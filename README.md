@@ -29,7 +29,9 @@ albo otworzyć lokalnie.
 ```
 src/
   types.ts                  wszystkie typy domenowe
+  routing.ts                trasy w hashu adresu
   data/exercises.ts         biblioteka 19 ćwiczeń, etapy trudności, kolory kettlebli
+  data/videos.ts            filmy instruktażowe, 4 na ćwiczenie
   engine/
     math.ts                 wzór Epleya, tonaż, wskaźnik obciążenia w czasie
     plan.ts                 stan początkowy, recepta na dziś, mieszane obciążenie
@@ -41,6 +43,8 @@ src/
     ui.tsx                  modal, toast, kafelek ciężaru, przełącznik, wykres
     ExerciseCard.tsx        karta ćwiczenia z formularzem serii
     views.tsx               wybór treningu, sesja, poziomy, kreator, ustawienia
+    atlas.tsx               spis ćwiczeń i podstrona pojedynczego ćwiczenia
+    VideoEmbed.tsx          odtwarzacz YouTube ładowany dopiero po kliknięciu
   App.tsx                   spina stan i widoki
   main.tsx                  punkt wejścia
   styles.css                arkusz stylów
@@ -49,6 +53,29 @@ src/
 Silnik jest w całości oddzielony od interfejsu. `engine/` nie importuje niczego z Reacta, funkcje
 przyjmują stan i zwracają zmiany, więc dają się testować bez DOM-u. Funkcje mutujące (`applyResult`,
 `applyLayoff`) działają na przekazanym obiekcie — `App.tsx` woła je zawsze na kopii stanu.
+
+## Atlas ćwiczeń i wideo
+
+Każde z 19 ćwiczeń ma własną podstronę pod adresem `#/cwiczenia/<id>` — z kadrem techniki,
+etapami trudności i czterema filmami instruktażowymi. Wejście prowadzi z zakładki „Atlas”
+albo z linku w rozwiniętej karcie ćwiczenia podczas treningu.
+
+**Trasy siedzą w części hash adresu.** GitHub Pages serwuje wyłącznie pliki statyczne, więc
+ścieżka `/cwiczenia/swing2` wróciłaby jako 404. Hash nie trafia na serwer: jeden `index.html`
+obsługuje każdą podstronę, ścieżka dokumentu zostaje ta sama, a względne adresy zasobów
+(`base: './'`) dalej się rozwiązują. Przycisk „wstecz” działa bez dodatkowego kodu.
+
+**Lista filmów nie jest pisana z pamięci.** Powstała z wyników wyszukiwania YouTube:
+kandydaci są odsiewani po długości i tytule, oceniani liczbą wyświetleń razem z pozycją
+w wynikach, ograniczani do jednego filmu na kanał, a każdy identyfikator sprawdzono przez
+oEmbed i stronę osadzania, żeby nie trafił tam film usunięty, prywatny albo z wyłączonym
+osadzaniem. Aplikacja jest po polsku, więc do dwóch miejsc na ćwiczenie rezerwowane jest na
+nagrania polskie — resztę zajmują najmocniejsze angielskie. Karta ma znacznik języka.
+
+**Odtwarzacz wchodzi dopiero po kliknięciu.** Cztery osadzone ramki na stronę ściągałyby
+megabajt skryptów i ustawiały ciasteczka, zanim ktokolwiek naciśnie play, więc do tego
+czasu stoi tam sama miniatura. Adres `youtube-nocookie.com` odkłada śledzenie do momentu
+odtworzenia, a zwykły link do YouTube pod spodem działa nawet wtedy, gdy autor skasuje film.
 
 ## Jak działa progresja
 
@@ -79,6 +106,14 @@ krytykowany, więc traktowany jest jako sygnał ostrzegawczy, nie wyrocznia.
 tylko tam, gdzie po korekcie nie da się utrzymać dolnej granicy zakresu. Progi są łagodne, bo
 badania nad roztrenowaniem pokazują, że nawet po 12 tygodniach przerwy siła spada o 5–15%.
 
+## Publikacja
+
+Aplikacja stoi na GitHub Pages: <https://aleksanderdudek.github.io/gym-training-tracker/>
+
+Wdrożenie prowadzi `.github/workflows/deploy.yml` — każdy push na `main` uruchamia
+`typecheck`, testy i build, a dopiero potem publikuje `dist/`. Nieprzechodzące testy
+zatrzymują wdrożenie.
+
 ## Zapis danych
 
 `storage/storage.ts` obsługuje dwa środowiska. Osadzone w artefakcie korzysta z `window.storage`,
@@ -90,4 +125,4 @@ wyścigały się o klucz.
 
 Aplikacja nie zastępuje trenera ani fizjoterapeuty. Przy bólu, kontuzji lub chorobie skonsultuj plan
 ze specjalistą.
-# gym-training-tracker
+
