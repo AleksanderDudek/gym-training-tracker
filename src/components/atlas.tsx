@@ -24,7 +24,8 @@ export function AtlasView({ state }: { state: AppState }) {
         <div key={g}>
           <div className="sect-label">{g}</div>
           {ids.map((id) => {
-            const count = VIDEOS[id]?.length ?? 0;
+            const v = VIDEOS[id];
+            const count = (v?.main.length ?? 0) + (v?.kb.length ?? 0);
             return (
               <button className="atlas-row" key={id} onClick={() => go(exercisePath(id))}>
                 <Chip state={state} id={id} />
@@ -63,7 +64,7 @@ export function ExercisePage({ state, id }: { state: AppState; id: ExerciseId })
   }
 
   const p = P(state, id);
-  const videos = VIDEOS[id] ?? [];
+  const videos = VIDEOS[id] ?? { main: [], kb: [] };
   const stages = m.stages ? STAGES[m.stages] : null;
 
   return (
@@ -110,14 +111,14 @@ export function ExercisePage({ state, id }: { state: AppState; id: ExerciseId })
 
       <div className="sect-label">Jak to trenować — wideo</div>
       <div className="grp">
-        {videos.length ? (
+        {videos.main.length ? (
           <>
             <p className="tight">
-              Nagrania wybrane z YouTube według liczby wyświetleń i trafności. Odtwarzacz ładuje się
-              dopiero po kliknięciu.
+              Najpopularniejsze nagrania techniki z YouTube, wybrane po liczbie wyświetleń i
+              trafności. Odtwarzacz ładuje się dopiero po kliknięciu.
             </p>
             <div className="vids">
-              {videos.map((v) => (
+              {videos.main.map((v) => (
                 <VideoEmbed key={v.id} video={v} />
               ))}
             </div>
@@ -126,6 +127,23 @@ export function ExercisePage({ state, id }: { state: AppState; id: ExerciseId })
           <p>Dla tego ćwiczenia nie ma jeszcze wybranych filmów.</p>
         )}
       </div>
+
+      {videos.kb.length > 0 && (
+        <>
+          <div className="sect-label">To samo ćwiczenie z kettlebell</div>
+          <div className="grp">
+            <p className="tight">
+              Nagrania pokazujące wariant z odważnikiem kulowym — chwyt, ustawienie ciężaru i różnice
+              względem wersji podstawowej.
+            </p>
+            <div className="vids">
+              {videos.kb.map((v) => (
+                <VideoEmbed key={v.id} video={v} />
+              ))}
+            </div>
+          </div>
+        </>
+      )}
 
       <div className="wrap">
         <p className="disclaimer">

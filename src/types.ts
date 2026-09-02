@@ -156,3 +156,11 @@ export interface VideoRef {
   /** Długość w sekundach. */
   secs: number;
 }
+
+/** Dwie listy filmów dla jednego ćwiczenia. */
+export interface ExerciseVideos {
+  /** Najpopularniejsze nagrania techniki, bez względu na sprzęt. */
+  main: VideoRef[];
+  /** To samo ćwiczenie w wariancie z kettlebell. */
+  kb: VideoRef[];
+}

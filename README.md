@@ -57,8 +57,9 @@ przyjmują stan i zwracają zmiany, więc dają się testować bez DOM-u. Funkcj
 ## Atlas ćwiczeń i wideo
 
 Każde z 19 ćwiczeń ma własną podstronę pod adresem `#/cwiczenia/<id>` — z kadrem techniki,
-etapami trudności i czterema filmami instruktażowymi. Wejście prowadzi z zakładki „Atlas”
-albo z linku w rozwiniętej karcie ćwiczenia podczas treningu.
+etapami trudności i filmami w dwóch listach: pięć najpopularniejszych nagrań techniki, a pod
+nimi ten sam ruch w wariancie z kettlebell. Wejście prowadzi z zakładki „Atlas” albo z linku
+w rozwiniętej karcie ćwiczenia podczas treningu.
 
 **Trasy siedzą w części hash adresu.** GitHub Pages serwuje wyłącznie pliki statyczne, więc
 ścieżka `/cwiczenia/swing2` wróciłaby jako 404. Hash nie trafia na serwer: jeden `index.html`
@@ -71,6 +72,14 @@ w wynikach, ograniczani do jednego filmu na kanał, a każdy identyfikator spraw
 oEmbed i stronę osadzania, żeby nie trafił tam film usunięty, prywatny albo z wyłączonym
 osadzaniem. Aplikacja jest po polsku, więc do dwóch miejsc na ćwiczenie rezerwowane jest na
 nagrania polskie — resztę zajmują najmocniejsze angielskie. Karta ma znacznik języka.
+
+**Do listy z kettlebell wchodzą tylko filmy, które nazywają odważnik** w tytule albo w nazwie
+kanału, trafiają w sam ruch i przekraczają próg oglądalności — inaczej sekcja zapełniłaby się
+wyczynami pokroju „podciąganie +49 kg” i treningami z serii „Day 244”. Trafność sprawdzana jest
+jeszcze raz na tytule z oEmbed, bo wyszukiwarka bywa zwraca tytuł automatycznie przetłumaczony
+i filtr działający na wynikach widzi inny tekst niż ten, który staje na karcie. Gdy po tym
+odsiewie zostają mniej niż trzy filmy, sekcji nie ma wcale — dla podciągania i dipów wariant
+z kettlebell nie istnieje jako materiał instruktażowy i lepiej nie udawać, że jest.
 
 **Odtwarzacz wchodzi dopiero po kliknięciu.** Cztery osadzone ramki na stronę ściągałyby
 megabajt skryptów i ustawiały ciasteczka, zanim ktokolwiek naciśnie play, więc do tego
