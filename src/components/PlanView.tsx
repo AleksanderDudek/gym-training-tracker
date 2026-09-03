@@ -344,8 +344,8 @@ function Scoreboard({ snap }: { snap: Snapshot }) {
 }
 
 /**
- * Odznaki mają własne miejsce w zakładce „Poziomy”, bo większość z nich liczy się z całej
- * historii, a nie z kalendarza. Tu zostaje sam licznik — żeby było widać, że rosną.
+ * Odznaki mają własną zakładkę, bo większość z nich liczy się z całej historii, a nie
+ * z kalendarza planu. Tu zostaje sam licznik — żeby było widać, że rosną.
  */
 function BadgeLine({ state }: { state: AppState }) {
   const { have, total } = achievementCount(state);
@@ -355,11 +355,11 @@ function BadgeLine({ state }: { state: AppState }) {
         Odznaki {have}/{total}
       </h3>
       <p className="tight">
-        Pełna lista z progami i postępem jest w zakładce <b>Poziomy</b>. Terminy planu odblokowują
-        rodziny „Seria w terminie”, „Bez pudła”, „Czysty tydzień” i „Nadrabiacz”.
+        Pełna lista z progami i postępem jest w zakładce <b>Osiągnięcia</b>. Terminy planu
+        odblokowują rodziny „Seria w terminie”, „Bez pudła”, „Czysty tydzień” i „Nadrabiacz”.
       </p>
-      <a className="vidlink" href="#/poziomy">
-        Zobacz odznaki
+      <a className="vidlink" href="#/osiagniecia">
+        Zobacz osiągnięcia
       </a>
     </div>
   );

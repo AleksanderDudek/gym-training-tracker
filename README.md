@@ -18,18 +18,34 @@ Pozostałe polecenia:
 npm run build      # produkcyjny build do dist/
 npm run preview    # podgląd builda
 npm run typecheck  # tsc --noEmit
-npm test           # testy silnika progresji (vitest)
+npm test           # 139 testów silnika i tras (vitest)
 ```
 
 Build jest w pełni statyczny (`base: './'`), więc `dist/` można wrzucić na dowolny hosting plików
 albo otworzyć lokalnie.
+
+## Zakładki
+
+| Zakładka | Adres | Co robi |
+| --- | --- | --- |
+| Trening | `#/trening` | Wybór treningu i prowadzenie sesji. |
+| Plan | `#/plan` | Kalendarz terminów, punkty, stopień, dziennik zdarzeń. |
+| Poziomy | `#/poziomy` | Wskaźnik obciążenia, poziomy ćwiczeń, historia sesji. |
+| Osiągnięcia | `#/osiagniecia` | Dorobek w liczbach i odznaki z progami. |
+| Treningi | `#/treningi` | Własne zestawy ćwiczeń. |
+| Atlas | `#/cwiczenia` | Opisy ćwiczeń i filmy; każde ma własny adres do wysłania. |
+| Ustawienia | `#/ustawienia` | Dostępne kettlebelle, eksport, import, kasowanie danych. |
+
+Osiągnięcia mają własną zakładkę, bo liczą się z całej historii, a nie z kalendarza planu —
+i mają być widoczne również wtedy, gdy żaden plan nie jest uruchomiony.
 
 ## Struktura
 
 ```
 src/
   types.ts                  wszystkie typy domenowe
-  routing.ts                trasy w hashu adresu
+  routing.ts                trasy w hashu adresu, siedem zakładek
+  routing.test.ts           7 testów tras i zakładek
   data/exercises.ts         biblioteka 19 ćwiczeń, cztery treningi, kolory kettlebli
   data/videos.ts            filmy instruktażowe, 4 na ćwiczenie
   data/plans.ts             katalog 54 planów: poziom × płeć × częstotliwość
@@ -57,7 +73,7 @@ src/
     views.tsx               wybór treningu, sesja, poziomy, kreator, ustawienia
     atlas.tsx               spis ćwiczeń i podstrona pojedynczego ćwiczenia
     PlanView.tsx            katalog planów, kalendarz, punkty i dziennik
-    Achievements.tsx        dorobek i odznaki z progami
+    Achievements.tsx        zakładka osiągnięć: dorobek w liczbach i odznaki z progami
     VideoEmbed.tsx          odtwarzacz YouTube ładowany dopiero po kliknięciu
   App.tsx                   spina stan i widoki
   main.tsx                  punkt wejścia
@@ -170,7 +186,7 @@ treningów, żeby pierwsza nagroda nie była odległa o miesiąc.
 **Odznaki mają progi, nie jeden koniec.** Rodzina „Powtórzenia" ma sześć progów od 500 do
 100 000, „Utrzymany rytm" pięć od czterech tygodni do roku. Zdobyty próg nie kończy tematu, tylko
 odsłania następny — a pasek postępu mówi, ile brakuje. Zamiast ściany „zablokowane" jest zawsze
-widoczny kolejny krok. Pełna lista jest w zakładce **Poziomy**, razem z sumami dorobku.
+widoczny kolejny krok. Wszystko mieszka w zakładce **Osiągnięcia**, razem z sumami dorobku.
 
 Cztery grupy:
 

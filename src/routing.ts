@@ -12,6 +12,7 @@ export const TABS: { key: TabKey; label: string; path: string }[] = [
   { key: 'train', label: 'Trening', path: '#/trening' },
   { key: 'plan', label: 'Plan', path: '#/plan' },
   { key: 'prog', label: 'Poziomy', path: '#/poziomy' },
+  { key: 'ach', label: 'Osiągnięcia', path: '#/osiagniecia' },
   { key: 'work', label: 'Treningi', path: '#/treningi' },
   { key: 'atlas', label: 'Atlas', path: '#/cwiczenia' },
   { key: 'set', label: 'Ustawienia', path: '#/ustawienia' },
@@ -21,6 +22,7 @@ const TAB_BY_PATH: Record<string, TabKey> = {
   trening: 'train',
   plan: 'plan',
   poziomy: 'prog',
+  osiagniecia: 'ach',
   treningi: 'work',
   ustawienia: 'set',
 };
@@ -57,6 +59,6 @@ export function useRoute(): Route {
   return route;
 }
 
-/** Który z pięciu przycisków nawigacji ma być podświetlony. */
+/** Który przycisk nawigacji ma być podświetlony. Atlas obejmuje też podstrony ćwiczeń. */
 export const activeTab = (route: Route): TabKey =>
   route.kind === 'tab' ? route.tab : 'atlas';

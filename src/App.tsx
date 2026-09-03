@@ -8,6 +8,7 @@ import { Banner, Modal, Toast, useModal } from './components/ui';
 import { LevelsView, SessionView, SettingsView, WorkoutPicker, WorkoutsView } from './components/views';
 import { AtlasView, ExercisePage } from './components/atlas';
 import { PlanView } from './components/PlanView';
+import { Achievements } from './components/Achievements';
 import { dayKey, daysBetween } from './engine/schedule';
 import { bankPoints, snapshot } from './engine/snapshot';
 import { achCtx, formatTier, migrateBadges, syncBadges } from './engine/badges';
@@ -293,7 +294,7 @@ export default function App() {
         </ul>
         {hits.length > shown.length && (
           <p style={{ marginTop: 8 }}>
-            …i jeszcze {hits.length - shown.length}. Cała lista jest w zakładce Poziomy.
+            …i jeszcze {hits.length - shown.length}. Cała lista jest w zakładce Osiągnięcia.
           </p>
         )}
       </>,
@@ -631,6 +632,8 @@ export default function App() {
         ))}
 
       {view === 'prog' && <LevelsView state={state} />}
+
+      {view === 'ach' && <Achievements state={state} />}
 
       {view === 'work' && (
         <WorkoutsView

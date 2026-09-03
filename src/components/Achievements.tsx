@@ -76,7 +76,10 @@ function Row({ r }: { r: AchProgress }) {
   );
 }
 
-/** Sumy z całej historii jednym rzutem oka — to samo, z czego liczą się odznaki dorobku. */
+/**
+ * Sumy z całej historii jednym rzutem oka — to samo, z czego liczą się odznaki z grupy
+ * „Dorobek”. Nagłówek celowo inny niż nazwa grupy, żeby dwie rzeczy nie nazywały się tak samo.
+ */
 function Totals({ m }: { m: Metrics }) {
   const tiles: [string, string][] = [
     [num(m.workouts), 'treningów'],
@@ -87,7 +90,7 @@ function Totals({ m }: { m: Metrics }) {
 
   return (
     <div className="grp">
-      <h3>Dorobek</h3>
+      <h3>W liczbach</h3>
       <div className="tiles">
         {tiles.map(([v, l]) => (
           <div className="tile" key={l}>
@@ -115,16 +118,19 @@ export function Achievements({ state }: { state: AppState }) {
 
   return (
     <>
+      <div className="wrap">
+        <h2>Osiągnięcia</h2>
+        <p className="lead">
+          Każda rodzina odznak ma kilka progów, więc zdobyta odznaka nie kończy tematu, tylko
+          pokazuje następny krok. Nic tu nie zależy od tego, jak ciężkim kettlebellem trenujesz —
+          liczy się to, ile i jak regularnie.
+        </p>
+      </div>
+
       <Totals m={ctx.metrics} />
 
-      <div className="wrap" style={{ marginTop: 14 }}>
-        <h2>
-          Odznaki {have}/{total}
-        </h2>
-        <p className="lead">
-          Każda rodzina ma kilka progów, więc zdobyta odznaka nie kończy tematu, tylko pokazuje
-          następny krok. Nic tu nie zależy od tego, jak ciężkim kettlebellem trenujesz.
-        </p>
+      <div className="sect-label">
+        Odznaki {have}/{total}
       </div>
 
       {GROUPS.map((g) => {

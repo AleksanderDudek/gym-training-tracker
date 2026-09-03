@@ -302,7 +302,7 @@ export interface PlannedSet {
 export type View = 'train' | 'prog' | 'work' | 'set';
 
 /** Zakładka w dolnej nawigacji. */
-export type TabKey = View | 'atlas' | 'plan';
+export type TabKey = View | 'atlas' | 'plan' | 'ach';
 
 /** Trasa aplikacji. Podstrona ćwiczenia ma własny adres, więc da się ją wysłać komuś linkiem. */
 export type Route =

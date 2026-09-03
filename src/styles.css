@@ -123,8 +123,9 @@
     text-decoration:none;color:var(--ink-soft);cursor:pointer;border-top:3px solid transparent;margin-top:-1px}
   nav a[aria-current=page]{color:var(--ink);font-weight:600;border-top-color:var(--steel)}
   nav a:focus-visible{outline:2px solid var(--steel);outline-offset:-2px}
-  /* Sześć zakładek na 320 px: „Ustawienia” nie mieści się w slocie przy 10,5 px. */
-  @media (max-width:359px){nav a{font-size:9.5px;letter-spacing:-.01em}}
+  /* Siedem zakładek na wąskim ekranie: przy 10,5 px „Osiągnięcia” i „Ustawienia” zjadają
+     odstępy między pozycjami i etykiety zaczynają się stykać. */
+  @media (max-width:374px){nav a{font-size:9.5px;letter-spacing:-.01em}}
 
   #modal{position:fixed;inset:0;background:rgba(30,35,32,.55);display:grid;place-items:center;padding:18px;z-index:50}
   #modal.hidden{display:none}
