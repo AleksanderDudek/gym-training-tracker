@@ -12,8 +12,8 @@ import {
   planId,
 } from '../data/plans';
 import { advise } from '../engine/advice';
-import { BADGES } from '../engine/badges';
 import { journal } from '../engine/journal';
+import { achievementCount } from './Achievements';
 import { POINTS, pointsToday } from '../engine/score';
 import { dayKey, daysBetween, planWeekdays } from '../engine/schedule';
 import { snapshot } from '../engine/snapshot';
@@ -343,27 +343,24 @@ function Scoreboard({ snap }: { snap: Snapshot }) {
   );
 }
 
-function Badges({ state }: { state: AppState }) {
-  const owned = state.award.badges;
-  const have = BADGES.filter((b) => owned[b.id]).length;
-
+/**
+ * Odznaki mają własne miejsce w zakładce „Poziomy”, bo większość z nich liczy się z całej
+ * historii, a nie z kalendarza. Tu zostaje sam licznik — żeby było widać, że rosną.
+ */
+function BadgeLine({ state }: { state: AppState }) {
+  const { have, total } = achievementCount(state);
   return (
     <div className="grp">
       <h3>
-        Odznaki {have}/{BADGES.length}
+        Odznaki {have}/{total}
       </h3>
-      <div className="badges">
-        {BADGES.map((b) => {
-          const at = owned[b.id];
-          return (
-            <div key={b.id} className={`bdg${at ? ' on' : ''}`} title={b.desc}>
-              <span className="bdg-mark">{b.mark}</span>
-              <span className="bdg-name">{b.name}</span>
-              <span className="bdg-desc">{at ? `zdobyta ${shortDate(at)}` : b.desc}</span>
-            </div>
-          );
-        })}
-      </div>
+      <p className="tight">
+        Pełna lista z progami i postępem jest w zakładce <b>Poziomy</b>. Terminy planu odblokowują
+        rodziny „Seria w terminie”, „Bez pudła”, „Czysty tydzień” i „Nadrabiacz”.
+      </p>
+      <a className="vidlink" href="#/poziomy">
+        Zobacz odznaki
+      </a>
     </div>
   );
 }
@@ -512,7 +509,7 @@ function ActivePlanView({
         );
       })}
 
-      <Badges state={state} />
+      <BadgeLine state={state} />
       <Journal snap={snap} state={state} />
 
       <div className="wrap">

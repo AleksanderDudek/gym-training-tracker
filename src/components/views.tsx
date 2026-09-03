@@ -4,6 +4,7 @@ import { acwr, sessionTonnage } from '../engine/math';
 import { P, exercisesByGroup, planLabel } from '../engine/plan';
 import { Chip, Sparkline } from './ui';
 import { ExerciseCard } from './ExerciseCard';
+import { Achievements } from './Achievements';
 import type { AppState, EffortKey, ExerciseId, ReadyKey, SetResult, Workout } from '../types';
 
 /* ---------------- Wybór treningu ---------------- */
@@ -180,6 +181,7 @@ export function LevelsView({ state }: { state: AppState }) {
   return (
     <>
       <LoadGauge state={state} />
+      <Achievements state={state} />
       <div className="sect-label">Poziomy ćwiczeń</div>
       {Object.entries(groups).map(([g, ids]) => (
         <div key={g}>

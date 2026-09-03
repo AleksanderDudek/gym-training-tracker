@@ -256,15 +256,27 @@
   ul.ptlist{margin:0;padding-left:0;list-style:none}
   ul.ptlist li{margin-bottom:5px;padding-left:14px;text-indent:-14px}
 
-  .badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:6px}
-  .bdg{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r);
-    padding:9px 10px;opacity:.5;min-width:0}
-  .bdg.on{opacity:1;border-color:var(--ok);background:var(--surface)}
-  .bdg-mark{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;
-    background:var(--line);color:var(--ink);font-family:var(--display);font-size:12px}
-  .bdg.on .bdg-mark{background:var(--ok);color:#fff}
-  .bdg-name{display:block;font-size:13.5px;font-weight:600;margin-top:6px}
-  .bdg-desc{display:block;font-size:11.5px;color:var(--ink-soft);line-height:1.35;margin-top:2px}
+  .ach-note{margin:0;padding:10px 14px 4px;font-size:12.5px;color:var(--ink-soft);max-width:62ch}
+  .ach{display:grid;grid-template-columns:30px 1fr;gap:11px;padding:11px 14px;
+    border-bottom:1px solid var(--line);opacity:.62}
+  .ach:last-child{border-bottom:0}
+  .ach.on{opacity:1}
+  .ach-mark{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;
+    background:var(--line);color:var(--ink);font-family:var(--display);font-size:12px;line-height:1}
+  .ach.on .ach-mark{background:var(--steel);color:#fff}
+  .ach.full .ach-mark{background:var(--ok);color:#fff}
+  .ach-body{min-width:0}
+  .ach-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .ach-head b{font-size:14.5px;font-weight:600}
+  .ach-pips{display:flex;gap:3px;flex:none}
+  .ach-pips i{width:7px;height:7px;border-radius:50%;background:var(--line)}
+  .ach-pips i.on{background:var(--ok)}
+  .ach-bar{height:5px;background:var(--surface-2);margin:6px 0 5px;overflow:hidden}
+  .ach-bar i{display:block;height:100%;background:var(--steel);opacity:.5}
+  .ach.full .ach-bar i{background:var(--ok);opacity:.55}
+  .ach-meta{font-family:var(--display);font-size:12.5px;color:var(--ink);margin-top:5px}
+  .ach-bar + .ach-meta{margin-top:0}
+  .ach-desc{font-size:12px;color:var(--ink-soft);line-height:1.35;margin-top:2px}
 
   .jrn{border-top:1px solid var(--surface-2)}
   .jrow{display:grid;grid-template-columns:44px 1fr auto;gap:9px;align-items:baseline;

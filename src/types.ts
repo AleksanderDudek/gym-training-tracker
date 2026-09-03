@@ -226,27 +226,37 @@ export interface PlanEvent {
   points?: number;
 }
 
-export type BadgeId =
-  | 'pierwszy-krok'
-  | 'czysty-tydzien'
-  | 'seria-3'
-  | 'seria-10'
-  | 'seria-25'
-  | 'nadrabiacz'
-  | 'punktualny'
-  | 'powrot'
-  | 'polowa'
-  | 'plan-zamkniety'
-  | 'setka'
-  | 'ranny-ptaszek'
-  | 'zelazo';
+/** Rodzina odznak. Każda ma kilka progów, więc jedna rzecz ma ciąg dalszy zamiast końca. */
+export type AchGroup =
+  /** Sumy z całej historii: treningi, serie, powtórzenia, tonaż. */
+  | 'dorobek'
+  /** Rekordy z okna czasu: najlepszy dzień, tydzień, miesiąc, kwartał. */
+  | 'szczyty'
+  /** Regularność i trzymanie poziomu w dłuższym czasie. */
+  | 'utrzymanie'
+  /** Terminy planu: seria, realizacja, domknięte tygodnie. */
+  | 'terminy';
 
-export interface Badge {
-  id: BadgeId;
+export interface Achievement {
+  /** Identyfikator rodziny. Klucz konkretnego progu to `id:numer`. */
+  id: string;
+  group: AchGroup;
   name: string;
   desc: string;
   /** Ikona tekstowa — aplikacja nie ładuje grafik. */
   mark: string;
+  /** Progi rosnąco. Jeden próg oznacza odznakę zerojedynkową. */
+  tiers: number[];
+  /** Jednostka dopisywana do progu, np. „powtórzeń”. */
+  unit?: string;
+}
+
+/** Zdobyty próg razem z rodziną, do której należy. */
+export interface AchievementHit {
+  ach: Achievement;
+  /** Numer progu liczony od jedynki. */
+  tier: number;
+  threshold: number;
 }
 
 /**
@@ -257,8 +267,8 @@ export interface Badge {
 export interface Award {
   /** Punkty z wcześniejszych, już zamkniętych planów. */
   banked: number;
-  /** Odznaka i dzień jej zdobycia. */
-  badges: Partial<Record<BadgeId, string>>;
+  /** Klucz progu (`rodzina:numer`) i dzień jego zdobycia. */
+  badges: Record<string, string>;
 }
 
 export interface AppState {

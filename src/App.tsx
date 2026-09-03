@@ -10,7 +10,7 @@ import { AtlasView, ExercisePage } from './components/atlas';
 import { PlanView } from './components/PlanView';
 import { dayKey, daysBetween } from './engine/schedule';
 import { bankPoints, snapshot } from './engine/snapshot';
-import { badgeById, syncBadges } from './engine/badges';
+import { achCtx, formatTier, migrateBadges, syncBadges } from './engine/badges';
 import { pointsToday } from './engine/score';
 import { seedFromPlan } from './engine/plan';
 import { planById, planId } from './data/plans';
@@ -18,7 +18,7 @@ import { TABS, activeTab, go, useRoute } from './routing';
 import type {
   ActivePlan,
   AppState,
-  BadgeId,
+  AchievementHit,
   Change,
   EffortKey,
   ExerciseId,
@@ -31,15 +31,10 @@ import type {
 
 const clone = (s: AppState): AppState => JSON.parse(JSON.stringify(s)) as AppState;
 
-/** Kontekst dla silnika odznak: stan plus to, co z niego wynika na dziś. */
+/** Kontekst dla silnika odznak: stan, wyliczone metryki i to, co wynika z planu na dziś. */
 const badgeCtx = (s: AppState) => {
   const snap = snapshot(s);
-  return {
-    state: s,
-    schedule: snap?.schedule ?? null,
-    stats: snap?.stats ?? null,
-    today: snap?.today ?? dayKey(Date.now()),
-  };
+  return achCtx(s, snap?.schedule ?? null, snap?.stats ?? null, snap?.today ?? dayKey(Date.now()));
 };
 
 export default function App() {
@@ -73,7 +68,10 @@ export default function App() {
         next.session = saved.session ?? null;
         next.plan = saved.plan ?? null;
         next.events = saved.events ?? [];
-        next.award = { banked: saved.award?.banked ?? 0, badges: saved.award?.badges ?? {} };
+        next.award = {
+          banked: saved.award?.banked ?? 0,
+          badges: migrateBadges(saved.award?.badges ?? {}),
+        };
         if (next.session && ![...BUILTIN, ...next.workouts].find((w) => w.id === next.session!.workout))
           next.session = null;
         if (next.session) {
@@ -272,20 +270,33 @@ export default function App() {
     if (fresh.length) await sayBadges(fresh);
   };
 
-  /** Odznaki pokazywane osobno, po podsumowaniu poziomów — dwie wiadomości, dwa tematy. */
-  const sayBadges = async (ids: BadgeId[]) => {
+  /**
+   * Odznaki pokazywane osobno, po podsumowaniu poziomów — dwie wiadomości, dwa tematy.
+   * Lista przycięta, bo po imporcie historii potrafi wpaść kilkanaście progów naraz,
+   * a ekran z osiemnastoma gratulacjami nie cieszy nikogo.
+   */
+  const sayBadges = async (hits: AchievementHit[]) => {
+    const shown = hits.slice(0, 6);
     await say(
-      ids.length === 1 ? 'Nowa odznaka' : `Nowe odznaki: ${ids.length}`,
-      <ul>
-        {ids.map((id) => {
-          const b = badgeById(id);
-          return (
-            <li key={id}>
-              <b>{b.name}</b> — {b.desc}
+      hits.length === 1 ? 'Nowa odznaka' : `Nowe odznaki: ${hits.length}`,
+      <>
+        <ul>
+          {shown.map((h) => (
+            <li key={`${h.ach.id}:${h.tier}`}>
+              <b>
+                {h.ach.name}
+                {h.ach.tiers.length > 1 ? ` ${h.tier}` : ''}
+              </b>{' '}
+              — {formatTier(h.ach, h.threshold)}
             </li>
-          );
-        })}
-      </ul>,
+          ))}
+        </ul>
+        {hits.length > shown.length && (
+          <p style={{ marginTop: 8 }}>
+            …i jeszcze {hits.length - shown.length}. Cała lista jest w zakładce Poziomy.
+          </p>
+        )}
+      </>,
     );
   };
 
@@ -498,7 +509,10 @@ export default function App() {
         next.session = parsed.session ?? null;
         next.plan = parsed.plan ?? null;
         next.events = parsed.events ?? [];
-        next.award = { banked: parsed.award?.banked ?? 0, badges: parsed.award?.badges ?? {} };
+        next.award = {
+          banked: parsed.award?.banked ?? 0,
+          badges: migrateBadges(parsed.award?.badges ?? {}),
+        };
         commit(next);
         setToastMsg('Dane wczytane.');
       } catch {

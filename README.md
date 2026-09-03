@@ -40,21 +40,24 @@ src/
     hints.ts                teksty podpowiedzi i wyjaśnień
     schedule.ts             rozpisanie planu na daty, przypisanie sesji do terminów, rotacja
     score.ts                punkty, premie za serię, stopnie
-    badges.ts               trzynaście odznak i ich warunki
+    metrics.ts              sumy, rekordy z okna czasu, miary utrzymania poziomu
+    badges.ts               katalog odznak z progami, postęp, migracja starych kluczy
     journal.ts              dziennik zdarzeń wyprowadzany z kalendarza
     advice.ts               podpowiedzi: nadrobienie, przerwa, zmiana częstotliwości
     snapshot.ts             jedno wyliczenie stanu planu na dziś
     progression.test.ts     40 testów silnika progresji
     schedule.test.ts        30 testów kalendarza, przypisania i rotacji
     score.test.ts           15 testów punktacji i dziennika
-    badges.test.ts          16 testów odznak, dorobku i podpowiedzi
+    badges.test.ts          19 testów odznak, dorobku i podpowiedzi
+    metrics.test.ts         28 testów warstwy liczb
   storage/storage.ts        zapis z kolejkowaniem, dwa środowiska
   components/
     ui.tsx                  modal, toast, kafelek ciężaru, przełącznik, wykres
     ExerciseCard.tsx        karta ćwiczenia z formularzem serii
     views.tsx               wybór treningu, sesja, poziomy, kreator, ustawienia
     atlas.tsx               spis ćwiczeń i podstrona pojedynczego ćwiczenia
-    PlanView.tsx            katalog planów i kalendarz 12 tygodni
+    PlanView.tsx            katalog planów, kalendarz, punkty i dziennik
+    Achievements.tsx        dorobek i odznaki z progami
     VideoEmbed.tsx          odtwarzacz YouTube ładowany dopiero po kliknięciu
   App.tsx                   spina stan i widoki
   main.tsx                  punkt wejścia
@@ -164,12 +167,35 @@ nie dług do odrobienia — wychodzenie z minusa zniechęca skuteczniej niż cok
 **Osiem stopni**, od Nowicjusza po Mistrza. Pierwszy awans wypada po niecałym tygodniu regularnych
 treningów, żeby pierwsza nagroda nie była odległa o miesiąc.
 
-**Trzynaście odznak** opisuje zachowanie, nie wynik siłowy: pierwszy trening, czysty tydzień,
-serie 3/10/25, nadrobienie zaległości, 90% realizacji, powrót po dwóch tygodniach przerwy,
-półmetek, zamknięty plan, sto treningów, trening przed ósmą rano, przejście na cięższy kettlebell.
+**Odznaki mają progi, nie jeden koniec.** Rodzina „Powtórzenia" ma sześć progów od 500 do
+100 000, „Utrzymany rytm" pięć od czterech tygodni do roku. Zdobyty próg nie kończy tematu, tylko
+odsłania następny — a pasek postępu mówi, ile brakuje. Zamiast ściany „zablokowane" jest zawsze
+widoczny kolejny krok. Pełna lista jest w zakładce **Poziomy**, razem z sumami dorobku.
+
+Cztery grupy:
+
+- **Dorobek** — sumy z całej historii: treningi, powtórzenia, serie, wykonane ćwiczenia, tonaż,
+  czas pod obciążeniem, liczba poznanych ruchów.
+- **Szczyty** — rekord z przesuwanego okna: najlepszy dzień, siedem, czternaście, dwadzieścia
+  jeden, trzydzieści i dziewięćdziesiąt dni. „Najlepszy miesiąc" znaczy dowolne trzydzieści dni
+  z rzędu, a nie miesiąc z kalendarza — okno przesuwa się po datach, nie po kartkach.
+- **Utrzymanie** — to, że nic się nie osypało: tygodnie z rzędu po dwa treningi, dni bez zejścia
+  z ciężaru, ćwiczenia stojące w granicach 5% własnego szczytu, powrót do poziomu po przerwie.
+- **Terminy** — zależne od uruchomionego planu: seria w terminie, brak pudła, czyste tygodnie,
+  nadrobienia.
+
 Wszystkie da się zdobyć przy dowolnym ciężarze — bo jedyne, na co człowiek ma realny wpływ
-każdego dnia, to czy się pojawi. Raz zdobyta odznaka zostaje po zmianie planu, tak samo jak
-punkty: przy zamknięciu planu przechodzą do trwałego dorobku.
+każdego dnia, to czy się pojawi. Raz zdobyty próg zostaje po zmianie planu, tak samo jak punkty:
+przy zamknięciu planu przechodzą do trwałego dorobku.
+
+**Odznaki nie dają punktów.** Punkty pilnują terminów, odznaki nagradzają dorobek — gdyby objętość
+płaciła punktami, ranga rosłaby najszybciej tuż przed kontuzją.
+
+**Liczenie jest osobne od nagradzania.** `metrics.ts` liczy wszystko z historii treningów raz,
+a warunek odznaki mieści się w jednej linijce porównania z progiem. Powtórzenia ćwiczeń na stronę
+liczą się dwa razy, sekundy spacerów farmera nie mieszają się z powtórzeniami, a tonaż dorobku
+liczy kilogramy razy powtórzenia — inaczej niż tonaż z `math.ts`, gdzie sekundy wchodzą do wzoru,
+bo na tamtej liczbie skalibrowany jest wskaźnik przeciążenia.
 
 **Ekran treningu podaje cenę zwłoki.** „Dziś do wzięcia 180 pkt" obok „nadrobienie jutro: 70 pkt"
 działa lepiej niż jakiekolwiek napomnienie.
