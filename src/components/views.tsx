@@ -16,18 +16,20 @@ export function WorkoutPicker({
   workouts: Workout[];
   onStart: (id: string) => void;
   /** Trening, który wypada dziś według planu — jeśli plan jest uruchomiony. */
-  planned?: { id: string; name: string; late: number } | undefined;
+  planned?: { id: string; name: string; late: number; points: number } | undefined;
 }) {
   return (
     <>
       {planned && (
-        <div className="wrap">
-          <div className="banner good">
-            <h4>{planned.late > 0 ? 'Zaległy trening z planu' : 'Dziś według planu'}</h4>
+        <div className={`wrap`}>
+          <div className={`banner ${planned.late > 0 ? '' : 'good'}`}>
+            <h4>{planned.late > 0 ? 'Termin do nadrobienia' : 'Dziś według planu'}</h4>
             <p>
               {planned.name}
-              {planned.late > 0 &&
-                ` — termin był ${planned.late === 1 ? 'wczoraj' : `${planned.late} dni temu`}. Zrób go dziś, plan nie przesuwa się sam.`}
+              {planned.late > 0
+                ? ` — termin był ${planned.late === 1 ? 'wczoraj' : `${planned.late} dni temu`}. Nadrobienie wciąż się liczy, tylko taniej.`
+                : ' — zrobiony dziś liczy się w pełni.'}{' '}
+              Do wzięcia <b>{planned.points} pkt</b>.
             </p>
           </div>
         </div>

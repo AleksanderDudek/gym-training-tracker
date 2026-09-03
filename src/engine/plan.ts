@@ -62,6 +62,8 @@ export function freshState(): AppState {
     log: [],
     plan: null,
     notice: null,
+    events: [],
+    award: { banked: 0, badges: {} },
   };
 }
 

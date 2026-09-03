@@ -70,7 +70,8 @@
   input:focus,select:focus,button:focus-visible{outline:2px solid var(--steel);outline-offset:-1px}
 
   .segline{margin:14px 0 6px;font-size:13px;color:var(--ink-soft)}
-  .seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px}
+  /* Kolumny z liczby opcji, nie na sztywno — segment bywa dwu- i trzypozycyjny. */
+  .seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:6px;margin-bottom:12px}
   .seg button{font:inherit;font-size:13.5px;padding:11px 6px;background:var(--surface-2);
     border:1px solid var(--line);border-radius:var(--r);cursor:pointer;color:var(--ink-soft);line-height:1.25}
   .seg button[aria-pressed=true]{background:var(--steel);border-color:var(--steel);color:#fff;font-weight:600}
@@ -230,3 +231,58 @@
   .pday.missed{opacity:.55}
   .pday.today{background:var(--surface);border-left:3px solid var(--steel);font-weight:600}
   .pday.today .pd-date{color:var(--ink)}
+
+  /* ---------------- Terminy, punkty i odznaki ---------------- */
+
+  .wdays{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+  .wdays button{font:inherit;font-family:var(--display);font-size:15px;padding:10px 2px;
+    background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r);
+    cursor:pointer;color:var(--ink-soft)}
+  .wdays button[aria-pressed=true]{background:var(--steel);border-color:var(--steel);color:#fff}
+
+  .rankline{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+  .rank-name{font-family:var(--display);font-size:22px}
+  .rank-pts{font-family:var(--display);font-size:22px;color:var(--ok)}
+  .rank-bar{height:7px;background:var(--surface-2);margin:8px 0 8px;overflow:hidden}
+  .rank-bar i{display:block;height:100%;background:var(--ok);opacity:.55}
+
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
+  .tile{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r);
+    padding:9px 6px;text-align:center;min-width:0}
+  .tile b{display:block;font-family:var(--display);font-size:19px;line-height:1.1}
+  .tile span{display:block;font-size:10.5px;color:var(--ink-soft);margin-top:3px;line-height:1.2}
+  @media (max-width:400px){.tiles{grid-template-columns:repeat(2,1fr)}}
+
+  ul.ptlist{margin:0;padding-left:0;list-style:none}
+  ul.ptlist li{margin-bottom:5px;padding-left:14px;text-indent:-14px}
+
+  .badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:6px}
+  .bdg{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r);
+    padding:9px 10px;opacity:.5;min-width:0}
+  .bdg.on{opacity:1;border-color:var(--ok);background:var(--surface)}
+  .bdg-mark{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;
+    background:var(--line);color:var(--ink);font-family:var(--display);font-size:12px}
+  .bdg.on .bdg-mark{background:var(--ok);color:#fff}
+  .bdg-name{display:block;font-size:13.5px;font-weight:600;margin-top:6px}
+  .bdg-desc{display:block;font-size:11.5px;color:var(--ink-soft);line-height:1.35;margin-top:2px}
+
+  .jrn{border-top:1px solid var(--surface-2)}
+  .jrow{display:grid;grid-template-columns:44px 1fr auto;gap:9px;align-items:baseline;
+    padding:9px 0;border-bottom:1px solid var(--surface-2);font-size:13.5px}
+  .jrow:last-child{border-bottom:0}
+  .j-date{font-family:var(--display);font-size:13px;color:var(--ink-soft)}
+  .j-body{min-width:0}
+  .j-body b{font-weight:600}
+  .j-text{display:block;font-size:12px;color:var(--ink-soft);line-height:1.35}
+  .j-pts{font-family:var(--display);font-size:13px;color:var(--ok)}
+  .jrow.j-missed .j-body b{color:var(--warn)}
+  .jrow.j-missed .j-pts{color:var(--ink-soft)}
+  .jrow.j-badge .j-body b,.jrow.j-week .j-body b{color:var(--ok)}
+  .jrow.j-plan-start .j-body b,.jrow.j-plan-stop .j-body b,.jrow.j-plan-swap .j-body b{color:var(--steel)}
+
+  .pday.open{background:var(--surface);border-left:3px solid var(--warn)}
+  .pday.done.late .pd-mark{color:var(--warn)}
+  .pd-tick{width:24px;height:24px;padding:0;border:1px solid var(--line);border-radius:50%;
+    background:var(--surface);color:var(--ink-soft);font-size:13px;cursor:pointer;line-height:1}
+  .pd-tick[aria-pressed=true]{background:var(--ok);border-color:var(--ok);color:#fff}
+  .pd-tick:focus-visible{outline:2px solid var(--steel);outline-offset:1px}

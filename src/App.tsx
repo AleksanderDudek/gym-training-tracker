@@ -8,15 +8,21 @@ import { Banner, Modal, Toast, useModal } from './components/ui';
 import { LevelsView, SessionView, SettingsView, WorkoutPicker, WorkoutsView } from './components/views';
 import { AtlasView, ExercisePage } from './components/atlas';
 import { PlanView } from './components/PlanView';
-import { buildSchedule, dayKey, daysBetween, loggedDays } from './engine/schedule';
-import { planById } from './data/plans';
+import { dayKey, daysBetween } from './engine/schedule';
+import { bankPoints, snapshot } from './engine/snapshot';
+import { badgeById, syncBadges } from './engine/badges';
+import { pointsToday } from './engine/score';
 import { seedFromPlan } from './engine/plan';
+import { planById, planId } from './data/plans';
 import { TABS, activeTab, go, useRoute } from './routing';
 import type {
+  ActivePlan,
   AppState,
+  BadgeId,
   Change,
   EffortKey,
   ExerciseId,
+  PlanOptions,
   PlanTemplate,
   ReadyKey,
   SetResult,
@@ -24,6 +30,17 @@ import type {
 } from './types';
 
 const clone = (s: AppState): AppState => JSON.parse(JSON.stringify(s)) as AppState;
+
+/** Kontekst dla silnika odznak: stan plus to, co z niego wynika na dziś. */
+const badgeCtx = (s: AppState) => {
+  const snap = snapshot(s);
+  return {
+    state: s,
+    schedule: snap?.schedule ?? null,
+    stats: snap?.stats ?? null,
+    today: snap?.today ?? dayKey(Date.now()),
+  };
+};
 
 export default function App() {
   const [state, setState] = useState<AppState | null>(null);
@@ -55,6 +72,8 @@ export default function App() {
         next.log = saved.log ?? [];
         next.session = saved.session ?? null;
         next.plan = saved.plan ?? null;
+        next.events = saved.events ?? [];
+        next.award = { banked: saved.award?.banked ?? 0, badges: saved.award?.badges ?? {} };
         if (next.session && ![...BUILTIN, ...next.workouts].find((w) => w.id === next.session!.workout))
           next.session = null;
         if (next.session) {
@@ -63,7 +82,12 @@ export default function App() {
         }
       }
       if (!next.session) next.notice = applyLayoff(next, daysSince(next));
+      // Odznaki dopinane przy starcie, a nie tylko po treningu: część z nich zdobywa się
+      // samym upływem czasu, a aplikacja bywa zamknięta przez tydzień. Data zdobycia ma
+      // zostać ta, którą widać na ekranie, więc świeże odznaki od razu idą na dysk.
+      const fresh = syncBadges(next, badgeCtx(next));
       setState(next);
+      if (fresh.length) void queueSave(next, setSaveBroken);
     })();
   }, []);
 
@@ -78,16 +102,19 @@ export default function App() {
   const view = route.kind === 'tab' ? route.tab : null;
   const workouts: Workout[] = [...BUILTIN, ...state.workouts];
   const current = state.session ? workouts.find((w) => w.id === state.session!.workout) : undefined;
-  // Co wypada dziś według planu — razem z zaległym terminem, jeśli któryś przepadł.
-  const planTemplate = state.plan ? planById(state.plan.templateId) : undefined;
+  // Co wypada dziś według planu — razem z terminem zaległym, ale wciąż do nadrobienia.
+  const snap = snapshot(state);
   const planned = (() => {
-    if (!state.plan || !planTemplate) return undefined;
-    const days = buildSchedule(planTemplate, state.plan, loggedDays(state));
-    const due = days.find((x) => x.status === 'today') ?? days.find((x) => x.status === 'missed');
+    const due = snap?.stats.due;
     if (!due) return undefined;
-    const w = [...BUILTIN, ...state.workouts].find((x) => x.id === due.workout);
+    const w = workouts.find((x) => x.id === due.workout);
     if (!w) return undefined;
-    return { id: w.id, name: w.name, late: due.status === 'missed' ? daysBetween(due.date, dayKey(Date.now())) : 0 };
+    return {
+      id: w.id,
+      name: w.name,
+      late: daysBetween(due.date, snap!.today),
+      points: pointsToday(snap!.stats, snap!.today).now,
+    };
   })();
 
   const d = daysSince(state);
@@ -217,6 +244,7 @@ export default function App() {
     });
     next.session = null;
     next.notice = null;
+    const fresh = syncBadges(next, badgeCtx(next));
     commit(next);
     window.scrollTo({ top: 0 });
 
@@ -239,6 +267,25 @@ export default function App() {
           powtórzeń.
         </p>
       ),
+    );
+
+    if (fresh.length) await sayBadges(fresh);
+  };
+
+  /** Odznaki pokazywane osobno, po podsumowaniu poziomów — dwie wiadomości, dwa tematy. */
+  const sayBadges = async (ids: BadgeId[]) => {
+    await say(
+      ids.length === 1 ? 'Nowa odznaka' : `Nowe odznaki: ${ids.length}`,
+      <ul>
+        {ids.map((id) => {
+          const b = badgeById(id);
+          return (
+            <li key={id}>
+              <b>{b.name}</b> — {b.desc}
+            </li>
+          );
+        })}
+      </ul>,
     );
   };
 
@@ -299,35 +346,128 @@ export default function App() {
     setToastMsg('Próby ustawione. Kolejny trening zmierzy poziomy.');
   };
 
-  const startPlan = async (t: PlanTemplate) => {
+  /**
+   * Uruchomienie planu. Dzień startu i dni tygodnia przychodzą z katalogu, bo to jedyne
+   * dwie rzeczy, których żaden algorytm nie zgadnie za człowieka.
+   */
+  const startPlan = async (t: PlanTemplate, opts: PlanOptions) => {
     const next = clone(state);
+    const banked = next.plan ? bankPoints(next) : 0;
     const seeded = seedFromPlan(next, t.loadFactor);
-    next.plan = { templateId: t.id, start: dayKey(Date.now()), ticked: {} };
+    const plan: ActivePlan = {
+      templateId: t.id,
+      start: opts.start,
+      weekdays: opts.weekdays,
+      policy: opts.policy,
+      ticked: {},
+    };
+    next.plan = plan;
+    // Zdarzenie datowane dniem ustawienia planu, nie dniem startu — plan bywa ustawiany
+    // z wyprzedzeniem, a wpis z przyszłą datą wypadłby z dziennika aż do tego dnia.
+    const set = dayKey(Date.now());
+    next.events.push({
+      id: `plan-start:${t.id}:${opts.start}`,
+      date: set < opts.start ? set : opts.start,
+      kind: 'plan-start',
+      title: `Start planu: ${t.name}`,
+      text:
+        (opts.start > set ? `Pierwsze terminy od ${opts.start}. ` : '') +
+        (banked ? `Punkty z poprzedniego planu (${banked}) trafiły do dorobku.` : ''),
+    });
+    syncBadges(next, badgeCtx(next));
     commit(next);
     go('#/plan');
+
+    const first = snapshot(next)?.stats.next;
     await say(
       'Plan ustawiony',
       <>
         <p>
-          {t.name}. Pierwszy trening liczy się od dzisiaj, kolejne wpadają w{' '}
-          {t.weekdays.length} dni tygodnia.
+          {t.name}. Start {opts.start}
+          {first ? `, pierwszy termin ${first.date}` : ''}.
         </p>
         <p style={{ marginTop: 10 }}>
           Ciężary startowe ustawione w <b>{seeded}</b> ćwiczeniach. Ćwiczenia z zaliczonym już
           wynikiem zostały nietknięte — zmierzony poziom jest wart więcej niż tabelka.
         </p>
+        <p style={{ marginTop: 10 }}>
+          {opts.policy === 'shift'
+            ? 'Opuszczony termin nie zjada treningu: ten sam trening wchodzi na kolejny termin.'
+            : 'Rotacja idzie sztywno z kalendarzem — opuszczony trening przepada.'}
+        </p>
       </>,
     );
+  };
+
+  /** Zmiana częstotliwości na podpowiedź silnika. Plan startuje od dziś, dorobek zostaje. */
+  const changeFrequency = async (days: number) => {
+    const t = state.plan ? planById(state.plan.templateId) : undefined;
+    if (!t) return;
+    const target = planById(planId(t.level, t.sex, days));
+    if (!target) return;
+    const ok = await ask(
+      `Przejść na ${days}× w tygodniu?`,
+      <p>
+        Nowy kalendarz rusza od dziś. Punkty z dotychczasowego planu trafiają do dorobku,
+        odznaki i poziomy ćwiczeń zostają bez zmian.
+      </p>,
+      'Zmień plan',
+    );
+    if (!ok) return;
+    const next = clone(state);
+    const banked = bankPoints(next);
+    next.plan = {
+      templateId: target.id,
+      start: dayKey(Date.now()),
+      weekdays: target.weekdays,
+      policy: next.plan?.policy ?? 'shift',
+      ticked: {},
+    };
+    next.events.push({
+      id: `plan-swap:${target.id}:${next.plan.start}`,
+      date: next.plan.start,
+      kind: 'plan-swap',
+      title: `Zmiana wariantu na ${days}× w tygodniu`,
+      text: `Punkty z poprzedniego kalendarza (${banked}) trafiły do dorobku.`,
+    });
+    commit(next);
+    setToastMsg(`Plan zmieniony na ${days}× w tygodniu.`);
+  };
+
+  /**
+   * Ręczne odhaczenie terminu — dla treningu zrobionego poza aplikacją. Liczy się tak samo
+   * jak zapisany, bo aplikacja mierzy regularność, a nie to, gdzie ktoś wpisał powtórzenia.
+   */
+  const tickDay = (index: number) => {
+    const next = clone(state);
+    const ticked = next.plan!.ticked ?? {};
+    if (ticked[index]) delete ticked[index];
+    else ticked[index] = true;
+    next.plan!.ticked = ticked;
+    const fresh = syncBadges(next, badgeCtx(next));
+    commit(next);
+    if (fresh.length) void sayBadges(fresh);
   };
 
   const stopPlan = async () => {
     const ok = await ask(
       'Zakończyć plan?',
-      <p>Kalendarz zniknie. Poziomy ćwiczeń i historia treningów zostają bez zmian.</p>,
+      <p>
+        Kalendarz zniknie. Punkty z tego planu przechodzą do dorobku, a odznaki, poziomy
+        ćwiczeń i historia zostają bez zmian.
+      </p>,
       'Zakończ',
     );
     if (!ok) return;
     const next = clone(state);
+    const banked = bankPoints(next);
+    next.events.push({
+      id: `plan-stop:${next.plan!.templateId}:${dayKey(Date.now())}`,
+      date: dayKey(Date.now()),
+      kind: 'plan-stop',
+      title: 'Plan zakończony',
+      text: `Do dorobku doszło ${banked} punktów.`,
+    });
     next.plan = null;
     commit(next);
   };
@@ -356,6 +496,9 @@ export default function App() {
         next.workouts = parsed.workouts ?? [];
         next.log = parsed.log ?? [];
         next.session = parsed.session ?? null;
+        next.plan = parsed.plan ?? null;
+        next.events = parsed.events ?? [];
+        next.award = { banked: parsed.award?.banked ?? 0, badges: parsed.award?.badges ?? {} };
         commit(next);
         setToastMsg('Dane wczytane.');
       } catch {
@@ -440,7 +583,13 @@ export default function App() {
       )}
 
       {view === 'plan' && (
-        <PlanView state={state} onStart={(t) => void startPlan(t)} onStop={() => void stopPlan()} />
+        <PlanView
+          state={state}
+          onStart={(t, o) => void startPlan(t, o)}
+          onStop={() => void stopPlan()}
+          onTick={tickDay}
+          onFrequency={(n) => void changeFrequency(n)}
+        />
       )}
 
       {route.kind === 'atlas' && <AtlasView state={state} />}

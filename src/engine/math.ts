@@ -1,4 +1,5 @@
 import { EFFORT } from '../data/exercises';
+import { dayKey, daysBetween } from './schedule';
 import type { AppState, EffortKey, LogEntry } from '../types';
 
 export const round1 = (x: number): number => Math.round(x * 10) / 10;
@@ -51,10 +52,15 @@ export function acwr(state: AppState, now: number = Date.now()): number | null {
   return round1(within(7) / chronic);
 }
 
+/**
+ * Przerwa liczona w dniach kalendarzowych, a nie w pełnych dobach. Trening wczoraj wieczorem
+ * i pytanie dziś rano to jeden dzień przerwy, nie zero — inaczej banery i progi przerwy
+ * mówiłyby co innego niż kalendarz planu.
+ */
 export function daysSince(state: AppState, now: number = Date.now()): number | null {
   const last = state.log[state.log.length - 1];
   if (!last) return null;
-  return Math.floor((now - new Date(last.date).getTime()) / 86_400_000);
+  return Math.max(0, daysBetween(dayKey(last.date), dayKey(now)));
 }
 
 /** Średnia liczba sesji na tydzień z ostatnich czterech tygodni. */

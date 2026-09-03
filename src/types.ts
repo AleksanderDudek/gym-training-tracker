@@ -150,14 +150,39 @@ export interface PlanTemplate {
   desc: string;
 }
 
+/** Co się dzieje z treningiem, którego termin przepadł. */
+export type PlanPolicy =
+  /** Rotacja czeka: kolejny termin dostaje ten trening, który przepadł. */
+  | 'shift'
+  /** Rotacja idzie z kalendarzem: opuszczony trening przepada. */
+  | 'fixed';
+
 /** Plan uruchomiony przez użytkownika. */
 export interface ActivePlan {
   templateId: string;
   /** Dzień startu, `yyyy-mm-dd`. */
   start: string;
+  /** Dni tygodnia wybrane ręcznie. Brak albo pusta lista oznacza dni z szablonu. */
+  weekdays?: number[];
+  /** Brak oznacza `shift` — tak zachowują się plany zapisane przed tą opcją. */
+  policy?: PlanPolicy;
   /** Sesje odhaczone ręcznie — poza tymi, które wynikają z historii treningów. */
   ticked: Record<number, true>;
 }
+
+/** Ustawienia wybrane w katalogu przy uruchamianiu planu. */
+export interface PlanOptions {
+  /** Dzień startu, `yyyy-mm-dd`. */
+  start: string;
+  weekdays: number[];
+  policy: PlanPolicy;
+}
+
+/**
+ * Stan terminu. `open` to termin po czasie, ale wciąż do nadrobienia w oknie łaski;
+ * dopiero `missed` liczy się jako opuszczony.
+ */
+export type DayStatus = 'done' | 'open' | 'missed' | 'today' | 'future';
 
 /** Jeden dzień rozpisanego planu. */
 export interface PlannedDay {
@@ -168,7 +193,72 @@ export interface PlannedDay {
   workout: string;
   /** Dni przerwy od poprzedniego treningu w planie. */
   gap: number;
-  status: 'done' | 'missed' | 'today' | 'future';
+  status: DayStatus;
+  /** Dzień, w którym termin faktycznie zrealizowano. */
+  filled: string | null;
+  /** Ile dni po terminie. 0 znaczy w terminie. */
+  late: number;
+  /** Skąd wiadomo, że termin zrealizowany: z historii treningów czy z ręcznego odhaczenia. */
+  source: 'log' | 'tick' | null;
+}
+
+/** Rodzaj wpisu w dzienniku. */
+export type EventKind =
+  | 'plan-start'
+  | 'plan-stop'
+  | 'plan-swap'
+  | 'done'
+  | 'late'
+  | 'extra'
+  | 'missed'
+  | 'badge'
+  | 'week';
+
+/** Jedno zdarzenie w dzienniku planu. */
+export interface PlanEvent {
+  /** Klucz idempotentny — to samo zdarzenie nie wpada dwa razy. */
+  id: string;
+  /** Dzień zdarzenia, `yyyy-mm-dd`. */
+  date: string;
+  kind: EventKind;
+  title: string;
+  text?: string;
+  points?: number;
+}
+
+export type BadgeId =
+  | 'pierwszy-krok'
+  | 'czysty-tydzien'
+  | 'seria-3'
+  | 'seria-10'
+  | 'seria-25'
+  | 'nadrabiacz'
+  | 'punktualny'
+  | 'powrot'
+  | 'polowa'
+  | 'plan-zamkniety'
+  | 'setka'
+  | 'ranny-ptaszek'
+  | 'zelazo';
+
+export interface Badge {
+  id: BadgeId;
+  name: string;
+  desc: string;
+  /** Ikona tekstowa — aplikacja nie ładuje grafik. */
+  mark: string;
+}
+
+/**
+ * Trwały dorobek. Punkty z trwającego planu liczą się na bieżąco z kalendarza,
+ * więc zapisywać trzeba tylko to, czego nie da się odtworzyć: dorobek z planów
+ * zamkniętych i daty odblokowania odznak.
+ */
+export interface Award {
+  /** Punkty z wcześniejszych, już zamkniętych planów. */
+  banked: number;
+  /** Odznaka i dzień jej zdobycia. */
+  badges: Partial<Record<BadgeId, string>>;
 }
 
 export interface AppState {
@@ -179,6 +269,9 @@ export interface AppState {
   log: LogEntry[];
   plan: ActivePlan | null;
   notice: Notice | null;
+  /** Dziennik zdarzeń, których nie da się odtworzyć z kalendarza. */
+  events: PlanEvent[];
+  award: Award;
 }
 
 /** Pojedyncza zmiana poziomu po zamkniętym treningu. */
