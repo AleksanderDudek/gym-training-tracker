@@ -38,7 +38,12 @@ export default function App() {
       if (saved) {
         ALL.forEach((id) => {
           const p = saved.prog?.[id];
-          if (p) Object.assign(next.prog[id]!, p);
+          if (!p) return;
+          Object.assign(next.prog[id]!, p);
+          // Zapisy sprzed wprowadzenia fazy próbnej nie mają pola `phase`. Kto ma już
+          // jakikolwiek wynik, ten jest po kalibracji — nie wolno go cofać do prób.
+          if (p.phase === undefined)
+            next.prog[id]!.phase = p.hist?.length || saved.log?.length ? 'work' : 'calib';
         });
         next.cfg = saved.cfg ?? next.cfg;
         next.workouts = saved.workouts ?? [];
@@ -244,7 +249,36 @@ export default function App() {
     p.target = p.min;
     p.trans = null;
     p.e1rm = round1(epley(w, p.target));
+    // Ręczne ustawienie poziomu jest odpowiedzią na to samo pytanie, które zadaje próba.
+    p.phase = 'work';
     commit(next);
+  };
+
+  const recalibrate = async () => {
+    const ok = await ask(
+      'Zmierzyć poziomy od nowa?',
+      <p>
+        Każde ćwiczenie dostanie serię próbną — jedną serię bez sufitu, z której wyjdzie nowy
+        poziom. Próba startuje od miejsca, w którym jesteś teraz, więc może pójść w górę albo w
+        dół. Historia i zapisane treningi zostają nietknięte.
+      </p>,
+      'Zmierz od nowa',
+    );
+    if (!ok) return;
+    const next = clone(state);
+    ALL.forEach((id) => {
+      const p = P(next, id);
+      p.phase = 'calib';
+      p.calibRuns = 0;
+      p.probe = false;
+      p.sinceProbe = 0;
+      p.easyRun = 0;
+      p.stalls = 0;
+      p.maxHolds = 0;
+      p.trans = null;
+    });
+    commit(next);
+    setToastMsg('Próby ustawione. Kolejny trening zmierzy poziomy.');
   };
 
   const exportData = () => {
@@ -423,6 +457,7 @@ export default function App() {
           onExport={exportData}
           onImport={importData}
           onReset={() => void resetAll()}
+          onRecalibrate={() => void recalibrate()}
         />
       )}
 

@@ -27,7 +27,9 @@ export function ExerciseCard({ state, id, onSave, onClear, onSkip, onToast }: Pr
   const [open, setOpen] = useState(false);
   const [effort, setEffort] = useState<EffortKey>(prev?.effort ?? 'solid');
   const [values, setValues] = useState<string[]>(() =>
-    rows.map((r, i) => String(prev?.rows[i]?.reps ?? r.reps)),
+    // Seria testowa startuje pusta — podpowiedziana liczba sugerowałaby cel, a testu
+    // nie da się „zaliczyć”; ma pokazać, ile naprawdę wychodzi.
+    rows.map((r, i) => String(prev?.rows[i]?.reps ?? (r.amrap ? '' : r.reps))),
   );
   const [weights, setWeights] = useState<(number | null)[]>(() =>
     rows.map((r, i) => prev?.rows[i]?.w ?? r.w),
@@ -35,6 +37,7 @@ export function ExerciseCard({ state, id, onSave, onClear, onSkip, onToast }: Pr
 
   const hint = levelHint(state, id, values, effort);
   const unitLabel = m.unit === 'secs' ? 'sekundy' : 'powtórzenia';
+  const calib = p.phase === 'calib';
 
   const save = () => {
     const out: SetResult[] = values.map((v, i) => ({
@@ -72,17 +75,17 @@ export function ExerciseCard({ state, id, onSave, onClear, onSkip, onToast }: Pr
 
           {rows.map((r, i) => (
             <div className={`setrow${r.heavy ? ' heavy' : ''}`} key={i}>
-              <span className="setno">
-                {i + 1}
+              <span className={`setno${r.amrap ? ' test' : ''}`}>
+                {r.amrap ? 'test' : i + 1}
                 {r.heavy ? '▲' : ''}
               </span>
               <label className="fld">
-                <span>{unitLabel}</span>
+                <span>{r.amrap ? `${unitLabel} — ile dasz radę` : unitLabel}</span>
                 <input
                   type="number"
                   inputMode="numeric"
                   min={0}
-                  placeholder={String(r.reps)}
+                  placeholder={r.amrap ? 'max' : String(r.reps)}
                   value={values[i] ?? ''}
                   onChange={(e) => {
                     const next = [...values];
@@ -115,7 +118,11 @@ export function ExerciseCard({ state, id, onSave, onClear, onSkip, onToast }: Pr
             </div>
           ))}
 
-          <div className="segline">Ile zostało w zapasie po ostatniej serii?</div>
+          <div className="segline">
+            {calib
+              ? 'Ile zostało w zapasie na koniec próby? Od tego zależy twój poziom startowy.'
+              : 'Ile zostało w zapasie po ostatniej serii?'}
+          </div>
           <Segmented
             value={effort}
             onChange={setEffort}

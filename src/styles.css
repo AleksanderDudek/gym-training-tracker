@@ -60,6 +60,7 @@
 
   .setrow{display:grid;grid-template-columns:26px 1fr 1fr;gap:8px;align-items:center;margin-bottom:8px}
   .setrow.heavy .setno{color:var(--warn);font-weight:600}
+  .setno.test{color:var(--ok);font-weight:600;font-size:12px;letter-spacing:.06em}
   .setno{font-family:var(--display);font-size:15px;color:var(--ink-soft)}
   label.fld{display:block}
   label.fld span{display:block;font-size:11px;color:var(--ink-soft);margin-bottom:2px}

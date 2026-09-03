@@ -21,7 +21,20 @@ export function levelHint(
   const nw = nextWeight(state, id);
   let head: string;
 
-  if (p.trans) {
+  if (p.phase === 'calib') {
+    const w = p.weight ? ` na <b>${p.weight} kg</b>` : '';
+    return {
+      html:
+        m.mode === 'ballistic'
+          ? `<b>Sesja próbna.</b> Zrób ${m.def.target} powtórzeń${w} i oceń, jak było. Z tej oceny bierze się twój ciężar startowy — jeśli poszło lekko, następnym razem próba na cięższym.`
+          : `<b>Sesja próbna.</b> Jedna seria${w}, tyle powtórzeń, ile dasz radę z zapasem jednego–dwóch. Z wyniku bierze się twój poziom startowy: powyżej ${p.max} próba wraca na cięższym, poniżej ${p.min} na lżejszym.`,
+      hit: false,
+    };
+  }
+
+  if (p.probe) {
+    head = `<b>Dziś test w ostatniej serii.</b> Wcześniejsze serie normalnie po ${p.target} ${u}, ostatnia bez sufitu — ile dasz radę z zapasem. Jeśli wyjdzie więcej, poziom przeskoczy od razu tam, gdzie powinien być.`;
+  } else if (p.trans) {
     const left = p.sets - p.trans.heavySets;
     head =
       left > 0
@@ -98,6 +111,12 @@ export function whyText(state: AppState, id: ExerciseId): string {
   const p = P(state, id);
   const m = ex(id);
   const bits: string[] = [`Typ: ${MODE_NAMES[m.mode]}.`];
+
+  if (p.phase === 'calib')
+    bits.push(
+      `Ćwiczenie jest w fazie próbnej (${p.calibRuns} ${p.calibRuns === 1 ? 'próba' : 'próby'} za tobą). Poziom startowy bierze się z wyniku, a nie z tabelki.`,
+    );
+  else bits.push(`Test kontrolny za ${Math.max(0, 6 - p.sinceProbe)} sesji.`);
 
   if (p.e1rm && p.weight)
     bits.push(

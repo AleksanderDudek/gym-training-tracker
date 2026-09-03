@@ -35,6 +35,12 @@ export interface Exercise {
   hint: string;
 }
 
+/**
+ * Faza pracy nad ćwiczeniem. `calib` to dochodzenie do poziomu startowego serią prób,
+ * `work` to normalna progresja.
+ */
+export type Phase = 'calib' | 'work';
+
 /** Trwające przejście na cięższy kettlebell — wchodzi seria po serii. */
 export interface Transition {
   to: number;
@@ -65,6 +71,16 @@ export interface Progress {
   e1rm: number | null;
   stalls: number;
   maxHolds: number;
+  /** Faza: dochodzenie do poziomu startowego albo normalna progresja. */
+  phase: Phase;
+  /** Ile prób kalibracyjnych już poszło — zabezpieczenie przed kręceniem się w kółko. */
+  calibRuns: number;
+  /** Czy w najbliższej sesji ostatnia seria jest testem „ile dasz radę”. */
+  probe: boolean;
+  /** Sesje od ostatniego testu. */
+  sinceProbe: number;
+  /** Sesje z rzędu zamknięte na „Łatwo” — sygnał, że obciążenie jest za małe. */
+  easyRun: number;
   hist: HistoryPoint[];
 }
 
@@ -132,6 +148,8 @@ export interface PlannedSet {
   w: number | null;
   reps: number;
   heavy?: boolean;
+  /** Seria bez sztywnego celu: robisz tyle, ile dasz radę, zostawiając zapas. */
+  amrap?: boolean;
 }
 
 export type View = 'train' | 'prog' | 'work' | 'set';

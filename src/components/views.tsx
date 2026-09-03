@@ -378,6 +378,7 @@ export function SettingsView({
   onExport,
   onImport,
   onReset,
+  onRecalibrate,
 }: {
   state: AppState;
   onWeights: (list: number[]) => void;
@@ -385,6 +386,7 @@ export function SettingsView({
   onExport: () => void;
   onImport: (f: File) => void;
   onReset: () => void;
+  onRecalibrate: () => void;
 }) {
   const [text, setText] = useState(state.cfg.weights.join(', '));
 
@@ -412,8 +414,30 @@ export function SettingsView({
       </div>
 
       <div className="grp">
+        <h3>Kalibracja</h3>
+        <p>
+          Nowe ćwiczenie zaczyna od jednej serii próbnej na najlżejszym kettlebellu i wchodzi po
+          drabinie w górę, aż wynik wpadnie w zakres powtórzeń. Później co kilka sesji wraca test
+          w ostatniej serii — po to, żeby aplikacja wyłapała, że jesteś już wyżej, zamiast czekać,
+          aż dogoni to po jednym powtórzeniu na sesję.
+        </p>
+        <p className="tight">
+          W fazie próbnej: <b>{ALL.filter((id) => P(state, id).phase === 'calib').length}</b> z{' '}
+          {ALL.length} ćwiczeń.
+        </p>
+        <div style={{ marginTop: 10 }}>
+          <button className="btn ghost sm" onClick={onRecalibrate}>
+            Zmierz wszystkie poziomy od nowa
+          </button>
+        </div>
+      </div>
+
+      <div className="grp">
         <h3>Poziomy startowe</h3>
-        <p>Ustaw raz. Dalej ciężary prowadzą się same na podstawie zalogowanych wyników.</p>
+        <p>
+          Ręczna korekta, gdy znasz swój poziom i nie chcesz czekać na próbę. Ustawienie ciężaru
+          zamyka fazę próbną tego ćwiczenia.
+        </p>
         {WEIGHTED.map((id) => (
           <div className="wsel" key={id}>
             <span>{ex(id).name}</span>
@@ -457,6 +481,16 @@ export function SettingsView({
       <div className="grp">
         <h3>Jak działa progresja</h3>
         <p className="tight">Silnik opiera się na kilku zasadach z literatury treningowej:</p>
+        <p>
+          <b>Poziom z pomiaru, nie z tabelki.</b> Każde ćwiczenie zaczyna od serii próbnej i wchodzi
+          po drabinie, aż wynik wpadnie w zakres powtórzeń. Potem co kilka sesji wraca test
+          w ostatniej serii — bo sam przyrost po jednym powtórzeniu nigdy nie dogoniłby kogoś, kto
+          wystartował kilka poziomów poniżej swoich możliwości.
+        </p>
+        <p>
+          <b>Nadwyżka się liczy.</b> Wynik wyższy od celu podnosi cel od razu do tego wyniku, a nie
+          o jedno powtórzenie.
+        </p>
         <p>
           <b>Podwójna progresja.</b> Najpierw rosną powtórzenia w zakresie, dopiero potem ciężar.
           Metoda opisana po raz pierwszy w 1911 roku, wciąż standard.

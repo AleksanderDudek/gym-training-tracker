@@ -1,6 +1,16 @@
 import { ALL, STAGES, WEIGHTED, ex } from '../data/exercises';
-import { e1rmFromSession, repsAt, round1 } from './math';
-import { P, floorReps, nextWeight, plan, prevWeight, step } from './plan';
+import { e1rmFromSession, epley, repsAt, round1 } from './math';
+import {
+  EASY_RUN_PROBE,
+  MAX_CALIB_RUNS,
+  P,
+  PROBE_EVERY,
+  floorReps,
+  nextWeight,
+  plan,
+  prevWeight,
+  step,
+} from './plan';
 import type {
   AppState,
   Change,
@@ -50,7 +60,9 @@ export function transReps(state: AppState, id: ExerciseId, w: number): number {
   // Balistyka: te same powtórzenia, po prostu mniej ciężkich serii na start.
   if (m.mode === 'ballistic') return p.target;
   if (!p.e1rm) return p.min;
-  return Math.max(1, Math.min(p.max, repsAt(p.e1rm, w)));
+  // Podłoga z połowy dolnej granicy zakresu. Szacowane maksimum bywa zaniżone —
+  // seria na jedno powtórzenie nie jest wtedy przepisem na trening, tylko skutkiem błędu wzoru.
+  return Math.max(floorReps(state, id), Math.min(p.max, repsAt(p.e1rm, w)));
 }
 
 /**
@@ -140,6 +152,124 @@ function regress(state: AppState, id: ExerciseId): Change | null {
 }
 
 /**
+ * Wynik serii próbnej przełożony na poziom. Celowo nie liczy tu nic wzorem Epleya:
+ * przy kilkunastu powtórzeniach z lekkim ciężarem szacowanie maksimum przestaje mieć
+ * sens — ogranicznikiem jest wtedy wytrzymałość, nie siła. Prostsza reguła jest
+ * uczciwsza: powyżej zakresu ćwiczenie idzie o stopień w górę, poniżej o stopień w dół,
+ * a w zakresie wynik po prostu staje się celem.
+ */
+function placeFromTest(
+  state: AppState,
+  id: ExerciseId,
+  achieved: number,
+  effort: EffortKey,
+  allowLevelMove: boolean,
+): { retry: boolean; text: string } {
+  const p = P(state, id);
+  const m = ex(id);
+  const st = step(id);
+  const u = m.unit === 'secs' ? ' s' : '';
+  // Wynik bez zapasu zawyża możliwości, więc do poziomu wchodzi o stopień niżej.
+  const usable = effort === 'max' ? Math.max(p.min, achieved - st) : achieved;
+
+  if (usable > p.max && allowLevelMove) {
+    const nxt = nextWeight(state, id);
+    if (p.weight !== null && nxt) {
+      p.weight = nxt;
+      return { retry: true, text: `${m.name}: ${usable}${u} to za lekko — próba jeszcze raz na ${nxt} kg.` };
+    }
+    if (m.mode === 'stage' && m.stages) {
+      const arr = STAGES[m.stages];
+      if ((p.stage ?? 0) < arr.length - 1) {
+        p.stage = (p.stage ?? 0) + 1;
+        return { retry: true, text: `${m.name}: ${usable} powtórzeń to za łatwy etap — próba na „${arr[p.stage]}”.` };
+      }
+    }
+    if (m.mode === 'body' && p.sets < p.maxSets) {
+      p.sets++;
+      p.target = p.max;
+      return { retry: true, text: `${m.name}: ${usable} powtórzeń w serii — próba jeszcze raz przy ${p.sets} seriach.` };
+    }
+  }
+
+  if (usable < p.min && allowLevelMove) {
+    const pw = prevWeight(state, id);
+    if (p.weight !== null && pw) {
+      p.weight = pw;
+      return { retry: true, text: `${m.name}: ${usable}${u} to za dużo na start — próba jeszcze raz na ${pw} kg.` };
+    }
+    if (m.mode === 'stage' && m.stages && (p.stage ?? 0) > 0) {
+      p.stage = (p.stage ?? 0) - 1;
+      const arr = STAGES[m.stages];
+      return { retry: true, text: `${m.name}: za trudny etap — próba na „${arr[p.stage]}”.` };
+    }
+  }
+
+  p.target = Math.max(p.min, Math.min(p.max, usable));
+  return { retry: false, text: '' };
+}
+
+/**
+ * Sesja kalibracyjna. Zamiast zgadywać poziom startowy z tabelki, ćwiczenie zaczyna od
+ * jednej serii próbnej na najlżejszym ciężarze i wchodzi po drabinie w górę, aż wynik
+ * wpadnie w zakres powtórzeń. Dzięki temu ktoś, kto nigdy nie ćwiczył, nie dostaje od razu
+ * 16 kg, a ktoś zaawansowany nie spędza dwudziestu sesji na dochodzeniu do swojego poziomu.
+ */
+function calibrate(
+  state: AppState,
+  id: ExerciseId,
+  done: SetResult[],
+  effort: EffortKey,
+): Change {
+  const p = P(state, id);
+  const m = ex(id);
+  p.calibRuns++;
+
+  // Balistyka nie schodzi na maksa — swing na wyczerpanie psuje technikę i przestaje być
+  // ruchem o prędkość. Drabina idzie tu po ocenie wysiłku, nie po liczbie powtórzeń.
+  if (m.mode === 'ballistic') {
+    const nxt = nextWeight(state, id);
+    if (effort === 'easy' && nxt && p.calibRuns < MAX_CALIB_RUNS) {
+      p.weight = nxt;
+      return { type: 'level', text: `${m.name}: lekko poszło — próba jeszcze raz na ${nxt} kg.` };
+    }
+    if (effort === 'max') {
+      const pw = prevWeight(state, id);
+      if (pw && p.calibRuns < MAX_CALIB_RUNS) {
+        p.weight = pw;
+        return { type: 'down', text: `${m.name}: za ciężko na start — próba jeszcze raz na ${pw} kg.` };
+      }
+    }
+    p.phase = 'work';
+    p.sets = p.minSets;
+    p.target = m.def.target;
+    p.e1rm = p.weight ? round1(epley(p.weight, p.target)) : null;
+    return {
+      type: 'level',
+      text: `${m.name}: poziom startowy ustawiony — ${p.sets} × ${p.target} na ${p.weight} kg. Stąd rosną serie.`,
+    };
+  }
+
+  const achieved = Math.max(...done.map((r) => r.reps));
+  const tested = done[0]?.w ?? p.weight;
+  if (tested !== null && tested !== undefined) p.weight = tested;
+
+  const res = placeFromTest(state, id, achieved, effort, p.calibRuns < MAX_CALIB_RUNS);
+  if (res.retry) return { type: 'level', text: res.text };
+
+  p.phase = 'work';
+  // Punkt wyjścia dla szacowanego maksimum bierze się z ustalonego poziomu, a nie
+  // z liczby powtórzeń na próbie.
+  p.e1rm = p.weight && m.unit === 'reps' ? round1(epley(p.weight, p.target)) : null;
+  const u = m.unit === 'secs' ? ' s' : '';
+  const where = p.weight ? ` na ${p.weight} kg` : '';
+  return {
+    type: 'level',
+    text: `${m.name}: poziom startowy ustawiony — ${p.sets} × ${p.target}${u}${where}. Stąd cel rośnie do ${p.max}${u}.`,
+  };
+}
+
+/**
  * Przelicza jedno ćwiczenie po zamkniętym treningu. Mutuje przekazany stan,
  * więc wywołuj na kopii.
  */
@@ -153,12 +283,16 @@ export function applyResult(
 ): Change | null {
   const p = P(state, id);
   const m = ex(id);
+  // Ocena musi powstać przed jakąkolwiek zmianą stanu — bierze receptę z bieżącego poziomu.
   const verdict = judge(state, id, rows, effort);
+  const wasProbe = p.probe;
   const done = rows.filter((r) => r.reps > 0);
 
   // Szacowane maksimum liczone z najcięższej serii, wygładzane, żeby jeden dzień
-  // nie wywracał całego obrazu.
-  if (p.weight !== null && done.length && m.unit === 'reps') {
+  // nie wywracał całego obrazu. Seria próbna jest z tego wyłączona: kilkanaście powtórzeń
+  // na najlżejszym kettlebellu daje wzorem Epleya liczbę bez sensu — tam ogranicznikiem
+  // jest wytrzymałość, nie siła — a wygładzanie przeniosłoby ten błąd na kolejne sesje.
+  if (p.phase === 'work' && p.weight !== null && done.length && m.unit === 'reps') {
     const heaviest = Math.max(...done.map((r) => r.w ?? 0));
     const repsAtHeaviest = done.filter((r) => (r.w ?? 0) === heaviest).map((r) => r.reps);
     if (heaviest > 0 && repsAtHeaviest.length) {
@@ -171,6 +305,47 @@ export function applyResult(
   if (p.hist.length > 80) p.hist = p.hist.slice(-80);
 
   if (verdict === 'none') return null;
+
+  if (p.phase === 'calib') return calibrate(state, id, done, effort);
+
+  const change = work(state, id, done, effort, verdict, blockJump, wasProbe);
+  scheduleProbe(state, id, effort, wasProbe);
+  return change;
+}
+
+/**
+ * Kiedy ćwiczenie dostanie serię testową. Co kilka sesji rutynowo, a wcześniej, gdy dwa
+ * razy z rzędu padło „Łatwo” — to znaczy, że obciążenie jest wyraźnie poniżej możliwości
+ * i progresja po jednym powtórzeniu na sesję nigdy tego nie dogoni.
+ */
+function scheduleProbe(state: AppState, id: ExerciseId, effort: EffortKey, wasProbe: boolean): void {
+  const p = P(state, id);
+  if (wasProbe) {
+    p.probe = false;
+    p.sinceProbe = 0;
+    p.easyRun = 0;
+    return;
+  }
+  p.sinceProbe++;
+  p.easyRun = effort === 'easy' ? p.easyRun + 1 : 0;
+  // W trakcie przejścia na cięższy kettlebell obraz zmienia się i tak co sesję — test tylko miesza.
+  p.probe = !p.trans && (p.sinceProbe >= PROBE_EVERY || p.easyRun >= EASY_RUN_PROBE);
+}
+
+/** Normalna progresja, już po kalibracji. */
+function work(
+  state: AppState,
+  id: ExerciseId,
+  done: SetResult[],
+  effort: EffortKey,
+  verdict: Verdict,
+  blockJump: boolean,
+  wasProbe: boolean,
+): Change | null {
+  const p = P(state, id);
+  const m = ex(id);
+  const st = step(id);
+  const u = m.unit === 'secs' ? ' s' : '';
 
   if (verdict === 'hold-max') {
     p.stalls = 0;
@@ -213,22 +388,45 @@ export function applyResult(
 
   if (p.trans) return advanceTransition(state, id, blockJump);
 
+  /**
+   * Ile ćwiczący realnie wyciągnął. W sesji z serią testową liczy się ta seria, w zwykłej
+   * najsłabsza — bo awans wymaga kompletu na każdej serii. „Łatwo” to zadeklarowane trzy
+   * powtórzenia zapasu, więc wynik jest w rzeczywistości o stopień wyższy niż zapisany.
+   */
+  const reached = wasProbe
+    ? (done[done.length - 1]?.reps ?? 0)
+    : Math.min(...done.map((r) => r.reps));
+  const usable = effort === 'easy' ? reached + st : reached;
+
   if (m.mode === 'ballistic') {
     if (p.sets < p.maxSets) {
-      p.sets++;
+      const before = p.sets;
+      // Balistyka nie mierzy nadwyżki powtórzeniami, więc szybszą ścieżkę otwiera sam zapas.
+      p.sets = Math.min(p.maxSets, p.sets + (effort === 'easy' ? 2 : 1));
       return {
         type: 'reps',
-        text: `${m.name}: ${p.sets - 1} → ${p.sets} serie (${p.sets * p.target} powtórzeń łącznie)`,
+        text: `${m.name}: ${before} → ${p.sets} serie (${p.sets * p.target} powtórzeń łącznie)`,
       };
     }
     return startTransition(state, id, blockJump);
   }
 
+  /**
+   * Nadwyżka nie idzie do kosza. Wynik wyższy od celu podnosi cel od razu do tego wyniku,
+   * zamiast o jedno powtórzenie — inaczej ktoś, kto zaczyna kilka poziomów poniżej swoich
+   * możliwości, spędza kilkanaście sesji na dochodzeniu do miejsca, w którym powinien zacząć.
+   */
+  if (p.target < p.max && usable < p.max) {
+    const before = p.target;
+    p.target = Math.min(p.max, Math.max(p.target + st, usable));
+    const leap = p.target - before > st ? ` — wynik ${reached}${u} przeskoczył kilka stopni` : '';
+    return { type: 'reps', text: `${m.name}: cel ${before} → ${p.target}${u}${leap}` };
+  }
+
+  // Wynik sięga szczytu zakresu: cel ląduje na maksimum i od razu idzie krok poziomu wyżej.
+  p.target = p.max;
+
   if (m.mode === 'body') {
-    if (p.target < p.max) {
-      p.target += step(id);
-      return { type: 'reps', text: `${m.name}: cel ${p.target - step(id)} → ${p.target}` };
-    }
     if (p.sets < p.maxSets) {
       p.sets++;
       p.target = p.min;
@@ -241,10 +439,6 @@ export function applyResult(
   }
 
   if (m.mode === 'stage' && m.stages) {
-    if (p.target < p.max) {
-      p.target += step(id);
-      return { type: 'reps', text: `${m.name}: cel ${p.target - step(id)} → ${p.target}` };
-    }
     const arr = STAGES[m.stages];
     if ((p.stage ?? 0) < arr.length - 1) {
       p.stage = (p.stage ?? 0) + 1;
@@ -255,13 +449,6 @@ export function applyResult(
   }
 
   // grind i carry
-  if (p.target < p.max) {
-    p.target = Math.min(p.max, p.target + step(id));
-    return {
-      type: 'reps',
-      text: `${m.name}: cel ${p.target - step(id)} → ${p.target}${m.unit === 'secs' ? ' s' : ''}`,
-    };
-  }
   return startTransition(state, id, blockJump);
 }
 

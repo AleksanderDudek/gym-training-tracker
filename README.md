@@ -88,6 +88,27 @@ odtworzenia, a zwykły link do YouTube pod spodem działa nawet wtedy, gdy autor
 
 ## Jak działa progresja
 
+**Poziom bierze się z pomiaru, nie z tabelki.** Każde ćwiczenie zaczyna w fazie próbnej: jedna
+seria na najlżejszym kettlebellu, tyle powtórzeń, ile wychodzi z zapasem. Wynik powyżej zakresu
+przenosi próbę na cięższy, poniżej — na lżejszy, a w zakresie staje się celem startowym. Drabina
+domyka się najwyżej po czterech próbach. Balistyka kalibruje się oceną wysiłku, nie serią na maksa,
+bo swing na wyczerpanie przestaje być ruchem o prędkość. Ćwiczenia z masą ciała przesuwają etap
+trudności zamiast ciężaru.
+
+**Nadwyżka nad celem nie idzie do kosza.** Wynik wyższy od celu podnosi cel od razu do tego wyniku.
+Wcześniej komplet dawał +1 powtórzenie niezależnie od tego, czy ktoś zrobił dokładnie tyle, ile
+trzeba, czy dwa razy tyle — dojście do własnego poziomu zajmowało kilkanaście sesji.
+
+**Test kontrolny.** Co sześć sesji, a po dwóch sesjach z rzędu na „Łatwo" wcześniej, ostatnia seria
+traci sufit. Wynik przestawia poziom od razu tam, gdzie powinien być. Test nie wchodzi w trakcie
+przejścia na cięższy kettlebell, bo obraz zmienia się tam i tak co sesję.
+
+**Szacowane maksimum nie liczy się z serii próbnej.** Kilkanaście powtórzeń na najlżejszym
+kettlebellu daje wzorem Epleya liczbę bez sensu — ogranicznikiem jest tam wytrzymałość, nie siła —
+a wygładzanie przeniosłoby ten błąd na kolejne sesje. Maksimum powstaje raz, z ustalonego poziomu.
+Przepisane powtórzenia po skoku ciężaru mają dodatkowo podłogę z połowy dolnej granicy zakresu,
+żeby żadne zaniżone oszacowanie nie kazało robić jednej powtórki.
+
 **Podwójna progresja.** Najpierw rosną powtórzenia w zakresie, dopiero potem ciężar. Metoda opisana
 po raz pierwszy w 1911 roku przez Alana Calverta, wciąż standard.
 
