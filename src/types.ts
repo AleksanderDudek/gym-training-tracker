@@ -230,8 +230,10 @@ export interface PlanEvent {
 export type AchGroup =
   /** Sumy z całej historii: treningi, serie, powtórzenia, tonaż. */
   | 'dorobek'
-  /** Rekordy z okna czasu: najlepszy dzień, tydzień, miesiąc, kwartał. */
+  /** Rekordy z okna czasu: najlepszy dzień, tydzień, miesiąc, kwartał, półrocze, rok. */
   | 'szczyty'
+  /** Objętość w rozbiciu na partie ruchu. */
+  | 'partie'
   /** Regularność i trzymanie poziomu w dłuższym czasie. */
   | 'utrzymanie'
   /** Terminy planu: seria, realizacja, domknięte tygodnie. */

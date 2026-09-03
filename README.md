@@ -18,7 +18,7 @@ Pozostałe polecenia:
 npm run build      # produkcyjny build do dist/
 npm run preview    # podgląd builda
 npm run typecheck  # tsc --noEmit
-npm test           # 139 testów silnika i tras (vitest)
+npm test           # 155 testów silnika i tras (vitest)
 ```
 
 Build jest w pełni statyczny (`base: './'`), więc `dist/` można wrzucić na dowolny hosting plików
@@ -31,7 +31,7 @@ albo otworzyć lokalnie.
 | Trening | `#/trening` | Wybór treningu i prowadzenie sesji. |
 | Plan | `#/plan` | Kalendarz terminów, punkty, stopień, dziennik zdarzeń. |
 | Poziomy | `#/poziomy` | Wskaźnik obciążenia, poziomy ćwiczeń, historia sesji. |
-| Osiągnięcia | `#/osiagniecia` | Dorobek w liczbach i odznaki z progami. |
+| Osiągnięcia | `#/osiagniecia` | Dorobek w liczbach, progi najbliższe zdobycia, 56 rodzin odznak. |
 | Treningi | `#/treningi` | Własne zestawy ćwiczeń. |
 | Atlas | `#/cwiczenia` | Opisy ćwiczeń i filmy; każde ma własny adres do wysłania. |
 | Ustawienia | `#/ustawienia` | Dostępne kettlebelle, eksport, import, kasowanie danych. |
@@ -64,8 +64,8 @@ src/
     progression.test.ts     40 testów silnika progresji
     schedule.test.ts        30 testów kalendarza, przypisania i rotacji
     score.test.ts           15 testów punktacji i dziennika
-    badges.test.ts          19 testów odznak, dorobku i podpowiedzi
-    metrics.test.ts         28 testów warstwy liczb
+    badges.test.ts          23 testy odznak, dorobku i podpowiedzi
+    metrics.test.ts         40 testów warstwy liczb
   storage/storage.ts        zapis z kolejkowaniem, dwa środowiska
   components/
     ui.tsx                  modal, toast, kafelek ciężaru, przełącznik, wykres
@@ -183,22 +183,35 @@ nie dług do odrobienia — wychodzenie z minusa zniechęca skuteczniej niż cok
 **Osiem stopni**, od Nowicjusza po Mistrza. Pierwszy awans wypada po niecałym tygodniu regularnych
 treningów, żeby pierwsza nagroda nie była odległa o miesiąc.
 
-**Odznaki mają progi, nie jeden koniec.** Rodzina „Powtórzenia" ma sześć progów od 500 do
-100 000, „Utrzymany rytm" pięć od czterech tygodni do roku. Zdobyty próg nie kończy tematu, tylko
-odsłania następny — a pasek postępu mówi, ile brakuje. Zamiast ściany „zablokowane" jest zawsze
-widoczny kolejny krok. Wszystko mieszka w zakładce **Osiągnięcia**, razem z sumami dorobku.
+**Odznaki mają progi, nie jeden koniec.** 56 rodzin, 312 progów. Rodzina „Powtórzenia" ma dziesięć
+progów od 500 do miliona, „Utrzymany rytm" siedem od czterech tygodni do dwóch lat. Zdobyty próg
+nie kończy tematu, tylko odsłania następny — a pasek postępu mówi, ile brakuje. Zamiast ściany
+„zablokowane" jest zawsze widoczny kolejny krok. Wszystko mieszka w zakładce **Osiągnięcia**.
 
-Cztery grupy:
+Drabiny są mniej więcej geometryczne (kolejny próg to zwykle dwa razy tyle, co poprzedni) i sięgają
+dalej, niż da się dojść w rok regularnych treningów. Ostatni próg ma być odległy, a nie osiągalny
+w sezon — inaczej po roku aplikacja przestaje mieć cokolwiek do zaproponowania.
 
-- **Dorobek** — sumy z całej historii: treningi, powtórzenia, serie, wykonane ćwiczenia, tonaż,
-  czas pod obciążeniem, liczba poznanych ruchów.
-- **Szczyty** — rekord z przesuwanego okna: najlepszy dzień, siedem, czternaście, dwadzieścia
-  jeden, trzydzieści i dziewięćdziesiąt dni. „Najlepszy miesiąc" znaczy dowolne trzydzieści dni
-  z rzędu, a nie miesiąc z kalendarza — okno przesuwa się po datach, nie po kartkach.
-- **Utrzymanie** — to, że nic się nie osypało: tygodnie z rzędu po dwa treningi, dni bez zejścia
-  z ciężaru, ćwiczenia stojące w granicach 5% własnego szczytu, powrót do poziomu po przerwie.
+Pięć grup:
+
+- **Dorobek** — sumy z całej historii: treningi (do 2 000), powtórzenia (do miliona), serie,
+  wykonane ćwiczenia, tonaż (do 10 000 t), czas pod obciążeniem, liczba poznanych ruchów.
+- **Partie ruchu** — objętość w rozbiciu na wzorce: zawias biodrowy, przysiad, ciągnięcie,
+  pchanie, całe ciało, core, nogi. Widać, co jest zaniedbane. Zawias ma próg na 10 000 powtórzeń,
+  bo tyle liczy klasyczne wyzwanie swingowe.
+- **Szczyty** — rekordy pojedynczych podejść (najcięższy kettlebell, szacowane maksimum,
+  najdłuższa seria, najdłuższy podchód, najcięższa sesja) oraz rekordy z przesuwanego okna: doba,
+  siedem, czternaście, dwadzieścia jeden, trzydzieści, dziewięćdziesiąt, sto osiemdziesiąt
+  i trzysta sześćdziesiąt pięć dni. „Najlepszy miesiąc" znaczy dowolne trzydzieści dni z rzędu,
+  a nie miesiąc z kalendarza — okno przesuwa się po datach, nie po kartkach.
+- **Utrzymanie** — to, że nic się nie osypało: tygodnie z rzędu po dwa treningi, dni z rzędu
+  z treningiem, dni bez zejścia z ciężaru, ćwiczenia stojące w granicach 5% własnego szczytu,
+  etapy w ćwiczeniach z masą ciała, powrót do poziomu po przerwie.
 - **Terminy** — zależne od uruchomionego planu: seria w terminie, brak pudła, czyste tygodnie,
   nadrobienia.
+
+**„Najbliżej zdobycia”** pokazuje pięć progów z najdalej posuniętym paskiem. Przy trzystu progach
+sama lista przestaje odpowiadać na pytanie „co mogę zrobić teraz" — ta sekcja odpowiada.
 
 Wszystkie da się zdobyć przy dowolnym ciężarze — bo jedyne, na co człowiek ma realny wpływ
 każdego dnia, to czy się pojawi. Raz zdobyty próg zostaje po zmianie planu, tak samo jak punkty:

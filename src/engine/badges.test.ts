@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { planById, planId } from '../data/plans';
 import { freshState } from './plan';
+import { GROUPS_OF_EX } from './metrics';
 import { buildSchedule, planStats } from './schedule';
 import { ACHIEVEMENTS, achCtx, achievementProgress, migrateBadges, syncBadges, tierKey } from './badges';
 import { advise } from './advice';
@@ -51,6 +52,49 @@ describe('odznaki', () => {
         if (i > 0) expect(t).toBeGreaterThan(a.tiers[i - 1]!);
       });
     });
+  });
+
+  it('żadna rodzina nie wywraca się na pustym stanie', () => {
+    const rows = achievementProgress(achCtx(freshState(), null, null, '2026-08-31'));
+    expect(rows).toHaveLength(ACHIEVEMENTS.length);
+    rows.forEach((r) => {
+      expect(Number.isFinite(r.value)).toBe(true);
+      expect(r.value).toBeGreaterThanOrEqual(0);
+      expect(r.progress).toBeGreaterThanOrEqual(0);
+      expect(r.progress).toBeLessThanOrEqual(1);
+    });
+  });
+
+  it('każda partia ruchu z biblioteki ma swoją rodzinę odznak', () => {
+    const covered = new Set(
+      ACHIEVEMENTS.filter((a) => a.group === 'partie').map((a) => a.desc.match(/„(.+)”/)?.[1]),
+    );
+    GROUPS_OF_EX.forEach((g) => expect(covered.has(g)).toBe(true));
+  });
+
+  it('okna czasu idą od doby aż po rok', () => {
+    const ids = ACHIEVEMENTS.map((a) => a.id);
+    [
+      'dzien-powtorzenia',
+      'tydzien-powtorzenia',
+      'dwa-tygodnie-powtorzenia',
+      'trzy-tygodnie-powtorzenia',
+      'miesiac-powtorzenia',
+      'kwartal-powtorzenia',
+      'polrocze-powtorzenia',
+      'rok-powtorzenia',
+    ].forEach((id) => expect(ids).toContain(id));
+  });
+
+  it('drabiny sięgają dalej niż rok regularnych treningów', () => {
+    const top = (id: string): number => {
+      const a = ACHIEVEMENTS.find((x) => x.id === id)!;
+      return a.tiers[a.tiers.length - 1]!;
+    };
+    // Trzy sesje w tygodniu przez rok to jakieś 156 treningów i 16 000 powtórzeń.
+    expect(top('treningi')).toBeGreaterThan(156);
+    expect(top('powtorzenia')).toBeGreaterThan(16_000);
+    expect(top('rytm')).toBeGreaterThan(52);
   });
 
   it('pierwszy trening odblokowuje pierwszy próg dorobku', () => {

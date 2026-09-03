@@ -31,6 +31,9 @@ export interface DayTotals {
 /** Ćwiczenie na stronę robi się dwa razy, więc liczy się dwa razy. */
 const sideFactor = (id: string): number => (EX[id]?.side ? 2 : 1);
 
+/** Partie ruchu w kolejności, w jakiej stoją w bibliotece ćwiczeń. */
+export const GROUPS_OF_EX: string[] = [...new Set(Object.values(EX).map((e) => e.group))];
+
 const isTime = (id: string): boolean => EX[id]?.unit === 'secs';
 
 export function dailyTotals(log: LogEntry[]): DayTotals[] {
@@ -216,6 +219,85 @@ export function comebacksHeld(log: LogEntry[], gap = 14, span = 30): number {
 export const trainedEarly = (log: LogEntry[]): boolean =>
   log.some((e) => new Date(e.date).getHours() < 8);
 
+/** Czy w historii jest trening zamknięty po dwudziestej pierwszej. */
+export const trainedLate = (log: LogEntry[]): boolean =>
+  log.some((e) => new Date(e.date).getHours() >= 21);
+
+/** Najdłuższy ciąg dni kalendarzowych z rzędu, w których padł jakikolwiek trening. */
+export function dayStreak(days: DayTotals[]): number {
+  let best = 0;
+  let run = 0;
+  days.forEach((d, i) => {
+    const prev = days[i - 1];
+    run = prev && daysBetween(prev.day, d.day) === 1 ? run + 1 : 1;
+    best = Math.max(best, run);
+  });
+  return best;
+}
+
+/** Powtórzenia w rozbiciu na partie ruchu. Ćwiczenia liczone na czas nie wchodzą. */
+export function repsByGroup(log: LogEntry[]): Record<string, number> {
+  const out: Record<string, number> = {};
+  GROUPS_OF_EX.forEach((g) => (out[g] = 0));
+
+  log.forEach((e) =>
+    e.items.forEach((it) => {
+      const m = EX[it.id];
+      if (!m || m.unit === 'secs') return;
+      const f = sideFactor(it.id);
+      out[m.group] = (out[m.group] ?? 0) + it.sets.reduce((a, r) => a + Math.max(0, r.reps) * f, 0);
+    }),
+  );
+
+  return out;
+}
+
+/** Najdłuższa pojedyncza seria — osobno powtórzenia i osobno czas. */
+export function bestSingleSet(log: LogEntry[]): { reps: number; secs: number } {
+  let reps = 0;
+  let secs = 0;
+
+  log.forEach((e) =>
+    e.items.forEach((it) => {
+      const f = sideFactor(it.id);
+      it.sets.forEach((r) => {
+        const v = r.reps * f;
+        if (isTime(it.id)) secs = Math.max(secs, v);
+        else reps = Math.max(reps, v);
+      });
+    }),
+  );
+
+  return { reps, secs };
+}
+
+/** Najcięższy kettlebell, jaki w ogóle pojawił się w zapisanej serii. */
+export const heaviestBell = (log: LogEntry[]): number =>
+  log.reduce(
+    (m, e) => Math.max(m, ...e.items.map((it) => Math.max(0, ...it.sets.map((s) => s.w ?? 0)))),
+    0,
+  );
+
+/** Najwyższe szacowane maksimum na jedno powtórzenie w całej historii. */
+export function bestE1rm(state: AppState): number {
+  return Object.values(state.prog).reduce(
+    (m, p) => Math.max(m, p.e1rm ?? 0, ...p.hist.map((h) => h.e1rm ?? 0)),
+    0,
+  );
+}
+
+/**
+ * Suma etapów w ćwiczeniach z masą ciała. Podciąganie, pompki i core mają po pięć etapów,
+ * więc komplet to dwanaście kroków ponad start — jedyna miara postępu, w której ciężar
+ * kettlebella nie gra żadnej roli.
+ */
+export function stageSum(state: AppState): number {
+  return Object.entries(state.prog).reduce(
+    (n, [id, p]) => (EX[id]?.stages ? n + (p.stage ?? 0) : n),
+    0,
+  );
+}
+
 export interface Metrics {
   workouts: number;
   sets: number;
@@ -225,25 +307,51 @@ export interface Metrics {
   reps: number;
   secs: number;
   tonnage: number;
-  /** Rekordy z przesuwanego okna. */
+  /** Rekordy z przesuwanego okna. Nazwy mówią o długości okna, nie o kartce z kalendarza. */
   best: {
     dayReps: number;
     daySets: number;
+    dayTonnage: number;
     weekReps: number;
+    weekSets: number;
     weekWorkouts: number;
+    twoWeekReps: number;
     twoWeekWorkouts: number;
+    threeWeekReps: number;
     threeWeekWorkouts: number;
+    monthReps: number;
+    monthSets: number;
+    monthExercises: number;
     monthWorkouts: number;
     monthTonnage: number;
     quarterWorkouts: number;
     quarterReps: number;
+    halfYearWorkouts: number;
+    halfYearReps: number;
+    yearWorkouts: number;
+    yearReps: number;
+    /** Najdłuższa pojedyncza seria i najdłuższy pojedynczy podchód na czas. */
+    set: number;
+    hold: number;
+    /** Najcięższa pojedyncza sesja. */
+    sessionTonnage: number;
   };
   steadyWeeks: number;
+  /** Najdłuższy ciąg dni z rzędu z treningiem. */
+  dayStreak: number;
   noDropDays: number;
   heldForm: number;
   heavier: number;
   comebacks: number;
+  /** Najcięższy użyty kettlebell i najwyższe szacowane maksimum. */
+  heaviest: number;
+  e1rm: number;
+  /** Suma etapów w ćwiczeniach z masą ciała. */
+  stages: number;
+  /** Powtórzenia w rozbiciu na partie ruchu. */
+  byGroup: Record<string, number>;
   early: boolean;
+  late: boolean;
   days: DayTotals[];
 }
 
@@ -252,6 +360,7 @@ export function metrics(state: AppState): Metrics {
   const sum = (pick: (d: DayTotals) => number): number => days.reduce((a, d) => a + pick(d), 0);
   const distinct = new Set<string>();
   state.log.forEach((e) => e.items.forEach((it) => distinct.add(it.id)));
+  const single = bestSingleSet(state.log);
 
   return {
     workouts: state.log.length,
@@ -264,21 +373,59 @@ export function metrics(state: AppState): Metrics {
     best: {
       dayReps: windowMax(days, 1, (d) => d.reps),
       daySets: windowMax(days, 1, (d) => d.sets),
+      dayTonnage: Math.round(windowMax(days, 1, (d) => d.tonnage)),
       weekReps: windowMax(days, 7, (d) => d.reps),
+      weekSets: windowMax(days, 7, (d) => d.sets),
       weekWorkouts: windowMax(days, 7, (d) => d.workouts),
+      twoWeekReps: windowMax(days, 14, (d) => d.reps),
       twoWeekWorkouts: windowMax(days, 14, (d) => d.workouts),
+      threeWeekReps: windowMax(days, 21, (d) => d.reps),
       threeWeekWorkouts: windowMax(days, 21, (d) => d.workouts),
+      monthReps: windowMax(days, 30, (d) => d.reps),
+      monthSets: windowMax(days, 30, (d) => d.sets),
+      monthExercises: windowMax(days, 30, (d) => d.exercises),
       monthWorkouts: windowMax(days, 30, (d) => d.workouts),
       monthTonnage: Math.round(windowMax(days, 30, (d) => d.tonnage)),
       quarterWorkouts: windowMax(days, 90, (d) => d.workouts),
       quarterReps: windowMax(days, 90, (d) => d.reps),
+      halfYearWorkouts: windowMax(days, 180, (d) => d.workouts),
+      halfYearReps: windowMax(days, 180, (d) => d.reps),
+      yearWorkouts: windowMax(days, 365, (d) => d.workouts),
+      yearReps: windowMax(days, 365, (d) => d.reps),
+      set: single.reps,
+      hold: single.secs,
+      sessionTonnage: Math.round(
+        state.log.reduce(
+          (m, e) =>
+            Math.max(
+              m,
+              e.items.reduce(
+                (a, it) =>
+                  a +
+                  it.sets.reduce(
+                    (b, r) =>
+                      b + (EX[it.id]?.unit === 'secs' ? 0 : (r.w ?? 0) * r.reps * sideFactor(it.id)),
+                    0,
+                  ),
+                0,
+              ),
+            ),
+          0,
+        ),
+      ),
     },
     steadyWeeks: steadyWeeks(days),
+    dayStreak: dayStreak(days),
     noDropDays: noDropDays(state, days),
     heldForm: heldForm(state),
     heavier: wentHeavier(state),
     comebacks: comebacksHeld(state.log),
+    heaviest: heaviestBell(state.log),
+    e1rm: Math.round(bestE1rm(state) * 10) / 10,
+    stages: stageSum(state),
+    byGroup: repsByGroup(state.log),
     early: trainedEarly(state.log),
+    late: trainedLate(state.log),
     days,
   };
 }

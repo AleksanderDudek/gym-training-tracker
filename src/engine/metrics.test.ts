@@ -1,11 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { freshState } from './plan';
 import {
+  bestE1rm,
+  bestSingleSet,
   comebacksHeld,
   dailyTotals,
+  dayStreak,
+  heaviestBell,
   heldForm,
   metrics,
   noDropDays,
+  repsByGroup,
+  stageSum,
   steadyWeeks,
   wentHeavier,
   windowMax,
@@ -240,6 +246,95 @@ describe('powrót do poziomu', () => {
   });
 });
 
+describe('rekordy pojedynczych podejść', () => {
+  it('najdłuższa seria liczy stronę osobno i nie miesza się z czasem', () => {
+    const log = [
+      entry('2026-08-31', [item('swing2', [30, 20]), item('swing1', [18]), item('carry', [45])]),
+    ];
+    const best = bestSingleSet(log);
+    // Swing jednorącz 18 na stronę to 36 powtórzeń — więcej niż trzydzieści obunóż.
+    expect(best.reps).toBe(36);
+    // Spacer na stronę: czterdzieści pięć sekund na rękę to dziewięćdziesiąt sekund pracy.
+    expect(best.secs).toBe(90);
+  });
+
+  it('najcięższy kettlebell bierze maksimum z całej historii', () => {
+    const log = [
+      entry('2026-08-31', [item('swing2', [10], 16)]),
+      entry('2026-09-02', [item('swing2', [10], 24), item('goblet', [8], 16)]),
+    ];
+    expect(heaviestBell(log)).toBe(24);
+    expect(heaviestBell([])).toBe(0);
+  });
+
+  it('najwyższe maksimum bierze też punkty z historii, nie tylko stan bieżący', () => {
+    const s = stateWith([]);
+    const p = s.prog['swing2']!;
+    p.hist = [
+      { d: '2026-06-01', w: 16, reps: [10], eff: 'solid', e1rm: 28 },
+      { d: '2026-06-09', w: 16, reps: [10], eff: 'solid', e1rm: 22 },
+    ];
+    p.e1rm = 22;
+    expect(bestE1rm(s)).toBe(28);
+  });
+});
+
+describe('dni z rzędu', () => {
+  it('liczy najdłuższy ciąg kolejnych dni z treningiem', () => {
+    const log = ['2026-08-01', '2026-08-02', '2026-08-03', '2026-08-10', '2026-08-11'].map((d) =>
+      entry(d, [item('swing2', [10])]),
+    );
+    expect(dayStreak(dailyTotals(log))).toBe(3);
+  });
+
+  it('dwa treningi jednego dnia to wciąż jeden dzień', () => {
+    const log = [
+      entry('2026-08-01', [item('swing2', [10])]),
+      entry('2026-08-01', [item('swing2', [10])], 20),
+    ];
+    expect(dayStreak(dailyTotals(log))).toBe(1);
+  });
+
+  it('pusta historia daje zero', () => {
+    expect(dayStreak([])).toBe(0);
+  });
+});
+
+describe('objętość partiami', () => {
+  it('rozdziela powtórzenia na wzorce ruchowe', () => {
+    const log = [
+      entry('2026-08-31', [item('swing2', [10]), item('goblet', [8]), item('press', [5])]),
+    ];
+    const g = repsByGroup(log);
+    expect(g['Zawias biodrowy']).toBe(10);
+    expect(g['Przysiad']).toBe(8);
+    // Wyciskanie jest na stronę.
+    expect(g['Pchanie']).toBe(10);
+  });
+
+  it('ćwiczenia liczone na czas nie wchodzą do objętości partii', () => {
+    const g = repsByGroup([entry('2026-08-31', [item('carry', [40]), item('core', [12])])]);
+    expect(g['Core i carry']).toBe(12);
+  });
+
+  it('każda partia z biblioteki ma swój licznik, choćby zerowy', () => {
+    const g = repsByGroup([]);
+    expect(g['Zawias biodrowy']).toBe(0);
+    expect(Object.keys(g).length).toBeGreaterThanOrEqual(7);
+  });
+});
+
+describe('etapy z masą ciała', () => {
+  it('sumuje etapy tylko z ćwiczeń, które je mają', () => {
+    const s = stateWith([]);
+    // Świeży stan: pompki startują od pierwszego etapu, reszta od zerowego.
+    expect(stageSum(s)).toBe(1);
+    s.prog['pullup']!.stage = 2;
+    s.prog['core']!.stage = 3;
+    expect(stageSum(s)).toBe(6);
+  });
+});
+
 describe('zestaw metryk', () => {
   it('pusta historia daje same zera bez wyjątków', () => {
     const m = metrics(freshState());
@@ -265,6 +360,27 @@ describe('zestaw metryk', () => {
     expect(m.tonnage).toBe(40 * 16);
     expect(m.best.dayReps).toBe(28);
     expect(m.best.weekWorkouts).toBe(2);
+  });
+
+  it('dłuższe okna obejmują co najmniej tyle, co krótsze', () => {
+    const log = Array.from({ length: 40 }, (_, i) =>
+      entry(new Date(Date.parse('2026-01-05T18:00:00Z') + i * 5 * 86_400_000).toISOString().slice(0, 10), [
+        item('swing2', [10, 10]),
+      ]),
+    );
+    const b = metrics(stateWith(log)).best;
+    expect(b.weekWorkouts).toBeLessThanOrEqual(b.twoWeekWorkouts);
+    expect(b.twoWeekWorkouts).toBeLessThanOrEqual(b.threeWeekWorkouts);
+    expect(b.threeWeekWorkouts).toBeLessThanOrEqual(b.monthWorkouts);
+    expect(b.monthWorkouts).toBeLessThanOrEqual(b.quarterWorkouts);
+    expect(b.quarterWorkouts).toBeLessThanOrEqual(b.halfYearWorkouts);
+    expect(b.halfYearWorkouts).toBeLessThanOrEqual(b.yearWorkouts);
+    expect(b.weekReps).toBeLessThanOrEqual(b.yearReps);
+  });
+
+  it('najcięższa sesja nie liczy sekund jako kilogramów', () => {
+    const s = stateWith([entry('2026-08-31', [item('swing2', [10], 20), item('carry', [40], 20)])]);
+    expect(metrics(s).best.sessionTonnage).toBe(200);
   });
 
   it('tonaż dorobku nie liczy sekund jako kilogramów', () => {

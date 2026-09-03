@@ -6,6 +6,7 @@ import {
   achCtx,
   achievementProgress,
   formatTier,
+  formatValue,
 } from '../engine/badges';
 import type { AchProgress } from '../engine/badges';
 import type { Metrics } from '../engine/metrics';
@@ -46,7 +47,7 @@ function Row({ r }: { r: AchProgress }) {
     ? done
       ? `zdobyta${r.at ? ` ${shortDate(r.at)}` : ''}`
       : 'jeszcze nie'
-    : `${done ? `komplet · ${formatTier(r.ach, r.value)}` : `${num(r.value)} z ${formatTier(r.ach, r.next!)}`}${
+    : `${done ? `komplet · ${formatTier(r.ach, r.value)}` : `${formatValue(r.ach, r.value)} z ${formatTier(r.ach, r.next!)}`}${
         r.at ? ` · ostatni próg ${shortDate(r.at)}` : ''
       }`;
 
@@ -107,6 +108,43 @@ function Totals({ m }: { m: Metrics }) {
   );
 }
 
+/**
+ * Progi najbliższe zdobycia. Przy dwustu siedemdziesięciu progach sama lista przestaje
+ * odpowiadać na pytanie „co mogę zrobić teraz” — ta sekcja odpowiada, biorąc pięć rodzin
+ * z najdalej posuniętym paskiem spośród tych, które jeszcze czegoś potrzebują.
+ */
+function Closest({ rows }: { rows: AchProgress[] }) {
+  const near = rows
+    .filter((r) => r.next !== null && r.value > 0)
+    .sort((a, b) => b.progress - a.progress)
+    .slice(0, 5);
+
+  if (!near.length) return null;
+
+  return (
+    <div className="grp">
+      <h3>Najbliżej zdobycia</h3>
+      <p className="tight">Pięć progów, do których brakuje najmniej.</p>
+      <div className="near">
+        {near.map((r) => (
+          <div className="near-row" key={r.ach.id}>
+            <span className="near-name">{r.ach.name}</span>
+            <span className="near-left">
+              brakuje {formatValue(r.ach, Math.max(0, r.next! - r.value))}
+            </span>
+            <span className="near-bar">
+              <i style={{ width: `${Math.max(3, Math.round(r.progress * 100))}%` }} />
+            </span>
+            <span className="near-meta">
+              {formatValue(r.ach, r.value)} z {formatTier(r.ach, r.next!)}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function Achievements({ state }: { state: AppState }) {
   const snap = snapshot(state);
   // Metryki liczone raz i podane dalej — to samo wyliczenie karmi kafelki i wszystkie progi.
@@ -128,6 +166,7 @@ export function Achievements({ state }: { state: AppState }) {
       </div>
 
       <Totals m={ctx.metrics} />
+      <Closest rows={rows} />
 
       <div className="sect-label">
         Odznaki {have}/{total}
