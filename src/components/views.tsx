@@ -11,12 +11,27 @@ import type { AppState, EffortKey, ExerciseId, ReadyKey, SetResult, Workout } fr
 export function WorkoutPicker({
   workouts,
   onStart,
+  planned,
 }: {
   workouts: Workout[];
   onStart: (id: string) => void;
+  /** Trening, który wypada dziś według planu — jeśli plan jest uruchomiony. */
+  planned?: { id: string; name: string; late: number } | undefined;
 }) {
   return (
     <>
+      {planned && (
+        <div className="wrap">
+          <div className="banner good">
+            <h4>{planned.late > 0 ? 'Zaległy trening z planu' : 'Dziś według planu'}</h4>
+            <p>
+              {planned.name}
+              {planned.late > 0 &&
+                ` — termin był ${planned.late === 1 ? 'wczoraj' : `${planned.late} dni temu`}. Zrób go dziś, plan nie przesuwa się sam.`}
+            </p>
+          </div>
+        </div>
+      )}
       <div className="wrap">
         <h2>Wybierz trening</h2>
       </div>
@@ -25,7 +40,11 @@ export function WorkoutPicker({
           {workouts.map((w) => {
             const names = w.items.map((i) => ex(i.ex).name).join(', ');
             return (
-              <button className="pick" key={w.id} onClick={() => onStart(w.id)}>
+              <button
+                className={`pick${planned?.id === w.id ? ' planned' : ''}`}
+                key={w.id}
+                onClick={() => onStart(w.id)}
+              >
                 <div>
                   <div className="n">{w.name}</div>
                   <div className="d">

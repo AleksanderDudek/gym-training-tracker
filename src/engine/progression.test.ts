@@ -222,7 +222,7 @@ describe('kalibracja poziomu startowego', () => {
     { reps, w: P(s, id).weight },
   ];
 
-  it('zaczyna od najlżejszego ciężaru i jednej serii próbnej', () => {
+  it('zaczyna od połowy domyślnego obciążenia i jednej serii próbnej', () => {
     const s = session(freshState());
     expect(P(s, 'goblet').phase).toBe('calib');
     expect(P(s, 'goblet').weight).toBe(8);
@@ -236,13 +236,30 @@ describe('kalibracja poziomu startowego', () => {
     expect(P(freshState(), 'goblet').e1rm).toBeNull();
   });
 
-  it('początkujący poniżej zakresu ląduje na dolnej granicy, nie niżej', () => {
+  it('początkującemu, dla którego start jest za ciężki, schodzi ciężar', () => {
     const s = session(freshState());
+    // 6 powtórzeń przy dolnej granicy 8 — próba wraca na lżejszym kettlebellu.
     applyResult(s, 'goblet', testSet(s, 'goblet', 6), 'solid', false);
+    expect(P(s, 'goblet').phase).toBe('calib');
+    expect(P(s, 'goblet').weight).toBe(6);
+
+    applyResult(s, 'goblet', testSet(s, 'goblet', 9), 'solid', false);
     const p = P(s, 'goblet');
     expect(p.phase).toBe('work');
-    expect(p.weight).toBe(8);
-    expect(p.target).toBe(8);
+    expect(p.weight).toBe(6);
+    expect(p.target).toBe(9);
+  });
+
+  it('lżejsze kettlebelle dają dokąd zejść poniżej ośmiu kilogramów', () => {
+    const s = session(freshState());
+    expect(s.cfg.weights.slice(0, 3)).toEqual([4, 6, 8]);
+  });
+
+  it('duża nadwyżka przeskakuje więcej niż jeden rozmiar', () => {
+    const s = session(freshState());
+    // Dwa razy ponad szczyt zakresu (12) to dwa rozmiary w górę: 8 -> 16.
+    applyResult(s, 'goblet', testSet(s, 'goblet', 26), 'solid', false);
+    expect(P(s, 'goblet').weight).toBe(16);
   });
 
   it('zaawansowany wchodzi po drabinie w górę, aż wynik wpadnie w zakres', () => {

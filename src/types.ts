@@ -128,12 +128,56 @@ export interface Notice {
   text: string;
 }
 
+/** Płeć służy wyłącznie do doboru ciężarów startowych — program jest ten sam. */
+export type Sex = 'f' | 'm' | 'any';
+
+export type PlanLevel = 'zero' | 'base' | 'strong';
+
+/** Gotowy plan treningowy: rotacja treningów rozpisana na tygodnie. */
+export interface PlanTemplate {
+  id: string;
+  name: string;
+  level: PlanLevel;
+  sex: Sex;
+  daysPerWeek: number;
+  weeks: number;
+  /** Mnożnik ciężarów startowych względem domyślnych obciążeń ćwiczeń. */
+  loadFactor: number;
+  /** Rotacja treningów. Sesja n dostaje `cycle[n % cycle.length]`. */
+  cycle: string[];
+  /** Dni tygodnia, 1 = poniedziałek … 7 = niedziela. */
+  weekdays: number[];
+  desc: string;
+}
+
+/** Plan uruchomiony przez użytkownika. */
+export interface ActivePlan {
+  templateId: string;
+  /** Dzień startu, `yyyy-mm-dd`. */
+  start: string;
+  /** Sesje odhaczone ręcznie — poza tymi, które wynikają z historii treningów. */
+  ticked: Record<number, true>;
+}
+
+/** Jeden dzień rozpisanego planu. */
+export interface PlannedDay {
+  index: number;
+  date: string;
+  weekday: number;
+  week: number;
+  workout: string;
+  /** Dni przerwy od poprzedniego treningu w planie. */
+  gap: number;
+  status: 'done' | 'missed' | 'today' | 'future';
+}
+
 export interface AppState {
   cfg: { weights: number[] };
   prog: Record<ExerciseId, Progress>;
   workouts: Workout[];
   session: Session | null;
   log: LogEntry[];
+  plan: ActivePlan | null;
   notice: Notice | null;
 }
 
@@ -155,7 +199,7 @@ export interface PlannedSet {
 export type View = 'train' | 'prog' | 'work' | 'set';
 
 /** Zakładka w dolnej nawigacji. */
-export type TabKey = View | 'atlas';
+export type TabKey = View | 'atlas' | 'plan';
 
 /** Trasa aplikacji. Podstrona ćwiczenia ma własny adres, więc da się ją wysłać komuś linkiem. */
 export type Route =

@@ -86,6 +86,7 @@
   .pick{background:var(--surface);border-bottom:1px solid var(--line);padding:15px 14px;
     display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;width:100%;
     border-left:0;border-right:0;border-top:0;font:inherit;text-align:left;color:inherit;cursor:pointer}
+  .pick.planned{border-left:3px solid var(--ok)}
   .pick .n{font-weight:600;font-size:17px}
   .pick .d{font-size:13px;color:var(--ink-soft);margin-top:2px}
   .pick .go{font-family:var(--display);font-size:14px;color:var(--ink-soft)}
@@ -117,10 +118,12 @@
 
   nav{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);
     display:flex;padding-bottom:env(safe-area-inset-bottom)}
-  nav a{flex:1;padding:14px 2px;background:none;border:0;font:inherit;font-size:11.5px;text-align:center;
+  nav a{flex:1;padding:14px 1px;background:none;border:0;font:inherit;font-size:10.5px;text-align:center;
     text-decoration:none;color:var(--ink-soft);cursor:pointer;border-top:3px solid transparent;margin-top:-1px}
   nav a[aria-current=page]{color:var(--ink);font-weight:600;border-top-color:var(--steel)}
   nav a:focus-visible{outline:2px solid var(--steel);outline-offset:-2px}
+  /* Sześć zakładek na 320 px: „Ustawienia” nie mieści się w slocie przy 10,5 px. */
+  @media (max-width:359px){nav a{font-size:9.5px;letter-spacing:-.01em}}
 
   #modal{position:fixed;inset:0;background:rgba(30,35,32,.55);display:grid;place-items:center;padding:18px;z-index:50}
   #modal.hidden{display:none}
@@ -194,3 +197,36 @@
 
   .vidlink{display:inline-block;font-size:13px;color:var(--steel);font-weight:600;
     text-decoration:underline;margin:0 0 12px}
+
+  /* ---------------- Plan treningowy ---------------- */
+
+  .freq{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+  .freq button{font:inherit;font-family:var(--display);font-size:16px;padding:10px 2px;
+    background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r);
+    cursor:pointer;color:var(--ink-soft)}
+  .freq button[aria-pressed=true]{background:var(--steel);border-color:var(--steel);color:#fff}
+
+  .wtag{display:inline-block;font-family:var(--display);font-size:13px;min-width:22px;
+    text-align:center;background:var(--steel);color:#fff;border-radius:2px;padding:1px 5px;margin-right:4px}
+  .wtag.light{background:var(--surface-2);color:var(--ink-soft);border:1px solid var(--line)}
+
+  .wk-head{width:100%;display:flex;justify-content:space-between;align-items:center;
+    background:var(--surface);border:0;border-bottom:1px solid var(--line);padding:12px 14px;
+    font:inherit;font-family:var(--display);font-size:16px;color:var(--ink);cursor:pointer;text-align:left}
+  .wk-head[aria-expanded=true]{border-left:3px solid var(--steel)}
+  .wk-head:focus-visible{outline:2px solid var(--steel);outline-offset:-2px}
+  .wk-sum{font-family:var(--body);font-size:13px;color:var(--ink-soft)}
+  .wk-body{background:var(--surface-2);border-bottom:1px solid var(--line)}
+
+  .pday{display:grid;grid-template-columns:78px 1fr 22px;gap:10px;align-items:center;
+    padding:9px 14px;border-bottom:1px solid var(--line);font-size:14px}
+  .pday:last-child{border-bottom:0}
+  .pd-date{font-family:var(--display);font-size:14px;color:var(--ink-soft)}
+  .pd-work{min-width:0}
+  .pd-gap{display:block;font-size:12px;color:var(--ink-soft)}
+  .pd-mark{font-size:15px;text-align:center;color:var(--ink-soft)}
+  .pday.done .pd-mark{color:var(--ok);font-weight:600}
+  .pday.done .pd-date,.pday.done .pd-work{color:var(--ink-soft)}
+  .pday.missed{opacity:.55}
+  .pday.today{background:var(--surface);border-left:3px solid var(--steel);font-weight:600}
+  .pday.today .pd-date{color:var(--ink)}

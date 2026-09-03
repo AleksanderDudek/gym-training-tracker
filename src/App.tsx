@@ -7,12 +7,17 @@ import { queueSave, store } from './storage/storage';
 import { Banner, Modal, Toast, useModal } from './components/ui';
 import { LevelsView, SessionView, SettingsView, WorkoutPicker, WorkoutsView } from './components/views';
 import { AtlasView, ExercisePage } from './components/atlas';
+import { PlanView } from './components/PlanView';
+import { buildSchedule, dayKey, daysBetween, loggedDays } from './engine/schedule';
+import { planById } from './data/plans';
+import { seedFromPlan } from './engine/plan';
 import { TABS, activeTab, go, useRoute } from './routing';
 import type {
   AppState,
   Change,
   EffortKey,
   ExerciseId,
+  PlanTemplate,
   ReadyKey,
   SetResult,
   Workout,
@@ -49,6 +54,7 @@ export default function App() {
         next.workouts = saved.workouts ?? [];
         next.log = saved.log ?? [];
         next.session = saved.session ?? null;
+        next.plan = saved.plan ?? null;
         if (next.session && ![...BUILTIN, ...next.workouts].find((w) => w.id === next.session!.workout))
           next.session = null;
         if (next.session) {
@@ -72,6 +78,18 @@ export default function App() {
   const view = route.kind === 'tab' ? route.tab : null;
   const workouts: Workout[] = [...BUILTIN, ...state.workouts];
   const current = state.session ? workouts.find((w) => w.id === state.session!.workout) : undefined;
+  // Co wypada dziś według planu — razem z zaległym terminem, jeśli któryś przepadł.
+  const planTemplate = state.plan ? planById(state.plan.templateId) : undefined;
+  const planned = (() => {
+    if (!state.plan || !planTemplate) return undefined;
+    const days = buildSchedule(planTemplate, state.plan, loggedDays(state));
+    const due = days.find((x) => x.status === 'today') ?? days.find((x) => x.status === 'missed');
+    if (!due) return undefined;
+    const w = [...BUILTIN, ...state.workouts].find((x) => x.id === due.workout);
+    if (!w) return undefined;
+    return { id: w.id, name: w.name, late: due.status === 'missed' ? daysBetween(due.date, dayKey(Date.now())) : 0 };
+  })();
+
   const d = daysSince(state);
   const rate = weeklyRate(state);
   const ratio = acwr(state);
@@ -281,6 +299,39 @@ export default function App() {
     setToastMsg('Próby ustawione. Kolejny trening zmierzy poziomy.');
   };
 
+  const startPlan = async (t: PlanTemplate) => {
+    const next = clone(state);
+    const seeded = seedFromPlan(next, t.loadFactor);
+    next.plan = { templateId: t.id, start: dayKey(Date.now()), ticked: {} };
+    commit(next);
+    go('#/plan');
+    await say(
+      'Plan ustawiony',
+      <>
+        <p>
+          {t.name}. Pierwszy trening liczy się od dzisiaj, kolejne wpadają w{' '}
+          {t.weekdays.length} dni tygodnia.
+        </p>
+        <p style={{ marginTop: 10 }}>
+          Ciężary startowe ustawione w <b>{seeded}</b> ćwiczeniach. Ćwiczenia z zaliczonym już
+          wynikiem zostały nietknięte — zmierzony poziom jest wart więcej niż tabelka.
+        </p>
+      </>,
+    );
+  };
+
+  const stopPlan = async () => {
+    const ok = await ask(
+      'Zakończyć plan?',
+      <p>Kalendarz zniknie. Poziomy ćwiczeń i historia treningów zostają bez zmian.</p>,
+      'Zakończ',
+    );
+    if (!ok) return;
+    const next = clone(state);
+    next.plan = null;
+    commit(next);
+  };
+
   const exportData = () => {
     const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
@@ -388,6 +439,10 @@ export default function App() {
       </div>
       )}
 
+      {view === 'plan' && (
+        <PlanView state={state} onStart={(t) => void startPlan(t)} onStop={() => void stopPlan()} />
+      )}
+
       {route.kind === 'atlas' && <AtlasView state={state} />}
       {route.kind === 'exercise' && <ExercisePage state={state} id={route.id} />}
 
@@ -409,7 +464,7 @@ export default function App() {
             onToast={setToastMsg}
           />
         ) : (
-          <WorkoutPicker workouts={workouts} onStart={startSession} />
+          <WorkoutPicker workouts={workouts} onStart={startSession} planned={planned} />
         ))}
 
       {view === 'prog' && <LevelsView state={state} />}

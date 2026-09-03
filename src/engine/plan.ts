@@ -8,7 +8,7 @@ export const step = (id: ExerciseId): number => (ex(id).unit === 'secs' ? 5 : 1)
  * Bez tego drabina kalibracyjna mogłaby się kręcić w nieskończoność u kogoś, kto za każdym
  * razem raportuje inaczej.
  */
-export const MAX_CALIB_RUNS = 4;
+export const MAX_CALIB_RUNS = 5;
 
 /** Co ile sesji ćwiczenie dostaje serię testową, żeby sprawdzić, czy poziom nie odjechał w górę. */
 export const PROBE_EVERY = 6;
@@ -43,14 +43,15 @@ export function freshProgress(id: ExerciseId): Progress {
 }
 
 export function freshState(): AppState {
-  const weights = [8, 12, 16, 20, 24, 28, 32];
+  const weights = [4, 6, 8, 12, 16, 20, 24, 28, 32];
   const prog: Record<ExerciseId, Progress> = {};
   ALL.forEach((id) => {
     const p = freshProgress(id);
-    // Kalibracja startuje od najlżejszego dostępnego ciężaru i idzie w górę. Odwrotny
-    // kierunek — zejście z ciężaru, który okazał się za duży — kosztuje nieudaną serię
-    // pod obciążeniem, a to jedyny moment w tym schemacie, w którym można zrobić sobie krzywdę.
-    if (p.weight !== null) p.weight = Math.min(p.weight, weights[0]!);
+    // Próba startuje od połowy domyślnego obciążenia. Od dna listy nie ma sensu: przy 4 kg
+    // ogranicznikiem przestaje być siła, a zaczyna cierpliwość, więc wynik nic nie mierzy.
+    // Drabina i tak dojdzie w obie strony — od tej wersji także w dół, bo 4 i 6 kg dają
+    // początkującemu dokąd zejść, gdy 8 kg okaże się za dużo.
+    if (p.weight !== null) p.weight = nearestWeight(weights, p.weight * 0.5);
     prog[id] = p;
   });
   return {
@@ -59,6 +60,7 @@ export function freshState(): AppState {
     workouts: [],
     session: null,
     log: [],
+    plan: null,
     notice: null,
   };
 }
@@ -84,6 +86,25 @@ export function nextWeight(state: AppState, id: ExerciseId): number | null {
   if (p.weight === null) return null;
   const i = state.cfg.weights.indexOf(p.weight);
   return i > -1 && i < state.cfg.weights.length - 1 ? state.cfg.weights[i + 1]! : null;
+}
+
+/**
+ * Ciężar przesunięty o kilka rozmiarów. Drabina kalibracyjna musi umieć przeskoczyć więcej
+ * niż jeden rozmiar naraz — lista zaczyna się od 4 kg, a ktoś silny miałby inaczej za mało
+ * prób, żeby w ogóle dojść do swojego poziomu.
+ */
+/** Najbliższy dostępny ciężar. Przy remisie wygrywa lżejszy. */
+export const nearestWeight = (list: number[], target: number): number =>
+  list.reduce((best, w) => (Math.abs(w - target) < Math.abs(best - target) ? w : best), list[0]!);
+
+export function shiftWeight(state: AppState, id: ExerciseId, steps: number): number | null {
+  const p = P(state, id);
+  if (p.weight === null) return null;
+  const list = state.cfg.weights;
+  const i = list.indexOf(p.weight);
+  if (i < 0) return null;
+  const j = Math.max(0, Math.min(list.length - 1, i + steps));
+  return j === i ? null : list[j]!;
 }
 
 export function prevWeight(state: AppState, id: ExerciseId): number | null {
@@ -163,6 +184,26 @@ export function planLabel(state: AppState, id: ExerciseId): string {
     (p.probe ? '  + test' : '') +
     (m.side ? ' · na stronę' : '')
   );
+}
+
+/**
+ * Ustawienie ciężarów startowych z planu. Dotyka wyłącznie ćwiczeń bez historii: gdzie
+ * jest już zalogowany wynik, tam zmierzony poziom bije każdą tabelkę i plan go nie nadpisuje.
+ */
+export function seedFromPlan(state: AppState, loadFactor: number): number {
+  let n = 0;
+  ALL.forEach((id) => {
+    const p = P(state, id);
+    const d = ex(id).def;
+    if (p.hist.length || d.w === undefined) return;
+    p.weight = nearestWeight(state.cfg.weights, d.w * loadFactor);
+    p.phase = 'calib';
+    p.calibRuns = 0;
+    p.trans = null;
+    p.e1rm = null;
+    n++;
+  });
+  return n;
 }
 
 export const exercisesByGroup = (): Record<string, ExerciseId[]> => {

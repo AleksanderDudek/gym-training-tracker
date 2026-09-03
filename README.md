@@ -30,13 +30,15 @@ albo otworzyć lokalnie.
 src/
   types.ts                  wszystkie typy domenowe
   routing.ts                trasy w hashu adresu
-  data/exercises.ts         biblioteka 19 ćwiczeń, etapy trudności, kolory kettlebli
+  data/exercises.ts         biblioteka 19 ćwiczeń, cztery treningi, kolory kettlebli
   data/videos.ts            filmy instruktażowe, 4 na ćwiczenie
+  data/plans.ts             katalog 54 planów: poziom × płeć × częstotliwość
   engine/
     math.ts                 wzór Epleya, tonaż, wskaźnik obciążenia w czasie
     plan.ts                 stan początkowy, recepta na dziś, mieszane obciążenie
     progression.ts          silnik: ocena sesji, awanse, przejścia, regres, przerwy
     hints.ts                teksty podpowiedzi i wyjaśnień
+    schedule.ts             rozpisanie planu na daty, przerwy, realizacja
     progression.test.ts     17 testów silnika
   storage/storage.ts        zapis z kolejkowaniem, dwa środowiska
   components/
@@ -44,6 +46,7 @@ src/
     ExerciseCard.tsx        karta ćwiczenia z formularzem serii
     views.tsx               wybór treningu, sesja, poziomy, kreator, ustawienia
     atlas.tsx               spis ćwiczeń i podstrona pojedynczego ćwiczenia
+    PlanView.tsx            katalog planów i kalendarz 12 tygodni
     VideoEmbed.tsx          odtwarzacz YouTube ładowany dopiero po kliknięciu
   App.tsx                   spina stan i widoki
   main.tsx                  punkt wejścia
@@ -86,10 +89,42 @@ megabajt skryptów i ustawiały ciasteczka, zanim ktokolwiek naciśnie play, wi�
 czasu stoi tam sama miniatura. Adres `youtube-nocookie.com` odkłada śledzenie do momentu
 odtworzenia, a zwykły link do YouTube pod spodem działa nawet wtedy, gdy autor skasuje film.
 
+## Plan treningowy
+
+Zakładka „Plan" rozpisuje dwanaście tygodni na konkretne daty. Każdy dzień pokazuje trening
+i przerwę od poprzedniego, a kalendarz odhacza się sam z historii treningów — sesja zalogowana
+w dniu terminu liczy się jako zrobiona.
+
+**Katalog ma 54 warianty**, generowane z reguł, nie pisane ręcznie: trzy poziomy (od zera,
+podstawowy, zaawansowany) × trzy warianty płci × sześć częstotliwości (2–7 treningów w tygodniu).
+
+**Dni tygodnia dobrane pod maksymalny odstęp.** Dwa treningi to poniedziałek i czwartek, czyli
+przerwy 2 i 3 dni, a nie 1 i 6. Układ tygodnia powtarza się co siedem dni, bo grafik, który da się
+zapamiętać, łatwiej wytrzymać przez trzy miesiące.
+
+**Im częściej, tym więcej dni lekkich.** Trening D nie jest „tym samym, tylko słabiej" — po prostu
+nie ma w nim ciężkiego zawiasu, przysiadu ani wyciskania. Przy dwóch treningach w tygodniu nie
+występuje wcale, przy siedmiu zajmuje cztery dni z siedmiu. Przy pięciu i więcej sesjach
+ogranicznikiem przestaje być motywacja, a zaczyna regeneracja.
+
+**Płeć przestawia wyłącznie ciężary startowe.** Program, rotacja treningów i zasady progresji są
+identyczne — różni się przeciętny punkt wyjścia obciążenia, a nie sposób trenowania. Jest też
+wariant bez wskazania, a i tak wszystko weryfikuje seria próbna przy pierwszym treningu. Start
+planu ustawia ciężary tylko w ćwiczeniach bez historii: gdzie jest już zalogowany wynik, tam
+zmierzony poziom bije każdą tabelkę.
+
+**Przerwy.** Plan pokazuje swoją najdłuższą zaplanowaną przerwę i zestawia ją z progami silnika:
+do 10 dni nic się nie dzieje, od 11 wstrzymane są skoki ciężaru, od 21 cofają się cele. Zakładka
+treningu podpowiada, co wypada dziś, i przypomina o zaległym terminie — plan nie przesuwa się sam.
+
 ## Jak działa progresja
 
 **Poziom bierze się z pomiaru, nie z tabelki.** Każde ćwiczenie zaczyna w fazie próbnej: jedna
-seria na najlżejszym kettlebellu, tyle powtórzeń, ile wychodzi z zapasem. Wynik powyżej zakresu
+seria na połowie domyślnego obciążenia, tyle powtórzeń, ile wychodzi z zapasem. Od dna listy próba
+nie startuje, bo przy 4 kg ogranicznikiem przestaje być siła, a zaczyna cierpliwość — wynik nic
+wtedy nie mierzy. Lista ciężarów zaczyna się za to od 4 i 6 kg po to, żeby początkujący, dla
+którego 8 kg to za dużo, miał dokąd zejść; wcześniej drabina nie miała stopni w dół. Duża nadwyżka
+przeskakuje więcej niż jeden rozmiar naraz. Wynik powyżej zakresu
 przenosi próbę na cięższy, poniżej — na lżejszy, a w zakresie staje się celem startowym. Drabina
 domyka się najwyżej po czterech próbach. Balistyka kalibruje się oceną wysiłku, nie serią na maksa,
 bo swing na wyczerpanie przestaje być ruchem o prędkość. Ćwiczenia z masą ciała przesuwają etap

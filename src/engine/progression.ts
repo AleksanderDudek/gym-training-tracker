@@ -9,6 +9,7 @@ import {
   nextWeight,
   plan,
   prevWeight,
+  shiftWeight,
   step,
 } from './plan';
 import type {
@@ -173,7 +174,11 @@ function placeFromTest(
   const usable = effort === 'max' ? Math.max(p.min, achieved - st) : achieved;
 
   if (usable > p.max && allowLevelMove) {
-    const nxt = nextWeight(state, id);
+    // Skala skoku bierze się z tego, jak bardzo wynik przebił zakres. Dwa razy ponad szczyt
+    // to dwa rozmiary w górę, nie jeden — ale nie więcej niż trzy, żeby pomyłka we wpisie
+    // nie wyrzuciła nikogo od razu na najcięższy kettlebell.
+    const sizes = Math.min(3, 1 + Math.floor((usable - p.max) / Math.max(1, p.max)));
+    const nxt = shiftWeight(state, id, sizes);
     if (p.weight !== null && nxt) {
       p.weight = nxt;
       return { retry: true, text: `${m.name}: ${usable}${u} to za lekko — próba jeszcze raz na ${nxt} kg.` };

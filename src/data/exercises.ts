@@ -244,6 +244,19 @@ export const BUILTIN: Workout[] = [
       { ex: 'calf1' },
     ],
   },
+  {
+    id: 'C',
+    name: 'Trening C — całe ciało',
+    items: [{ ex: 'tgu' }, { ex: 'complex' }, { ex: 'goblet' }, { ex: 'farmer' }, { ex: 'core' }],
+  },
+  {
+    // Dzień lekki. Nie „to samo, tylko słabiej” — po prostu bez ciężkiego zawiasu, przysiadu
+    // i wyciskania. Przy pięciu i więcej treningach w tygodniu to on decyduje, czy plan da się
+    // wytrzymać przez trzy miesiące.
+    id: 'D',
+    name: 'Trening D — lekki',
+    items: [{ ex: 'carry' }, { ex: 'core' }, { ex: 'calf' }, { ex: 'calf1' }, { ex: 'curl' }],
+  },
 ];
 
 export const ex = (id: ExerciseId): Exercise => {
