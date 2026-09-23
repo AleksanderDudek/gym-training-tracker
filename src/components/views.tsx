@@ -404,7 +404,7 @@ export function SettingsView({
       </div>
 
       <div className="wrap">
-        <SupportLine />
+        <SupportLine compact />
       </div>
 
       <div className="grp">

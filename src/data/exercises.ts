@@ -9,23 +9,35 @@ import type {
   Workout,
 } from '../types';
 
-/** Kolory z zawodowego standardu kettlebli — obciążenie rozpoznajesz zanim przeczytasz liczbę. */
+/**
+ * Kolory z zawodowego standardu kettlebli — obciążenie rozpoznajesz zanim przeczytasz liczbę.
+ * Dwa odcienie są o włos ciemniejsze od standardu (12 i 24 kg), bo na oryginalnych biała
+ * liczba na kafelku dawała 4,4:1; po przyciemnieniu trzyma 4,6:1. Reszta bez zmian —
+ * to kod funkcjonalny, nie paleta marki.
+ */
 export const KB_COLORS: Record<number, string> = {
   4: '#9AA3A6',
   6: '#D794B8',
   8: '#E8558F',
   10: '#7FA84A',
-  12: '#2C7CB8',
+  12: '#2B7AB5',
   14: '#6B4C93',
   16: '#E0B325',
   20: '#7A47A0',
-  24: '#3B8F4A',
+  24: '#378444',
   28: '#DB7420',
   32: '#BE3630',
   36: '#6B7075',
   40: '#B9BCB6',
 };
 export const kbColor = (w: number): string => KB_COLORS[w] ?? '#6B7075';
+
+/**
+ * Czy numer na kafelku ma być biały. Ciemne kolory kettlebli niosą biel powyżej 4,5:1,
+ * jasne — `--ink`. Bez tego podziału żółta szesnastka miała biały napis na 1,8:1.
+ */
+const DARK_KB = new Set([12, 14, 20, 24, 32, 36]);
+export const kbInkIsLight = (w: number): boolean => DARK_KB.has(w) || !(w in KB_COLORS);
 
 /**
  * Drabiny ciężaru na sprzęt. Sztanga zaczyna od pustego gryfu i idzie skokiem talerzy,

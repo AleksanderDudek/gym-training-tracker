@@ -1,32 +1,49 @@
 import { SUPPORT_URL } from '../engine/share';
-import { SUPPORT, daySeed, pick } from '../engine/quips';
+import { COACH_TIPS, daySeed, pick } from '../engine/quips';
+import { Gorilla } from './Gorilla';
 import { Icon } from './icons';
 
 /**
- * Wsparcie autora.
+ * Wsparcie autora — z Trenerem Siwym.
  *
- * Trzy zasady, na których to stoi: nigdy nie blokuje drogi (żadnego okna, które trzeba
- * zamknąć, żeby iść dalej), nigdy nie pojawia się w trakcie treningu i nigdy nie prosi
- * dwa razy na tym samym ekranie.
+ * Trzy zasady bez zmian: nigdy nie blokuje drogi (żadnego okna do zamknięcia), nigdy nie
+ * pojawia się w trakcie treningu i nigdy nie prosi dwa razy na tym samym ekranie.
  *
- * Wariant jest jeden — kolorowy baner — bo trzy warianty szarej karty znaczyły tyle, co
- * żaden: prośba schowana w tle jest prośbą, której nikt nie widzi. Miejsca są stałe:
- * ekran startowy, góra podsumowania sesji, okno zdobytej odznaki, Plan, Treningi, Profil,
- * Osiągnięcia, Atlas, Ustawienia i koniec wprowadzenia. Jeden na ekran, nigdy dwa.
+ * Zmienia się kolejność. Najpierw trener daje radę dnia — coś, co ma wartość samo w sobie
+ * i po co można wrócić jutro, bo rada będzie inna. Dopiero potem pada żart o espresso
+ * i przycisk. Nikt tu nie prosi z pozycji potrzebującego: stary srebrnogrzbiety częstuje
+ * wiedzą, a kawa jest uśmiechem w odpowiedzi. Cała powierzchnia jest jednym odnośnikiem,
+ * więc nie trzeba trafiać w przycisk.
  */
-export function SupportLine({ seed = daySeed() }: { seed?: number }) {
-  const line = pick(SUPPORT, seed);
+export function SupportLine({
+  seed = daySeed(),
+  compact = false,
+}: {
+  /** Ziarno rady — ten sam ekran ma pokazywać tę samą radę przez cały dzień. */
+  seed?: number;
+  /** Wersja w linii: głowa trenera, sam żart i przycisk. Do ustawień i wprowadzenia. */
+  compact?: boolean;
+}) {
+  const t = pick(COACH_TIPS, seed);
 
   return (
-    <div className="supportbanner">
-      <Icon name="coffee" size={26} />
-      <div>
-        <p className="supportbanner-line">{line}</p>
-        <a className="btn sm coffee" href={SUPPORT_URL} target="_blank" rel="noopener noreferrer">
-          Postaw kawę
-        </a>
-      </div>
-    </div>
+    <a className={`mbanner${compact ? ' compact' : ''}`} href={SUPPORT_URL} target="_blank" rel="noopener noreferrer">
+      <span className="mbanner-art" aria-hidden="true">
+        <Gorilla who="siwy" mood={t.mood} {...(compact ? { crop: 'face' as const, size: 56 } : { size: 150 })} />
+      </span>
+      <span className="mbanner-body">
+        {!compact && <span className="mbanner-eyebrow">Rada dnia · Trener Siwy</span>}
+        {!compact && <span className="mbanner-tip">{t.tip}</span>}
+        <span className="mbanner-line">{t.joke}</span>
+        {/*
+          Etykieta krótsza niż w systemie projektowym („Postaw Siwemu espresso”): przy
+          szerokości telefonu tamta łamała się na dwa wiersze i przycisk rósł do 64 px.
+          Nadpis nad radą i tak mówi, czyja to rada, więc imię w przycisku było powtórzeniem.
+        */}
+        <span className="btn sm coffee">Postaw espresso</span>
+        {!compact && <span className="mbanner-url">buycoffee.to/uriel · otwiera się w nowej karcie</span>}
+      </span>
+    </a>
   );
 }
 

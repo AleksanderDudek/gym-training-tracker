@@ -7,7 +7,7 @@ import { sessionTonnage } from '../engine/math';
 import { metrics } from '../engine/metrics';
 import { P, planLabel } from '../engine/plan';
 import { exercisePath, go, statsPath } from '../routing';
-import { Chip, Sparkline, Trendline } from './ui';
+import { Chip, EmptyState, Sparkline, Trendline } from './ui';
 import { LoadGauge } from './views';
 import { SupportLine } from './Support';
 import type { AppState, ExerciseId } from '../types';
@@ -98,10 +98,10 @@ export function ProfileView({ state }: { state: AppState }) {
 
       <div className="sect-label">Twoje ćwiczenia</div>
       {!done.length ? (
-        <div className="empty">
-          Tu pojawią się ćwiczenia, które naprawdę zrobiłeś — nie te, które planujesz.
-          Pierwszy zamknięty trening zakłada tę listę.
-        </div>
+        <EmptyState
+          title="Jeszcze nic tu nie ma"
+          text="Ta lista bierze się z historii, więc pierwszy zamknięty trening ją zakłada — pojawią się na niej ćwiczenia zrobione, nie zaplanowane."
+        />
       ) : (
         <>
           <p className="ach-note">
@@ -127,9 +127,11 @@ export function ProfileView({ state }: { state: AppState }) {
 
       <div className="sect-label">Historia treningów</div>
       {!history.length ? (
-        <div className="empty">
-          Historia pusta. Pierwszy zamknięty trening zajmie tu miejsce na zawsze.
-        </div>
+        <EmptyState
+          title="Historia pusta"
+          text="Pierwszy zamknięty trening zajmie tu miejsce na zawsze."
+          cast={{ who: 'gosia', mood: 'longing' }}
+        />
       ) : (
         <>
           {shownHistory.map((e, idx) => (
@@ -220,7 +222,11 @@ export function ExerciseStatsPage({ state, id }: { state: AppState; id: Exercise
         <button className="back" onClick={() => go('#/profil')}>
           ← Profil
         </button>
-        <div className="empty">Nie ma ćwiczenia o identyfikatorze „{id}”.</div>
+        <EmptyState
+          title="Nie ma takiego ćwiczenia"
+          text={`Identyfikator „${id}” do niczego nie pasuje.`}
+          cast={{ who: 'siwy', mood: 'wise' }}
+        />
       </div>
     );
   }
@@ -234,10 +240,10 @@ export function ExerciseStatsPage({ state, id }: { state: AppState; id: Exercise
           </button>
         </div>
         <div className="wrap">
-          <div className="empty">
-            „{m.name}” jeszcze nie wszedł do dziennika. Historia zaczyna się przy pierwszym
-            zamkniętym treningu z tym ruchem.
-          </div>
+          <EmptyState
+            title={`${m.name} — jeszcze bez historii`}
+            text="Historia zaczyna się przy pierwszym zamkniętym treningu z tym ruchem."
+          />
           <div className="actions">
             <button className="btn ghost wide" onClick={() => go(exercisePath(id))}>
               Zobacz technikę w atlasie

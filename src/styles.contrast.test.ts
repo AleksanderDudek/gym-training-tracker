@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { KB_COLORS, kbInkIsLight } from './data/exercises';
 // Arkusz wczytany jako tekst przez Vite (`?raw`), a nie przez `node:fs` — projekt nie
 // ciągnie typów node'a, a test i tak interesuje sama treść pliku.
 import css from './styles.css?raw';
@@ -59,10 +60,30 @@ describe('kontrast tokenów', () => {
     expect(ratio('#ffffff', token('c-orange-ink'))).toBeGreaterThanOrEqual(4.5);
   });
 
+  it('tekst drugiego planu i stany czytają się na każdym tle', () => {
+    // Te trzy tusze wygaszają treść: podpisy, „zrobione” i ostrzeżenia. Wygaszony
+    // nie znaczy nieczytelny — 4,5:1 obowiązuje je tak samo jak zwykły tekst.
+    for (const name of ['ink-soft', 'ok', 'warn']) {
+      for (const bd of BACKDROPS) {
+        expect(ratio(token(name), token(bd)), `${name} na --${bd}`).toBeGreaterThanOrEqual(4.5);
+      }
+    }
+  });
+
+  it('numer na kafelku ciężaru trzyma się koloru kettlebla', () => {
+    // Kolor kettlebla jest kodem zawodowym i zostaje, więc dopasowuje się napis:
+    // biel na ciemnych odważnikach, `--ink` na jasnych.
+    for (const [w, hex] of Object.entries(KB_COLORS)) {
+      const light = kbInkIsLight(Number(w));
+      const fg = light ? '#ffffff' : token('ink');
+      expect(ratio(fg, hex), `${w} kg (${light ? 'biały' : 'ink'} na ${hex})`).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
   it('tło baneru wsparcia nie udaje granicy', () => {
     // Wypełnienie jest za blisko teł strony, żeby cokolwiek wyznaczać — dlatego baner
     // ma ramkę. Test pilnuje, żeby nikt ramki nie skasował jako „zbędnej”.
     expect(ratio(token('c-orange-bg'), token('surface'))).toBeLessThan(3);
-    expect(css).toMatch(/\.supportbanner\{[^}]*border:1px solid var\(--c-orange-ink\)/);
+    expect(css).toMatch(/\.mbanner\{[^}]*border:1px solid var\(--c-orange-ink\)/);
   });
 });

@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { MOVES } from '../data/moves';
 import type { MoveName } from '../data/moves';
 import { sampleCycle, skeleton } from '../engine/pose';
+import type { TraineeMood } from './Gorilla';
 
 /**
  * Odznaki jako przedmioty, nie znaki typograficzne.
@@ -14,6 +15,20 @@ import { sampleCycle, skeleton } from '../engine/pose';
 
 /** Tworzywo odznaki. Zero znaczy „jeszcze nie zdobyta”. */
 export type Band = 0 | 1 | 2 | 3 | 4 | 5;
+
+/**
+ * Mina podopiecznego dla pasma: im wyżej, tym większa radość. Medal mówi, co zdobyte,
+ * postać mówi, jak to jest — ale nazwa pasma i tak stoi obok, bo obraz nie jest
+ * jedynym nośnikiem.
+ */
+export const BAND_MOOD: Record<Band, TraineeMood> = {
+  0: 'longing',
+  1: 'content',
+  2: 'proud',
+  3: 'happy',
+  4: 'amazed',
+  5: 'euphoric',
+};
 
 export const BAND_NAME: Record<Band, string> = {
   0: 'niezdobyta',

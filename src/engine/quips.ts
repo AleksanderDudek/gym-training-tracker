@@ -229,6 +229,80 @@ export const SUPPORT: readonly string[] = [
   'Nie zbieramy ciasteczek. Kawa do ciasteczka mile widziana.',
 ];
 
+/**
+ * Rada dnia od Trenera Siwego.
+ *
+ * Kolejność jest tu całym pomysłem: najpierw coś wartościowego za darmo, potem lekki
+ * żart o kawie. Nigdy prośba z pozycji kogoś, kto czegoś potrzebuje — trener częstuje
+ * wiedzą, a espresso jest uśmiechem w odpowiedzi. Rada zmienia się co dzień, więc jutro
+ * warto zajrzeć nawet bez kawy.
+ */
+export interface CoachTip {
+  tip: string;
+  joke: string;
+  /** Mina trenera do tej rady. */
+  mood: 'coffee' | 'wise' | 'approve' | 'calm' | 'wink';
+}
+
+export const COACH_TIPS: readonly CoachTip[] = [
+  {
+    tip: 'Dokładaj ciężar dopiero wtedy, gdy ostatnie powtórzenie idzie czysto.',
+    joke: 'Ta rada jest za darmo. Espresso do niej — w pełni dobrowolne.',
+    mood: 'wise',
+  },
+  {
+    tip: 'Sen to najtańszy suplement na siłowni.',
+    joke: 'Drugi w kolejce? Kawa, którą ktoś postawił autorowi.',
+    mood: 'coffee',
+  },
+  {
+    tip: 'Rozgrzewka to nie strata czasu. To odsetki od progresu.',
+    joke: 'Siwy przyjmuje wpłaty także w espresso.',
+    mood: 'wink',
+  },
+  {
+    tip: 'Opuszczony trening to nie porażka. Porażka to się poddać.',
+    joke: 'Kawa za to nigdy nie jest porażką. Siwy sprawdził.',
+    mood: 'calm',
+  },
+  { tip: 'Technika przed ciężarem. Zawsze.', joke: 'Autor też koduje technicznie. Najlepiej po espresso.', mood: 'approve' },
+  {
+    tip: 'Najlepszy plan to ten, który naprawdę robisz.',
+    joke: 'Najlepsza kawa to ta, którą ktoś postawił. Tak mówią stare goryle.',
+    mood: 'coffee',
+  },
+  {
+    tip: 'Srebrny grzbiet nie rośnie w tydzień. Progres też nie.',
+    joke: 'Siwy pracował na niego latami. I na kawie.',
+    mood: 'wink',
+  },
+  {
+    tip: 'Przerwa między seriami też jest częścią serii. Odmierz ją, nie zgaduj.',
+    joke: 'Espresso mieści się dokładnie w dwóch takich przerwach.',
+    mood: 'calm',
+  },
+  {
+    tip: 'Ciężar, którym nie panujesz w dole ruchu, nie jest jeszcze twój.',
+    joke: 'Filiżanka za to jest. Trener trzyma ją małym palcem w górze.',
+    mood: 'coffee',
+  },
+  {
+    tip: 'Zapisuj wynik od razu po serii. Pamięć dorabia sobie powtórzenia.',
+    joke: 'Kawa niczego nie dorabia. Po prostu jest.',
+    mood: 'wise',
+  },
+  {
+    tip: 'Dwa treningi w tygodniu przez rok biją sześć przez miesiąc.',
+    joke: 'Jedno espresso raz na jakiś czas też działa lepiej niż żadne.',
+    mood: 'approve',
+  },
+  {
+    tip: 'Ból stawu to nie zakwas. Ten pierwszy jest sygnałem, żeby przerwać.',
+    joke: 'A ten drugi — powodem, żeby usiąść z kawą.',
+    mood: 'wise',
+  },
+];
+
 /* ---------------- Blankiety ---------------- */
 
 /** Sentencja pod nagłówkiem dokumentu. Dyplomy mają łacinę, ten też — mniej więcej. */

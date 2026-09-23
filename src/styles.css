@@ -1,7 +1,12 @@
 :root{
     --bg:#D7D9D3; --surface:#FAFAF8; --surface-2:#EFF0EC;
-    --ink:#1E2320; --ink-soft:#5E655D; --line:#C2C5BD; --steel:#3C423D;
-    --ok:#2F6F4E; --warn:#9A5B12; --r:3px;
+    /*
+     * Trzy tusze przyciemnione względem pierwszej wersji, bo na najciemniejszym tle
+     * aplikacji nie dobijały do 4,5:1: `--ink-soft` miał 4,22, `--ok` 4,21, `--warn` 3,80.
+     * Teraz trzymają 4,61 / 4,63 / 4,61 na `--bg` i więcej na jaśniejszych tłach.
+     */
+    --ink:#1E2320; --ink-soft:#595F58; --line:#C2C5BD; --steel:#3C423D;
+    --ok:#2C6849; --warn:#885010; --r:3px;
 
     /*
      * `--line` rysuje podziały w treści i przy 1,2–1,7:1 jest dokładnie tym, czym ma być:
@@ -25,6 +30,15 @@
     --c-green:#788c5d;  --c-green-ink:#54633f;
     --c-dark:#141413;   --c-light:#faf9f5;
     --c-mid:#b0aea5;    --c-sand:#e8e6dc;
+
+    /*
+     * Obsada: goryle. Sierść, naga skóra i pysk to wyłącznie kolory ilustracji — nigdy
+     * tekst ani tło. Srebro jest zarezerwowane dla trenera: u goryla srebrny grzbiet
+     * przychodzi z wiekiem, więc to kolor doświadczenia, nie dekoracja.
+     */
+    --fur:#3f3c44;      --fur-line:#5f5b66;
+    --hide:#7f7589;     --muzzle:#a69bab;
+    --silver:#b9bcc2;   --silver-fur:#a4a7ae;
     --display:"Oswald","Arial Narrow",system-ui,sans-serif;
     --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   }
@@ -64,15 +78,23 @@
     cursor:pointer;font:inherit;color:inherit;-webkit-tap-highlight-color:transparent}
   .ex-head:active{background:var(--surface-2)}
   .ex-head:focus-visible{outline:2px solid var(--steel);outline-offset:-2px}
+  /*
+   * Kafelek niesie kolor zawodowego kettlebla, a ten bywa jasny (żółty 16, piaskowy 40)
+   * i ciemny (granatowy 12, bordowy 32). Biały numer na żółtym dawał 1,8:1, więc kolor
+   * napisu idzie za tłem: biel na ciemnych, `--ink` na jasnych. Cień pod literami
+   * zostaje tylko tam, gdzie pomaga — na ciemnych.
+   */
   .chip{height:46px;display:flex;flex-direction:column;align-items:center;justify-content:center;
-    font-family:var(--display);color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.35);position:relative}
+    font-family:var(--display);color:var(--ink);position:relative}
+  .chip.dark{color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.35)}
   .chip .n{font-size:21px;line-height:1}
   .chip .u{font-size:9px;letter-spacing:.12em;opacity:.9}
-  .chip.bw{background:var(--steel)}
+  .chip.bw{background:var(--steel);color:#fff}
   .chip.bw .n{font-size:12px;letter-spacing:.05em;text-align:center;padding:0 2px}
   .chip .split{position:absolute;inset:0;display:flex}
   .chip .split i{flex:1}
   .chip .lbl{position:relative;display:flex;flex-direction:column;align-items:center}
+  .chip .lbl.plate{background:var(--steel);border-radius:2px;padding:2px 5px;text-shadow:none}
   .ex-name{font-weight:600;font-size:16px;display:block}
   .ex-target{font-size:14px;color:var(--ink-soft)}
   .tick{width:26px;height:26px;flex:none;border:1.5px solid var(--line);border-radius:50%;
@@ -507,15 +529,8 @@
   @media (max-width:439px){.mqbox{grid-template-columns:1fr;justify-items:center;text-align:center}}
   .mq{display:block;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r)}
   .mq-ground{stroke:var(--line);stroke-width:2}
-  .mq-body path{fill:none;stroke:var(--steel);stroke-width:7;stroke-linecap:round;stroke-linejoin:round}
-  /* Głowa z konturem, nie plama: w środku musi się zmieścić mina. */
-  .mq-body circle.mq-head{fill:var(--surface-2);stroke:var(--steel);stroke-width:3.6}
-  .mq-face .mq-line{fill:none;stroke:var(--steel);stroke-width:1.5;stroke-linecap:round;
-    stroke-linejoin:round}
-  .mq-face .mq-ink{fill:var(--steel);stroke:none}
-  .mq-far path{fill:none;stroke:var(--steel);stroke-width:6;stroke-linecap:round;
-    stroke-linejoin:round;opacity:.34}
-  .mq-prop *{stroke:var(--c-orange);fill:none;stroke-linecap:round}
+  /* Sierść, twarz i sprzęt niosą kolory w atrybutach, bo rysunek składa się z warstw
+     (kontur pod spodem, wypełnienie na wierzchu) — jedna reguła CSS zjadłaby tę różnicę. */
   .mq-side{min-width:0}
   .mq-alt{margin:0 0 9px;font-size:13px;color:var(--ink-soft);max-width:34ch}
   .mq-scrub{display:block;margin-top:10px}
@@ -575,6 +590,96 @@
   p.trend.down{color:var(--c-orange-ink)}
   p.trend.flat{color:var(--ink-soft)}
 
+  /* ---------------- Baner wsparcia: rada dnia ---------------- */
+
+  /*
+   * Cała powierzchnia jest odnośnikiem, więc nie trzeba trafiać w przycisk. Granicę
+   * niesie ramka (`--c-orange-ink`, 4,7:1 na tle strony), bo samo ciepłe wypełnienie
+   * odcina się od tła ledwie 1,2:1. Strzałka przy etykiecie sunie na najechaniu —
+   * tylko tam, gdzie ruch jest dozwolony.
+   */
+  .mbanner{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:end;
+    background:var(--c-orange-bg);border:1px solid var(--c-orange-ink);
+    border-left:5px solid var(--c-orange);border-radius:var(--r);
+    padding:12px 14px 0 6px;margin:14px 0;text-decoration:none;color:var(--ink);
+    overflow:hidden;-webkit-tap-highlight-color:transparent}
+  .mbanner-art{align-self:end;margin-bottom:-2px}
+  .mbanner-body{display:grid;gap:9px;justify-items:start;padding-bottom:12px;align-self:center}
+  .mbanner-eyebrow{font-family:var(--display);font-size:11px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--c-orange-ink)}
+  .mbanner-tip{font-family:var(--display);font-weight:600;font-size:18px;line-height:1.2;color:var(--ink)}
+  .mbanner-line{font-size:13.5px;line-height:1.45;color:var(--ink)}
+  .mbanner-url{font-size:11.5px;color:var(--ink-soft)}
+  /* Przycisk jest tylko obrazkiem przycisku: klik obsługuje odnośnik dookoła. */
+  .mbanner .btn{pointer-events:none}
+  .mbanner .btn::after{content:'\2192';display:inline-block;margin-left:8px;
+    transition:transform .15s ease-out}
+  @media (prefers-reduced-motion:no-preference){.mbanner:hover .btn::after{transform:translateX(3px)}}
+  .mbanner:hover{border-color:var(--ink)}
+  .mbanner:hover .btn{background:var(--ink);border-color:var(--ink)}
+  .mbanner:active .btn{transform:translateY(1px)}
+  .mbanner:focus-visible{outline:2px solid var(--steel);outline-offset:2px}
+  /* Na wąskim telefonie trener schodzi do dolnej granicy systemu (110 px popiersia),
+     żeby kolumna tekstu nie zeszła poniżej połowy baneru. */
+  @media (max-width:430px){
+    .mbanner{gap:8px}
+    .mbanner-art svg{width:118px;height:auto}
+  }
+  .mbanner.compact{align-items:center;padding:8px 12px 8px 8px}
+  .mbanner.compact .mbanner-art{align-self:center;margin:0}
+  .mbanner.compact .mbanner-body{padding:0;gap:6px}
+
+  /* ---------------- Obsada: Gustaw, Gosia, Trener Siwy ---------------- */
+
+  /*
+   * Postacie są reakcją, nigdy informacją: obok każdej stoi ten sam stan napisany
+   * słowem. Ich tłem jest `--surface`, `--surface-2` albo ciepłe tło baneru — nigdy
+   * stal, na której ciemna sierść znika.
+   */
+  .gorilla{display:block;flex:none;overflow:hidden}
+  .cast-face{display:block;flex:none;line-height:0}
+
+  .banner.with-cast{display:grid;grid-template-columns:44px 1fr;gap:12px;align-items:start}
+  .toast.with-cast{display:flex;gap:10px;align-items:center;padding:8px 14px 8px 8px}
+  /* Okrągłe okno w kolorze karty: na stalowym pasku sama sierść byłaby plamą. */
+  .toast.with-cast .cast-face{background:var(--surface);border-radius:50%;padding:2px}
+  .mbox.with-cast{position:relative;padding-top:18px}
+  .mbox.with-cast .cast-bust{display:block;align-self:center;margin:-4px 0 6px;line-height:0}
+  .mbox.with-cast h3{text-align:center}
+  .empty.with-cast{display:grid;justify-items:center;gap:6px;padding:20px 16px 24px}
+  .empty-title{font-family:var(--display);font-weight:600;font-size:19px;color:var(--ink)}
+  .empty-text{font-size:14px;color:var(--ink-soft);max-width:38ch}
+  .empty-action{margin-top:8px}
+  .timer.with-cast{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}
+  .timer.with-cast .cast-face{align-self:start}
+
+  /* ---------------- Kontrast stanów ---------------- */
+
+  /*
+   * Wygaszenie kryciem wygląda jak wyłączony ekran, a przy okazji zabiera tekstowi
+   * kontrast: pominięte ćwiczenie schodziło do 2,3:1, opuszczony termin do 2,9:1.
+   * Krycie zostaje tam, gdzie tłumi rysunek (kafelek, medal), a tekst wygasza się
+   * własnym kolorem — `--ink-soft` trzyma 5,7:1 i dalej daje się przeczytać.
+   */
+  .ex.skipped{opacity:1}
+  .ex.skipped .chip{opacity:.5}
+  .ex.skipped .ex-name,.ex.skipped .ex-target{color:var(--ink-soft)}
+  .ex.skipped .ex-name{text-decoration:line-through}
+  .pday.missed{opacity:1}
+  .pday.missed .pd-date,.pday.missed .pd-work{color:var(--ink-soft)}
+  .ach{opacity:1}
+  .ach:not(.on) .ach-head b{color:var(--ink-soft)}
+  ol.stages li.past{opacity:1}
+
+  /* Znacznik niesie informację, więc obrys idzie na `--edge` (3:1), nie na hairline. */
+  .tick{border-color:var(--edge)}
+  .pd-tick::before{border-color:var(--edge)}
+
+  /* Paski postępu pełną mocą: przygaszony zielony schodził poniżej progu dla grafiki. */
+  .rank-bar i,.near-bar i,.timer-bar i,.ach.full .ach-bar i{opacity:1}
+  .timer-bar{background:var(--surface)}
+  .ach-bar i{background:var(--edge);opacity:1}
+
   /* ---------------- Puenty ---------------- */
 
   /* Humor dostaje własny rejestr typograficzny, żeby nie mylił się z informacją. */
@@ -594,21 +699,6 @@
   .headtools .gearbtn{margin-right:0}
   .coffeebtn:active{background:var(--surface-2)}
 
-  /*
-   * Baner wsparcia. Ciepłe tło odcina się od teł aplikacji ledwie 1,2:1, więc granicę
-   * niesie ramka, nie wypełnienie: kreska w `--c-orange-ink` (4,7:1 na tle strony)
-   * i grubszy pasek akcentu z lewej. Przycisk jest pełnym kolorem, a nie obrysem —
-   * to jedyne miejsce w aplikacji, gdzie wsparcie ma wyglądać inaczej niż reszta.
-   */
-  .intro-box .supportbanner{width:100%;box-sizing:border-box}
-  .supportbanner{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start;
-    background:var(--c-orange-bg);border:1px solid var(--c-orange-ink);
-    border-left:5px solid var(--c-orange);border-radius:var(--r);
-    padding:13px 14px;margin:14px 0;text-align:left}
-  /* Kubek równa się z pierwszym wierszem tekstu, nie ze środkiem bloku. */
-  .supportbanner > .ico{color:var(--c-orange-ink);margin-top:1px}
-  .supportbanner-line{margin:0 0 10px;font-size:13.5px;color:var(--ink);line-height:1.45}
-  /* Biel na przygaszonym pomarańczu: 6,67:1. Czysty akcent dałby 2,9:1 i nieczytelny napis. */
   .btn.coffee{background:var(--c-orange-ink);border-color:var(--c-orange-ink);color:#fff}
   .coffeebtn{color:var(--c-orange-ink)}
 

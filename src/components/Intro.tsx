@@ -65,7 +65,7 @@ export function Intro({ onDone }: { onDone: () => void }) {
         <h2 className="intro-title">{step.title}</h2>
         <p className="intro-body">{step.body}</p>
 
-        {last && <SupportLine seed={STEPS.length} />}
+        {last && <SupportLine seed={STEPS.length} compact />}
 
         <div className="intro-dots" aria-hidden="true">
           {STEPS.map((s, n) => (

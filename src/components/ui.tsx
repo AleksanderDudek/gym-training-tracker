@@ -1,7 +1,18 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { STAGES, ex, kbColor } from '../data/exercises';
+import { STAGES, ex, kbColor, kbInkIsLight } from '../data/exercises';
 import { P } from '../engine/plan';
+import { Gorilla } from './Gorilla';
+import type { CoachMood, TraineeMood, Who } from './Gorilla';
 import type { AppState, ExerciseId, HistoryPoint, Notice } from '../types';
+
+/**
+ * Kto reaguje na dany komunikat. Postać nigdy nie niesie informacji sama — obok niej
+ * stoi to samo słowem, więc czytnik ekranu i osoba nierozróżniająca min dostają tyle samo.
+ */
+export interface Cast {
+  who: Who;
+  mood: TraineeMood | CoachMood;
+}
 
 /* ---------------- Modal ---------------- */
 
@@ -12,6 +23,8 @@ export interface ModalRequest {
   cancel?: string;
   /** Wariant okna — np. `celebrate-box` wyśrodkowuje całość na moment zdobycia odznaki. */
   tone?: string;
+  /** Postać nad tytułem. Brak oznacza okno bez obsady — tak jak przy zwykłym pytaniu. */
+  cast?: Cast;
   resolve: (v: boolean) => void;
 }
 
@@ -19,7 +32,12 @@ export function Modal({ req }: { req: ModalRequest | null }) {
   if (!req) return null;
   return (
     <div id="modal" role="dialog" aria-modal="true">
-      <div className={`mbox${req.tone ? ` ${req.tone}` : ''}`}>
+      <div className={`mbox${req.tone ? ` ${req.tone}` : ''}${req.cast ? ' with-cast' : ''}`}>
+        {req.cast && (
+          <span className="cast-bust" aria-hidden="true">
+            <Gorilla who={req.cast.who} mood={req.cast.mood} size={120} />
+          </span>
+        )}
         <h3>{req.title}</h3>
         <div className="mtext">{req.body}</div>
         <div className="btnrow">
@@ -39,23 +57,76 @@ export function Modal({ req }: { req: ModalRequest | null }) {
 
 /* ---------------- Toast ---------------- */
 
-export function Toast({ msg, onDone }: { msg: string | null; onDone: () => void }) {
+export function Toast({
+  msg,
+  onDone,
+  cast = { who: 'gustaw', mood: 'content' },
+}: {
+  msg: string | null;
+  onDone: () => void;
+  cast?: Cast;
+}) {
   useEffect(() => {
     if (!msg) return;
     const t = setTimeout(onDone, 3200);
     return () => clearTimeout(t);
   }, [msg, onDone]);
   if (!msg) return null;
-  return <div className="toast">{msg}</div>;
+  return (
+    <div className="toast with-cast">
+      <span className="cast-face" aria-hidden="true">
+        <Gorilla who={cast.who} mood={cast.mood} crop="face" size={30} />
+      </span>
+      <span>{msg}</span>
+    </div>
+  );
 }
 
 /* ---------------- Banner ---------------- */
 
-export function Banner({ notice }: { notice: Notice }) {
+/**
+ * Ostrzeżenie mówi trener — spokojnie, nigdy z pretensją. Dobra wiadomość to radość
+ * podopiecznego. Tytuł i tak nazywa rzecz po imieniu, więc mina jest dodatkiem.
+ */
+export function Banner({ notice, who = 'gustaw' }: { notice: Notice; who?: 'gustaw' | 'gosia' }) {
+  const cast: Cast =
+    notice.level === 'good' ? { who, mood: 'happy' } : { who: 'siwy', mood: 'wise' };
   return (
-    <div className={`banner${notice.level === 'good' ? ' good' : ''}`}>
-      <h4>{notice.title}</h4>
-      <p>{notice.text}</p>
+    <div className={`banner with-cast${notice.level === 'good' ? ' good' : ''}`}>
+      <span className="cast-face" aria-hidden="true">
+        <Gorilla who={cast.who} mood={cast.mood} crop="face" size={44} />
+      </span>
+      <div>
+        <h4>{notice.title}</h4>
+        <p>{notice.text}</p>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- Pusty stan ---------------- */
+
+/**
+ * Pusta lista z postacią. Zaprasza, nigdy nie wyrzuca: jedno zdanie i jedno wyjście.
+ * Domyślnie tęskni podopieczny; pusty plan wita spokojny trener.
+ */
+export function EmptyState({
+  title,
+  text,
+  action,
+  cast = { who: 'gustaw', mood: 'longing' },
+}: {
+  title: string;
+  text?: ReactNode;
+  action?: ReactNode;
+  cast?: Cast;
+}) {
+  return (
+    <div className="empty with-cast">
+      <Gorilla who={cast.who} mood={cast.mood} size={132} />
+      <b className="empty-title">{title}</b>
+      {text && <span className="empty-text">{text}</span>}
+      {action && <span className="empty-action">{action}</span>}
     </div>
   );
 }
@@ -89,13 +160,15 @@ export function Chip({ state, id }: { state: AppState; id: ExerciseId }) {
     );
   }
   if (p.trans) {
+    // Przejście dzieli kafelek na dwa kolory, więc jeden kolor napisu nie zadziała na obu.
+    // Numer idzie wtedy na własnej, stalowej etykiecie — czytelnej na każdym tle.
     return (
-      <div className="chip" style={{ background: kbColor(p.weight) }}>
+      <div className="chip dark" style={{ background: kbColor(p.weight) }}>
         <span className="split">
           <i />
           <i style={{ background: kbColor(p.trans.to) }} />
         </span>
-        <span className="lbl">
+        <span className="lbl plate">
           <span className="n">
             {p.weight}/{p.trans.to}
           </span>
@@ -105,7 +178,10 @@ export function Chip({ state, id }: { state: AppState; id: ExerciseId }) {
     );
   }
   return (
-    <div className="chip" style={{ background: kbColor(p.weight) }}>
+    <div
+      className={`chip${kbInkIsLight(p.weight) ? ' dark' : ''}`}
+      style={{ background: kbColor(p.weight) }}
+    >
       <span className="n">{p.weight}</span>
       <span className="u">KG</span>
     </div>
@@ -219,6 +295,7 @@ export function useModal() {
     ok: string,
     cancel?: string,
     tone?: string,
+    cast?: Cast,
   ): Promise<boolean> =>
     new Promise((resolve) => {
       setReq({
@@ -227,6 +304,7 @@ export function useModal() {
         ok,
         cancel,
         tone,
+        cast,
         resolve: (v) => {
           setReq(null);
           resolve(v);
@@ -236,8 +314,9 @@ export function useModal() {
 
   return {
     req,
-    say: (title: string, body: ReactNode, opts?: { ok?: string; tone?: string }) =>
-      open(title, body, opts?.ok ?? 'OK', undefined, opts?.tone),
-    ask: (title: string, body: ReactNode, ok = 'Tak') => open(title, body, ok, 'Anuluj'),
+    say: (title: string, body: ReactNode, opts?: { ok?: string; tone?: string; cast?: Cast }) =>
+      open(title, body, opts?.ok ?? 'OK', undefined, opts?.tone, opts?.cast),
+    ask: (title: string, body: ReactNode, ok = 'Tak', cast?: Cast) =>
+      open(title, body, ok, 'Anuluj', undefined, cast),
   };
 }

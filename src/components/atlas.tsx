@@ -7,7 +7,7 @@ import { AnimatedMannequin } from './Mannequin';
 import { MODE_NAMES } from '../engine/hints';
 import { P, exercisesByGroup, levelLabel, planLabel } from '../engine/plan';
 import { exercisePath, go } from '../routing';
-import { Chip } from './ui';
+import { Chip, EmptyState } from './ui';
 import { VideoEmbed } from './VideoEmbed';
 import { SupportLine } from './Support';
 import type { AppState, ExerciseId, Gear } from '../types';
@@ -94,7 +94,11 @@ export function ExercisePage({ state, id }: { state: AppState; id: ExerciseId })
         <button className="back" onClick={() => go('#/cwiczenia')}>
           ← Atlas ćwiczeń
         </button>
-        <div className="empty">Nie ma ćwiczenia o identyfikatorze „{id}”.</div>
+        <EmptyState
+          title="Nie ma takiego ćwiczenia"
+          text={`Identyfikator „${id}” do niczego nie pasuje. Wróć do spisu i wybierz ruch z listy.`}
+          cast={{ who: 'siwy', mood: 'wise' }}
+        />
       </div>
     );
   }

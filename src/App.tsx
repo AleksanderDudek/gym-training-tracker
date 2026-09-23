@@ -28,7 +28,7 @@ import { SupportButton, SupportLine } from './components/Support';
 import { metrics } from './engine/metrics';
 import { LOADING, SAVED, daySeed, pick } from './engine/quips';
 import { progressSubject, punchline } from './engine/share';
-import { bandFor, BAND_NAME } from './components/BadgeArt';
+import { bandFor, BAND_MOOD, BAND_NAME } from './components/BadgeArt';
 import type {
   ActivePlan,
   AppState,
@@ -207,6 +207,7 @@ export default function App() {
       'Porzucić trening?',
       <p>Wpisane wyniki przepadną, a poziomy zostaną bez zmian.</p>,
       'Porzuć',
+      { who: 'siwy', mood: 'wise' },
     );
     if (!ok) return;
     const next = clone(state);
@@ -225,6 +226,7 @@ export default function App() {
         'Zakończyć bez zapisu?',
         <p>Żadne ćwiczenie nie ma wyniku, więc nie ma czego przeliczyć. Trening nie trafi do historii.</p>,
         'Zakończ',
+        { who: 'siwy', mood: 'calm' },
       );
       if (!ok) return;
       const next = clone(state);
@@ -265,6 +267,7 @@ export default function App() {
         )}
       </>,
       'Zamknij i przelicz',
+      { who: 'gustaw', mood: 'tired' },
     );
     if (!ok) return;
 
@@ -371,10 +374,10 @@ export default function App() {
         <Celebrate hits={hits} />
         <div className="after">
           <ShareButton subject={subject} medalRef={medalBox} label="Udostępnij odznakę" />
-          <SupportLine seed={top.tier + m.workouts} />
+          <SupportLine seed={top.tier + m.workouts} compact />
         </div>
       </div>,
-      { ok: 'Nieźle', tone: 'celebrate-box' },
+      { ok: 'Nieźle', tone: 'celebrate-box', cast: { who: 'gustaw', mood: BAND_MOOD[bandFor(top.tier, top.ach.tiers.length)] } },
     );
   };
 
@@ -605,6 +608,7 @@ export default function App() {
       'Usunąć wszystkie dane?',
       <p>Historia, poziomy ćwiczeń i własne treningi znikną bezpowrotnie.</p>,
       'Usuń wszystko',
+      { who: 'siwy', mood: 'wise' },
     );
     if (!ok) return;
     await store.clear();

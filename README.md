@@ -25,6 +25,37 @@ npm test           # 236 testów silnika, biblioteki, odznak, ruchu, mimiki i tr
 Build jest w pełni statyczny (`base: './'`), więc `dist/` można wrzucić na dowolny hosting plików
 albo otworzyć lokalnie.
 
+## Obsada: goryle
+
+Aplikacja ma trzy postacie i to one niosą jej charakter. Goryl rośnie siłą przez całe życie,
+a srebrny grzbiet dostaje dopiero z wiekiem — trudno o lepszy obraz progresji.
+
+- **Gustaw** — podopieczny, młody samiec: mały grzebień, pomarańczowa opaska, błękitna koszulka.
+- **Gosia** — podopieczna: okrągła głowa bez grzebienia, kitka z pomarańczową gumką, zielony top.
+  Rysowana w 92% wielkości Gustawa, bo samice goryli są mniejsze.
+- **Trener Siwy** — stary srebrnogrzbiety: duży grzebień, srebrna czapa i barki, okulary nisko
+  na nosie, gwizdek na pomarańczowej smyczy i stalowa kamizelka TRENER.
+
+Budowa jest anatomiczna, nie kreskówkowa: masywne barki i kaptury, prawie brak szyi, mała
+głowa osadzona nisko, przedramię niemal tak grube jak ramię, naga twarz w kształcie serca pod
+łukiem brwiowym, wysunięty pysk z płaskim nosem. Kreska jest komiksowa: jeden kontur, płaskie
+wypełnienia, emocja w brwiach, oczach i ustach.
+
+**Kolory pochodzą od postaci, nie odwrotnie.** Stal to kamizelka trenera — i dlatego stal jest
+kolorem akcji. Pomarańcz to opaski i smycz, więc pomarańcz oznacza aktywną zakładkę i wsparcie.
+Błękit to koszulka Gustawa, zieleń top Gosi, srebro grzbiet Siwego. Paleta interfejsu i paleta
+obsady to jedna lista, nie dwie.
+
+**Zasady, których pilnuje test.** Postać reaguje, nigdy nie informuje: każdy stan — pasmo
+odznaki, liczba, nazwa — stoi obok niej napisany słowem, więc nic nie ginie przy wyłączonych
+obrazkach ani przy czytniku ekranu. Radość rośnie razem z pasmem (`BAND_MOOD`: 0 tęsknota →
+5 euforia), a nie skacze. Siwy tylko doradza i wspiera — nigdy nie beszta i o nic nie błaga.
+Jedna postać na ekran i nigdy w trakcie serii.
+
+Kto gdzie stoi: ostrzeżenie mówi Siwy (spokojna rada), dobra wiadomość to radość podopiecznego,
+pusta lista to tęsknota, stoper ma kibica, który męczy się w ostatniej jednej trzeciej podchodu,
+a okno kasowania danych — trenera, bo to on pilnuje, żeby nikt nie skasował sobie roku pracy.
+
 ## Ton
 
 Aplikacja żartuje, ale nie wszędzie. `engine/quips.ts` pilnuje trzech zasad:
@@ -129,15 +160,21 @@ był na kartce.
 stałych miejsc poza nim: ekran startowy, góra podsumowania po zamkniętej sesji, okno zdobytej
 odznaki, koniec wprowadzenia oraz dół zakładek Plan, Treningi, Profil, Osiągnięcia, Atlas
 i Ustawienia. Zasady bez zmian: nigdy nie blokuje drogi, nigdy nie pojawia się w trakcie
-treningu, nigdy nie prosi dwa razy na tym samym ekranie. Zdań jest czternaście i rotują
-(„Ta aplikacja nie ma inwestorów. Ma ekspres i dobre chęci."), więc ten sam komunikat nie
-wisi w kółko. Żart idzie z aplikacji i z autora, nigdy z czytającego — nie ma tu liczników
-zbiórki, pasków „do celu" ani zdań o tym, jak bardzo autor potrzebuje.
+treningu, nigdy nie prosi dwa razy na tym samym ekranie. Rad jest dwanaście i rotują dzień
+po dniu, więc ten sam komunikat nie wisi w kółko. Żart idzie z aplikacji i z autora, nigdy
+z czytającego — nie ma tu liczników zbiórki, pasków „do celu" ani zdań o tym, jak bardzo
+autor potrzebuje.
 
-**Wariant jest jeden: kolorowy baner.** Wcześniej były trzy — szara karta, szary blok i zdanie
-z odnośnikiem — co w praktyce znaczyło tyle, co żaden: prośba schowana w tle jest prośbą,
-której nikt nie widzi. Teraz wszędzie stoi to samo: ciepłe tło, pomarańczowy pasek z lewej,
-pełnokolorowy przycisk i jedno zdanie z czternastu.
+**Baner daje, zanim poprosi.** Prowadzi rada dnia od Trenera Siwego — konkretna wskazówka
+treningowa, która ma wartość sama w sobie i zmienia się co dzień, więc jutro jest po co wrócić.
+Dopiero pod nią stoi żart o espresso i przycisk. Kolejność jest tu całym pomysłem: stary
+srebrnogrzbiety częstuje wiedzą, a kawa jest uśmiechem w odpowiedzi — nie prośbą kogoś, kto
+czegoś potrzebuje. Test pilnuje, żeby rada nigdy nie mówiła o kawie, a żart zawsze.
+
+Cała powierzchnia baneru jest jednym odnośnikiem, więc nie trzeba trafiać w przycisk.
+Wersja pełna (z popiersiem trenera) stoi na ekranie startowym, w podsumowaniu sesji i na
+zakładkach; wersja w linii (sama głowa) w Ustawieniach, na końcu wprowadzenia i w oknie
+zdobytej odznaki, gdzie scena ma już swoją postać.
 
 **Miejsce w układzie zależy od tego, po co ktoś przyszedł.** Na ekranie startowym baner stoi
 **pod** oboma wyjściami do treningu, bo kto przyszedł ćwiczyć, ten najpierw widzi przycisk
@@ -251,7 +288,9 @@ stoją na nich, więc test pilnuje, żeby żaden nie zniknął przy kolejnym roz
 ## Tor ruchu — manekin zamiast nagrań
 
 Każde ćwiczenie z przypisanym wzorcem ruchu ma w atlasie animowaną sylwetkę rysowaną
-w przeglądarce z kątów stawów. **Nic tu nie pochodzi z cudzych nagrań,
+w przeglądarce z kątów stawów — ruch wykonuje Gustaw albo Gosia. Szkielet jest ten sam, co
+w wersji patyczkowej (te same osiemnaście ruchów, te same klatki, ta sama mimika), zmienia się
+kreska: sierść z konturem, tors w kolorze koszulki postaci i profil goryla. **Nic tu nie pochodzi z cudzych nagrań,
 bibliotek ruchu ani sklepów z modelami** — nie ma czyjegoś prawa autorskiego do pilnowania,
 licencji do odnawiania, reklam przed odtworzeniem ani zapytań na zewnątrz. Sam manekin
 nie kosztuje ani jednego zapytania — rysuje się z kilku kilobajtów liczb zapisanych
@@ -335,7 +374,7 @@ src/
     metrics.test.ts         40 testów warstwy liczb
   storage/storage.ts        zapis z kolejkowaniem, dwa środowiska
   components/
-    ui.tsx                  modal, toast, kafelek ciężaru, przełącznik, dwa wykresy
+    ui.tsx                  modal, toast, baner, pusty stan, kafelek, przełącznik, dwa wykresy
     ExerciseCard.tsx        karta ćwiczenia z formularzem serii
     views.tsx               wybór treningu, sesja, obciążenie, kreator, ustawienia
     atlas.tsx               spis ćwiczeń i podstrona pojedynczego ćwiczenia
@@ -346,16 +385,18 @@ src/
     BadgeArt.tsx            medale odznak: tworzywa, piktogramy, pasma progów
     Celebrate.tsx           moment zdobycia — medal, promienie, konfetti
     icons.tsx               ikony nawigacji
-    Mannequin.tsx           sylwetka ćwiczeń i jej zegar
+    Mannequin.tsx           postać wykonująca ruch i jej zegar
     Intro.tsx               opcjonalne wprowadzenie, cztery ekrany
     Share.tsx               przycisk udostępniania i ścieżka zapasowa
-    Support.tsx             wsparcie autora: jeden baner, czternaście zdań
+    Support.tsx             baner wsparcia: rada dnia Trenera Siwego i espresso
+    Gorilla.tsx             obsada: Gustaw, Gosia i Trener Siwy, siedemnaście min
+    cast.test.ts            8 testów obsady, pasm i rady dnia
     Achievements.tsx        zakładka osiągnięć: dorobek w liczbach i odznaki z progami
     VideoEmbed.tsx          odtwarzacz YouTube ładowany dopiero po kliknięciu
   App.tsx                   spina stan i widoki
   main.tsx                  punkt wejścia
   styles.css                arkusz stylów
-  styles.contrast.test.ts   5 testów kontrastu tokenów, liczonych wprost z arkusza
+  styles.contrast.test.ts   7 testów kontrastu tokenów, liczonych wprost z arkusza
 ```
 
 Silnik jest w całości oddzielony od interfejsu. `engine/` nie importuje niczego z Reacta, funkcje
@@ -524,9 +565,25 @@ filtry sprzętu i pola formularzy chodzą więc na `--edge` (4,10 / 3,74 / 3,01 
 a nierozpoznawalny przycisk przestał być nierozpoznawalny. Zaciemnienie samego `--line`
 zamieniłoby spokojną kartę w kratkę, więc tokeny są dwa.
 
+**Wygaszenie nie znaczy nieczytelność.** Pominięte ćwiczenie, opuszczony termin i niezdobyta
+odznaka były wcześniej przygaszane kryciem całego wiersza, co spychało tekst do 2,3–3,8:1.
+Krycie zostaje tam, gdzie tłumi rysunek (kafelek ciężaru, medal), a tekst wygasza się własnym
+kolorem — `--ink-soft` trzyma 5,7:1, a nazwa pominiętego ćwiczenia dostaje jeszcze przekreślenie,
+bo stan nie może zależeć od samego koloru. Trzy tusze stanów (`--ink-soft`, `--ok`, `--warn`)
+zostały przyciemnione, bo na najciemniejszym tle miały 4,22 / 4,21 / 3,80:1 — teraz 4,61 / 4,63
+/ 4,61. Znaczniki, które niosą informację (kółko odhaczenia, kropka terminu), przeszły z hairline
+`--line` na `--edge`.
+
+**Numer na kafelku ciężaru chodzi za kolorem kettlebla.** Kolory są kodem zawodowym i zostają —
+ale biała liczba na żółtej szesnastce dawała 1,8:1. Teraz biel wchodzi tylko na ciemne odważniki
+(12, 14, 20, 24, 32, 36 kg), reszta dostaje `--ink`, a dwa odcienie (12 i 24) są o włos ciemniejsze
+niż standard, żeby biel trzymała 4,6:1. Kafelek w trakcie przejścia ma dwa kolory naraz, więc
+numer siedzi tam na własnej, stalowej etykiecie.
+
 **Progi pilnuje test, nie pamięć.** `styles.contrast.test.ts` czyta arkusz, wyciąga z niego
 tokeny i liczy kontrast po WCAG: wersje `ink` powyżej 4,5:1 na każdym tle, `--edge` powyżej
-3:1, biel na przycisku kawy powyżej 4,5:1. Sprawdza też rzecz odwrotną — że czyste akcenty
+3:1, biel na przycisku kawy powyżej 4,5:1, tusze stanów powyżej 4,5:1 i każdy kafelek ciężaru
+z właściwym kolorem liczby. Sprawdza też rzecz odwrotną — że czyste akcenty
 nadal **nie** nadają się na tekst, bo gdyby kiedyś przeskoczyły próg, podział na dwa tokeny
 byłby już tylko zabobonem.
 
@@ -655,6 +712,26 @@ krytykowany, więc traktowany jest jako sygnał ostrzegawczy, nie wyrocznia.
 21 do 42 cofają się cele powtórzeń. Powyżej sześciu tygodni maksima schodzą o 10%, a ciężar spada
 tylko tam, gdzie po korekcie nie da się utrzymać dolnej granicy zakresu. Progi są łagodne, bo
 badania nad roztrenowaniem pokazują, że nawet po 12 tygodniach przerwy siła spada o 5–15%.
+
+## System projektowy
+
+Paleta, obsada i reguły kontrastu mają jedno źródło poza kodem: system projektowy GYM TRACKER
+(artefakt „Design System”), zbudowany z tego repozytorium i rozwinięty o rzeczy, których w nim
+nie było. Ten kierunek — z systemu do kodu — dotyczy trzech rzeczy: poprawek kontrastu,
+obsady goryli i baneru z radą dnia. Reszta poszła w drugą stronę: tokeny, komponenty i teksty
+system wziął stąd.
+
+Czego z systemu **nie** ma w aplikacji i dlaczego:
+
+- **ShareCard** — system rysuje kwadratową grafikę w DOM-ie. Aplikacja ma własne blankiety
+  („ŚWIADECTWO POCIĘŻAROWE”, „LEGITYMACJA SIŁOWA”) rysowane na płótnie 1080 × 1080, bo tylko
+  z płótna da się zrobić plik do udostępnienia. Dwie implementacje tego samego rozjechałyby się
+  po pierwszej zmianie, więc zostaje ta, która działa w arkuszu udostępniania.
+- **AchievementCard** jako osobna karta — moment zdobycia ma w aplikacji własną scenę
+  (medal wjeżdża z przeskalowaniem, promienie, konfetti). Postać z pasmem doszła do tej sceny
+  zamiast ją zastępować.
+- **Popiersia w plikach SVG i PNG** — obsada jest komponentem, a nie zestawem obrazków, więc
+  nie ma czego kopiować do paczki. Grafiki poza aplikacją bierze się z systemu.
 
 ## Publikacja
 
