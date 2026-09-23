@@ -18,6 +18,7 @@ import { POINTS, pointsToday } from '../engine/score';
 import { dayKey, daysBetween, planWeekdays } from '../engine/schedule';
 import { snapshot } from '../engine/snapshot';
 import type { Snapshot } from '../engine/snapshot';
+import { SupportLine } from './Support';
 import { Segmented } from './ui';
 import type {
   AppState,
@@ -521,6 +522,7 @@ function ActivePlanView({
             Zakończ plan
           </button>
         </div>
+        <SupportLine seed={state.log.length + 2} />
       </div>
     </>
   );

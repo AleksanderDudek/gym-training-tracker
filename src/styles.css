@@ -533,9 +533,6 @@
   .share-more{display:flex;flex-wrap:wrap;gap:7px;justify-content:center}
   .share-more .btn{text-decoration:none;display:inline-flex;align-items:center}
 
-  .support{margin:12px 0 0;font-size:12.5px;color:var(--ink-soft);text-align:center;line-height:1.5}
-  .support a{color:var(--steel);font-weight:600}
-
   /* ---------------- Wprowadzenie ---------------- */
 
   .intro{position:fixed;inset:0;z-index:60;background:var(--bg);display:grid;place-items:center;
@@ -553,13 +550,30 @@
   .intro-title{font-family:var(--display);font-weight:600;font-size:clamp(23px,6.4vw,29px);
     line-height:1.12;margin:0 0 9px}
   .intro-body{margin:0;font-size:14.5px;color:var(--ink-soft);line-height:1.55}
-  .intro-coffee{margin-top:14px;align-self:flex-start;text-decoration:none;
-    display:inline-flex;align-items:center}
   .intro-dots{display:flex;gap:6px;margin:20px 0 12px}
   .intro-dots i{width:8px;height:8px;border-radius:50%;background:var(--line)}
   .intro-dots i.on{background:var(--steel)}
   .intro-nav{display:flex;gap:9px;margin-top:auto}
   .intro-nav .btn.wide{flex:1;width:auto}
+
+  /* ---------------- Profil: wykres i kierunek ---------------- */
+
+  .trendbox{margin-top:12px}
+  .trendline{display:block;width:100%;height:auto;background:var(--surface-2);
+    border:1px solid var(--line);border-radius:var(--r)}
+  .trendline .area{fill:var(--c-green);opacity:.18;stroke:none}
+  .trendline .line{fill:none;stroke:var(--c-green-ink);stroke-width:2.2;
+    stroke-linejoin:round;stroke-linecap:round}
+  .trendline .dot{fill:var(--c-green-ink)}
+  .trend-scale{display:flex;justify-content:space-between;gap:10px;margin-top:5px;
+    font-size:11.5px;color:var(--ink-soft)}
+
+  /* Kierunek zmiany dostaje kolor, ale spadek nie dostaje czerwieni: to nie jest błąd,
+     tylko liczba. Pomarańcz mówi „zwróć uwagę”, nie „zawaliłeś”. */
+  p.trend{margin:0 0 6px;font-size:14px;line-height:1.45;font-weight:600}
+  p.trend.up{color:var(--c-green-ink)}
+  p.trend.down{color:var(--c-orange-ink)}
+  p.trend.flat{color:var(--ink-soft)}
 
   /* ---------------- Puenty ---------------- */
 
@@ -580,18 +594,13 @@
   .headtools .gearbtn{margin-right:0}
   .coffeebtn:active{background:var(--surface-2)}
 
-  .supportblock{display:grid;grid-template-columns:auto 1fr;gap:11px;align-items:start;
-    margin-top:14px;padding:12px;background:var(--surface-2);border:1px solid var(--line);
-    border-radius:var(--r);text-align:left}
-  .supportblock > .ico{color:var(--c-orange);margin-top:2px}
-  .supportblock-line{margin:0 0 9px;font-size:13px;color:var(--ink);line-height:1.45}
-
   /*
    * Baner wsparcia. Ciepłe tło odcina się od teł aplikacji ledwie 1,2:1, więc granicę
    * niesie ramka, nie wypełnienie: kreska w `--c-orange-ink` (4,7:1 na tle strony)
    * i grubszy pasek akcentu z lewej. Przycisk jest pełnym kolorem, a nie obrysem —
    * to jedyne miejsce w aplikacji, gdzie wsparcie ma wyglądać inaczej niż reszta.
    */
+  .intro-box .supportbanner{width:100%;box-sizing:border-box}
   .supportbanner{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start;
     background:var(--c-orange-bg);border:1px solid var(--c-orange-ink);
     border-left:5px solid var(--c-orange);border-radius:var(--r);

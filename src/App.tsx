@@ -5,7 +5,8 @@ import { P, freshState } from './engine/plan';
 import { applyLayoff, applyResult } from './engine/progression';
 import { queueSave, store } from './storage/storage';
 import { Banner, Modal, Toast, useModal } from './components/ui';
-import { LevelsView, SessionView, SettingsView, WorkoutsView } from './components/views';
+import { SessionView, SettingsView, WorkoutsView } from './components/views';
+import { ExerciseStatsPage, ProfileView } from './components/Profile';
 import { SessionHome } from './components/SessionHome';
 import type { TodayPlan } from './components/SessionHome';
 import { AtlasView, ExercisePage } from './components/atlas';
@@ -312,7 +313,7 @@ export default function App() {
           trzeba do niej doscrollować. Prośba pada raz na ekran — drugiego bloku niżej
           już nie ma.
         */}
-        <SupportLine tone="banner" seed={m.workouts} />
+        <SupportLine seed={m.workouts} />
         {changes.length ? (
           <>
             <p>Zmiany na kolejną sesję:</p>
@@ -370,7 +371,7 @@ export default function App() {
         <Celebrate hits={hits} />
         <div className="after">
           <ShareButton subject={subject} medalRef={medalBox} label="Udostępnij odznakę" />
-          <SupportLine />
+          <SupportLine seed={top.tier + m.workouts} />
         </div>
       </div>,
       { ok: 'Nieźle', tone: 'celebrate-box' },
@@ -702,6 +703,7 @@ export default function App() {
 
       {route.kind === 'atlas' && <AtlasView state={state} />}
       {route.kind === 'exercise' && <ExercisePage state={state} id={route.id} />}
+      {route.kind === 'exstats' && <ExerciseStatsPage state={state} id={route.id} />}
 
       {view === 'train' &&
         (current ? (
@@ -736,7 +738,7 @@ export default function App() {
           />
         ))}
 
-      {view === 'prog' && <LevelsView state={state} />}
+      {view === 'prog' && <ProfileView state={state} />}
 
       {view === 'ach' && <Achievements state={state} />}
 

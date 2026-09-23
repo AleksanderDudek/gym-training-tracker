@@ -19,7 +19,7 @@ export const TABS: { key: TabKey; label: string; path: string; icon: IconName }[
   { key: 'train', label: 'Twoja sesja', path: '#/sesja', icon: 'session' },
   { key: 'plan', label: 'Plan', path: '#/plan', icon: 'plan' },
   { key: 'work', label: 'Treningi', path: '#/treningi', icon: 'workouts' },
-  { key: 'prog', label: 'Poziomy', path: '#/poziomy', icon: 'levels' },
+  { key: 'prog', label: 'Profil', path: '#/profil', icon: 'profile' },
   { key: 'ach', label: 'Osiągnięcia', path: '#/osiagniecia', icon: 'awards' },
   { key: 'atlas', label: 'Atlas', path: '#/cwiczenia', icon: 'atlas' },
 ];
@@ -32,6 +32,9 @@ const TAB_BY_PATH: Record<string, TabKey> = {
   // Stary adres zakładki. Zostaje, żeby zapisane linki i zakładki przeglądarki dalej działały.
   trening: 'train',
   plan: 'plan',
+  profil: 'prog',
+  // Stary adres zakładki poziomów. Zapisane linki prowadzą teraz do profilu, w którym
+  // te same liczby siedzą przy historii, zamiast obok niej.
   poziomy: 'prog',
   osiagniecia: 'ach',
   treningi: 'work',
@@ -40,11 +43,15 @@ const TAB_BY_PATH: Record<string, TabKey> = {
 
 export const exercisePath = (id: ExerciseId): string => `#/cwiczenia/${encodeURIComponent(id)}`;
 
+/** Historia ćwiczenia w profilu. Osobny adres, więc da się ją wysłać albo zapisać. */
+export const statsPath = (id: ExerciseId): string => `#/profil/${encodeURIComponent(id)}`;
+
 export function parseHash(hash: string): Route {
   const parts = hash.replace(/^#\/?/, '').split('/').filter(Boolean).map(decodeURIComponent);
   const [head, second] = parts;
   if (!head) return { kind: 'tab', tab: 'train' };
   if (head === 'cwiczenia') return second ? { kind: 'exercise', id: second } : { kind: 'atlas' };
+  if (head === 'profil' && second) return { kind: 'exstats', id: second };
   const tab = TAB_BY_PATH[head];
   return tab ? { kind: 'tab', tab } : { kind: 'tab', tab: 'train' };
 }
@@ -70,6 +77,9 @@ export function useRoute(): Route {
   return route;
 }
 
-/** Który przycisk nawigacji ma być podświetlony. Atlas obejmuje też podstrony ćwiczeń. */
+/**
+ * Który przycisk nawigacji ma być podświetlony. Podstrona ćwiczenia należy do atlasu,
+ * a jego historia do profilu — ten sam ruch, dwa różne pytania.
+ */
 export const activeTab = (route: Route): TabKey =>
-  route.kind === 'tab' ? route.tab : 'atlas';
+  route.kind === 'tab' ? route.tab : route.kind === 'exstats' ? 'prog' : 'atlas';

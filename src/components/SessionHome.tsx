@@ -124,7 +124,7 @@ export function SessionHome({
           Baner stoi pod obiema drogami wyjścia z ekranu, nie nad nimi: kto przyszedł
           trenować, ten najpierw widzi przycisk startu. Kto się rozgląda — widzi kawę.
         */}
-        <SupportLine tone="banner" />
+        <SupportLine />
         {lastLabel && <p className="disclaimer">{lastLabel}</p>}
       </div>
     </>

@@ -161,6 +161,53 @@ export function Sparkline({ hist }: { hist: HistoryPoint[] }) {
   );
 }
 
+/* ---------------- Wykres historii ćwiczenia ---------------- */
+
+/**
+ * Większy brat `Sparkline`. Tamten stoi w wierszu listy i ma pokazać kształt; ten stoi
+ * na podstronie i ma pozwolić odczytać wartości, więc dostaje skrajne liczby pod spodem,
+ * kropki na punktach i zdanie w `aria-label` — czytnik ekranu nie zobaczy linii, ale
+ * usłyszy, skąd dokąd ona idzie.
+ */
+export function Trendline({ values, label }: { values: number[]; label: string }) {
+  if (values.length < 2) return null;
+
+  const w = 320;
+  const h = 96;
+  const pad = 8;
+  const mn = Math.min(...values);
+  const mx = Math.max(...values);
+  // Płaski ciąg podzieliłby przez zero, a narysowany w połowie wysokości czyta się uczciwiej
+  // niż linia przyklejona do dolnej krawędzi.
+  const range = mx - mn || 1;
+  const x = (i: number): number => pad + (i / (values.length - 1)) * (w - pad * 2);
+  const y = (v: number): number => h - pad - ((v - mn) / range) * (h - pad * 2);
+  const pts = values.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`);
+
+  return (
+    <div className="trendbox">
+      <svg
+        className="trendline"
+        viewBox={`0 0 ${w} ${h}`}
+        role="img"
+        aria-label={`${label}: od ${values[0]} do ${values[values.length - 1]}, najniżej ${mn}, najwyżej ${mx}, ${values.length} sesji.`}
+      >
+        <polygon className="area" points={`${pts.join(' ')} ${w - pad},${h} ${pad},${h}`} />
+        <polyline className="line" points={pts.join(' ')} />
+        {values.map((v, i) => (
+          <circle className="dot" key={i} cx={x(i)} cy={y(v)} r={mx === mn ? 2 : 2.6} />
+        ))}
+      </svg>
+      <div className="trend-scale">
+        <span>{label}</span>
+        <span>
+          {mn} – {mx}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 /* ---------------- Hook okna dialogowego ---------------- */
 
 export function useModal() {

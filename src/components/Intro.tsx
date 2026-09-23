@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { SUPPORT_URL } from '../engine/share';
 import { Icon } from './icons';
 import type { IconName } from './icons';
+import { SupportLine } from './Support';
 
 /**
  * Wprowadzenie dla nowych.
@@ -65,11 +65,7 @@ export function Intro({ onDone }: { onDone: () => void }) {
         <h2 className="intro-title">{step.title}</h2>
         <p className="intro-body">{step.body}</p>
 
-        {last && (
-          <a className="btn sm ghost intro-coffee" href={SUPPORT_URL} target="_blank" rel="noopener noreferrer">
-            Postaw kawę
-          </a>
-        )}
+        {last && <SupportLine seed={STEPS.length} />}
 
         <div className="intro-dots" aria-hidden="true">
           {STEPS.map((s, n) => (

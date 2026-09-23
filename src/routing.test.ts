@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SETTINGS_PATH, TABS, activeTab, exercisePath, parseHash } from './routing';
+import { SETTINGS_PATH, TABS, activeTab, exercisePath, parseHash, statsPath } from './routing';
 import type { TabKey } from './types';
 
 describe('trasy', () => {
@@ -54,9 +54,23 @@ describe('trasy', () => {
     expect(activeTab({ kind: 'atlas' })).toBe('atlas' as TabKey);
   });
 
+  it('profil ma zakładkę, podstrony ćwiczeń i stary adres poziomów', () => {
+    expect(parseHash('#/profil')).toEqual({ kind: 'tab', tab: 'prog' });
+    expect(parseHash('#/poziomy')).toEqual({ kind: 'tab', tab: 'prog' });
+    expect(parseHash(statsPath('swing2'))).toEqual({ kind: 'exstats', id: 'swing2' });
+    expect(TABS.find((t) => t.key === 'prog')?.label).toBe('Profil');
+  });
+
+  it('historia ćwiczenia podświetla profil, a nie atlas', () => {
+    // Ten sam ruch ma dwie podstrony: w atlasie technikę, w profilu własną przeszłość.
+    expect(activeTab({ kind: 'exstats', id: 'swing2' })).toBe('prog' as TabKey);
+    expect(statsPath('swing2')).not.toBe(exercisePath('swing2'));
+  });
+
   it('identyfikator ze znakami specjalnymi przechodzi w obie strony', () => {
     // Ukośnik w identyfikatorze wychodzi jako %2F, więc podział ścieżki go nie rozcina.
     const id = 'ćwiczenie/dziwne';
     expect(parseHash(exercisePath(id))).toEqual({ kind: 'exercise', id });
+    expect(parseHash(statsPath(id))).toEqual({ kind: 'exstats', id });
   });
 });

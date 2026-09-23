@@ -205,13 +205,28 @@ export const PROGRESS_TITLES: readonly string[] = [
   'suma wszystkich serii',
 ];
 
-/** Wiersze o wsparciu. Widoczne, ale nigdy blokujące. */
+/**
+ * Wiersze o wsparciu. Widoczne, ale nigdy blokujące.
+ *
+ * Żart idzie z aplikacji i z autora, nigdy z czytającego — nikt nie ma poczuć, że jest
+ * coś winien. Stąd brak liczników, pasków „do celu” i zdań o tym, jak bardzo autor
+ * potrzebuje. Kawa jest puentą, nie prośbą.
+ */
 export const SUPPORT: readonly string[] = [
   'Aplikacja jest bezpłatna. Kawa autora już nie.',
   'Zero reklam, zero kont, zero abonamentu. Kawa opcjonalna.',
   'Za tę aplikację nikt nie płaci. Autor też nie, ale kawę pije.',
   'Darmowe na zawsze. Wdzięczność przyjmowana w kubkach.',
   'Nie ma tu reklam. Jest za to link do kawy i czyste sumienie.',
+  'Tu nie ma wersji premium. Jest wersja z kawą i wersja bez.',
+  'Twoje dane zostają u ciebie. Kawa może zostać u autora.',
+  'Ta aplikacja nie pyta o mail. Pyta najwyżej o małą czarną.',
+  'Serwera nie ma, więc nic nie kosztuje. Kawa kosztuje tyle, co kawa.',
+  'Progresja liniowa, cennik płaski: zero.',
+  'Autor nie potrzebuje twoich danych. Kofeiny — bywa, że tak.',
+  'Jeden przycisk, jedna kawa, zero newsletterów.',
+  'Ta aplikacja nie ma inwestorów. Ma ekspres i dobre chęci.',
+  'Nie zbieramy ciasteczek. Kawa do ciasteczka mile widziana.',
 ];
 
 /* ---------------- Blankiety ---------------- */

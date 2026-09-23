@@ -125,20 +125,29 @@ pierścienie, ale niczego nie zamalowuje: idzie na papier **przed** stopką, wi�
 i numer wydania drukują się na niej. Prawdziwa pieczęć też nie zjada tekstu, który już
 był na kartce.
 
-**Wsparcie** jest widoczne z każdego ekranu — kubek w nagłówku, obok ustawień — i ma pięć
-stałych miejsc poza nim: ekran startowy, góra podsumowania po zamkniętej sesji, koniec
-wprowadzenia, dół zakładki Osiągnięcia i Ustawienia. Zasady bez zmian: nigdy nie blokuje
-drogi, nigdy nie pojawia się w trakcie treningu, nigdy nie prosi dwa razy na tym samym
-ekranie. Teksty rotują („Aplikacja jest bezpłatna. Kawa autora już nie."), więc ten sam
-komunikat nie wisi w kółko.
+**Wsparcie** jest widoczne z każdego ekranu — kubek w nagłówku, obok ustawień — i ma dziesięć
+stałych miejsc poza nim: ekran startowy, góra podsumowania po zamkniętej sesji, okno zdobytej
+odznaki, koniec wprowadzenia oraz dół zakładek Plan, Treningi, Profil, Osiągnięcia, Atlas
+i Ustawienia. Zasady bez zmian: nigdy nie blokuje drogi, nigdy nie pojawia się w trakcie
+treningu, nigdy nie prosi dwa razy na tym samym ekranie. Zdań jest czternaście i rotują
+(„Ta aplikacja nie ma inwestorów. Ma ekspres i dobre chęci."), więc ten sam komunikat nie
+wisi w kółko. Żart idzie z aplikacji i z autora, nigdy z czytającego — nie ma tu liczników
+zbiórki, pasków „do celu" ani zdań o tym, jak bardzo autor potrzebuje.
 
-**Dwa z tych miejsc dostały kolor.** Na ekranie startowym i na górze podsumowania stoi baner:
-ciepłe tło, pomarańczowy pasek z lewej, pełnokolorowy przycisk. Reszta zostaje szara, bo kolor
-działa tylko wtedy, gdy jest go mało. Na ekranie startowym baner stoi **pod** oboma wyjściami
-do treningu — kto przyszedł ćwiczyć, ten najpierw widzi przycisk startu. W podsumowaniu jest
-odwrotnie, na samej górze: to jedyna chwila, w której aplikacja właśnie coś dla kogoś zrobiła,
-a lista zmian bywa długa i dół okna trzeba by doscrollować. Prośba pada raz na ekran — bloku,
-który wcześniej stał pod przyciskami udostępniania, już tam nie ma.
+**Wariant jest jeden: kolorowy baner.** Wcześniej były trzy — szara karta, szary blok i zdanie
+z odnośnikiem — co w praktyce znaczyło tyle, co żaden: prośba schowana w tle jest prośbą,
+której nikt nie widzi. Teraz wszędzie stoi to samo: ciepłe tło, pomarańczowy pasek z lewej,
+pełnokolorowy przycisk i jedno zdanie z czternastu.
+
+**Miejsce w układzie zależy od tego, po co ktoś przyszedł.** Na ekranie startowym baner stoi
+**pod** oboma wyjściami do treningu, bo kto przyszedł ćwiczyć, ten najpierw widzi przycisk
+startu. W podsumowaniu sesji jest odwrotnie, na samej górze: to jedyna chwila, w której
+aplikacja właśnie coś dla kogoś zrobiła, a lista zmian bywa długa i dół okna trzeba by
+doscrollować. Na pozostałych zakładkach zamyka ekran.
+
+**Czego nie ma:** dwóch próśb na jednym ekranie (blok spod przycisków udostępniania zniknął),
+banera w trakcie sesji, w kreatorze własnego treningu i w katalogu planów. To są zadania
+w toku — kawa poczeka, aż ktoś je skończy.
 
 **Dorobek udostępnisz w każdej chwili** — przycisk „Udostępnij dorobek" w zakładce Osiągnięcia
 i drugi, obok wyniku sesji, po każdym zamkniętym treningu.
@@ -149,10 +158,13 @@ i drugi, obok wyniku sesji, po każdym zamkniętym treningu.
 | --- | --- | --- |
 | Twoja sesja | `#/sesja` | Co masz dziś do zrobienia według planu; w trakcie — bieżąca sesja. |
 | Plan | `#/plan` | Kalendarz terminów, punkty, stopień, dziennik zdarzeń. |
-| Poziomy | `#/poziomy` | Wskaźnik obciążenia, poziomy ćwiczeń, historia sesji. |
+| Profil | `#/profil` | Twoje liczby, obciążenie, lista zrobionych ćwiczeń i historia treningów. |
 | Osiągnięcia | `#/osiagniecia` | Dorobek w liczbach, progi najbliższe zdobycia, 56 rodzin odznak. |
 | Treningi | `#/treningi` | Wszystkie treningi do wyboru i kreator własnych. |
 | Atlas | `#/cwiczenia` | 105 ćwiczeń z filtrem sprzętu; każde ma własny adres do wysłania. |
+
+Dwa adresy prowadzą do podstron: `#/cwiczenia/<id>` to technika i wideo, `#/profil/<id>` to
+historia tego samego ruchu. Stary `#/poziomy` dalej działa i wchodzi do profilu.
 
 Ustawienia (`#/ustawienia`) mają przycisk w nagłówku, nie w dolnym pasku: drabina kettlebli,
 poziomy startowe, eksport, import i kasowanie danych to ekran otwierany raz na miesiąc.
@@ -188,6 +200,38 @@ przełączniki, filtry sprzętu, odhaczanie terminu w kalendarzu i odnośniki te
 odhaczenia ma dalej 24 px średnicy, ale obszar kliknięcia 44 px — inaczej domknięcie terminu
 było loterią. Audyt w przeglądarce na siedmiu ekranach nie znajduje już ani jednego celu
 poniżej progu.
+
+## Profil — historia bez konta
+
+Aplikacja nie zna maila, nazwiska ani hasła i nie zamierza poznać. „Profil” znaczy tu więc coś
+innego niż zwykle: nie tożsamość, tylko jedno miejsce, z którego widać przeszłość. Zakładka
+zastąpiła „Poziomy” — te same liczby siedzą teraz **przy** historii, zamiast obok niej, a pełny
+katalog poziomów i tak stał już w atlasie przy każdym ćwiczeniu.
+
+**Cztery rzeczy na jednym ekranie:** twoje liczby (treningi, powtórzenia, tonaż, staż w tygodniach),
+wskaźnik obciążenia, lista ćwiczeń **zrobionych** i historia treningów. Lista bierze się z dziennika,
+a nie z katalogu: profil pokazuje przeszłość, nie to, co dałoby się jeszcze zrobić. Każdy wiersz
+mówi, ile sesji, jak dawno i w którą stronę to idzie.
+
+**Każde ćwiczenie ma własną podstronę** pod `#/profil/<id>` — oddzielną od tej w atlasie, bo to
+dwa różne pytania. Atlas mówi, jak to robić; profil mówi, jak ci szło: kierunek zmiany zdaniem,
+wykres sesja po sesji, rekordy (najcięższy ciężar, najlepsza seria, tonaż) i pełna lista sesji
+z ciężarem, seriami i zadeklarowanym wysiłkiem.
+
+**Kierunek liczony jest z tercji, nie z krańców.** Porównanie pierwszego wyniku z ostatnim
+opowiadałoby głównie o szumie — gorszy sen, cięższy dzień, inny sprzęt. Średnia z pierwszej
+tercji sesji kontra średnia z ostatniej wygładza wahania, a próg pięciu procent oddziela
+zmianę od drgania. Poniżej czterech sesji aplikacja mówi wprost, że jest za wcześnie,
+zamiast rysować trend z trzech punktów.
+
+**Miarą jest szacowane maksimum, gdy jest z czego je policzyć** — od czterech sesji z ciężarem.
+Ćwiczenia z masą ciała dostają powtórzenia, ćwiczenia na czas sekundy. Wykres nie miesza
+wielkości: linia od początku do końca pokazuje to samo, inaczej skakałaby przy każdej
+zmianie obciążenia.
+
+**Liczone jest z dziennika, nie z `prog[id].hist`.** Dziennik jest źródłem — `hist` bywa
+przycinany przez silnik progresji, bo służy do wyliczania następnej sesji, a nie do pamiętania
+wszystkiego. Spadek po przerwie nie jest tu opisany jako porażka: wykres liczy, nie ocenia.
 
 ## Atlas i sprzęt
 
@@ -255,8 +299,8 @@ dostaje rzadsze `setInterval`, więc licznik oparty na tyknięciach zostawałby 
 ```
 src/
   types.ts                  wszystkie typy domenowe
-  routing.ts                trasy w hashu adresu, siedem zakładek
-  routing.test.ts           7 testów tras i zakładek
+  routing.ts                trasy w hashu adresu, sześć zakładek i dwie rodziny podstron
+  routing.test.ts           12 testów tras, zakładek i starych adresów
   data/exercises.ts         biblioteka 105 ćwiczeń, drabiny sprzętu, cztery treningi
   data/exjokes.ts           dopiski do 105 ćwiczeń i do gotowych treningów
   data/moves.ts             osiemnaście wzorców ruchu jako klatki kluczowe
@@ -272,9 +316,10 @@ src/
     schedule.ts             rozpisanie planu na daty, przypisanie sesji do terminów, rotacja
     score.ts                punkty, premie za serię, stopnie
     metrics.ts              sumy, rekordy z okna czasu, miary utrzymania poziomu
+    history.ts              dziennik przewrócony na ćwiczenia: sesje, rekordy, kierunek zmiany
     pose.ts                 szkielet manekina: kąty, klatki, dosunięcie do podłoża
     share.ts                treść wpisu, karta 1080×1080, wysyłka i ścieżka zapasowa
-    share.test.ts           11 testów treści wpisu, adresów i wprowadzenia
+    share.test.ts           12 testów treści wpisu, adresów i wprowadzenia
     quips.ts                humor: porównania liczb, odmiana, zestawy tekstów
     quips.test.ts           19 testów puent, odmiany, dopisków i granic porównań
     pose.test.ts            24 testy szkieletu, cyklu, katalogu ruchów i mimiki
@@ -285,16 +330,18 @@ src/
     progression.test.ts     40 testów silnika progresji
     schedule.test.ts        30 testów kalendarza, przypisania i rotacji
     score.test.ts           15 testów punktacji i dziennika
-    badges.test.ts          23 testy odznak, dorobku i podpowiedzi
+    badges.test.ts          29 testów odznak, dorobku i podpowiedzi
+    history.test.ts         14 testów historii ćwiczenia i kierunku zmiany
     metrics.test.ts         40 testów warstwy liczb
   storage/storage.ts        zapis z kolejkowaniem, dwa środowiska
   components/
-    ui.tsx                  modal, toast, kafelek ciężaru, przełącznik, wykres
+    ui.tsx                  modal, toast, kafelek ciężaru, przełącznik, dwa wykresy
     ExerciseCard.tsx        karta ćwiczenia z formularzem serii
-    views.tsx               wybór treningu, sesja, poziomy, kreator, ustawienia
+    views.tsx               wybór treningu, sesja, obciążenie, kreator, ustawienia
     atlas.tsx               spis ćwiczeń i podstrona pojedynczego ćwiczenia
     PlanView.tsx            katalog planów, kalendarz, punkty i dziennik
     SessionHome.tsx         ekran „co robię dzisiaj”
+    Profile.tsx             profil: liczby, lista zrobionych ćwiczeń, historia i podstrony
     Timer.tsx               stoper i odliczanie dla ćwiczeń na czas
     BadgeArt.tsx            medale odznak: tworzywa, piktogramy, pasma progów
     Celebrate.tsx           moment zdobycia — medal, promienie, konfetti
@@ -302,7 +349,7 @@ src/
     Mannequin.tsx           sylwetka ćwiczeń i jej zegar
     Intro.tsx               opcjonalne wprowadzenie, cztery ekrany
     Share.tsx               przycisk udostępniania i ścieżka zapasowa
-    Support.tsx             wsparcie autora w czterech wariantach, jeden z nich kolorowy
+    Support.tsx             wsparcie autora: jeden baner, czternaście zdań
     Achievements.tsx        zakładka osiągnięć: dorobek w liczbach i odznaki z progami
     VideoEmbed.tsx          odtwarzacz YouTube ładowany dopiero po kliknięciu
   App.tsx                   spina stan i widoki

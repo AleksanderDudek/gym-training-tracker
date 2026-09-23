@@ -330,7 +330,9 @@ export type TabKey = View | 'atlas' | 'plan' | 'ach';
 export type Route =
   | { kind: 'tab'; tab: TabKey }
   | { kind: 'atlas' }
-  | { kind: 'exercise'; id: ExerciseId };
+  | { kind: 'exercise'; id: ExerciseId }
+  /** Historia jednego ćwiczenia w profilu — inna strona niż jego opis w atlasie. */
+  | { kind: 'exstats'; id: ExerciseId };
 
 /** Materiał wideo pokazujący technikę ćwiczenia. */
 export interface VideoRef {

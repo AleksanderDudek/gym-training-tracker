@@ -2,7 +2,6 @@ import { useState } from 'react';
 import {
   ALL,
   BUILTIN,
-  EX,
   GEAR_LABEL,
   READY,
   WEIGHTED,
@@ -10,9 +9,8 @@ import {
   gearOf,
   ladderFor,
 } from '../data/exercises';
-import { acwr, sessionTonnage } from '../engine/math';
-import { P, exercisesByGroup, planLabel } from '../engine/plan';
-import { Chip, Sparkline } from './ui';
+import { acwr } from '../engine/math';
+import { P, exercisesByGroup } from '../engine/plan';
 import { ExerciseCard } from './ExerciseCard';
 import { SupportLine } from './Support';
 import { OWN_WORKOUT_JOKES, WORKOUT_JOKES } from '../data/exjokes';
@@ -126,71 +124,6 @@ export function LoadGauge({ state }: { state: AppState }) {
       </div>
       <p style={{ margin: '6px 0 0', fontSize: 13, color: 'var(--ink-soft)' }}>{verdict}</p>
     </div>
-  );
-}
-
-/* ---------------- Poziomy i historia ---------------- */
-
-export function LevelsView({ state }: { state: AppState }) {
-  const groups = exercisesByGroup();
-  return (
-    <>
-      <LoadGauge state={state} />
-      <div className="sect-label">Poziomy ćwiczeń</div>
-      {Object.entries(groups).map(([g, ids]) => (
-        <div key={g}>
-          <div className="sect-label">{g}</div>
-          {ids.map((id) => {
-            const p = P(state, id);
-            return (
-              <div className="prog-row" key={id}>
-                <Chip state={state} id={id} />
-                <div>
-                  <div className="ex-name">{ex(id).name}</div>
-                  <div className="ex-target">{planLabel(state, id)}</div>
-                </div>
-                <div className="streak">
-                  {p.e1rm && p.weight ? `1RM ≈ ${p.e1rm} kg` : p.trans ? 'w przejściu' : '—'}
-                  <Sparkline hist={p.hist} />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      ))}
-
-      <div className="sect-label">Historia</div>
-      {!state.log.length ? (
-        <div className="empty">
-          Historia pusta. Pierwszy zamknięty trening zajmie tu miejsce na zawsze.
-        </div>
-      ) : (
-        [...state.log]
-          .reverse()
-          .slice(0, 40)
-          .map((e, idx) => {
-            const dt = new Date(e.date);
-            return (
-              <div className="h-item" key={`${e.date}-${idx}`}>
-                <div className="h-date">
-                  {String(dt.getDate()).padStart(2, '0')}.{String(dt.getMonth() + 1).padStart(2, '0')}
-                </div>
-                <div>
-                  <div>
-                    <b>{e.workout}</b>
-                  </div>
-                  <div className="h-detail">
-                    {e.items
-                      .map((i) => `${EX[i.id]?.name ?? i.id} ${i.sets.map((s) => s.reps).join('/')}`)
-                      .join(' · ')}
-                  </div>
-                </div>
-                <div className="streak">{Math.round(sessionTonnage(e))} kg·p</div>
-              </div>
-            );
-          })
-      )}
-    </>
   );
 }
 
@@ -351,6 +284,13 @@ export function WorkoutsView({
           </div>
         </div>
       )}
+      {/* Baner tylko na spisie treningów. W trakcie układania własnego nikt nie chce
+          kawy — chce skończyć listę ćwiczeń. */}
+      {!draft && (
+        <div className="wrap">
+          <SupportLine seed={state.log.length} />
+        </div>
+      )}
     </>
   );
 }
@@ -463,7 +403,9 @@ export function SettingsView({
         })}
       </div>
 
-      <SupportLine tone="card" />
+      <div className="wrap">
+        <SupportLine />
+      </div>
 
       <div className="grp">
         <h3>Wprowadzenie</h3>

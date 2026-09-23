@@ -286,7 +286,9 @@ export function Achievements({ state }: { state: AppState }) {
         );
       })}
 
-      <SupportLine tone="card" seed={rows.length} />
+      <div className="wrap">
+        <SupportLine seed={rows.length} />
+      </div>
     </>
   );
 }

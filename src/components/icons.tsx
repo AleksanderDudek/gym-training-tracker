@@ -13,7 +13,8 @@ export type IconName =
   | 'workouts'
   | 'atlas'
   | 'settings'
-  | 'coffee';
+  | 'coffee'
+  | 'profile';
 
 const PATHS: Record<IconName, ReactNode> = {
   // Hantla: dwa obciążniki i gryf.
@@ -64,6 +65,17 @@ const PATHS: Record<IconName, ReactNode> = {
       <path d="M4.5 9.5h12v6a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4Z" />
       <path d="M16.5 11h1.8a2.6 2.6 0 0 1 0 5.2h-1.8" />
       <path d="M8 6.2c0-1 1-1.4 1-2.4M12 6.2c0-1 1-1.4 1-2.4" />
+    </>
+  ),
+  // Profil: wykres z punktami zamiast sylwetki człowieka. Tutaj nie ma konta ani awatara,
+  // jest historia liczb — ikona ma mówić to samo.
+  profile: (
+    <>
+      <path d="M4 19.5V5" />
+      <path d="M4 19.5h16" />
+      <path d="M7 15.5l4-4.5 3.5 2.5L20 7" />
+      <circle cx="11" cy="11" r="1.4" />
+      <circle cx="14.5" cy="13.5" r="1.4" />
     </>
   ),
   // Suwaki — czytelniejsze w małym rozmiarze niż zębatka.
