@@ -7,7 +7,7 @@ import { sampleCycle, skeleton } from '../engine/pose';
  * Odznaki jako przedmioty, nie znaki typograficzne.
  *
  * Trzy rzeczy robią różnicę między „zaliczone” a „zdobyte”: kształt, który wygląda jak
- * medal, tworzywo rosnące razem z progiem (brąz → srebro → złoto → platyna → diament)
+ * medal, tworzywo rosnące razem z progiem (brąz → srebro → złoto → platyna → szmaragd)
  * i widoczny stan zablokowany, w którym nadal widać, co jest do wzięcia. Ostatnie jest
  * najważniejsze: szary, ale czytelny piktogram pokazuje cel, a nie ścianę.
  */
@@ -21,17 +21,17 @@ export const BAND_NAME: Record<Band, string> = {
   2: 'srebro',
   3: 'złoto',
   4: 'platyna',
-  5: 'diament',
+  5: 'szmaragd',
 };
 
 /**
  * Tworzywo z postępu w obrębie rodziny, a nie z gołego numeru progu. Dzięki temu domknięcie
- * dowolnej rodziny kończy się diamentem — także tej trzyprogowej — a rodzina dziesięcioprogowa
+ * dowolnej rodziny kończy się szmaragdem — także tej trzyprogowej — a rodzina dziesięcioprogowa
  * rozkłada te same pięć pasm na dłuższą drogę.
  */
 export const bandFor = (tier: number, total: number): Band => {
   if (tier <= 0 || total <= 0) return 0;
-  // Odznaka jednorazowa dostaje złoto, nie diament. Inaczej „Ranny ptaszek” za jeden trening
+  // Odznaka jednorazowa dostaje złoto, nie szmaragd. Inaczej „Ranny ptaszek” za jeden trening
   // przed ósmą stałby na półce w tym samym tworzywie, co domknięta dziesięcioprogowa rodzina.
   if (total === 1) return 3;
   return Math.max(1, Math.min(5, Math.ceil((tier / total) * 5))) as Band;
@@ -226,12 +226,22 @@ interface Metal {
   ink: string;
 }
 
+/*
+ * Tworzywa przestrojone na paletę Claude. Metafora metalu zostaje — brąz, srebro, złoto,
+ * platyna, szmaragd — ale każdy stop jest wyprowadzony z jednego z trzech akcentów, więc
+ * półka z odznakami czyta się jak jeden zestaw, a nie jak pudełko z guzikami.
+ *
+ * `ink` to kolor rysunku na medalu i zawsze jest dobrany tak, żeby odcinał się od `base`;
+ * przy jasnych stopach jest ciemny, przy ciemnych jasny.
+ */
 const METALS: Record<Exclude<Band, 0>, Metal> = {
-  1: { light: '#D9A275', base: '#A8703F', dark: '#6B4021', ink: '#FCEFE3' },
-  2: { light: '#EEF1F4', base: '#B4BCC4', dark: '#767F88', ink: '#2A3138' },
-  3: { light: '#F8E39B', base: '#E0AE33', dark: '#96690F', ink: '#4A3204' },
-  4: { light: '#EAF4F6', base: '#9FC2C9', dark: '#5C838B', ink: '#1E3136' },
-  5: { light: '#DCD2FF', base: '#9C82F0', dark: '#5636B4', ink: '#F6F2FF' },
+  // Rysunek wszędzie ciemny, „grawerowany”: jasny na stopie o średniej jasności dawał
+  // kontrast poniżej 3:1, czyli poniżej progu czytelności dla grafiki.
+  1: { light: '#EDA98C', base: '#C9724F', dark: '#7E3F26', ink: '#3E1B0F' },
+  2: { light: '#EFEEE7', base: '#B8B6AC', dark: '#807E75', ink: '#2B2A26' },
+  3: { light: '#F4D9A6', base: '#D9A157', dark: '#94631F', ink: '#3A2708' },
+  4: { light: '#D8E7F4', base: '#6A9BCC', dark: '#3A6289', ink: '#102839' },
+  5: { light: '#CBDCB4', base: '#788C5D', dark: '#47563A', ink: '#1F2815' },
 };
 
 /** Gradienty definiowane raz w dokumencie — inaczej każdy medal niósłby własną kopię. */

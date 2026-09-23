@@ -83,9 +83,6 @@ export function AtlasView({ state }: { state: AppState }) {
 
 export function ExercisePage({ state, id }: { state: AppState; id: ExerciseId }) {
   const m = EX[id];
-  // Miniatury filmów ściągają się z serwerów Google w chwili, gdy trafią do dokumentu,
-  // więc lista wchodzi dopiero po kliknięciu. Do tego czasu strona nie odpytuje nikogo.
-  const [videosOn, setVideosOn] = useState(false);
 
   if (!m) {
     return (
@@ -167,26 +164,12 @@ export function ExercisePage({ state, id }: { state: AppState; id: ExerciseId })
       )}
 
       <div className="sect-label">Jak to trenować — wideo</div>
-      {!videosOn ? (
-        <div className="grp">
-          <p className="tight">
-            {videos.main.length
-              ? `${videos.main.length + videos.kb.length} nagrań z YouTube. Miniatury i odtwarzacz ładują się z serwerów Google dopiero po kliknięciu — do tego czasu ta strona nie odpytuje nikogo z zewnątrz.`
-              : 'Dla tego ćwiczenia nie ma jeszcze wybranych filmów. Tor ruchu wyżej i opis techniki wystarczą, żeby je poprawnie zaplanować.'}
-          </p>
-          {videos.main.length > 0 && (
-            <button className="btn ghost sm" style={{ marginTop: 6 }} onClick={() => setVideosOn(true)}>
-              Pokaż filmy z YouTube
-            </button>
-          )}
-        </div>
-      ) : (
       <div className="grp">
         {videos.main.length ? (
           <>
             <p className="tight">
               Najpopularniejsze nagrania techniki z YouTube, wybrane po liczbie wyświetleń i
-              trafności. Odtwarzacz ładuje się dopiero po kliknięciu.
+              trafności. Odtwarzacz ładuje się dopiero po kliknięciu w miniaturę.
             </p>
             <div className="vids">
               {videos.main.map((v) => (
@@ -194,17 +177,21 @@ export function ExercisePage({ state, id }: { state: AppState; id: ExerciseId })
               ))}
             </div>
           </>
-        ) : null}
+        ) : (
+          <p>
+            Dla tego ćwiczenia nie ma jeszcze wybranych filmów. Tor ruchu wyżej i opis techniki
+            wystarczą, żeby je poprawnie zaplanować.
+          </p>
+        )}
       </div>
-      )}
 
-      {videosOn && videos.kb.length > 0 && (
+      {videos.kb.length > 0 && (
         <>
           <div className="sect-label">To samo ćwiczenie z kettlebell</div>
           <div className="grp">
             <p className="tight">
-              Nagrania pokazujące wariant z odważnikiem kulowym — chwyt, ustawienie ciężaru i różnice
-              względem wersji podstawowej.
+              Nagrania pokazujące wariant z odważnikiem kulowym — chwyt, ustawienie ciężaru i
+              różnice względem wersji podstawowej.
             </p>
             <div className="vids">
               {videos.kb.map((v) => (

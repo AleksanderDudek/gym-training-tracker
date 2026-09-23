@@ -14,7 +14,8 @@ import type { AchievementHit } from '../types';
  */
 
 const CONFETTI = 18;
-const COLORS = ['#E0AE33', '#9C82F0', '#3B8F4A', '#DB7420', '#2C7CB8', '#B4BCC4'];
+// Konfetti w palecie Claude — te same trzy akcenty, co na medalach i w ikonach.
+const COLORS = ['#D97757', '#6A9BCC', '#788C5D', '#D9A157', '#B0AEA5', '#94452C'];
 
 const tierLabel = (h: AchievementHit): string =>
   h.ach.tiers.length > 1 ? `próg ${h.tier} z ${h.ach.tiers.length}` : 'odznaka jednorazowa';

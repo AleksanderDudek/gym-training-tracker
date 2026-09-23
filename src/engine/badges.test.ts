@@ -128,12 +128,12 @@ describe('odznaki', () => {
     });
   });
 
-  it('tworzywo rośnie z postępem, a domknięcie rodziny daje diament', () => {
+  it('tworzywo rośnie z postępem, a domknięcie rodziny daje szmaragd', () => {
     expect(bandFor(0, 6)).toBe(0);
     expect(bandFor(1, 10)).toBe(1);
     expect(bandFor(10, 10)).toBe(5);
     expect(bandFor(3, 3)).toBe(5);
-    // Odznaka jednorazowa to złoto, nie diament — jeden trening przed ósmą nie waży tyle,
+    // Odznaka jednorazowa to złoto, nie szmaragd — jeden trening przed ósmą nie waży tyle,
     // co domknięta dziesięcioprogowa rodzina.
     expect(bandFor(1, 1)).toBe(3);
 

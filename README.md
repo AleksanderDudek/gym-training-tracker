@@ -116,6 +116,15 @@ z gradientami, które inaczej zostałyby w osobnym bloku `defs`. Adres stoi w os
 ostatniej linii wpisu, bo serwisy robią podgląd z ostatniego adresu, a wtrącony w zdanie
 bywa ucinany.
 
+**Karta ma się czytać w miniaturze**, a nie dopiero po powiększeniu — na osi czasu nikt
+w nią nie klika, tylko przewija. Stopnie pisma poszły w górę (tytuł 76 px, wiersze 37 px,
+puenta 38 px, adres 27 px półgrubą), a napisy siedzą na trzech tuszach zamiast na czterech
+szarościach: czarny na treści, przygaszony na podpisach, ceglasty na puencie i nagłówku
+dokumentu. Pieczęć dostała pełny kolor zamiast sześćdziesięciu procent krycia i grubsze
+pierścienie, ale niczego nie zamalowuje: idzie na papier **przed** stopką, więc adres
+i numer wydania drukują się na niej. Prawdziwa pieczęć też nie zjada tekstu, który już
+był na kartce.
+
 **Wsparcie** jest widoczne z każdego ekranu — kubek w nagłówku, obok ustawień — i ma cztery
 stałe miejsca poza nim: podsumowanie po zamkniętej sesji, koniec wprowadzenia, dół zakładki
 Osiągnięcia i Ustawienia. Zasady bez zmian: nigdy nie blokuje drogi, nigdy nie pojawia się
@@ -191,10 +200,11 @@ stoją na nich, więc test pilnuje, żeby żaden nie zniknął przy kolejnym roz
 Każde ćwiczenie z przypisanym wzorcem ruchu ma w atlasie animowaną sylwetkę rysowaną
 w przeglądarce z kątów stawów. **Nic tu nie pochodzi z cudzych nagrań,
 bibliotek ruchu ani sklepów z modelami** — nie ma czyjegoś prawa autorskiego do pilnowania,
-licencji do odnawiania, reklam przed odtworzeniem ani zapytań na zewnątrz. Podstrona
-ćwiczenia po wejściu nie odpytuje żadnego obcego serwera; filmy z YouTube wchodzą dopiero
-po kliknięciu, bo same miniatury ściągają się z serwerów Google w chwili, gdy trafią
-do dokumentu.
+licencji do odnawiania, reklam przed odtworzeniem ani zapytań na zewnątrz. Sam manekin
+nie kosztuje ani jednego zapytania — rysuje się z kilku kilobajtów liczb zapisanych
+w paczce aplikacji. Filmy z YouTube stoją niżej na tej samej podstronie i są tam od wejścia:
+miniatury dociągają się leniwie z `i.ytimg.com`, gdy dojedziesz do nich przewijaniem,
+a odtwarzacz razem z ciasteczkami wchodzi dopiero po kliknięciu.
 
 **Jak to działa.** `engine/pose.ts` liczy punkty stawów z kątów bezwzględnych (0 to pion
 w górę, wartości rosną zgodnie z ruchem wskazówek zegara). `data/moves.ts` trzyma
@@ -322,10 +332,18 @@ i filtr działający na wynikach widzi inny tekst niż ten, który staje na karc
 odsiewie zostają mniej niż trzy filmy, sekcji nie ma wcale — dla podciągania i dipów wariant
 z kettlebell nie istnieje jako materiał instruktażowy i lepiej nie udawać, że jest.
 
+**Listy filmów są rozwinięte od wejścia.** Stała przed nimi przez chwilę bramka „Pokaż
+filmy z YouTube", żeby podstrona nie odpytywała nikogo z zewnątrz, dopóki ktoś sam nie
+poprosi. Kosztowała kliknięcie w każdej wizycie za oszczędność, której nikt nie widział —
+po atlas przychodzi się właśnie po to, żeby zobaczyć ruch. Bramki nie ma, a prywatności
+pilnuje sam odtwarzacz.
+
 **Odtwarzacz wchodzi dopiero po kliknięciu.** Cztery osadzone ramki na stronę ściągałyby
 megabajt skryptów i ustawiały ciasteczka, zanim ktokolwiek naciśnie play, więc do tego
-czasu stoi tam sama miniatura. Adres `youtube-nocookie.com` odkłada śledzenie do momentu
-odtworzenia, a zwykły link do YouTube pod spodem działa nawet wtedy, gdy autor skasuje film.
+czasu stoi tam sama miniatura z `loading="lazy"` — obrazek z CDN, bez skryptów i bez
+ciasteczek, dociągany dopiero wtedy, gdy zbliży się do ekranu. Adres `youtube-nocookie.com`
+odkłada śledzenie do momentu odtworzenia, a zwykły link do YouTube pod spodem działa nawet
+wtedy, gdy autor skasuje film.
 
 ## Plan treningowy
 
@@ -421,12 +439,32 @@ Pięć grup:
 - **Terminy** — zależne od uruchomionego planu: seria w terminie, brak pudła, czyste tygodnie,
   nadrobienia.
 
+## Kolory
+
+Ikony, grafiki i odznaki chodzą na palecie Claude: pomarańcz `#d97757`, błękit `#6a9bcc`,
+zieleń `#788c5d` i ciepłe neutralne (`#141413`, `#faf9f5`, `#b0aea5`, `#e8e6dc`). Typografia,
+układ i nazwa zostają własne — paleta spina rysunki w jeden zestaw, ale aplikacja nie udaje
+cudzego produktu.
+
+**Każdy akcent ma dwie wersje i to nie jest ozdoba.** Czysty kolor idzie w wypełnienia:
+paski postępu, kropka pod aktywną zakładką, kropelki potu, konfetti, sprzęt w dłoni manekina.
+Do tekstu wchodzi wersja przyciemniona (`--c-orange-ink` i reszta), bo czysty pomarańcz
+na jasnym tle daje 2,99:1, a błękit 2,80:1 — poniżej progu czytelności. Wersje `ink`
+trzymają się powyżej 4,5:1 na wszystkich trzech tłach aplikacji, wypełnienia powyżej 3:1.
+Podział jest tu po to, żeby przy następnym kolorowaniu nie trzeba było liczyć od nowa:
+nazwa tokenu mówi, gdzie wolno go użyć.
+
+**Tworzywa odznak wyprowadzone są z tych samych akcentów** — brąz z pomarańczu, platyna
+z błękitu, szmaragd z zieleni; srebro i złoto zostają przy neutralnych. Rysunek na medalu
+jest wszędzie ciemny, „grawerowany": jasny piktogram na stopie o średniej jasności schodził
+do 2,74:1 i po prostu znikał. Ciemny trzyma od 4,16:1 wzwyż na każdym z pięciu pasm.
+
 ## Jak wyglądają odznaki
 
 Odznaka jest przedmiotem, nie znakiem typograficznym. Każda to sześciokątny medal z tworzywem,
-które rośnie razem z postępem w rodzinie: **brąz → srebro → złoto → platyna → diament**.
+które rośnie razem z postępem w rodzinie: **brąz → srebro → złoto → platyna → szmaragd**.
 Tworzywo liczy się z udziału zdobytych progów w rodzinie, nie z gołego numeru progu — dzięki
-temu domknięcie dowolnej rodziny kończy się diamentem, także tej trzyprogowej, a rodzina
+temu domknięcie dowolnej rodziny kończy się szmaragdem, także tej trzyprogowej, a rodzina
 dziesięcioprogowa rozkłada te same pięć pasm na dłuższą drogę. Odznaka jednorazowa dostaje
 złoto: jeden trening przed ósmą nie waży tyle, co domknięta dziesięcioprogowa rodzina.
 

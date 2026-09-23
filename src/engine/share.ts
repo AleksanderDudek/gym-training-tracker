@@ -206,8 +206,8 @@ function drawFigure(ctx: CanvasRenderingContext2D, cx: number, top: number, h: n
   };
 
   ctx.save();
-  ctx.strokeStyle = '#3C423D';
-  ctx.fillStyle = '#3C423D';
+  ctx.strokeStyle = INK.dark;
+  ctx.fillStyle = INK.dark;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 
@@ -223,15 +223,15 @@ function drawFigure(ctx: CanvasRenderingContext2D, cx: number, top: number, h: n
   const hr = 11 * k;
   ctx.beginPath();
   ctx.arc(X(s.head), Y(s.head), hr, 0, Math.PI * 2);
-  ctx.fillStyle = '#EFF0EC';
+  ctx.fillStyle = '#EFEEE7';
   ctx.fill();
-  ctx.strokeStyle = '#3C423D';
+  ctx.strokeStyle = INK.dark;
   ctx.lineWidth = 3.6 * k;
   ctx.stroke();
   drawFace(ctx, X(s.head), Y(s.head), k, headAngle(s), 0.25);
 
   // Kettlebell w dłoni — bez niego sylwetka po prostu stoi.
-  ctx.strokeStyle = '#9A5B12';
+  ctx.strokeStyle = INK.stamp;
   ctx.lineWidth = 2.6 * k;
   ctx.beginPath();
   ctx.arc(X(s.wristN), Y({ y: s.wristN.y + 9 }), 6.4 * k, 0, Math.PI * 2);
@@ -249,8 +249,8 @@ function flourish(ctx: CanvasRenderingContext2D, x: number, y: number, sx: numbe
   ctx.save();
   ctx.translate(x, y);
   ctx.scale(sx, sy);
-  ctx.strokeStyle = '#C2C5BD';
-  ctx.lineWidth = 2;
+  ctx.strokeStyle = INK.rule;
+  ctx.lineWidth = 2.6;
   ctx.beginPath();
   ctx.moveTo(0, 46);
   ctx.quadraticCurveTo(0, 0, 46, 0);
@@ -271,10 +271,10 @@ function flourish(ctx: CanvasRenderingContext2D, x: number, y: number, sx: numbe
  */
 function signature(ctx: CanvasRenderingContext2D, cx: number, y: number, who: string): void {
   ctx.save();
-  ctx.strokeStyle = '#3C423D';
-  ctx.lineWidth = 3;
+  ctx.strokeStyle = INK.dark;
+  ctx.lineWidth = 3.4;
   ctx.lineCap = 'round';
-  ctx.globalAlpha = 0.75;
+  ctx.globalAlpha = 0.85;
   ctx.beginPath();
   ctx.moveTo(cx - 92, y + 10);
   ctx.bezierCurveTo(cx - 60, y - 22, cx - 34, y + 26, cx - 8, y - 4);
@@ -285,14 +285,14 @@ function signature(ctx: CanvasRenderingContext2D, cx: number, y: number, who: st
   ctx.beginPath();
   ctx.moveTo(cx - 120, y + 26);
   ctx.lineTo(cx + 120, y + 26);
-  ctx.lineWidth = 1;
-  ctx.strokeStyle = '#C2C5BD';
+  ctx.lineWidth = 1.4;
+  ctx.strokeStyle = INK.rule;
   ctx.stroke();
   ctx.restore();
 
-  ctx.fillStyle = '#5E655D';
-  ctx.font = '400 21px "IBM Plex Sans", system-ui, sans-serif';
-  ctx.fillText(who, cx, y + 34);
+  ctx.fillStyle = INK.soft;
+  ctx.font = '400 25px "IBM Plex Sans", system-ui, sans-serif';
+  ctx.fillText(who, cx, y + 36);
 }
 
 /** Ta sama mimika, co w atlasie, tylko pociągnięta po płótnie zamiast po SVG. */
@@ -309,8 +309,8 @@ function drawFace(
   ctx.translate(cx, cy);
   ctx.rotate((angle * Math.PI) / 180);
   ctx.scale(k, k);
-  ctx.strokeStyle = '#3C423D';
-  ctx.fillStyle = '#3C423D';
+  ctx.strokeStyle = INK.dark;
+  ctx.fillStyle = INK.dark;
   ctx.lineWidth = 1.5;
   ctx.lineCap = 'round';
 
@@ -342,23 +342,26 @@ function stamp(ctx: CanvasRenderingContext2D, words: readonly [string, string]):
   ctx.save();
   ctx.translate(CARD - 152, CARD - 170);
   ctx.rotate((-14 * Math.PI) / 180);
-  ctx.strokeStyle = '#9A5B12';
-  ctx.fillStyle = '#9A5B12';
-  ctx.globalAlpha = 0.62;
-  ctx.lineWidth = 5;
+  // Pieczęć była ledwie widoczna przy 62% krycia. Mocniejszy kolor i grubsze pierścienie.
+  // Bez krycia tła pod spodem: stempel idzie na papier przed napisami stopki i te napisy
+  // rysują się na nim — tak samo, jak prawdziwa pieczęć wchodzi na druk, nie zamiast niego.
+  ctx.strokeStyle = INK.stamp;
+  ctx.fillStyle = INK.stamp;
+  ctx.globalAlpha = 0.92;
+  ctx.lineWidth = 6.5;
   ctx.beginPath();
-  ctx.arc(0, 0, 70, 0, Math.PI * 2);
+  ctx.arc(0, 0, 72, 0, Math.PI * 2);
   ctx.stroke();
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 2.6;
   ctx.beginPath();
   ctx.arc(0, 0, 61, 0, Math.PI * 2);
   ctx.stroke();
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.font = '600 27px "Oswald", system-ui, sans-serif';
-  ctx.fillText(words[0], 0, -12);
-  ctx.font = '400 15px "IBM Plex Sans", system-ui, sans-serif';
-  ctx.fillText(words[1], 0, 15);
+  ctx.font = '600 32px "Oswald", system-ui, sans-serif';
+  ctx.fillText(words[0], 0, -13);
+  ctx.font = '600 16px "IBM Plex Sans", system-ui, sans-serif';
+  ctx.fillText(words[1], 0, 16);
   ctx.restore();
   ctx.globalAlpha = 1;
   ctx.textAlign = 'center';
@@ -377,6 +380,18 @@ const INLINE_VARS: Record<string, string> = {
   'var(--ink-soft)': '#5E655D',
   'var(--steel)': '#3C423D',
 };
+
+/** Kolory blankietu. Te same akcenty, co w aplikacji — karta ma wyglądać na jej część. */
+const INK = {
+  dark: '#141413',
+  soft: '#4E5249',
+  faint: '#6E7268',
+  rule: '#C2C5BD',
+  accent: '#94452C',
+  stamp: '#C9724F',
+  paper: '#FAF9F5',
+  board: '#D7D9D3',
+} as const;
 
 const inlineVars = (markup: string): string =>
   Object.entries(INLINE_VARS).reduce((out, [k, v]) => out.split(k).join(v), markup);
@@ -449,14 +464,14 @@ export async function shareCard(s: ShareSubject, medal?: SVGSVGElement | null): 
   // Czekamy na kroje pisma: `fillText` przed ich załadowaniem rysuje zapasowym fontem.
   if (document.fonts?.ready) await document.fonts.ready;
 
-  ctx.fillStyle = '#D7D9D3';
+  ctx.fillStyle = INK.board;
   ctx.fillRect(0, 0, CARD, CARD);
-  ctx.fillStyle = '#FAFAF8';
+  ctx.fillStyle = INK.paper;
   ctx.fillRect(56, 56, CARD - 112, CARD - 112);
 
   // Podwójna ramka i pieczęć: karta ma wyglądać jak świadectwo wydane przez urząd,
   // który nie istnieje. Powaga formy przy błahości treści jest tu całym żartem.
-  ctx.strokeStyle = '#C2C5BD';
+  ctx.strokeStyle = INK.rule;
   ctx.lineWidth = 3;
   ctx.strokeRect(56, 56, CARD - 112, CARD - 112);
   ctx.lineWidth = 1;
@@ -468,42 +483,36 @@ export async function shareCard(s: ShareSubject, medal?: SVGSVGElement | null): 
   ctx.textBaseline = 'top';
 
   const FONT = {
-    brand: '600 34px "Oswald", system-ui, sans-serif',
-    band: '600 30px "IBM Plex Sans", system-ui, sans-serif',
-    title: '600 72px "Oswald", system-ui, sans-serif',
-    line: '400 34px "IBM Plex Sans", system-ui, sans-serif',
-    punch: '600 34px "Oswald", system-ui, sans-serif',
-    // Krótszy adres wchodziłby pod pieczęć w prawym dolnym rogu.
-    url: '500 25px "IBM Plex Sans", system-ui, sans-serif',
+    kind: '600 30px "IBM Plex Sans", system-ui, sans-serif',
+    brand: '600 40px "Oswald", system-ui, sans-serif',
+    motto: '500 23px "IBM Plex Sans", system-ui, sans-serif',
+    band: '600 34px "IBM Plex Sans", system-ui, sans-serif',
+    title: '600 76px "Oswald", system-ui, sans-serif',
+    line: '400 37px "IBM Plex Sans", system-ui, sans-serif',
+    punch: '600 38px "Oswald", system-ui, sans-serif',
+    sign: '400 25px "IBM Plex Sans", system-ui, sans-serif',
+    url: '600 27px "IBM Plex Sans", system-ui, sans-serif',
+    serial: '400 23px "IBM Plex Sans", system-ui, sans-serif',
   };
 
-  ctx.fillStyle = '#5E655D';
-  ctx.font = '600 26px "IBM Plex Sans", system-ui, sans-serif';
+  ctx.fillStyle = INK.accent;
+  ctx.font = FONT.kind;
   ctx.fillText(
     s.kind === 'progress' ? 'LEGITYMACJA SIŁOWA' : 'ŚWIADECTWO POCIĘŻAROWE',
     CARD / 2,
-    116,
+    108,
   );
-  ctx.fillStyle = '#1E2320';
+  ctx.fillStyle = INK.dark;
   ctx.font = FONT.brand;
-  ctx.fillText('GYM TRACKER', CARD / 2, 148);
-  ctx.fillStyle = '#9BA298';
-  ctx.font = '400 20px "IBM Plex Sans", system-ui, sans-serif';
-  ctx.fillText(pick(MOTTOS, seed), CARD / 2, 190);
+  ctx.fillText('GYM TRACKER', CARD / 2, 146);
+  ctx.fillStyle = INK.faint;
+  ctx.font = FONT.motto;
+  ctx.fillText(pick(MOTTOS, seed), CARD / 2, 196);
 
   flourish(ctx, 92, 92, 1, 1);
   flourish(ctx, CARD - 92, 92, -1, 1);
   flourish(ctx, 92, CARD - 92, 1, -1);
   flourish(ctx, CARD - 92, CARD - 92, -1, -1);
-
-  ctx.font = FONT.url;
-  ctx.fillStyle = '#3C423D';
-  ctx.fillText(APP_URL.replace(/^https:\/\//, ''), CARD / 2, CARD - 152);
-
-  // Numer wydania: wygląda urzędowo, nie znaczy nic. O to chodzi.
-  ctx.font = '400 22px "IBM Plex Sans", system-ui, sans-serif';
-  ctx.fillStyle = '#9BA298';
-  ctx.fillText(serial(s), CARD / 2, CARD - 114);
 
 
 
@@ -522,17 +531,17 @@ export async function shareCard(s: ShareSubject, medal?: SVGSVGElement | null): 
   const MIN_ART = 150;
   // Wiersz nadpisu nad tytułem. Oswald ma wysoki wzrost liter, więc odstęp musi być
   // liczony z zapasem — inaczej wersaliki tytułu dotykają nadpisu.
-  const BAND_ROW = 54;
+  const BAND_ROW = 58;
   const text =
     (s.band ? BAND_ROW : 0) +
-    titleLines.length * 84 +
-    (bodyLines.length ? 16 + bodyLines.length * 46 : 0) +
-    (punchLines.length ? 20 + punchLines.length * 44 : 0);
+    titleLines.length * 88 +
+    (bodyLines.length ? 16 + bodyLines.length * 50 : 0) +
+    (punchLines.length ? 22 + punchLines.length * 48 : 0);
 
   // Blok treści jeździ pionowo między nagłówkiem a adresem, więc karta bez medalu nie
   // zostawia dziury na środku, a karta z medalem nie wypycha tekstu pod krawędź.
-  const top = 224;
-  const bottom = CARD - 268;
+  const top = 238;
+  const bottom = CARD - 262;
   const band = bottom - top;
 
   /*
@@ -557,36 +566,36 @@ export async function shareCard(s: ShareSubject, medal?: SVGSVGElement | null): 
   }
 
   if (s.band) {
-    ctx.fillStyle = '#5E655D';
+    ctx.fillStyle = INK.soft;
     ctx.font = FONT.band;
     ctx.fillText(s.band.toUpperCase(), CARD / 2, y);
     y += BAND_ROW;
   }
 
-  ctx.fillStyle = '#1E2320';
+  ctx.fillStyle = INK.dark;
   ctx.font = FONT.title;
   titleLines.forEach((l) => {
     ctx.fillText(l, CARD / 2, y);
-    y += 84;
+    y += 88;
   });
 
   if (bodyLines.length) {
     y += 16;
-    ctx.fillStyle = '#5E655D';
+    ctx.fillStyle = INK.soft;
     ctx.font = FONT.line;
     bodyLines.forEach((l) => {
       ctx.fillText(l, CARD / 2, y);
-      y += 46;
+      y += 50;
     });
   }
 
   if (punchLines.length) {
-    y += 20;
-    ctx.fillStyle = '#9A5B12';
+    y += 22;
+    ctx.fillStyle = INK.accent;
     ctx.font = FONT.punch;
     punchLines.forEach((l) => {
       ctx.fillText(l, CARD / 2, y);
-      y += 44;
+      y += 48;
     });
   }
 
@@ -595,7 +604,21 @@ export async function shareCard(s: ShareSubject, medal?: SVGSVGElement | null): 
   // lepiej dokument bez podpisu niż podpis w poprzek zdania.
   const signY = y + 26;
   if (signY < CARD - 238) signature(ctx, CARD / 2 - 86, signY, pick(SIGNATORIES, seed));
+
   stamp(ctx, pick(STAMPS, seed));
+
+  // Stopka na samym wierzchu: adres musi zostać czytelny także tam, gdzie przechodzi
+  // pod nim pierścień pieczęci.
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.font = FONT.url;
+  ctx.fillStyle = INK.dark;
+  ctx.fillText(APP_URL.replace(/^https:\/\//, ''), CARD / 2, CARD - 154);
+
+  // Numer wydania: wygląda urzędowo, nie znaczy nic. O to chodzi.
+  ctx.font = FONT.serial;
+  ctx.fillStyle = INK.faint;
+  ctx.fillText(serial(s), CARD / 2, CARD - 112);
 
   return new Promise((resolve, reject) => {
     c.toBlob((b) => (b ? resolve(b) : reject(new Error('Nie udało się zapisać obrazka.'))), 'image/png');
