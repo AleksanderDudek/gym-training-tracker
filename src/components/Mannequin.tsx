@@ -69,6 +69,30 @@ const line = (a: Pt, b: Pt): string => polyline([a, b]);
 const limb = (a: Pt, b: Pt, c: Pt): string => polyline([a, b, c]);
 
 /**
+ * Kropelki potu w najtrudniejszym momencie ruchu. Nie niosą informacji i o to chodzi:
+ * sylwetka, która wyraźnie się męczy, jest zabawniejsza i lepiej pokazuje, gdzie wysiłek
+ * jest największy. Pojawiają się tylko w okolicach dołu ruchu i tylko tam, gdzie jest ciężko.
+ */
+function Sweat({ at, effort }: { at: Pt; effort: number }) {
+  if (effort <= 0.05) return null;
+  const drops = [
+    { dx: -14, dy: -6 },
+    { dx: 13, dy: -9 },
+    { dx: -18, dy: 4 },
+  ];
+  return (
+    <g className="mq-sweat" opacity={Math.min(1, effort)}>
+      {drops.map((d, i) => (
+        <path
+          key={i}
+          d={`M${at.x + d.dx} ${at.y + d.dy - 4 - effort * 7}q3 3.4 0 6.4q-3-3-0-6.4Z`}
+        />
+      ))}
+    </g>
+  );
+}
+
+/**
  * Jedna sylwetka. `phase` 0–1 to miejsce w cyklu powtórzenia; przy wyłączonych animacjach
  * zostaje nieruchoma klatka z najciekawszego momentu ruchu, bo to ona uczy techniki.
  */
@@ -86,6 +110,10 @@ export function Mannequin({
   const m = MOVES[move];
   const s = skeleton(sampleCycle(m.frames, phase));
   const prop = propPoint(s, m.prop);
+  // Wysiłek rośnie w okolicy klatki kluczowej i gaśnie na końcach — kropelki lecą wtedy,
+  // kiedy w prawdziwej serii najbardziej by leciały.
+  const peak = m.key ?? 0.45;
+  const effort = Math.max(0, 1 - Math.abs(((phase % 1) + 1) % 1 - peak) / 0.22);
 
   return (
     <svg
@@ -122,6 +150,7 @@ export function Mannequin({
         <path d={limb(s.neck, s.elbowN, s.wristN)} />
       </g>
       <Prop at={prop} gear={gear} spot={m.prop} />
+      <Sweat at={s.head} effort={effort} />
     </svg>
   );
 }

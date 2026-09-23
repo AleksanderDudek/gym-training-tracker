@@ -13,6 +13,10 @@ import { BAND_NAME, BadgeMedal, bandFor } from './BadgeArt';
 import type { Metrics } from '../engine/metrics';
 import { EMPTY_SHELF, daySeed, massJoke, pick, repsJoke, timeJoke } from '../engine/quips';
 import { snapshot } from '../engine/snapshot';
+import { progressSubject } from '../engine/share';
+import { rankFor } from '../engine/score';
+import { ShareButton } from './Share';
+import { SupportLine } from './Support';
 import { dayKey } from '../engine/schedule';
 import type { AppState } from '../types';
 
@@ -226,6 +230,23 @@ export function Achievements({ state }: { state: AppState }) {
 
       <Shelf rows={rows} />
       <Totals m={ctx.metrics} />
+
+      <div className="grp">
+        <h3>Pochwal się</h3>
+        <p className="tight">
+          Cały dorobek na jednej karcie: stopień, liczby i porównanie, którego nikt nie prosił.
+        </p>
+        <div style={{ marginTop: 10 }}>
+          <ShareButton
+            subject={progressSubject(
+              ctx.metrics,
+              rankFor((state.award.banked ?? 0) + (snap?.score.points ?? 0)).rank.name,
+              ctx.metrics.workouts,
+            )}
+            label="Udostępnij dorobek"
+          />
+        </div>
+      </div>
       <Closest rows={rows} />
 
       <div className="sect-label">
@@ -259,6 +280,8 @@ export function Achievements({ state }: { state: AppState }) {
           </div>
         );
       })}
+
+      <SupportLine tone="card" seed={rows.length} />
     </>
   );
 }

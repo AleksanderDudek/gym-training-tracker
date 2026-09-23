@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { EFFORT, ex, ladderFor } from '../data/exercises';
+import { EX_JOKES } from '../data/exjokes';
 import { levelHint, whyText } from '../engine/hints';
 import { P, plan, planLabel } from '../engine/plan';
 import { exercisePath } from '../routing';
@@ -74,6 +75,7 @@ export function ExerciseCard({ state, id, onSave, onClear, onSkip, onToast }: Pr
       {open && (
         <div className="ex-body">
           <p className="hint">{m.hint}</p>
+          {EX_JOKES[id] && <p className="exjoke">{EX_JOKES[id]}</p>}
           <a className="vidlink" href={exercisePath(id)}>
             Zobacz technikę na wideo →
           </a>

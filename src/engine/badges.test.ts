@@ -100,7 +100,8 @@ describe('odznaki', () => {
   });
 
   it('każda rodzina ma puentę i żadna nie dokucza użytkownikowi', () => {
-    const harsh = /wstyd|leń|słab|żałos|porażk|nieudacz|grub/i;
+    // Zwroty, nie pojedyncze słowa — „bez wstydu” pociesza, a nie dokucza.
+    const harsh = /wstydź się|jesteś (słab|leni|gruby)|za słab|nieudacznik|żałosn|leniu|do niczego/i;
     ACHIEVEMENTS.forEach((a) => {
       expect({ id: a.id, ok: (a.quip ?? '').length > 15 }).toEqual({ id: a.id, ok: true });
       expect(a.quip).not.toMatch(harsh);

@@ -540,3 +540,22 @@
   .cel-quip{margin:10px auto 0;max-width:34ch;font-family:var(--display);font-size:15px;
     color:var(--warn)}
   p.tight.joke{color:var(--warn);font-style:italic}
+
+  /* ---------------- Dopiski i wsparcie ---------------- */
+
+  .exjoke{font-size:12.5px;color:var(--warn);font-style:italic;line-height:1.4;margin:0 0 10px}
+
+  .headtools{display:flex;align-items:center;gap:2px;margin-right:-10px}
+  .headtools .gearbtn{margin-right:0}
+  .coffeebtn{color:var(--warn)}
+  .coffeebtn:active{background:var(--surface-2)}
+
+  .supportblock{display:grid;grid-template-columns:auto 1fr;gap:11px;align-items:start;
+    margin-top:14px;padding:12px;background:var(--surface-2);border:1px solid var(--line);
+    border-radius:var(--r);text-align:left}
+  .supportblock > .ico{color:var(--warn);margin-top:2px}
+  .supportblock-line{margin:0 0 9px;font-size:13px;color:var(--ink);line-height:1.45}
+
+  .grp h3 .ico{vertical-align:-3px;margin-right:5px;color:var(--warn)}
+  .mq-sweat path{fill:#2C7CB8;stroke:none;opacity:.7}
+  @media (prefers-reduced-motion:reduce){.mq-sweat{display:none}}

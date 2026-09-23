@@ -196,6 +196,24 @@ export const LOADING: readonly string[] = [
   'Liczę, ile już podniosłeś…',
 ];
 
+/** Podtytuły legitymacji dorobku — stoją nad nazwą stopnia. */
+export const PROGRESS_TITLES: readonly string[] = [
+  'stan posiadania',
+  'bilans otwarcia',
+  'dorobek bez retuszu',
+  'stan na dziś',
+  'suma wszystkich serii',
+];
+
+/** Wiersze o wsparciu. Widoczne, ale nigdy blokujące. */
+export const SUPPORT: readonly string[] = [
+  'Aplikacja jest bezpłatna. Kawa autora już nie.',
+  'Zero reklam, zero kont, zero abonamentu. Kawa opcjonalna.',
+  'Za tę aplikację nikt nie płaci. Autor też nie, ale kawę pije.',
+  'Darmowe na zawsze. Wdzięczność przyjmowana w kubkach.',
+  'Nie ma tu reklam. Jest za to link do kawy i czyste sumienie.',
+];
+
 /** Potwierdzenia w dymku. */
 export const TOASTS: readonly string[] = [
   'Zapisane.',

@@ -19,7 +19,7 @@ Pozostałe polecenia:
 npm run build      # produkcyjny build do dist/
 npm run preview    # podgląd builda
 npm run typecheck  # tsc --noEmit
-npm test           # 223 testy silnika, biblioteki, odznak, ruchu, tonu i tras (vitest)
+npm test           # 230 testów silnika, biblioteki, odznak, ruchu, tonu i tras (vitest)
 ```
 
 Build jest w pełni statyczny (`base: './'`), więc `dist/` można wrzucić na dowolny hosting plików
@@ -49,12 +49,26 @@ a „3 maluchy" widać od razu — tylko tą, przy której liczba wypada najbli�
 Liczba zawsze wychodzi całkowita, bo ułamek wymusiłby w polszczyźnie czwartą formę odmiany
 dla każdej jednostki.
 
+**Każde ćwiczenie i każdy trening ma dopisek.** Sto pięć komentarzy z szatni, po jednym na
+ruch, i po jednym na gotowy zestaw. Stoją obok wskazówki technicznej, nigdy zamiast niej:
+`hint` mówi, co zrobić, żeby się nie połamać, dopisek mówi, jak to wygląda z boku.
+
+**Sylwetka się poci.** W najtrudniejszym momencie ruchu manekinowi lecą kropelki — nie niosą
+informacji i o to chodzi: figurka, która wyraźnie się męczy, jest zabawniejsza i przy okazji
+pokazuje, gdzie wysiłek jest największy. Przy `prefers-reduced-motion` znikają.
+
 **Stopnie opisują karierę, nie mięśnie**: od „Gościa z ulicy" po „Pomnik za życia". Awans
 zależy od frekwencji, więc i nazwa mówi o tym, jak często cię tam widują.
 
-**Karta do wpisu jest świadectwem wydanym przez urząd, który nie istnieje**: podwójna ramka,
-numer wydania „bez trybu odwoławczego" i przechylona pieczęć „ZROBIONE — bez świadków".
-Powaga formy przy błahości treści jest tu całym żartem.
+**Karty do wpisu są dokumentami wydanymi przez urząd, który nie istnieje.** Odznaka dostaje
+„ŚWIADECTWO POCIĘŻAROWE" z medalem, cały dorobek — „LEGITYMACJĘ SIŁOWĄ" z rysowaną sylwetką.
+Obie mają podwójną ramkę, numer wydania „bez trybu odwoławczego" liczony z treści i przechyloną
+pieczęć „ZROBIONE — bez świadków". Powaga formy przy błahości treści jest tu całym żartem.
+
+Sylwetka na legitymacji rysowana jest wprost na płótnie z tego samego silnika póz, co manekin
+w atlasie — kopiowanie jego SVG nic by nie dało, bo kolory kresek siedzą w arkuszu strony,
+a samodzielny obrazek nie ma do niego dostępu. Skala liczona jest z obwiedni postaci, nie
+z rozmiaru sceny: scena ma 160 na 150 jednostek, a człowiek zajmuje z niej ćwiartkę.
 
 ## Wprowadzenie, udostępnianie i wsparcie
 
@@ -78,10 +92,14 @@ z gradientami, które inaczej zostałyby w osobnym bloku `defs`. Adres stoi w os
 ostatniej linii wpisu, bo serwisy robią podgląd z ostatniego adresu, a wtrącony w zdanie
 bywa ucinany.
 
-**Wsparcie** ma trzy stałe miejsca: podsumowanie po zamkniętej sesji, koniec wprowadzenia
-i Ustawienia. Zasady są proste — nigdy nie blokuje drogi, nigdy nie pojawia się w trakcie
-treningu i zawsze wygląda tak samo: jedna linijka i jeden przycisk. Kto nie chce, ten tego
-nie zauważy; kto chce, ten wie, gdzie szukać.
+**Wsparcie** jest widoczne z każdego ekranu — kubek w nagłówku, obok ustawień — i ma cztery
+stałe miejsca poza nim: podsumowanie po zamkniętej sesji, koniec wprowadzenia, dół zakładki
+Osiągnięcia i Ustawienia. Zasady bez zmian: nigdy nie blokuje drogi, nigdy nie pojawia się
+w trakcie treningu, nigdy nie prosi dwa razy pod rząd. Teksty rotują („Aplikacja jest
+bezpłatna. Kawa autora już nie."), więc ten sam komunikat nie wisi w kółko.
+
+**Dorobek udostępnisz w każdej chwili** — przycisk „Udostępnij dorobek" w zakładce Osiągnięcia
+i drugi, obok wyniku sesji, po każdym zamkniętym treningu.
 
 ## Zakładki
 
@@ -197,6 +215,7 @@ src/
   routing.ts                trasy w hashu adresu, siedem zakładek
   routing.test.ts           7 testów tras i zakładek
   data/exercises.ts         biblioteka 105 ćwiczeń, drabiny sprzętu, cztery treningi
+  data/exjokes.ts           dopiski do 105 ćwiczeń i do gotowych treningów
   data/moves.ts             osiemnaście wzorców ruchu jako klatki kluczowe
   data/anim.ts              przypisanie ćwiczeń do wzorców
   data/exercises.test.ts    14 testów spójności biblioteki i drabin
@@ -214,7 +233,7 @@ src/
     share.ts                treść wpisu, karta 1080×1080, wysyłka i ścieżka zapasowa
     share.test.ts           11 testów treści wpisu, adresów i wprowadzenia
     quips.ts                humor: porównania liczb, odmiana, zestawy tekstów
-    quips.test.ts           14 testów puent, odmiany i granic porównań
+    quips.test.ts           19 testów puent, odmiany, dopisków i granic porównań
     pose.test.ts            19 testów szkieletu, cyklu i katalogu ruchów
     badges.ts               katalog odznak z progami, postęp, migracja starych kluczy
     journal.ts              dziennik zdarzeń wyprowadzany z kalendarza

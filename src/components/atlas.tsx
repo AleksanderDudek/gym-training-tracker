@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { EX, GEAR_LABEL, STAGES, ex, gearOf } from '../data/exercises';
 import { VIDEOS } from '../data/videos';
 import { ANIM } from '../data/anim';
+import { EX_JOKES } from '../data/exjokes';
 import { AnimatedMannequin } from './Mannequin';
 import { MODE_NAMES } from '../engine/hints';
 import { P, exercisesByGroup, levelLabel, planLabel } from '../engine/plan';
@@ -126,6 +127,7 @@ export function ExercisePage({ state, id }: { state: AppState; id: ExerciseId })
       <div className="grp">
         <h3>Na co uważać</h3>
         <p>{m.hint}</p>
+        {EX_JOKES[id] && <p className="exjoke">{EX_JOKES[id]}</p>}
         <p className="tight">
           Typ progresji: {MODE_NAMES[m.mode]}
           {m.side ? '. Powtórzenia liczone osobno na każdą stronę' : ''}.

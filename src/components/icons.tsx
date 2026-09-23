@@ -5,7 +5,15 @@ import type { ReactNode } from 'react';
  * zewnętrznych zasobów, a pasek zakładek bez ikon zmusza do etykiet na 9,5 px — poniżej
  * minimum każdej wytycznej. Jedna siatka 24×24, jedna grubość linii, kolor dziedziczony.
  */
-export type IconName = 'session' | 'plan' | 'levels' | 'awards' | 'workouts' | 'atlas' | 'settings';
+export type IconName =
+  | 'session'
+  | 'plan'
+  | 'levels'
+  | 'awards'
+  | 'workouts'
+  | 'atlas'
+  | 'settings'
+  | 'coffee';
 
 const PATHS: Record<IconName, ReactNode> = {
   // Hantla: dwa obciążniki i gryf.
@@ -48,6 +56,14 @@ const PATHS: Record<IconName, ReactNode> = {
       <rect x="13" y="3.5" width="7.5" height="7.5" rx="1.5" />
       <rect x="3.5" y="13" width="7.5" height="7.5" rx="1.5" />
       <rect x="13" y="13" width="7.5" height="7.5" rx="1.5" />
+    </>
+  ),
+  // Kubek z parą. Jedyna ikona w tej aplikacji, która niczego nie mierzy.
+  coffee: (
+    <>
+      <path d="M4.5 9.5h12v6a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4Z" />
+      <path d="M16.5 11h1.8a2.6 2.6 0 0 1 0 5.2h-1.8" />
+      <path d="M8 6.2c0-1 1-1.4 1-2.4M12 6.2c0-1 1-1.4 1-2.4" />
     </>
   ),
   // Suwaki — czytelniejsze w małym rozmiarze niż zębatka.

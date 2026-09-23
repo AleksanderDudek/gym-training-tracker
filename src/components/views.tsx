@@ -15,6 +15,8 @@ import { P, exercisesByGroup, planLabel } from '../engine/plan';
 import { Chip, Sparkline } from './ui';
 import { ExerciseCard } from './ExerciseCard';
 import { SupportLine } from './Support';
+import { OWN_WORKOUT_JOKES, WORKOUT_JOKES } from '../data/exjokes';
+import { pick } from '../engine/quips';
 import type { AppState, EffortKey, ExerciseId, ReadyKey, SetResult, Workout } from '../types';
 
 /* ---------------- Sesja ---------------- */
@@ -232,6 +234,9 @@ export function WorkoutsView({
           <div className={`grp${plannedId === w.id ? ' today' : ''}`} key={w.id}>
             {plannedId === w.id && <div className="today-tag">Dziś według planu</div>}
             <h3>{w.name}</h3>
+            <p className="exjoke">
+              {WORKOUT_JOKES[w.id] ?? pick(OWN_WORKOUT_JOKES, w.name.length + w.items.length)}
+            </p>
             <p>{w.items.map((i) => ex(i.ex).name).join(' · ')}</p>
             <div className="btnrow">
               <button className="btn sm" onClick={() => onStart(w.id)}>

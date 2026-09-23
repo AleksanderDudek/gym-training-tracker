@@ -14,6 +14,12 @@ import {
   timeJoke,
 } from './quips';
 
+/**
+ * Wzorce dokuczania. Sprawdzamy zwroty, nie pojedyncze słowa: „bez wstydu” jest zdaniem
+ * pocieszającym, a wyłapanie go przez samo słowo „wstyd” kasowałoby dobre teksty.
+ */
+const SHAMING = /wstydź się|nie ma czego|jesteś (słab|leni|gruby)|za słab|nieudacznik|żałosn|leniu|nie umiesz|do niczego/i;
+
 describe('wybór tekstu', () => {
   it('to samo ziarno daje ten sam tekst', () => {
     expect(pick(CHEERS, 7)).toBe(pick(CHEERS, 7));
@@ -118,5 +124,56 @@ describe('zestawy tekstów', () => {
   it('teksty o spóźnieniu nie robią użytkownikowi wyrzutów', () => {
     const harsh = /wstyd|leń|słab|wymówk|żałos|porażk/i;
     [...LATE, ...REST, ...SAVED, ...CHEERS].forEach((t) => expect(t).not.toMatch(harsh));
+  });
+});
+
+describe('dopiski ćwiczeń i treningów', () => {
+  it('każde ćwiczenie ma dopisek i nie powiela wskazówki technicznej', async () => {
+    const { EX_JOKES, WORKOUT_JOKES, OWN_WORKOUT_JOKES } = await import('../data/exjokes');
+    const { EX, ALL, BUILTIN } = await import('../data/exercises');
+    ALL.forEach((id) => {
+      const j = EX_JOKES[id];
+      expect({ id, ok: !!j && j.length > 20 }).toEqual({ id, ok: true });
+      expect(j).not.toBe(EX[id]!.hint);
+    });
+    BUILTIN.forEach((w) => expect(WORKOUT_JOKES[w.id]?.length ?? 0).toBeGreaterThan(20));
+    expect(OWN_WORKOUT_JOKES.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('dopiski nie dokuczają i nie powtarzają się', async () => {
+    const { EX_JOKES } = await import('../data/exjokes');
+    const all = Object.values(EX_JOKES) as string[];
+    expect(new Set(all).size).toBe(all.length);
+    all.forEach((t) => expect(t).not.toMatch(SHAMING));
+  });
+});
+
+describe('wsparcie i dorobek', () => {
+  it('wiersze o wsparciu mówią o bezpłatności i nie naciskają', async () => {
+    const { SUPPORT, PROGRESS_TITLES } = await import('./quips');
+    expect(SUPPORT.length).toBeGreaterThanOrEqual(4);
+    expect(PROGRESS_TITLES.length).toBeGreaterThanOrEqual(3);
+    SUPPORT.forEach((t) => expect(t).not.toMatch(/musisz|koniecznie|natychmiast|ostatnia szansa/i));
+  });
+
+  it('karta dorobku zbiera liczby i puentę', async () => {
+    const { progressSubject, shareText } = await import('./share');
+    const subj = progressSubject(
+      { workouts: 48, reps: 6288, sets: 480, tonnage: 99_100, secs: 7680 },
+      'Stały klient',
+      3,
+    );
+    expect(subj.kind).toBe('progress');
+    expect(subj.title).toBe('Stały klient');
+    expect(subj.lines.join(' ')).toContain('48');
+    expect(subj.punch!.length).toBeGreaterThan(5);
+    expect(shareText(subj)).toContain('Stały klient');
+  });
+
+  it('dorobek bez historii nie wywraca się na zerach', async () => {
+    const { progressSubject } = await import('./share');
+    const subj = progressSubject({ workouts: 0, reps: 0, sets: 0, tonnage: 0, secs: 0 }, 'Gość z ulicy', 0);
+    expect(subj.title).toBe('Gość z ulicy');
+    expect(subj.punch).toBeTruthy();
   });
 });

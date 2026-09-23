@@ -7,7 +7,9 @@
  * nie ma, zostaje kopiowanie i kilka bezpośrednich adresów.
  */
 
-import { CHEERS, massJoke, pick, repsJoke } from './quips';
+import { CHEERS, PROGRESS_TITLES, massJoke, pick, repsJoke } from './quips';
+import { MOVES } from '../data/moves';
+import { sampleCycle, skeleton } from './pose';
 
 export const APP_URL = 'https://aleksanderdudek.github.io/gym-training-tracker/';
 export const SUPPORT_URL = 'https://buycoffee.to/uriel';
@@ -21,6 +23,30 @@ export interface ShareSubject {
   lines: string[];
   /** Puenta pod liczbami. Wpis bez niej ląduje w cudzym kanale jako sucha statystyka. */
   punch?: string | undefined;
+  /**
+   * Rodzaj dokumentu. Odznaka dostaje świadectwo z medalem, dorobek — legitymację
+   * z sylwetką. Dwa różne żarty, więc i dwa różne blankiety.
+   */
+  kind?: 'badge' | 'progress';
+}
+
+/** Liczby dorobku w formie, którą da się wrzucić do cudzego kanału bez wyjaśnień. */
+export function progressSubject(
+  m: { workouts: number; reps: number; sets: number; tonnage: number; secs: number },
+  rank: string,
+  seed: number,
+): ShareSubject {
+  const n = (x: number): string => Math.round(x).toLocaleString('pl-PL');
+  return {
+    kind: 'progress',
+    title: rank,
+    band: pick(PROGRESS_TITLES, seed),
+    lines: [
+      `${n(m.workouts)} ${m.workouts === 1 ? 'trening' : 'treningów'} · ${n(m.reps)} powtórzeń`,
+      `${n(m.sets)} serii · ${m.tonnage >= 1000 ? `${Math.round(m.tonnage / 100) / 10} t` : `${n(m.tonnage)} kg`}`,
+    ],
+    punch: punchline(m.tonnage, m.reps, seed),
+  };
 }
 
 /**
@@ -68,6 +94,74 @@ function serial(s: ShareSubject): string {
   let h = 7;
   for (let i = 0; i < base.length; i++) h = (h * 31 + base.charCodeAt(i)) % 900_000;
   return `nr ${String(h + 100_000).padStart(6, '0')} · wydano bez trybu odwoławczego`;
+}
+
+/**
+ * Sylwetka rysowana wprost na płótnie z tego samego silnika póz, co manekin w atlasie.
+ * Kopiowanie jego SVG nic by nie dało: kolory kresek siedzą w arkuszu strony, a samodzielny
+ * obrazek nie ma do niego dostępu i wyszłaby czarna plama.
+ */
+function drawFigure(ctx: CanvasRenderingContext2D, cx: number, top: number, h: number): void {
+  // Pełny wykrok, nie moment mijania nóg: postać w połowie kroku wygląda jak kreska.
+  // Bliższa ręka odchylona kilkanaście stopni, żeby nie zlewała się z tułowiem — to
+  // pozowane zdjęcie do legitymacji, nie klatka z animacji.
+  const s = skeleton({
+    ...sampleCycle(MOVES.carry.frames, 0),
+    armA: 166,
+    armB: 170,
+    farArmA: 191,
+    farArmB: 191,
+  });
+  const pts = Object.values(s);
+
+  // Skala liczona z obwiedni postaci, a nie z rozmiaru sceny. Scena ma 160 na 150 jednostek,
+  // a człowiek zajmuje z niej może jedną czwartą — skalowanie do sceny dawało figurkę
+  // wielkości znaczka pocztowego pośrodku pustej karty.
+  const minX = Math.min(...pts.map((p) => p.x));
+  const maxX = Math.max(...pts.map((p) => p.x));
+  const minY = Math.min(...pts.map((p) => p.y));
+  const maxY = Math.max(...pts.map((p) => p.y));
+  const k = h / (maxY - minY + 20);
+  const X = (p: { x: number }): number => cx + (p.x - (minX + maxX) / 2) * k;
+  const Y = (p: { y: number }): number => top + (p.y - minY + 10) * k;
+
+  const chain = (list: { x: number; y: number }[], width: number, alpha: number): void => {
+    ctx.globalAlpha = alpha;
+    ctx.lineWidth = width * k;
+    ctx.beginPath();
+    list.forEach((p, i) => (i ? ctx.lineTo(X(p), Y(p)) : ctx.moveTo(X(p), Y(p))));
+    ctx.stroke();
+  };
+
+  ctx.save();
+  ctx.strokeStyle = '#3C423D';
+  ctx.fillStyle = '#3C423D';
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  chain([s.neck, s.elbowF, s.wristF], 6, 0.34);
+  chain([s.hip, s.kneeF, s.ankleF, s.toeF], 6, 0.34);
+  chain([s.hip, s.neck], 9, 1);
+  chain([s.hip, s.kneeN, s.ankleN, s.toeN], 7, 1);
+  chain([s.neck, s.elbowN, s.wristN], 7, 1);
+
+  ctx.globalAlpha = 1;
+  ctx.beginPath();
+  ctx.arc(X(s.head), Y(s.head), 8.5 * k, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Kettlebell w dłoni — bez niego sylwetka po prostu stoi.
+  ctx.strokeStyle = '#9A5B12';
+  ctx.lineWidth = 2.6 * k;
+  ctx.beginPath();
+  ctx.arc(X(s.wristN), Y({ y: s.wristN.y + 9 }), 6.4 * k, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(X(s.wristN), Y({ y: s.wristN.y + 2 }), 4 * k, Math.PI * 1.15, Math.PI * 1.85);
+  ctx.stroke();
+
+  ctx.restore();
+  ctx.globalAlpha = 1;
 }
 
 /** Pieczęć w rogu. Przechylona, bo pieczęcie nigdy nie są proste. */
@@ -210,7 +304,11 @@ export async function shareCard(s: ShareSubject, medal?: SVGSVGElement | null): 
 
   ctx.fillStyle = '#5E655D';
   ctx.font = '600 26px "IBM Plex Sans", system-ui, sans-serif';
-  ctx.fillText('ŚWIADECTWO POCIĘŻAROWE', CARD / 2, 116);
+  ctx.fillText(
+    s.kind === 'progress' ? 'LEGITYMACJA SIŁOWA' : 'ŚWIADECTWO POCIĘŻAROWE',
+    CARD / 2,
+    116,
+  );
   ctx.fillStyle = '#1E2320';
   ctx.font = FONT.brand;
   ctx.fillText('GYM TRACKER', CARD / 2, 152);
@@ -227,6 +325,7 @@ export async function shareCard(s: ShareSubject, medal?: SVGSVGElement | null): 
   stamp(ctx);
 
   const img = medal ? await loadSvg(standaloneSvg(medal, 320)).catch(() => null) : null;
+  const figure = !img && s.kind === 'progress';
 
   ctx.font = FONT.title;
   const titleLines = wrap(ctx, s.title, CARD - 220);
@@ -236,11 +335,13 @@ export async function shareCard(s: ShareSubject, medal?: SVGSVGElement | null): 
   const punchLines = s.punch ? wrap(ctx, s.punch, CARD - 220) : [];
 
   const MEDAL = 300;
+  const FIGURE = 300;
   // Wiersz nadpisu nad tytułem. Oswald ma wysoki wzrost liter, więc odstęp musi być
   // liczony z zapasem — inaczej wersaliki tytułu dotykają nadpisu.
   const BAND_ROW = 54;
   const height =
     (img ? MEDAL + 34 : 0) +
+    (figure ? FIGURE + 30 : 0) +
     (s.band ? BAND_ROW : 0) +
     titleLines.length * 84 +
     (bodyLines.length ? 16 + bodyLines.length * 46 : 0) +
@@ -255,6 +356,9 @@ export async function shareCard(s: ShareSubject, medal?: SVGSVGElement | null): 
   if (img) {
     ctx.drawImage(img, (CARD - MEDAL) / 2, y, MEDAL, MEDAL);
     y += MEDAL + 34;
+  } else if (figure) {
+    drawFigure(ctx, CARD / 2, y, FIGURE);
+    y += FIGURE + 30;
   }
 
   if (s.band) {

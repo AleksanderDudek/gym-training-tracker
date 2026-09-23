@@ -14,7 +14,7 @@ import { Achievements } from './components/Achievements';
 import { dayKey, daysBetween } from './engine/schedule';
 import { bankPoints, snapshot } from './engine/snapshot';
 import { achCtx, migrateBadges, syncBadges } from './engine/badges';
-import { pointsToday } from './engine/score';
+import { pointsToday, rankFor } from './engine/score';
 import { seedFromPlan } from './engine/plan';
 import { planById, planId } from './data/plans';
 import { SETTINGS_PATH, TABS, activeTab, go, useRoute } from './routing';
@@ -23,10 +23,10 @@ import { BadgeDefs } from './components/BadgeArt';
 import { Celebrate } from './components/Celebrate';
 import { Intro } from './components/Intro';
 import { ShareButton } from './components/Share';
-import { SupportLine } from './components/Support';
+import { SupportButton, SupportLine } from './components/Support';
 import { metrics } from './engine/metrics';
 import { LOADING, SAVED, daySeed, pick } from './engine/quips';
-import { punchline } from './engine/share';
+import { progressSubject, punchline } from './engine/share';
 import { bandFor, BAND_NAME } from './components/BadgeArt';
 import type {
   ActivePlan,
@@ -43,6 +43,10 @@ import type {
 } from './types';
 
 const clone = (s: AppState): AppState => JSON.parse(JSON.stringify(s)) as AppState;
+
+/** Nazwa stopnia na teraz. Bez planu punkty są tylko te z dorobku. */
+const rankNow = (s: AppState): string =>
+  rankFor(s.award.banked + (snapshot(s)?.score.points ?? 0)).rank.name;
 
 /** Kontekst dla silnika odznak: stan, wyliczone metryki i to, co wynika z planu na dziś. */
 const badgeCtx = (s: AppState) => {
@@ -319,7 +323,11 @@ export default function App() {
         )}
         <div className="after">
           <ShareButton subject={subject} label="Udostępnij wynik" />
-          <SupportLine />
+          <ShareButton
+            subject={progressSubject(m, rankNow(next), m.workouts)}
+            label="Udostępnij cały dorobek"
+          />
+          <SupportLine tone="block" seed={m.workouts} />
         </div>
       </>,
     );
@@ -622,14 +630,17 @@ export default function App() {
                 ? 'sesja w toku'
                 : `${state.log.length} ${state.log.length === 1 ? 'zapisany trening' : 'zapisanych treningów'}`}
             </span>
-            <a
+            <span className="headtools">
+              <SupportButton />
+              <a
               className="gearbtn"
               href={SETTINGS_PATH}
               aria-label="Ustawienia"
               aria-current={view === 'set' ? 'page' : 'false'}
             >
               <Icon name="settings" size={21} />
-            </a>
+              </a>
+            </span>
           </div>
           <h1>{current ? current.name : 'GYM TRACKER'}</h1>
           <div className="subline">{sessionProgress ?? subline.join(' · ')}</div>
