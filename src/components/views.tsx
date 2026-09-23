@@ -14,6 +14,7 @@ import { acwr, sessionTonnage } from '../engine/math';
 import { P, exercisesByGroup, planLabel } from '../engine/plan';
 import { Chip, Sparkline } from './ui';
 import { ExerciseCard } from './ExerciseCard';
+import { SupportLine } from './Support';
 import type { AppState, EffortKey, ExerciseId, ReadyKey, SetResult, Workout } from '../types';
 
 /* ---------------- Sesja ---------------- */
@@ -357,6 +358,7 @@ export function SettingsView({
   onImport,
   onReset,
   onRecalibrate,
+  onIntro,
 }: {
   state: AppState;
   onWeights: (list: number[]) => void;
@@ -365,6 +367,7 @@ export function SettingsView({
   onImport: (f: File) => void;
   onReset: () => void;
   onRecalibrate: () => void;
+  onIntro: () => void;
 }) {
   const [text, setText] = useState(state.cfg.weights.join(', '));
   const groups = exercisesByGroup();
@@ -451,6 +454,16 @@ export function SettingsView({
             </details>
           );
         })}
+      </div>
+
+      <SupportLine tone="card" />
+
+      <div className="grp">
+        <h3>Wprowadzenie</h3>
+        <p>Cztery ekrany o tym, jak aplikacja prowadzi trening. Można je otworzyć kiedykolwiek.</p>
+        <button className="btn ghost sm" onClick={onIntro}>
+          Pokaż wprowadzenie
+        </button>
       </div>
 
       <div className="grp">

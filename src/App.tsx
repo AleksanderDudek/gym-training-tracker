@@ -21,6 +21,11 @@ import { SETTINGS_PATH, TABS, activeTab, go, useRoute } from './routing';
 import { Icon } from './components/icons';
 import { BadgeDefs } from './components/BadgeArt';
 import { Celebrate } from './components/Celebrate';
+import { Intro } from './components/Intro';
+import { ShareButton } from './components/Share';
+import { SupportLine } from './components/Support';
+import { metrics } from './engine/metrics';
+import { bandFor, BAND_NAME } from './components/BadgeArt';
 import type {
   ActivePlan,
   AppState,
@@ -48,6 +53,8 @@ export default function App() {
   const route = useRoute();
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [saveBroken, setSaveBroken] = useState(false);
+  const [replayIntro, setReplayIntro] = useState(false);
+  const medalBox = useRef<HTMLDivElement>(null);
   const { req, say, ask } = useModal();
   const booted = useRef(false);
 
@@ -74,6 +81,7 @@ export default function App() {
         next.session = saved.session ?? null;
         next.plan = saved.plan ?? null;
         next.events = saved.events ?? [];
+        next.introSeen = saved.introSeen;
         next.award = {
           banked: saved.award?.banked ?? 0,
           badges: migrateBadges(saved.award?.badges ?? {}),
@@ -136,6 +144,19 @@ export default function App() {
   const d = daysSince(state);
   const rate = weeklyRate(state);
   const ratio = acwr(state);
+  // Wprowadzenie samo z siebie wchodzi tylko przy pierwszym uruchomieniu i nigdy w trakcie
+  // sesji — kto już trenuje, ten nie potrzebuje wycieczki po ekranach. Z ustawień da się
+  // je otworzyć ponownie w dowolnym momencie.
+  const firstRun = !state.introSeen && !state.log.length && !state.session;
+  const showIntro = replayIntro || firstRun;
+
+  const closeIntro = () => {
+    setReplayIntro(false);
+    if (state.introSeen) return;
+    const next = clone(state);
+    next.introSeen = dayKey(Date.now());
+    commit(next);
+  };
 
   /* ---------- sesja ---------- */
 
@@ -264,25 +285,40 @@ export default function App() {
     commit(next);
     window.scrollTo({ top: 0 });
 
+    const m = metrics(next);
+    const subject = {
+      title: `${w.name} zaliczony`,
+      lines: [
+        `${logged.length} ${logged.length === 1 ? 'ćwiczenie' : 'ćwiczeń'} w tej sesji`,
+        `${m.workouts} ${m.workouts === 1 ? 'zapisany trening' : 'zapisanych treningów'} · ${m.reps.toLocaleString('pl-PL')} powtórzeń`,
+      ],
+    };
+
     await say(
       'Trening zapisany',
-      changes.length ? (
-        <>
-          <p>Zmiany na kolejną sesję:</p>
-          <ul>
-            {changes.map((c, i) => (
-              <li key={i}>
-                {c.type === 'level' ? '▲' : c.type === 'down' ? '▼' : '·'} {c.text}
-              </li>
-            ))}
-          </ul>
-        </>
-      ) : (
-        <p>
-          Bez zmian poziomów. Cel rośnie, gdy każda seria dobije do wyznaczonej liczby i zostanie zapas
-          powtórzeń.
-        </p>
-      ),
+      <>
+        {changes.length ? (
+          <>
+            <p>Zmiany na kolejną sesję:</p>
+            <ul>
+              {changes.map((c, i) => (
+                <li key={i}>
+                  {c.type === 'level' ? '▲' : c.type === 'down' ? '▼' : '·'} {c.text}
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : (
+          <p>
+            Bez zmian poziomów. Cel rośnie, gdy każda seria dobije do wyznaczonej liczby i zostanie
+            zapas powtórzeń.
+          </p>
+        )}
+        <div className="after">
+          <ShareButton subject={subject} label="Udostępnij wynik" />
+          <SupportLine />
+        </div>
+      </>,
     );
 
     if (fresh.length) await sayBadges(fresh);
@@ -294,10 +330,29 @@ export default function App() {
    * a ekran z osiemnastoma gratulacjami nie cieszy nikogo.
    */
   const sayBadges = async (hits: AchievementHit[]) => {
-    await say(hits.length === 1 ? 'Zdobyte!' : `Zdobyte: ${hits.length}`, <Celebrate hits={hits} />, {
-      ok: 'Nieźle',
-      tone: 'celebrate-box',
-    });
+    const top = [...hits].sort(
+      (a, b) => bandFor(b.tier, b.ach.tiers.length) - bandFor(a.tier, a.ach.tiers.length),
+    )[0]!;
+    const subject = {
+      title: top.ach.name,
+      band: BAND_NAME[bandFor(top.tier, top.ach.tiers.length)],
+      lines: [
+        top.ach.tiers.length > 1 ? `próg ${top.tier} z ${top.ach.tiers.length}` : 'odznaka jednorazowa',
+        top.ach.desc,
+      ],
+    };
+
+    await say(
+      hits.length === 1 ? 'Zdobyte!' : `Zdobyte: ${hits.length}`,
+      <div ref={medalBox}>
+        <Celebrate hits={hits} />
+        <div className="after">
+          <ShareButton subject={subject} medalRef={medalBox} label="Udostępnij odznakę" />
+          <SupportLine />
+        </div>
+      </div>,
+      { ok: 'Nieźle', tone: 'celebrate-box' },
+    );
   };
 
   /* ---------- ustawienia i dane ---------- */
@@ -699,6 +754,7 @@ export default function App() {
       {view === 'set' && (
         <SettingsView
           state={state}
+          onIntro={() => setReplayIntro(true)}
           onWeights={setWeights}
           onStartWeight={setStartWeight}
           onExport={exportData}
@@ -719,6 +775,8 @@ export default function App() {
           );
         })}
       </nav>
+
+      {showIntro && <Intro onDone={closeIntro} />}
 
       <BadgeDefs />
       <Modal req={req} />

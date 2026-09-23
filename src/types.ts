@@ -300,6 +300,8 @@ export interface AppState {
   /** Dziennik zdarzeń, których nie da się odtworzyć z kalendarza. */
   events: PlanEvent[];
   award: Award;
+  /** Dzień, w którym wprowadzenie zostało przejrzane albo pominięte. */
+  introSeen?: string;
 }
 
 /** Pojedyncza zmiana poziomu po zamkniętym treningu. */

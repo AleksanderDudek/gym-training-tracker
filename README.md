@@ -19,11 +19,38 @@ Pozostałe polecenia:
 npm run build      # produkcyjny build do dist/
 npm run preview    # podgląd builda
 npm run typecheck  # tsc --noEmit
-npm test           # 198 testów silnika, biblioteki, odznak, ruchu i tras (vitest)
+npm test           # 209 testów silnika, biblioteki, odznak, ruchu i tras (vitest)
 ```
 
 Build jest w pełni statyczny (`base: './'`), więc `dist/` można wrzucić na dowolny hosting plików
 albo otworzyć lokalnie.
+
+## Wprowadzenie, udostępnianie i wsparcie
+
+**Wprowadzenie** wchodzi samo tylko przy pierwszym uruchomieniu i nigdy w trakcie sesji.
+Cztery ekrany, bo piąty nikt nie czyta; „Pomiń” stoi na każdym z nich, a nie pod krzyżykiem
+w rogu — wprowadzenie, którego nie da się wyminąć, jest bramką, nie pomocą. Ostatni ekran
+mówi wprost, że aplikacja jest bezpłatna, i podaje jedną konkretną akcję dla tych, którzy
+chcą się odwdzięczyć. Da się je otworzyć ponownie z Ustawień.
+
+**Udostępnianie** siedzi w podsumowaniu po zamkniętej sesji i w oknie zdobytej odznaki.
+Wysyłka idzie przez systemowy arkusz (`navigator.share`), bo to on zna aplikacje
+zainstalowane na telefonie — własna lista przycisków zawsze będzie niepełna. Gdy arkusza
+nie ma, treść ląduje w schowku i pokazują się bezpośrednie adresy do X, Facebooka
+i WhatsAppa oraz pobranie obrazka.
+
+Do wpisu składa się **kwadratowa karta 1080 × 1080**: medal w tworzywie, nazwa odznaki,
+liczby i adres aplikacji. Kwadrat, bo mieści się bez przycięcia wszędzie tam, gdzie
+prostokąt bywa kadrowany inaczej, niż autor zakładał. Karta powstaje na płótnie dopiero
+po kliknięciu, a medal wjeżdża w nią jako kopia żywego rysunku ze strony — razem
+z gradientami, które inaczej zostałyby w osobnym bloku `defs`. Adres stoi w osobnej,
+ostatniej linii wpisu, bo serwisy robią podgląd z ostatniego adresu, a wtrącony w zdanie
+bywa ucinany.
+
+**Wsparcie** ma trzy stałe miejsca: podsumowanie po zamkniętej sesji, koniec wprowadzenia
+i Ustawienia. Zasady są proste — nigdy nie blokuje drogi, nigdy nie pojawia się w trakcie
+treningu i zawsze wygląda tak samo: jedna linijka i jeden przycisk. Kto nie chce, ten tego
+nie zauważy; kto chce, ten wie, gdzie szukać.
 
 ## Zakładki
 
@@ -153,6 +180,8 @@ src/
     score.ts                punkty, premie za serię, stopnie
     metrics.ts              sumy, rekordy z okna czasu, miary utrzymania poziomu
     pose.ts                 szkielet manekina: kąty, klatki, dosunięcie do podłoża
+    share.ts                treść wpisu, karta 1080×1080, wysyłka i ścieżka zapasowa
+    share.test.ts           11 testów treści wpisu, adresów i wprowadzenia
     pose.test.ts            19 testów szkieletu, cyklu i katalogu ruchów
     badges.ts               katalog odznak z progami, postęp, migracja starych kluczy
     journal.ts              dziennik zdarzeń wyprowadzany z kalendarza
@@ -176,6 +205,9 @@ src/
     Celebrate.tsx           moment zdobycia — medal, promienie, konfetti
     icons.tsx               ikony nawigacji
     Mannequin.tsx           sylwetka ćwiczeń i jej zegar
+    Intro.tsx               opcjonalne wprowadzenie, cztery ekrany
+    Share.tsx               przycisk udostępniania i ścieżka zapasowa
+    Support.tsx             wsparcie autora w dwóch wariantach
     Achievements.tsx        zakładka osiągnięć: dorobek w liczbach i odznaki z progami
     VideoEmbed.tsx          odtwarzacz YouTube ładowany dopiero po kliknięciu
   App.tsx                   spina stan i widoki

@@ -90,14 +90,17 @@
   .seg button:active{background:var(--line)}
   .seg button[aria-pressed=true]{background:var(--steel);border-color:var(--steel);color:#fff;font-weight:600}
 
-  button.btn{font:inherit;font-weight:600;font-size:15px;padding:13px 18px;min-height:48px;
+  /* Reguła celuje w klasę, nie w znacznik: przyciskiem bywa też odnośnik i etykieta pola. */
+  .btn{font:inherit;font-weight:600;font-size:15px;padding:13px 18px;min-height:48px;
     border-radius:var(--r);cursor:pointer;border:1px solid var(--steel);background:var(--steel);
-    color:#fff;-webkit-tap-highlight-color:transparent}
-  button.btn:active{transform:translateY(1px)}
-  button.btn.ghost{background:transparent;color:var(--steel)}
-  button.btn.wide{width:100%}
+    color:#fff;-webkit-tap-highlight-color:transparent;
+    display:inline-flex;align-items:center;justify-content:center;text-align:center;
+    text-decoration:none;box-sizing:border-box}
+  .btn:active{transform:translateY(1px)}
+  .btn.ghost{background:transparent;color:var(--steel)}
+  .btn.wide{width:100%}
   /* Nawet „mały” przycisk zostaje klikalny jedną ręką w biegu. */
-  button.btn.sm{padding:10px 14px;font-size:14px;min-height:44px}
+  .btn.sm{padding:10px 14px;font-size:14px;min-height:44px}
   .btnrow{display:flex;gap:9px;flex-wrap:wrap;flex:none}
   .actions{margin:18px 0 8px;display:grid;gap:9px}
 
@@ -492,3 +495,40 @@
   .mq-scrub input{width:100%;min-height:44px}
   .mq-scene *{fill:none;stroke:var(--line);stroke-width:3;stroke-linecap:round}
   .mq-scene rect{fill:var(--line);stroke:none}
+
+  /* ---------------- Udostępnianie i wsparcie ---------------- */
+
+  /* Blok po treningu: udostępnienie i wsparcie stoją pod treścią, nigdy nad nią. */
+  .after{margin-top:16px;padding-top:13px;border-top:1px solid var(--line)}
+  .share{display:grid;gap:8px;justify-items:center}
+  .share-note{margin:0;font-size:12.5px;color:var(--ink-soft)}
+  .share-more{display:flex;flex-wrap:wrap;gap:7px;justify-content:center}
+  .share-more .btn{text-decoration:none;display:inline-flex;align-items:center}
+
+  .support{margin:12px 0 0;font-size:12.5px;color:var(--ink-soft);text-align:center;line-height:1.5}
+  .support a{color:var(--steel);font-weight:600}
+
+  /* ---------------- Wprowadzenie ---------------- */
+
+  .intro{position:fixed;inset:0;z-index:60;background:var(--bg);display:grid;place-items:center;
+    padding:18px;padding-bottom:calc(18px + env(safe-area-inset-bottom))}
+  .intro-box{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
+    width:100%;max-width:440px;max-height:92vh;overflow-y:auto;padding:16px 18px 18px;
+    display:flex;flex-direction:column}
+  .intro-top{display:flex;justify-content:space-between;align-items:center;min-height:44px}
+  .intro-count{font-family:var(--display);font-size:12px;letter-spacing:.12em;color:var(--ink-soft)}
+  .intro-skip{background:none;border:0;font:inherit;font-size:14px;font-weight:600;
+    color:var(--steel);cursor:pointer;padding:10px 0 10px 14px;min-height:44px;
+    -webkit-tap-highlight-color:transparent}
+  .intro-art{display:grid;place-items:center;width:78px;height:78px;margin:6px 0 14px;
+    border-radius:50%;background:var(--surface-2);color:var(--steel)}
+  .intro-title{font-family:var(--display);font-weight:600;font-size:clamp(23px,6.4vw,29px);
+    line-height:1.12;margin:0 0 9px}
+  .intro-body{margin:0;font-size:14.5px;color:var(--ink-soft);line-height:1.55}
+  .intro-coffee{margin-top:14px;align-self:flex-start;text-decoration:none;
+    display:inline-flex;align-items:center}
+  .intro-dots{display:flex;gap:6px;margin:20px 0 12px}
+  .intro-dots i{width:8px;height:8px;border-radius:50%;background:var(--line)}
+  .intro-dots i.on{background:var(--steel)}
+  .intro-nav{display:flex;gap:9px;margin-top:auto}
+  .intro-nav .btn.wide{flex:1;width:auto}
