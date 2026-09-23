@@ -44,10 +44,7 @@ export function SessionView({
 
   return (
     <div className="wrap">
-      <div className="sess-head">
-        <span className="today-tag">Sesja w toku</span>
-        <h2 style={{ margin: '2px 0 0' }}>{workout.name}</h2>
-      </div>
+      {/* Nazwa treningu i stan sesji stoją w nagłówku aplikacji — tu byłyby drugi raz. */}
       <div className="segline">Jak się dziś czujesz? Wpływa na dzisiejsze cele, nie na twoje poziomy.</div>
       <div className="seg">
         {(Object.keys(READY) as ReadyKey[]).map((k) => (

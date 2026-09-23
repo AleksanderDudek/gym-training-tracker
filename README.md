@@ -35,7 +35,9 @@ albo otworzyć lokalnie.
 | Osiągnięcia | `#/osiagniecia` | Dorobek w liczbach, progi najbliższe zdobycia, 56 rodzin odznak. |
 | Treningi | `#/treningi` | Wszystkie treningi do wyboru i kreator własnych. |
 | Atlas | `#/cwiczenia` | 105 ćwiczeń z filtrem sprzętu; każde ma własny adres do wysłania. |
-| Ustawienia | `#/ustawienia` | Drabina kettlebli, poziomy startowe, eksport, import, kasowanie. |
+
+Ustawienia (`#/ustawienia`) mają przycisk w nagłówku, nie w dolnym pasku: drabina kettlebli,
+poziomy startowe, eksport, import i kasowanie danych to ekran otwierany raz na miesiąc.
 
 Osiągnięcia mają własną zakładkę, bo liczą się z całej historii, a nie z kalendarza planu —
 i mają być widoczne również wtedy, gdy żaden plan nie jest uruchomiony.
@@ -47,6 +49,27 @@ bo ekran z ośmioma równorzędnymi przyciskami nie podpowiada niczego.
 
 Stary adres `#/trening` dalej działa — zapisane linki i zakładki przeglądarki nie przestają
 prowadzić tam, gdzie prowadziły.
+
+## Nawigacja i cele dotykowe
+
+**Sześć zakładek, nie siedem.** Przy siedmiu na ekranie 320 px na pozycję wypadało 45 px
+wysokości i 42 px szerokości, a etykiety trzeba było ścisnąć do 9,5 px — poniżej minimum
+44 px z wytycznych Apple, 48 dp z Material Design i poniżej czytelności każdej znanej
+podziałki typograficznej. Ustawienia zeszły do przycisku w nagłówku, bo dolny pasek jest od
+miejsc odwiedzanych codziennie, a nie od ekranu otwieranego raz na miesiąc.
+
+**Ikona nad etykietą.** Pozwala trzymać tekst na 10,5–11 px zamiast 9,5 px i daje drugi,
+szybszy do rozpoznania znacznik niż samo słowo. Ikony są rysowane inline, jedną siatką 24×24
+i jedną grubością linii — bez zewnętrznych zasobów i bez zależności.
+
+Po zmianie każda zakładka ma **53 × 56 px** przy szerokości ekranu 320 px, a stan aktywny
+niesie trzy sygnały naraz: pasek nad pozycją, kolor i pogrubienie.
+
+**Cele dotykowe w całej aplikacji** przeszły przez ten sam próg 44 px: przyciski, rozwijacze,
+przełączniki, filtry sprzętu, odhaczanie terminu w kalendarzu i odnośniki tekstowe. Kółko
+odhaczenia ma dalej 24 px średnicy, ale obszar kliknięcia 44 px — inaczej domknięcie terminu
+było loterią. Audyt w przeglądarce na siedmiu ekranach nie znajduje już ani jednego celu
+poniżej progu.
 
 ## Atlas i sprzęt
 

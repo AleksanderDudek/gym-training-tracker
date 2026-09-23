@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import type { IconName } from './components/icons';
 import type { ExerciseId, Route, TabKey } from './types';
 
 /**
@@ -8,15 +9,23 @@ import type { ExerciseId, Route, TabKey } from './types';
  * i względne adresy zasobów (`base: './'`) dalej się rozwiązują.
  */
 
-export const TABS: { key: TabKey; label: string; path: string }[] = [
-  { key: 'train', label: 'Twoja sesja', path: '#/sesja' },
-  { key: 'plan', label: 'Plan', path: '#/plan' },
-  { key: 'prog', label: 'Poziomy', path: '#/poziomy' },
-  { key: 'ach', label: 'Osiągnięcia', path: '#/osiagniecia' },
-  { key: 'work', label: 'Treningi', path: '#/treningi' },
-  { key: 'atlas', label: 'Atlas', path: '#/cwiczenia' },
-  { key: 'set', label: 'Ustawienia', path: '#/ustawienia' },
+/**
+ * Zakładki dolnego paska. Sześć, nie siedem: przy siedmiu na ekranie 320 px na pozycję
+ * wypada 45 px, czyli poniżej minimum 44 px z wytycznych Apple i 48 px z Material Design,
+ * a etykiety trzeba ścisnąć do 9,5 px. Ustawienia schodzą do nagłówka — to ekran otwierany
+ * raz na miesiąc, a dolny pasek jest od miejsc odwiedzanych codziennie.
+ */
+export const TABS: { key: TabKey; label: string; path: string; icon: IconName }[] = [
+  { key: 'train', label: 'Twoja sesja', path: '#/sesja', icon: 'session' },
+  { key: 'plan', label: 'Plan', path: '#/plan', icon: 'plan' },
+  { key: 'work', label: 'Treningi', path: '#/treningi', icon: 'workouts' },
+  { key: 'prog', label: 'Poziomy', path: '#/poziomy', icon: 'levels' },
+  { key: 'ach', label: 'Osiągnięcia', path: '#/osiagniecia', icon: 'awards' },
+  { key: 'atlas', label: 'Atlas', path: '#/cwiczenia', icon: 'atlas' },
 ];
+
+/** Ustawienia mają własny przycisk w nagłówku — poza dolnym paskiem, ale wciąż jeden klik. */
+export const SETTINGS_PATH = '#/ustawienia';
 
 const TAB_BY_PATH: Record<string, TabKey> = {
   sesja: 'train',

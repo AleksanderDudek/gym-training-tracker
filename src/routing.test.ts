@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { TABS, activeTab, exercisePath, parseHash } from './routing';
+import { SETTINGS_PATH, TABS, activeTab, exercisePath, parseHash } from './routing';
 import type { TabKey } from './types';
 
 describe('trasy', () => {
@@ -13,6 +13,17 @@ describe('trasy', () => {
       const route = parseHash(t.path);
       expect(activeTab(route)).toBe(t.key);
     });
+  });
+
+  it('dolny pasek trzyma się sześciu pozycji', () => {
+    // Siedem pozycji na ekranie 320 px daje 45 px na pozycję — poniżej minimum 48 px.
+    expect(TABS.length).toBeLessThanOrEqual(6);
+    TABS.forEach((t) => expect(t.icon.length).toBeGreaterThan(2));
+  });
+
+  it('ustawienia są poza paskiem, ale wciąż mają działający adres', () => {
+    expect(TABS.some((t) => t.key === 'set')).toBe(false);
+    expect(parseHash(SETTINGS_PATH)).toEqual({ kind: 'tab', tab: 'set' });
   });
 
   it('sesja ma własny adres, a stary link do treningu dalej działa', () => {

@@ -17,7 +17,8 @@ import { achCtx, formatTier, migrateBadges, syncBadges } from './engine/badges';
 import { pointsToday } from './engine/score';
 import { seedFromPlan } from './engine/plan';
 import { planById, planId } from './data/plans';
-import { TABS, activeTab, go, useRoute } from './routing';
+import { SETTINGS_PATH, TABS, activeTab, go, useRoute } from './routing';
+import { Icon } from './components/icons';
 import type {
   ActivePlan,
   AppState,
@@ -550,6 +551,12 @@ export default function App() {
 
   /* ---------- nagłówek ---------- */
 
+  // W trakcie sesji nagłówek pokazuje postęp, a nie statystyki sprzed tygodni — to jedyna
+  // liczba, której ktoś w połowie treningu naprawdę szuka.
+  const sessionProgress = current
+    ? `${Object.keys(state.session!.done).length} z ${current.items.length} ćwiczeń zapisanych`
+    : null;
+
   const subline = [
     d === null
       ? 'Pierwszy trening'
@@ -572,9 +579,17 @@ export default function App() {
                 ? 'sesja w toku'
                 : `${state.log.length} ${state.log.length === 1 ? 'zapisany trening' : 'zapisanych treningów'}`}
             </span>
+            <a
+              className="gearbtn"
+              href={SETTINGS_PATH}
+              aria-label="Ustawienia"
+              aria-current={view === 'set' ? 'page' : 'false'}
+            >
+              <Icon name="settings" size={21} />
+            </a>
           </div>
           <h1>{current ? current.name : 'GYM TRACKER'}</h1>
-          <div className="subline">{subline.join(' · ')}</div>
+          <div className="subline">{sessionProgress ?? subline.join(' · ')}</div>
         </header>
       </div>
 
@@ -709,12 +724,16 @@ export default function App() {
         />
       )}
 
-      <nav>
-        {TABS.map((t) => (
-          <a key={t.key} href={t.path} aria-current={activeTab(route) === t.key ? 'page' : 'false'}>
-            {t.label}
-          </a>
-        ))}
+      <nav aria-label="Główna nawigacja">
+        {TABS.map((t) => {
+          const on = activeTab(route) === t.key;
+          return (
+            <a key={t.key} href={t.path} aria-current={on ? 'page' : 'false'}>
+              <Icon name={t.icon} />
+              <span>{t.label}</span>
+            </a>
+          );
+        })}
       </nav>
 
       <Modal req={req} />

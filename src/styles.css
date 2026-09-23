@@ -8,11 +8,19 @@
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
   body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;
-    line-height:1.5;-webkit-text-size-adjust:100%;padding-bottom:86px}
+    line-height:1.5;-webkit-text-size-adjust:100%;
+    padding-bottom:calc(96px + env(safe-area-inset-bottom))}
   .wrap{max-width:640px;margin:0 auto;padding:0 14px}
 
   header{padding:22px 0 14px}
-  .meta{font-size:13px;color:var(--ink-soft);display:flex;gap:14px;flex-wrap:wrap}
+  .meta{font-size:13px;color:var(--ink-soft);display:flex;gap:14px;align-items:center;
+    justify-content:space-between;min-height:44px}
+  .gearbtn{flex:none;width:44px;height:44px;margin-right:-10px;display:grid;place-items:center;
+    color:var(--ink-soft);text-decoration:none;border-radius:var(--r);
+    -webkit-tap-highlight-color:transparent}
+  .gearbtn:active{background:var(--surface-2)}
+  .gearbtn[aria-current=page]{color:var(--steel);background:var(--surface-2)}
+  .gearbtn:focus-visible{outline:2px solid var(--steel);outline-offset:-2px}
   h1{font-family:var(--display);font-weight:600;font-size:clamp(32px,9vw,44px);line-height:.98;margin:6px 0 8px}
   h2{font-family:var(--display);font-weight:500;font-size:20px;margin:0 0 10px}
   .subline{font-size:14px;color:var(--ink-soft)}
@@ -29,7 +37,9 @@
 
   .ex{border-bottom:1px solid var(--line)}
   .ex-head{display:grid;grid-template-columns:52px 1fr auto;align-items:center;gap:12px;
-    padding:13px 14px 13px 0;width:100%;background:none;border:0;text-align:left;cursor:pointer;font:inherit;color:inherit}
+    padding:13px 14px 13px 0;min-height:60px;width:100%;background:none;border:0;text-align:left;
+    cursor:pointer;font:inherit;color:inherit;-webkit-tap-highlight-color:transparent}
+  .ex-head:active{background:var(--surface-2)}
   .ex-head:focus-visible{outline:2px solid var(--steel);outline-offset:-2px}
   .chip{height:46px;display:flex;flex-direction:column;align-items:center;justify-content:center;
     font-family:var(--display);color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.35);position:relative}
@@ -55,7 +65,9 @@
     margin:0 0 12px;font-size:13.5px;line-height:1.45}
   .nextlvl.hit{border-left-color:var(--ok)}
   .why{font-size:13px;color:var(--ink-soft);margin:0 0 12px}
-  .why summary{cursor:pointer;color:var(--steel);font-weight:600}
+  /* Rozwijacz to też cel dotykowy — sam tekst daje 20 px wysokości. */
+  .why summary{cursor:pointer;color:var(--steel);font-weight:600;padding:12px 0;min-height:44px;
+    display:flex;align-items:center;-webkit-tap-highlight-color:transparent}
   .why div{padding-top:7px;line-height:1.5}
 
   .setrow{display:grid;grid-template-columns:26px 1fr 1fr;gap:8px;align-items:center;margin-bottom:8px}
@@ -72,15 +84,20 @@
   .segline{margin:14px 0 6px;font-size:13px;color:var(--ink-soft)}
   /* Kolumny z liczby opcji, nie na sztywno — segment bywa dwu- i trzypozycyjny. */
   .seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:6px;margin-bottom:12px}
-  .seg button{font:inherit;font-size:13.5px;padding:11px 6px;background:var(--surface-2);
-    border:1px solid var(--line);border-radius:var(--r);cursor:pointer;color:var(--ink-soft);line-height:1.25}
+  .seg button{font:inherit;font-size:13.5px;padding:11px 6px;min-height:48px;background:var(--surface-2);
+    border:1px solid var(--line);border-radius:var(--r);cursor:pointer;color:var(--ink-soft);
+    line-height:1.25;-webkit-tap-highlight-color:transparent}
+  .seg button:active{background:var(--line)}
   .seg button[aria-pressed=true]{background:var(--steel);border-color:var(--steel);color:#fff;font-weight:600}
 
-  button.btn{font:inherit;font-weight:600;font-size:15px;padding:13px 18px;border-radius:var(--r);
-    cursor:pointer;border:1px solid var(--steel);background:var(--steel);color:#fff}
+  button.btn{font:inherit;font-weight:600;font-size:15px;padding:13px 18px;min-height:48px;
+    border-radius:var(--r);cursor:pointer;border:1px solid var(--steel);background:var(--steel);
+    color:#fff;-webkit-tap-highlight-color:transparent}
+  button.btn:active{transform:translateY(1px)}
   button.btn.ghost{background:transparent;color:var(--steel)}
   button.btn.wide{width:100%}
-  button.btn.sm{padding:8px 12px;font-size:14px}
+  /* Nawet „mały” przycisk zostaje klikalny jedną ręką w biegu. */
+  button.btn.sm{padding:10px 14px;font-size:14px;min-height:44px}
   .btnrow{display:flex;gap:9px;flex-wrap:wrap}
   .actions{margin:18px 0 8px;display:grid;gap:9px}
 
@@ -109,7 +126,8 @@
     padding:7px 0;border-top:1px solid var(--surface-2);font-size:15px}
   .bitem{display:grid;grid-template-columns:1fr 96px 40px;gap:9px;align-items:center;
     padding:9px 0;border-top:1px solid var(--surface-2);font-size:15px}
-  .bitem button{background:none;border:0;font-size:20px;color:var(--ink-soft);cursor:pointer;padding:4px}
+  .bitem button{background:none;border:0;font-size:20px;color:var(--ink-soft);cursor:pointer;
+    padding:4px;min-width:44px;min-height:44px;-webkit-tap-highlight-color:transparent}
 
   .gauge{background:var(--surface);border-bottom:1px solid var(--line);padding:14px}
   .gbar{height:9px;background:var(--surface-2);position:relative;margin:9px 0 6px}
@@ -117,17 +135,33 @@
   .gbar b{position:absolute;top:-3px;bottom:-3px;width:3px;background:var(--ink)}
   .gscale{display:flex;justify-content:space-between;font-size:11px;color:var(--ink-soft)}
 
-  nav{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);
-    display:flex;padding-bottom:env(safe-area-inset-bottom)}
-  /* Bez `nowrap` dwuwyrazowa „Twoja sesja” łamie się na dwie linie i rozpycha pasek. */
-  nav a{flex:1;padding:14px 1px;background:none;border:0;font:inherit;font-size:10.5px;text-align:center;
-    white-space:nowrap;text-decoration:none;color:var(--ink-soft);cursor:pointer;
-    border-top:3px solid transparent;margin-top:-1px}
-  nav a[aria-current=page]{color:var(--ink);font-weight:600;border-top-color:var(--steel)}
-  nav a:focus-visible{outline:2px solid var(--steel);outline-offset:-2px}
-  /* Siedem zakładek na wąskim ekranie: przy 10,5 px „Osiągnięcia” i „Ustawienia” zjadają
-     odstępy między pozycjami i etykiety zaczynają się stykać. */
-  @media (max-width:374px){nav a{font-size:9.5px;letter-spacing:-.01em}}
+  /*
+   * Dolny pasek. Cel dotykowy ma 56 px wysokości i co najmniej 48 px szerokości — powyżej
+   * minimum 44 px z wytycznych Apple i na poziomie 48 dp z Material Design. Ikona nad
+   * etykietą pozwala trzymać tekst na 11 px zamiast 9,5 px i daje drugi, szybszy do
+   * rozpoznania znacznik niż samo słowo.
+   */
+  nav{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--surface);
+    border-top:1px solid var(--line);display:flex;
+    padding-bottom:env(safe-area-inset-bottom);
+    box-shadow:0 -1px 0 rgba(30,35,32,.04),0 -6px 18px rgba(30,35,32,.06)}
+  nav a{flex:1;min-width:0;min-height:56px;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:3px;
+    padding:7px 2px 8px;background:none;border:0;font:inherit;font-size:11px;line-height:1.15;
+    text-align:center;white-space:nowrap;text-decoration:none;color:var(--ink-soft);
+    cursor:pointer;position:relative;
+    -webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+  nav a .ico{flex:none;opacity:.82}
+  /* Pasek stanu wchodzi od góry pozycji — nie przesuwa treści, bo jest pozycjonowany. */
+  nav a::before{content:'';position:absolute;top:-1px;left:16%;right:16%;height:3px;
+    background:transparent;border-radius:0 0 2px 2px}
+  nav a[aria-current=page]{color:var(--steel);font-weight:600}
+  nav a[aria-current=page] .ico{opacity:1}
+  nav a[aria-current=page]::before{background:var(--steel)}
+  nav a:active{background:var(--surface-2)}
+  nav a:focus-visible{outline:2px solid var(--steel);outline-offset:-3px}
+  /* Najwęższe telefony: etykiety schodzą o pół punktu, cel dotykowy zostaje bez zmian. */
+  @media (max-width:339px){nav a{font-size:10.5px;letter-spacing:-.01em}}
 
   #modal{position:fixed;inset:0;background:rgba(30,35,32,.55);display:grid;place-items:center;padding:18px;z-index:50}
   #modal.hidden{display:none}
@@ -153,13 +187,16 @@
   .disclaimer{font-size:12px;color:var(--ink-soft);margin:16px 0 0;max-width:62ch}
 
   .atlas-row{background:var(--surface);border:0;border-bottom:1px solid var(--line);padding:12px 14px;
-    display:grid;grid-template-columns:52px 1fr auto;gap:12px;align-items:center;width:100%;
-    font:inherit;text-align:left;color:inherit;cursor:pointer}
+    min-height:60px;display:grid;grid-template-columns:52px 1fr auto;gap:12px;align-items:center;
+    width:100%;font:inherit;text-align:left;color:inherit;cursor:pointer;
+    -webkit-tap-highlight-color:transparent}
+  .atlas-row:active{background:var(--surface-2)}
   .atlas-row:focus-visible{outline:2px solid var(--steel);outline-offset:-2px}
   .atlas-row .go{font-family:var(--display);font-size:17px;color:var(--ink-soft)}
 
   .back{background:none;border:0;font:inherit;font-size:14px;color:var(--steel);font-weight:600;
-    cursor:pointer;padding:16px 0 6px}
+    cursor:pointer;padding:16px 8px 12px 0;min-height:48px;display:inline-flex;align-items:center;
+    -webkit-tap-highlight-color:transparent}
   .back:focus-visible{outline:2px solid var(--steel);outline-offset:2px}
 
   .ex-hero{display:grid;grid-template-columns:52px 1fr;gap:12px;align-items:center;padding:0 0 14px}
@@ -199,31 +236,35 @@
     border:1px solid var(--line);color:var(--ink-soft);padding:1px 5px;border-radius:2px}
   .tag.pl{background:var(--steel);border-color:var(--steel);color:#fff}
 
-  .vidlink{display:inline-block;font-size:13px;color:var(--steel);font-weight:600;
-    text-decoration:underline;margin:0 0 12px}
+  .vidlink{display:inline-flex;align-items:center;min-height:44px;font-size:13px;
+    color:var(--steel);font-weight:600;text-decoration:underline;padding-right:8px;
+    -webkit-tap-highlight-color:transparent}
 
   /* ---------------- Plan treningowy ---------------- */
 
   .freq{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
   .freq button{font:inherit;font-family:var(--display);font-size:16px;padding:10px 2px;
-    background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r);
-    cursor:pointer;color:var(--ink-soft)}
+    min-height:48px;background:var(--surface-2);border:1px solid var(--line);
+    border-radius:var(--r);cursor:pointer;color:var(--ink-soft);
+    -webkit-tap-highlight-color:transparent}
   .freq button[aria-pressed=true]{background:var(--steel);border-color:var(--steel);color:#fff}
 
   .wtag{display:inline-block;font-family:var(--display);font-size:13px;min-width:22px;
     text-align:center;background:var(--steel);color:#fff;border-radius:2px;padding:1px 5px;margin-right:4px}
   .wtag.light{background:var(--surface-2);color:var(--ink-soft);border:1px solid var(--line)}
 
-  .wk-head{width:100%;display:flex;justify-content:space-between;align-items:center;
+  .wk-head{width:100%;min-height:52px;display:flex;justify-content:space-between;align-items:center;
     background:var(--surface);border:0;border-bottom:1px solid var(--line);padding:12px 14px;
-    font:inherit;font-family:var(--display);font-size:16px;color:var(--ink);cursor:pointer;text-align:left}
+    font:inherit;font-family:var(--display);font-size:16px;color:var(--ink);cursor:pointer;
+    text-align:left;-webkit-tap-highlight-color:transparent}
+  .wk-head:active{background:var(--surface-2)}
   .wk-head[aria-expanded=true]{border-left:3px solid var(--steel)}
   .wk-head:focus-visible{outline:2px solid var(--steel);outline-offset:-2px}
   .wk-sum{font-family:var(--body);font-size:13px;color:var(--ink-soft)}
   .wk-body{background:var(--surface-2);border-bottom:1px solid var(--line)}
 
-  .pday{display:grid;grid-template-columns:78px 1fr 22px;gap:10px;align-items:center;
-    padding:9px 14px;border-bottom:1px solid var(--line);font-size:14px}
+  .pday{display:grid;grid-template-columns:78px 1fr 24px;gap:10px;align-items:center;
+    padding:9px 14px;border-bottom:1px solid var(--line);font-size:14px;position:relative}
   .pday:last-child{border-bottom:0}
   .pd-date{font-family:var(--display);font-size:14px;color:var(--ink-soft)}
   .pd-work{min-width:0}
@@ -239,8 +280,9 @@
 
   .wdays{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
   .wdays button{font:inherit;font-family:var(--display);font-size:15px;padding:10px 2px;
-    background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r);
-    cursor:pointer;color:var(--ink-soft)}
+    min-height:48px;background:var(--surface-2);border:1px solid var(--line);
+    border-radius:var(--r);cursor:pointer;color:var(--ink-soft);
+    -webkit-tap-highlight-color:transparent}
   .wdays button[aria-pressed=true]{background:var(--steel);border-color:var(--steel);color:#fff}
 
   .rankline{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
@@ -297,9 +339,16 @@
 
   .pday.open{background:var(--surface);border-left:3px solid var(--warn)}
   .pday.done.late .pd-mark{color:var(--warn)}
-  .pd-tick{width:24px;height:24px;padding:0;border:1px solid var(--line);border-radius:50%;
-    background:var(--surface);color:var(--ink-soft);font-size:13px;cursor:pointer;line-height:1}
-  .pd-tick[aria-pressed=true]{background:var(--ok);border-color:var(--ok);color:#fff}
+  /* Kółko ma 24 px, ale obszar kliknięcia 40 px — inaczej odhaczenie terminu jest loterią. */
+  .pd-tick{width:44px;height:44px;margin:-10px;padding:0;border:0;background:none;
+    color:var(--ink-soft);font-size:13px;cursor:pointer;line-height:1;
+    display:grid;place-items:center;-webkit-tap-highlight-color:transparent}
+  .pd-tick::before{content:'';position:absolute;width:24px;height:24px;border-radius:50%;
+    border:1px solid var(--line);background:var(--surface)}
+  .pd-tick span{position:relative}
+  .pd-tick[aria-pressed=true]{color:#fff}
+  .pd-tick[aria-pressed=true]::before{background:var(--ok);border-color:var(--ok)}
+  .pd-tick:active::before{background:var(--surface-2)}
   .pd-tick:focus-visible{outline:2px solid var(--steel);outline-offset:1px}
 
   .near{display:grid;gap:9px;margin-top:4px}
@@ -337,16 +386,17 @@
   .today-name{font-family:var(--display);font-weight:600;font-size:22px;line-height:1.1;
     margin:3px 0 7px}
 
-  .sess-head{padding:4px 0 10px}
   .gsel{border-top:1px solid var(--surface-2)}
-  .gsel summary{cursor:pointer;padding:9px 0;font-size:14.5px;font-weight:600;
-    display:flex;justify-content:space-between;align-items:center}
+  .gsel summary{cursor:pointer;padding:13px 0;min-height:48px;font-size:14.5px;font-weight:600;
+    display:flex;justify-content:space-between;align-items:center;
+    -webkit-tap-highlight-color:transparent}
   .gsel summary i{font-style:normal;font-family:var(--display);font-size:13px;color:var(--ink-soft)}
   .gsel summary:focus-visible{outline:2px solid var(--steel);outline-offset:2px}
   .wsel i.gear{display:block;font-style:normal;font-size:11.5px;color:var(--ink-soft)}
 
   .gearfilter{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
-  .gearfilter button{font:inherit;font-size:12.5px;padding:7px 11px;background:var(--surface-2);
-    border:1px solid var(--line);border-radius:var(--r);cursor:pointer;color:var(--ink-soft)}
+  .gearfilter button{font:inherit;font-size:13px;padding:10px 13px;min-height:44px;
+    background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r);
+    cursor:pointer;color:var(--ink-soft);-webkit-tap-highlight-color:transparent}
   .gearfilter button[aria-pressed=true]{background:var(--steel);border-color:var(--steel);
     color:#fff;font-weight:600}

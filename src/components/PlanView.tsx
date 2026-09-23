@@ -258,7 +258,7 @@ function DayRow({ d, onTick }: { d: PlannedDay; onTick: (i: number) => void }) {
           title={d.source === 'tick' ? 'Cofnij odhaczenie' : 'Odhacz — trening zrobiony poza aplikacją'}
           onClick={() => onTick(d.index)}
         >
-          {d.source === 'tick' ? '✓' : '○'}
+          <span>{d.source === 'tick' ? '✓' : ''}</span>
         </button>
       ) : (
         <span className="pd-mark">{mark}</span>
