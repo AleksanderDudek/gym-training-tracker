@@ -10,6 +10,8 @@ export interface ModalRequest {
   body: ReactNode;
   ok: string;
   cancel?: string;
+  /** Wariant okna — np. `celebrate-box` wyśrodkowuje całość na moment zdobycia odznaki. */
+  tone?: string;
   resolve: (v: boolean) => void;
 }
 
@@ -17,7 +19,7 @@ export function Modal({ req }: { req: ModalRequest | null }) {
   if (!req) return null;
   return (
     <div id="modal" role="dialog" aria-modal="true">
-      <div className="mbox">
+      <div className={`mbox${req.tone ? ` ${req.tone}` : ''}`}>
         <h3>{req.title}</h3>
         <div className="mtext">{req.body}</div>
         <div className="btnrow">
@@ -164,13 +166,20 @@ export function Sparkline({ hist }: { hist: HistoryPoint[] }) {
 export function useModal() {
   const [req, setReq] = useState<ModalRequest | null>(null);
 
-  const open = (title: string, body: ReactNode, ok: string, cancel?: string): Promise<boolean> =>
+  const open = (
+    title: string,
+    body: ReactNode,
+    ok: string,
+    cancel?: string,
+    tone?: string,
+  ): Promise<boolean> =>
     new Promise((resolve) => {
       setReq({
         title,
         body,
         ok,
         cancel,
+        tone,
         resolve: (v) => {
           setReq(null);
           resolve(v);
@@ -180,7 +189,8 @@ export function useModal() {
 
   return {
     req,
-    say: (title: string, body: ReactNode) => open(title, body, 'OK'),
+    say: (title: string, body: ReactNode, opts?: { ok?: string; tone?: string }) =>
+      open(title, body, opts?.ok ?? 'OK', undefined, opts?.tone),
     ask: (title: string, body: ReactNode, ok = 'Tak') => open(title, body, ok, 'Anuluj'),
   };
 }

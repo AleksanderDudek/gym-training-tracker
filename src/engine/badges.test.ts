@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { planById, planId } from '../data/plans';
 import { freshState } from './plan';
 import { GROUPS_OF_EX } from './metrics';
+import { ART_NAMES, bandFor, hasArt } from '../components/BadgeArt';
 import { buildSchedule, planStats } from './schedule';
 import { ACHIEVEMENTS, achCtx, achievementProgress, migrateBadges, syncBadges, tierKey } from './badges';
 import { advise } from './advice';
@@ -46,7 +47,8 @@ describe('odznaki', () => {
     ACHIEVEMENTS.forEach((a) => {
       expect(a.name.length).toBeGreaterThan(0);
       expect(a.desc.length).toBeGreaterThan(0);
-      expect(a.mark.length).toBeGreaterThan(0);
+      // Medal niesie albo piktogram, albo napis — nigdy nic.
+      expect(hasArt(a.art) || a.mark.length > 0).toBe(true);
       expect(a.tiers.length).toBeGreaterThan(0);
       a.tiers.forEach((t, i) => {
         if (i > 0) expect(t).toBeGreaterThan(a.tiers[i - 1]!);
@@ -95,6 +97,49 @@ describe('odznaki', () => {
     expect(top('treningi')).toBeGreaterThan(156);
     expect(top('powtorzenia')).toBeGreaterThan(16_000);
     expect(top('rytm')).toBeGreaterThan(52);
+  });
+
+  it('każdy piktogram odznaki istnieje w rejestrze rysunków', () => {
+    ACHIEVEMENTS.forEach((a) => {
+      if (a.art) expect(ART_NAMES).toContain(a.art);
+    });
+  });
+
+  it('napis na medalu mieści się w kształcie', () => {
+    ACHIEVEMENTS.filter((a) => !a.art).forEach((a) => {
+      expect(a.mark.length).toBeGreaterThan(0);
+      expect(a.mark.length).toBeLessThanOrEqual(3);
+    });
+  });
+
+  it('tworzywo rośnie z postępem, a domknięcie rodziny daje diament', () => {
+    expect(bandFor(0, 6)).toBe(0);
+    expect(bandFor(1, 10)).toBe(1);
+    expect(bandFor(10, 10)).toBe(5);
+    expect(bandFor(3, 3)).toBe(5);
+    // Odznaka jednorazowa to złoto, nie diament — jeden trening przed ósmą nie waży tyle,
+    // co domknięta dziesięcioprogowa rodzina.
+    expect(bandFor(1, 1)).toBe(3);
+
+    ACHIEVEMENTS.forEach((a) => {
+      const bands = a.tiers.map((_, i) => bandFor(i + 1, a.tiers.length));
+      expect(bands[bands.length - 1]).toBe(a.tiers.length === 1 ? 3 : 5);
+      bands.forEach((b, i) => {
+        if (i > 0) expect(b).toBeGreaterThanOrEqual(bands[i - 1]!);
+      });
+    });
+  });
+
+  it('żadne dwie rodziny w tej samej grupie nie noszą tego samego rysunku', () => {
+    const byGroup = new Map<string, string[]>();
+    ACHIEVEMENTS.forEach((a) => {
+      const key = a.art ?? `mark:${a.mark}`;
+      byGroup.set(a.group, [...(byGroup.get(a.group) ?? []), key]);
+    });
+    byGroup.forEach((keys, group) => {
+      const dupes = keys.filter((k, i) => !k.startsWith('mark:') && keys.indexOf(k) !== i);
+      expect({ group, dupes }).toEqual({ group, dupes: [] });
+    });
   });
 
   it('pierwszy trening odblokowuje pierwszy próg dorobku', () => {

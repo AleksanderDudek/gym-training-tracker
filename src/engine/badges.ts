@@ -40,13 +40,14 @@ const yes = (b: boolean): number => (b ? 1 : 0);
 const groupFamily = (
   id: string,
   group: string,
-  mark: string,
+  art: string,
   name: string,
   tiers: number[],
 ): AchDef => ({
   id,
   group: 'partie',
-  mark,
+  mark: '',
+  art,
   name,
   desc: `Powtórzenia z partii „${group}”. Ćwiczenia liczone na czas nie wchodzą.`,
   unit: 'powtórzeń',
@@ -59,7 +60,8 @@ const DEFS: AchDef[] = [
   {
     id: 'treningi',
     group: 'dorobek',
-    mark: '⛭',
+    mark: '',
+    art: 'dumbbell',
     name: 'Zapisane treningi',
     desc: 'Suma zamkniętych sesji. Pierwsza jest najtrudniejsza, tysięczna najrzadsza.',
     unit: 'treningów',
@@ -69,7 +71,8 @@ const DEFS: AchDef[] = [
   {
     id: 'powtorzenia',
     group: 'dorobek',
-    mark: '∑',
+    mark: '',
+    art: 'sigma',
     name: 'Powtórzenia',
     desc: 'Suma powtórzeń z całej historii. Ćwiczenia na stronę liczą się dwa razy.',
     unit: 'powtórzeń',
@@ -79,7 +82,8 @@ const DEFS: AchDef[] = [
   {
     id: 'serie',
     group: 'dorobek',
-    mark: '≡',
+    mark: '',
+    art: 'bars',
     name: 'Serie',
     desc: 'Każda seria z wpisanym wynikiem to jedna sztuka.',
     unit: 'serii',
@@ -89,7 +93,8 @@ const DEFS: AchDef[] = [
   {
     id: 'cwiczenia',
     group: 'dorobek',
-    mark: '◆',
+    mark: '',
+    art: 'grid',
     name: 'Wykonane ćwiczenia',
     desc: 'Jedno ćwiczenie w jednej sesji to jedna sztuka.',
     unit: 'sztuk',
@@ -99,7 +104,8 @@ const DEFS: AchDef[] = [
   {
     id: 'tonaz',
     group: 'dorobek',
-    mark: '▬',
+    mark: '',
+    art: 'plates',
     name: 'Tonaż',
     desc: 'Ciężar razy powtórzenia, zsumowany przez całą historię.',
     tiers: [10_000, 50_000, 200_000, 500_000, 1_000_000, 2_500_000, 5_000_000, 10_000_000],
@@ -109,7 +115,8 @@ const DEFS: AchDef[] = [
   {
     id: 'czas',
     group: 'dorobek',
-    mark: '◷',
+    mark: '',
+    art: 'stopwatch',
     name: 'Czas pod obciążeniem',
     desc: 'Sekundy z ćwiczeń liczonych na czas: spacery farmera i deska.',
     tiers: [600, 3_000, 10_000, 30_000, 60_000, 120_000, 250_000],
@@ -119,7 +126,8 @@ const DEFS: AchDef[] = [
   {
     id: 'atlas',
     group: 'dorobek',
-    mark: '⌘',
+    mark: '',
+    art: 'book',
     name: 'Poznany atlas',
     desc: 'Ile różnych ćwiczeń w ogóle się pojawiło w historii. Ostatni próg to cała biblioteka.',
     unit: 'ćwiczeń',
@@ -129,19 +137,19 @@ const DEFS: AchDef[] = [
   },
 
   /* ---------------- Partie ruchu ---------------- */
-  groupFamily('zawias', 'Zawias biodrowy', '⌒', 'Zawias biodrowy', [
+  groupFamily('zawias', 'Zawias biodrowy', 'hinge', 'Zawias biodrowy', [
     500, 2_500, 5_000, 10_000, 25_000, 50_000,
   ]),
-  groupFamily('przysiad', 'Przysiad', '⌄', 'Przysiad', [300, 1_500, 3_000, 6_000, 12_000, 25_000]),
-  groupFamily('ciagniecie', 'Ciągnięcie', '↑', 'Ciągnięcie', [
+  groupFamily('przysiad', 'Przysiad', 'squat', 'Przysiad', [300, 1_500, 3_000, 6_000, 12_000, 25_000]),
+  groupFamily('ciagniecie', 'Ciągnięcie', 'pullup', 'Ciągnięcie', [
     300, 1_500, 3_000, 6_000, 12_000, 25_000,
   ]),
-  groupFamily('pchanie', 'Pchanie', '↓', 'Pchanie', [300, 1_500, 3_000, 6_000, 12_000, 25_000]),
-  groupFamily('cale-cialo', 'Całe ciało', '✦', 'Całe ciało', [
+  groupFamily('pchanie', 'Pchanie', 'push', 'Pchanie', [300, 1_500, 3_000, 6_000, 12_000, 25_000]),
+  groupFamily('cale-cialo', 'Całe ciało', 'star', 'Całe ciało', [
     100, 500, 1_200, 2_500, 5_000, 10_000,
   ]),
-  groupFamily('core', 'Core i carry', '◫', 'Core', [200, 1_000, 2_500, 5_000, 10_000, 20_000]),
-  groupFamily('nogi', 'Nogi — dodatkowe', '⋀', 'Nogi dodatkowo', [
+  groupFamily('core', 'Core i carry', 'core', 'Core', [200, 1_000, 2_500, 5_000, 10_000, 20_000]),
+  groupFamily('nogi', 'Nogi — dodatkowe', 'legs', 'Nogi dodatkowo', [
     300, 1_500, 3_000, 6_000, 12_000, 25_000,
   ]),
 
@@ -149,7 +157,8 @@ const DEFS: AchDef[] = [
   {
     id: 'najciezszy',
     group: 'szczyty',
-    mark: 'kg',
+    mark: '',
+    art: 'kettlebell',
     name: 'Najcięższy ciężar',
     desc: 'Najcięższe obciążenie, jakie w ogóle pojawiło się w zapisanej serii.',
     tiers: [8, 12, 16, 20, 24, 32, 40, 60, 80, 100, 140],
@@ -159,7 +168,8 @@ const DEFS: AchDef[] = [
   {
     id: 'maksimum',
     group: 'szczyty',
-    mark: '1RM',
+    mark: '',
+    art: 'ruler',
     name: 'Szacowane maksimum',
     desc: 'Najwyższy szacowany ciężar na jedno powtórzenie, wzorem Epleya z twoich serii.',
     tiers: [20, 30, 40, 50, 60, 80, 100],
@@ -169,7 +179,8 @@ const DEFS: AchDef[] = [
   {
     id: 'seria-rekord',
     group: 'szczyty',
-    mark: '⟶',
+    mark: '',
+    art: 'arrowRight',
     name: 'Najdłuższa seria',
     desc: 'Najwięcej powtórzeń w jednej serii bez przerwy.',
     unit: 'powtórzeń',
@@ -179,7 +190,8 @@ const DEFS: AchDef[] = [
   {
     id: 'podchod',
     group: 'szczyty',
-    mark: '◔',
+    mark: '',
+    art: 'hourglass',
     name: 'Najdłuższy podchód',
     desc: 'Najdłuższy pojedynczy spacer albo trzymanie na czas.',
     tiers: [60, 120, 180, 300],
@@ -189,7 +201,8 @@ const DEFS: AchDef[] = [
   {
     id: 'sesja-tonaz',
     group: 'szczyty',
-    mark: '▰',
+    mark: '',
+    art: 'plate',
     name: 'Najcięższa sesja',
     desc: 'Największy tonaż w jednym treningu.',
     tiers: [500, 1_500, 3_000, 6_000, 10_000, 15_000],
@@ -201,7 +214,7 @@ const DEFS: AchDef[] = [
   {
     id: 'dzien-powtorzenia',
     group: 'szczyty',
-    mark: '24',
+    mark: '24H',
     name: 'Najlepszy dzień',
     desc: 'Najwięcej powtórzeń w jednej dobie.',
     unit: 'powtórzeń',
@@ -211,7 +224,7 @@ const DEFS: AchDef[] = [
   {
     id: 'dzien-serie',
     group: 'szczyty',
-    mark: '≣',
+    mark: '24H',
     name: 'Dzień serii',
     desc: 'Najwięcej serii w jednej dobie, choćby z dwóch sesji.',
     unit: 'serii',
@@ -221,7 +234,7 @@ const DEFS: AchDef[] = [
   {
     id: 'dzien-tonaz',
     group: 'szczyty',
-    mark: '▱',
+    mark: '24H',
     name: 'Najcięższa doba',
     desc: 'Największy tonaż w jednym dniu, choćby z dwóch sesji.',
     tiers: [1_000, 3_000, 6_000, 10_000, 16_000],
@@ -231,7 +244,7 @@ const DEFS: AchDef[] = [
   {
     id: 'tydzien-powtorzenia',
     group: 'szczyty',
-    mark: '7',
+    mark: '7D',
     name: 'Tydzień objętości',
     desc: 'Najwięcej powtórzeń w dowolnych siedmiu dniach z rzędu.',
     unit: 'powtórzeń',
@@ -241,7 +254,7 @@ const DEFS: AchDef[] = [
   {
     id: 'tydzien-serie',
     group: 'szczyty',
-    mark: '7≡',
+    mark: '7D',
     name: 'Tydzień serii',
     desc: 'Najwięcej serii w dowolnych siedmiu dniach.',
     unit: 'serii',
@@ -251,7 +264,7 @@ const DEFS: AchDef[] = [
   {
     id: 'tydzien-treningi',
     group: 'szczyty',
-    mark: '7×',
+    mark: '7D',
     name: 'Gęsty tydzień',
     desc: 'Najwięcej treningów w dowolnych siedmiu dniach.',
     unit: 'treningów',
@@ -261,7 +274,7 @@ const DEFS: AchDef[] = [
   {
     id: 'dwa-tygodnie',
     group: 'szczyty',
-    mark: '14',
+    mark: '14D',
     name: 'Dwa tygodnie treningów',
     desc: 'Najwięcej treningów w dowolnych czternastu dniach.',
     unit: 'treningów',
@@ -271,7 +284,7 @@ const DEFS: AchDef[] = [
   {
     id: 'dwa-tygodnie-powtorzenia',
     group: 'szczyty',
-    mark: '14∑',
+    mark: '14D',
     name: 'Dwa tygodnie objętości',
     desc: 'Najwięcej powtórzeń w dowolnych czternastu dniach.',
     unit: 'powtórzeń',
@@ -281,7 +294,7 @@ const DEFS: AchDef[] = [
   {
     id: 'trzy-tygodnie',
     group: 'szczyty',
-    mark: '21',
+    mark: '21D',
     name: 'Trzy tygodnie treningów',
     desc: 'Najwięcej treningów w dowolnych dwudziestu jeden dniach.',
     unit: 'treningów',
@@ -291,7 +304,7 @@ const DEFS: AchDef[] = [
   {
     id: 'trzy-tygodnie-powtorzenia',
     group: 'szczyty',
-    mark: '21∑',
+    mark: '21D',
     name: 'Trzy tygodnie objętości',
     desc: 'Najwięcej powtórzeń w dowolnych dwudziestu jeden dniach.',
     unit: 'powtórzeń',
@@ -301,7 +314,7 @@ const DEFS: AchDef[] = [
   {
     id: 'miesiac-treningi',
     group: 'szczyty',
-    mark: '30',
+    mark: '30D',
     name: 'Miesiąc treningów',
     desc: 'Najwięcej treningów w dowolnych trzydziestu dniach.',
     unit: 'treningów',
@@ -311,7 +324,7 @@ const DEFS: AchDef[] = [
   {
     id: 'miesiac-powtorzenia',
     group: 'szczyty',
-    mark: '30∑',
+    mark: '30D',
     name: 'Miesiąc objętości',
     desc: 'Najwięcej powtórzeń w dowolnych trzydziestu dniach.',
     unit: 'powtórzeń',
@@ -321,7 +334,7 @@ const DEFS: AchDef[] = [
   {
     id: 'miesiac-serie',
     group: 'szczyty',
-    mark: '30≡',
+    mark: '30D',
     name: 'Miesiąc serii',
     desc: 'Najwięcej serii w dowolnych trzydziestu dniach.',
     unit: 'serii',
@@ -331,7 +344,7 @@ const DEFS: AchDef[] = [
   {
     id: 'miesiac-cwiczenia',
     group: 'szczyty',
-    mark: '30◆',
+    mark: '30D',
     name: 'Miesiąc ćwiczeń',
     desc: 'Najwięcej wykonanych ćwiczeń w dowolnych trzydziestu dniach.',
     unit: 'sztuk',
@@ -341,7 +354,7 @@ const DEFS: AchDef[] = [
   {
     id: 'miesiac-tonaz',
     group: 'szczyty',
-    mark: '▮',
+    mark: '30D',
     name: 'Miesięczny tonaż',
     desc: 'Najcięższe trzydzieści dni z rzędu.',
     tiers: [5_000, 15_000, 40_000, 80_000, 150_000, 250_000],
@@ -351,7 +364,7 @@ const DEFS: AchDef[] = [
   {
     id: 'kwartal-treningi',
     group: 'szczyty',
-    mark: '90',
+    mark: '90D',
     name: 'Kwartał treningów',
     desc: 'Najwięcej treningów w dowolnych dziewięćdziesięciu dniach.',
     unit: 'treningów',
@@ -361,7 +374,7 @@ const DEFS: AchDef[] = [
   {
     id: 'kwartal-powtorzenia',
     group: 'szczyty',
-    mark: 'Q',
+    mark: '90D',
     name: 'Kwartał objętości',
     desc: 'Najwięcej powtórzeń w dowolnych dziewięćdziesięciu dniach.',
     unit: 'powtórzeń',
@@ -381,7 +394,7 @@ const DEFS: AchDef[] = [
   {
     id: 'polrocze-powtorzenia',
     group: 'szczyty',
-    mark: '180∑',
+    mark: '180',
     name: 'Półrocze objętości',
     desc: 'Najwięcej powtórzeń w dowolnych stu osiemdziesięciu dniach.',
     unit: 'powtórzeń',
@@ -401,7 +414,7 @@ const DEFS: AchDef[] = [
   {
     id: 'rok-powtorzenia',
     group: 'szczyty',
-    mark: '365∑',
+    mark: '365',
     name: 'Rok objętości',
     desc: 'Najwięcej powtórzeń w dowolnym roku liczonym od dowolnego dnia.',
     unit: 'powtórzeń',
@@ -413,7 +426,8 @@ const DEFS: AchDef[] = [
   {
     id: 'rytm',
     group: 'utrzymanie',
-    mark: '≈',
+    mark: '',
+    art: 'wave',
     name: 'Utrzymany rytm',
     desc: 'Tygodnie z rzędu, w każdym co najmniej dwa treningi. Jeden pusty tydzień zeruje ciąg.',
     unit: 'tygodni',
@@ -423,7 +437,8 @@ const DEFS: AchDef[] = [
   {
     id: 'dni-z-rzedu',
     group: 'utrzymanie',
-    mark: '⋯',
+    mark: '',
+    art: 'dots',
     name: 'Dni z rzędu',
     desc: 'Najdłuższy ciąg dni kalendarzowych z treningiem. Dzień przerwy zeruje ciąg.',
     unit: 'dni',
@@ -433,7 +448,8 @@ const DEFS: AchDef[] = [
   {
     id: 'bez-cofniecia',
     group: 'utrzymanie',
-    mark: '⊟',
+    mark: '',
+    art: 'shield',
     name: 'Bez cofnięcia',
     desc: 'Dni treningu bez ani jednego zejścia z ciężaru. Liczone do ostatniej sesji, nie do dzisiaj.',
     unit: 'dni',
@@ -443,7 +459,8 @@ const DEFS: AchDef[] = [
   {
     id: 'forma',
     group: 'utrzymanie',
-    mark: '=',
+    mark: '',
+    art: 'equals',
     name: 'Trzymana forma',
     desc: 'Ćwiczenia stojące w granicach 5% własnego szczytu. Miara utrzymania, nie wzrostu.',
     unit: 'ćwiczeń',
@@ -453,7 +470,8 @@ const DEFS: AchDef[] = [
   {
     id: 'etapy',
     group: 'utrzymanie',
-    mark: '⇞',
+    mark: '',
+    art: 'stairs',
     name: 'Etapy z masą ciała',
     desc: 'Suma etapów w podciąganiu, pompkach i core. Jedyna miara, w której ciężar nie gra żadnej roli.',
     unit: 'etapów',
@@ -463,7 +481,8 @@ const DEFS: AchDef[] = [
   {
     id: 'powrot-do-formy',
     group: 'utrzymanie',
-    mark: '⟲',
+    mark: '',
+    art: 'refresh',
     name: 'Powrót do poziomu',
     desc: 'Po przerwie od czternastu dni ciężar wrócił w miesiąc tam, gdzie był przed nią.',
     unit: 'razy',
@@ -473,7 +492,8 @@ const DEFS: AchDef[] = [
   {
     id: 'zelazo',
     group: 'utrzymanie',
-    mark: '▲',
+    mark: '',
+    art: 'triangleUp',
     name: 'Żelazo',
     desc: 'Ćwiczenia, które przeszły na cięższe obciążenie i tam zostały.',
     unit: 'ćwiczeń',
@@ -483,7 +503,8 @@ const DEFS: AchDef[] = [
   {
     id: 'ranny-ptaszek',
     group: 'utrzymanie',
-    mark: '☀',
+    mark: '',
+    art: 'sun',
     name: 'Ranny ptaszek',
     desc: 'Trening zamknięty przed ósmą rano.',
     tiers: [1],
@@ -492,7 +513,8 @@ const DEFS: AchDef[] = [
   {
     id: 'nocny-marek',
     group: 'utrzymanie',
-    mark: '☾',
+    mark: '',
+    art: 'moon',
     name: 'Nocny marek',
     desc: 'Trening zamknięty po dwudziestej pierwszej.',
     tiers: [1],
@@ -503,7 +525,8 @@ const DEFS: AchDef[] = [
   {
     id: 'seria',
     group: 'terminy',
-    mark: '→',
+    mark: '',
+    art: 'chain',
     name: 'Seria w terminie',
     desc: 'Terminy z rzędu zrobione co do dnia. Nadrobienie serii nie przedłuża.',
     unit: 'terminów',
@@ -513,7 +536,8 @@ const DEFS: AchDef[] = [
   {
     id: 'bez-pudla',
     group: 'terminy',
-    mark: '○',
+    mark: '',
+    art: 'circleCheck',
     name: 'Bez pudła',
     desc: 'Terminy z rzędu nieopuszczone. Nadrobienie w oknie łaski się liczy.',
     unit: 'terminów',
@@ -523,7 +547,8 @@ const DEFS: AchDef[] = [
   {
     id: 'czysty-tydzien',
     group: 'terminy',
-    mark: '7',
+    mark: '',
+    art: 'calendarCheck',
     name: 'Czysty tydzień',
     desc: 'Tygodnie planu domknięte w komplecie, bez ani jednego opuszczonego terminu.',
     unit: 'tygodni',
@@ -533,7 +558,8 @@ const DEFS: AchDef[] = [
   {
     id: 'nadrabiacz',
     group: 'terminy',
-    mark: '↺',
+    mark: '',
+    art: 'rewind',
     name: 'Nadrabiacz',
     desc: 'Zaległe terminy domknięte w ciągu dwóch dni.',
     unit: 'razy',
@@ -546,7 +572,8 @@ const DEFS: AchDef[] = [
   {
     id: 'punktualny',
     group: 'terminy',
-    mark: '✓',
+    mark: '',
+    art: 'check',
     name: 'Punktualny',
     desc: 'Realizacja co najmniej 90% przy minimum dwunastu rozstrzygniętych terminach.',
     tiers: [1],
@@ -555,7 +582,8 @@ const DEFS: AchDef[] = [
   {
     id: 'polowa',
     group: 'terminy',
-    mark: '½',
+    mark: '',
+    art: 'half',
     name: 'Półmetek',
     desc: 'Połowa terminów planu zrobiona.',
     tiers: [1],
@@ -564,7 +592,8 @@ const DEFS: AchDef[] = [
   {
     id: 'plan-zamkniety',
     group: 'terminy',
-    mark: '★',
+    mark: '',
+    art: 'trophy',
     name: 'Plan zamknięty',
     desc: 'Wszystkie terminy planu zrobione.',
     tiers: [1],

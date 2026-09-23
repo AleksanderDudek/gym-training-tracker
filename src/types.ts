@@ -254,8 +254,10 @@ export interface Achievement {
   group: AchGroup;
   name: string;
   desc: string;
-  /** Ikona tekstowa — aplikacja nie ładuje grafik. */
+  /** Napis na medalu, gdy rodzina nie ma piktogramu — zwykle długość okna, np. „30D”. */
   mark: string;
+  /** Nazwa piktogramu z rejestru odznak. Brak oznacza medal z napisem. */
+  art?: string;
   /** Progi rosnąco. Jeden próg oznacza odznakę zerojedynkową. */
   tiers: number[];
   /** Jednostka dopisywana do progu, np. „powtórzeń”. */

@@ -19,7 +19,7 @@ Pozostałe polecenia:
 npm run build      # produkcyjny build do dist/
 npm run preview    # podgląd builda
 npm run typecheck  # tsc --noEmit
-npm test           # 173 testy silnika, biblioteki i tras (vitest)
+npm test           # 179 testów silnika, biblioteki, odznak i tras (vitest)
 ```
 
 Build jest w pełni statyczny (`base: './'`), więc `dist/` można wrzucić na dowolny hosting plików
@@ -138,6 +138,9 @@ src/
     PlanView.tsx            katalog planów, kalendarz, punkty i dziennik
     SessionHome.tsx         ekran „co robię dzisiaj”
     Timer.tsx               stoper i odliczanie dla ćwiczeń na czas
+    BadgeArt.tsx            medale odznak: tworzywa, piktogramy, pasma progów
+    Celebrate.tsx           moment zdobycia — medal, promienie, konfetti
+    icons.tsx               ikony nawigacji
     Achievements.tsx        zakładka osiągnięć: dorobek w liczbach i odznaki z progami
     VideoEmbed.tsx          odtwarzacz YouTube ładowany dopiero po kliknięciu
   App.tsx                   spina stan i widoki
@@ -274,6 +277,38 @@ Pięć grup:
   etapy w ćwiczeniach z masą ciała, powrót do poziomu po przerwie.
 - **Terminy** — zależne od uruchomionego planu: seria w terminie, brak pudła, czyste tygodnie,
   nadrobienia.
+
+## Jak wyglądają odznaki
+
+Odznaka jest przedmiotem, nie znakiem typograficznym. Każda to sześciokątny medal z tworzywem,
+które rośnie razem z postępem w rodzinie: **brąz → srebro → złoto → platyna → diament**.
+Tworzywo liczy się z udziału zdobytych progów w rodzinie, nie z gołego numeru progu — dzięki
+temu domknięcie dowolnej rodziny kończy się diamentem, także tej trzyprogowej, a rodzina
+dziesięcioprogowa rozkłada te same pięć pasm na dłuższą drogę. Odznaka jednorazowa dostaje
+złoto: jeden trening przed ósmą nie waży tyle, co domknięta dziesięcioprogowa rodzina.
+
+**Niezdobyta odznaka nadal pokazuje swój rysunek**, tylko bez tworzywa. Szary, ale czytelny
+piktogram mówi, co jest do wzięcia — ściana z kłódką nie mówi nic.
+
+Rysunki są rysowane inline, jedną siatką 24×24 i jedną grubością linii, tak samo jak ikony
+nawigacji. Rodziny okien czasu noszą zamiast piktogramu długość okna (`7D`, `30D`, `365`),
+bo liczba na medalu czyta się szybciej niż kolejny symbol.
+
+**Półka** na górze zakładki ustawia zdobyte medale najmocniejszym tworzywem do przodu.
+Lista rodzin mówi, ile czego brakuje; półka pokazuje dorobek jako zbiór przedmiotów,
+a to inne uczucie.
+
+## Moment zdobycia
+
+Po zamkniętej sesji nowe progi dostają własne okno, nie listę punktowaną: medal wjeżdża
+z przeskalowaniem, za nim obracają się promienie, z niego wystrzeliwuje konfetti, telefon
+krótko wibruje. Na scenę idzie **najwyższe zdobyte tworzywo**, nie pierwsze w kolejności
+rodzin — zdobycie złota nie może zniknąć pod brązem tylko dlatego, że brąz wypadł wcześniej
+w katalogu. Reszta ustawia się pod spodem, bo dwanaście równorzędnych gratulacji to hałas.
+
+Cały ruch znika przy `prefers-reduced-motion` — zostaje sam medal. Przyciski okna są
+przyklejone do dołu, a treść przewija się pod nimi, więc główna akcja nigdy nie ucieka
+pod krawędź ekranu.
 
 **„Najbliżej zdobycia”** pokazuje pięć progów z najdalej posuniętym paskiem. Przy trzystu progach
 sama lista przestaje odpowiadać na pytanie „co mogę zrobić teraz" — ta sekcja odpowiada.

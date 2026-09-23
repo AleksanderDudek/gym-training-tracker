@@ -9,6 +9,7 @@ import {
   formatValue,
 } from '../engine/badges';
 import type { AchProgress } from '../engine/badges';
+import { BAND_NAME, BadgeMedal, bandFor } from './BadgeArt';
 import type { Metrics } from '../engine/metrics';
 import { snapshot } from '../engine/snapshot';
 import { dayKey } from '../engine/schedule';
@@ -53,7 +54,12 @@ function Row({ r }: { r: AchProgress }) {
 
   return (
     <div className={`ach${r.tier ? ' on' : ''}${done ? ' full' : ''}`}>
-      <span className="ach-mark">{r.ach.mark}</span>
+      <BadgeMedal
+        art={r.ach.art}
+        mark={r.ach.mark}
+        band={bandFor(r.tier, r.ach.tiers.length)}
+        title={`${r.ach.name} — ${r.tier} z ${r.ach.tiers.length}`}
+      />
       <div className="ach-body">
         <div className="ach-head">
           <b>{r.ach.name}</b>
@@ -104,6 +110,49 @@ function Totals({ m }: { m: Metrics }) {
         Wykonane ćwiczenia: {num(m.exercises)} · różne ruchy: {m.distinct} · czas pod obciążeniem:{' '}
         {m.secs >= 120 ? `${Math.round(m.secs / 60)} min` : `${m.secs} s`}
       </p>
+    </div>
+  );
+}
+
+/**
+ * Półka trofeów: zdobyte odznaki w najmocniejszym tworzywie na przodzie. Sama lista rodzin
+ * mówi, ile czego brakuje; półka pokazuje dorobek jako zbiór przedmiotów, a to inne uczucie.
+ */
+function Shelf({ rows }: { rows: AchProgress[] }) {
+  const owned = rows
+    .filter((r) => r.tier > 0)
+    .map((r) => ({ r, band: bandFor(r.tier, r.ach.tiers.length) }))
+    .sort((a, b) => b.band - a.band || b.r.tier - a.r.tier)
+    .slice(0, 12);
+
+  if (!owned.length)
+    return (
+      <div className="grp">
+        <h3>Półka</h3>
+        <p className="tight">
+          Jeszcze pusta. Pierwszy zapisany trening zdejmuje z niej kłódkę — dalej rosną same.
+        </p>
+      </div>
+    );
+
+  return (
+    <div className="grp">
+      <h3>Półka</h3>
+      <p className="tight">Najmocniejsze tworzywa na przodzie.</p>
+      <div className="shelf">
+        {owned.map(({ r, band }) => (
+          <div className="shelf-item" key={r.ach.id}>
+            <BadgeMedal
+              art={r.ach.art}
+              mark={r.ach.mark}
+              band={band}
+              size={46}
+              title={`${r.ach.name} — ${BAND_NAME[band]}`}
+            />
+            <span>{r.ach.name}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -165,6 +214,7 @@ export function Achievements({ state }: { state: AppState }) {
         </p>
       </div>
 
+      <Shelf rows={rows} />
       <Totals m={ctx.metrics} />
       <Closest rows={rows} />
 

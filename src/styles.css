@@ -98,7 +98,7 @@
   button.btn.wide{width:100%}
   /* Nawet „mały” przycisk zostaje klikalny jedną ręką w biegu. */
   button.btn.sm{padding:10px 14px;font-size:14px;min-height:44px}
-  .btnrow{display:flex;gap:9px;flex-wrap:wrap}
+  .btnrow{display:flex;gap:9px;flex-wrap:wrap;flex:none}
   .actions{margin:18px 0 8px;display:grid;gap:9px}
 
   .pick{background:var(--surface);border-bottom:1px solid var(--line);padding:15px 14px;
@@ -165,9 +165,24 @@
 
   #modal{position:fixed;inset:0;background:rgba(30,35,32,.55);display:grid;place-items:center;padding:18px;z-index:50}
   #modal.hidden{display:none}
-  .mbox{background:var(--surface);max-width:460px;width:100%;padding:20px;border-radius:var(--r);max-height:82vh;overflow:auto}
+  /*
+   * Treść okna przewija się, przyciski zostają. Bez tego długa lista ćwiczeń albo wysoka
+   * scena z medalem spychały główną akcję pod krawędź na niższych ekranach.
+   */
+  .mbox{background:var(--surface);max-width:460px;width:100%;padding:20px;border-radius:var(--r);
+    max-height:86vh;display:flex;flex-direction:column;overflow:hidden}
   .mbox h3{margin:0 0 8px;font-family:var(--display);font-weight:600;font-size:22px;line-height:1.15}
-  .mtext{font-size:14.5px;color:var(--ink-soft);margin-bottom:16px}
+  .mtext{font-size:14.5px;color:var(--ink-soft);margin-bottom:16px;overflow-y:auto;
+    flex:1 1 auto;min-height:0;overscroll-behavior:contain;
+    /* Cień krawędzi pojawia się sam, tylko gdy jest co przewijać — warstwy `local`
+       jadą z treścią i zasłaniają warstwy `scroll` przyklejone do ramki. */
+    background:
+      linear-gradient(var(--surface) 30%, rgba(250,250,248,0)) top / 100% 16px no-repeat local,
+      linear-gradient(rgba(250,250,248,0), var(--surface) 70%) bottom / 100% 16px no-repeat local,
+      radial-gradient(farthest-side at 50% 0, rgba(30,35,32,.16), rgba(30,35,32,0))
+        top / 100% 7px no-repeat scroll,
+      radial-gradient(farthest-side at 50% 100%, rgba(30,35,32,.16), rgba(30,35,32,0))
+        bottom / 100% 7px no-repeat scroll}
   .mtext ul{margin:10px 0 0;padding-left:0;list-style:none;color:var(--ink)}
   .mtext li{margin-bottom:6px;padding-left:16px;text-indent:-16px;font-size:14.5px}
   .toast{position:fixed;left:14px;right:14px;bottom:78px;max-width:612px;margin:0 auto;background:var(--steel);
@@ -302,14 +317,10 @@
   ul.ptlist li{margin-bottom:5px;padding-left:14px;text-indent:-14px}
 
   .ach-note{margin:0;padding:10px 14px 4px;font-size:12.5px;color:var(--ink-soft);max-width:62ch}
-  .ach{display:grid;grid-template-columns:30px 1fr;gap:11px;padding:11px 14px;
-    border-bottom:1px solid var(--line);opacity:.62}
+  .ach{display:grid;grid-template-columns:34px 1fr;gap:12px;padding:12px 14px;
+    border-bottom:1px solid var(--line);opacity:.74}
   .ach:last-child{border-bottom:0}
   .ach.on{opacity:1}
-  .ach-mark{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;
-    background:var(--line);color:var(--ink);font-family:var(--display);font-size:12px;line-height:1}
-  .ach.on .ach-mark{background:var(--steel);color:#fff}
-  .ach.full .ach-mark{background:var(--ok);color:#fff}
   .ach-body{min-width:0}
   .ach-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
   .ach-head b{font-size:14.5px;font-weight:600}
@@ -400,3 +411,65 @@
     cursor:pointer;color:var(--ink-soft);-webkit-tap-highlight-color:transparent}
   .gearfilter button[aria-pressed=true]{background:var(--steel);border-color:var(--steel);
     color:#fff;font-weight:600}
+
+  /* ---------------- Odznaki: medale i moment zdobycia ---------------- */
+
+  .medal{display:block;flex:none}
+  .medal.band-0{opacity:.72}
+  .medal.band-5{filter:drop-shadow(0 1px 5px rgba(108,79,208,.35))}
+  .medal.band-3{filter:drop-shadow(0 1px 5px rgba(224,174,51,.3))}
+
+  .mbox.celebrate-box{text-align:center}
+  .mbox.celebrate-box h3{text-align:center;font-size:15px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--ink-soft);margin-bottom:0}
+  .mbox.celebrate-box .mtext{margin-bottom:14px}
+  .mbox.celebrate-box .btnrow{justify-content:center}
+  .mbox.celebrate-box .btn{min-width:170px}
+
+  .celebrate{text-align:center}
+  .cel-stage{position:relative;height:150px;display:grid;place-items:center;margin:2px 0 6px}
+  .cel-rays{position:absolute;width:190px;height:190px;color:var(--steel);opacity:.16;
+    animation:celspin 16s linear infinite}
+  .cel-pop{position:relative;animation:celpop .62s cubic-bezier(.2,1.5,.4,1) both}
+  .cel-confetti{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
+  .cel-confetti i{position:absolute;width:7px;height:10px;border-radius:1px;opacity:0;
+    animation:celfly .95s cubic-bezier(.15,.8,.3,1) var(--t) both}
+
+  @keyframes celpop{
+    0%{transform:scale(.4) rotate(-22deg);opacity:0}
+    100%{transform:scale(1) rotate(0);opacity:1}
+  }
+  @keyframes celfly{
+    0%{opacity:0;transform:rotate(var(--a)) translateY(0) rotate(0)}
+    12%{opacity:1}
+    100%{opacity:0;transform:rotate(var(--a)) translateY(calc(var(--d) * -1)) rotate(320deg)}
+  }
+  @keyframes celspin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+  @keyframes celrise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  .cel-band{font-family:var(--display);font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--ink-soft)}
+  .cel-name{font-family:var(--display);font-weight:600;font-size:25px;line-height:1.1;margin:2px 0 4px}
+  .cel-sub{margin:0;font-family:var(--display);font-size:14px;color:var(--ok)}
+  .cel-desc{margin:8px 0 0;font-size:13.5px;color:var(--ink-soft);max-width:38ch;
+    margin-left:auto;margin-right:auto}
+
+  .cel-more{margin-top:18px;border-top:1px solid var(--line);padding-top:12px}
+  .cel-more-label{font-size:12px;color:var(--ink-soft);margin-bottom:9px}
+  .cel-row{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+  .cel-mini{width:78px;display:grid;justify-items:center;gap:5px;
+    animation:celrise .4s ease-out both}
+  .cel-mini span{font-size:11.5px;line-height:1.25;color:var(--ink-soft)}
+  .cel-rest{margin:10px 0 0;font-size:12.5px;color:var(--ink-soft)}
+
+  @media (prefers-reduced-motion:reduce){
+    .cel-pop,.cel-mini{animation:none}
+    .cel-rays{animation:none}
+    .cel-confetti{display:none}
+  }
+
+  /* Półka: zdobyte medale jednym rzutem oka, najmocniejsze tworzywa na przodzie. */
+  .shelf{display:flex;flex-wrap:wrap;gap:9px;margin-top:10px}
+  .shelf-item{display:grid;justify-items:center;gap:4px;width:64px}
+  .shelf-item span{font-size:10.5px;line-height:1.2;color:var(--ink-soft);text-align:center;
+    overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}

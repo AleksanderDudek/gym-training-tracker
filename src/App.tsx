@@ -13,12 +13,14 @@ import { PlanView } from './components/PlanView';
 import { Achievements } from './components/Achievements';
 import { dayKey, daysBetween } from './engine/schedule';
 import { bankPoints, snapshot } from './engine/snapshot';
-import { achCtx, formatTier, migrateBadges, syncBadges } from './engine/badges';
+import { achCtx, migrateBadges, syncBadges } from './engine/badges';
 import { pointsToday } from './engine/score';
 import { seedFromPlan } from './engine/plan';
 import { planById, planId } from './data/plans';
 import { SETTINGS_PATH, TABS, activeTab, go, useRoute } from './routing';
 import { Icon } from './components/icons';
+import { BadgeDefs } from './components/BadgeArt';
+import { Celebrate } from './components/Celebrate';
 import type {
   ActivePlan,
   AppState,
@@ -292,28 +294,10 @@ export default function App() {
    * a ekran z osiemnastoma gratulacjami nie cieszy nikogo.
    */
   const sayBadges = async (hits: AchievementHit[]) => {
-    const shown = hits.slice(0, 6);
-    await say(
-      hits.length === 1 ? 'Nowa odznaka' : `Nowe odznaki: ${hits.length}`,
-      <>
-        <ul>
-          {shown.map((h) => (
-            <li key={`${h.ach.id}:${h.tier}`}>
-              <b>
-                {h.ach.name}
-                {h.ach.tiers.length > 1 ? ` ${h.tier}` : ''}
-              </b>{' '}
-              — {formatTier(h.ach, h.threshold)}
-            </li>
-          ))}
-        </ul>
-        {hits.length > shown.length && (
-          <p style={{ marginTop: 8 }}>
-            …i jeszcze {hits.length - shown.length}. Cała lista jest w zakładce Osiągnięcia.
-          </p>
-        )}
-      </>,
-    );
+    await say(hits.length === 1 ? 'Zdobyte!' : `Zdobyte: ${hits.length}`, <Celebrate hits={hits} />, {
+      ok: 'Nieźle',
+      tone: 'celebrate-box',
+    });
   };
 
   /* ---------- ustawienia i dane ---------- */
@@ -736,6 +720,7 @@ export default function App() {
         })}
       </nav>
 
+      <BadgeDefs />
       <Modal req={req} />
       <Toast msg={toastMsg} onDone={() => setToastMsg(null)} />
     </>
