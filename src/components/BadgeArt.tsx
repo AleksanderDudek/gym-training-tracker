@@ -1,4 +1,7 @@
 import type { ReactNode } from 'react';
+import { MOVES } from '../data/moves';
+import type { MoveName } from '../data/moves';
+import { sampleCycle, skeleton } from '../engine/pose';
 
 /**
  * Odznaki jako przedmioty, nie znaki typograficzne.
@@ -145,6 +148,72 @@ const ART: Record<string, ReactNode> = {
   ),
 };
 
+/**
+ * Ludzik na medalu.
+ *
+ * Odznaka o powtórzeniach pokazuje figurkę w trakcie swingu, a nie znak sumy — to ten sam
+ * manekin, co w atlasie, tylko zmniejszony do środka sześciokąta. Symbol trzeba rozszyfrować,
+ * sylwetkę widać od razu, a przy okazji odznaki przestają wyglądać jak tabela pojęć.
+ *
+ * Rysowane z tego samego silnika póz i z atrybutami zamiast klas, bo medal trafia też na
+ * kartę do wpisu, a tam arkusz stylów strony już nie sięga.
+ */
+function figure(move: MoveName, phase: number): ReactNode {
+  const s = skeleton(sampleCycle(MOVES[move].frames, phase));
+  const pts = Object.values(s);
+  const minX = Math.min(...pts.map((p) => p.x));
+  const maxX = Math.max(...pts.map((p) => p.x));
+  const minY = Math.min(...pts.map((p) => p.y));
+  const maxY = Math.max(...pts.map((p) => p.y));
+  const k = 27 / (Math.max(maxX - minX, maxY - minY) + 4);
+  // Przy pozie wysokiej i wąskiej skala robi się mała, a kreska cieńsza niż włos.
+  // Dolna granica trzyma ludzika czytelnym także wtedy, gdy stoi na baczność.
+  const w = (base: number): string => Math.max(1.5, base * k).toFixed(2);
+  const X = (p: { x: number }): string => (24 + (p.x - (minX + maxX) / 2) * k).toFixed(1);
+  const Y = (p: { y: number }): string => (24 + (p.y - (minY + maxY) / 2) * k).toFixed(1);
+  const d = (list: { x: number; y: number }[]): string =>
+    list.map((p, i) => `${i ? 'L' : 'M'} ${X(p)} ${Y(p)}`).join(' ');
+
+  return (
+    <>
+      <path d={d([s.neck, s.elbowF, s.wristF])} strokeWidth={w(6)} opacity="0.4" />
+      <path d={d([s.hip, s.kneeF, s.ankleF, s.toeF])} strokeWidth={w(6)} opacity="0.4" />
+      <path d={d([s.hip, s.neck])} strokeWidth={w(9)} />
+      <path d={d([s.hip, s.kneeN, s.ankleN, s.toeN])} strokeWidth={w(7)} />
+      <path d={d([s.neck, s.elbowN, s.wristN])} strokeWidth={w(7)} />
+      <circle
+        cx={X(s.head)}
+        cy={Y(s.head)}
+        r={Math.max(2.1, 8.5 * k).toFixed(2)}
+        fill="currentColor"
+        stroke="none"
+      />
+    </>
+  );
+}
+
+/** Pozy figurek. Dobrane tak, żeby w 25 pikselach dało się rozpoznać, co ludzik robi. */
+const POSES: [string, MoveName, number][] = [
+  // Wykrok i pełny krok zamiast postawy na baczność: sylwetka rozłożona wszerz czyta się
+  // w dwudziestu siedmiu pikselach, pionowa kreska nie.
+  ['fig-carry', 'lunge', 0.45],
+  ['fig-walk', 'swing', 0],
+  ['fig-swing', 'swing', 0.4],
+  ['fig-squat', 'squat', 0.45],
+  ['fig-press', 'pressOverhead', 0.2],
+  ['fig-hinge', 'hinge', 0.45],
+  ['fig-plank', 'plank', 0.5],
+  ['fig-pull', 'pullup', 0.45],
+  ['fig-row', 'row', 0.45],
+  ['fig-pushup', 'pushup', 0.45],
+  ['fig-calf', 'calf', 0.45],
+  ['fig-dip', 'dip', 0.45],
+];
+
+POSES.forEach(([name, move, phase]) => {
+  ART[name] = figure(move, phase);
+});
+
 export const ART_NAMES = Object.keys(ART);
 export const hasArt = (name: string | undefined): boolean => !!name && name in ART;
 
@@ -231,9 +300,11 @@ export function BadgeMedal({
       {metal && <path d="M24 2.6 42.6 13.3 24 24 5.4 13.3Z" fill="url(#bmShine)" />}
       {glyph ? (
         <g
-          transform="translate(12 12) scale(0.72) translate(4.65 4.65)"
+          // Figurki mają już współrzędne w skali medalu; symbole rysowane są na siatce 24×24.
+          transform={art?.startsWith('fig-') ? undefined : 'translate(12 12) scale(0.72) translate(4.65 4.65)'}
           fill="none"
           stroke={ink}
+          color={ink}
           strokeWidth="2.2"
           strokeLinecap="round"
           strokeLinejoin="round"

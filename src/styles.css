@@ -559,3 +559,11 @@
   .grp h3 .ico{vertical-align:-3px;margin-right:5px;color:var(--warn)}
   .mq-sweat path{fill:#2C7CB8;stroke:none;opacity:.7}
   @media (prefers-reduced-motion:reduce){.mq-sweat{display:none}}
+
+  .share-peek{width:100%;max-width:38ch}
+  .share-peek summary{cursor:pointer;color:var(--steel);font-weight:600;font-size:12.5px;
+    padding:11px 0;min-height:44px;display:flex;align-items:center;justify-content:center;
+    -webkit-tap-highlight-color:transparent}
+  .share-peek p{margin:0 0 4px;padding:10px 12px;background:var(--surface-2);
+    border:1px solid var(--line);border-radius:var(--r);font-size:12.5px;line-height:1.5;
+    color:var(--ink-soft);white-space:pre-wrap;text-align:left;word-break:break-word}

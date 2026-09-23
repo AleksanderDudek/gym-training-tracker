@@ -293,6 +293,8 @@ export default function App() {
 
     const m = metrics(next);
     const subject = {
+      kind: 'session' as const,
+      seed: m.workouts,
       title: `${w.name} zaliczony`,
       lines: [
         `${logged.length} ${logged.length === 1 ? 'ćwiczenie' : 'ćwiczeń'} w tej sesji`,
@@ -345,6 +347,8 @@ export default function App() {
       (a, b) => bandFor(b.tier, b.ach.tiers.length) - bandFor(a.tier, a.ach.tiers.length),
     )[0]!;
     const subject = {
+      kind: 'badge' as const,
+      seed: top.tier + m.workouts,
       title: top.ach.name,
       band: BAND_NAME[bandFor(top.tier, top.ach.tiers.length)],
       lines: [

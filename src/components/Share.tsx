@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { canShareFiles, download, share, shareCard, shareLinks } from '../engine/share';
+import { canShareFiles, download, share, shareCard, shareLinks, shareText } from '../engine/share';
 import type { ShareSubject } from '../engine/share';
 
 /**
@@ -65,6 +65,12 @@ export function ShareButton({
       <button className="btn ghost sm" onClick={() => void go()} disabled={busy}>
         {busy ? 'Przygotowuję…' : label}
       </button>
+
+      {/* Podgląd wpisu: nic nie wychodzi w świat bez pokazania, co dokładnie wychodzi. */}
+      <details className="share-peek">
+        <summary>Co pójdzie w świat</summary>
+        <p>{shareText(subject)}</p>
+      </details>
 
       {note && <p className="share-note">{note}</p>}
 

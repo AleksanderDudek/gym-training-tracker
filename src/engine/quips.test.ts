@@ -167,7 +167,8 @@ describe('wsparcie i dorobek', () => {
     expect(subj.title).toBe('Stały klient');
     expect(subj.lines.join(' ')).toContain('48');
     expect(subj.punch!.length).toBeGreaterThan(5);
-    expect(shareText(subj)).toContain('Stały klient');
+    // Szablony wplatają stopień w zdanie, więc bywa z małej litery — „jestem już stały klient”.
+    expect(shareText(subj).toLowerCase()).toContain('stały klient');
   });
 
   it('dorobek bez historii nie wywraca się na zerach', async () => {

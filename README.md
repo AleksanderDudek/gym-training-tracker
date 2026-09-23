@@ -19,7 +19,7 @@ Pozostałe polecenia:
 npm run build      # produkcyjny build do dist/
 npm run preview    # podgląd builda
 npm run typecheck  # tsc --noEmit
-npm test           # 230 testów silnika, biblioteki, odznak, ruchu, tonu i tras (vitest)
+npm test           # 231 testów silnika, biblioteki, odznak, ruchu, tonu i tras (vitest)
 ```
 
 Build jest w pełni statyczny (`base: './'`), więc `dist/` można wrzucić na dowolny hosting plików
@@ -62,8 +62,21 @@ zależy od frekwencji, więc i nazwa mówi o tym, jak często cię tam widują.
 
 **Karty do wpisu są dokumentami wydanymi przez urząd, który nie istnieje.** Odznaka dostaje
 „ŚWIADECTWO POCIĘŻAROWE" z medalem, cały dorobek — „LEGITYMACJĘ SIŁOWĄ" z rysowaną sylwetką.
-Obie mają podwójną ramkę, numer wydania „bez trybu odwoławczego" liczony z treści i przechyloną
-pieczęć „ZROBIONE — bez świadków". Powaga formy przy błahości treści jest tu całym żartem.
+Obie mają podwójną ramkę, zawijasy w narożnikach, sentencję zamiast łacińskiej dewizy
+(„PER ASPERA AD ZAKWASY"), numer wydania „bez trybu odwoławczego" liczony z treści, odręczny
+podpis urzędu, który nie istnieje („Główny Inspektor Zakwasów"), i przechyloną pieczęć
+(„POTWIERDZONE — nikt nie sprawdzał"). Powaga formy przy błahości treści jest tu całym żartem.
+
+Blankiet dopasowuje się do treści: przy dwuwierszowym tytule i długiej puencie medal się
+kurczy, a poniżej progu znika całkiem. Podpis idzie pod treść, nie na sztywno — inaczej
+zawijas lądował w poprzek zdania.
+
+**Medale pokazują ludzika.** Odznaki o ruchu — powtórzenia, serie, tonaż, partie ciała —
+noszą tę samą faceless sylwetkę, co manekin w atlasie, zmniejszoną do środka sześciokąta
+i zatrzymaną w charakterystycznej klatce: wykrok, zawias, deska, pompka. Symbol trzeba
+rozszyfrować, sylwetkę widać od razu. Rodziny kalendarzowe zostają przy znakach, a okna
+czasu przy liczbach — tam informacja jest ważniejsza od żartu. Pozy dobrane są szerokie:
+postać na baczność w dwudziestu siedmiu pikselach czyta się jak kreska.
 
 Sylwetka na legitymacji rysowana jest wprost na płótnie z tego samego silnika póz, co manekin
 w atlasie — kopiowanie jego SVG nic by nie dało, bo kolory kresek siedzą w arkuszu strony,

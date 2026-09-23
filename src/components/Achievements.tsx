@@ -98,7 +98,12 @@ function Totals({ m }: { m: Metrics }) {
     [num(m.workouts), 'treningów'],
     [num(m.reps), 'powtórzeń'],
     [num(m.sets), 'serii'],
-    [m.tonnage >= 1000 ? `${Math.round(m.tonnage / 100) / 10} t` : `${num(m.tonnage)} kg`, 'tonaż'],
+    [
+      m.tonnage >= 1000
+        ? `${(Math.round(m.tonnage / 100) / 10).toLocaleString('pl-PL', { maximumFractionDigits: 1 })} t`
+        : `${num(m.tonnage)} kg`,
+      'tonaż',
+    ],
   ];
 
   return (

@@ -7,7 +7,17 @@
  * nie ma, zostaje kopiowanie i kilka bezpośrednich adresów.
  */
 
-import { CHEERS, PROGRESS_TITLES, massJoke, pick, repsJoke } from './quips';
+import {
+  CHEERS,
+  CTA,
+  MOTTOS,
+  PROGRESS_TITLES,
+  SIGNATORIES,
+  STAMPS,
+  massJoke,
+  pick,
+  repsJoke,
+} from './quips';
 import { MOVES } from '../data/moves';
 import { sampleCycle, skeleton } from './pose';
 
@@ -27,7 +37,9 @@ export interface ShareSubject {
    * Rodzaj dokumentu. Odznaka dostaje świadectwo z medalem, dorobek — legitymację
    * z sylwetką. Dwa różne żarty, więc i dwa różne blankiety.
    */
-  kind?: 'badge' | 'progress';
+  kind?: 'badge' | 'progress' | 'session';
+  /** Ziarno tekstów. Wpis i blankiet mają wypaść w tym samym wariancie. */
+  seed?: number;
 }
 
 /** Liczby dorobku w formie, którą da się wrzucić do cudzego kanału bez wyjaśnień. */
@@ -37,13 +49,19 @@ export function progressSubject(
   seed: number,
 ): ShareSubject {
   const n = (x: number): string => Math.round(x).toLocaleString('pl-PL');
+  // Tonaż po polsku ma przecinek, nie kropkę — ręczne dzielenie przez sto dawało „99.2 t”.
+  const tons = (kg: number): string =>
+    kg >= 1000
+      ? `${(Math.round(kg / 100) / 10).toLocaleString('pl-PL', { maximumFractionDigits: 1 })} t`
+      : `${n(kg)} kg`;
   return {
     kind: 'progress',
+    seed,
     title: rank,
     band: pick(PROGRESS_TITLES, seed),
     lines: [
       `${n(m.workouts)} ${m.workouts === 1 ? 'trening' : 'treningów'} · ${n(m.reps)} powtórzeń`,
-      `${n(m.sets)} serii · ${m.tonnage >= 1000 ? `${Math.round(m.tonnage / 100) / 10} t` : `${n(m.tonnage)} kg`}`,
+      `${n(m.sets)} serii · ${tons(m.tonnage)}`,
     ],
     punch: punchline(m.tonnage, m.reps, seed),
   };
@@ -66,11 +84,65 @@ export function punchline(kg: number, reps: number, seed: number): string {
  * Treść wpisu. Adres na końcu i w osobnej linii, bo serwisy społecznościowe zamieniają
  * na podgląd wyłącznie ostatni adres we wpisie, a wtrącony w zdanie bywa ucinany.
  */
+/**
+ * Wpisy pisane pierwszą osobą i w czasie przeszłym, bo tak ludzie piszą o tym, co zrobili.
+ * Poprzednia wersja składała nagłówek i listę pod spodem — czytało się to jak wydruk
+ * z maszyny i w cudzym kanale wyglądało na wygenerowane, czyli dokładnie tak, jak wyglądało.
+ *
+ * Każdy szablon kończy się jednym zdaniem zaproszenia i adresem w osobnej linii: serwisy
+ * robią podgląd z ostatniego adresu we wpisie, a wtrącony w zdanie bywa ucinany.
+ */
+type Template = (s: ShareSubject) => string;
+
+const first = (s: ShareSubject): string => s.lines[0] ?? '';
+const rest = (s: ShareSubject): string => s.lines.slice(1).join(' · ');
+const punch = (s: ShareSubject): string => s.punch ?? '';
+
+const BADGE: Template[] = [
+  (s) => `Wpadła odznaka „${s.title}”${s.band ? ` — ${s.band}` : ''}. ${first(s)}. ${punch(s)}`,
+  (s) => `Zdobyte: „${s.title}”${s.band ? ` (${s.band})` : ''}. ${punch(s)} Nikt nie bił braw, aplikacja tak.`,
+  (s) => `Odznaka „${s.title}” zaliczona${s.band ? `, tworzywo: ${s.band}` : ''}. ${punch(s)} Na lodówkę się nie zmieści.`,
+  (s) => `Mam „${s.title}”${s.band ? ` w ${s.band}` : ''}. Brzmi poważnie, w praktyce to ${first(s).toLowerCase()}. ${punch(s)}`,
+  (s) => `Nowa odznaka: „${s.title}”. ${punch(s)} Wiem, że nikt nie pytał.`,
+];
+
+const SESSION: Template[] = [
+  (s) => `${s.title}. ${first(s)}. ${punch(s)}`,
+  (s) => `${s.title}. ${first(s)}, a licznik z całej historii mówi: ${punch(s)}`,
+  (s) => `Trening odhaczony. ${first(s)}. ${punch(s)} Kanapa zasłużona.`,
+  (s) => `${s.title}. ${punch(s)} Pot wyparował, dane zostały.`,
+  (s) => `Zrobione. ${first(s)}. ${punch(s)} Nikt nie patrzył, aplikacja patrzyła.`,
+];
+
+const PROGRESS: Template[] = [
+  (s) => `Stopień „${s.title}” osiągnięty. ${first(s)}. ${punch(s)}`,
+  (s) => `Bilans po wszystkim: ${first(s)}${rest(s) ? `, ${rest(s)}` : ''}. ${punch(s)} Stopień: ${s.title.toLowerCase()}.`,
+  (s) => `${first(s)}. ${punch(s)} Aplikacja mówi na mnie „${s.title.toLowerCase()}” i trudno się kłócić.`,
+  (s) => `Licznik pokazuje ${first(s).toLowerCase()}. ${punch(s)} Formalnie jestem już „${s.title.toLowerCase()}”.`,
+];
+
+const SETS: Record<NonNullable<ShareSubject['kind']>, Template[]> = {
+  badge: BADGE,
+  session: SESSION,
+  progress: PROGRESS,
+};
+
+/**
+ * Sprzątanie po szablonach: podwójne spacje biorą się z pustych pól, a wstawiony fragment
+ * zaczyna się małą literą, bo w danych jest „próg 4 z 6”, nie „Próg 4 z 6”.
+ */
+const tidy = (t: string): string =>
+  t
+    .replace(/\s+/g, ' ')
+    .replace(/\s+([.,!?])/g, '$1')
+    .replace(/([.!?]\s+|^)(\p{Ll})/gu, (_, lead: string, ch: string) => lead + ch.toUpperCase())
+    .replace(/\.\s*\./g, '.')
+    .trim();
+
 export function shareText(s: ShareSubject): string {
-  const head = s.band ? `${s.title} — ${s.band}` : s.title;
-  return [head, ...s.lines, s.punch ?? '', '', 'Prowadzę trening w GYM TRACKER:', APP_URL]
-    .filter((x, i, all) => x !== '' || (all[i - 1] !== '' && i > 0))
-    .join('\n');
+  const seed = s.seed ?? s.lines.length + s.title.length;
+  const body = tidy(pick(SETS[s.kind ?? 'badge'], seed)(s));
+  return [body, '', `${pick(CTA, seed)}`, APP_URL].join('\n');
 }
 
 /** Adresy „udostępnij” dla serwisów, które nie trafiają do systemowego arkusza. */
@@ -164,28 +236,79 @@ function drawFigure(ctx: CanvasRenderingContext2D, cx: number, top: number, h: n
   ctx.globalAlpha = 1;
 }
 
-/** Pieczęć w rogu. Przechylona, bo pieczęcie nigdy nie są proste. */
-function stamp(ctx: CanvasRenderingContext2D): void {
+/** Ozdobniki w narożnikach. Dyplom bez zawijasów wygląda jak faktura. */
+function flourish(ctx: CanvasRenderingContext2D, x: number, y: number, sx: number, sy: number): void {
   ctx.save();
-  ctx.translate(CARD - 196, CARD - 214);
+  ctx.translate(x, y);
+  ctx.scale(sx, sy);
+  ctx.strokeStyle = '#C2C5BD';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, 46);
+  ctx.quadraticCurveTo(0, 0, 46, 0);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(0, 30);
+  ctx.quadraticCurveTo(0, 0, 30, 0);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(13, 13, 3.4, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+}
+
+/**
+ * Podpis pod dokumentem: zawijas i urząd, który nie istnieje. Dyplomy są podpisywane,
+ * więc ten też — to najtańszy sposób, żeby blankiet wyglądał poważnie mimo treści.
+ */
+function signature(ctx: CanvasRenderingContext2D, cx: number, y: number, who: string): void {
+  ctx.save();
+  ctx.strokeStyle = '#3C423D';
+  ctx.lineWidth = 3;
+  ctx.lineCap = 'round';
+  ctx.globalAlpha = 0.75;
+  ctx.beginPath();
+  ctx.moveTo(cx - 92, y + 10);
+  ctx.bezierCurveTo(cx - 60, y - 22, cx - 34, y + 26, cx - 8, y - 4);
+  ctx.bezierCurveTo(cx + 12, y - 24, cx + 26, y + 20, cx + 52, y - 2);
+  ctx.bezierCurveTo(cx + 66, y - 12, cx + 76, y + 6, cx + 94, y - 6);
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+  ctx.beginPath();
+  ctx.moveTo(cx - 120, y + 26);
+  ctx.lineTo(cx + 120, y + 26);
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = '#C2C5BD';
+  ctx.stroke();
+  ctx.restore();
+
+  ctx.fillStyle = '#5E655D';
+  ctx.font = '400 21px "IBM Plex Sans", system-ui, sans-serif';
+  ctx.fillText(who, cx, y + 34);
+}
+
+/** Pieczęć w rogu. Przechylona, bo pieczęcie nigdy nie są proste. */
+function stamp(ctx: CanvasRenderingContext2D, words: readonly [string, string]): void {
+  ctx.save();
+  ctx.translate(CARD - 152, CARD - 170);
   ctx.rotate((-14 * Math.PI) / 180);
   ctx.strokeStyle = '#9A5B12';
   ctx.fillStyle = '#9A5B12';
   ctx.globalAlpha = 0.62;
   ctx.lineWidth = 5;
   ctx.beginPath();
-  ctx.arc(0, 0, 76, 0, Math.PI * 2);
+  ctx.arc(0, 0, 70, 0, Math.PI * 2);
   ctx.stroke();
   ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.arc(0, 0, 66, 0, Math.PI * 2);
+  ctx.arc(0, 0, 61, 0, Math.PI * 2);
   ctx.stroke();
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.font = '600 30px "Oswald", system-ui, sans-serif';
-  ctx.fillText('ZROBIONE', 0, -12);
-  ctx.font = '400 17px "IBM Plex Sans", system-ui, sans-serif';
-  ctx.fillText('bez świadków', 0, 16);
+  ctx.font = '600 27px "Oswald", system-ui, sans-serif';
+  ctx.fillText(words[0], 0, -12);
+  ctx.font = '400 15px "IBM Plex Sans", system-ui, sans-serif';
+  ctx.fillText(words[1], 0, 15);
   ctx.restore();
   ctx.globalAlpha = 1;
   ctx.textAlign = 'center';
@@ -271,6 +394,7 @@ export async function shareCard(s: ShareSubject, medal?: SVGSVGElement | null): 
   c.height = CARD;
   const ctx = c.getContext('2d');
   if (!ctx) throw new Error('Przeglądarka nie udostępnia rysowania na płótnie.');
+  const seed = s.seed ?? s.title.length + s.lines.length;
 
   // Czekamy na kroje pisma: `fillText` przed ich załadowaniem rysuje zapasowym fontem.
   if (document.fonts?.ready) await document.fonts.ready;
@@ -299,7 +423,8 @@ export async function shareCard(s: ShareSubject, medal?: SVGSVGElement | null): 
     title: '600 72px "Oswald", system-ui, sans-serif',
     line: '400 34px "IBM Plex Sans", system-ui, sans-serif',
     punch: '600 34px "Oswald", system-ui, sans-serif',
-    url: '500 28px "IBM Plex Sans", system-ui, sans-serif',
+    // Krótszy adres wchodziłby pod pieczęć w prawym dolnym rogu.
+    url: '500 25px "IBM Plex Sans", system-ui, sans-serif',
   };
 
   ctx.fillStyle = '#5E655D';
@@ -311,18 +436,26 @@ export async function shareCard(s: ShareSubject, medal?: SVGSVGElement | null): 
   );
   ctx.fillStyle = '#1E2320';
   ctx.font = FONT.brand;
-  ctx.fillText('GYM TRACKER', CARD / 2, 152);
+  ctx.fillText('GYM TRACKER', CARD / 2, 148);
+  ctx.fillStyle = '#9BA298';
+  ctx.font = '400 20px "IBM Plex Sans", system-ui, sans-serif';
+  ctx.fillText(pick(MOTTOS, seed), CARD / 2, 190);
+
+  flourish(ctx, 92, 92, 1, 1);
+  flourish(ctx, CARD - 92, 92, -1, 1);
+  flourish(ctx, 92, CARD - 92, 1, -1);
+  flourish(ctx, CARD - 92, CARD - 92, -1, -1);
 
   ctx.font = FONT.url;
   ctx.fillStyle = '#3C423D';
-  ctx.fillText(APP_URL.replace(/^https:\/\//, ''), CARD / 2, CARD - 146);
+  ctx.fillText(APP_URL.replace(/^https:\/\//, ''), CARD / 2, CARD - 152);
 
   // Numer wydania: wygląda urzędowo, nie znaczy nic. O to chodzi.
   ctx.font = '400 22px "IBM Plex Sans", system-ui, sans-serif';
   ctx.fillStyle = '#9BA298';
-  ctx.fillText(serial(s), CARD / 2, CARD - 108);
+  ctx.fillText(serial(s), CARD / 2, CARD - 114);
 
-  stamp(ctx);
+
 
   const img = medal ? await loadSvg(standaloneSvg(medal, 320)).catch(() => null) : null;
   const figure = !img && s.kind === 'progress';
@@ -334,14 +467,13 @@ export async function shareCard(s: ShareSubject, medal?: SVGSVGElement | null): 
   ctx.font = FONT.punch;
   const punchLines = s.punch ? wrap(ctx, s.punch, CARD - 220) : [];
 
-  const MEDAL = 300;
-  const FIGURE = 300;
+  const MEDAL = 268;
+  const FIGURE = 274;
+  const MIN_ART = 150;
   // Wiersz nadpisu nad tytułem. Oswald ma wysoki wzrost liter, więc odstęp musi być
   // liczony z zapasem — inaczej wersaliki tytułu dotykają nadpisu.
   const BAND_ROW = 54;
-  const height =
-    (img ? MEDAL + 34 : 0) +
-    (figure ? FIGURE + 30 : 0) +
+  const text =
     (s.band ? BAND_ROW : 0) +
     titleLines.length * 84 +
     (bodyLines.length ? 16 + bodyLines.length * 46 : 0) +
@@ -349,16 +481,29 @@ export async function shareCard(s: ShareSubject, medal?: SVGSVGElement | null): 
 
   // Blok treści jeździ pionowo między nagłówkiem a adresem, więc karta bez medalu nie
   // zostawia dziury na środku, a karta z medalem nie wypycha tekstu pod krawędź.
-  const top = 208;
-  const bottom = CARD - 200;
-  let y = top + Math.max(0, (bottom - top - height) / 2);
+  const top = 224;
+  const bottom = CARD - 268;
+  const band = bottom - top;
 
-  if (img) {
-    ctx.drawImage(img, (CARD - MEDAL) / 2, y, MEDAL, MEDAL);
-    y += MEDAL + 34;
-  } else if (figure) {
-    drawFigure(ctx, CARD / 2, y, FIGURE);
-    y += FIGURE + 30;
+  /*
+   * Grafika ustępuje tekstowi. Dwuwierszowy tytuł i dwuwierszowa puenta potrafią zjeść
+   * całe pole; gdyby medal trzymał stały rozmiar, treść zjechałaby na podpis i na pieczęć.
+   * Poniżej pewnego progu grafika znika całkiem — lepiej dokument bez ozdoby niż nachodzące
+   * na siebie napisy.
+   */
+  const wanted = img ? MEDAL : figure ? FIGURE : 0;
+  const art = wanted ? Math.min(wanted, band - text - 26) : 0;
+  const showArt = art >= MIN_ART;
+
+  const height = (showArt ? art + 26 : 0) + text;
+  let y = top + Math.max(0, (band - height) / 2);
+
+  if (showArt && img) {
+    ctx.drawImage(img, (CARD - art) / 2, y, art, art);
+    y += art + 26;
+  } else if (showArt && figure) {
+    drawFigure(ctx, CARD / 2, y, art);
+    y += art + 26;
   }
 
   if (s.band) {
@@ -394,6 +539,13 @@ export async function shareCard(s: ShareSubject, medal?: SVGSVGElement | null): 
       y += 44;
     });
   }
+
+  // Podpis idzie pod treść, a nie na sztywno: przy dwuwierszowym tytule albo długiej puencie
+  // blok rósł w dół i zawijas lądował na tekście. Gdy miejsca zabraknie, podpisu nie ma —
+  // lepiej dokument bez podpisu niż podpis w poprzek zdania.
+  const signY = y + 26;
+  if (signY < CARD - 238) signature(ctx, CARD / 2 - 86, signY, pick(SIGNATORIES, seed));
+  stamp(ctx, pick(STAMPS, seed));
 
   return new Promise((resolve, reject) => {
     c.toBlob((b) => (b ? resolve(b) : reject(new Error('Nie udało się zapisać obrazka.'))), 'image/png');

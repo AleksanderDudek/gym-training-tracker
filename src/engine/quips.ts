@@ -214,6 +214,51 @@ export const SUPPORT: readonly string[] = [
   'Nie ma tu reklam. Jest za to link do kawy i czyste sumienie.',
 ];
 
+/* ---------------- Blankiety ---------------- */
+
+/** Sentencja pod nagłówkiem dokumentu. Dyplomy mają łacinę, ten też — mniej więcej. */
+export const MOTTOS: readonly string[] = [
+  'PER ASPERA AD ZAKWASY',
+  'VENI, VIDI, PRZYSIAD',
+  'IN SERIA VERITAS',
+  'MENS SANA IN CORPORE ZMĘCZONE',
+  'ALEA IACTA EST — SERIA OSTATNIA',
+  'AUDACES FORTUNA IUVAT, RESZTA ROBI CARDIO',
+];
+
+/** Napis w pieczęci: pierwszy wiersz duży, drugi drobny. */
+export const STAMPS: readonly (readonly [string, string])[] = [
+  ['ZROBIONE', 'bez świadków'],
+  ['ZALICZONE', 'komisja spała'],
+  ['POTWIERDZONE', 'nikt nie sprawdzał'],
+  ['WAŻNE', 'do odwołania'],
+  ['PRZYJĘTO', 'bez zastrzeżeń'],
+];
+
+/** Kto podpisał dokument. Żaden z tych urzędów nie istnieje. */
+export const SIGNATORIES: readonly string[] = [
+  'Komisja ds. Powtórzeń',
+  'Główny Inspektor Zakwasów',
+  'Urząd Miar i Ciężarów',
+  'Departament Dnia Nóg',
+  'Krajowy Rejestr Serii',
+  'Inspektorat Techniki i Pochyleń',
+];
+
+/* ---------------- Wpisy do mediów społecznościowych ---------------- */
+
+/**
+ * Zakończenia wpisu. Zaproszenie ma brzmieć jak rzucone mimochodem, a nie jak baner
+ * reklamowy — nikt nie udostępnia postów, które wyglądają na sponsorowane.
+ */
+export const CTA: readonly string[] = [
+  'Jak ktoś chce sobie policzyć swoje — GYM TRACKER, za darmo:',
+  'Liczy to za mnie darmowa apka, gdyby ktoś pytał:',
+  'Wszystko liczy GYM TRACKER, nie ja:',
+  'Jak ktoś też lubi patrzeć, jak liczby rosną:',
+  'Dla ciekawskich, czym to liczę:',
+];
+
 /** Potwierdzenia w dymku. */
 export const TOASTS: readonly string[] = [
   'Zapisane.',
