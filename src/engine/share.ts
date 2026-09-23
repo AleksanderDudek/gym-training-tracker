@@ -19,7 +19,7 @@ import {
   repsJoke,
 } from './quips';
 import { MOVES } from '../data/moves';
-import { sampleCycle, skeleton } from './pose';
+import { face, headAngle, sampleCycle, skeleton } from './pose';
 
 export const APP_URL = 'https://aleksanderdudek.github.io/gym-training-tracker/';
 export const SUPPORT_URL = 'https://buycoffee.to/uriel';
@@ -217,10 +217,18 @@ function drawFigure(ctx: CanvasRenderingContext2D, cx: number, top: number, h: n
   chain([s.hip, s.kneeN, s.ankleN, s.toeN], 7, 1);
   chain([s.neck, s.elbowN, s.wristN], 7, 1);
 
+  // Głowa z konturem i miną. Na zdjęciu do legitymacji człowiek nie wyje z wysiłku, więc
+  // wysiłek jest ustawiony nisko — wychodzi spokojne skupienie.
   ctx.globalAlpha = 1;
+  const hr = 11 * k;
   ctx.beginPath();
-  ctx.arc(X(s.head), Y(s.head), 8.5 * k, 0, Math.PI * 2);
+  ctx.arc(X(s.head), Y(s.head), hr, 0, Math.PI * 2);
+  ctx.fillStyle = '#EFF0EC';
   ctx.fill();
+  ctx.strokeStyle = '#3C423D';
+  ctx.lineWidth = 3.6 * k;
+  ctx.stroke();
+  drawFace(ctx, X(s.head), Y(s.head), k, headAngle(s), 0.25);
 
   // Kettlebell w dłoni — bez niego sylwetka po prostu stoi.
   ctx.strokeStyle = '#9A5B12';
@@ -285,6 +293,48 @@ function signature(ctx: CanvasRenderingContext2D, cx: number, y: number, who: st
   ctx.fillStyle = '#5E655D';
   ctx.font = '400 21px "IBM Plex Sans", system-ui, sans-serif';
   ctx.fillText(who, cx, y + 34);
+}
+
+/** Ta sama mimika, co w atlasie, tylko pociągnięta po płótnie zamiast po SVG. */
+function drawFace(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  k: number,
+  angle: number,
+  effort: number,
+): void {
+  const f = face(effort);
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate((angle * Math.PI) / 180);
+  ctx.scale(k, k);
+  ctx.strokeStyle = '#3C423D';
+  ctx.fillStyle = '#3C423D';
+  ctx.lineWidth = 1.5;
+  ctx.lineCap = 'round';
+
+  ctx.beginPath();
+  ctx.moveTo(1.1, -5.4);
+  ctx.lineTo(5.7, -5.4 + (f.brow / 26) * 2.5);
+  ctx.stroke();
+
+  if (f.eye > 0.45) {
+    ctx.beginPath();
+    ctx.arc(3.5, -2, 1.4 * f.eye, 0, Math.PI * 2);
+    ctx.fill();
+  } else {
+    ctx.beginPath();
+    ctx.moveTo(2.1, -2);
+    ctx.lineTo(5, -2);
+    ctx.stroke();
+  }
+
+  ctx.beginPath();
+  ctx.moveTo(0.8, 3.9);
+  ctx.quadraticCurveTo(3.2, 3.9 + f.mouth, 5.6, 3.9);
+  ctx.stroke();
+  ctx.restore();
 }
 
 /** Pieczęć w rogu. Przechylona, bo pieczęcie nigdy nie są proste. */

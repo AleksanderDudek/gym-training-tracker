@@ -105,6 +105,13 @@ const step = (from: Pt, deg: number, len: number): Pt => {
   return { x: from.x + Math.sin(a) * len, y: from.y - Math.cos(a) * len };
 };
 
+/** Kąt, pod jakim ustawiona jest głowa — mimika musi obracać się razem z nią. */
+export function headAngle(s: Skeleton): number {
+  const dx = s.head.x - s.neck.x;
+  const dy = s.head.y - s.neck.y;
+  return (Math.atan2(dx, -dy) * 180) / Math.PI;
+}
+
 export interface Skeleton {
   hip: Pt;
   neck: Pt;
@@ -216,4 +223,38 @@ export function sampleCycle(frames: Keyframe[], t: number): FullPose {
   const span = nxt.at - cur.at;
   const local = span <= 0 ? 0 : (u - cur.at) / span;
   return lerpPose(cur.pose, nxt.pose, ease(Math.min(1, Math.max(0, local))));
+}
+
+/* ---------------- Mimika ---------------- */
+
+/**
+ * Twarz z profilu, bo sylwetka jest widziana z boku. Dwoje oczu na profilu wygląda jak
+ * błąd rysunkowy, więc jest jedno oko, jedna brew, nos i usta — i to wystarcza, żeby
+ * odczytać, czy człowiekowi jest lekko, czy właśnie walczy.
+ *
+ * Wszystko wynika z jednej liczby: wysiłku w zakresie 0–1. Dzięki temu mina zmienia się
+ * razem z ruchem, a nie losowo — na górze powtórzenia twarz odpuszcza, na dole zaciska.
+ */
+export interface Face {
+  /** Nachylenie brwi w stopniach. Ujemne to brew uniesiona, dodatnie ściągnięta do nosa. */
+  brow: number;
+  /** Wysokość szpary oka, 1 to oko otwarte, 0 to zmrużone do kreski. */
+  eye: number;
+  /** Wygięcie ust. Dodatnie to uśmiech, ujemne to podkówka. */
+  mouth: number;
+  /** Czy usta są otwarte — przy dużym wysiłku człowiek nie zaciska warg, tylko wypuszcza powietrze. */
+  open: boolean;
+}
+
+const mixTo = (a: number, b: number, t: number): number => a + (b - a) * t;
+
+export function face(effort: number): Face {
+  const e = Math.min(1, Math.max(0, effort));
+  return {
+    brow: mixTo(-10, 26, e),
+    eye: mixTo(1, 0.18, e),
+    // Lekki uśmiech na luzie, płasko w połowie, podkówka na maksa.
+    mouth: mixTo(1.6, -2.2, e),
+    open: e > 0.72,
+  };
 }

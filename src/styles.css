@@ -484,7 +484,11 @@
   .mq{display:block;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r)}
   .mq-ground{stroke:var(--line);stroke-width:2}
   .mq-body path{fill:none;stroke:var(--steel);stroke-width:7;stroke-linecap:round;stroke-linejoin:round}
-  .mq-body circle{fill:var(--steel);stroke:none}
+  /* Głowa z konturem, nie plama: w środku musi się zmieścić mina. */
+  .mq-body circle.mq-head{fill:var(--surface-2);stroke:var(--steel);stroke-width:3.6}
+  .mq-face .mq-line{fill:none;stroke:var(--steel);stroke-width:1.5;stroke-linecap:round;
+    stroke-linejoin:round}
+  .mq-face .mq-ink{fill:var(--steel);stroke:none}
   .mq-far path{fill:none;stroke:var(--steel);stroke-width:6;stroke-linecap:round;
     stroke-linejoin:round;opacity:.34}
   .mq-prop *{stroke:var(--warn);fill:none;stroke-linecap:round}

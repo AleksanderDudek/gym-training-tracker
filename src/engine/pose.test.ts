@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { MOVES } from '../data/moves';
 import { ANIM } from '../data/anim';
 import { EX } from '../data/exercises';
-import { SEG, STAGE, lerpPose, polyline, resolve, sampleCycle, skeleton } from './pose';
+import { SEG, STAGE, face, headAngle, lerpPose, polyline, resolve, sampleCycle, skeleton } from './pose';
 
 const dist = (a: { x: number; y: number }, b: { x: number; y: number }): number =>
   Math.hypot(a.x - b.x, a.y - b.y);
@@ -161,5 +161,47 @@ describe('przypisanie ćwiczeń do ruchów', () => {
   it('pokrywa większość biblioteki', () => {
     const total = Object.keys(EX).length;
     expect(Object.keys(ANIM).length / total).toBeGreaterThan(0.6);
+  });
+});
+
+describe('mimika', () => {
+  it('trzyma się zakresu i nie wybucha na wartościach spoza niego', () => {
+    [-5, 0, 0.5, 1, 9].forEach((e) => {
+      const f = face(e);
+      expect(Number.isFinite(f.brow)).toBe(true);
+      expect(f.eye).toBeGreaterThan(0);
+      expect(f.eye).toBeLessThanOrEqual(1);
+      expect(typeof f.open).toBe('boolean');
+    });
+  });
+
+  it('im większy wysiłek, tym bardziej ściągnięta brew i węższe oko', () => {
+    const easy = face(0);
+    const hard = face(1);
+    expect(hard.brow).toBeGreaterThan(easy.brow);
+    expect(hard.eye).toBeLessThan(easy.eye);
+  });
+
+  it('na luzie uśmiech, na maksa podkówka i otwarte usta', () => {
+    expect(face(0).mouth).toBeGreaterThan(0);
+    expect(face(0).open).toBe(false);
+    expect(face(1).mouth).toBeLessThan(0);
+    expect(face(1).open).toBe(true);
+  });
+
+  it('zmiana miny jest płynna, bez skoków w środku zakresu', () => {
+    for (let e = 0; e < 1; e += 0.1) {
+      const a = face(e);
+      const b = face(e + 0.1);
+      expect(Math.abs(b.brow - a.brow)).toBeLessThan(6);
+      expect(Math.abs(b.mouth - a.mouth)).toBeLessThan(1);
+    }
+  });
+
+  it('kąt głowy idzie za pozą, więc twarz nie zostaje pionowo przy leżeniu', () => {
+    const stand = headAngle(skeleton({ anchor: 'free', torso: 0, head: 0 }));
+    expect(Math.abs(stand)).toBeLessThan(1);
+    const lying = headAngle(skeleton({ anchor: 'free', torso: 272, head: 272 }));
+    expect(Math.abs(lying - -88)).toBeLessThan(2);
   });
 });

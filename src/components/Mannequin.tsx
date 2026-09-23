@@ -1,17 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
 import { MOVES } from '../data/moves';
 import type { MoveName, PropSpot } from '../data/moves';
-import { STAGE, polyline, sampleCycle, skeleton } from '../engine/pose';
+import { STAGE, face, headAngle, polyline, sampleCycle, skeleton } from '../engine/pose';
 import type { Pt, Skeleton } from '../engine/pose';
 import type { Gear } from '../types';
 
 /**
- * Manekin ćwiczeń: sylwetka bez twarzy, rysowana od zera z kątów stawów.
+ * Manekin ćwiczeń: patyczkowa sylwetka rysowana od zera z kątów stawów.
  *
  * Dlaczego nie nagrania ani modele 3D: wszystko tutaj powstaje w przeglądarce z kilkuset
  * bajtów liczb. Nie ma cudzego prawa autorskiego do pilnowania, nie ma reklam przed
  * odtworzeniem, nie ma zapytań do obcych serwerów i nic nie znika, gdy autor skasuje film.
- * Sylwetka jest celowo bez twarzy i bez płci — pokazuje tor ruchu, a nie człowieka.
+ * Sylwetka ma minę i zmienia ją razem z ruchem: na górze powtórzenia odpuszcza, na dole
+ * zaciska zęby. Mimika nie jest ozdobą — pokazuje, w którym miejscu zakresu jest ciężko,
+ * a przy okazji robi z patyczka kogoś, komu można kibicować.
  */
 
 const mid = (a: Pt, b: Pt): Pt => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
@@ -67,6 +69,45 @@ function Prop({ at, gear, spot }: { at: Pt | null; gear: Gear; spot: PropSpot })
 
 const line = (a: Pt, b: Pt): string => polyline([a, b]);
 const limb = (a: Pt, b: Pt, c: Pt): string => polyline([a, b, c]);
+
+const HEAD_R = 11;
+
+/**
+ * Twarz z profilu, obrócona razem z głową. Rysowana w układzie lokalnym, w którym „do góry”
+ * to kierunek głowy, a „do przodu” to prawo — czyli ta strona, w którą sylwetka jest zwrócona.
+ */
+function Face({ at, angle, effort }: { at: Pt; angle: number; effort: number }) {
+  const f = face(effort);
+  const x = at.x;
+  const y = at.y;
+  // Bez nosa. Profil z garbkiem wymaga narysowania go na konturze czaszki, a narysowany
+  // w środku sterczy przez kreskę jak dziób — oko, brew i usta wystarczają.
+  const browY = y - 5.4;
+  const mouthX = x + 3.2;
+  const mouthY = y + 3.9;
+
+  return (
+    <g className="mq-face" transform={`rotate(${angle.toFixed(1)} ${x.toFixed(1)} ${y.toFixed(1)})`}>
+      <path
+        d={`M${x + 1.1} ${browY}L${x + 5.7} ${(browY + (f.brow / 26) * 2.5).toFixed(2)}`}
+        className="mq-line"
+      />
+      {f.eye > 0.45 ? (
+        <circle cx={x + 3.5} cy={y - 2} r={(1.4 * f.eye).toFixed(2)} className="mq-ink" />
+      ) : (
+        <path d={`M${x + 2.1} ${y - 2}h2.9`} className="mq-line" />
+      )}
+      {f.open ? (
+        <ellipse cx={mouthX} cy={mouthY} rx="1.7" ry="2.2" className="mq-ink" />
+      ) : (
+        <path
+          d={`M${mouthX - 2.4} ${mouthY}Q${mouthX} ${(mouthY + f.mouth).toFixed(2)} ${mouthX + 2.4} ${mouthY}`}
+          className="mq-line"
+        />
+      )}
+    </g>
+  );
+}
 
 /**
  * Kropelki potu w najtrudniejszym momencie ruchu. Nie niosą informacji i o to chodzi:
@@ -144,11 +185,12 @@ export function Mannequin({
       </g>
       <g className="mq-body">
         <path d={line(s.hip, s.neck)} strokeWidth="9" />
-        <circle cx={s.head.x} cy={s.head.y} r="8.5" />
+        <circle className="mq-head" cx={s.head.x} cy={s.head.y} r={HEAD_R} />
         <path d={limb(s.hip, s.kneeN, s.ankleN)} />
         <path d={line(s.ankleN, s.toeN)} />
         <path d={limb(s.neck, s.elbowN, s.wristN)} />
       </g>
+      <Face at={s.head} angle={headAngle(s)} effort={effort} />
       <Prop at={prop} gear={gear} spot={m.prop} />
       <Sweat at={s.head} effort={effort} />
     </svg>

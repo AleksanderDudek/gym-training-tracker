@@ -19,7 +19,7 @@ Pozostałe polecenia:
 npm run build      # produkcyjny build do dist/
 npm run preview    # podgląd builda
 npm run typecheck  # tsc --noEmit
-npm test           # 231 testów silnika, biblioteki, odznak, ruchu, tonu i tras (vitest)
+npm test           # 236 testów silnika, biblioteki, odznak, ruchu, mimiki i tras (vitest)
 ```
 
 Build jest w pełni statyczny (`base: './'`), więc `dist/` można wrzucić na dowolny hosting plików
@@ -53,9 +53,20 @@ dla każdej jednostki.
 ruch, i po jednym na gotowy zestaw. Stoją obok wskazówki technicznej, nigdy zamiast niej:
 `hint` mówi, co zrobić, żeby się nie połamać, dopisek mówi, jak to wygląda z boku.
 
-**Sylwetka się poci.** W najtrudniejszym momencie ruchu manekinowi lecą kropelki — nie niosą
-informacji i o to chodzi: figurka, która wyraźnie się męczy, jest zabawniejsza i przy okazji
-pokazuje, gdzie wysiłek jest największy. Przy `prefers-reduced-motion` znikają.
+**Sylwetka ma minę i się poci.** Mimika i kropelki potu wynikają z jednej liczby — wysiłku
+liczonego z odległości od najtrudniejszej klatki ruchu. Na górze powtórzenia twarz odpuszcza:
+brew uniesiona, oko otwarte, lekki uśmiech. W dole brew ściąga się do nosa, oko mruży się
+do kreski, usta otwierają się do wydechu, a obok głowy lecą krople. To nie tylko żart —
+widać, w którym miejscu zakresu jest ciężko.
+
+Twarz jest z profilu, bo sylwetka też: jedno oko, jedna brew, usta. Dwoje oczu na profilu
+wygląda jak błąd rysunkowy, a nos narysowany w środku czaszki sterczy przez kontur jak dziób,
+więc nosa nie ma. Cała mimika obraca się razem z głową, więc przy leżeniu na ławce nie zostaje
+pionowo. Kropelki znikają przy `prefers-reduced-motion`.
+
+Ten sam ludzik pozuje na legitymacji siłowej — tam z wysiłkiem ustawionym nisko, bo na zdjęciu
+do dokumentu nikt nie wyje z wysiłku. Na medalach odznak głowa zostaje kropką: przy dwóch
+pikselach średnicy mina byłaby plamą.
 
 **Stopnie opisują karierę, nie mięśnie**: od „Gościa z ulicy" po „Pomnik za życia". Awans
 zależy od frekwencji, więc i nazwa mówi o tym, jak często cię tam widują.
@@ -72,7 +83,7 @@ kurczy, a poniżej progu znika całkiem. Podpis idzie pod treść, nie na sztywn
 zawijas lądował w poprzek zdania.
 
 **Medale pokazują ludzika.** Odznaki o ruchu — powtórzenia, serie, tonaż, partie ciała —
-noszą tę samą faceless sylwetkę, co manekin w atlasie, zmniejszoną do środka sześciokąta
+noszą tę samą patyczkową sylwetkę, co manekin w atlasie, zmniejszoną do środka sześciokąta
 i zatrzymaną w charakterystycznej klatce: wykrok, zawias, deska, pompka. Symbol trzeba
 rozszyfrować, sylwetkę widać od razu. Rodziny kalendarzowe zostają przy znakach, a okna
 czasu przy liczbach — tam informacja jest ważniejsza od żartu. Pozy dobrane są szerokie:
@@ -177,8 +188,8 @@ stoją na nich, więc test pilnuje, żeby żaden nie zniknął przy kolejnym roz
 
 ## Tor ruchu — manekin zamiast nagrań
 
-Każde ćwiczenie z przypisanym wzorcem ruchu ma w atlasie animowaną sylwetkę: bez twarzy,
-bez płci, rysowaną w przeglądarce z kątów stawów. **Nic tu nie pochodzi z cudzych nagrań,
+Każde ćwiczenie z przypisanym wzorcem ruchu ma w atlasie animowaną sylwetkę rysowaną
+w przeglądarce z kątów stawów. **Nic tu nie pochodzi z cudzych nagrań,
 bibliotek ruchu ani sklepów z modelami** — nie ma czyjegoś prawa autorskiego do pilnowania,
 licencji do odnawiania, reklam przed odtworzeniem ani zapytań na zewnątrz. Podstrona
 ćwiczenia po wejściu nie odpytuje żadnego obcego serwera; filmy z YouTube wchodzą dopiero
@@ -247,7 +258,7 @@ src/
     share.test.ts           11 testów treści wpisu, adresów i wprowadzenia
     quips.ts                humor: porównania liczb, odmiana, zestawy tekstów
     quips.test.ts           19 testów puent, odmiany, dopisków i granic porównań
-    pose.test.ts            19 testów szkieletu, cyklu i katalogu ruchów
+    pose.test.ts            24 testy szkieletu, cyklu, katalogu ruchów i mimiki
     badges.ts               katalog odznak z progami, postęp, migracja starych kluczy
     journal.ts              dziennik zdarzeń wyprowadzany z kalendarza
     advice.ts               podpowiedzi: nadrobienie, przerwa, zmiana częstotliwości
