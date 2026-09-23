@@ -45,8 +45,8 @@ export function levelHint(
   } else if (m.mode === 'ballistic') {
     head =
       p.sets < p.maxSets
-        ? `Komplet <b>${p.sets} × ${p.target}</b> dokłada serię (${p.sets + 1} × ${p.target}). Przy ${p.maxSets} seriach wchodzi <b>${nw ? `${nw} kg` : 'cięższy kettlebell'}</b>.`
-        : `Komplet dziś zaczyna przejście na <b>${nw ? `${nw} kg` : 'cięższy kettlebell'}</b>.`;
+        ? `Komplet <b>${p.sets} × ${p.target}</b> dokłada serię (${p.sets + 1} × ${p.target}). Przy ${p.maxSets} seriach wchodzi <b>${nw ? `${nw} kg` : 'cięższe obciążenie'}</b>.`
+        : `Komplet dziś zaczyna przejście na <b>${nw ? `${nw} kg` : 'cięższe obciążenie'}</b>.`;
   } else if (m.mode === 'body') {
     head =
       p.target < p.max
@@ -124,7 +124,7 @@ export function whyText(state: AppState, id: ExerciseId): string {
     );
   if (p.trans && p.weight) {
     bits.push(
-      `Trwa przejście na ${p.trans.to} kg. Cięższy kettlebell wchodzi seria po serii, bo skok z ${p.weight} na ${p.trans.to} kg to ${Math.round(
+      `Trwa przejście na ${p.trans.to} kg. Cięższy ciężar wchodzi seria po serii, bo skok z ${p.weight} na ${p.trans.to} kg to ${Math.round(
         (p.trans.to / p.weight - 1) * 100,
       )}% obciążenia — na sztandze odpowiednik dorzucenia kilkunastu kilogramów naraz.`,
     );

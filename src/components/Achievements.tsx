@@ -160,7 +160,7 @@ export function Achievements({ state }: { state: AppState }) {
         <h2>Osiągnięcia</h2>
         <p className="lead">
           Każda rodzina odznak ma kilka progów, więc zdobyta odznaka nie kończy tematu, tylko
-          pokazuje następny krok. Nic tu nie zależy od tego, jak ciężkim kettlebellem trenujesz —
+          pokazuje następny krok. Nic tu nie zależy od tego, jak ciężko trenujesz —
           liczy się to, ile i jak regularnie.
         </p>
       </div>

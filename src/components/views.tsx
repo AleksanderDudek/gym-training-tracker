@@ -1,68 +1,20 @@
 import { useState } from 'react';
-import { ALL, BUILTIN, EX, READY, WEIGHTED, ex } from '../data/exercises';
+import {
+  ALL,
+  BUILTIN,
+  EX,
+  GEAR_LABEL,
+  READY,
+  WEIGHTED,
+  ex,
+  gearOf,
+  ladderFor,
+} from '../data/exercises';
 import { acwr, sessionTonnage } from '../engine/math';
 import { P, exercisesByGroup, planLabel } from '../engine/plan';
 import { Chip, Sparkline } from './ui';
 import { ExerciseCard } from './ExerciseCard';
 import type { AppState, EffortKey, ExerciseId, ReadyKey, SetResult, Workout } from '../types';
-
-/* ---------------- Wybór treningu ---------------- */
-
-export function WorkoutPicker({
-  workouts,
-  onStart,
-  planned,
-}: {
-  workouts: Workout[];
-  onStart: (id: string) => void;
-  /** Trening, który wypada dziś według planu — jeśli plan jest uruchomiony. */
-  planned?: { id: string; name: string; late: number; points: number } | undefined;
-}) {
-  return (
-    <>
-      {planned && (
-        <div className={`wrap`}>
-          <div className={`banner ${planned.late > 0 ? '' : 'good'}`}>
-            <h4>{planned.late > 0 ? 'Termin do nadrobienia' : 'Dziś według planu'}</h4>
-            <p>
-              {planned.name}
-              {planned.late > 0
-                ? ` — termin był ${planned.late === 1 ? 'wczoraj' : `${planned.late} dni temu`}. Nadrobienie wciąż się liczy, tylko taniej.`
-                : ' — zrobiony dziś liczy się w pełni.'}{' '}
-              Do wzięcia <b>{planned.points} pkt</b>.
-            </p>
-          </div>
-        </div>
-      )}
-      <div className="wrap">
-        <h2>Wybierz trening</h2>
-      </div>
-      <div className="wrap">
-        <div className="list">
-          {workouts.map((w) => {
-            const names = w.items.map((i) => ex(i.ex).name).join(', ');
-            return (
-              <button
-                className={`pick${planned?.id === w.id ? ' planned' : ''}`}
-                key={w.id}
-                onClick={() => onStart(w.id)}
-              >
-                <div>
-                  <div className="n">{w.name}</div>
-                  <div className="d">
-                    {w.items.length} ćwiczeń · {names.slice(0, 70)}
-                    {names.length > 70 ? '…' : ''}
-                  </div>
-                </div>
-                <div className="go">start</div>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    </>
-  );
-}
 
 /* ---------------- Sesja ---------------- */
 
@@ -92,6 +44,10 @@ export function SessionView({
 
   return (
     <div className="wrap">
+      <div className="sess-head">
+        <span className="today-tag">Sesja w toku</span>
+        <h2 style={{ margin: '2px 0 0' }}>{workout.name}</h2>
+      </div>
       <div className="segline">Jak się dziś czujesz? Wpływa na dzisiejsze cele, nie na twoje poziomy.</div>
       <div className="seg">
         {(Object.keys(READY) as ReadyKey[]).map((k) => (
@@ -119,10 +75,10 @@ export function SessionView({
 
       <div className="actions">
         <button className="btn wide" onClick={onFinish}>
-          Zamknij trening ({doneCount} z {workout.items.length} zapisanych)
+          Zamknij sesję ({doneCount} z {workout.items.length} zapisanych)
         </button>
         <button className="btn ghost wide" onClick={onCancel}>
-          Porzuć trening
+          Porzuć sesję
         </button>
       </div>
     </div>
@@ -240,6 +196,7 @@ export function LevelsView({ state }: { state: AppState }) {
 
 export function WorkoutsView({
   state,
+  plannedId,
   onStart,
   onSaveWorkout,
   onDelete,
@@ -247,6 +204,8 @@ export function WorkoutsView({
   onToast,
 }: {
   state: AppState;
+  /** Trening, który wypada dziś według planu — dostaje znacznik i pierwszeństwo wzrokowe. */
+  plannedId?: string | undefined;
   onStart: (id: string) => void;
   onSaveWorkout: (w: Workout) => void;
   onDelete: (w: Workout) => void;
@@ -270,7 +229,8 @@ export function WorkoutsView({
       {all.map((w) => {
         const own = !BUILTIN.find((b) => b.id === w.id);
         return (
-          <div className="grp" key={w.id}>
+          <div className={`grp${plannedId === w.id ? ' today' : ''}`} key={w.id}>
+            {plannedId === w.id && <div className="today-tag">Dziś według planu</div>}
             <h3>{w.name}</h3>
             <p>{w.items.map((i) => ex(i.ex).name).join(' · ')}</p>
             <div className="btnrow">
@@ -410,12 +370,17 @@ export function SettingsView({
   onRecalibrate: () => void;
 }) {
   const [text, setText] = useState(state.cfg.weights.join(', '));
+  const groups = exercisesByGroup();
 
   return (
     <>
       <div className="grp">
         <h3>Dostępne kettlebelle</h3>
-        <p>Wagi po przecinku. Progresja dobiera ciężary wyłącznie z tej listy.</p>
+        <p>
+          Wagi po przecinku. Progresja dobiera ciężary wyłącznie z tej listy — ale tylko dla
+          ćwiczeń z kettlebellem. Sztanga, hantle i maszyny mają własne drabiny, bo skaczą
+          inaczej: gryf od dwudziestki co 2,5–10 kg, stos maszyny co 5.
+        </p>
         <input type="text" value={text} onChange={(e) => setText(e.target.value)} />
         <div style={{ height: 10 }} />
         <button
@@ -437,7 +402,7 @@ export function SettingsView({
       <div className="grp">
         <h3>Kalibracja</h3>
         <p>
-          Nowe ćwiczenie zaczyna od jednej serii próbnej na najlżejszym kettlebellu i wchodzi po
+          Nowe ćwiczenie zaczyna od jednej serii próbnej na lekkim obciążeniu i wchodzi po
           drabinie w górę, aż wynik wpadnie w zakres powtórzeń. Później co kilka sesji wraca test
           w ostatniej serii — po to, żeby aplikacja wyłapała, że jesteś już wyżej, zamiast czekać,
           aż dogoni to po jednym powtórzeniu na sesję.
@@ -459,21 +424,36 @@ export function SettingsView({
           Ręczna korekta, gdy znasz swój poziom i nie chcesz czekać na próbę. Ustawienie ciężaru
           zamyka fazę próbną tego ćwiczenia.
         </p>
-        {WEIGHTED.map((id) => (
-          <div className="wsel" key={id}>
-            <span>{ex(id).name}</span>
-            <select
-              value={String(P(state, id).weight ?? '')}
-              onChange={(e) => onStartWeight(id, Number(e.target.value))}
-            >
-              {state.cfg.weights.map((w) => (
-                <option key={w} value={w}>
-                  {w} kg
-                </option>
+        {/* Biblioteka ma ponad sto ćwiczeń — bez zwijanych partii ta sekcja byłaby ścianą. */}
+        {Object.entries(groups).map(([g, ids]) => {
+          const weighted = ids.filter((id) => WEIGHTED.includes(id));
+          if (!weighted.length) return null;
+          return (
+            <details className="gsel" key={g}>
+              <summary>
+                {g} <i>{weighted.length}</i>
+              </summary>
+              {weighted.map((id) => (
+                <div className="wsel" key={id}>
+                  <span>
+                    {ex(id).name}
+                    <i className="gear">{GEAR_LABEL[gearOf(id)]}</i>
+                  </span>
+                  <select
+                    value={String(P(state, id).weight ?? '')}
+                    onChange={(e) => onStartWeight(id, Number(e.target.value))}
+                  >
+                    {ladderFor(state, id).map((w) => (
+                      <option key={w} value={w}>
+                        {w} kg
+                      </option>
+                    ))}
+                  </select>
+                </div>
               ))}
-            </select>
-          </div>
-        ))}
+            </details>
+          );
+        })}
       </div>
 
       <div className="grp">
@@ -522,14 +502,15 @@ export function SettingsView({
           blisko upadku — dlatego skala ma trzy stopnie, a nie dziesięć.
         </p>
         <p>
-          <b>Przejście ciężaru seria po serii.</b> Skok o 4 kg to 16–33% obciążenia, czyli
-          wielokrotnie więcej niż typowy skok na sztandze. Cięższy kettlebell wchodzi więc najpierw
-          do jednej serii, potem kolejnej, aż zastąpi wszystkie.
+          <b>Przejście ciężaru seria po serii.</b> Skok o rozmiar kettlebella to 16–33%
+          obciążenia, czyli wielokrotnie więcej niż typowy skok na sztandze. Cięższy ciężar wchodzi
+          więc najpierw do jednej serii, potem kolejnej, aż zastąpi wszystkie. Każdy sprzęt ma
+          własną drabinę, więc na sztandze kroki są proporcjonalnie mniejsze.
         </p>
         <p>
           <b>Powtórzenia po zmianie ciężaru</b> liczone są wzorem Epleya: 1RM = ciężar × (1 +
           powtórzenia / 30). Z szacowanego maksimum wychodzi, ile powtórzeń da się zrobić na nowym
-          kettlebellu.
+          ciężarze.
         </p>
         <p>
           <b>Balistyka inaczej niż siła.</b> Swingi to ruch wybuchowy — nie prowadzi się ich do

@@ -1,4 +1,4 @@
-import { ALL, EX, STAGES, ex } from '../data/exercises';
+import { ALL, EX, LADDERS, STAGES, ex, gearOf, ladderFor } from '../data/exercises';
 import type { AppState, ExerciseId, PlannedSet, Progress } from '../types';
 
 export const step = (id: ExerciseId): number => (ex(id).unit === 'secs' ? 5 : 1);
@@ -51,7 +51,9 @@ export function freshState(): AppState {
     // ogranicznikiem przestaje być siła, a zaczyna cierpliwość, więc wynik nic nie mierzy.
     // Drabina i tak dojdzie w obie strony — od tej wersji także w dół, bo 4 i 6 kg dają
     // początkującemu dokąd zejść, gdy 8 kg okaże się za dużo.
-    if (p.weight !== null) p.weight = nearestWeight(weights, p.weight * 0.5);
+    const gear = gearOf(id);
+    const list = gear === 'kettlebell' ? weights : LADDERS[gear];
+    if (p.weight !== null && list.length) p.weight = nearestWeight(list, p.weight * 0.5);
     prog[id] = p;
   });
   return {
@@ -86,8 +88,9 @@ export function floorReps(state: AppState, id: ExerciseId): number {
 export function nextWeight(state: AppState, id: ExerciseId): number | null {
   const p = P(state, id);
   if (p.weight === null) return null;
-  const i = state.cfg.weights.indexOf(p.weight);
-  return i > -1 && i < state.cfg.weights.length - 1 ? state.cfg.weights[i + 1]! : null;
+  const list = ladderFor(state, id);
+  const i = list.indexOf(p.weight);
+  return i > -1 && i < list.length - 1 ? list[i + 1]! : null;
 }
 
 /**
@@ -102,7 +105,7 @@ export const nearestWeight = (list: number[], target: number): number =>
 export function shiftWeight(state: AppState, id: ExerciseId, steps: number): number | null {
   const p = P(state, id);
   if (p.weight === null) return null;
-  const list = state.cfg.weights;
+  const list = ladderFor(state, id);
   const i = list.indexOf(p.weight);
   if (i < 0) return null;
   const j = Math.max(0, Math.min(list.length - 1, i + steps));
@@ -112,8 +115,9 @@ export function shiftWeight(state: AppState, id: ExerciseId, steps: number): num
 export function prevWeight(state: AppState, id: ExerciseId): number | null {
   const p = P(state, id);
   if (p.weight === null) return null;
-  const i = state.cfg.weights.indexOf(p.weight);
-  return i > 0 ? state.cfg.weights[i - 1]! : null;
+  const list = ladderFor(state, id);
+  const i = list.indexOf(p.weight);
+  return i > 0 ? list[i - 1]! : null;
 }
 
 export function levelLabel(state: AppState, id: ExerciseId): string {
@@ -160,17 +164,23 @@ export function plan(state: AppState, id: ExerciseId): PlannedSet[] {
   return out;
 }
 
+/**
+ * Jednostka dopisywana do liczby. Bez niej „3 × 30” przy spacerze farmera i przy swingach
+ * znaczy dwie zupełnie różne rzeczy, a to pierwsza informacja, której ktoś szuka na karcie.
+ */
+export const unitTag = (id: ExerciseId): string => (ex(id).unit === 'secs' ? ' s' : ' powt.');
+
 export function planLabel(state: AppState, id: ExerciseId): string {
   const rows = plan(state, id);
   const p = P(state, id);
   const m = ex(id);
-  const u = m.unit === 'secs' ? ' s' : '';
+  const u = unitTag(id);
 
   if (p.phase === 'calib') {
     const w = p.weight ? ` · ${p.weight} kg` : '';
     return m.mode === 'ballistic'
-      ? `próba: 1 × ${m.def.target}${w}`
-      : `próba: ile dasz radę${w}`;
+      ? `próba: 1 × ${m.def.target}${u}${w}`
+      : `próba: ile dasz radę${m.unit === 'secs' ? ' — na czas' : ''}${w}`;
   }
 
   const groups: { n: number; w: number | null; reps: number }[] = [];
@@ -198,7 +208,9 @@ export function seedFromPlan(state: AppState, loadFactor: number): number {
     const p = P(state, id);
     const d = ex(id).def;
     if (p.hist.length || d.w === undefined) return;
-    p.weight = nearestWeight(state.cfg.weights, d.w * loadFactor);
+    const list = ladderFor(state, id);
+    if (!list.length) return;
+    p.weight = nearestWeight(list, d.w * loadFactor);
     p.phase = 'calib';
     p.calibRuns = 0;
     p.trans = null;

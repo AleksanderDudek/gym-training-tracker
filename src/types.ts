@@ -7,9 +7,16 @@ export type Mode =
   | 'body'; // masa ciała: rosną powtórzenia, potem serie
 
 export type Unit = 'reps' | 'secs';
+
+/**
+ * Sprzęt decyduje o drabinie ciężaru. Sztanga idzie co 2,5–10 kg i zaczyna od gryfu,
+ * kettlebell skacze co 4 kg, stos maszyny co 5 — jedna wspólna lista dawałaby ciężary,
+ * których nie da się nałożyć.
+ */
+export type Gear = 'kettlebell' | 'dumbbell' | 'barbell' | 'machine' | 'band' | 'bodyweight';
 export type EffortKey = 'easy' | 'solid' | 'max';
 export type ReadyKey = 'low' | 'ok' | 'high';
-export type StageKey = 'pullup' | 'pushup' | 'core';
+export type StageKey = 'pullup' | 'pushup' | 'core' | 'pistol' | 'hspu';
 export type ExerciseId = string;
 
 export interface ExerciseDefaults {
@@ -26,6 +33,8 @@ export interface ExerciseDefaults {
 export interface Exercise {
   name: string;
   group: string;
+  /** Sprzęt — wybiera drabinę ciężaru. Brak oznacza kettlebell, tak jak w pierwszej wersji. */
+  gear?: Gear;
   mode: Mode;
   unit: Unit;
   /** Powtórzenia liczone osobno na każdą stronę. */
@@ -274,7 +283,12 @@ export interface Award {
 }
 
 export interface AppState {
-  cfg: { weights: number[] };
+  cfg: {
+    /** Drabina kettlebli. Osobne pole, bo to jedyna lista, którą użytkownik sam edytuje. */
+    weights: number[];
+    /** Drabiny pozostałego sprzętu. Brak oznacza wartości domyślne. */
+    ladders?: Partial<Record<Gear, number[]>>;
+  };
   prog: Record<ExerciseId, Progress>;
   workouts: Workout[];
   session: Session | null;

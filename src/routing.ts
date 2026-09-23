@@ -9,7 +9,7 @@ import type { ExerciseId, Route, TabKey } from './types';
  */
 
 export const TABS: { key: TabKey; label: string; path: string }[] = [
-  { key: 'train', label: 'Trening', path: '#/trening' },
+  { key: 'train', label: 'Twoja sesja', path: '#/sesja' },
   { key: 'plan', label: 'Plan', path: '#/plan' },
   { key: 'prog', label: 'Poziomy', path: '#/poziomy' },
   { key: 'ach', label: 'Osiągnięcia', path: '#/osiagniecia' },
@@ -19,6 +19,8 @@ export const TABS: { key: TabKey; label: string; path: string }[] = [
 ];
 
 const TAB_BY_PATH: Record<string, TabKey> = {
+  sesja: 'train',
+  // Stary adres zakładki. Zostaje, żeby zapisane linki i zakładki przeglądarki dalej działały.
   trening: 'train',
   plan: 'plan',
   poziomy: 'prog',

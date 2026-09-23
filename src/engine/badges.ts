@@ -1,3 +1,4 @@
+import { ALL } from '../data/exercises';
 import type { Achievement, AchievementHit, AppState } from '../types';
 import type { PlanStats, Schedule } from './schedule';
 import { metrics } from './metrics';
@@ -120,9 +121,10 @@ const DEFS: AchDef[] = [
     group: 'dorobek',
     mark: '⌘',
     name: 'Poznany atlas',
-    desc: 'Ile różnych ćwiczeń w ogóle się pojawiło w historii.',
+    desc: 'Ile różnych ćwiczeń w ogóle się pojawiło w historii. Ostatni próg to cała biblioteka.',
     unit: 'ćwiczeń',
-    tiers: [5, 10, 15, 19],
+    // Ostatni próg liczony z biblioteki, żeby nie rozjechał się przy kolejnym rozszerzeniu atlasu.
+    tiers: [5, 10, 20, 35, 55, 80, ALL.length],
     value: (c) => c.metrics.distinct,
   },
 
@@ -148,9 +150,9 @@ const DEFS: AchDef[] = [
     id: 'najciezszy',
     group: 'szczyty',
     mark: 'kg',
-    name: 'Najcięższy kettlebell',
-    desc: 'Najcięższy ciężar, jaki w ogóle pojawił się w zapisanej serii.',
-    tiers: [8, 12, 16, 20, 24, 28, 32],
+    name: 'Najcięższy ciężar',
+    desc: 'Najcięższe obciążenie, jakie w ogóle pojawiło się w zapisanej serii.',
+    tiers: [8, 12, 16, 20, 24, 32, 40, 60, 80, 100, 140],
     value: (c) => c.metrics.heaviest,
     fmt: (n) => `${n} kg`,
   },
@@ -445,7 +447,7 @@ const DEFS: AchDef[] = [
     name: 'Trzymana forma',
     desc: 'Ćwiczenia stojące w granicach 5% własnego szczytu. Miara utrzymania, nie wzrostu.',
     unit: 'ćwiczeń',
-    tiers: [3, 6, 10, 15, 19],
+    tiers: [3, 6, 10, 20, 35, 55],
     value: (c) => c.metrics.heldForm,
   },
   {
@@ -453,7 +455,7 @@ const DEFS: AchDef[] = [
     group: 'utrzymanie',
     mark: '⇞',
     name: 'Etapy z masą ciała',
-    desc: 'Suma etapów w podciąganiu, pompkach i core. Jedyna miara, w której ciężar kettlebella nie gra roli.',
+    desc: 'Suma etapów w podciąganiu, pompkach i core. Jedyna miara, w której ciężar nie gra żadnej roli.',
     unit: 'etapów',
     tiers: [2, 4, 6, 9, 12],
     value: (c) => c.metrics.stages,
@@ -473,9 +475,9 @@ const DEFS: AchDef[] = [
     group: 'utrzymanie',
     mark: '▲',
     name: 'Żelazo',
-    desc: 'Ćwiczenia, które przeszły na cięższy kettlebell i tam zostały.',
+    desc: 'Ćwiczenia, które przeszły na cięższe obciążenie i tam zostały.',
     unit: 'ćwiczeń',
-    tiers: [1, 3, 6, 10, 15, 19],
+    tiers: [1, 3, 6, 12, 25, 40],
     value: (c) => c.metrics.heavier,
   },
   {

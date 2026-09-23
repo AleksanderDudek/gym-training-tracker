@@ -1,26 +1,54 @@
-import { EX, STAGES, ex } from '../data/exercises';
+import { useState } from 'react';
+import { EX, GEAR_LABEL, STAGES, ex, gearOf } from '../data/exercises';
 import { VIDEOS } from '../data/videos';
 import { MODE_NAMES } from '../engine/hints';
 import { P, exercisesByGroup, levelLabel, planLabel } from '../engine/plan';
 import { exercisePath, go } from '../routing';
 import { Chip } from './ui';
 import { VideoEmbed } from './VideoEmbed';
-import type { AppState, ExerciseId } from '../types';
+import type { AppState, ExerciseId, Gear } from '../types';
 
 /* ---------------- Spis ćwiczeń ---------------- */
 
+/** Filtry sprzętu. „Wszystko” zostaje pierwsze, bo to domyślny widok. */
+const GEAR_FILTERS: (Gear | 'all')[] = [
+  'all',
+  'kettlebell',
+  'barbell',
+  'dumbbell',
+  'machine',
+  'bodyweight',
+];
+
 export function AtlasView({ state }: { state: AppState }) {
   const groups = exercisesByGroup();
+  const [gear, setGear] = useState<Gear | 'all'>('all');
+  const match = (id: ExerciseId): boolean => gear === 'all' || gearOf(id) === gear;
+  const shown = Object.entries(groups)
+    .map(([g, ids]) => [g, ids.filter(match)] as const)
+    .filter(([, ids]) => ids.length);
+  const total = shown.reduce((n, [, ids]) => n + ids.length, 0);
+
   return (
     <>
       <div className="wrap">
         <h2>Atlas ćwiczeń</h2>
         <p className="lead">
-          Każde ćwiczenie ma własną podstronę z filmami pokazującymi technikę. Adres podstrony da się
-          wysłać albo zapisać w zakładkach.
+          Każde ćwiczenie ma własną podstronę z opisem techniki, a te z pierwszej biblioteki także
+          z filmami. Adres podstrony da się wysłać albo zapisać w zakładkach.
+        </p>
+        <div className="gearfilter">
+          {GEAR_FILTERS.map((g) => (
+            <button key={g} aria-pressed={gear === g} onClick={() => setGear(g)}>
+              {g === 'all' ? 'wszystko' : GEAR_LABEL[g]}
+            </button>
+          ))}
+        </div>
+        <p className="tight" style={{ marginTop: 8 }}>
+          {total} z {Object.values(groups).reduce((n, ids) => n + ids.length, 0)} ćwiczeń.
         </p>
       </div>
-      {Object.entries(groups).map(([g, ids]) => (
+      {shown.map(([g, ids]) => (
         <div key={g}>
           <div className="sect-label">{g}</div>
           {ids.map((id) => {
@@ -32,9 +60,10 @@ export function AtlasView({ state }: { state: AppState }) {
                 <div>
                   <div className="ex-name">{ex(id).name}</div>
                   <div className="ex-target">
-                    {count ? `${count} ${count === 1 ? 'film' : count < 5 ? 'filmy' : 'filmów'}` : 'brak filmów'}
+                    {GEAR_LABEL[gearOf(id)]}
                     {' · '}
                     {levelLabel(state, id)}
+                    {count > 0 && ` · ${count} ${count === 1 ? 'film' : count < 5 ? 'filmy' : 'filmów'}`}
                   </div>
                 </div>
                 <div className="go">→</div>
@@ -79,7 +108,9 @@ export function ExercisePage({ state, id }: { state: AppState; id: ExerciseId })
         <div className="ex-hero">
           <Chip state={state} id={id} />
           <div>
-            <div className="ex-group">{m.group}</div>
+            <div className="ex-group">
+              {m.group} · {GEAR_LABEL[gearOf(id)]}
+            </div>
             <h2 className="ex-h">{m.name}</h2>
             <div className="ex-target">{planLabel(state, id)}</div>
           </div>
@@ -92,6 +123,11 @@ export function ExercisePage({ state, id }: { state: AppState; id: ExerciseId })
         <p className="tight">
           Typ progresji: {MODE_NAMES[m.mode]}
           {m.side ? '. Powtórzenia liczone osobno na każdą stronę' : ''}.
+        </p>
+        <p className="tight">
+          Jednostka: <b>{m.unit === 'secs' ? 'sekundy' : 'powtórzenia'}</b>
+          {m.unit === 'secs' && ' — w sesji dostajesz stoper albo odliczanie'}. Sprzęt:{' '}
+          <b>{GEAR_LABEL[gearOf(id)]}</b>.
         </p>
       </div>
 
@@ -124,7 +160,10 @@ export function ExercisePage({ state, id }: { state: AppState; id: ExerciseId })
             </div>
           </>
         ) : (
-          <p>Dla tego ćwiczenia nie ma jeszcze wybranych filmów.</p>
+          <p>
+            Dla tego ćwiczenia nie ma jeszcze wybranych filmów. Opis techniki i typ progresji
+            wyżej wystarczą, żeby je poprawnie zaplanować.
+          </p>
         )}
       </div>
 

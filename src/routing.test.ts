@@ -15,6 +15,13 @@ describe('trasy', () => {
     });
   });
 
+  it('sesja ma własny adres, a stary link do treningu dalej działa', () => {
+    expect(parseHash('#/sesja')).toEqual({ kind: 'tab', tab: 'train' });
+    expect(parseHash('#/trening')).toEqual({ kind: 'tab', tab: 'train' });
+    expect(TABS.find((t) => t.key === 'train')?.path).toBe('#/sesja');
+    expect(TABS.find((t) => t.key === 'train')?.label).toBe('Twoja sesja');
+  });
+
   it('osiągnięcia mają własny adres', () => {
     expect(parseHash('#/osiagniecia')).toEqual({ kind: 'tab', tab: 'ach' });
     expect(TABS.find((t) => t.key === 'ach')?.path).toBe('#/osiagniecia');

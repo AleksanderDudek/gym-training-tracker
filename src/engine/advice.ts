@@ -74,7 +74,7 @@ export function advise(
       kind: 'layoff',
       level: 'warn',
       title: `Przerwa ${gap} dni`,
-      text: 'Pierwszy trening po powrocie nie musi być ciężki. Skoki na cięższy kettlebell i tak są wstrzymane.',
+      text: 'Pierwszy trening po powrocie nie musi być ciężki. Skoki na cięższe obciążenie i tak są wstrzymane.',
     });
   }
 

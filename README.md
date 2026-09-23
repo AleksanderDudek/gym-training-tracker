@@ -1,7 +1,8 @@
-# Trener kettlebell
+# GYM TRACKER
 
-Aplikacja do prowadzenia treningu kettlebell z automatyczną progresją. Wybierasz trening, wpisujesz
-wyniki, a silnik sam decyduje, kiedy podnieść powtórzenia i kiedy wejść na cięższy kettlebell.
+Aplikacja do prowadzenia treningu siłowego z automatyczną progresją. Wybierasz trening, wpisujesz
+wyniki, a silnik sam decyduje, kiedy podnieść powtórzenia i kiedy wejść na cięższe obciążenie.
+Atlas obejmuje 105 ćwiczeń: kettlebell, sztanga, hantle, maszyny i kalistenika.
 
 React 18 + TypeScript + Vite. Bez backendu — dane leżą w przeglądarce, z eksportem i importem do pliku.
 
@@ -18,7 +19,7 @@ Pozostałe polecenia:
 npm run build      # produkcyjny build do dist/
 npm run preview    # podgląd builda
 npm run typecheck  # tsc --noEmit
-npm test           # 155 testów silnika i tras (vitest)
+npm test           # 173 testy silnika, biblioteki i tras (vitest)
 ```
 
 Build jest w pełni statyczny (`base: './'`), więc `dist/` można wrzucić na dowolny hosting plików
@@ -28,16 +29,54 @@ albo otworzyć lokalnie.
 
 | Zakładka | Adres | Co robi |
 | --- | --- | --- |
-| Trening | `#/trening` | Wybór treningu i prowadzenie sesji. |
+| Twoja sesja | `#/sesja` | Co masz dziś do zrobienia według planu; w trakcie — bieżąca sesja. |
 | Plan | `#/plan` | Kalendarz terminów, punkty, stopień, dziennik zdarzeń. |
 | Poziomy | `#/poziomy` | Wskaźnik obciążenia, poziomy ćwiczeń, historia sesji. |
 | Osiągnięcia | `#/osiagniecia` | Dorobek w liczbach, progi najbliższe zdobycia, 56 rodzin odznak. |
-| Treningi | `#/treningi` | Własne zestawy ćwiczeń. |
-| Atlas | `#/cwiczenia` | Opisy ćwiczeń i filmy; każde ma własny adres do wysłania. |
-| Ustawienia | `#/ustawienia` | Dostępne kettlebelle, eksport, import, kasowanie danych. |
+| Treningi | `#/treningi` | Wszystkie treningi do wyboru i kreator własnych. |
+| Atlas | `#/cwiczenia` | 105 ćwiczeń z filtrem sprzętu; każde ma własny adres do wysłania. |
+| Ustawienia | `#/ustawienia` | Drabina kettlebli, poziomy startowe, eksport, import, kasowanie. |
 
 Osiągnięcia mają własną zakładkę, bo liczą się z całej historii, a nie z kalendarza planu —
 i mają być widoczne również wtedy, gdy żaden plan nie jest uruchomiony.
+
+**Zakładka „Twoja sesja” odpowiada na jedno pytanie: co robię dzisiaj.** Gdy plan ma termin —
+pokazuje ten jeden trening i przycisk startu. Gdy terminu nie ma — mówi, kiedy wypada następny.
+Gdy sesja już trwa — pokazuje ją. Lista wszystkich treningów mieszka w zakładce „Treningi”,
+bo ekran z ośmioma równorzędnymi przyciskami nie podpowiada niczego.
+
+Stary adres `#/trening` dalej działa — zapisane linki i zakładki przeglądarki nie przestają
+prowadzić tam, gdzie prowadziły.
+
+## Atlas i sprzęt
+
+Biblioteka ma **105 ćwiczeń** w siedmiu partiach ruchu: zawias biodrowy, przysiad, ciągnięcie,
+pchanie, całe ciało, core i carry, nogi dodatkowo. Obok pierwotnych dziewiętnastu ćwiczeń
+kettlebellowych stoją teraz sztanga, hantle, maszyny i kalistenika. Atlas filtruje się po sprzęcie.
+
+**Każdy sprzęt ma własną drabinę ciężaru.** Sztanga zaczyna od gryfu i idzie skokiem talerzy,
+kettlebell skacze co 4 kg, stos maszyny co 5, hantle co 2 kg do dwudziestki. Jedna wspólna lista
+proponowałaby obciążenia, których nie da się nałożyć — 60 kg nie mieści się w drabinie kettlebli,
+a 4 kg nie istnieje na sztandze. Progresja dobiera ciężar wyłącznie z drabiny właściwej dla
+ćwiczenia; edytowalna w Ustawieniach jest drabina kettlebli, reszta ma wartości domyślne.
+
+**Identyfikatory pierwszej biblioteki są nietknięte.** Gotowe treningi, plany i zapisane postępy
+stoją na nich, więc test pilnuje, żeby żaden nie zniknął przy kolejnym rozszerzeniu atlasu.
+
+## Ćwiczenia na czas
+
+Ćwiczenie mierzone w sekundach mówi to wprost — na karcie, w celu (`3 × 30 s`) i przy polu wyniku.
+Ćwiczenia na powtórzenia dostają ten sam znacznik (`3 × 8 powt.`), bo „3 × 30” przy spacerze
+farmera i przy swingach znaczy dwie zupełnie różne rzeczy.
+
+W sesji każda seria na czas dostaje licznik:
+
+- **próba i test kontrolny** — stoper liczący w górę, bo pytanie brzmi „ile wytrzymasz”;
+- **seria z wyznaczonym czasem** — odliczanie w dół od przepisanego czasu, z paskiem postępu.
+
+Odliczanie zatrzymuje się samo na zerze i wpisuje wynik do formularza; stoper wpisuje go po
+zatrzymaniu. Czas liczy się z różnicy znaczników czasu, a nie z liczby tyknięć — karta w tle
+dostaje rzadsze `setInterval`, więc licznik oparty na tyknięciach zostawałby w tyle.
 
 ## Struktura
 
@@ -46,7 +85,8 @@ src/
   types.ts                  wszystkie typy domenowe
   routing.ts                trasy w hashu adresu, siedem zakładek
   routing.test.ts           7 testów tras i zakładek
-  data/exercises.ts         biblioteka 19 ćwiczeń, cztery treningi, kolory kettlebli
+  data/exercises.ts         biblioteka 105 ćwiczeń, drabiny sprzętu, cztery treningi
+  data/exercises.test.ts    14 testów spójności biblioteki i drabin
   data/videos.ts            filmy instruktażowe, 4 na ćwiczenie
   data/plans.ts             katalog 54 planów: poziom × płeć × częstotliwość
   engine/
@@ -73,6 +113,8 @@ src/
     views.tsx               wybór treningu, sesja, poziomy, kreator, ustawienia
     atlas.tsx               spis ćwiczeń i podstrona pojedynczego ćwiczenia
     PlanView.tsx            katalog planów, kalendarz, punkty i dziennik
+    SessionHome.tsx         ekran „co robię dzisiaj”
+    Timer.tsx               stoper i odliczanie dla ćwiczeń na czas
     Achievements.tsx        zakładka osiągnięć: dorobek w liczbach i odznaki z progami
     VideoEmbed.tsx          odtwarzacz YouTube ładowany dopiero po kliknięciu
   App.tsx                   spina stan i widoki
@@ -199,7 +241,7 @@ Pięć grup:
 - **Partie ruchu** — objętość w rozbiciu na wzorce: zawias biodrowy, przysiad, ciągnięcie,
   pchanie, całe ciało, core, nogi. Widać, co jest zaniedbane. Zawias ma próg na 10 000 powtórzeń,
   bo tyle liczy klasyczne wyzwanie swingowe.
-- **Szczyty** — rekordy pojedynczych podejść (najcięższy kettlebell, szacowane maksimum,
+- **Szczyty** — rekordy pojedynczych podejść (najcięższy ciężar, szacowane maksimum,
   najdłuższa seria, najdłuższy podchód, najcięższa sesja) oraz rekordy z przesuwanego okna: doba,
   siedem, czternaście, dwadzieścia jeden, trzydzieści, dziewięćdziesiąt, sto osiemdziesiąt
   i trzysta sześćdziesiąt pięć dni. „Najlepszy miesiąc" znaczy dowolne trzydzieści dni z rzędu,

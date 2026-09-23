@@ -1,9 +1,9 @@
 {
-  "name": "kettlebell-trener",
+  "name": "gym-tracker",
   "private": true,
   "version": "3.0.0",
   "type": "module",
-  "description": "Aplikacja do treningu kettlebell z automatyczną progresją",
+  "description": "GYM TRACKER — trening siłowy z automatyczną progresją, planem i osiągnięciami",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

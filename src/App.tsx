@@ -5,7 +5,9 @@ import { P, freshState } from './engine/plan';
 import { applyLayoff, applyResult } from './engine/progression';
 import { queueSave, store } from './storage/storage';
 import { Banner, Modal, Toast, useModal } from './components/ui';
-import { LevelsView, SessionView, SettingsView, WorkoutPicker, WorkoutsView } from './components/views';
+import { LevelsView, SessionView, SettingsView, WorkoutsView } from './components/views';
+import { SessionHome } from './components/SessionHome';
+import type { TodayPlan } from './components/SessionHome';
 import { AtlasView, ExercisePage } from './components/atlas';
 import { PlanView } from './components/PlanView';
 import { Achievements } from './components/Achievements';
@@ -103,18 +105,30 @@ export default function App() {
   const current = state.session ? workouts.find((w) => w.id === state.session!.workout) : undefined;
   // Co wypada dziś według planu — razem z terminem zaległym, ale wciąż do nadrobienia.
   const snap = snapshot(state);
-  const planned = (() => {
-    const due = snap?.stats.due;
-    if (!due) return undefined;
-    const w = workouts.find((x) => x.id === due.workout);
-    if (!w) return undefined;
+  const todayPlan: TodayPlan = (() => {
+    if (!snap) return { kind: 'none' };
+    const due = snap.stats.due;
+    const w = due ? workouts.find((x) => x.id === due.workout) : undefined;
+    if (due && w)
+      return {
+        kind: 'due',
+        workout: w,
+        late: daysBetween(due.date, snap.today),
+        points: pointsToday(snap.stats, snap.today).now,
+      };
+    const next = snap.stats.next;
     return {
-      id: w.id,
-      name: w.name,
-      late: daysBetween(due.date, snap!.today),
-      points: pointsToday(snap!.stats, snap!.today).now,
+      kind: 'rest',
+      ...(next
+        ? {
+            nextDate: next.date,
+            nextName: workouts.find((x) => x.id === next.workout)?.name ?? next.workout,
+            nextIn: daysBetween(snap.today, next.date),
+          }
+        : {}),
     };
   })();
+  const plannedId = todayPlan.kind === 'due' ? todayPlan.workout?.id : undefined;
 
   const d = daysSince(state);
   const rate = weeklyRate(state);
@@ -126,7 +140,7 @@ export default function App() {
     const next = clone(state);
     next.session = { workout: id, started: new Date().toISOString(), ready: 'ok', res: {}, done: {}, skip: {} };
     commit(next);
-    go('#/trening');
+    go('#/sesja');
     window.scrollTo({ top: 0 });
   };
 
@@ -215,7 +229,7 @@ export default function App() {
         )}
         {blockJump && (
           <p style={{ marginTop: 12 }}>
-            Skoki na cięższy kettlebell są dziś wstrzymane — {reason}. Cele powtórzeń rosną normalnie.
+            Skoki na cięższe obciążenie są dziś wstrzymane — {reason}. Cele powtórzeń rosną normalnie.
           </p>
         )}
       </>,
@@ -488,7 +502,7 @@ export default function App() {
     const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `trener-kettlebell-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `gym-tracker-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(a.href);
   };
@@ -555,11 +569,11 @@ export default function App() {
           <div className="meta">
             <span>
               {state.session
-                ? 'trening w toku'
+                ? 'sesja w toku'
                 : `${state.log.length} ${state.log.length === 1 ? 'zapisany trening' : 'zapisanych treningów'}`}
             </span>
           </div>
-          <h1>{current ? current.name : 'Trener kettlebell'}</h1>
+          <h1>{current ? current.name : 'GYM TRACKER'}</h1>
           <div className="subline">{subline.join(' · ')}</div>
         </header>
       </div>
@@ -581,7 +595,7 @@ export default function App() {
             notice={{
               level: 'warn',
               title: 'Skok obciążenia',
-              text: `Tonaż z ostatniego tygodnia to ${ratio.toFixed(2)} średniej z czterech tygodni. Powyżej 1,5 rośnie ryzyko przeciążenia, więc skoki na cięższy kettlebell są wstrzymane. Cele powtórzeń rosną normalnie.`,
+              text: `Tonaż z ostatniego tygodnia to ${ratio.toFixed(2)} średniej z czterech tygodni. Powyżej 1,5 rośnie ryzyko przeciążenia, więc skoki na cięższe obciążenie są wstrzymane. Cele powtórzeń rosną normalnie.`,
             }}
           />
         )}
@@ -628,7 +642,19 @@ export default function App() {
             onToast={setToastMsg}
           />
         ) : (
-          <WorkoutPicker workouts={workouts} onStart={startSession} planned={planned} />
+          <SessionHome
+            today={todayPlan}
+            lastLabel={
+              d === null
+                ? null
+                : d === 0
+                  ? 'Ostatni trening: dzisiaj.'
+                  : d === 1
+                    ? 'Ostatni trening: wczoraj.'
+                    : `Ostatni trening: ${d} dni temu.`
+            }
+            onStart={startSession}
+          />
         ))}
 
       {view === 'prog' && <LevelsView state={state} />}
@@ -638,6 +664,7 @@ export default function App() {
       {view === 'work' && (
         <WorkoutsView
           state={state}
+          plannedId={plannedId}
           onStart={startSession}
           onSaveWorkout={(w) => {
             const next = clone(state);

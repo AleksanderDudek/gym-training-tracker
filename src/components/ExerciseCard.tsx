@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { EFFORT, ex } from '../data/exercises';
+import { EFFORT, ex, ladderFor } from '../data/exercises';
 import { levelHint, whyText } from '../engine/hints';
 import { P, plan, planLabel } from '../engine/plan';
 import { exercisePath } from '../routing';
 import { Chip, Segmented } from './ui';
+import { Timer } from './Timer';
 import type { AppState, EffortKey, ExerciseId, SetResult } from '../types';
 
 interface Props {
@@ -36,8 +37,16 @@ export function ExerciseCard({ state, id, onSave, onClear, onSkip, onToast }: Pr
   );
 
   const hint = levelHint(state, id, values, effort);
-  const unitLabel = m.unit === 'secs' ? 'sekundy' : 'powtórzenia';
+  const timed = m.unit === 'secs';
+  const unitLabel = timed ? 'sekundy' : 'powtórzenia';
+  const unitShort = timed ? 's' : 'powt.';
   const calib = p.phase === 'calib';
+
+  const setValue = (i: number, v: string) => {
+    const next = [...values];
+    next[i] = v;
+    setValues(next);
+  };
 
   const save = () => {
     const out: SetResult[] = values.map((v, i) => ({
@@ -73,47 +82,64 @@ export function ExerciseCard({ state, id, onSave, onClear, onSkip, onToast }: Pr
             dangerouslySetInnerHTML={{ __html: hint.html }}
           />
 
+          {timed && (
+            <p className="hint">
+              To ćwiczenie mierzy się <b>w sekundach</b>, nie w powtórzeniach.{' '}
+              {calib
+                ? 'Próba idzie na stoperze: włącz, wytrzymaj tyle, ile dasz radę, zatrzymaj.'
+                : 'Odliczanie startuje od przepisanego czasu i samo wpisuje wynik.'}
+            </p>
+          )}
+
           {rows.map((r, i) => (
-            <div className={`setrow${r.heavy ? ' heavy' : ''}`} key={i}>
-              <span className={`setno${r.amrap ? ' test' : ''}`}>
-                {r.amrap ? 'test' : i + 1}
-                {r.heavy ? '▲' : ''}
-              </span>
-              <label className="fld">
-                <span>{r.amrap ? `${unitLabel} — ile dasz radę` : unitLabel}</span>
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  min={0}
-                  placeholder={r.amrap ? 'max' : String(r.reps)}
-                  value={values[i] ?? ''}
-                  onChange={(e) => {
-                    const next = [...values];
-                    next[i] = e.target.value;
-                    setValues(next);
-                  }}
-                />
-              </label>
-              {r.w !== null ? (
+            <div key={i}>
+              <div className={`setrow${r.heavy ? ' heavy' : ''}`}>
+                <span className={`setno${r.amrap ? ' test' : ''}`}>
+                  {r.amrap ? 'test' : i + 1}
+                  {r.heavy ? '▲' : ''}
+                </span>
                 <label className="fld">
-                  <span>ciężar</span>
-                  <select
-                    value={String(weights[i] ?? r.w)}
-                    onChange={(e) => {
-                      const next = [...weights];
-                      next[i] = Number(e.target.value);
-                      setWeights(next);
-                    }}
-                  >
-                    {state.cfg.weights.map((x) => (
-                      <option key={x} value={x}>
-                        {x} kg
-                      </option>
-                    ))}
-                  </select>
+                  <span>{r.amrap ? `${unitLabel} — ile dasz radę` : unitLabel}</span>
+                  <span className="withunit">
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      min={0}
+                      placeholder={r.amrap ? 'max' : String(r.reps)}
+                      value={values[i] ?? ''}
+                      onChange={(e) => setValue(i, e.target.value)}
+                    />
+                    <i>{unitShort}</i>
+                  </span>
                 </label>
-              ) : (
-                <span />
+                {r.w !== null ? (
+                  <label className="fld">
+                    <span>ciężar</span>
+                    <select
+                      value={String(weights[i] ?? r.w)}
+                      onChange={(e) => {
+                        const next = [...weights];
+                        next[i] = Number(e.target.value);
+                        setWeights(next);
+                      }}
+                    >
+                      {ladderFor(state, id).map((x) => (
+                        <option key={x} value={x}>
+                          {x} kg
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ) : (
+                  <span />
+                )}
+              </div>
+              {timed && (
+                <Timer
+                  mode={r.amrap ? 'stopwatch' : 'count'}
+                  target={r.reps}
+                  onDone={(secs) => setValue(i, String(secs))}
+                />
               )}
             </div>
           ))}
@@ -160,7 +186,7 @@ export function ExerciseCard({ state, id, onSave, onClear, onSkip, onToast }: Pr
           </button>
           {p.trans && (
             <p className="hint" style={{ marginTop: 12 }}>
-              Serie oznaczone ▲ robisz cięższym kettlebellem.
+              Serie oznaczone ▲ robisz cięższym obciążeniem.
             </p>
           )}
         </div>

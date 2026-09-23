@@ -76,7 +76,7 @@ function startTransition(state: AppState, id: ExerciseId, blockJump: boolean): C
   const nxt = nextWeight(state, id);
 
   if (p.weight === null || !nxt)
-    return { type: 'cap', text: `${m.name}: szczyt zakresu. Brak cięższego kettlebell na liście.` };
+    return { type: 'cap', text: `${m.name}: szczyt zakresu. Brak cięższego obciążenia na drabinie.` };
   if (blockJump)
     return { type: 'held', text: `${m.name}: gotowe do wejścia na ${nxt} kg, skok wstrzymany do następnej sesji.` };
 
@@ -469,7 +469,7 @@ export function applyLayoff(state: AppState, days: number | null): Notice | null
     return {
       level: 'warn',
       title: `Przerwa ${days} dni`,
-      text: 'Cele powtórzeń zostają, ale skoki na cięższy kettlebell są wstrzymane na jedną sesję. Wróć do rytmu, potem ruszaj dalej.',
+      text: 'Cele powtórzeń zostają, ale skoki na cięższe obciążenie są wstrzymane na jedną sesję. Wróć do rytmu, potem ruszaj dalej.',
     };
   }
 

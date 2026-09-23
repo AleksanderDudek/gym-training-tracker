@@ -476,7 +476,7 @@ function ActivePlanView({
         </p>
         <p style={{ marginTop: 8 }}>
           Do <b>10 dni</b> przerwy nie dzieje się nic. Od <b>11</b> wstrzymane są skoki na cięższy
-          kettlebell. Od <b>21</b> cele powtórzeń wracają do dolnej granicy zakresu, a powyżej
+          obciążenie. Od <b>21</b> cele powtórzeń wracają do dolnej granicy zakresu, a powyżej
           sześciu tygodni schodzą też szacowane maksima.
         </p>
       </div>
