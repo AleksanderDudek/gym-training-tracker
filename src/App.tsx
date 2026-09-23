@@ -306,6 +306,13 @@ export default function App() {
     await say(
       pick(SAVED, m.workouts),
       <>
+        {/*
+          Kawa na górze podsumowania, a nie pod spodem: to jedyny moment, w którym
+          aplikacja właśnie coś dla kogoś zrobiła, a lista zmian bywa długa i dół okna
+          trzeba do niej doscrollować. Prośba pada raz na ekran — drugiego bloku niżej
+          już nie ma.
+        */}
+        <SupportLine tone="banner" seed={m.workouts} />
         {changes.length ? (
           <>
             <p>Zmiany na kolejną sesję:</p>
@@ -329,7 +336,6 @@ export default function App() {
             subject={progressSubject(m, rankNow(next), m.workouts)}
             label="Udostępnij cały dorobek"
           />
-          <SupportLine tone="block" seed={m.workouts} />
         </div>
       </>,
     );

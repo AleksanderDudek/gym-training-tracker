@@ -1,6 +1,7 @@
 import { ex } from '../data/exercises';
 import { go } from '../routing';
 import { LATE, REST, daySeed, pick } from '../engine/quips';
+import { SupportLine } from './Support';
 import type { Workout } from '../types';
 
 /** Co plan mówi na dziś. `due` to termin do zrobienia, `rest` to dzień bez terminu. */
@@ -119,6 +120,11 @@ export function SessionHome({
             Wybierz dowolny trening
           </button>
         </div>
+        {/*
+          Baner stoi pod obiema drogami wyjścia z ekranu, nie nad nimi: kto przyszedł
+          trenować, ten najpierw widzi przycisk startu. Kto się rozgląda — widzi kawę.
+        */}
+        <SupportLine tone="banner" />
         {lastLabel && <p className="disclaimer">{lastLabel}</p>}
       </div>
     </>

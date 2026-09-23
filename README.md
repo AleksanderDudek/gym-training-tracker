@@ -125,11 +125,20 @@ pierścienie, ale niczego nie zamalowuje: idzie na papier **przed** stopką, wi�
 i numer wydania drukują się na niej. Prawdziwa pieczęć też nie zjada tekstu, który już
 był na kartce.
 
-**Wsparcie** jest widoczne z każdego ekranu — kubek w nagłówku, obok ustawień — i ma cztery
-stałe miejsca poza nim: podsumowanie po zamkniętej sesji, koniec wprowadzenia, dół zakładki
-Osiągnięcia i Ustawienia. Zasady bez zmian: nigdy nie blokuje drogi, nigdy nie pojawia się
-w trakcie treningu, nigdy nie prosi dwa razy pod rząd. Teksty rotują („Aplikacja jest
-bezpłatna. Kawa autora już nie."), więc ten sam komunikat nie wisi w kółko.
+**Wsparcie** jest widoczne z każdego ekranu — kubek w nagłówku, obok ustawień — i ma pięć
+stałych miejsc poza nim: ekran startowy, góra podsumowania po zamkniętej sesji, koniec
+wprowadzenia, dół zakładki Osiągnięcia i Ustawienia. Zasady bez zmian: nigdy nie blokuje
+drogi, nigdy nie pojawia się w trakcie treningu, nigdy nie prosi dwa razy na tym samym
+ekranie. Teksty rotują („Aplikacja jest bezpłatna. Kawa autora już nie."), więc ten sam
+komunikat nie wisi w kółko.
+
+**Dwa z tych miejsc dostały kolor.** Na ekranie startowym i na górze podsumowania stoi baner:
+ciepłe tło, pomarańczowy pasek z lewej, pełnokolorowy przycisk. Reszta zostaje szara, bo kolor
+działa tylko wtedy, gdy jest go mało. Na ekranie startowym baner stoi **pod** oboma wyjściami
+do treningu — kto przyszedł ćwiczyć, ten najpierw widzi przycisk startu. W podsumowaniu jest
+odwrotnie, na samej górze: to jedyna chwila, w której aplikacja właśnie coś dla kogoś zrobiła,
+a lista zmian bywa długa i dół okna trzeba by doscrollować. Prośba pada raz na ekran — bloku,
+który wcześniej stał pod przyciskami udostępniania, już tam nie ma.
 
 **Dorobek udostępnisz w każdej chwili** — przycisk „Udostępnij dorobek" w zakładce Osiągnięcia
 i drugi, obok wyniku sesji, po każdym zamkniętym treningu.
@@ -293,12 +302,13 @@ src/
     Mannequin.tsx           sylwetka ćwiczeń i jej zegar
     Intro.tsx               opcjonalne wprowadzenie, cztery ekrany
     Share.tsx               przycisk udostępniania i ścieżka zapasowa
-    Support.tsx             wsparcie autora w dwóch wariantach
+    Support.tsx             wsparcie autora w czterech wariantach, jeden z nich kolorowy
     Achievements.tsx        zakładka osiągnięć: dorobek w liczbach i odznaki z progami
     VideoEmbed.tsx          odtwarzacz YouTube ładowany dopiero po kliknięciu
   App.tsx                   spina stan i widoki
   main.tsx                  punkt wejścia
   styles.css                arkusz stylów
+  styles.contrast.test.ts   5 testów kontrastu tokenów, liczonych wprost z arkusza
 ```
 
 Silnik jest w całości oddzielony od interfejsu. `engine/` nie importuje niczego z Reacta, funkcje
@@ -459,6 +469,19 @@ informację samo, nie stoi na nich**. Ikona ma obok siebie podpis, aktywna zakł
 pogrubienie i ciemniejszy tekst, kropelki potu i konfetti nie mówią niczego, czego nie
 widać gdzie indziej. Tam, gdzie kolor jest jedynym nośnikiem — rysunek wygrawerowany
 na medalu — próg 3:1 jest trzymany z zapasem.
+
+**Krawędź kontrolki to osobny token.** `--line` rysuje podziały w treści i przy 1,2–1,7:1
+jest dokładnie tym, czym ma być: ledwie widoczną kreską. Ta sama kreska na przycisku znaczy
+jednak co innego — to ona mówi „tu się klika”. Segmenty, wybór częstotliwości, dni tygodnia,
+filtry sprzętu i pola formularzy chodzą więc na `--edge` (4,10 / 3,74 / 3,01 na trzech tłach),
+a nierozpoznawalny przycisk przestał być nierozpoznawalny. Zaciemnienie samego `--line`
+zamieniłoby spokojną kartę w kratkę, więc tokeny są dwa.
+
+**Progi pilnuje test, nie pamięć.** `styles.contrast.test.ts` czyta arkusz, wyciąga z niego
+tokeny i liczy kontrast po WCAG: wersje `ink` powyżej 4,5:1 na każdym tle, `--edge` powyżej
+3:1, biel na przycisku kawy powyżej 4,5:1. Sprawdza też rzecz odwrotną — że czyste akcenty
+nadal **nie** nadają się na tekst, bo gdyby kiedyś przeskoczyły próg, podział na dwa tokeny
+byłby już tylko zabobonem.
 
 **Tworzywa odznak wyprowadzone są z tych samych akcentów** — brąz z pomarańczu, platyna
 z błękitu, szmaragd z zieleni; srebro i złoto zostają przy neutralnych. Rysunek na medalu
