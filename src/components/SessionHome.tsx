@@ -1,5 +1,6 @@
 import { ex } from '../data/exercises';
 import { go } from '../routing';
+import { LATE, REST, daySeed, pick } from '../engine/quips';
 import type { Workout } from '../types';
 
 /** Co plan mówi na dziś. `due` to termin do zrobienia, `rest` to dzień bez terminu. */
@@ -48,8 +49,8 @@ export function SessionHome({
           {today.kind === 'due'
             ? 'Plan ma na dziś konkretny trening. Zacznij go jednym przyciskiem albo wybierz coś innego.'
             : today.kind === 'rest'
-              ? 'Dziś plan nie ma terminu. Możesz odpocząć albo zrobić sesję dodatkową.'
-              : 'Nie masz uruchomionego planu, więc wybierasz sam. Plan podpowiadałby, co i kiedy.'}
+              ? `${pick(REST, daySeed())} Możesz też zrobić sesję dodatkową.`
+              : 'Nie masz planu, więc decydujesz sam. Plan robiłby to za ciebie i nigdy by nie zapomniał.'}
         </p>
       </div>
 
@@ -64,7 +65,7 @@ export function SessionHome({
           </p>
           <p className="tight" style={{ marginTop: 6 }}>
             {today.late
-              ? `Termin był ${today.late === 1 ? 'wczoraj' : `${today.late} dni temu`}. Nadrobienie wciąż się liczy, tylko taniej.`
+              ? `Termin był ${today.late === 1 ? 'wczoraj' : `${today.late} dni temu`}. ${pick(LATE, today.late)} Nadrobienie wciąż się liczy, tylko taniej.`
               : 'Zrobiony dziś liczy się w pełni.'}
             {today.points ? ` Do wzięcia ${today.points} pkt.` : ''}
           </p>
@@ -98,7 +99,8 @@ export function SessionHome({
           <h3 className="today-name">Nikt nie pilnuje terminów</h3>
           <p className="tight">
             Plan rozpisuje dwanaście tygodni na konkretne dni, liczy realizację i sam decyduje,
-            który trening wypada następny — także wtedy, gdy poprzedni się nie odbył.
+            który trening wypada następny — także wtedy, gdy poprzedni się nie odbył. Nie obraża
+            się i nie przypomina o sobie w nocy.
           </p>
           <div className="actions">
             <button className="btn ghost wide" onClick={() => go('#/plan')}>

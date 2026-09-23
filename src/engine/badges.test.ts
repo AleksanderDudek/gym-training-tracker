@@ -99,6 +99,21 @@ describe('odznaki', () => {
     expect(top('rytm')).toBeGreaterThan(52);
   });
 
+  it('każda rodzina ma puentę i żadna nie dokucza użytkownikowi', () => {
+    const harsh = /wstyd|leń|słab|żałos|porażk|nieudacz|grub/i;
+    ACHIEVEMENTS.forEach((a) => {
+      expect({ id: a.id, ok: (a.quip ?? '').length > 15 }).toEqual({ id: a.id, ok: true });
+      expect(a.quip).not.toMatch(harsh);
+    });
+  });
+
+  it('puenta nie zastępuje opisu — informacja i żart stoją osobno', () => {
+    ACHIEVEMENTS.forEach((a) => {
+      expect(a.desc.length).toBeGreaterThan(20);
+      expect(a.quip).not.toBe(a.desc);
+    });
+  });
+
   it('każdy piktogram odznaki istnieje w rejestrze rysunków', () => {
     ACHIEVEMENTS.forEach((a) => {
       if (a.art) expect(ART_NAMES).toContain(a.art);

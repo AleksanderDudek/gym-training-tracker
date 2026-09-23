@@ -19,11 +19,42 @@ Pozostałe polecenia:
 npm run build      # produkcyjny build do dist/
 npm run preview    # podgląd builda
 npm run typecheck  # tsc --noEmit
-npm test           # 209 testów silnika, biblioteki, odznak, ruchu i tras (vitest)
+npm test           # 223 testy silnika, biblioteki, odznak, ruchu, tonu i tras (vitest)
 ```
 
 Build jest w pełni statyczny (`base: './'`), więc `dist/` można wrzucić na dowolny hosting plików
 albo otworzyć lokalnie.
+
+## Ton
+
+Aplikacja żartuje, ale nie wszędzie. `engine/quips.ts` pilnuje trzech zasad:
+
+**Żart nigdy nie stoi tam, gdzie człowiek szuka informacji.** Cele serii, ciężary, terminy,
+opisy odznak i ostrzeżenia o przeciążeniu zostają suche. Puenta idzie obok, we własnym
+rejestrze typograficznym — inny kolor, inny krój — żeby nikt nie pomylił dowcipu z danymi.
+Ostrzeżenia o bólu, kontuzji i skoku obciążenia nie żartują nigdy i nie mają wariantów.
+
+**Nigdy kosztem użytkownika.** Opuszczony termin kwitowany jest łagodnie („Kalendarz się nie
+obraził. Czeka."), bo wstyd jeszcze nikogo nie wzmocnił. Śmiejemy się z siłowni, z liczb
+i z samej aplikacji. Test sprawdza, że w tekstach nie ma słów, którymi da się komuś dokopać.
+
+**Ten sam żart dwa razy przestaje być żartem.** Teksty losowane są ziarnem — tym samym
+w obrębie jednego ekranu, innym przy kolejnym treningu. Losowanie przy każdym renderze
+migałoby tekstem w trakcie czytania.
+
+**Liczby przekładane na rzeczy.** Tonaż i powtórzenia zamieniają się w przedmioty o znanej
+masie i w czas: „w sumie 2 czołgi", „po jednym na sekundę zajęłoby to 1 godzinę i 45 minut".
+Jednostka nie jest największą, która się mieści — „1,2 hipopotama" jest prawdziwe i martwe,
+a „3 maluchy" widać od razu — tylko tą, przy której liczba wypada najbliżej kilku sztuk.
+Liczba zawsze wychodzi całkowita, bo ułamek wymusiłby w polszczyźnie czwartą formę odmiany
+dla każdej jednostki.
+
+**Stopnie opisują karierę, nie mięśnie**: od „Gościa z ulicy" po „Pomnik za życia". Awans
+zależy od frekwencji, więc i nazwa mówi o tym, jak często cię tam widują.
+
+**Karta do wpisu jest świadectwem wydanym przez urząd, który nie istnieje**: podwójna ramka,
+numer wydania „bez trybu odwoławczego" i przechylona pieczęć „ZROBIONE — bez świadków".
+Powaga formy przy błahości treści jest tu całym żartem.
 
 ## Wprowadzenie, udostępnianie i wsparcie
 
@@ -182,6 +213,8 @@ src/
     pose.ts                 szkielet manekina: kąty, klatki, dosunięcie do podłoża
     share.ts                treść wpisu, karta 1080×1080, wysyłka i ścieżka zapasowa
     share.test.ts           11 testów treści wpisu, adresów i wprowadzenia
+    quips.ts                humor: porównania liczb, odmiana, zestawy tekstów
+    quips.test.ts           14 testów puent, odmiany i granic porównań
     pose.test.ts            19 testów szkieletu, cyklu i katalogu ruchów
     badges.ts               katalog odznak z progami, postęp, migracja starych kluczy
     journal.ts              dziennik zdarzeń wyprowadzany z kalendarza

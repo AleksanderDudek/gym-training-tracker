@@ -258,6 +258,8 @@ export interface Achievement {
   mark: string;
   /** Nazwa piktogramu z rejestru odznak. Brak oznacza medal z napisem. */
   art?: string;
+  /** Puenta. Stoi obok opisu, nigdy zamiast niego — żart nie może zjeść informacji. */
+  quip?: string;
   /** Progi rosnąco. Jeden próg oznacza odznakę zerojedynkową. */
   tiers: number[];
   /** Jednostka dopisywana do progu, np. „powtórzeń”. */

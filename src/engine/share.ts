@@ -7,6 +7,8 @@
  * nie ma, zostaje kopiowanie i kilka bezpośrednich adresów.
  */
 
+import { CHEERS, massJoke, pick, repsJoke } from './quips';
+
 export const APP_URL = 'https://aleksanderdudek.github.io/gym-training-tracker/';
 export const SUPPORT_URL = 'https://buycoffee.to/uriel';
 
@@ -17,6 +19,21 @@ export interface ShareSubject {
   band?: string | undefined;
   /** Wiersze z liczbami, od najważniejszego. */
   lines: string[];
+  /** Puenta pod liczbami. Wpis bez niej ląduje w cudzym kanale jako sucha statystyka. */
+  punch?: string | undefined;
+}
+
+/**
+ * Puenta z dorobku: tonaż i powtórzenia przełożone na rzeczy, które da się sobie wyobrazić.
+ * Wpis „12 483 powtórzenia” nikogo nie zatrzyma; „to sześć fortepianów” zatrzyma.
+ */
+export function punchline(kg: number, reps: number, seed: number): string {
+  const mass = massJoke(kg);
+  const time = repsJoke(reps);
+  if (mass && time) return seed % 2 ? `W sumie ${mass}.` : `Powtórzenia: ${time}.`;
+  if (mass) return `W sumie ${mass}.`;
+  if (time) return `Powtórzenia: ${time}.`;
+  return pick(CHEERS, seed);
 }
 
 /**
@@ -25,8 +42,8 @@ export interface ShareSubject {
  */
 export function shareText(s: ShareSubject): string {
   const head = s.band ? `${s.title} — ${s.band}` : s.title;
-  return [head, ...s.lines, '', 'Prowadzę trening w GYM TRACKER:', APP_URL]
-    .filter((x, i, all) => !(x === '' && all[i - 1] === ''))
+  return [head, ...s.lines, s.punch ?? '', '', 'Prowadzę trening w GYM TRACKER:', APP_URL]
+    .filter((x, i, all) => x !== '' || (all[i - 1] !== '' && i > 0))
     .join('\n');
 }
 
@@ -44,6 +61,42 @@ export function shareLinks(s: ShareSubject): { name: string; url: string }[] {
 /* ---------------- Obrazek do wpisu ---------------- */
 
 const CARD = 1080;
+
+/** Numer wydania — wyliczany z treści, żeby ta sama odznaka zawsze miała ten sam. */
+function serial(s: ShareSubject): string {
+  const base = `${s.title}${s.band ?? ''}${s.lines.join('')}`;
+  let h = 7;
+  for (let i = 0; i < base.length; i++) h = (h * 31 + base.charCodeAt(i)) % 900_000;
+  return `nr ${String(h + 100_000).padStart(6, '0')} · wydano bez trybu odwoławczego`;
+}
+
+/** Pieczęć w rogu. Przechylona, bo pieczęcie nigdy nie są proste. */
+function stamp(ctx: CanvasRenderingContext2D): void {
+  ctx.save();
+  ctx.translate(CARD - 196, CARD - 214);
+  ctx.rotate((-14 * Math.PI) / 180);
+  ctx.strokeStyle = '#9A5B12';
+  ctx.fillStyle = '#9A5B12';
+  ctx.globalAlpha = 0.62;
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.arc(0, 0, 76, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(0, 0, 66, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = '600 30px "Oswald", system-ui, sans-serif';
+  ctx.fillText('ZROBIONE', 0, -12);
+  ctx.font = '400 17px "IBM Plex Sans", system-ui, sans-serif';
+  ctx.fillText('bez świadków', 0, 16);
+  ctx.restore();
+  ctx.globalAlpha = 1;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+}
 
 /**
  * Zmienne CSS nie rozwiązują się w samodzielnym pliku SVG — obrazek ładowany przez
@@ -131,7 +184,15 @@ export async function shareCard(s: ShareSubject, medal?: SVGSVGElement | null): 
   ctx.fillStyle = '#D7D9D3';
   ctx.fillRect(0, 0, CARD, CARD);
   ctx.fillStyle = '#FAFAF8';
-  ctx.fillRect(64, 64, CARD - 128, CARD - 128);
+  ctx.fillRect(56, 56, CARD - 112, CARD - 112);
+
+  // Podwójna ramka i pieczęć: karta ma wyglądać jak świadectwo wydane przez urząd,
+  // który nie istnieje. Powaga formy przy błahości treści jest tu całym żartem.
+  ctx.strokeStyle = '#C2C5BD';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(56, 56, CARD - 112, CARD - 112);
+  ctx.lineWidth = 1;
+  ctx.strokeRect(74, 74, CARD - 148, CARD - 148);
 
   ctx.textAlign = 'center';
   // Linia bazowa u góry: przy domyślnej („alphabetic”) wysokość wiersza zależy od kroju
@@ -143,16 +204,27 @@ export async function shareCard(s: ShareSubject, medal?: SVGSVGElement | null): 
     band: '600 30px "IBM Plex Sans", system-ui, sans-serif',
     title: '600 72px "Oswald", system-ui, sans-serif',
     line: '400 34px "IBM Plex Sans", system-ui, sans-serif',
+    punch: '600 34px "Oswald", system-ui, sans-serif',
     url: '500 28px "IBM Plex Sans", system-ui, sans-serif',
   };
 
   ctx.fillStyle = '#5E655D';
+  ctx.font = '600 26px "IBM Plex Sans", system-ui, sans-serif';
+  ctx.fillText('ŚWIADECTWO POCIĘŻAROWE', CARD / 2, 116);
+  ctx.fillStyle = '#1E2320';
   ctx.font = FONT.brand;
-  ctx.fillText('GYM TRACKER', CARD / 2, 132);
+  ctx.fillText('GYM TRACKER', CARD / 2, 152);
 
   ctx.font = FONT.url;
   ctx.fillStyle = '#3C423D';
-  ctx.fillText(APP_URL.replace(/^https:\/\//, ''), CARD / 2, CARD - 140);
+  ctx.fillText(APP_URL.replace(/^https:\/\//, ''), CARD / 2, CARD - 146);
+
+  // Numer wydania: wygląda urzędowo, nie znaczy nic. O to chodzi.
+  ctx.font = '400 22px "IBM Plex Sans", system-ui, sans-serif';
+  ctx.fillStyle = '#9BA298';
+  ctx.fillText(serial(s), CARD / 2, CARD - 108);
+
+  stamp(ctx);
 
   const img = medal ? await loadSvg(standaloneSvg(medal, 320)).catch(() => null) : null;
 
@@ -160,6 +232,8 @@ export async function shareCard(s: ShareSubject, medal?: SVGSVGElement | null): 
   const titleLines = wrap(ctx, s.title, CARD - 220);
   ctx.font = FONT.line;
   const bodyLines = s.lines.flatMap((l) => wrap(ctx, l, CARD - 200));
+  ctx.font = FONT.punch;
+  const punchLines = s.punch ? wrap(ctx, s.punch, CARD - 220) : [];
 
   const MEDAL = 300;
   // Wiersz nadpisu nad tytułem. Oswald ma wysoki wzrost liter, więc odstęp musi być
@@ -169,12 +243,13 @@ export async function shareCard(s: ShareSubject, medal?: SVGSVGElement | null): 
     (img ? MEDAL + 34 : 0) +
     (s.band ? BAND_ROW : 0) +
     titleLines.length * 84 +
-    (bodyLines.length ? 16 + bodyLines.length * 46 : 0);
+    (bodyLines.length ? 16 + bodyLines.length * 46 : 0) +
+    (punchLines.length ? 20 + punchLines.length * 44 : 0);
 
   // Blok treści jeździ pionowo między nagłówkiem a adresem, więc karta bez medalu nie
   // zostawia dziury na środku, a karta z medalem nie wypycha tekstu pod krawędź.
-  const top = 210;
-  const bottom = CARD - 190;
+  const top = 208;
+  const bottom = CARD - 200;
   let y = top + Math.max(0, (bottom - top - height) / 2);
 
   if (img) {
@@ -203,6 +278,16 @@ export async function shareCard(s: ShareSubject, medal?: SVGSVGElement | null): 
     bodyLines.forEach((l) => {
       ctx.fillText(l, CARD / 2, y);
       y += 46;
+    });
+  }
+
+  if (punchLines.length) {
+    y += 20;
+    ctx.fillStyle = '#9A5B12';
+    ctx.font = FONT.punch;
+    punchLines.forEach((l) => {
+      ctx.fillText(l, CARD / 2, y);
+      y += 44;
     });
   }
 

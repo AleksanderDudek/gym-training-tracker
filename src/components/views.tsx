@@ -159,7 +159,9 @@ export function LevelsView({ state }: { state: AppState }) {
 
       <div className="sect-label">Historia</div>
       {!state.log.length ? (
-        <div className="empty">Pierwszy zamknięty trening pojawi się tutaj.</div>
+        <div className="empty">
+          Historia pusta. Pierwszy zamknięty trening zajmie tu miejsce na zawsze.
+        </div>
       ) : (
         [...state.log]
           .reverse()

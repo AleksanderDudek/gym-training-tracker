@@ -22,22 +22,22 @@ export const STEPS: Step[] = [
   {
     icon: 'session',
     title: 'Trening, który sam się rozlicza',
-    body: 'Wpisujesz wyniki serii i oceniasz, ile zostało w zapasie. Resztę silnik bierze na siebie: decyduje, kiedy dołożyć powtórzenia, a kiedy wejść na cięższe obciążenie.',
+    body: 'Wpisujesz wyniki serii i oceniasz, ile zostało w zapasie. Resztę silnik bierze na siebie: decyduje, kiedy dołożyć powtórzenia, a kiedy wejść na cięższe obciążenie. Ty masz tylko przyjść.',
   },
   {
     icon: 'workouts',
     title: 'Pierwsza sesja mierzy poziom',
-    body: 'Każde ćwiczenie zaczyna od jednej serii próbnej. Nie ma tabelek ani zgadywania — punkt startowy bierze się z tego, co naprawdę zrobisz.',
+    body: 'Każde ćwiczenie zaczyna od jednej serii próbnej. Nie ma tabelek ani zgadywania — punkt startowy bierze się z tego, co naprawdę zrobisz. Nikt nie patrzy, więc nie ma po co ściemniać.',
   },
   {
     icon: 'plan',
     title: 'Plan pilnuje terminów',
-    body: 'Rozpisuje dwanaście tygodni na konkretne dni i sam decyduje, który trening wypada następny — także wtedy, gdy poprzedni się nie odbył. Za trzymanie się terminów są punkty i odznaki. Plan jest opcjonalny.',
+    body: 'Rozpisuje dwanaście tygodni na konkretne dni i sam decyduje, co wypada następne — także wtedy, gdy poprzedni trening się nie odbył. Za trzymanie się terminów są punkty, odznaki i stopnie od „Gościa z ulicy” po „Pomnik za życia”. Plan jest opcjonalny.',
   },
   {
     icon: 'awards',
     title: 'Bezpłatna i zostaje bezpłatna',
-    body: 'Bez kont, bez reklam, bez śledzenia. Dane leżą w twojej przeglądarce i możesz je wyeksportować do pliku. Jeśli aplikacja ci się przyda, możesz postawić kawę — w dowolnej kwocie i tylko wtedy, gdy masz ochotę.',
+    body: 'Bez kont, bez reklam, bez śledzenia. Dane leżą w twojej przeglądarce. Jeśli aplikacja ci się przyda, możesz postawić kawę — w dowolnej kwocie i tylko wtedy, gdy masz ochotę. Autor pije ją i tak, ale wolałby, żeby ktoś zauważył.',
   },
 ];
 

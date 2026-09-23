@@ -532,3 +532,11 @@
   .intro-dots i.on{background:var(--steel)}
   .intro-nav{display:flex;gap:9px;margin-top:auto}
   .intro-nav .btn.wide{flex:1;width:auto}
+
+  /* ---------------- Puenty ---------------- */
+
+  /* Humor dostaje własny rejestr typograficzny, żeby nie mylił się z informacją. */
+  .ach-quip{font-size:12px;color:var(--warn);line-height:1.35;margin-top:3px;font-style:italic}
+  .cel-quip{margin:10px auto 0;max-width:34ch;font-family:var(--display);font-size:15px;
+    color:var(--warn)}
+  p.tight.joke{color:var(--warn);font-style:italic}

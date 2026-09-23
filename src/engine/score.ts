@@ -98,16 +98,20 @@ export interface Rank {
   at: number;
 }
 
-/** Progi tak dobrane, żeby pierwszy awans wypadł po niecałym tygodniu regularnych treningów. */
+/**
+ * Progi tak dobrane, żeby pierwszy awans wypadł po niecałym tygodniu regularnych treningów.
+ * Nazwy opisują karierę na siłowni, nie stan mięśni — awans zależy od frekwencji, więc
+ * i stopień mówi o tym, jak często cię tam widują.
+ */
 export const RANKS: Rank[] = [
-  { name: 'Nowicjusz', at: 0 },
-  { name: 'Regularny', at: 500 },
-  { name: 'Wytrwały', at: 1500 },
-  { name: 'Zaprawiony', at: 3000 },
-  { name: 'Twardy', at: 5500 },
-  { name: 'Żelazny', at: 9000 },
-  { name: 'Weteran', at: 14000 },
-  { name: 'Mistrz', at: 20000 },
+  { name: 'Gość z ulicy', at: 0 },
+  { name: 'Bywalec', at: 500 },
+  { name: 'Stały klient', at: 1500 },
+  { name: 'Etat na siłowni', at: 3000 },
+  { name: 'Legenda szatni', at: 5500 },
+  { name: 'Postrach hantli', at: 9000 },
+  { name: 'Zjawisko pogodowe', at: 14000 },
+  { name: 'Pomnik za życia', at: 20000 },
 ];
 
 export interface RankState {

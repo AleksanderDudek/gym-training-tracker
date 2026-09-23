@@ -25,6 +25,8 @@ import { Intro } from './components/Intro';
 import { ShareButton } from './components/Share';
 import { SupportLine } from './components/Support';
 import { metrics } from './engine/metrics';
+import { LOADING, SAVED, daySeed, pick } from './engine/quips';
+import { punchline } from './engine/share';
 import { bandFor, BAND_NAME } from './components/BadgeArt';
 import type {
   ActivePlan,
@@ -108,7 +110,7 @@ export default function App() {
     void queueSave(next, setSaveBroken);
   }, []);
 
-  if (!state) return <div className="empty">Wczytywanie…</div>;
+  if (!state) return <div className="empty">{pick(LOADING, daySeed())}</div>;
 
   // Cztery zakładki aplikacji renderują się po staremu; atlas i podstrony ćwiczeń mają własne gałęzie.
   const view = route.kind === 'tab' ? route.tab : null;
@@ -292,10 +294,11 @@ export default function App() {
         `${logged.length} ${logged.length === 1 ? 'ćwiczenie' : 'ćwiczeń'} w tej sesji`,
         `${m.workouts} ${m.workouts === 1 ? 'zapisany trening' : 'zapisanych treningów'} · ${m.reps.toLocaleString('pl-PL')} powtórzeń`,
       ],
+      punch: punchline(m.tonnage, m.reps, m.workouts),
     };
 
     await say(
-      'Trening zapisany',
+      pick(SAVED, m.workouts),
       <>
         {changes.length ? (
           <>
@@ -321,7 +324,7 @@ export default function App() {
       </>,
     );
 
-    if (fresh.length) await sayBadges(fresh);
+    if (fresh.length) await sayBadges(fresh, m);
   };
 
   /**
@@ -329,7 +332,7 @@ export default function App() {
    * Lista przycięta, bo po imporcie historii potrafi wpaść kilkanaście progów naraz,
    * a ekran z osiemnastoma gratulacjami nie cieszy nikogo.
    */
-  const sayBadges = async (hits: AchievementHit[]) => {
+  const sayBadges = async (hits: AchievementHit[], m: ReturnType<typeof metrics>) => {
     const top = [...hits].sort(
       (a, b) => bandFor(b.tier, b.ach.tiers.length) - bandFor(a.tier, a.ach.tiers.length),
     )[0]!;
@@ -340,6 +343,7 @@ export default function App() {
         top.ach.tiers.length > 1 ? `próg ${top.tier} z ${top.ach.tiers.length}` : 'odznaka jednorazowa',
         top.ach.desc,
       ],
+      punch: punchline(m.tonnage, m.reps, top.tier),
     };
 
     await say(
@@ -512,7 +516,7 @@ export default function App() {
     next.plan!.ticked = ticked;
     const fresh = syncBadges(next, badgeCtx(next));
     commit(next);
-    if (fresh.length) void sayBadges(fresh);
+    if (fresh.length) void sayBadges(fresh, metrics(next));
   };
 
   const stopPlan = async () => {

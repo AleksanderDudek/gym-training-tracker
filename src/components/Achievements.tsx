@@ -11,6 +11,7 @@ import {
 import type { AchProgress } from '../engine/badges';
 import { BAND_NAME, BadgeMedal, bandFor } from './BadgeArt';
 import type { Metrics } from '../engine/metrics';
+import { EMPTY_SHELF, daySeed, massJoke, pick, repsJoke, timeJoke } from '../engine/quips';
 import { snapshot } from '../engine/snapshot';
 import { dayKey } from '../engine/schedule';
 import type { AppState } from '../types';
@@ -78,6 +79,7 @@ function Row({ r }: { r: AchProgress }) {
         )}
         <div className="ach-meta">{meta}</div>
         <div className="ach-desc">{r.ach.desc}</div>
+        {r.ach.quip && <div className="ach-quip">{r.ach.quip}</div>}
       </div>
     </div>
   );
@@ -110,6 +112,13 @@ function Totals({ m }: { m: Metrics }) {
         Wykonane ćwiczenia: {num(m.exercises)} · różne ruchy: {m.distinct} · czas pod obciążeniem:{' '}
         {m.secs >= 120 ? `${Math.round(m.secs / 60)} min` : `${m.secs} s`}
       </p>
+      {(massJoke(m.tonnage) || repsJoke(m.reps)) && (
+        <p className="tight joke">
+          {massJoke(m.tonnage) && <>Tonaż to mniej więcej {massJoke(m.tonnage)}. </>}
+          {repsJoke(m.reps) && <>Powtórzenia: {repsJoke(m.reps)}. </>}
+          {timeJoke(m.secs) && <>Czas pod obciążeniem: {timeJoke(m.secs)}.</>}
+        </p>
+      )}
     </div>
   );
 }
@@ -130,7 +139,8 @@ function Shelf({ rows }: { rows: AchProgress[] }) {
       <div className="grp">
         <h3>Półka</h3>
         <p className="tight">
-          Jeszcze pusta. Pierwszy zapisany trening zdejmuje z niej kłódkę — dalej rosną same.
+          {pick(EMPTY_SHELF, daySeed())} Pierwszy zapisany trening zdejmuje kłódkę — dalej
+          odznaki rosną same.
         </p>
       </div>
     );

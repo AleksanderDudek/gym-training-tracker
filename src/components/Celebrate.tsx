@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { BAND_NAME, BadgeMedal, bandFor } from './BadgeArt';
 import { formatTier } from '../engine/badges';
+import { CHEERS, pick } from '../engine/quips';
 import type { AchievementHit } from '../types';
 
 /**
@@ -72,6 +73,10 @@ export function Celebrate({ hits }: { hits: AchievementHit[] }) {
         {tierLabel(hero)} · {formatTier(hero.ach, hero.threshold)}
       </p>
       <p className="cel-desc">{hero.ach.desc}</p>
+      {/* Puenta rodziny jest celniejsza od uniwersalnej — ta druga wchodzi tylko awaryjnie. */}
+      <p className="cel-quip">
+        {hero.ach.quip || pick(CHEERS, hero.tier + hero.ach.tiers.length + hits.length)}
+      </p>
 
       {rest.length > 0 && (
         <div className="cel-more">
