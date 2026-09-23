@@ -473,3 +473,22 @@
   .shelf-item{display:grid;justify-items:center;gap:4px;width:64px}
   .shelf-item span{font-size:10.5px;line-height:1.2;color:var(--ink-soft);text-align:center;
     overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+
+  /* ---------------- Manekin ćwiczeń ---------------- */
+
+  .mqbox{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:center}
+  @media (max-width:439px){.mqbox{grid-template-columns:1fr;justify-items:center;text-align:center}}
+  .mq{display:block;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r)}
+  .mq-ground{stroke:var(--line);stroke-width:2}
+  .mq-body path{fill:none;stroke:var(--steel);stroke-width:7;stroke-linecap:round;stroke-linejoin:round}
+  .mq-body circle{fill:var(--steel);stroke:none}
+  .mq-far path{fill:none;stroke:var(--steel);stroke-width:6;stroke-linecap:round;
+    stroke-linejoin:round;opacity:.34}
+  .mq-prop *{stroke:var(--warn);fill:none;stroke-linecap:round}
+  .mq-side{min-width:0}
+  .mq-alt{margin:0 0 9px;font-size:13px;color:var(--ink-soft);max-width:34ch}
+  .mq-scrub{display:block;margin-top:10px}
+  .mq-scrub span{display:block;font-size:11px;color:var(--ink-soft);margin-bottom:4px}
+  .mq-scrub input{width:100%;min-height:44px}
+  .mq-scene *{fill:none;stroke:var(--line);stroke-width:3;stroke-linecap:round}
+  .mq-scene rect{fill:var(--line);stroke:none}

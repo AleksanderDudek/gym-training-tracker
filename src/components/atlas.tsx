@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { EX, GEAR_LABEL, STAGES, ex, gearOf } from '../data/exercises';
 import { VIDEOS } from '../data/videos';
+import { ANIM } from '../data/anim';
+import { AnimatedMannequin } from './Mannequin';
 import { MODE_NAMES } from '../engine/hints';
 import { P, exercisesByGroup, levelLabel, planLabel } from '../engine/plan';
 import { exercisePath, go } from '../routing';
@@ -80,6 +82,9 @@ export function AtlasView({ state }: { state: AppState }) {
 
 export function ExercisePage({ state, id }: { state: AppState; id: ExerciseId }) {
   const m = EX[id];
+  // Miniatury filmów ściągają się z serwerów Google w chwili, gdy trafią do dokumentu,
+  // więc lista wchodzi dopiero po kliknięciu. Do tego czasu strona nie odpytuje nikogo.
+  const [videosOn, setVideosOn] = useState(false);
 
   if (!m) {
     return (
@@ -93,6 +98,7 @@ export function ExercisePage({ state, id }: { state: AppState; id: ExerciseId })
   }
 
   const p = P(state, id);
+  const move = ANIM[id];
   const videos = VIDEOS[id] ?? { main: [], kb: [] };
   const stages = m.stages ? STAGES[m.stages] : null;
 
@@ -145,7 +151,34 @@ export function ExercisePage({ state, id }: { state: AppState; id: ExerciseId })
         </div>
       )}
 
+      {move && (
+        <>
+          <div className="sect-label">Tor ruchu</div>
+          <div className="grp">
+            <AnimatedMannequin move={move} gear={gearOf(id)} />
+            <p className="tight" style={{ marginTop: 10 }}>
+              Sylwetka rysowana w aplikacji z kątów stawów — bez nagrań, bez reklam i bez
+              zapytań na zewnątrz. Pokazuje tor ruchu i tempo, nie zastępuje instruktażu.
+            </p>
+          </div>
+        </>
+      )}
+
       <div className="sect-label">Jak to trenować — wideo</div>
+      {!videosOn ? (
+        <div className="grp">
+          <p className="tight">
+            {videos.main.length
+              ? `${videos.main.length + videos.kb.length} nagrań z YouTube. Miniatury i odtwarzacz ładują się z serwerów Google dopiero po kliknięciu — do tego czasu ta strona nie odpytuje nikogo z zewnątrz.`
+              : 'Dla tego ćwiczenia nie ma jeszcze wybranych filmów. Tor ruchu wyżej i opis techniki wystarczą, żeby je poprawnie zaplanować.'}
+          </p>
+          {videos.main.length > 0 && (
+            <button className="btn ghost sm" style={{ marginTop: 6 }} onClick={() => setVideosOn(true)}>
+              Pokaż filmy z YouTube
+            </button>
+          )}
+        </div>
+      ) : (
       <div className="grp">
         {videos.main.length ? (
           <>
@@ -159,15 +192,11 @@ export function ExercisePage({ state, id }: { state: AppState; id: ExerciseId })
               ))}
             </div>
           </>
-        ) : (
-          <p>
-            Dla tego ćwiczenia nie ma jeszcze wybranych filmów. Opis techniki i typ progresji
-            wyżej wystarczą, żeby je poprawnie zaplanować.
-          </p>
-        )}
+        ) : null}
       </div>
+      )}
 
-      {videos.kb.length > 0 && (
+      {videosOn && videos.kb.length > 0 && (
         <>
           <div className="sect-label">To samo ćwiczenie z kettlebell</div>
           <div className="grp">

@@ -19,7 +19,7 @@ Pozostałe polecenia:
 npm run build      # produkcyjny build do dist/
 npm run preview    # podgląd builda
 npm run typecheck  # tsc --noEmit
-npm test           # 179 testów silnika, biblioteki, odznak i tras (vitest)
+npm test           # 198 testów silnika, biblioteki, odznak, ruchu i tras (vitest)
 ```
 
 Build jest w pełni statyczny (`base: './'`), więc `dist/` można wrzucić na dowolny hosting plików
@@ -86,6 +86,36 @@ a 4 kg nie istnieje na sztandze. Progresja dobiera ciężar wyłącznie z drabin
 **Identyfikatory pierwszej biblioteki są nietknięte.** Gotowe treningi, plany i zapisane postępy
 stoją na nich, więc test pilnuje, żeby żaden nie zniknął przy kolejnym rozszerzeniu atlasu.
 
+## Tor ruchu — manekin zamiast nagrań
+
+Każde ćwiczenie z przypisanym wzorcem ruchu ma w atlasie animowaną sylwetkę: bez twarzy,
+bez płci, rysowaną w przeglądarce z kątów stawów. **Nic tu nie pochodzi z cudzych nagrań,
+bibliotek ruchu ani sklepów z modelami** — nie ma czyjegoś prawa autorskiego do pilnowania,
+licencji do odnawiania, reklam przed odtworzeniem ani zapytań na zewnątrz. Podstrona
+ćwiczenia po wejściu nie odpytuje żadnego obcego serwera; filmy z YouTube wchodzą dopiero
+po kliknięciu, bo same miniatury ściągają się z serwerów Google w chwili, gdy trafią
+do dokumentu.
+
+**Jak to działa.** `engine/pose.ts` liczy punkty stawów z kątów bezwzględnych (0 to pion
+w górę, wartości rosną zgodnie z ruchem wskazówek zegara). `data/moves.ts` trzyma
+osiemnaście wzorców ruchu jako po kilka klatek kluczowych; między klatkami idzie
+interpolacja z wygładzonym tempem, więc powtórzenie zwalnia na krańcach zakresu tak jak
+prawdziwe. Sylwetka dosuwa się sama do podłoża — najniższy punkt ciała ląduje na linii
+ziemi — dzięki czemu autor pozy nie liczy wysokości bioder, a przysiad nie wisi
+w powietrzu. Cały katalog animacji waży kilka kilobajtów liczb.
+
+Jeden wzorzec obsługuje całą rodzinę ćwiczeń: przysiad ze sztangą, goblet i hack squat
+różnią się trzymanym sprzętem, nie torem ruchu. Sprzęt dorysowuje się osobno z pola `gear`,
+więc ten sam przysiad dostaje gryf, kettlebell albo nic.
+
+Animacja startuje sama, da się ją zatrzymać i przewinąć suwakiem klatka po klatce.
+Przy `prefers-reduced-motion` nie rusza się wcale — zostaje nieruchoma klatka z momentu,
+który uczy najwięcej. Opis toru ruchu jest zapisany w `aria-label`, więc czytnik ekranu
+dostaje zdanie zamiast grafiki.
+
+**Czego to nie zastępuje.** Sylwetka pokazuje tor ruchu i tempo, nie ustawienie łopatek
+ani oddech. Filmy zostają na miejscu dla tych, którzy chcą zobaczyć żywego człowieka.
+
 ## Ćwiczenia na czas
 
 Ćwiczenie mierzone w sekundach mówi to wprost — na karcie, w celu (`3 × 30 s`) i przy polu wyniku.
@@ -109,6 +139,8 @@ src/
   routing.ts                trasy w hashu adresu, siedem zakładek
   routing.test.ts           7 testów tras i zakładek
   data/exercises.ts         biblioteka 105 ćwiczeń, drabiny sprzętu, cztery treningi
+  data/moves.ts             osiemnaście wzorców ruchu jako klatki kluczowe
+  data/anim.ts              przypisanie ćwiczeń do wzorców
   data/exercises.test.ts    14 testów spójności biblioteki i drabin
   data/videos.ts            filmy instruktażowe, 4 na ćwiczenie
   data/plans.ts             katalog 54 planów: poziom × płeć × częstotliwość
@@ -120,6 +152,8 @@ src/
     schedule.ts             rozpisanie planu na daty, przypisanie sesji do terminów, rotacja
     score.ts                punkty, premie za serię, stopnie
     metrics.ts              sumy, rekordy z okna czasu, miary utrzymania poziomu
+    pose.ts                 szkielet manekina: kąty, klatki, dosunięcie do podłoża
+    pose.test.ts            19 testów szkieletu, cyklu i katalogu ruchów
     badges.ts               katalog odznak z progami, postęp, migracja starych kluczy
     journal.ts              dziennik zdarzeń wyprowadzany z kalendarza
     advice.ts               podpowiedzi: nadrobienie, przerwa, zmiana częstotliwości
@@ -141,6 +175,7 @@ src/
     BadgeArt.tsx            medale odznak: tworzywa, piktogramy, pasma progów
     Celebrate.tsx           moment zdobycia — medal, promienie, konfetti
     icons.tsx               ikony nawigacji
+    Mannequin.tsx           sylwetka ćwiczeń i jej zegar
     Achievements.tsx        zakładka osiągnięć: dorobek w liczbach i odznaki z progami
     VideoEmbed.tsx          odtwarzacz YouTube ładowany dopiero po kliknięciu
   App.tsx                   spina stan i widoki
