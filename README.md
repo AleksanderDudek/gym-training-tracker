@@ -450,9 +450,15 @@ cudzego produktu.
 paski postępu, kropka pod aktywną zakładką, kropelki potu, konfetti, sprzęt w dłoni manekina.
 Do tekstu wchodzi wersja przyciemniona (`--c-orange-ink` i reszta), bo czysty pomarańcz
 na jasnym tle daje 2,99:1, a błękit 2,80:1 — poniżej progu czytelności. Wersje `ink`
-trzymają się powyżej 4,5:1 na wszystkich trzech tłach aplikacji, wypełnienia powyżej 3:1.
-Podział jest tu po to, żeby przy następnym kolorowaniu nie trzeba było liczyć od nowa:
-nazwa tokenu mówi, gdzie wolno go użyć.
+trzymają się powyżej 4,5:1 na wszystkich trzech tłach aplikacji. Podział jest tu po to,
+żeby przy następnym kolorowaniu nie trzeba było liczyć od nowa: nazwa tokenu mówi,
+gdzie wolno go użyć.
+
+Czyste akcenty zostają przy dwóch i pół do trzech do jednego, więc **nic, co niesie
+informację samo, nie stoi na nich**. Ikona ma obok siebie podpis, aktywna zakładka —
+pogrubienie i ciemniejszy tekst, kropelki potu i konfetti nie mówią niczego, czego nie
+widać gdzie indziej. Tam, gdzie kolor jest jedynym nośnikiem — rysunek wygrawerowany
+na medalu — próg 3:1 jest trzymany z zapasem.
 
 **Tworzywa odznak wyprowadzone są z tych samych akcentów** — brąz z pomarańczu, platyna
 z błękitu, szmaragd z zieleni; srebro i złoto zostają przy neutralnych. Rysunek na medalu
