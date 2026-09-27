@@ -24,6 +24,12 @@ import { face, headAngle, sampleCycle, skeleton } from './pose';
 export const APP_URL = 'https://aleksanderdudek.github.io/gym-training-tracker/';
 export const SUPPORT_URL = 'https://buycoffee.to/uriel';
 
+/**
+ * Adres w postaci, w jakiej stoi na blankiecie: bez protokołu i końcowego ukośnika. Z obrazka
+ * nikt go nie kliknie, tylko przepisze — każdy zbędny znak to miejsce na większy krój.
+ */
+export const APP_HOST = APP_URL.replace(/^https?:\/\//, '').replace(/\/$/, '');
+
 export interface ShareSubject {
   /** Nagłówek: nazwa odznaki albo nazwa treningu. */
   title: string;
@@ -337,14 +343,43 @@ function drawFace(
   ctx.restore();
 }
 
-/** Pieczęć w rogu. Przechylona, bo pieczęcie nigdy nie są proste. */
-function stamp(ctx: CanvasRenderingContext2D, words: readonly [string, string]): void {
+/**
+ * Ustawia krój w największym stopniu, w którym tekst mieści się w danej szerokości.
+ * Stopień schodzi co piksel, ale nie niżej niż `min` — poniżej tekst i tak przestaje być
+ * czytelny w miniaturze, więc lepiej, żeby wystawał, niż żeby zniknął.
+ */
+function fit(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  font: (px: number) => string,
+  max: number,
+  width: number,
+  min = Math.round(max * 0.6),
+): number {
+  let px = max;
+  ctx.font = font(px);
+  while (px > min && ctx.measureText(text).width > width) ctx.font = font(--px);
+  return px;
+}
+
+/**
+ * Pieczęć. Przechylona, bo pieczęcie nigdy nie są proste.
+ *
+ * Duże słowo dopasowuje się do pierścienia: „POTWIERDZONE” w stałym stopniu wychodziło
+ * poza obwódkę i wyglądało jak napis obok pieczęci, a nie w niej.
+ */
+function stamp(
+  ctx: CanvasRenderingContext2D,
+  words: readonly [string, string],
+  x: number,
+  y: number,
+): void {
   ctx.save();
-  ctx.translate(CARD - 152, CARD - 170);
+  ctx.translate(x, y);
   ctx.rotate((-14 * Math.PI) / 180);
   // Pieczęć była ledwie widoczna przy 62% krycia. Mocniejszy kolor i grubsze pierścienie.
-  // Bez krycia tła pod spodem: stempel idzie na papier przed napisami stopki i te napisy
-  // rysują się na nim — tak samo, jak prawdziwa pieczęć wchodzi na druk, nie zamiast niego.
+  // Bez krycia tła pod spodem: stempel wchodzi na to, co już leży na papierze, a nie
+  // zamiast tego — tak jak prawdziwa pieczęć na zdjęciu w legitymacji.
   ctx.strokeStyle = INK.stamp;
   ctx.fillStyle = INK.stamp;
   ctx.globalAlpha = 0.92;
@@ -358,9 +393,9 @@ function stamp(ctx: CanvasRenderingContext2D, words: readonly [string, string]):
   ctx.stroke();
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.font = '600 32px "Oswald", system-ui, sans-serif';
+  fit(ctx, words[0], (px) => `600 ${px}px "Oswald", system-ui, sans-serif`, 32, 102, 16);
   ctx.fillText(words[0], 0, -13);
-  ctx.font = '600 16px "IBM Plex Sans", system-ui, sans-serif';
+  fit(ctx, words[1], (px) => `600 ${px}px "IBM Plex Sans", system-ui, sans-serif`, 16, 96, 12);
   ctx.fillText(words[1], 0, 16);
   ctx.restore();
   ctx.globalAlpha = 1;
@@ -369,11 +404,100 @@ function stamp(ctx: CanvasRenderingContext2D, words: readonly [string, string]):
 }
 
 /**
+ * Portret w narożniku nagłówka: goryl w okrągłym medalionie, jak popiersia założycieli
+ * na starych dyplomach. Głowa jest większa niż medalion i wystaje nad obwódkę — portret
+ * zamknięty w kółku wyglądał jak awatar z komunikatora, a nie jak postać z dokumentu.
+ */
+function portrait(ctx: CanvasRenderingContext2D, img: HTMLImageElement, cx: number, cy: number): void {
+  const r = PORTRAIT.r;
+  ctx.save();
+  ctx.fillStyle = INK.sand;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = INK.rule;
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r - 7, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Dolna połowa głowy zostaje w medalionie, górna może z niego wyjść. Przycięcie od dołu
+  // chowa krawędź rysunku, która inaczej wisiałaby pod medalionem jak ucięta szyja.
+  const size = PORTRAIT.face;
+  ctx.beginPath();
+  ctx.rect(cx - size, cy - size * 2, size * 2, size * 2);
+  ctx.moveTo(cx + r, cy);
+  ctx.arc(cx, cy, r, 0, Math.PI);
+  ctx.clip();
+  ctx.drawImage(img, cx - size / 2, cy - size / 2 - PORTRAIT.lift, size, size);
+  ctx.restore();
+}
+
+/**
+ * Wstęga z adresem. Pełna szerokość karty i jasne litery na stali, bo adres ma być pierwszą
+ * rzeczą, którą widać w stopce — wcześniej stał drobnym drukiem pod pieczęcią i ginął.
+ * Stal nie jest przypadkowa: w aplikacji to kolor akcji, a adres jest jedyną akcją,
+ * jaką obrazek w cudzym kanale może komuś zaproponować. Końce wychodzą poza kartkę
+ * i mają wcięcia jak wstęga na dyplomie.
+ */
+function ribbon(ctx: CanvasRenderingContext2D, text: string, y: number): void {
+  const { h, edge, tail, drop, notch, pad } = RIBBON;
+  const a = edge + tail / 2;
+  const b = CARD - edge - tail / 2;
+
+  ctx.save();
+  // Końce pod spodem: ciemniejsze, niżej i z wcięciem — to one robią z pasa wstęgę.
+  ctx.fillStyle = INK.fold;
+  ([
+    [edge, 1],
+    [CARD - edge, -1],
+  ] as const).forEach(([out, dir]) => {
+    const inn = out + tail * dir;
+    ctx.beginPath();
+    ctx.moveTo(out, y + drop);
+    ctx.lineTo(inn, y + drop);
+    ctx.lineTo(inn, y + h + drop);
+    ctx.lineTo(out, y + h + drop);
+    ctx.lineTo(out + notch * dir, y + h / 2 + drop);
+    ctx.closePath();
+    ctx.fill();
+  });
+
+  ctx.fillStyle = INK.steel;
+  ctx.fillRect(a, y, b - a, h);
+
+  // Przeszycia wzdłuż krawędzi — bez nich pas czyta się jak pasek przeglądarki.
+  ctx.strokeStyle = INK.paper;
+  ctx.globalAlpha = 0.35;
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([10, 7]);
+  [y + 7, y + h - 7].forEach((ly) => {
+    ctx.beginPath();
+    ctx.moveTo(a + 12, ly);
+    ctx.lineTo(b - 12, ly);
+    ctx.stroke();
+  });
+  ctx.restore();
+
+  ctx.save();
+  ctx.fillStyle = INK.paper;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  fit(ctx, text, (px) => `600 ${px}px "IBM Plex Sans", system-ui, sans-serif`, 40, b - a - 2 * pad);
+  ctx.fillText(text, CARD / 2, y + h / 2 + 1);
+  ctx.restore();
+}
+
+/**
  * Zmienne CSS nie rozwiązują się w samodzielnym pliku SVG — obrazek ładowany przez
  * `Image` nie ma dostępu do arkusza strony. Przed rasteryzacją podmieniamy je na wartości.
  */
 const INLINE_VARS: Record<string, string> = {
-  'var(--display)': '"Oswald", "Arial Narrow", system-ui, sans-serif',
+  // Apostrofy, nie cudzysłowy: wartość ląduje w atrybucie `style="…"` i cudzysłów by go
+  // zamknął — obrazek przestawał się wczytywać, a medal z napisem znikał z karty.
+  'var(--display)': "'Oswald', 'Arial Narrow', system-ui, sans-serif",
   'var(--surface-2)': '#EFF0EC',
   'var(--line)': '#C2C5BD',
   'var(--ink)': '#1E2320',
@@ -391,10 +515,37 @@ const INK = {
   stamp: '#C9724F',
   paper: '#FAF9F5',
   board: '#D7D9D3',
+  sand: '#E8E6DC',
+  steel: '#3C423D',
+  fold: '#23272A',
 } as const;
 
-const inlineVars = (markup: string): string =>
-  Object.entries(INLINE_VARS).reduce((out, [k, v]) => out.split(k).join(v), markup);
+/** Medaliony z obsadą w narożnikach nagłówka. */
+const PORTRAIT = {
+  r: 70,
+  /** Bok kwadratu, w który wpisana jest głowa. Czubek wystaje nad obwódkę, reszta w niej siedzi. */
+  face: 152,
+  /** O ile głowa siedzi wyżej niż środek medalionu. */
+  lift: 14,
+  x: 178,
+  y: 166,
+} as const;
+
+/** Pieczęć: środek pierścienia. Zahacza o prawy medalion, ale nie o twarz w nim. */
+const STAMP = { x: CARD - 136, y: 278 } as const;
+
+/** Wstęga z adresem w stopce. */
+const RIBBON = { y: 884, h: 70, edge: 24, tail: 60, drop: 12, notch: 20, pad: 30 } as const;
+
+/**
+ * Najpierw zmienne znane z nazwy, potem wszystko, co ma w `var()` wartość zapasową — tak
+ * rysuje obsada (`var(--fur, #3f3c44)`), a samodzielny obrazek żadnej zmiennej nie zna.
+ * Zapasowe wartości obsady są wartościami tokenów, więc wynik wygląda jak na ekranie.
+ */
+export const inlineVars = (markup: string): string =>
+  Object.entries(INLINE_VARS)
+    .reduce((out, [k, v]) => out.split(k).join(v), markup)
+    .replace(/var\(--[\w-]+\s*,\s*([^()]+)\)/g, (_, fallback: string) => fallback.trim());
 
 /**
  * Kopia medalu jako samodzielny obrazek. Gradienty leżą w osobnym bloku `defs` na stronie
@@ -449,11 +600,19 @@ function wrap(ctx: CanvasRenderingContext2D, text: string, max: number): string[
   return out;
 }
 
+/** Grafiki do wklejenia w kartę — kopie żywych rysunków ze strony. */
+export interface CardArt {
+  /** Medal odznaki. Brak oznacza kartę z samym tytułem i liczbami albo z sylwetką. */
+  medal?: SVGSVGElement | null | undefined;
+  /** Twarze obsady do narożników nagłówka: pierwsza stoi po lewej, druga po prawej. */
+  faces?: readonly (SVGSVGElement | null | undefined)[] | undefined;
+}
+
 /**
  * Kwadratowa karta do wpisu. Kwadrat, bo mieści się bez przycięcia w każdym serwisie,
  * w którym prostokąt bywa kadrowany inaczej niż autor zakładał.
  */
-export async function shareCard(s: ShareSubject, medal?: SVGSVGElement | null): Promise<Blob> {
+export async function shareCard(s: ShareSubject, { medal, faces = [] }: CardArt = {}): Promise<Blob> {
   const c = document.createElement('canvas');
   c.width = CARD;
   c.height = CARD;
@@ -485,16 +644,39 @@ export async function shareCard(s: ShareSubject, medal?: SVGSVGElement | null): 
   const FONT = {
     kind: '600 30px "IBM Plex Sans", system-ui, sans-serif',
     brand: '600 40px "Oswald", system-ui, sans-serif',
-    motto: '500 23px "IBM Plex Sans", system-ui, sans-serif',
     band: '600 34px "IBM Plex Sans", system-ui, sans-serif',
     title: '600 76px "Oswald", system-ui, sans-serif',
     line: '400 37px "IBM Plex Sans", system-ui, sans-serif',
     punch: '600 38px "Oswald", system-ui, sans-serif',
     sign: '400 25px "IBM Plex Sans", system-ui, sans-serif',
-    url: '600 27px "IBM Plex Sans", system-ui, sans-serif',
     serial: '400 23px "IBM Plex Sans", system-ui, sans-serif',
   };
 
+  // Zawijasy tylko u góry: dolne narożniki zajmuje wstęga i spod niej wystawały ich końcówki.
+  flourish(ctx, 92, 92, 1, 1);
+  flourish(ctx, CARD - 92, 92, -1, 1);
+
+  // Obsada w narożnikach nagłówka, jak herbowe postacie po bokach godła. Nagłówek jest
+  // wąski, więc medaliony nie zabierają treści ani piksela w pionie — a karta bez nich
+  // wyglądała jak wydruk z urzędu, nie z aplikacji z gorylami.
+  const [left, right] = await Promise.all(
+    [0, 1].map((i) => {
+      const f = faces[i];
+      return f ? loadSvg(standaloneSvg(f, 320)).catch(() => null) : Promise.resolve(null);
+    }),
+  );
+  if (left) portrait(ctx, left, PORTRAIT.x, PORTRAIT.y);
+  if (right) portrait(ctx, right, CARD - PORTRAIT.x, PORTRAIT.y);
+
+  // Pieczęć wchodzi na prawy medalion, jak na zdjęcie w legitymacji. W stopce przykrywała
+  // adres; przy prawej krawędzi pod nagłówkiem jest miejsce, którego treść nie zajmuje —
+  // medal i sylwetka stoją pośrodku, a tytuł karty bez grafiki zaczyna się niżej. Idzie
+  // przed napisami: gdy długi tytuł jednak do niej dosięgnie, wydrukuje się na niej.
+  stamp(ctx, pick(STAMPS, seed), STAMP.x, STAMP.y);
+
+  // Napisy nagłówka mieszczą się między medalionami. Najdłuższa sentencja dziś się
+  // mieści; dopasowanie jest dla tej, którą ktoś dopisze jutro.
+  const between = CARD - 2 * (PORTRAIT.x + PORTRAIT.r + 24);
   ctx.fillStyle = INK.accent;
   ctx.font = FONT.kind;
   ctx.fillText(
@@ -506,15 +688,9 @@ export async function shareCard(s: ShareSubject, medal?: SVGSVGElement | null): 
   ctx.font = FONT.brand;
   ctx.fillText('GYM TRACKER', CARD / 2, 146);
   ctx.fillStyle = INK.faint;
-  ctx.font = FONT.motto;
-  ctx.fillText(pick(MOTTOS, seed), CARD / 2, 196);
-
-  flourish(ctx, 92, 92, 1, 1);
-  flourish(ctx, CARD - 92, 92, -1, 1);
-  flourish(ctx, 92, CARD - 92, 1, -1);
-  flourish(ctx, CARD - 92, CARD - 92, -1, -1);
-
-
+  const motto = pick(MOTTOS, seed);
+  fit(ctx, motto, (px) => `500 ${px}px "IBM Plex Sans", system-ui, sans-serif`, 23, between, 17);
+  ctx.fillText(motto, CARD / 2, 196);
 
   const img = medal ? await loadSvg(standaloneSvg(medal, 320)).catch(() => null) : null;
   const figure = !img && s.kind === 'progress';
@@ -538,10 +714,10 @@ export async function shareCard(s: ShareSubject, medal?: SVGSVGElement | null): 
     (bodyLines.length ? 16 + bodyLines.length * 50 : 0) +
     (punchLines.length ? 22 + punchLines.length * 48 : 0);
 
-  // Blok treści jeździ pionowo między nagłówkiem a adresem, więc karta bez medalu nie
+  // Blok treści jeździ pionowo między nagłówkiem a wstęgą, więc karta bez medalu nie
   // zostawia dziury na środku, a karta z medalem nie wypycha tekstu pod krawędź.
   const top = 238;
-  const bottom = CARD - 262;
+  const bottom = RIBBON.y - 66;
   const band = bottom - top;
 
   /*
@@ -601,24 +777,18 @@ export async function shareCard(s: ShareSubject, medal?: SVGSVGElement | null): 
 
   // Podpis idzie pod treść, a nie na sztywno: przy dwuwierszowym tytule albo długiej puencie
   // blok rósł w dół i zawijas lądował na tekście. Gdy miejsca zabraknie, podpisu nie ma —
-  // lepiej dokument bez podpisu niż podpis w poprzek zdania.
+  // lepiej dokument bez podpisu niż podpis w poprzek zdania albo na wstędze.
   const signY = y + 26;
-  if (signY < CARD - 238) signature(ctx, CARD / 2 - 86, signY, pick(SIGNATORIES, seed));
+  if (signY + 62 < RIBBON.y - 8) signature(ctx, CARD / 2, signY, pick(SIGNATORIES, seed));
 
-  stamp(ctx, pick(STAMPS, seed));
-
-  // Stopka na samym wierzchu: adres musi zostać czytelny także tam, gdzie przechodzi
-  // pod nim pierścień pieczęci.
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  ctx.font = FONT.url;
-  ctx.fillStyle = INK.dark;
-  ctx.fillText(APP_URL.replace(/^https:\/\//, ''), CARD / 2, CARD - 154);
+  ribbon(ctx, APP_HOST, RIBBON.y);
 
   // Numer wydania: wygląda urzędowo, nie znaczy nic. O to chodzi.
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
   ctx.font = FONT.serial;
   ctx.fillStyle = INK.faint;
-  ctx.fillText(serial(s), CARD / 2, CARD - 112);
+  ctx.fillText(serial(s), CARD / 2, RIBBON.y + RIBBON.h + RIBBON.drop + 8);
 
   return new Promise((resolve, reject) => {
     c.toBlob((b) => (b ? resolve(b) : reject(new Error('Nie udało się zapisać obrazka.'))), 'image/png');

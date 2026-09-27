@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { APP_URL, SUPPORT_URL, shareLinks, shareText } from './share';
+import { APP_HOST, APP_URL, SUPPORT_URL, inlineVars, shareLinks, shareText } from './share';
 import { STEPS } from '../components/Intro';
 
 const badge = { title: 'Gęsty tydzień', band: 'platyna', lines: ['próg 4 z 6', '5 treningów'] };
@@ -89,6 +89,26 @@ describe('adresy zapasowe', () => {
     const x = shareLinks(badge).find((l) => l.name === 'X')!;
     expect(decodeURIComponent(x.url)).toContain('Gęsty tydzień');
     expect(decodeURIComponent(x.url)).toContain(APP_URL);
+  });
+});
+
+describe('blankiet', () => {
+  it('adres na wstędze da się przepisać z obrazka i prowadzi tam, gdzie wpis', () => {
+    expect(APP_HOST).not.toMatch(/^https?:|\/$/);
+    expect(`https://${APP_HOST}/`).toBe(APP_URL);
+  });
+
+  it('zmienne arkusza zamienia na wartości, także te z wartością zapasową', () => {
+    expect(inlineVars('<path fill="var(--fur, #3f3c44)" stroke="var(--ink)"/>')).toBe(
+      '<path fill="#3f3c44" stroke="#1E2320"/>',
+    );
+  });
+
+  it('krój wstawiony do atrybutu style nie zamyka atrybutu', () => {
+    // Cudzysłów w nazwie kroju zamykał `style="…"` i medal z napisem („30D”) znikał z karty.
+    const out = inlineVars('<text style="font-family: var(--display); font-size: 18px">30D</text>');
+    expect(out).toMatch(/^<text style="[^"]*">30D<\/text>$/);
+    expect(out).toContain('Oswald');
   });
 });
 

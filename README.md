@@ -50,7 +50,8 @@ obsady to jedna lista, nie dwie.
 odznaki, liczba, nazwa — stoi obok niej napisany słowem, więc nic nie ginie przy wyłączonych
 obrazkach ani przy czytniku ekranu. Radość rośnie razem z pasmem (`BAND_MOOD`: 0 tęsknota →
 5 euforia), a nie skacze. Siwy tylko doradza i wspiera — nigdy nie beszta i o nic nie błaga.
-Jedna postać na ekran i nigdy w trakcie serii.
+Jedna postać na ekran i nigdy w trakcie serii. Wyjątkiem jest blankiet do wpisu — to nie ekran,
+tylko dokument z dwoma portretami w narożnikach (o nim niżej, w części o tonie).
 
 Kto gdzie stoi: ostrzeżenie mówi Siwy (spokojna rada), dobra wiadomość to radość podopiecznego,
 pusta lista to tęsknota, stoper ma kibica, który męczy się w ostatniej jednej trzeciej podchodu,
@@ -109,6 +110,19 @@ Obie mają podwójną ramkę, zawijasy w narożnikach, sentencję zamiast łaci�
 podpis urzędu, który nie istnieje („Główny Inspektor Zakwasów"), i przechyloną pieczęć
 („POTWIERDZONE — nikt nie sprawdzał"). Powaga formy przy błahości treści jest tu całym żartem.
 
+**W narożnikach nagłówka wiszą portrety obsady**, jak popiersia założycieli na starych
+dyplomach: po lewej podopieczny (Gustaw albo Gosia, zależnie od ziarna karty), po prawej
+Trener Siwy jako komisja, która dokument zatwierdza — i na jego medalion zahacza pieczęć,
+tak jak na zdjęcie w legitymacji. Na karcie widać tylko głowę, więc miny są dobrane pod
+twarz: świadectwo odznaki bierze minę z pasma (`BAND_MOOD`, ta sama drabina co w oknie
+zdobycia), po treningu podopieczny ledwie żyje — wywalony język i krople potu — a przy
+dorobku jest dumny albo osłupiały. Trener aprobuje albo mruga. Tęsknoty i opuszczonego
+treningu na blankiecie nie ma: nikt nie udostępnia dokumentu, na którym ktoś jest smutny.
+Medaliony stoją obok napisów nagłówka, więc nie zabierają treści ani piksela w pionie.
+Twarze rysuje ten sam komponent co w aplikacji, wyrenderowany po kliknięciu do odłączonego
+węzła, a zmienne arkusza zamieniają się przed rasteryzacją na swoje wartości zapasowe —
+samodzielny obrazek arkusza strony nie widzi.
+
 Blankiet dopasowuje się do treści: przy dwuwierszowym tytule i długiej puencie medal się
 kurczy, a poniżej progu znika całkiem. Podpis idzie pod treść, nie na sztywno — inaczej
 zawijas lądował w poprzek zdania.
@@ -140,7 +154,7 @@ nie ma, treść ląduje w schowku i pokazują się bezpośrednie adresy do X, Fa
 i WhatsAppa oraz pobranie obrazka.
 
 Do wpisu składa się **kwadratowa karta 1080 × 1080**: medal w tworzywie, nazwa odznaki,
-liczby i adres aplikacji. Kwadrat, bo mieści się bez przycięcia wszędzie tam, gdzie
+liczby, dwa portrety obsady i adres aplikacji. Kwadrat, bo mieści się bez przycięcia wszędzie tam, gdzie
 prostokąt bywa kadrowany inaczej, niż autor zakładał. Karta powstaje na płótnie dopiero
 po kliknięciu, a medal wjeżdża w nią jako kopia żywego rysunku ze strony — razem
 z gradientami, które inaczej zostałyby w osobnym bloku `defs`. Adres stoi w osobnej,
@@ -149,12 +163,23 @@ bywa ucinany.
 
 **Karta ma się czytać w miniaturze**, a nie dopiero po powiększeniu — na osi czasu nikt
 w nią nie klika, tylko przewija. Stopnie pisma poszły w górę (tytuł 76 px, wiersze 37 px,
-puenta 38 px, adres 27 px półgrubą), a napisy siedzą na trzech tuszach zamiast na czterech
-szarościach: czarny na treści, przygaszony na podpisach, ceglasty na puencie i nagłówku
-dokumentu. Pieczęć dostała pełny kolor zamiast sześćdziesięciu procent krycia i grubsze
-pierścienie, ale niczego nie zamalowuje: idzie na papier **przed** stopką, więc adres
-i numer wydania drukują się na niej. Prawdziwa pieczęć też nie zjada tekstu, który już
-był na kartce.
+puenta 38 px), a napisy siedzą na trzech tuszach zamiast na czterech szarościach: czarny
+na treści, przygaszony na podpisach, ceglasty na puencie i nagłówku dokumentu.
+
+**Adres stoi na wstędze przez całą szerokość stopki**: jasne litery na stali, 40 px półgrubą,
+bez `https://` i końcowego ukośnika — z obrazka nikt go nie kliknie, tylko przepisze, więc
+każdy zbędny znak to miejsce na większy krój. Wcześniej stał drobnym drukiem (27 px) i do
+tego pod pieczęcią. Stal nie jest przypadkowa: w aplikacji to kolor akcji, a adres jest
+jedyną akcją, jaką obrazek w cudzym kanale może komuś zaproponować. Końce wstęgi wychodzą
+poza kartkę i mają wcięcia jak na dyplomie; stopień dopasowuje się do szerokości, gdyby
+adres kiedyś się wydłużył.
+
+Pieczęć ma pełny kolor i grubsze pierścienie, a duże słowo dopasowuje się do obwódki —
+„POTWIERDZONE” w stałym stopniu wychodziło poza pierścień. Stoi przy prawej krawędzi pod
+nagłówkiem, zahaczając o portret trenera: to miejsce, którego treść nie zajmuje, bo medal
+i sylwetka stoją pośrodku, a tytuł karty bez grafiki zaczyna się niżej. Idzie na papier
+**przed** napisami, więc gdy długi tytuł jednak do niej dosięgnie, wydrukuje się na niej —
+prawdziwa pieczęć też nie zjada tekstu, który już był na kartce.
 
 **Wsparcie** jest widoczne z każdego ekranu — kubek w nagłówku, obok ustawień — i ma dziesięć
 stałych miejsc poza nim: ekran startowy, góra podsumowania po zamkniętej sesji, okno zdobytej
@@ -358,7 +383,7 @@ src/
     history.ts              dziennik przewrócony na ćwiczenia: sesje, rekordy, kierunek zmiany
     pose.ts                 szkielet manekina: kąty, klatki, dosunięcie do podłoża
     share.ts                treść wpisu, karta 1080×1080, wysyłka i ścieżka zapasowa
-    share.test.ts           12 testów treści wpisu, adresów i wprowadzenia
+    share.test.ts           15 testów treści wpisu, adresów, blankietu i wprowadzenia
     quips.ts                humor: porównania liczb, odmiana, zestawy tekstów
     quips.test.ts           19 testów puent, odmiany, dopisków i granic porównań
     pose.test.ts            24 testy szkieletu, cyklu, katalogu ruchów i mimiki
@@ -387,10 +412,10 @@ src/
     icons.tsx               ikony nawigacji
     Mannequin.tsx           postać wykonująca ruch i jej zegar
     Intro.tsx               opcjonalne wprowadzenie, cztery ekrany
-    Share.tsx               przycisk udostępniania i ścieżka zapasowa
+    Share.tsx               przycisk udostępniania, obsada blankietu i ścieżka zapasowa
     Support.tsx             baner wsparcia: rada dnia Trenera Siwego i espresso
     Gorilla.tsx             obsada: Gustaw, Gosia i Trener Siwy, siedemnaście min
-    cast.test.ts            8 testów obsady, pasm i rady dnia
+    cast.test.ts            13 testów obsady, pasm, blankietu i rady dnia
     Achievements.tsx        zakładka osiągnięć: dorobek w liczbach i odznaki z progami
     VideoEmbed.tsx          odtwarzacz YouTube ładowany dopiero po kliknięciu
   App.tsx                   spina stan i widoki
