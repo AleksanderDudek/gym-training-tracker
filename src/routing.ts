@@ -46,12 +46,21 @@ export const exercisePath = (id: ExerciseId): string => `#/cwiczenia/${encodeURI
 /** Historia ćwiczenia w profilu. Osobny adres, więc da się ją wysłać albo zapisać. */
 export const statsPath = (id: ExerciseId): string => `#/profil/${encodeURIComponent(id)}`;
 
+/**
+ * Przekąski ruchowe. Bez własnej zakładki — siódma zeszłaby poniżej 44 px celu dotykowego —
+ * więc mają adres i wejścia z ekranu sesji, profilu i podstrony ćwiczenia. Z identyfikatorem
+ * formularz otwiera się od razu z tym ćwiczeniem.
+ */
+export const snacksPath = (id?: ExerciseId): string =>
+  id ? `#/przekaski/${encodeURIComponent(id)}` : '#/przekaski';
+
 export function parseHash(hash: string): Route {
   const parts = hash.replace(/^#\/?/, '').split('/').filter(Boolean).map(decodeURIComponent);
   const [head, second] = parts;
   if (!head) return { kind: 'tab', tab: 'train' };
   if (head === 'cwiczenia') return second ? { kind: 'exercise', id: second } : { kind: 'atlas' };
   if (head === 'profil' && second) return { kind: 'exstats', id: second };
+  if (head === 'przekaski') return second ? { kind: 'snacks', id: second } : { kind: 'snacks' };
   const tab = TAB_BY_PATH[head];
   return tab ? { kind: 'tab', tab } : { kind: 'tab', tab: 'train' };
 }
@@ -79,7 +88,14 @@ export function useRoute(): Route {
 
 /**
  * Który przycisk nawigacji ma być podświetlony. Podstrona ćwiczenia należy do atlasu,
- * a jego historia do profilu — ten sam ruch, dwa różne pytania.
+ * a jego historia do profilu — ten sam ruch, dwa różne pytania. Przekąski należą do sesji:
+ * to ta sama odpowiedź na pytanie „co robię dzisiaj”, tylko w mniejszej porcji.
  */
 export const activeTab = (route: Route): TabKey =>
-  route.kind === 'tab' ? route.tab : route.kind === 'exstats' ? 'prog' : 'atlas';
+  route.kind === 'tab'
+    ? route.tab
+    : route.kind === 'exstats'
+      ? 'prog'
+      : route.kind === 'snacks'
+        ? 'train'
+        : 'atlas';

@@ -125,6 +125,24 @@ export interface LogEntry {
   items: LogItem[];
 }
 
+/**
+ * Przekąska ruchowa: jedna seria jednego ćwiczenia poza treningiem — dziesięć przysiadów
+ * przy biurku, deska w przerwie na kawę. Nie rusza poziomów ćwiczeń ani kalendarza planu,
+ * bo dziesięć pompek nie jest treningiem; liczy się za to do odznak ćwiczeń i do punktów
+ * doświadczenia postaci.
+ */
+export interface Snack {
+  /** Klucz do usuwania. Znacznik czasu nie wystarczy — dwa szybkie stuknięcia bywają w tej samej ms. */
+  key: string;
+  /** Chwila zapisu, ISO. */
+  at: string;
+  ex: ExerciseId;
+  /** Powtórzenia albo sekundy — zależnie od jednostki ćwiczenia. Przy ruchu na stronę: na stronę. */
+  reps: number;
+  /** Ciężar, jeśli był. Przekąska z masą ciała albo bez sprzętu ma `null`. */
+  w: number | null;
+}
+
 export interface Workout {
   id: string;
   name: string;
@@ -245,6 +263,10 @@ export type AchGroup =
   | 'partie'
   /** Regularność i trzymanie poziomu w dłuższym czasie. */
   | 'utrzymanie'
+  /** Przekąski ruchowe: ile, jak często, jak różnorodnie. */
+  | 'przekaski'
+  /** Odznaki pojedynczego ćwiczenia: dzień, tydzień, miesiąc i suma — z treningów i przekąsek. */
+  | 'cwiczenia'
   /** Terminy planu: seria, realizacja, domknięte tygodnie. */
   | 'terminy';
 
@@ -292,11 +314,15 @@ export interface AppState {
     weights: number[];
     /** Drabiny pozostałego sprzętu. Brak oznacza wartości domyślne. */
     ladders?: Partial<Record<Gear, number[]>>;
+    /** Postać, która rośnie razem z punktami doświadczenia. Brak oznacza Gustawa. */
+    avatar?: 'gustaw' | 'gosia';
   };
   prog: Record<ExerciseId, Progress>;
   workouts: Workout[];
   session: Session | null;
   log: LogEntry[];
+  /** Przekąski ruchowe — osobno od dziennika, bo dziennik to treningi, a plan liczy się z niego. */
+  snacks: Snack[];
   plan: ActivePlan | null;
   notice: Notice | null;
   /** Dziennik zdarzeń, których nie da się odtworzyć z kalendarza. */
@@ -332,7 +358,9 @@ export type Route =
   | { kind: 'atlas' }
   | { kind: 'exercise'; id: ExerciseId }
   /** Historia jednego ćwiczenia w profilu — inna strona niż jego opis w atlasie. */
-  | { kind: 'exstats'; id: ExerciseId };
+  | { kind: 'exstats'; id: ExerciseId }
+  /** Przekąski ruchowe. Z identyfikatorem — formularz od razu z tym ćwiczeniem. */
+  | { kind: 'snacks'; id?: ExerciseId | undefined };
 
 /** Materiał wideo pokazujący technikę ćwiczenia. */
 export interface VideoRef {

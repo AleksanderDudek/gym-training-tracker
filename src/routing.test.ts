@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SETTINGS_PATH, TABS, activeTab, exercisePath, parseHash, statsPath } from './routing';
+import { SETTINGS_PATH, TABS, activeTab, exercisePath, parseHash, snacksPath, statsPath } from './routing';
 import type { TabKey } from './types';
 
 describe('trasy', () => {
@@ -67,10 +67,19 @@ describe('trasy', () => {
     expect(statsPath('swing2')).not.toBe(exercisePath('swing2'));
   });
 
+  it('przekąski mają adres bez zakładki i podświetlają sesję', () => {
+    // Siódma pozycja w pasku zeszłaby poniżej celu dotykowego — przekąski wchodzą adresem.
+    expect(TABS.some((t) => t.path.includes('przekaski'))).toBe(false);
+    expect(parseHash(snacksPath())).toEqual({ kind: 'snacks' });
+    expect(parseHash(snacksPath('squat_air'))).toEqual({ kind: 'snacks', id: 'squat_air' });
+    expect(activeTab({ kind: 'snacks' })).toBe('train' as TabKey);
+  });
+
   it('identyfikator ze znakami specjalnymi przechodzi w obie strony', () => {
     // Ukośnik w identyfikatorze wychodzi jako %2F, więc podział ścieżki go nie rozcina.
     const id = 'ćwiczenie/dziwne';
     expect(parseHash(exercisePath(id))).toEqual({ kind: 'exercise', id });
     expect(parseHash(statsPath(id))).toEqual({ kind: 'exstats', id });
+    expect(parseHash(snacksPath(id))).toEqual({ kind: 'snacks', id });
   });
 });

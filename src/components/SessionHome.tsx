@@ -2,7 +2,10 @@ import { ex } from '../data/exercises';
 import { go } from '../routing';
 import { LATE, REST, daySeed, pick } from '../engine/quips';
 import { SupportLine } from './Support';
-import type { Workout } from '../types';
+import { CharacterStrip } from './Character';
+import { SnackCard } from './Snacks';
+import type { LogSnack } from './Snacks';
+import type { AppState, Workout } from '../types';
 
 /** Co plan mówi na dziś. `due` to termin do zrobienia, `rest` to dzień bez terminu. */
 export interface TodayPlan {
@@ -31,14 +34,18 @@ const days = (n: number): string => (n === 1 ? 'jutro' : `za ${n} dni`);
  * w bok, bo ekran z ośmioma równorzędnymi przyciskami nie podpowiada niczego.
  */
 export function SessionHome({
+  state,
   today,
   lastLabel,
   onStart,
+  onSnack,
 }: {
+  state: AppState;
   today: TodayPlan;
   /** Jednozdaniowe podsumowanie ostatniego treningu. */
   lastLabel: string | null;
   onStart: (id: string) => void;
+  onSnack: LogSnack;
 }) {
   const w = today.workout;
 
@@ -53,6 +60,7 @@ export function SessionHome({
               ? `${pick(REST, daySeed())} Możesz też zrobić sesję dodatkową.`
               : 'Nie masz planu, więc decydujesz sam. Plan robiłby to za ciebie i nigdy by nie zapomniał.'}
         </p>
+        <CharacterStrip state={state} />
       </div>
 
       {today.kind === 'due' && w && (
@@ -120,6 +128,12 @@ export function SessionHome({
             Wybierz dowolny trening
           </button>
         </div>
+      </div>
+
+      {/* Przekąska pod treningiem, nie nad nim: kto przyszedł trenować, najpierw widzi trening. */}
+      <SnackCard state={state} onLog={onSnack} />
+
+      <div className="wrap">
         {/*
           Baner stoi pod obiema drogami wyjścia z ekranu, nie nad nimi: kto przyszedł
           trenować, ten najpierw widzi przycisk startu. Kto się rozgląda — widzi kawę.

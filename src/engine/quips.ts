@@ -188,6 +188,32 @@ export const EMPTY_SHELF: readonly string[] = [
   'Nic tu nie ma. To się da naprawić jednym treningiem.',
 ];
 
+/** Dopisek w dymku po zapisanej przekąsce. Krótko — dymek znika po trzech sekundach. */
+export const SNACK_SAVED: readonly string[] = [
+  'Krzesło odpoczywa.',
+  'Biurko nic nie widziało.',
+  'Przekąska bez kalorii.',
+  'Stawy dziękują, klawiatura tęskni.',
+  'Kawa może poczekać minutę.',
+  'Ruch zapisany. Winda obrażona.',
+];
+
+/** Pusty dzień przekąsek. Zaprasza, nie wypomina. */
+export const SNACK_EMPTY: readonly string[] = [
+  'Dziesięć przysiadów przy czajniku też się liczy.',
+  'Minuta deski w przerwie na reklamy to już przekąska.',
+  'Pompki przy biurku. Nikt nie patrzy, a jak patrzy — zazdrości.',
+];
+
+/** Awans postaci. Żart o goryla i o stadzie, nigdy o tym, ile komuś brakowało. */
+export const LEVEL_UP: readonly string[] = [
+  'Grzbiet jeszcze nie srebrny, ale ambicje już tak.',
+  'Awans bez rozmowy kwalifikacyjnej. Wystarczył ruch.',
+  'Stado zauważyło. Banan w drodze.',
+  'Poziom wyżej. Schody jakby niższe.',
+  'Nikt tego nie dał za darmo. Każdy punkt jest wypocony.',
+];
+
 /** Ekran wczytywania. */
 export const LOADING: readonly string[] = [
   'Rozgrzewam liczydło…',

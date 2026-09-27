@@ -4,6 +4,7 @@ import type { PlanStats, Schedule } from './schedule';
 import { metrics } from './metrics';
 import type { Metrics } from './metrics';
 import { countCleanWeeks } from './score';
+import { EX_DEFS } from './exbadges';
 
 /**
  * Odznaki opisują zachowanie i dorobek, nie wynik siłowy: przy dowolnym ciężarze da się zdobyć
@@ -22,11 +23,33 @@ export interface AchCtx {
 }
 
 /** Odznaka razem ze sposobem liczenia jej wartości. */
-interface AchDef extends Achievement {
+export interface AchDef extends Achievement {
   value: (c: AchCtx) => number;
+  /**
+   * Wartość w bieżącym okresie — tylko dla rekordów dnia, tygodnia i miesiąca. Kolejny próg
+   * zdobywa się w jednym okresie, więc pasek postępu liczy się z tego, co jest teraz,
+   * a nie z rekordu, który został w zeszłym tygodniu.
+   */
+  current?: (c: AchCtx) => number;
   /** Formatowanie wartości i progu, gdy goła liczba niewiele mówi. */
   fmt?: (n: number) => string;
 }
+
+/** Tworzywo odznaki. Zero znaczy „jeszcze nie zdobyta”. */
+export type Band = 0 | 1 | 2 | 3 | 4 | 5;
+
+/**
+ * Tworzywo z postępu w obrębie rodziny, a nie z gołego numeru progu. Dzięki temu domknięcie
+ * dowolnej rodziny kończy się szmaragdem — także tej trzyprogowej — a rodzina dziesięcioprogowa
+ * rozkłada te same pięć pasm na dłuższą drogę.
+ */
+export const bandFor = (tier: number, total: number): Band => {
+  if (tier <= 0 || total <= 0) return 0;
+  // Odznaka jednorazowa dostaje złoto, nie szmaragd. Inaczej „Ranny ptaszek” za jeden trening
+  // przed ósmą stałby na półce w tym samym tworzywie, co domknięta dziesięcioprogowa rodzina.
+  if (total === 1) return 3;
+  return Math.max(1, Math.min(5, Math.ceil((tier / total) * 5))) as Band;
+};
 
 const kg = (n: number): string => (n >= 1000 ? `${Math.round(n / 100) / 10} t` : `${n} kg`);
 const mins = (n: number): string => (n >= 120 ? `${Math.round(n / 60)} min` : `${n} s`);
@@ -566,6 +589,66 @@ const DEFS: AchDef[] = [
     value: (c) => yes(c.metrics.late),
   },
 
+  /* ---------------- Przekąski ruchowe ---------------- */
+  {
+    id: 'przekaski',
+    group: 'przekaski',
+    mark: '',
+    art: 'stopwatch',
+    name: 'Przekąski ruchowe',
+    desc: 'Krótkie serie zapisane poza treningiem. Jedna przekąska to jedna sztuka.',
+    quip: 'Przerwy na nic stały się przerwami na coś.',
+    unit: 'przekąsek',
+    tiers: [1, 10, 30, 75, 150, 300, 600, 1_000],
+    value: (c) => c.metrics.snacks.count,
+  },
+  {
+    id: 'przekaski-dzien',
+    group: 'przekaski',
+    mark: '24H',
+    name: 'Dzień w ruchu',
+    desc: 'Najwięcej przekąsek w jednym dniu. Liczy się rozłożenie w czasie, nie jedna długa seria.',
+    quip: 'Dzień, w którym krzesło widziało cię tylko przelotnie.',
+    unit: 'przekąsek',
+    tiers: [3, 5, 8, 12],
+    value: (c) => c.metrics.snacks.bestDay,
+  },
+  {
+    id: 'przekaski-ciag',
+    group: 'przekaski',
+    mark: '',
+    art: 'wave',
+    name: 'Codzienny ruch',
+    desc: 'Najdłuższy ciąg dni z rzędu z co najmniej jedną przekąską. Dzień bez przekąski zeruje ciąg.',
+    quip: 'Codziennie trochę. Nudne jak mycie zębów i równie skuteczne.',
+    unit: 'dni',
+    tiers: [3, 7, 14, 30, 60, 100, 200],
+    value: (c) => c.metrics.snacks.run,
+  },
+  {
+    id: 'przekaski-tydzien',
+    group: 'przekaski',
+    mark: '7D',
+    name: 'Pełny tydzień w ruchu',
+    desc: 'Tygodnie od poniedziałku do niedzieli z przekąską każdego dnia.',
+    quip: 'Siedem dni, siedem okazji, siedem wykorzystanych.',
+    unit: 'tygodni',
+    tiers: [1, 4, 12, 26, 52],
+    value: (c) => c.metrics.snacks.fullWeeks,
+  },
+  {
+    id: 'przekaski-menu',
+    group: 'przekaski',
+    mark: '',
+    art: 'book',
+    name: 'Menu przekąsek',
+    desc: 'Ile różnych ćwiczeń poszło jako przekąska.',
+    quip: 'Karta dań dłuższa niż w barze mlecznym.',
+    unit: 'ćwiczeń',
+    tiers: [3, 7, 15, 30],
+    value: (c) => c.metrics.snacks.distinct,
+  },
+
   /* ---------------- Terminy: kalendarz planu ---------------- */
   {
     id: 'seria',
@@ -653,35 +736,46 @@ const DEFS: AchDef[] = [
   },
 ];
 
+/** Rodziny ogólne. Odznaki ćwiczeń stoją osobno, bo jest ich po cztery na każdy ruch. */
 export const ACHIEVEMENTS: Achievement[] = DEFS;
+
+/** Wszystkie rodziny, łącznie z odznakami ćwiczeń — pod zdobywanie i formatowanie. */
+const EVERY: AchDef[] = [...DEFS, ...EX_DEFS];
+const BY_ID = new Map<string, AchDef>(EVERY.map((d) => [d.id, d]));
 
 export const GROUP_LABEL: Record<Achievement['group'], string> = {
   dorobek: 'Dorobek',
   partie: 'Partie ruchu',
   szczyty: 'Szczyty',
   utrzymanie: 'Utrzymanie',
+  przekaski: 'Przekąski ruchowe',
   terminy: 'Terminy',
+  cwiczenia: 'Ćwiczenia',
 };
 
 export const GROUP_NOTE: Record<Achievement['group'], string> = {
-  dorobek: 'Sumy z całej historii. Rosną same, dopóki trenujesz.',
+  dorobek: 'Sumy z całej historii treningów. Rosną same, dopóki trenujesz.',
   partie: 'Objętość w rozbiciu na wzorce ruchowe. Widać, co jest zaniedbane.',
   szczyty:
     'Rekordy pojedynczych podejść i przesuwanego okna — dowolne siedem, trzydzieści, dziewięćdziesiąt, sto osiemdziesiąt czy trzysta sześćdziesiąt pięć dni z rzędu.',
   utrzymanie: 'Nie o to, ile urosło, tylko o to, że nic się nie osypało.',
+  przekaski: 'Krótkie serie poza treningiem. Liczy się, jak często — nie ile naraz.',
   terminy: 'Zależne od uruchomionego planu i jego kalendarza.',
+  cwiczenia:
+    'Każde ćwiczenie ma rekord dnia, tygodnia i miesiąca kalendarzowego oraz sumę — z treningów i przekąsek razem. Widać tylko ruchy, które już robisz.',
 };
 
+/** Grupy rozwijane w zakładce. Odznaki ćwiczeń mają własny układ — po ćwiczeniu, nie po rodzinie. */
 export const GROUPS: Achievement['group'][] = [
   'dorobek',
   'partie',
   'szczyty',
   'utrzymanie',
+  'przekaski',
   'terminy',
 ];
 
-export const achievementById = (id: string): Achievement | undefined =>
-  DEFS.find((d) => d.id === id);
+export const achievementById = (id: string): Achievement | undefined => BY_ID.get(id);
 
 /** Klucz w trwałym dorobku. Progi numerowane od jedynki. */
 export const tierKey = (id: string, tier: number): string => `${id}:${tier}`;
@@ -692,7 +786,7 @@ export const tierKey = (id: string, tier: number): string => `${id}:${tier}`;
  * jest poprawne, ale „4 powtórzeń do celu” już nie, a odmiana zależy od ostatniej cyfry.
  */
 export function formatValue(a: Achievement, n: number): string {
-  const def = DEFS.find((d) => d.id === a.id);
+  const def = BY_ID.get(a.id);
   return def?.fmt ? def.fmt(n) : n.toLocaleString('pl-PL');
 }
 
@@ -702,7 +796,7 @@ export function formatValue(a: Achievement, n: number): string {
  * każdego liczebnika.
  */
 export function formatTier(a: Achievement, n: number): string {
-  const def = DEFS.find((d) => d.id === a.id);
+  const def = BY_ID.get(a.id);
   if (def?.fmt) return def.fmt(n);
   return a.unit ? `${n.toLocaleString('pl-PL')} ${a.unit}` : n.toLocaleString('pl-PL');
 }
@@ -718,25 +812,53 @@ export interface AchProgress {
   progress: number;
   /** Dzień zdobycia ostatniego progu. */
   at: string | null;
+  /**
+   * Wartość w bieżącym dniu, tygodniu albo miesiącu — tylko dla rekordów okresu. Dla sum
+   * i reszty rodzin `null`: tam liczy się wartość z całej historii.
+   */
+  current: number | null;
 }
 
-/** Stan wszystkich rodzin na dziś — do ekranu i do modala z nowościami. */
+const rowFor = (d: AchDef, ctx: AchCtx): AchProgress => {
+  const value = d.value(ctx);
+  const tier = d.tiers.filter((t) => value >= t).length;
+  const next = d.tiers[tier] ?? null;
+  const from = tier > 0 ? d.tiers[tier - 1]! : 0;
+  const current = d.current ? d.current(ctx) : null;
+  // Rekord okresu goni się w jednym okresie: pasek mierzy to, co jest teraz, od zera.
+  const progress =
+    next === null
+      ? 1
+      : current !== null
+        ? Math.min(1, Math.max(0, current / next))
+        : Math.min(1, Math.max(0, (value - from) / (next - from)));
+  return {
+    ach: d,
+    value,
+    tier,
+    next,
+    progress,
+    at: tier > 0 ? (ctx.state.award.badges[tierKey(d.id, tier)] ?? null) : null,
+    current,
+  };
+};
+
+/** Stan rodzin ogólnych na dziś — do ekranu i do modala z nowościami. */
 export function achievementProgress(ctx: AchCtx): AchProgress[] {
-  return DEFS.map((d) => {
-    const value = d.value(ctx);
-    const tier = d.tiers.filter((t) => value >= t).length;
-    const next = d.tiers[tier] ?? null;
-    const from = tier > 0 ? d.tiers[tier - 1]! : 0;
-    return {
-      ach: d,
-      value,
-      tier,
-      next,
-      progress: next === null ? 1 : Math.min(1, Math.max(0, (value - from) / (next - from))),
-      at: tier > 0 ? (ctx.state.award.badges[tierKey(d.id, tier)] ?? null) : null,
-    };
-  });
+  return DEFS.map((d) => rowFor(d, ctx));
 }
+
+/** Cztery rodziny jednego ćwiczenia: dzień, tydzień, miesiąc i suma. */
+export function exerciseProgress(ctx: AchCtx, id: string): AchProgress[] {
+  return EX_DEFS.filter((d) => d.ex === id).map((d) => rowFor(d, ctx));
+}
+
+/** Ćwiczenia, które już się pojawiły — w treningu albo jako przekąska — od najczęstszego. */
+export const touchedExercises = (ctx: AchCtx): string[] =>
+  Object.entries(ctx.metrics.perEx)
+    .filter(([id, v]) => v.total > 0 && EX_DEFS.some((d) => d.ex === id))
+    .sort((a, b) => b[1].sessions + b[1].snacks - (a[1].sessions + a[1].snacks) || a[0].localeCompare(b[0]))
+    .map(([id]) => id);
 
 export const achCtx = (
   state: AppState,
@@ -753,7 +875,7 @@ export const achCtx = (
 export function syncBadges(state: AppState, ctx: AchCtx): AchievementHit[] {
   const fresh: AchievementHit[] = [];
 
-  DEFS.forEach((d) => {
+  EVERY.forEach((d) => {
     const value = d.value(ctx);
     d.tiers.forEach((threshold, i) => {
       const tier = i + 1;
@@ -761,6 +883,9 @@ export function syncBadges(state: AppState, ctx: AchCtx): AchievementHit[] {
       if (state.award.badges[key] || value < threshold) return;
       state.award.badges[key] = ctx.today;
       fresh.push({ ach: d, tier, threshold });
+      // Odznaki ćwiczeń nie idą do dziennika planu: jest ich po cztery na ruch i po imporcie
+      // historii zasypałyby dziennik, w którym mają być terminy. Widać je przy ćwiczeniu.
+      if (d.group === 'cwiczenia') return;
       state.events.push({
         id: `badge:${key}`,
         date: ctx.today,
@@ -772,6 +897,29 @@ export function syncBadges(state: AppState, ctx: AchCtx): AchievementHit[] {
   });
 
   return fresh;
+}
+
+/**
+ * Cofa progi, których historia już nie uzasadnia — tylko w rodzinach wskazanych filtrem.
+ *
+ * Dziennik treningów jest dopisywany, nigdy kasowany, więc tam zdobyty próg zawsze ma pokrycie.
+ * Przekąskę da się usunąć: gdyby jej progi zostawały, literówka „150” zamiast „15” dawałaby
+ * odznakę i doświadczenie na zawsze, a ekran pokazywałby ten sam próg jako niezdobyty. Usunięcie
+ * przekąski jest poprawką pomyłki, więc cofa to, co ta pomyłka dała. Zwraca liczbę cofniętych.
+ */
+export function revokeUnmet(state: AppState, ctx: AchCtx, only: (d: AchDef) => boolean): number {
+  let n = 0;
+  EVERY.filter(only).forEach((d) => {
+    const value = d.value(ctx);
+    d.tiers.forEach((threshold, i) => {
+      const key = tierKey(d.id, i + 1);
+      if (!state.award.badges[key] || value >= threshold) return;
+      delete state.award.badges[key];
+      state.events = state.events.filter((e) => e.id !== `badge:${key}`);
+      n++;
+    });
+  });
+  return n;
 }
 
 /**

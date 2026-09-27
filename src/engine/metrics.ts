@@ -1,6 +1,10 @@
 import { EX } from '../data/exercises';
-import type { AppState, LogEntry } from '../types';
+import type { AppState, ExerciseId, LogEntry } from '../types';
 import { dayKey, daysBetween, mondayOf } from './schedule';
+import { snackStats, snacksOf } from './snacks';
+import type { SnackStats } from './snacks';
+import { exerciseVolumes } from './volume';
+import type { ExVolume } from './volume';
 
 /**
  * Warstwa liczb. Wszystko, co da się policzyć z historii treningów, liczy się tutaj raz,
@@ -353,6 +357,13 @@ export interface Metrics {
   early: boolean;
   late: boolean;
   days: DayTotals[];
+  /**
+   * Przekąski ruchowe. Osobno od wszystkiego powyżej: sumy i rekordy dorobku liczą
+   * zamknięte treningi, a przekąski mają własne odznaki i wchodzą do odznak ćwiczeń.
+   */
+  snacks: SnackStats;
+  /** Objętość każdego ćwiczenia z treningów i przekąsek razem — pod odznaki ćwiczeń. */
+  perEx: Record<ExerciseId, ExVolume>;
 }
 
 export function metrics(state: AppState): Metrics {
@@ -427,5 +438,7 @@ export function metrics(state: AppState): Metrics {
     early: trainedEarly(state.log),
     late: trainedLate(state.log),
     days,
+    snacks: snackStats(snacksOf(state)),
+    perEx: exerciseVolumes(state.log, snacksOf(state)),
   };
 }

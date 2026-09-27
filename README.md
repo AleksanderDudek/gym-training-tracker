@@ -53,6 +53,9 @@ obrazkach ani przy czytniku ekranu. Radość rośnie razem z pasmem (`BAND_MOOD`
 Jedna postać na ekran i nigdy w trakcie serii. Wyjątkiem jest blankiet do wpisu — to nie ekran,
 tylko dokument z dwoma portretami w narożnikach (o nim niżej, w części o tonie).
 
+**Twoja postać to Gustaw albo Gosia** — do wyboru w profilu. Rośnie razem z punktami
+doświadczenia, od „Świeżo z dżungli” po srebrny grzbiet (o tym niżej, w części o postaci).
+
 Kto gdzie stoi: ostrzeżenie mówi Siwy (spokojna rada), dobra wiadomość to radość podopiecznego,
 pusta lista to tęsknota, stoper ma kibica, który męczy się w ostatniej jednej trzeciej podchodu,
 a okno kasowania danych — trenera, bo to on pilnuje, żeby nikt nie skasował sobie roku pracy.
@@ -218,15 +221,20 @@ i drugi, obok wyniku sesji, po każdym zamkniętym treningu.
 
 | Zakładka | Adres | Co robi |
 | --- | --- | --- |
-| Twoja sesja | `#/sesja` | Co masz dziś do zrobienia według planu; w trakcie — bieżąca sesja. |
+| Twoja sesja | `#/sesja` | Co masz dziś do zrobienia według planu, pasek postaci i przekąska ruchowa; w trakcie — bieżąca sesja. |
 | Plan | `#/plan` | Kalendarz terminów, punkty, stopień, dziennik zdarzeń. |
-| Profil | `#/profil` | Twoje liczby, obciążenie, lista zrobionych ćwiczeń i historia treningów. |
-| Osiągnięcia | `#/osiagniecia` | Dorobek w liczbach, progi najbliższe zdobycia, 56 rodzin odznak. |
+| Profil | `#/profil` | Postać i doświadczenie, twoje liczby, obciążenie, przekąski, lista zrobionych ćwiczeń i historia treningów. |
+| Osiągnięcia | `#/osiagniecia` | Dorobek w liczbach, progi najbliższe zdobycia, 61 rodzin odznak i odznaki każdego zrobionego ćwiczenia. |
 | Treningi | `#/treningi` | Wszystkie treningi do wyboru i kreator własnych. |
 | Atlas | `#/cwiczenia` | 105 ćwiczeń z filtrem sprzętu; każde ma własny adres do wysłania. |
 
 Dwa adresy prowadzą do podstron: `#/cwiczenia/<id>` to technika i wideo, `#/profil/<id>` to
 historia tego samego ruchu. Stary `#/poziomy` dalej działa i wchodzi do profilu.
+
+Przekąski ruchowe mają adres `#/przekaski` (a `#/przekaski/<id>` otwiera formularz od razu
+z tym ćwiczeniem), ale nie mają zakładki: siódma pozycja w pasku zeszłaby poniżej celu
+dotykowego. Wchodzi się do nich z ekranu sesji, z profilu i z podstrony ćwiczenia, a pasek
+podświetla wtedy „Twoją sesję” — to ta sama odpowiedź na pytanie „co robię dzisiaj”.
 
 Ustawienia (`#/ustawienia`) mają przycisk w nagłówku, nie w dolnym pasku: drabina kettlebli,
 poziomy startowe, eksport, import i kasowanie danych to ekran otwierany raz na miesiąc.
@@ -294,6 +302,40 @@ zmianie obciążenia.
 **Liczone jest z dziennika, nie z `prog[id].hist`.** Dziennik jest źródłem — `hist` bywa
 przycinany przez silnik progresji, bo służy do wyliczania następnej sesji, a nie do pamiętania
 wszystkiego. Spadek po przerwie nie jest tu opisany jako porażka: wykres liczy, nie ocenia.
+
+## Przekąski ruchowe
+
+Krótka seria poza treningiem: dziesięć przysiadów przy czajniku, minuta deski w przerwie,
+kilka swingów między spotkaniami. Badania nad takimi „przekąskami” — od kilkudziesięciu sekund
+do kilku minut, kilka razy dziennie — pokazują poprawę wydolności i przerwanie długiego
+siedzenia. Liczy się więc rozłożenie w ciągu dnia, nie objętość jednej serii.
+
+**Przekąska nie jest treningiem** i aplikacja pilnuje tej granicy. Nie trafia do dziennika
+treningów, więc nie podnosi celów serii, nie domyka terminu planu, nie wchodzi do wskaźnika
+obciążenia ani do sum dorobku. Dziesięć pompek nie może udawać sesji. Dokłada się za to do
+odznak ćwiczeń, do własnej grupy odznak i do doświadczenia postaci.
+
+**Zapis ma kosztować jedno stuknięcie.** Przekąskę robi się zwykle tę samą kilka razy dziennie,
+więc na ekranie sesji i na górze ekranu przekąsek stoją przyciski „jeszcze raz to samo” —
+ostatnie różne przekąski, zapisywane bez formularza. Formularz jest dla nowej: ćwiczenie,
+liczba z przyciskami ±, ciężar tylko przy ćwiczeniach z obciążeniem (domyślnie ostatni użyty
+albo roboczy), stoper przy ćwiczeniach na czas. Podpowiedź liczby bierze się z ostatniej
+przekąski tym ruchem, a bez niej — z celu w bibliotece.
+
+**Ekran przekąsek** (`#/przekaski`) pokazuje dzisiejsze przekąski z godziną i przyciskiem
+usunięcia, ile jeszcze da dziś doświadczenie, ile brakuje do kolejnego progu dnia każdego
+ćwiczenia zrobionego dziś, ostatnie siedem dni jako pasek i historię dzień po dniu.
+
+**Usunięcie przekąski cofa to, co dała.** Dziennik treningów tylko rośnie, więc tam raz zdobyty
+próg ma zawsze pokrycie. Przekąskę da się skasować — i to zwykle po literówce, „150” zamiast
+„15”. Gdyby jej progi zostawały, pomyłka dawałaby odznaki i doświadczenie na zawsze, a ekran
+pokazywałby te same progi jako niezdobyte. Usunięcie cofa więc progi przekąsek i progi tego
+ćwiczenia, których historia już nie uzasadnia; reszta odznak zostaje nietknięta. Jedna
+przekąska ma też górną granicę — 500 powtórzeń albo 30 minut — bo więcej to już nie przekąska.
+
+Przekąska wisi pod treningiem z planu, nie nad nim: kto przyszedł trenować, najpierw widzi
+trening. Na ekranie przekąsek nie ma baneru wsparcia — to narzędzie do szybkiego zapisu,
+a kawa poczeka.
 
 ## Atlas i sprzęt
 
@@ -364,7 +406,7 @@ dostaje rzadsze `setInterval`, więc licznik oparty na tyknięciach zostawałby 
 src/
   types.ts                  wszystkie typy domenowe
   routing.ts                trasy w hashu adresu, sześć zakładek i dwie rodziny podstron
-  routing.test.ts           12 testów tras, zakładek i starych adresów
+  routing.test.ts           13 testów tras, zakładek, przekąsek i starych adresów
   data/exercises.ts         biblioteka 105 ćwiczeń, drabiny sprzętu, cztery treningi
   data/exjokes.ts           dopiski do 105 ćwiczeń i do gotowych treningów
   data/moves.ts             osiemnaście wzorców ruchu jako klatki kluczowe
@@ -384,8 +426,15 @@ src/
     pose.ts                 szkielet manekina: kąty, klatki, dosunięcie do podłoża
     share.ts                treść wpisu, karta 1080×1080, wysyłka i ścieżka zapasowa
     share.test.ts           15 testów treści wpisu, adresów, blankietu i wprowadzenia
+    snacks.ts               przekąski ruchowe: zapis, szybki wybór, podpowiedzi, liczby
+    snacks.test.ts          14 testów zapisu, granicy z treningiem i liczb przekąsek
+    volume.ts               objętość ćwiczenia w dniu, tygodniu i miesiącu kalendarzowym
+    exbadges.ts             odznaki ćwiczeń: cztery rodziny na ruch, progi z objętości sesji
+    exbadges.test.ts        15 testów okresów, progów, zdobywania i cofania odznak ćwiczeń
+    xp.ts                   punkty doświadczenia, poziomy i tytuły postaci
+    xp.test.ts              12 testów źródeł doświadczenia, sufitu przekąsek i poziomów
     quips.ts                humor: porównania liczb, odmiana, zestawy tekstów
-    quips.test.ts           19 testów puent, odmiany, dopisków i granic porównań
+    quips.test.ts           20 testów puent, odmiany, dopisków i granic porównań
     pose.test.ts            24 testy szkieletu, cyklu, katalogu ruchów i mimiki
     badges.ts               katalog odznak z progami, postęp, migracja starych kluczy
     journal.ts              dziennik zdarzeń wyprowadzany z kalendarza
@@ -413,9 +462,12 @@ src/
     Mannequin.tsx           postać wykonująca ruch i jej zegar
     Intro.tsx               opcjonalne wprowadzenie, cztery ekrany
     Share.tsx               przycisk udostępniania, obsada blankietu i ścieżka zapasowa
+    Snacks.tsx              przekąski ruchowe: karta na ekranie sesji i pełny ekran
+    Character.tsx           postać: karta w profilu, pasek na ekranie sesji, okno awansu
+    ExerciseBadges.tsx      wiersz odznaki ćwiczenia z bieżącym okresem i rekordem
     Support.tsx             baner wsparcia: rada dnia Trenera Siwego i espresso
     Gorilla.tsx             obsada: Gustaw, Gosia i Trener Siwy, siedemnaście min
-    cast.test.ts            13 testów obsady, pasm, blankietu i rady dnia
+    cast.test.ts            16 testów obsady, pasm, blankietu, miny postaci i rady dnia
     Achievements.tsx        zakładka osiągnięć: dorobek w liczbach i odznaki z progami
     VideoEmbed.tsx          odtwarzacz YouTube ładowany dopiero po kliknięciu
   App.tsx                   spina stan i widoki
@@ -532,10 +584,11 @@ kilogramy popychałyby do przeciążenia dokładnie wtedy, gdy trzeba odpuścić
 **Nie ma punktów ujemnych.** Karą za opuszczony termin jest zerwana seria i zatrzymany licznik, a
 nie dług do odrobienia — wychodzenie z minusa zniechęca skuteczniej niż cokolwiek innego.
 
-**Osiem stopni**, od Nowicjusza po Mistrza. Pierwszy awans wypada po niecałym tygodniu regularnych
+**Osiem stopni**, od „Gościa z ulicy” po „Pomnik za życia” — to stopień w planie, nie poziom postaci. Pierwszy awans wypada po niecałym tygodniu regularnych
 treningów, żeby pierwsza nagroda nie była odległa o miesiąc.
 
-**Odznaki mają progi, nie jeden koniec.** 56 rodzin, 312 progów. Rodzina „Powtórzenia" ma dziesięć
+**Odznaki mają progi, nie jeden koniec.** 61 rodzin ogólnych i 348 progów, a do tego po cztery
+rodziny na każde ćwiczenie biblioteki (o nich niżej). Rodzina „Powtórzenia" ma dziesięć
 progów od 500 do miliona, „Utrzymany rytm" siedem od czterech tygodni do dwóch lat. Zdobyty próg
 nie kończy tematu, tylko odsłania następny — a pasek postępu mówi, ile brakuje. Zamiast ściany
 „zablokowane" jest zawsze widoczny kolejny krok. Wszystko mieszka w zakładce **Osiągnięcia**.
@@ -559,8 +612,66 @@ Pięć grup:
 - **Utrzymanie** — to, że nic się nie osypało: tygodnie z rzędu po dwa treningi, dni z rzędu
   z treningiem, dni bez zejścia z ciężaru, ćwiczenia stojące w granicach 5% własnego szczytu,
   etapy w ćwiczeniach z masą ciała, powrót do poziomu po przerwie.
+- **Przekąski ruchowe** — ile w sumie, najwięcej jednego dnia, dni z rzędu, pełne tygodnie
+  z przekąską codziennie i liczba różnych ćwiczeń zrobionych jako przekąska.
 - **Terminy** — zależne od uruchomionego planu: seria w terminie, brak pudła, czyste tygodnie,
   nadrobienia.
+
+**Odznaki ćwiczeń.** Każde ze 105 ćwiczeń ma cztery rodziny: rekord dnia, tygodnia i miesiąca
+kalendarzowego oraz sumę z całej historii — razem 420 rodzin i 2 205 progów. To jedyne odznaki,
+do których przekąska dokłada się na równi z treningiem: pompka przy biurku jest tą samą pompką.
+
+- **Okresy są kalendarzowe, nie przesuwane.** Tydzień od poniedziałku, miesiąc od pierwszego.
+  Tylko wtedy da się uczciwie powiedzieć „dziś 30 z 50”, a nowy tydzień zaczyna od zera i daje
+  nową szansę. Rekordy przesuwanego okna mają już swoje miejsce w „Szczytach”.
+- **Pasek mierzy bieżący okres, nie stary rekord.** Kolejny próg dnia zdobywa się jednego dnia,
+  więc „Najbliżej zdobycia” pokazuje, ile brakuje dziś — i przekąska jeszcze dziś może go domknąć.
+- **Progi liczone, nie wpisane.** Podstawą jest typowa sesja z biblioteki (serie × cel), więc
+  dwadzieścia podciągnięć i dwadzieścia wspięć na palce nie stoją na tym samym progu. Dzień to
+  1, 2, 3, 5 i 8 sesji, tydzień 2–20, miesiąc 6–60, suma 5–1 200 — zaokrąglone do okrągłych
+  liczb, a przy czasie powyżej dwóch minut do pełnych minut. Pompki: dzień 25 / 50 / 75 / 120 /
+  200, suma od 120 do 30 000.
+- **Liczy się to, co wpisane.** Przy ruchu na stronę — powtórzenia na stronę, przy ćwiczeniu na
+  czas — sekundy. Medale okresów noszą napis 24H, 7D i 30D, medal sumy — figurkę ruchu.
+- **Widać tylko ruchy, które już robisz.** Czterysta rodzin dla ćwiczeń, których ktoś nigdy nie
+  dotknął, to ściana, a nie zachęta. W zakładce Osiągnięcia każde ćwiczenie jest osobno zwijane,
+  a pełny zestaw stoi też na jego podstronie w profilu. Odznaki ćwiczeń nie trafiają do dziennika
+  planu — po imporcie historii zasypałyby terminy.
+
+## Postać i punkty doświadczenia
+
+Punkty planu pilnują terminów i istnieją tylko przy uruchomionym planie. **Doświadczenie (XP)
+liczy każdy ruch** — trening, przekąskę, zdobyty próg — także bez planu, i z niego rośnie
+postać: Gustaw albo Gosia, do wyboru w profilu.
+
+| Źródło | XP |
+| --- | --- |
+| Pierwszy zamknięty trening danego dnia | 100 |
+| Każdy kolejny trening tego samego dnia | 20 |
+| Przekąska ruchowa | 15, do sześciu dziennie |
+| Próg odznaki: brąz / srebro / złoto / platyna / szmaragd | 20 / 40 / 80 / 150 / 300 |
+| Próg odznaki ćwiczenia | połowa powyższego |
+
+Zasady te same, co przy punktach planu. **Obecność, nie objętość:** trening płaci stałą pulę,
+ciężar i tonaż nie dają niczego — doświadczenie za kilogramy rosłoby najszybciej tuż przed
+kontuzją. Drugi trening tego samego dnia płaci mało, bo te same wzorce dwa razy dziennie nie
+budują dwa razy szybciej. **Przekąski mają dzienny sufit:** szósta jeszcze płaci, siódma liczy
+się już tylko do odznak. Chodzi o ruch rozłożony w ciągu dnia, nie o klikanie. **Odznaki ćwiczeń
+płacą połowę**, bo jest ich po cztery na każdy ruch.
+
+**Poziom n → n+1 kosztuje 100·n XP.** Pierwszy awans wypada po pierwszym treningu, dziesiąty po
+mniej więcej półtora miesiąca regularnego ruchu, trzydziesty po roku. Tytuły idą za życiem
+goryla — od „Świeżo z dżungli” przez „Czarny grzbiet” i „Pierwszy siwy włos” po „Srebrny
+grzbiet”, „Przywódcę stada” i dalej. Żart jest o goryla, nie o człowieku, który dopiero zaczyna.
+
+**Gdzie to widać.** Na ekranie sesji stoi pasek postaci: poziom, tytuł, ile brakuje i ile
+wpadło dziś — bez rysunku, bo ten ekran ma już trenera w banerze. W profilu jest pełna karta:
+goryl z miną zależną od tego, kiedy był ostatni ruch (i zawsze tym samym zdaniem obok), pasek,
+najbliższy nowy tytuł, skąd przyszło doświadczenie i wybór postaci. Po treningu podsumowanie
+mówi, ile doszło, a awans dostaje własne okno po odznakach.
+
+**Nic nie jest zapamiętane.** Suma liczy się od zera z dziennika, przekąsek i dat zdobycia
+odznak. Nie ma licznika, który mógłby rozjechać się z historią po imporcie danych.
 
 ## Kolory
 
@@ -656,8 +767,9 @@ Wszystkie da się zdobyć przy dowolnym ciężarze — bo jedyne, na co człowie
 każdego dnia, to czy się pojawi. Raz zdobyty próg zostaje po zmianie planu, tak samo jak punkty:
 przy zamknięciu planu przechodzą do trwałego dorobku.
 
-**Odznaki nie dają punktów.** Punkty pilnują terminów, odznaki nagradzają dorobek — gdyby objętość
-płaciła punktami, ranga rosłaby najszybciej tuż przed kontuzją.
+**Odznaki nie dają punktów planu.** Punkty pilnują terminów, odznaki nagradzają dorobek — gdyby
+objętość płaciła punktami, ranga rosłaby najszybciej tuż przed kontuzją. Dają za to jednorazowo
+doświadczenie postaci: próg to rzecz skończona, więc nie da się go wyciskać w nieskończoność.
 
 **Liczenie jest osobne od nagradzania.** `metrics.ts` liczy wszystko z historii treningów raz,
 a warunek odznaki mieści się w jednej linijce porównania z progiem. Powtórzenia ćwiczeń na stronę
@@ -778,6 +890,11 @@ odznak liczą się od zera z historii treningów przy każdym otwarciu. Zapisywa
 czego nie da się odtworzyć — dorobek punktowy z planów zamkniętych, daty zdobycia odznak i
 zdarzenia jednorazowe. Dzięki temu żaden licznik nie może rozjechać się z historią po imporcie
 danych ani po zmianie dni tygodnia.
+
+Przekąski mają w zapisie własną listę (`snacks`), obok dziennika treningów, a wybrana postać
+siedzi w ustawieniach (`cfg.avatar`). Zapis sprzed przekąsek wczytuje się z pustą listą, a przy
+wczytaniu i imporcie odpadają wpisy z nieznanym ćwiczeniem, zepsutą datą albo zerowym wynikiem.
+Doświadczenie i poziom postaci — jak punkty planu — są wyprowadzane, nie zapisywane.
 
 ## Zastrzeżenie
 

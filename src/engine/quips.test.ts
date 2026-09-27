@@ -3,9 +3,12 @@ import {
   CHEERS,
   EMPTY_SHELF,
   LATE,
+  LEVEL_UP,
   LOADING,
   REST,
   SAVED,
+  SNACK_EMPTY,
+  SNACK_SAVED,
   daySeed,
   massJoke,
   pick,
@@ -114,10 +117,19 @@ describe('porównania czasu i powtórzeń', () => {
 
 describe('zestawy tekstów', () => {
   it('każdy zestaw ma z czego losować i nie powtarza się w środku', () => {
-    [CHEERS, SAVED, REST, LATE, EMPTY_SHELF, LOADING].forEach((list) => {
+    [CHEERS, SAVED, REST, LATE, EMPTY_SHELF, LOADING, SNACK_SAVED, SNACK_EMPTY, LEVEL_UP].forEach((list) => {
       expect(list.length).toBeGreaterThanOrEqual(3);
       expect(new Set(list).size).toBe(list.length);
       list.forEach((t) => expect(t.length).toBeGreaterThan(12));
+    });
+  });
+
+  it('przekąski i awanse zapraszają, nie wypominają', () => {
+    // Pusty dzień przekąsek i awans postaci to dwa miejsca, w których łatwo o przytyk
+    // („wreszcie”, „dopiero teraz”) — oba mają żartować z goryla i z biurka, nie z człowieka.
+    [...SNACK_SAVED, ...SNACK_EMPTY, ...LEVEL_UP].forEach((t) => {
+      expect(t).not.toMatch(SHAMING);
+      expect(t).not.toMatch(/wstyd|leń|słab|wymówk|żałos|porażk|wreszcie|dopiero teraz/i);
     });
   });
 

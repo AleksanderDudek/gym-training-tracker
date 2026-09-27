@@ -7,6 +7,11 @@ import { BAND_MOOD, BAND_NAME } from './BadgeArt';
 import { certificateCast } from './Share';
 import { COACH_TIPS } from '../engine/quips';
 import { inlineVars } from '../engine/share';
+import { characterMood } from './Character';
+import { freshState } from '../engine/plan';
+import { addSnack } from '../engine/snacks';
+import { tierKey } from '../engine/badges';
+import { xpSummary } from '../engine/xp';
 
 /**
  * Obsada trzyma się trzech zasad, których nie widać w typach, więc pilnuje ich test:
@@ -123,5 +128,40 @@ describe('obsada na blankiecie', () => {
         expect(inlineVars(markup), `${who}/${mood}`).not.toMatch(/var\(/);
       });
     });
+  });
+});
+
+describe('mina postaci', () => {
+  const today = '2026-09-27';
+  const workout = (iso: string) => ({
+    date: iso,
+    workout: 'A',
+    ready: 'ok' as const,
+    items: [{ id: 'swing2', sets: [{ reps: 10, w: 16 }], effort: 'solid' as const }],
+  });
+
+  it('próg dopięty dziś przy starcie nie udaje dzisiejszego ruchu', () => {
+    // Po aktualizacji aplikacja dopina odznaki ćwiczeń z dawnej historii z dzisiejszą datą.
+    const s = freshState();
+    s.log = [workout('2026-09-20T08:00:00Z')];
+    s.award.badges[tierKey('treningi', 1)] = today;
+    const m = characterMood(s, xpSummary(s, today), today);
+    expect(m.line).toBe('Ostatni ruch 7 dni temu');
+    expect(m.mood).toBe('longing');
+  });
+
+  it('przekąska dziś to ruch dziś, trening dziś — ruch porządny', () => {
+    const s = freshState();
+    addSnack(s, 'squat_air', 10, null, Date.parse(`${today}T09:00:00Z`));
+    expect(characterMood(s, xpSummary(s, today), today).mood).toBe('happy');
+    s.log = [workout(`${today}T18:00:00Z`)];
+    expect(characterMood(s, xpSummary(s, today), today).mood).toBe('proud');
+  });
+
+  it('bez żadnego ruchu postać czeka, a mina zawsze ma zdanie obok', () => {
+    const s = freshState();
+    const m = characterMood(s, xpSummary(s, today), today);
+    expect(m.line).toBe('Czeka na pierwszy ruch');
+    expect(TRAINEE_MOODS[m.mood]).toBeTruthy();
   });
 });

@@ -20,7 +20,14 @@ const COLORS = ['#D97757', '#6A9BCC', '#788C5D', '#D9A157', '#B0AEA5', '#94452C'
 const tierLabel = (h: AchievementHit): string =>
   h.ach.tiers.length > 1 ? `próg ${h.tier} z ${h.ach.tiers.length}` : 'odznaka jednorazowa';
 
-export function Celebrate({ hits }: { hits: AchievementHit[] }) {
+export function Celebrate({
+  hits,
+  context = 'W tej samej sesji',
+}: {
+  hits: AchievementHit[];
+  /** Podpis nad resztą medali — po przekąsce to nie była sesja. */
+  context?: string;
+}) {
   // Najwyższe pasmo na scenę: zdobycie złota nie może zniknąć pod brązem tylko dlatego,
   // że brąz wpadł pierwszy w kolejności rodzin.
   const ranked = [...hits].sort(
@@ -82,9 +89,7 @@ export function Celebrate({ hits }: { hits: AchievementHit[] }) {
       {rest.length > 0 && (
         <div className="cel-more">
           <div className="cel-more-label">
-            {hits.length === rest.length + 1
-              ? 'W tej samej sesji'
-              : `W tej samej sesji (${hits.length - 1})`}
+            {hits.length === rest.length + 1 ? context : `${context} (${hits.length - 1})`}
           </div>
           <div className="cel-row">
             {rest.map((h, i) => (

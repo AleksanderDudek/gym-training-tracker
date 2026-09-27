@@ -6,10 +6,17 @@ import type { ExerciseRow, ExerciseSummary, Trend } from '../engine/history';
 import { sessionTonnage } from '../engine/math';
 import { metrics } from '../engine/metrics';
 import { P, planLabel } from '../engine/plan';
-import { exercisePath, go, statsPath } from '../routing';
+import { exercisePath, go, snacksPath, statsPath } from '../routing';
 import { Chip, EmptyState, Sparkline, Trendline } from './ui';
 import { LoadGauge } from './views';
 import { SupportLine } from './Support';
+import { CharacterCard } from './Character';
+import type { Avatar } from './Character';
+import { ExerciseBadgeRow, badgeTally } from './ExerciseBadges';
+import { achCtx, exerciseProgress } from '../engine/badges';
+import { snackStats, snacksOf, snacksOn } from '../engine/snacks';
+import { dayKey } from '../engine/schedule';
+import { plural } from '../engine/quips';
 import type { AppState, ExerciseId } from '../types';
 
 /**
@@ -50,7 +57,60 @@ const unitOf = (id: ExerciseId): string => (ex(id).unit === 'secs' ? 's' : 'powt
 
 /* ---------------- Zakładka profilu ---------------- */
 
-export function ProfileView({ state }: { state: AppState }) {
+const SNACK_FORMS = ['przekąska', 'przekąski', 'przekąsek'] as const;
+
+/**
+ * Przekąski w profilu: jednym zdaniem ile, jak regularnie i czym — i wejście do pełnego
+ * ekranu. Liczby treningów wyżej zostają treningowe, bo tak liczą się poziomy i plan.
+ */
+function SnackSummary({ state }: { state: AppState }) {
+  const st = snackStats(snacksOf(state));
+  const today = snacksOn(state, dayKey(Date.now())).length;
+  return (
+    <div className="grp">
+      <h3>Przekąski ruchowe</h3>
+      <p className="tight">
+        {st.count
+          ? `${st.count} ${plural(st.count, SNACK_FORMS)} od początku, dziś ${today}. Najdłuższy ciąg: ${st.run} ${plural(st.run, ['dzień', 'dni', 'dni'])} z rzędu, różnych ćwiczeń: ${st.distinct}.`
+          : 'Jeszcze żadnej. Krótka seria poza treningiem nie zmienia planu ani poziomów — dokłada się do odznak ćwiczeń i do postaci.'}
+      </p>
+      <div style={{ marginTop: 10 }}>
+        <button className="btn ghost sm" onClick={() => go(snacksPath())}>
+          {st.count ? 'Przekąski — dziś i historia' : 'Zapisz pierwszą przekąskę'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** Cztery odznaki ćwiczenia z nagłówkiem i przyciskiem przekąski — na podstronie ruchu. */
+function ExerciseBadgesBlock({ state, id }: { state: AppState; id: ExerciseId }) {
+  const rows = exerciseProgress(achCtx(state, null, null, dayKey(Date.now())), id);
+  const snacks = snacksOf(state).filter((s) => s.ex === id).length;
+  return (
+    <>
+      <div className="sect-label">Odznaki ćwiczenia {badgeTally(rows)}</div>
+      <p className="ach-note">
+        Rekord dnia, tygodnia i miesiąca oraz suma — z treningów i przekąsek razem.
+        {snacks ? ` Przekąsek z tym ruchem: ${snacks}.` : ''}
+      </p>
+      <div className="wk-body">
+        {rows.map((r) => (
+          <ExerciseBadgeRow key={r.ach.id} r={r} />
+        ))}
+      </div>
+      <div className="wrap">
+        <div className="actions">
+          <button className="btn ghost wide" onClick={() => go(snacksPath(id))}>
+            Zapisz przekąskę z tym ćwiczeniem
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+export function ProfileView({ state, onAvatar }: { state: AppState; onAvatar: (a: Avatar) => void }) {
   const m = metrics(state);
   const done = doneExercises(state);
   const [allHistory, setAllHistory] = useState(false);
@@ -78,6 +138,11 @@ export function ProfileView({ state }: { state: AppState }) {
           Wszystko, co zrobiłeś, policzone w jednym miejscu. Bez konta, bez maila i bez
           wysyłania czegokolwiek na zewnątrz — te liczby nie opuszczają tej przeglądarki.
         </p>
+      </div>
+
+      <CharacterCard state={state} onAvatar={onAvatar} />
+
+      <div className="wrap">
         <div className="tiles">
           {tiles.map(([v, l]) => (
             <div className="tile" key={l}>
@@ -95,6 +160,7 @@ export function ProfileView({ state }: { state: AppState }) {
       </div>
 
       <LoadGauge state={state} />
+      <SnackSummary state={state} />
 
       <div className="sect-label">Twoje ćwiczenia</div>
       {!done.length ? (
@@ -232,6 +298,8 @@ export function ExerciseStatsPage({ state, id }: { state: AppState; id: Exercise
   }
 
   if (!rows.length) {
+    // Ruch robiony dotąd tylko jako przekąska nie ma sesji do wykresu, ale ma odznaki.
+    const snacked = snacksOf(state).some((s) => s.ex === id);
     return (
       <>
         <div className="wrap">
@@ -240,10 +308,36 @@ export function ExerciseStatsPage({ state, id }: { state: AppState; id: Exercise
           </button>
         </div>
         <div className="wrap">
-          <EmptyState
-            title={`${m.name} — jeszcze bez historii`}
-            text="Historia zaczyna się przy pierwszym zamkniętym treningu z tym ruchem."
-          />
+          {snacked ? (
+            <div className="ex-hero">
+              <Chip state={state} id={id} />
+              <div>
+                <div className="ex-group">
+                  {m.group} · {GEAR_LABEL[gearOf(id)]}
+                </div>
+                <h2 className="ex-h">{m.name}</h2>
+                <div className="ex-target">Na razie tylko w przekąskach — wykres sesji ruszy z pierwszym treningiem.</div>
+              </div>
+            </div>
+          ) : (
+            <EmptyState
+              title={`${m.name} — jeszcze bez historii`}
+              text="Historia zaczyna się przy pierwszym zamkniętym treningu albo pierwszej przekąsce z tym ruchem."
+            />
+          )}
+        </div>
+        {snacked ? (
+          <ExerciseBadgesBlock state={state} id={id} />
+        ) : (
+          <div className="wrap">
+            <div className="actions">
+              <button className="btn wide" onClick={() => go(snacksPath(id))}>
+                Zapisz przekąskę z tym ćwiczeniem
+              </button>
+            </div>
+          </div>
+        )}
+        <div className="wrap">
           <div className="actions">
             <button className="btn ghost wide" onClick={() => go(exercisePath(id))}>
               Zobacz technikę w atlasie
@@ -332,6 +426,8 @@ export function ExerciseStatsPage({ state, id }: { state: AppState; id: Exercise
           {p.e1rm ? ` Aktualne szacowane maksimum: ${p.e1rm} kg.` : ''}
         </p>
       </div>
+
+      <ExerciseBadgesBlock state={state} id={id} />
 
       <div className="sect-label">Sesja po sesji</div>
       {[...rows].reverse().map((r, i) => (

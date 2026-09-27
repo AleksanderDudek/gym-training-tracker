@@ -62,6 +62,7 @@ export function freshState(): AppState {
     workouts: [],
     session: null,
     log: [],
+    snacks: [],
     plan: null,
     notice: null,
     events: [],

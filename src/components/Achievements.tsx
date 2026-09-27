@@ -5,10 +5,17 @@ import {
   GROUP_NOTE,
   achCtx,
   achievementProgress,
+  exerciseProgress,
   formatTier,
   formatValue,
+  touchedExercises,
 } from '../engine/badges';
 import type { AchProgress } from '../engine/badges';
+import { KIND_NOW } from '../engine/exbadges';
+import type { ExFamily } from '../engine/exbadges';
+import { ex } from '../data/exercises';
+import { go, statsPath } from '../routing';
+import { ExerciseBadgeRow, badgeTally } from './ExerciseBadges';
 import { BAND_NAME, BadgeMedal, bandFor } from './BadgeArt';
 import type { Metrics } from '../engine/metrics';
 import { EMPTY_SHELF, daySeed, massJoke, pick, repsJoke, timeJoke } from '../engine/quips';
@@ -181,9 +188,19 @@ function Shelf({ rows }: { rows: AchProgress[] }) {
  * odpowiadać na pytanie „co mogę zrobić teraz” — ta sekcja odpowiada, biorąc pięć rodzin
  * z najdalej posuniętym paskiem spośród tych, które jeszcze czegoś potrzebują.
  */
+/** Wartość, z którą porównuje się następny próg: przy rekordzie okresu — ta z bieżącego okresu. */
+const nowOf = (r: AchProgress): number => r.current ?? r.value;
+
+/** „dziś 30 z 50”, „w tym tygodniu 120 z 150”, a przy sumach po prostu „1 200 z 1 500”. */
+const nearMeta = (r: AchProgress): string => {
+  const k = (r.ach as Partial<ExFamily>).kind;
+  const lead = r.current !== null && k && k !== 'lacznie' ? `${KIND_NOW[k]} ` : '';
+  return `${lead}${formatValue(r.ach, nowOf(r))} z ${formatTier(r.ach, r.next!)}`;
+};
+
 function Closest({ rows }: { rows: AchProgress[] }) {
   const near = rows
-    .filter((r) => r.next !== null && r.value > 0)
+    .filter((r) => r.next !== null && nowOf(r) > 0)
     .sort((a, b) => b.progress - a.progress)
     .slice(0, 5);
 
@@ -192,20 +209,21 @@ function Closest({ rows }: { rows: AchProgress[] }) {
   return (
     <div className="grp">
       <h3>Najbliżej zdobycia</h3>
-      <p className="tight">Pięć progów, do których brakuje najmniej.</p>
+      <p className="tight">
+        Pięć progów, do których brakuje najmniej. Rekordy dnia i tygodnia liczą się od początku
+        bieżącego okresu — przekąska jeszcze dziś może któryś domknąć.
+      </p>
       <div className="near">
         {near.map((r) => (
           <div className="near-row" key={r.ach.id}>
             <span className="near-name">{r.ach.name}</span>
             <span className="near-left">
-              brakuje {formatValue(r.ach, Math.max(0, r.next! - r.value))}
+              brakuje {formatValue(r.ach, Math.max(0, r.next! - nowOf(r)))}
             </span>
             <span className="near-bar">
               <i style={{ width: `${Math.max(3, Math.round(r.progress * 100))}%` }} />
             </span>
-            <span className="near-meta">
-              {formatValue(r.ach, r.value)} z {formatTier(r.ach, r.next!)}
-            </span>
+            <span className="near-meta">{nearMeta(r)}</span>
           </div>
         ))}
       </div>
@@ -221,6 +239,11 @@ export function Achievements({ state }: { state: AppState }) {
   const have = rows.reduce((n, r) => n + r.tier, 0);
   const total = rows.reduce((n, r) => n + r.ach.tiers.length, 0);
   const [open, setOpen] = useState<string | null>('dorobek');
+  // Odznaki ćwiczeń tylko dla ruchów, które już się pojawiły — czterysta rodzin dla stu pięciu
+  // ćwiczeń, z których ktoś robi dwanaście, to ściana, a nie zachęta.
+  const touched = touchedExercises(ctx);
+  const exRows = new Map(touched.map((id) => [id, exerciseProgress(ctx, id)]));
+  const exAll = [...exRows.values()].flat();
 
   return (
     <>
@@ -233,7 +256,7 @@ export function Achievements({ state }: { state: AppState }) {
         </p>
       </div>
 
-      <Shelf rows={rows} />
+      <Shelf rows={[...rows, ...exAll]} />
       <Totals m={ctx.metrics} />
 
       <div className="grp">
@@ -252,7 +275,7 @@ export function Achievements({ state }: { state: AppState }) {
           />
         </div>
       </div>
-      <Closest rows={rows} />
+      <Closest rows={[...rows, ...exAll]} />
 
       <div className="sect-label">
         Odznaki {have}/{total}
@@ -285,6 +308,41 @@ export function Achievements({ state }: { state: AppState }) {
           </div>
         );
       })}
+
+      <div>
+        <button
+          className="wk-head"
+          aria-expanded={open === 'cwiczenia'}
+          onClick={() => setOpen(open === 'cwiczenia' ? null : 'cwiczenia')}
+        >
+          <span>{GROUP_LABEL.cwiczenia}</span>
+          <span className="wk-sum">{touched.length ? badgeTally(exAll) : '—'}</span>
+        </button>
+        {open === 'cwiczenia' && (
+          <div className="wk-body">
+            <p className="ach-note">{GROUP_NOTE.cwiczenia}</p>
+            {!touched.length && (
+              <p className="ach-note">
+                Pojawią się po pierwszym treningu albo pierwszej przekąsce — każdy zrobiony ruch
+                dostaje swoje cztery.
+              </p>
+            )}
+            {touched.map((id) => (
+              <details className="gsel exbadges" key={id}>
+                <summary>
+                  {ex(id).name} <i>{badgeTally(exRows.get(id)!)}</i>
+                </summary>
+                {exRows.get(id)!.map((r) => (
+                  <ExerciseBadgeRow key={r.ach.id} r={r} />
+                ))}
+                <button className="vidlink exbadges-link" onClick={() => go(statsPath(id))}>
+                  Historia ćwiczenia →
+                </button>
+              </details>
+            ))}
+          </div>
+        )}
+      </div>
 
       <div className="wrap">
         <SupportLine seed={rows.length} />

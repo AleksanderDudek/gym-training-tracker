@@ -2,6 +2,8 @@ import type { ReactNode } from 'react';
 import { MOVES } from '../data/moves';
 import type { MoveName } from '../data/moves';
 import { sampleCycle, skeleton } from '../engine/pose';
+import { bandFor } from '../engine/badges';
+import type { Band } from '../engine/badges';
 import type { TraineeMood } from './Gorilla';
 
 /**
@@ -13,8 +15,9 @@ import type { TraineeMood } from './Gorilla';
  * najważniejsze: szary, ale czytelny piktogram pokazuje cel, a nie ścianę.
  */
 
-/** Tworzywo odznaki. Zero znaczy „jeszcze nie zdobyta”. */
-export type Band = 0 | 1 | 2 | 3 | 4 | 5;
+/** Tworzywo i jego wyliczenie żyją w silniku, bo z tworzywa liczą się też punkty doświadczenia. */
+export { bandFor };
+export type { Band };
 
 /**
  * Mina podopiecznego dla pasma: im wyżej, tym większa radość. Medal mówi, co zdobyte,
@@ -37,19 +40,6 @@ export const BAND_NAME: Record<Band, string> = {
   3: 'złoto',
   4: 'platyna',
   5: 'szmaragd',
-};
-
-/**
- * Tworzywo z postępu w obrębie rodziny, a nie z gołego numeru progu. Dzięki temu domknięcie
- * dowolnej rodziny kończy się szmaragdem — także tej trzyprogowej — a rodzina dziesięcioprogowa
- * rozkłada te same pięć pasm na dłuższą drogę.
- */
-export const bandFor = (tier: number, total: number): Band => {
-  if (tier <= 0 || total <= 0) return 0;
-  // Odznaka jednorazowa dostaje złoto, nie szmaragd. Inaczej „Ranny ptaszek” za jeden trening
-  // przed ósmą stałby na półce w tym samym tworzywie, co domknięta dziesięcioprogowa rodzina.
-  if (total === 1) return 3;
-  return Math.max(1, Math.min(5, Math.ceil((tier / total) * 5))) as Band;
 };
 
 /* ---------------- Piktogramy ---------------- */

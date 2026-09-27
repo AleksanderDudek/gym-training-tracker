@@ -14,7 +14,7 @@ import { PlanView } from './components/PlanView';
 import { Achievements } from './components/Achievements';
 import { dayKey, daysBetween } from './engine/schedule';
 import { bankPoints, snapshot } from './engine/snapshot';
-import { achCtx, migrateBadges, syncBadges } from './engine/badges';
+import { achCtx, migrateBadges, revokeUnmet, syncBadges } from './engine/badges';
 import { pointsToday, rankFor } from './engine/score';
 import { seedFromPlan } from './engine/plan';
 import { planById, planId } from './data/plans';
@@ -26,9 +26,15 @@ import { Intro } from './components/Intro';
 import { ShareButton } from './components/Share';
 import { SupportButton, SupportLine } from './components/Support';
 import { metrics } from './engine/metrics';
-import { LOADING, SAVED, daySeed, pick } from './engine/quips';
+import { LOADING, SAVED, SNACK_SAVED, daySeed, pick } from './engine/quips';
 import { progressSubject, punchline } from './engine/share';
 import { bandFor, BAND_MOOD, BAND_NAME } from './components/BadgeArt';
+import { addSnack, removeSnack, snacksOf, snacksOn, validSnack } from './engine/snacks';
+import { XP, levelFor, xpSummary } from './engine/xp';
+import type { LevelState } from './engine/xp';
+import { SnacksPage, snackLabel } from './components/Snacks';
+import { LevelUp, avatarOf } from './components/Character';
+import type { Avatar } from './components/Character';
 import type {
   ActivePlan,
   AppState,
@@ -44,6 +50,19 @@ import type {
 } from './types';
 
 const clone = (s: AppState): AppState => JSON.parse(JSON.stringify(s)) as AppState;
+
+/** Poziom postaci na teraz — liczony od zera z historii, tak jak wszystko inne. */
+const levelNow = (s: AppState): LevelState => levelFor(xpSummary(s).total);
+
+/**
+ * Co z zapisu da się wziąć bez sprawdzania, a co trzeba przesiać: przekąski z nieznanym
+ * ćwiczeniem albo zepsutą datą wywróciłyby liczenie odznak, a postać spoza obsady — rysunek.
+ */
+function restoreExtras(next: AppState, saved: Partial<AppState>): void {
+  next.snacks = Array.isArray(saved.snacks) ? saved.snacks.filter(validSnack) : [];
+  if (next.cfg.avatar !== undefined && next.cfg.avatar !== 'gustaw' && next.cfg.avatar !== 'gosia')
+    delete next.cfg.avatar;
+}
 
 /** Nazwa stopnia na teraz. Bez planu punkty są tylko te z dorobku. */
 const rankNow = (s: AppState): string =>
@@ -89,6 +108,7 @@ export default function App() {
         next.plan = saved.plan ?? null;
         next.events = saved.events ?? [];
         next.introSeen = saved.introSeen;
+        restoreExtras(next, saved);
         next.award = {
           banked: saved.award?.banked ?? 0,
           badges: migrateBadges(saved.award?.badges ?? {}),
@@ -202,6 +222,66 @@ export default function App() {
     commit(next);
   };
 
+  /* ---------- przekąski i postać ---------- */
+
+  /**
+   * Awans dostaje własne okno, po odznakach — trzecia wiadomość, trzeci temat. Poziomy
+   * wpadają rzadko, więc okno nie spowszednieje, a przeskoczyć je można jednym stuknięciem.
+   */
+  const sayLevel = async (before: LevelState, next: AppState) => {
+    const after = levelNow(next);
+    if (after.level <= before.level) return;
+    await say('Awans postaci', <LevelUp before={before} after={after} />, {
+      ok: 'Dalej',
+      tone: 'celebrate-box',
+      cast: { who: avatarOf(next), mood: 'euphoric' },
+    });
+  };
+
+  const logSnack = (id: ExerciseId, reps: number, w: number | null) => {
+    const before = levelNow(state);
+    const next = clone(state);
+    const snack = addSnack(next, id, reps, w);
+    const fresh = syncBadges(next, badgeCtx(next));
+    commit(next);
+    const n = snacksOn(next, dayKey(Date.now())).length;
+    setToastMsg(
+      `Zapisane: ${snackLabel(snack)} · ${n <= XP.snackCap ? `+${XP.snack} XP` : 'bez XP, limit na dziś'}. ${pick(SNACK_SAVED, n + next.snacks.length)}`,
+    );
+    void (async () => {
+      if (fresh.length) await sayBadges(fresh, metrics(next), 'Przy tej przekąsce');
+      await sayLevel(before, next);
+    })();
+  };
+
+  /**
+   * Usunięcie przekąski to poprawka pomyłki, więc cofa też to, co pomyłka dała: progi
+   * przekąsek i progi tego ćwiczenia, których historia już nie uzasadnia. Reszta odznak
+   * zostaje nietknięta — nie ma nic wspólnego z tą jedną przekąską.
+   */
+  const deleteSnack = (key: string) => {
+    const next = clone(state);
+    const gone = snacksOf(next).find((s) => s.key === key);
+    if (!gone || !removeSnack(next, key)) return;
+    const revoked = revokeUnmet(
+      next,
+      badgeCtx(next),
+      (d) => d.group === 'przekaski' || (d.group === 'cwiczenia' && d.id.startsWith(`ex:${gone.ex}:`)),
+    );
+    commit(next);
+    setToastMsg(
+      revoked
+        ? `Przekąska usunięta razem z ${revoked === 1 ? 'progiem, który dała' : `progami, które dała (${revoked})`}.`
+        : 'Przekąska usunięta.',
+    );
+  };
+
+  const setAvatar = (a: Avatar) => {
+    const next = clone(state);
+    next.cfg.avatar = a;
+    commit(next);
+  };
+
   const cancelSession = async () => {
     const ok = await ask(
       'Porzucić trening?',
@@ -271,6 +351,8 @@ export default function App() {
     );
     if (!ok) return;
 
+    const before = levelNow(state);
+    const xpBefore = xpSummary(state).total;
     const next = clone(state);
     const changes: Change[] = [];
     logged.forEach((i) => {
@@ -296,6 +378,8 @@ export default function App() {
     window.scrollTo({ top: 0 });
 
     const m = metrics(next);
+    const after = levelNow(next);
+    const gained = after.xp - xpBefore;
     const subject = {
       kind: 'session' as const,
       seed: m.workouts,
@@ -334,6 +418,10 @@ export default function App() {
             zapas powtórzeń.
           </p>
         )}
+        <p className="xpline">
+          Postać: +{gained} XP · poziom {after.level}, {after.title}
+          {after.level > before.level ? ' — awans!' : `, do kolejnego ${after.toNext} XP`}
+        </p>
         <div className="after">
           <ShareButton subject={subject} label="Udostępnij wynik" />
           <ShareButton
@@ -345,6 +433,7 @@ export default function App() {
     );
 
     if (fresh.length) await sayBadges(fresh, m);
+    await sayLevel(before, next);
   };
 
   /**
@@ -352,7 +441,11 @@ export default function App() {
    * Lista przycięta, bo po imporcie historii potrafi wpaść kilkanaście progów naraz,
    * a ekran z osiemnastoma gratulacjami nie cieszy nikogo.
    */
-  const sayBadges = async (hits: AchievementHit[], m: ReturnType<typeof metrics>) => {
+  const sayBadges = async (
+    hits: AchievementHit[],
+    m: ReturnType<typeof metrics>,
+    context = 'W tej samej sesji',
+  ) => {
     const top = [...hits].sort(
       (a, b) => bandFor(b.tier, b.ach.tiers.length) - bandFor(a.tier, a.ach.tiers.length),
     )[0]!;
@@ -371,7 +464,7 @@ export default function App() {
     await say(
       hits.length === 1 ? 'Zdobyte!' : `Zdobyte: ${hits.length}`,
       <div ref={medalBox}>
-        <Celebrate hits={hits} />
+        <Celebrate hits={hits} context={context} />
         <div className="after">
           <ShareButton subject={subject} medalRef={medalBox} label="Udostępnij odznakę" />
           <SupportLine seed={top.tier + m.workouts} compact />
@@ -531,6 +624,7 @@ export default function App() {
    * jak zapisany, bo aplikacja mierzy regularność, a nie to, gdzie ktoś wpisał powtórzenia.
    */
   const tickDay = (index: number) => {
+    const before = levelNow(state);
     const next = clone(state);
     const ticked = next.plan!.ticked ?? {};
     if (ticked[index]) delete ticked[index];
@@ -538,7 +632,10 @@ export default function App() {
     next.plan!.ticked = ticked;
     const fresh = syncBadges(next, badgeCtx(next));
     commit(next);
-    if (fresh.length) void sayBadges(fresh, metrics(next));
+    void (async () => {
+      if (fresh.length) await sayBadges(fresh, metrics(next));
+      await sayLevel(before, next);
+    })();
   };
 
   const stopPlan = async () => {
@@ -594,6 +691,7 @@ export default function App() {
           banked: parsed.award?.banked ?? 0,
           badges: migrateBadges(parsed.award?.badges ?? {}),
         };
+        restoreExtras(next, parsed);
         commit(next);
         setToastMsg('Dane wczytane.');
       } catch {
@@ -708,6 +806,15 @@ export default function App() {
       {route.kind === 'atlas' && <AtlasView state={state} />}
       {route.kind === 'exercise' && <ExercisePage state={state} id={route.id} />}
       {route.kind === 'exstats' && <ExerciseStatsPage state={state} id={route.id} />}
+      {route.kind === 'snacks' && (
+        <SnacksPage
+          state={state}
+          id={route.id}
+          onLog={logSnack}
+          onDelete={deleteSnack}
+          onToast={setToastMsg}
+        />
+      )}
 
       {view === 'train' &&
         (current ? (
@@ -728,6 +835,8 @@ export default function App() {
           />
         ) : (
           <SessionHome
+            state={state}
+            onSnack={logSnack}
             today={todayPlan}
             lastLabel={
               d === null
@@ -742,7 +851,7 @@ export default function App() {
           />
         ))}
 
-      {view === 'prog' && <ProfileView state={state} />}
+      {view === 'prog' && <ProfileView state={state} onAvatar={setAvatar} />}
 
       {view === 'ach' && <Achievements state={state} />}
 
