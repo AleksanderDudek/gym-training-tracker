@@ -6,7 +6,7 @@ import { EX_JOKES } from '../data/exjokes';
 import { AnimatedMannequin } from './Mannequin';
 import { MODE_NAMES } from '../engine/hints';
 import { P, exercisesByGroup, levelLabel, planLabel } from '../engine/plan';
-import { exercisePath, go, snacksPath } from '../routing';
+import { exercisePath, go, snackAddPath } from '../routing';
 import { Chip, EmptyState } from './ui';
 import { VideoEmbed } from './VideoEmbed';
 import { SupportLine } from './Support';
@@ -144,7 +144,7 @@ export function ExercisePage({ state, id }: { state: AppState; id: ExerciseId })
         </p>
         {/* Krótka seria tego ruchu poza treningiem — prosto z miejsca, w którym ktoś go ogląda. */}
         <div style={{ marginTop: 10 }}>
-          <button className="btn ghost sm" onClick={() => go(snacksPath(id))}>
+          <button className="btn ghost sm" onClick={() => go(snackAddPath(id))}>
             Zapisz jako przekąskę ruchową
           </button>
         </div>

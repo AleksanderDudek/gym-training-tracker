@@ -81,44 +81,68 @@ export const snacksOn = (state: AppState, day: string): Snack[] =>
     .filter((s) => dayKey(s.at) === day)
     .sort((a, b) => a.at.localeCompare(b.at));
 
-/** Przekąska do powtórzenia jednym stuknięciem: ćwiczenie, liczba i ciężar. */
-export interface SnackPick {
-  ex: ExerciseId;
-  reps: number;
-  w: number | null;
-}
+/**
+ * Ćwiczenia na start, zanim ktoś zapisze pierwszą przekąskę: cztery ruchy bez sprzętu,
+ * które da się zrobić przy biurku albo w kuchni.
+ */
+export const SNACK_SUGGESTED: readonly ExerciseId[] = ['squat_air', 'pushup', 'plank', 'burpee'];
 
 /**
- * Ostatnie różne przekąski — do przycisków „jeszcze raz to samo”. Przekąskę robi się
- * zwykle tę samą kilka razy dziennie, więc jedno stuknięcie zamiast formularza jest tu
- * całą różnicą między „zapiszę” a „nie chce mi się”.
+ * Skróty do ćwiczeń: ostatnio robione jako przekąska, od najnowszego, dopełnione propozycjami
+ * na start. Same ćwiczenia, bez liczb — liczbę wpisuje się dopiero w widoku zapisu, bo nikt
+ * nie robi dwa razy dokładnie tyle samo, a gotowa liczba na przycisku zachęcała do zapisania
+ * nie tego, co było.
  */
-export function quickPicks(state: AppState, n = 4): SnackPick[] {
-  const out: SnackPick[] = [];
-  const seen = new Set<string>();
+export function recentExercises(
+  state: AppState,
+  n = 4,
+  suggested: readonly ExerciseId[] = SNACK_SUGGESTED,
+): ExerciseId[] {
+  const out: ExerciseId[] = [];
   [...snacksOf(state)]
     .sort((a, b) => b.at.localeCompare(a.at))
     .forEach((s) => {
-      const k = `${s.ex}|${s.reps}|${s.w ?? ''}`;
-      if (seen.has(k) || out.length >= n) return;
-      seen.add(k);
-      out.push({ ex: s.ex, reps: s.reps, w: s.w });
+      if (!out.includes(s.ex)) out.push(s.ex);
     });
-  return out;
+  suggested.forEach((id) => {
+    if (EX[id] && !out.includes(id)) out.push(id);
+  });
+  return out.slice(0, n);
 }
 
 /**
- * Co wpisać w formularz po wyborze ćwiczenia. Najpierw to, co ktoś robił ostatnio jako
- * przekąskę, potem cel z biblioteki. Ciężar z ostatniej przekąski, a przy jej braku —
- * bieżący ciężar roboczy, bo to jedyna liczba, o której wiadomo, że pasuje do ręki.
+ * Podpowiedź do pustego pola: ile było ostatnim razem i jakim ciężarem. Tylko podpowiedź —
+ * pole zostaje puste, żeby wpisać to, co naprawdę było, a nie zatwierdzić cudzą liczbę.
+ * Bez wcześniejszej przekąski tym ruchem nie ma czego podpowiadać, więc oba pola są puste.
  */
-export function snackDefaults(state: AppState, ex: ExerciseId): { reps: number; w: number | null } {
+export function snackHint(state: AppState, ex: ExerciseId): { last: number | null; w: number | null } {
   const last = [...snacksOf(state)]
     .filter((s) => s.ex === ex)
     .sort((a, b) => b.at.localeCompare(a.at))[0];
-  if (last) return { reps: last.reps, w: last.w };
-  const m = EX[ex];
-  return { reps: m?.def.target ?? 10, w: state.prog[ex]?.weight ?? null };
+  return last ? { last: last.reps, w: last.w } : { last: null, w: null };
+}
+
+/** Dzisiejsze przekąski zsumowane po ćwiczeniu. */
+export interface SnackDay {
+  ex: ExerciseId;
+  /** Suma powtórzeń albo sekund. */
+  total: number;
+  /** Ile przekąsek tym ćwiczeniem. */
+  count: number;
+  /** Pora ostatniej, ISO — do kolejności „najświeższe na górze”. */
+  last: string;
+}
+
+export function snacksByExercise(state: AppState, day: string): SnackDay[] {
+  const out = new Map<ExerciseId, SnackDay>();
+  snacksOn(state, day).forEach((s) => {
+    const d = out.get(s.ex) ?? { ex: s.ex, total: 0, count: 0, last: s.at };
+    d.total += s.reps;
+    d.count++;
+    d.last = s.at;
+    out.set(s.ex, d);
+  });
+  return [...out.values()].sort((a, b) => b.last.localeCompare(a.last));
 }
 
 export interface SnackStats {

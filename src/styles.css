@@ -719,14 +719,30 @@
   /* Etykieta pola, które nie jest `label` (licznik z przyciskami ma własne etykiety). */
   div.fld > span:first-child{display:block;font-size:11px;color:var(--ink-soft);margin-bottom:2px}
 
-  /* „Jeszcze raz to samo” — duże, bo to najczęstsza akcja na tym ekranie. */
-  .snack-picks{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
-  .snack-pick{font:inherit;font-size:14px;font-weight:600;padding:10px 13px;min-height:44px;
-    background:var(--surface-2);border:1px solid var(--edge);border-radius:var(--r);color:var(--ink);
-    cursor:pointer;text-align:left;-webkit-tap-highlight-color:transparent}
-  .snack-pick span{color:var(--c-blue-ink);font-family:var(--display);margin-right:2px}
-  .snack-pick:active{background:var(--line)}
-  .snackcard .actions{margin-bottom:0}
+  /*
+   * Skróty do ćwiczeń: pełna szerokość, bo nazwy bywają długie („Pompki w staniu na rękach”),
+   * a licznik dnia stoi pod nazwą dopiero wtedy, gdy jest co liczyć.
+   */
+  .snack-exs{display:grid;gap:7px;margin:12px 0 4px}
+  .snack-ex{display:grid;grid-template-columns:1fr auto;grid-template-areas:"name go" "now go";
+    align-items:center;column-gap:10px;width:100%;min-height:52px;padding:9px 12px;
+    font:inherit;text-align:left;color:var(--ink);background:var(--surface-2);
+    border:1px solid var(--edge);border-radius:var(--r);cursor:pointer;
+    -webkit-tap-highlight-color:transparent}
+  .snack-ex:active{background:var(--line)}
+  .snack-ex:focus-visible{outline:2px solid var(--steel);outline-offset:1px}
+  .snack-ex-name{grid-area:name;font-weight:600;font-size:15px}
+  .snack-ex-now{grid-area:now;font-family:var(--display);font-size:13px;color:var(--c-blue-ink)}
+  .snack-ex-go{grid-area:go;font-family:var(--display);font-size:22px;line-height:1;color:var(--steel)}
+  .snack-ex.on{background:var(--surface);border-color:var(--c-blue-ink);border-left-width:4px}
+  .snack-ex.other{background:transparent}
+  .snackcard .vidlink{margin-top:4px}
+
+  .snack-entry .snack-row{margin-top:14px}
+  .snack-today-num{font-family:var(--display);font-weight:600;font-size:34px;line-height:1.05;
+    color:var(--c-blue-ink)}
+  .snack-today-num small{font-size:15px;font-weight:500;color:var(--ink-soft)}
+  .snack-today p.tight{margin-top:4px}
 
   .snack-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
   .snack-row.single{grid-template-columns:1fr}

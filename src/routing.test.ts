@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { SETTINGS_PATH, TABS, activeTab, exercisePath, parseHash, snacksPath, statsPath } from './routing';
+import {
+  SETTINGS_PATH,
+  TABS,
+  activeTab,
+  exercisePath,
+  parseHash,
+  snackAddPath,
+  snacksPath,
+  statsPath,
+} from './routing';
 import type { TabKey } from './types';
 
 describe('trasy', () => {
@@ -71,8 +80,15 @@ describe('trasy', () => {
     // Siódma pozycja w pasku zeszłaby poniżej celu dotykowego — przekąski wchodzą adresem.
     expect(TABS.some((t) => t.path.includes('przekaski'))).toBe(false);
     expect(parseHash(snacksPath())).toEqual({ kind: 'snacks' });
-    expect(parseHash(snacksPath('squat_air'))).toEqual({ kind: 'snacks', id: 'squat_air' });
     expect(activeTab({ kind: 'snacks' })).toBe('train' as TabKey);
+  });
+
+  it('zapis przekąski ma własny widok, z ćwiczeniem albo bez', () => {
+    expect(parseHash(snackAddPath())).toEqual({ kind: 'snackAdd' });
+    expect(parseHash(snackAddPath('squat_air'))).toEqual({ kind: 'snackAdd', id: 'squat_air' });
+    // Dawne linki `#/przekaski/<id>` prowadziły do formularza z tym ćwiczeniem — dalej prowadzą.
+    expect(parseHash('#/przekaski/squat_air')).toEqual({ kind: 'snackAdd', id: 'squat_air' });
+    expect(activeTab({ kind: 'snackAdd' })).toBe('train' as TabKey);
   });
 
   it('identyfikator ze znakami specjalnymi przechodzi w obie strony', () => {
@@ -80,6 +96,6 @@ describe('trasy', () => {
     const id = 'ćwiczenie/dziwne';
     expect(parseHash(exercisePath(id))).toEqual({ kind: 'exercise', id });
     expect(parseHash(statsPath(id))).toEqual({ kind: 'exstats', id });
-    expect(parseHash(snacksPath(id))).toEqual({ kind: 'snacks', id });
+    expect(parseHash(snackAddPath(id))).toEqual({ kind: 'snackAdd', id });
   });
 });

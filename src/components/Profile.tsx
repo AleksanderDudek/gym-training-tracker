@@ -6,7 +6,7 @@ import type { ExerciseRow, ExerciseSummary, Trend } from '../engine/history';
 import { sessionTonnage } from '../engine/math';
 import { metrics } from '../engine/metrics';
 import { P, planLabel } from '../engine/plan';
-import { exercisePath, go, snacksPath, statsPath } from '../routing';
+import { exercisePath, go, snackAddPath, snacksPath, statsPath } from '../routing';
 import { Chip, EmptyState, Sparkline, Trendline } from './ui';
 import { LoadGauge } from './views';
 import { SupportLine } from './Support';
@@ -101,7 +101,7 @@ function ExerciseBadgesBlock({ state, id }: { state: AppState; id: ExerciseId })
       </div>
       <div className="wrap">
         <div className="actions">
-          <button className="btn ghost wide" onClick={() => go(snacksPath(id))}>
+          <button className="btn ghost wide" onClick={() => go(snackAddPath(id))}>
             Zapisz przekąskę z tym ćwiczeniem
           </button>
         </div>
@@ -331,7 +331,7 @@ export function ExerciseStatsPage({ state, id }: { state: AppState; id: Exercise
         ) : (
           <div className="wrap">
             <div className="actions">
-              <button className="btn wide" onClick={() => go(snacksPath(id))}>
+              <button className="btn wide" onClick={() => go(snackAddPath(id))}>
                 Zapisz przekąskę z tym ćwiczeniem
               </button>
             </div>

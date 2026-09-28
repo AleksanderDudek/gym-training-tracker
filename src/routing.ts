@@ -48,11 +48,28 @@ export const statsPath = (id: ExerciseId): string => `#/profil/${encodeURICompon
 
 /**
  * Przekąski ruchowe. Bez własnej zakładki — siódma zeszłaby poniżej 44 px celu dotykowego —
- * więc mają adres i wejścia z ekranu sesji, profilu i podstrony ćwiczenia. Z identyfikatorem
- * formularz otwiera się od razu z tym ćwiczeniem.
+ * więc mają adresy i wejścia z ekranu sesji, profilu i podstrony ćwiczenia. Dwa widoki:
+ * historia pod `#/przekaski` i zapis jednej przekąski. Zapis z identyfikatorem otwiera się
+ * od razu z tym ćwiczeniem — tak wyglądały dawne linki, więc dalej prowadzą do celu.
  */
-export const snacksPath = (id?: ExerciseId): string =>
-  id ? `#/przekaski/${encodeURIComponent(id)}` : '#/przekaski';
+export const snacksPath = (): string => '#/przekaski';
+
+export const snackAddPath = (id?: ExerciseId): string =>
+  id ? `#/przekaski/${encodeURIComponent(id)}` : '#/przekaski/dodaj';
+
+/** Czy od uruchomienia była już jakaś zmiana trasy w aplikacji. */
+let movedInApp = false;
+
+/**
+ * Powrót tam, skąd ktoś przyszedł — po zapisie przekąski na ekran sesji, do atlasu albo do
+ * historii ćwiczenia. Przycisk „wstecz” przeglądarki zna tę drogę lepiej niż jakakolwiek
+ * zapamiętana ścieżka. Gdy ktoś otworzył adres wprost, historii w aplikacji nie ma i cofnięcie
+ * wyprowadziłoby go ze strony, więc wtedy idzie na ekran zapasowy.
+ */
+export const goBack = (fallback: string): void => {
+  if (movedInApp && window.history.length > 1) window.history.back();
+  else go(fallback);
+};
 
 export function parseHash(hash: string): Route {
   const parts = hash.replace(/^#\/?/, '').split('/').filter(Boolean).map(decodeURIComponent);
@@ -60,7 +77,10 @@ export function parseHash(hash: string): Route {
   if (!head) return { kind: 'tab', tab: 'train' };
   if (head === 'cwiczenia') return second ? { kind: 'exercise', id: second } : { kind: 'atlas' };
   if (head === 'profil' && second) return { kind: 'exstats', id: second };
-  if (head === 'przekaski') return second ? { kind: 'snacks', id: second } : { kind: 'snacks' };
+  if (head === 'przekaski') {
+    if (!second) return { kind: 'snacks' };
+    return second === 'dodaj' ? { kind: 'snackAdd' } : { kind: 'snackAdd', id: second };
+  }
   const tab = TAB_BY_PATH[head];
   return tab ? { kind: 'tab', tab } : { kind: 'tab', tab: 'train' };
 }
@@ -76,6 +96,7 @@ export function useRoute(): Route {
 
   useEffect(() => {
     const onChange = () => {
+      movedInApp = true;
       setRoute(parseHash(window.location.hash));
       window.scrollTo({ top: 0 });
     };
@@ -96,6 +117,6 @@ export const activeTab = (route: Route): TabKey =>
     ? route.tab
     : route.kind === 'exstats'
       ? 'prog'
-      : route.kind === 'snacks'
+      : route.kind === 'snacks' || route.kind === 'snackAdd'
         ? 'train'
         : 'atlas';

@@ -231,9 +231,9 @@ i drugi, obok wyniku sesji, po każdym zamkniętym treningu.
 Dwa adresy prowadzą do podstron: `#/cwiczenia/<id>` to technika i wideo, `#/profil/<id>` to
 historia tego samego ruchu. Stary `#/poziomy` dalej działa i wchodzi do profilu.
 
-Przekąski ruchowe mają adres `#/przekaski` (a `#/przekaski/<id>` otwiera formularz od razu
-z tym ćwiczeniem), ale nie mają zakładki: siódma pozycja w pasku zeszłaby poniżej celu
-dotykowego. Wchodzi się do nich z ekranu sesji, z profilu i z podstrony ćwiczenia, a pasek
+Przekąski ruchowe mają dwa adresy: `#/przekaski` to historia, a `#/przekaski/<id>` i
+`#/przekaski/dodaj` to zapis jednej przekąski — z wybranym ćwiczeniem albo z wyborem. Nie mają
+zakładki: siódma pozycja w pasku zeszłaby poniżej celu dotykowego. Wchodzi się do nich z ekranu sesji, z profilu i z podstrony ćwiczenia, a pasek
 podświetla wtedy „Twoją sesję” — to ta sama odpowiedź na pytanie „co robię dzisiaj”.
 
 Ustawienia (`#/ustawienia`) mają przycisk w nagłówku, nie w dolnym pasku: drabina kettlebli,
@@ -315,12 +315,26 @@ treningów, więc nie podnosi celów serii, nie domyka terminu planu, nie wchodz
 obciążenia ani do sum dorobku. Dziesięć pompek nie może udawać sesji. Dokłada się za to do
 odznak ćwiczeń, do własnej grupy odznak i do doświadczenia postaci.
 
-**Zapis ma kosztować jedno stuknięcie.** Przekąskę robi się zwykle tę samą kilka razy dziennie,
-więc na ekranie sesji i na górze ekranu przekąsek stoją przyciski „jeszcze raz to samo” —
-ostatnie różne przekąski, zapisywane bez formularza. Formularz jest dla nowej: ćwiczenie
-z podpowiedziami, liczba z przyciskami ±, ciężar tylko przy ćwiczeniach z obciążeniem (domyślnie ostatni użyty
-albo roboczy), stoper przy ćwiczeniach na czas. Podpowiedź liczby bierze się z ostatniej
-przekąski tym ruchem, a bez niej — z celu w bibliotece.
+**Droga jest zawsze ta sama: ćwiczenie → liczba → zapis.** Na ekranie sesji karta przekąsek
+pokazuje same ćwiczenia, bez liczb: ostatnio robione jako przekąska, a na start cztery ruchy bez
+sprzętu (przysiad, pompki, deska, burpee), plus „Inne ćwiczenie”. Stuknięcie prowadzi do widoku
+zapisu, w którym wpisuje się, ile było. Wcześniej na przyciskach stały gotowe liczby
+(„Przysiad ×15”, zapis jednym stuknięciem) — szybciej, ale zapisywało się to, co było ostatnio,
+a nie to, co jest teraz.
+
+**Widok zapisu nie podpowiada liczby z góry.** Pole jest puste, a kursor stoi w nim od razu;
+jedyna podpowiedź to szara „ostatnio 12”, i to tylko wtedy, gdy ktoś już robił ten ruch jako
+przekąskę. Obok przyciski ±, ciężar tylko przy ćwiczeniach z obciążeniem (domyślnie ostatnio
+użyty, bez historii — bez ciężaru) i stoper przy ćwiczeniach na czas. Enter zapisuje. Po zapisie
+widok wraca tam, skąd ktoś przyszedł — na ekran sesji, do atlasu albo do historii ćwiczenia;
+otwarty wprost z adresu wraca na ekran sesji.
+
+**Licznik dnia pojawia się dopiero po pierwszym zapisie.** Do tego czasu karta zaprasza i nic
+nie liczy — zero przy każdym ćwiczeniu to lista rzeczy niezrobionych, a nie zachęta. Po zapisie
+nagłówek karty mówi „Dziś 3 przekąski · +45 XP”, a dzisiejsze ćwiczenia wskakują na górę listy
+z tym, ile już jest: „Pompki — dziś 36 powt. · 3×”. Widok zapisu pokazuje pod formularzem
+analizę dnia dla wybranego ćwiczenia: ile łącznie, z ilu przekąsek i ile z treningu, i ile
+brakuje do kolejnego progu dnia.
 
 **Ćwiczenie wybiera się pisaniem, nie przewijaniem.** Pole działa jak wyszukiwarka: po wejściu
 pokazuje wszystkie 105 ćwiczeń według polskiego alfabetu (Ł po L, Ś po S), ustawione na tym
@@ -336,9 +350,10 @@ Escape zamyka i przywraca poprzedni wybór, czytnik ekranu słyszy liczbę wynik
 pozycja ma 48 px wysokości. Po wyborze nazwa zostaje zaznaczona, więc kolejna litera zaczyna
 nowe szukanie, zamiast doklejać się do nazwy.
 
-**Ekran przekąsek** (`#/przekaski`) pokazuje dzisiejsze przekąski z godziną i przyciskiem
-usunięcia, ile jeszcze da dziś doświadczenie, ile brakuje do kolejnego progu dnia każdego
-ćwiczenia zrobionego dziś, ostatnie siedem dni jako pasek i historię dzień po dniu.
+**Historia przekąsek** (`#/przekaski`) ma te same skróty do zapisu, dzisiejsze przekąski
+z godziną i przyciskiem usunięcia, dzień w rozbiciu na ćwiczenia (ile, w ilu przekąskach, ile
+razem z treningiem, ile brakuje do progu dnia), ile jeszcze da dziś doświadczenie, ostatnie
+siedem dni jako pasek i historię dzień po dniu.
 
 **Usunięcie przekąski cofa to, co dała.** Dziennik treningów tylko rośnie, więc tam raz zdobyty
 próg ma zawsze pokrycie. Przekąskę da się skasować — i to zwykle po literówce, „150” zamiast
@@ -420,7 +435,7 @@ dostaje rzadsze `setInterval`, więc licznik oparty na tyknięciach zostawałby 
 src/
   types.ts                  wszystkie typy domenowe
   routing.ts                trasy w hashu adresu, sześć zakładek i dwie rodziny podstron
-  routing.test.ts           13 testów tras, zakładek, przekąsek i starych adresów
+  routing.test.ts           14 testów tras, zakładek, przekąsek i starych adresów
   data/exercises.ts         biblioteka 105 ćwiczeń, drabiny sprzętu, cztery treningi
   data/exjokes.ts           dopiski do 105 ćwiczeń i do gotowych treningów
   data/moves.ts             osiemnaście wzorców ruchu jako klatki kluczowe
@@ -440,8 +455,8 @@ src/
     pose.ts                 szkielet manekina: kąty, klatki, dosunięcie do podłoża
     share.ts                treść wpisu, karta 1080×1080, wysyłka i ścieżka zapasowa
     share.test.ts           15 testów treści wpisu, adresów, blankietu i wprowadzenia
-    snacks.ts               przekąski ruchowe: zapis, szybki wybór, podpowiedzi, liczby
-    snacks.test.ts          14 testów zapisu, granicy z treningiem i liczb przekąsek
+    snacks.ts               przekąski ruchowe: zapis, skróty, podpowiedź, dzień po ćwiczeniu, liczby
+    snacks.test.ts          17 testów zapisu, skrótów, granicy z treningiem i liczb przekąsek
     volume.ts               objętość ćwiczenia w dniu, tygodniu i miesiącu kalendarzowym
     find.ts                 wyszukiwanie ćwiczenia: polski alfabet, ogonki opcjonalne, podświetlenie
     find.test.ts            9 testów kolejności, dopasowania i podświetlenia
@@ -478,7 +493,7 @@ src/
     Mannequin.tsx           postać wykonująca ruch i jej zegar
     Intro.tsx               opcjonalne wprowadzenie, cztery ekrany
     Share.tsx               przycisk udostępniania, obsada blankietu i ścieżka zapasowa
-    Snacks.tsx              przekąski ruchowe: karta na ekranie sesji i pełny ekran
+    Snacks.tsx              przekąski ruchowe: karta na ekranie sesji, widok zapisu i historia
     Character.tsx           postać: karta w profilu, pasek na ekranie sesji, okno awansu
     ExerciseBadges.tsx      wiersz odznaki ćwiczenia z bieżącym okresem i rekordem
     ExercisePicker.tsx      pole wyboru ćwiczenia z podpowiedziami (wzorzec combobox)

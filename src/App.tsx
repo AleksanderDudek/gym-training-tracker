@@ -32,7 +32,7 @@ import { bandFor, BAND_MOOD, BAND_NAME } from './components/BadgeArt';
 import { addSnack, removeSnack, snacksOf, snacksOn, validSnack } from './engine/snacks';
 import { XP, levelFor, xpSummary } from './engine/xp';
 import type { LevelState } from './engine/xp';
-import { SnacksPage, snackLabel } from './components/Snacks';
+import { SnackEntry, SnacksPage, snackLabel } from './components/Snacks';
 import { LevelUp, avatarOf } from './components/Character';
 import type { Avatar } from './components/Character';
 import type {
@@ -806,12 +806,14 @@ export default function App() {
       {route.kind === 'atlas' && <AtlasView state={state} />}
       {route.kind === 'exercise' && <ExercisePage state={state} id={route.id} />}
       {route.kind === 'exstats' && <ExerciseStatsPage state={state} id={route.id} />}
-      {route.kind === 'snacks' && (
-        <SnacksPage
+      {route.kind === 'snacks' && <SnacksPage state={state} onDelete={deleteSnack} />}
+      {route.kind === 'snackAdd' && (
+        // Klucz za adresem: wejście z innym ćwiczeniem zaczyna czysty formularz.
+        <SnackEntry
+          key={route.id ?? ''}
           state={state}
           id={route.id}
           onLog={logSnack}
-          onDelete={deleteSnack}
           onToast={setToastMsg}
         />
       )}
@@ -836,7 +838,6 @@ export default function App() {
         ) : (
           <SessionHome
             state={state}
-            onSnack={logSnack}
             today={todayPlan}
             lastLabel={
               d === null

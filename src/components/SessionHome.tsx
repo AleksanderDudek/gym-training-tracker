@@ -4,7 +4,6 @@ import { LATE, REST, daySeed, pick } from '../engine/quips';
 import { SupportLine } from './Support';
 import { CharacterStrip } from './Character';
 import { SnackCard } from './Snacks';
-import type { LogSnack } from './Snacks';
 import type { AppState, Workout } from '../types';
 
 /** Co plan mówi na dziś. `due` to termin do zrobienia, `rest` to dzień bez terminu. */
@@ -38,14 +37,12 @@ export function SessionHome({
   today,
   lastLabel,
   onStart,
-  onSnack,
 }: {
   state: AppState;
   today: TodayPlan;
   /** Jednozdaniowe podsumowanie ostatniego treningu. */
   lastLabel: string | null;
   onStart: (id: string) => void;
-  onSnack: LogSnack;
 }) {
   const w = today.workout;
 
@@ -131,7 +128,7 @@ export function SessionHome({
       </div>
 
       {/* Przekąska pod treningiem, nie nad nim: kto przyszedł trenować, najpierw widzi trening. */}
-      <SnackCard state={state} onLog={onSnack} />
+      <SnackCard state={state} />
 
       <div className="wrap">
         {/*

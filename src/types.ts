@@ -359,8 +359,10 @@ export type Route =
   | { kind: 'exercise'; id: ExerciseId }
   /** Historia jednego ćwiczenia w profilu — inna strona niż jego opis w atlasie. */
   | { kind: 'exstats'; id: ExerciseId }
-  /** Przekąski ruchowe. Z identyfikatorem — formularz od razu z tym ćwiczeniem. */
-  | { kind: 'snacks'; id?: ExerciseId | undefined };
+  /** Przekąski ruchowe: dzisiejsze, tydzień i historia. */
+  | { kind: 'snacks' }
+  /** Zapis jednej przekąski. Z identyfikatorem — od razu z tym ćwiczeniem, bez wyboru. */
+  | { kind: 'snackAdd'; id?: ExerciseId | undefined };
 
 /** Materiał wideo pokazujący technikę ćwiczenia. */
 export interface VideoRef {

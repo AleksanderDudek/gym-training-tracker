@@ -21,10 +21,14 @@ export function ExercisePicker({
   value,
   onChange,
   label,
+  autoFocus = false,
 }: {
-  value: ExerciseId;
+  /** Brak wyboru jest dozwolony — pole czeka wtedy na pierwsze litery. */
+  value: ExerciseId | null;
   onChange: (id: ExerciseId) => void;
   label: string;
+  /** Fokus od razu po wejściu — gdy wybór ćwiczenia jest pierwszym, co trzeba zrobić. */
+  autoFocus?: boolean;
 }) {
   const uid = useId();
   const inputId = `${uid}-in`;
@@ -36,7 +40,7 @@ export function ExercisePicker({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const found = open ? findExercises(query) : [];
-  const current = EX[value]?.name ?? '';
+  const current = value ? (EX[value]?.name ?? '') : '';
   const activeId = found[active]?.id;
 
   // Podświetlona pozycja zawsze w polu widzenia — także po wejściu, gdy lista staje
@@ -49,7 +53,7 @@ export function ExercisePicker({
 
   const openList = () => {
     setQuery('');
-    setActive(Math.max(0, ALPHABETICAL.indexOf(value)));
+    setActive(value ? Math.max(0, ALPHABETICAL.indexOf(value)) : 0);
     setOpen(true);
   };
 
@@ -61,9 +65,11 @@ export function ExercisePicker({
   const choose = (id: ExerciseId) => {
     close();
     if (id !== value) onChange(id);
-    // Fokus zostaje w polu, a nazwa jest zaznaczona: kolejna litera zaczyna nowe szukanie,
-    // zamiast doklejać się do wybranej nazwy.
-    requestAnimationFrame(() => inputRef.current?.select());
+    // Nazwa zostaje zaznaczona, więc kolejna litera zaczyna nowe szukanie, zamiast doklejać
+    // się do wybranej nazwy. Chyba że fokus poszedł już dalej — wtedy go nie zabieramy.
+    requestAnimationFrame(() => {
+      if (document.activeElement === inputRef.current) inputRef.current?.select();
+    });
   };
 
   const onKey = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -109,7 +115,10 @@ export function ExercisePicker({
           enterKeyHint="done"
           // Po wejściu pole jest puste, a obecne ćwiczenie stoi w podpowiedzi — pisze się od razu,
           // bez kasowania nazwy literka po literce.
-          placeholder={open ? `${current} — wpisz, żeby zawęzić` : 'Wpisz nazwę ćwiczenia'}
+          placeholder={
+            open && current ? `${current} — wpisz, żeby zawęzić` : 'Wpisz nazwę ćwiczenia'
+          }
+          autoFocus={autoFocus}
           value={open ? query : current}
           onFocus={openList}
           onClick={() => !open && openList()}

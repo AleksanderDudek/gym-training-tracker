@@ -2,11 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { freshState } from './plan';
 import {
   SNACK_MAX,
+  SNACK_SUGGESTED,
   addSnack,
-  quickPicks,
+  recentExercises,
   removeSnack,
-  snackDefaults,
+  snackHint,
   snackStats,
+  snacksByExercise,
   snacksOf,
   snacksOn,
   validSnack,
@@ -88,26 +90,35 @@ describe('przekąska nie jest treningiem', () => {
   });
 });
 
-describe('szybki wybór i podpowiedzi', () => {
-  it('pokazuje ostatnie różne przekąski, od najnowszej', () => {
+describe('skróty i podpowiedzi', () => {
+  it('skróty to same ćwiczenia: ostatnio robione od najnowszego, bez powtórzeń', () => {
     const s = freshState();
     addSnack(s, 'squat_air', 15, null, at('2026-09-27T08:00:00Z'));
-    addSnack(s, 'plank', 30, null, at('2026-09-27T09:00:00Z'));
-    addSnack(s, 'squat_air', 15, null, at('2026-09-27T10:00:00Z'));
-    addSnack(s, 'squat_air', 20, null, at('2026-09-27T11:00:00Z'));
-    expect(quickPicks(s)).toEqual([
-      { ex: 'squat_air', reps: 20, w: null },
-      { ex: 'squat_air', reps: 15, w: null },
-      { ex: 'plank', reps: 30, w: null },
-    ]);
-    expect(quickPicks(s, 1)).toHaveLength(1);
+    addSnack(s, 'goblet', 8, 12, at('2026-09-27T09:00:00Z'));
+    addSnack(s, 'squat_air', 20, null, at('2026-09-27T10:00:00Z'));
+    expect(recentExercises(s, 2)).toEqual(['squat_air', 'goblet']);
   });
 
-  it('podpowiada ostatnią przekąskę z tym ćwiczeniem, a bez niej cel i ciężar roboczy', () => {
+  it('bez historii i przy krótkiej historii dopełnia listę propozycjami na start', () => {
     const s = freshState();
-    expect(snackDefaults(s, 'goblet')).toEqual({ reps: 8, w: s.prog.goblet!.weight });
+    expect(recentExercises(s)).toEqual([...SNACK_SUGGESTED].slice(0, 4));
+    addSnack(s, 'goblet', 8, 12, at('2026-09-27T09:00:00Z'));
+    const list = recentExercises(s);
+    expect(list[0]).toBe('goblet');
+    expect(list).toHaveLength(4);
+    expect(new Set(list).size).toBe(4);
+  });
+
+  it('propozycje na start to ćwiczenia z biblioteki', () => {
+    SNACK_SUGGESTED.forEach((id) => expect(freshState().prog[id], id).toBeTruthy());
+  });
+
+  it('podpowiedź mówi tylko, ile było ostatnio — nic nie zmyśla z celu biblioteki', () => {
+    const s = freshState();
+    expect(snackHint(s, 'goblet')).toEqual({ last: null, w: null });
     addSnack(s, 'goblet', 12, 12, at('2026-09-27T08:00:00Z'));
-    expect(snackDefaults(s, 'goblet')).toEqual({ reps: 12, w: 12 });
+    addSnack(s, 'goblet', 9, 16, at('2026-09-27T12:00:00Z'));
+    expect(snackHint(s, 'goblet')).toEqual({ last: 9, w: 16 });
   });
 
   it('dzień przekąsek jest ułożony od najwcześniejszej', () => {
@@ -116,6 +127,19 @@ describe('szybki wybór i podpowiedzi', () => {
     addSnack(s, 'squat_air', 15, null, at('2026-09-27T08:00:00Z'));
     addSnack(s, 'squat_air', 15, null, at('2026-09-26T08:00:00Z'));
     expect(snacksOn(s, '2026-09-27').map((x) => x.ex)).toEqual(['squat_air', 'plank']);
+  });
+
+  it('dzień w rozbiciu na ćwiczenia: suma, liczba przekąsek, najświeższe na górze', () => {
+    const s = freshState();
+    addSnack(s, 'squat_air', 15, null, at('2026-09-27T08:00:00Z'));
+    addSnack(s, 'plank', 30, null, at('2026-09-27T09:00:00Z'));
+    addSnack(s, 'squat_air', 20, null, at('2026-09-27T10:00:00Z'));
+    addSnack(s, 'squat_air', 50, null, at('2026-09-26T10:00:00Z'));
+    expect(snacksByExercise(s, '2026-09-27').map(({ ex, total, count }) => ({ ex, total, count }))).toEqual([
+      { ex: 'squat_air', total: 35, count: 2 },
+      { ex: 'plank', total: 30, count: 1 },
+    ]);
+    expect(snacksByExercise(s, '2026-09-25')).toEqual([]);
   });
 });
 
