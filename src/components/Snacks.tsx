@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { EX, GEAR_LABEL, WEIGHTED, ex, gearOf, ladderFor } from '../data/exercises';
-import { exercisesByGroup, step } from '../engine/plan';
+import { EX, WEIGHTED, ex, ladderFor } from '../data/exercises';
+import { step } from '../engine/plan';
 import { achCtx, exerciseProgress, formatTier, formatValue } from '../engine/badges';
 import { clock, exFamilyId } from '../engine/exbadges';
 import { addDays, dayKey, weekdayOf } from '../engine/schedule';
@@ -10,6 +10,7 @@ import { XP, snackXpLeft } from '../engine/xp';
 import { SNACK_EMPTY, daySeed, pick, plural } from '../engine/quips';
 import { go, snacksPath, statsPath } from '../routing';
 import { Timer } from './Timer';
+import { ExercisePicker } from './ExercisePicker';
 import type { AppState, ExerciseId, Snack } from '../types';
 
 /**
@@ -105,7 +106,6 @@ function SnackForm({
   onLog: LogSnack;
   onToast: (m: string) => void;
 }) {
-  const groups = exercisesByGroup();
   const [id, setId] = useState<ExerciseId>(initial);
   const d0 = snackDefaults(state, initial);
   const [reps, setReps] = useState(String(d0.reps));
@@ -144,20 +144,7 @@ function SnackForm({
   return (
     <div className="grp">
       <h3>Nowa przekąska</h3>
-      <label className="fld">
-        <span>ćwiczenie</span>
-        <select value={id} onChange={(e) => choose(e.target.value)}>
-          {Object.entries(groups).map(([g, ids]) => (
-            <optgroup label={g} key={g}>
-              {ids.map((x) => (
-                <option key={x} value={x}>
-                  {ex(x).name} · {GEAR_LABEL[gearOf(x)]}
-                </option>
-              ))}
-            </optgroup>
-          ))}
-        </select>
-      </label>
+      <ExercisePicker label="ćwiczenie" value={id} onChange={choose} />
 
       <div className={`snack-row${weighted ? '' : ' single'}`}>
         <div className="fld">

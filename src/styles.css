@@ -805,3 +805,29 @@
   .exbadges{padding:0 14px;background:var(--surface)}
   .exbadges .ach{padding-left:0;padding-right:0}
   .exbadges-link{background:none;border:0;cursor:pointer;margin-bottom:6px;font:inherit;font-size:13px}
+
+  /* ---------------- Wybór ćwiczenia z podpowiedziami ---------------- */
+
+  .picker{position:relative}
+  .picker-label{display:block;font-size:11px;color:var(--ink-soft);margin-bottom:2px}
+  .picker-box{position:relative}
+  .picker-box input{padding-right:38px}
+  .picker-caret{position:absolute;right:12px;top:50%;transform:translateY(-50%);
+    color:var(--ink-soft);pointer-events:none;font-size:14px}
+  /* Lista nad treścią, ale pod dolnym paskiem; na telefonie z klawiaturą mieści się w połowie ekranu. */
+  .picker-list{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:25;margin:0;padding:4px 0;
+    list-style:none;background:#fff;border:1px solid var(--edge);border-radius:var(--r);
+    max-height:min(340px,46vh);overflow-y:auto;overscroll-behavior:contain;
+    box-shadow:0 8px 24px rgba(30,35,32,.16)}
+  .picker-opt{display:grid;gap:1px;padding:8px 12px 8px 11px;min-height:48px;cursor:pointer;
+    border-left:3px solid transparent;-webkit-tap-highlight-color:transparent}
+  .picker-opt[aria-selected=true]{background:var(--surface-2);border-left-color:var(--steel)}
+  .picker-name{font-size:15px;color:var(--ink)}
+  .picker-now{font-size:12px;color:var(--ok);font-weight:600}
+  .picker-sub{font-size:12px;color:var(--ink-soft)}
+  /* Dopasowanie pogrubione na ciepłym tle — czytelne bez koloru, bo niesie je też grubość. */
+  .picker mark{background:var(--c-orange-bg);color:inherit;font-weight:700;border-radius:2px}
+  .picker-empty{padding:12px;font-size:13.5px;color:var(--ink-soft)}
+
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+    clip:rect(0,0,0,0);white-space:nowrap;border:0}

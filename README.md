@@ -317,10 +317,24 @@ odznak ćwiczeń, do własnej grupy odznak i do doświadczenia postaci.
 
 **Zapis ma kosztować jedno stuknięcie.** Przekąskę robi się zwykle tę samą kilka razy dziennie,
 więc na ekranie sesji i na górze ekranu przekąsek stoją przyciski „jeszcze raz to samo” —
-ostatnie różne przekąski, zapisywane bez formularza. Formularz jest dla nowej: ćwiczenie,
-liczba z przyciskami ±, ciężar tylko przy ćwiczeniach z obciążeniem (domyślnie ostatni użyty
+ostatnie różne przekąski, zapisywane bez formularza. Formularz jest dla nowej: ćwiczenie
+z podpowiedziami, liczba z przyciskami ±, ciężar tylko przy ćwiczeniach z obciążeniem (domyślnie ostatni użyty
 albo roboczy), stoper przy ćwiczeniach na czas. Podpowiedź liczby bierze się z ostatniej
 przekąski tym ruchem, a bez niej — z celu w bibliotece.
+
+**Ćwiczenie wybiera się pisaniem, nie przewijaniem.** Pole działa jak wyszukiwarka: po wejściu
+pokazuje wszystkie 105 ćwiczeń według polskiego alfabetu (Ł po L, Ś po S), ustawione na tym
+wybranym, a każda litera zawęża listę. Szuka po początkach słów — „pomp” daje wszystkie pompki,
+„hantle” ćwiczenia z hantlami, „zawias” całą partię — a gdy tak nic nie pasuje, także w środku
+słowa. Ogonki są opcjonalne: „wioslowanie” znajduje „Wiosłowanie”, bo na telefonie tak się
+pisze szybciej. Dopasowany fragment jest podświetlony, wynik zostaje alfabetyczny.
+
+Zamiast natywnego `datalist` jest własne pole według wzorca combobox z wytycznych WAI-ARIA:
+`datalist` na telefonach zachowuje się każdy inaczej, nie da się go ostylować, a ogonki
+dopasowuje albo nie — zależnie od przeglądarki. Strzałki chodzą po liście, Enter wybiera,
+Escape zamyka i przywraca poprzedni wybór, czytnik ekranu słyszy liczbę wyników, a każda
+pozycja ma 48 px wysokości. Po wyborze nazwa zostaje zaznaczona, więc kolejna litera zaczyna
+nowe szukanie, zamiast doklejać się do nazwy.
 
 **Ekran przekąsek** (`#/przekaski`) pokazuje dzisiejsze przekąski z godziną i przyciskiem
 usunięcia, ile jeszcze da dziś doświadczenie, ile brakuje do kolejnego progu dnia każdego
@@ -429,6 +443,8 @@ src/
     snacks.ts               przekąski ruchowe: zapis, szybki wybór, podpowiedzi, liczby
     snacks.test.ts          14 testów zapisu, granicy z treningiem i liczb przekąsek
     volume.ts               objętość ćwiczenia w dniu, tygodniu i miesiącu kalendarzowym
+    find.ts                 wyszukiwanie ćwiczenia: polski alfabet, ogonki opcjonalne, podświetlenie
+    find.test.ts            9 testów kolejności, dopasowania i podświetlenia
     exbadges.ts             odznaki ćwiczeń: cztery rodziny na ruch, progi z objętości sesji
     exbadges.test.ts        15 testów okresów, progów, zdobywania i cofania odznak ćwiczeń
     xp.ts                   punkty doświadczenia, poziomy i tytuły postaci
@@ -465,6 +481,7 @@ src/
     Snacks.tsx              przekąski ruchowe: karta na ekranie sesji i pełny ekran
     Character.tsx           postać: karta w profilu, pasek na ekranie sesji, okno awansu
     ExerciseBadges.tsx      wiersz odznaki ćwiczenia z bieżącym okresem i rekordem
+    ExercisePicker.tsx      pole wyboru ćwiczenia z podpowiedziami (wzorzec combobox)
     Support.tsx             baner wsparcia: rada dnia Trenera Siwego i espresso
     Gorilla.tsx             obsada: Gustaw, Gosia i Trener Siwy, siedemnaście min
     cast.test.ts            16 testów obsady, pasm, blankietu, miny postaci i rady dnia
