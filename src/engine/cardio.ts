@@ -1,4 +1,7 @@
 import type { AppState, Cardio, CardioInput, CardioSport } from '../types';
+import { heightOf, weightOn } from './body';
+import { STEP_CADENCE, cardioEnergy } from './energy';
+import { daysBetween, mondayOf } from './schedule';
 
 /**
  * Kroki, bieżnia i rower wpisane ręcznie.
@@ -156,4 +159,129 @@ export function lastOf<K extends CardioInput['kind']>(
     .filter((c): c is Extract<Cardio, { kind: K }> => c.kind === kind)
     .sort((a, b) => b.at.localeCompare(a.at));
   return list[0] ?? null;
+}
+
+/* ---------------- Minuty ruchu, statystyki pod odznaki i doświadczenie ---------------- */
+
+/**
+ * Progi intensywności z zaleceń WHO i ACSM: ruch umiarkowany to od 3 MET, intensywny od 6.
+ * Minuta intensywna liczy się podwójnie — tak WHO przelicza 75 minut biegu na 150 marszu.
+ */
+export const MODERATE_MET = 3;
+export const VIGOROUS_MET = 6;
+
+/**
+ * Kroki, które robi się bez wychodzenia z domu. Poniżej 5 000 dziennie badania Tudor-Locke
+ * mówią o trybie siedzącym, więc minuty ruchu liczą się dopiero z nadwyżki — spacer, a nie
+ * kroki po mieszkaniu. Przy 100 krokach na minutę to marsz umiarkowany.
+ */
+export const BASE_STEPS = 5_000;
+
+/**
+ * Cel dzienny kroków. Metaanaliza Palucha i in. (Lancet Public Health, 2022) pokazuje, że
+ * korzyść dla zdrowia rośnie mniej więcej do 6–8 tysięcy kroków u starszych i 8–10 tysięcy
+ * u młodszych, a dalej się wypłaszcza. Osiem tysięcy to środek tego przedziału — okrągłe
+ * dziesięć tysięcy wzięło się z reklamy krokomierza z lat 60., a nie z badań.
+ */
+export const STEP_GOAL = 8_000;
+
+/** Tydzień według WHO: co najmniej 150 minut ruchu umiarkowanego albo odpowiednik. */
+export const WHO_WEEK_MIN = 150;
+
+/** Dzień aktywny: tyle minut, ile wychodzi ze 150 rozłożonych na tydzień. */
+export const ACTIVE_DAY_MIN = 20;
+
+/** Bieżnia albo rower od tylu minut liczą się jako wyjście — krótsze to rozgrzewka. */
+export const SESSION_MIN = 10;
+
+/**
+ * Waga do samej intensywności roweru z mocą, gdy ważenia jeszcze nie ma. Tylko do progu
+ * umiarkowany/intensywny — kalorii z niej nie pokazujemy.
+ */
+const INTENSITY_KG = 75;
+
+/**
+ * Minuty ruchu w przeliczeniu na umiarkowany: intensywny razy dwa, lżejszy niż 3 MET zero.
+ * Kroki — z nadwyżki ponad 5 000, przy 100 krokach na minutę.
+ */
+export function activeMinutes(state: AppState, c: Cardio): number {
+  if (c.kind === 'steps') return Math.max(0, c.steps - BASE_STEPS) / STEP_CADENCE;
+  const met = cardioEnergy(c, weightOn(state, c.day) ?? INTENSITY_KG, heightOf(state)).met;
+  return c.min * (met >= VIGOROUS_MET ? 2 : met >= MODERATE_MET ? 1 : 0);
+}
+
+/** Minuty ruchu na dzień `yyyy-mm-dd`. Dni bez wpisu nie ma w wyniku. */
+export function minutesByDay(state: AppState): Record<string, number> {
+  const out: Record<string, number> = {};
+  cardioOf(state).forEach((c) => {
+    out[c.day] = (out[c.day] ?? 0) + activeMinutes(state, c);
+  });
+  return out;
+}
+
+/** Minuty ruchu w tygodniu od poniedziałku do niedzieli, w którym leży dzień. */
+export function weekMinutes(state: AppState, day: string): number {
+  const monday = mondayOf(day);
+  return Object.entries(minutesByDay(state))
+    .filter(([d]) => mondayOf(d) === monday)
+    .reduce((s, [, m]) => s + m, 0);
+}
+
+export interface CardioStats {
+  /** Wszystkie kroki z całej historii. */
+  steps: number;
+  /** Najwięcej kroków w jednym dniu. */
+  bestDaySteps: number;
+  /** Dni z celem kroków. */
+  goalDays: number;
+  /** Bieżnia i rower od dziesięciu minut. */
+  sessions: number;
+  /** Droga z kroków, bieżni i roweru, w pełnych kilometrach. */
+  km: number;
+  /** Tygodnie od poniedziałku do niedzieli ze 150 minutami ruchu. */
+  whoWeeks: number;
+  /** Najdłuższy ciąg dni aktywnych z rzędu. */
+  run: number;
+}
+
+export function cardioStats(state: AppState): CardioStats {
+  const list = cardioOf(state);
+  const height = heightOf(state);
+  const stepsByDay: Record<string, number> = {};
+  let steps = 0;
+  let sessions = 0;
+  let km = 0;
+  list.forEach((c) => {
+    if (c.kind === 'steps') {
+      steps += c.steps;
+      stepsByDay[c.day] = (stepsByDay[c.day] ?? 0) + c.steps;
+    } else if (c.min >= SESSION_MIN) sessions++;
+    // Droga nie zależy od wagi — liczymy ją dla dowolnej, żeby odznaka nie czekała na ważenie.
+    km += cardioEnergy(c, INTENSITY_KG, height).km ?? 0;
+  });
+
+  const minutes = minutesByDay(state);
+  const perWeek = new Map<string, number>();
+  Object.entries(minutes).forEach(([d, m]) => perWeek.set(mondayOf(d), (perWeek.get(mondayOf(d)) ?? 0) + m));
+
+  const active = Object.keys(minutes)
+    .filter((d) => minutes[d]! >= ACTIVE_DAY_MIN)
+    .sort();
+  let run = 0;
+  let best = 0;
+  active.forEach((d, i) => {
+    const prev = active[i - 1];
+    run = prev && daysBetween(prev, d) === 1 ? run + 1 : 1;
+    best = Math.max(best, run);
+  });
+
+  return {
+    steps,
+    bestDaySteps: Math.max(0, ...Object.values(stepsByDay)),
+    goalDays: Object.values(stepsByDay).filter((n) => n >= STEP_GOAL).length,
+    sessions,
+    km: Math.floor(km),
+    whoWeeks: [...perWeek.values()].filter((m) => m >= WHO_WEEK_MIN).length,
+    run: best,
+  };
 }

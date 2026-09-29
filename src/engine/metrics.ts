@@ -3,6 +3,8 @@ import type { AppState, ExerciseId, LogEntry } from '../types';
 import { dayKey, daysBetween, mondayOf } from './schedule';
 import { snackStats, snacksOf } from './snacks';
 import type { SnackStats } from './snacks';
+import { cardioStats } from './cardio';
+import type { CardioStats } from './cardio';
 import { exerciseVolumes } from './volume';
 import type { ExVolume } from './volume';
 
@@ -362,6 +364,11 @@ export interface Metrics {
    * zamknięte treningi, a przekąski mają własne odznaki i wchodzą do odznak ćwiczeń.
    */
   snacks: SnackStats;
+  /**
+   * Kroki, bieżnia i rower wpisane ręcznie. Też osobno: to nie trening siłowy, więc nie wchodzi
+   * do sum dorobku, tylko do własnej grupy odznak.
+   */
+  cardio: CardioStats;
   /** Objętość każdego ćwiczenia z treningów i przekąsek razem — pod odznaki ćwiczeń. */
   perEx: Record<ExerciseId, ExVolume>;
 }
@@ -439,6 +446,7 @@ export function metrics(state: AppState): Metrics {
     late: trainedLate(state.log),
     days,
     snacks: snackStats(snacksOf(state)),
+    cardio: cardioStats(state),
     perEx: exerciseVolumes(state.log, snacksOf(state)),
   };
 }

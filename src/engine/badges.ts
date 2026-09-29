@@ -649,6 +649,97 @@ const DEFS: AchDef[] = [
     value: (c) => c.metrics.snacks.distinct,
   },
 
+  /*
+   * ---------------- Kroki i cardio ----------------
+   *
+   * Liczą kroki, kilometry i minuty ruchu, nigdy kalorie. Kalorie rosną z masą ciała, więc
+   * odznaka za nie przychodziłaby szybciej temu, kto waży więcej — a waga to ostatnia rzecz,
+   * za którą aplikacja ma kogoś nagradzać albo karać.
+   */
+  {
+    id: 'kroki',
+    group: 'cardio',
+    mark: '',
+    art: 'fig-carry',
+    name: 'Kroki w nogach',
+    desc: 'Wszystkie kroki wpisane z telefonu albo zegarka, z całej historii.',
+    quip: 'Telefon liczył, nogi robiły. Podział pracy jak w dobrym stadzie.',
+    unit: 'kroków',
+    tiers: [10_000, 50_000, 100_000, 250_000, 500_000, 1_000_000, 2_500_000, 5_000_000],
+    value: (c) => c.metrics.cardio.steps,
+  },
+  {
+    id: 'kroki-dzien',
+    group: 'cardio',
+    mark: '24H',
+    name: 'Dzień na nogach',
+    desc: 'Najwięcej kroków w jednym dniu, z wpisu z telefonu albo zegarka.',
+    quip: 'Dzień, w którym winda czuła się niepotrzebna.',
+    unit: 'kroków',
+    tiers: [5_000, 7_500, 10_000, 15_000, 20_000, 30_000],
+    value: (c) => c.metrics.cardio.bestDaySteps,
+  },
+  {
+    id: 'kroki-cel',
+    group: 'cardio',
+    mark: '',
+    art: 'circleCheck',
+    name: 'Osiem tysięcy',
+    desc: 'Dni z co najmniej 8 000 kroków. Według badań korzyść dla zdrowia rośnie mniej więcej do tego miejsca, a dalej już wolniej.',
+    quip: 'Dziesięć tysięcy wymyśliła reklama krokomierza. Osiem tysięcy — badania.',
+    unit: 'dni',
+    tiers: [1, 7, 30, 90, 180, 365, 730],
+    value: (c) => c.metrics.cardio.goalDays,
+  },
+  {
+    id: 'cardio-sesje',
+    group: 'cardio',
+    mark: '',
+    art: 'stopwatch',
+    name: 'Bieżnia i rower',
+    desc: 'Wyjścia na bieżnię albo rower trwające co najmniej dziesięć minut.',
+    quip: 'Bieżnia kręci się w miejscu. Forma już nie.',
+    unit: 'wyjść',
+    tiers: [1, 10, 25, 50, 100, 200, 400],
+    value: (c) => c.metrics.cardio.sessions,
+  },
+  {
+    id: 'cardio-dystans',
+    group: 'cardio',
+    mark: '',
+    art: 'ruler',
+    name: 'Kilometry',
+    desc: 'Droga z kroków, bieżni i roweru na zewnątrz, w pełnych kilometrach. Rower stacjonarny z mocą drogi nie ma.',
+    quip: 'Gdyby iść w jedną stronę, za plecami zostałoby już inne województwo.',
+    unit: 'km',
+    tiers: [10, 50, 100, 250, 500, 1_000, 2_500, 5_000],
+    value: (c) => c.metrics.cardio.km,
+  },
+  {
+    id: 'cardio-who',
+    group: 'cardio',
+    mark: '',
+    art: 'calendarCheck',
+    name: 'Tydzień według WHO',
+    desc: 'Tygodnie od poniedziałku do niedzieli ze 150 minutami ruchu umiarkowanego z kroków, bieżni i roweru. Minuta intensywna liczy się podwójnie.',
+    quip: 'Zalecenie odhaczone. Rzadki przypadek, gdy urzędowa tabelka ma rację.',
+    unit: 'tygodni',
+    tiers: [1, 4, 12, 26, 52, 104],
+    value: (c) => c.metrics.cardio.whoWeeks,
+  },
+  {
+    id: 'cardio-ciag',
+    group: 'cardio',
+    mark: '',
+    art: 'wave',
+    name: 'Dzień po dniu',
+    desc: 'Najdłuższy ciąg dni z rzędu z co najmniej 20 minutami ruchu — z kroków ponad 5 000, bieżni albo roweru.',
+    quip: 'Codziennie kawałek drogi. Suma robi się sama.',
+    unit: 'dni',
+    tiers: [3, 7, 14, 30, 60, 100, 200, 365],
+    value: (c) => c.metrics.cardio.run,
+  },
+
   /* ---------------- Terminy: kalendarz planu ---------------- */
   {
     id: 'seria',
@@ -749,6 +840,7 @@ export const GROUP_LABEL: Record<Achievement['group'], string> = {
   szczyty: 'Szczyty',
   utrzymanie: 'Utrzymanie',
   przekaski: 'Przekąski ruchowe',
+  cardio: 'Kroki i cardio',
   terminy: 'Terminy',
   cwiczenia: 'Ćwiczenia',
 };
@@ -760,6 +852,8 @@ export const GROUP_NOTE: Record<Achievement['group'], string> = {
     'Rekordy pojedynczych podejść i przesuwanego okna — dowolne siedem, trzydzieści, dziewięćdziesiąt, sto osiemdziesiąt czy trzysta sześćdziesiąt pięć dni z rzędu.',
   utrzymanie: 'Nie o to, ile urosło, tylko o to, że nic się nie osypało.',
   przekaski: 'Krótkie serie poza treningiem. Liczy się, jak często — nie ile naraz.',
+  cardio:
+    'Kroki, bieżnia i rower wpisane ręcznie. Liczą się kroki, kilometry i minuty ruchu według zaleceń WHO — nie kalorie, bo te rosną razem z wagą.',
   terminy: 'Zależne od uruchomionego planu i jego kalendarza.',
   cwiczenia:
     'Każde ćwiczenie ma rekord dnia, tygodnia i miesiąca kalendarzowego oraz sumę — z treningów i przekąsek razem. Widać tylko ruchy, które już robisz.',
@@ -772,6 +866,7 @@ export const GROUPS: Achievement['group'][] = [
   'szczyty',
   'utrzymanie',
   'przekaski',
+  'cardio',
   'terminy',
 ];
 

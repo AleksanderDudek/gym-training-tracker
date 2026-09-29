@@ -5,6 +5,7 @@ import { XP, levelFor, xpSummary } from '../engine/xp';
 import type { LevelState, XpSummary } from '../engine/xp';
 import { dayKey, daysBetween } from '../engine/schedule';
 import { snacksOf } from '../engine/snacks';
+import { BASE_STEPS, cardioOf } from '../engine/cardio';
 import { LEVEL_UP, pick, plural } from '../engine/quips';
 import type { AppState } from '../types';
 
@@ -22,9 +23,14 @@ const num = (n: number): string => Math.round(n).toLocaleString('pl-PL');
 
 export const avatarOf = (state: AppState): Avatar => state.cfg.avatar ?? 'gustaw';
 
-/** Ostatni dzień z jakimkolwiek ruchem — treningiem albo przekąską. */
+/** Ostatni dzień z jakimkolwiek ruchem — treningiem, przekąską, krokami albo cardio. */
 export function lastActiveDay(state: AppState): string | null {
-  const days = [...state.log.map((e) => dayKey(e.date)), ...snacksOf(state).map((s) => dayKey(s.at))];
+  const days = [
+    ...state.log.map((e) => dayKey(e.date)),
+    ...snacksOf(state).map((s) => dayKey(s.at)),
+    // Dzień wpisu, nie chwila zapisu — kroki z wczoraj wpisane dziś rano to ruch wczoraj.
+    ...cardioOf(state).map((c) => c.day),
+  ];
   return days.length ? days.reduce((a, b) => (a > b ? a : b)) : null;
 }
 
@@ -34,7 +40,7 @@ export function characterMood(
   sum: XpSummary,
   today: string = dayKey(Date.now()),
 ): { mood: TraineeMood; line: string } {
-  // Ruch dziś to trening albo przekąska dziś. Samo doświadczenie z odznak się nie liczy —
+  // Ruch dziś to trening, przekąska albo kroki i cardio z dzisiejszą datą. Samo doświadczenie z odznak się nie liczy —
   // próg dopięty przy starcie aplikacji nie znaczy, że ktoś się dziś ruszał.
   const last = lastActiveDay(state);
   if (last === today)
@@ -94,8 +100,8 @@ export function CharacterCard({ state, onAvatar }: { state: AppState; onAvatar: 
         </p>
       )}
       <p className="tight">
-        Skąd: treningi {num(sum.parts.trening)} · przekąski {num(sum.parts.przekaska)} · odznaki{' '}
-        {num(sum.parts.odznaka)} XP.
+        Skąd: treningi {num(sum.parts.trening)} · przekąski {num(sum.parts.przekaska)} · kroki i
+        cardio {num(sum.parts.cardio)} · odznaki {num(sum.parts.odznaka)} XP.
       </p>
 
       <div className="segline">Kto rośnie razem z tobą</div>
@@ -119,6 +125,12 @@ export function CharacterCard({ state, onAvatar }: { state: AppState; onAvatar: 
             <b>Przekąska ruchowa: {XP.snack} XP</b>, do {XP.snackCap} dziennie. Kolejne liczą się do
             odznak, ale już bez doświadczenia: przekąski mają rozkładać ruch na cały dzień, a nie
             zamieniać się w klikanie.
+          </p>
+          <p className="tight">
+            <b>Kroki i cardio: {XP.cardioPerMin} XP za minutę ruchu</b>, do {XP.cardioCap} dziennie.
+            Minuta intensywna (bieg, szybki rower) liczy się podwójnie, jak w zaleceniach WHO;
+            z kroków liczy się to, co ponad {BASE_STEPS.toLocaleString('pl-PL')}, przy 100 na minutę.
+            Sufit to połowa treningu — spacer ma dokładać, a nie zastępować.
           </p>
           <p className="tight">
             <b>Próg odznaki: od {XP.band[1]} do {XP.band[5]} XP</b>, zależnie od tworzywa. Odznaki

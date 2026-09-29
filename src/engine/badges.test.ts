@@ -4,7 +4,17 @@ import { freshState } from './plan';
 import { GROUPS_OF_EX } from './metrics';
 import { ART_NAMES, bandFor, hasArt } from '../components/BadgeArt';
 import { buildSchedule, planStats } from './schedule';
-import { ACHIEVEMENTS, achCtx, achievementProgress, migrateBadges, syncBadges, tierKey } from './badges';
+import {
+  ACHIEVEMENTS,
+  GROUPS,
+  achCtx,
+  achievementProgress,
+  migrateBadges,
+  revokeUnmet,
+  syncBadges,
+  tierKey,
+} from './badges';
+import { addCardio, removeCardio } from './cardio';
 import { advise } from './advice';
 import { bankPoints, snapshot } from './snapshot';
 import type { ActivePlan, AppState, LogEntry } from '../types';
@@ -310,5 +320,47 @@ describe('podpowiedzi', () => {
   it('po długiej przerwie ostrzega przed ciężkim wejściem', () => {
     const s = withLog(['2026-08-31']);
     expect(tip(s, '2026-09-21').some((x) => x.kind === 'layoff')).toBe(true);
+  });
+});
+
+describe('odznaki kroków i cardio', () => {
+  const day = '2026-09-28';
+
+  it('mają własną grupę na ekranie osiągnięć i nie liczą kalorii', () => {
+    expect(GROUPS).toContain('cardio');
+    const fams = ACHIEVEMENTS.filter((a) => a.group === 'cardio');
+    expect(fams.length).toBeGreaterThanOrEqual(5);
+    fams.forEach((a) => expect(`${a.name} ${a.unit ?? ''}`).not.toMatch(/kcal|kalori/i));
+  });
+
+  it('kroki z telefonu odblokowują progi sumy, dnia i celu', () => {
+    const s = freshState();
+    addCardio(s, { kind: 'steps', steps: 11_000 }, day);
+    const got = syncBadges(s, achCtx(s, null, null, day)).map((h) => `${h.ach.id}:${h.tier}`);
+    expect(got).toContain('kroki:1');
+    expect(got).toContain('kroki-dzien:3');
+    expect(got).toContain('kroki-cel:1');
+    // Próg kroków idzie do dziennika zdarzeń, jak każda odznaka spoza ćwiczeń.
+    expect(s.events.some((e) => e.id === `badge:${tierKey('kroki', 1)}`)).toBe(true);
+  });
+
+  it('usunięty wpis cofa progi, które dał — literówka nie zostaje na zawsze', () => {
+    const s = freshState();
+    const { entry } = addCardio(s, { kind: 'steps', steps: 90_000 }, day);
+    syncBadges(s, achCtx(s, null, null, day));
+    expect(s.award.badges[tierKey('kroki-dzien', 6)]).toBe(day);
+    removeCardio(s, entry.key);
+    const n = revokeUnmet(s, achCtx(s, null, null, day), (d) => d.group === 'cardio');
+    expect(n).toBeGreaterThan(0);
+    expect(Object.keys(s.award.badges).some((k) => k.startsWith('kroki'))).toBe(false);
+  });
+
+  it('bieżnia i rower dokładają wyjścia i kilometry', () => {
+    const s = freshState();
+    addCardio(s, { kind: 'bike', kmh: 25, min: 30 }, day);
+    const got = syncBadges(s, achCtx(s, null, null, day)).map((h) => h.ach.id);
+    expect(got).toContain('cardio-sesje');
+    expect(got).toContain('cardio-dystans');
+    expect(got).not.toContain('kroki');
   });
 });

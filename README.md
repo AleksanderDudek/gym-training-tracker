@@ -19,7 +19,7 @@ Pozostałe polecenia:
 npm run build      # produkcyjny build do dist/, z listą plików dla service workera
 npm run preview    # podgląd builda — tu działa też praca offline
 npm run typecheck  # tsc --noEmit
-npm test           # 388 testów silnika, kalorii, biblioteki, odznak, ruchu, mimiki, obsady i tras (vitest)
+npm test           # 402 testy silnika, kalorii, biblioteki, odznak, ruchu, mimiki, obsady i tras (vitest)
 ```
 
 Build jest w pełni statyczny (`base: './'`), więc `dist/` można wrzucić na dowolny hosting plików
@@ -234,7 +234,7 @@ i drugi, obok wyniku sesji, po każdym zamkniętym treningu.
 | Dziś | `#/sesja` | Co masz dziś do zrobienia według planu, pasek postaci, przekąska ruchowa i rada dnia; w trakcie — bieżąca sesja. |
 | Plan | `#/plan` | Kalendarz terminów, punkty, stopień, dziennik zdarzeń. |
 | Atlas | `#/cwiczenia` | 105 ćwiczeń z filtrem sprzętu; każde ma własny adres do wysłania. |
-| Osiągnięcia | `#/osiagniecia` | Dorobek w liczbach, progi najbliższe zdobycia, 61 rodzin odznak i odznaki każdego zrobionego ćwiczenia. |
+| Osiągnięcia | `#/osiagniecia` | Dorobek w liczbach, progi najbliższe zdobycia, 68 rodzin odznak i odznaki każdego zrobionego ćwiczenia. |
 | Profil | `#/profil` | Postać i doświadczenie, twoje liczby, waga i wzrost, obciążenie, przekąski, kroki i cardio, lista zrobionych ćwiczeń i historia treningów z kaloriami. |
 
 Podstrony mają własne adresy i strzałkę wstecz w pasku aplikacji:
@@ -475,8 +475,41 @@ ważenie. **Bez wagi aplikacja nie zgaduje** — zapisuje drogę i czas, a kalor
 tylko waga się pojawi, także dla wcześniejszych wpisów. Formularz pyta o wagę sam, dopóki jej
 nie ma; później zmienia się ją w profilu, obok opcjonalnego wzrostu (tylko do długości kroku).
 
-**Ruch wpisany ręcznie nie jest treningiem**, tak jak przekąska: nie trafia do dziennika,
-nie rusza poziomów, planu ani odznak i nie daje doświadczenia. Liczy się do kalorii dnia.
+**Ruch wpisany ręcznie nie jest treningiem**, tak jak przekąska: nie trafia do dziennika
+i nie rusza poziomów ćwiczeń ani planu. Daje za to doświadczenie postaci i własne odznaki.
+
+**Doświadczenie płaci za minuty ruchu, nie za liczby.** Miarą są minuty według zaleceń WHO
+(150–300 tygodniowo): bieżnia i rower od 3 MET to minuty umiarkowane, od 6 MET — podwójne, bo
+tak WHO przelicza bieg na marsz; lżej niż 3 MET to zero. Z kroków liczy się nadwyżka ponad
+5 000 — tyle robi się bez wychodzenia z domu, poniżej zaczyna się według badań Tudor-Locke
+tryb siedzący — przy 100 krokach na minutę. **Minuta to 1 XP, do 50 dziennie.** Sufit to
+połowa treningu: 50 minut to z nawiązką dzienna porcja z WHO, a spacer ma dokładać, a nie
+zastępować sesję, wokół której zbudowana jest cała aplikacja. Wpis jest ręczny i nikt go nie
+sprawdza, więc sufit jest też bezpiecznikiem na zero dopisane przez pomyłkę. Podgląd w formularzu
+mówi, ile minut da wpis, karta na ekranie Dziś — ile ich dziś jest i ile dały XP, a ekran kroków
+pokazuje pasek bieżącego tygodnia na tle 150 minut WHO.
+
+**Siedem rodzin odznak w grupie „Kroki i cardio”:**
+
+| Rodzina | Co liczy | Progi |
+| --- | --- | --- |
+| Kroki w nogach | wszystkie kroki z historii | od 10 tys. do 5 mln |
+| Dzień na nogach | najwięcej kroków w jednym dniu | od 5 do 30 tys. |
+| Osiem tysięcy | dni z co najmniej 8 000 kroków | od 1 do 730 dni |
+| Bieżnia i rower | wyjścia od dziesięciu minut | od 1 do 400 |
+| Kilometry | droga z kroków, bieżni i roweru na zewnątrz | od 10 do 5 000 km |
+| Tydzień według WHO | tygodnie pn–nd ze 150 minutami ruchu | od 1 do 104 |
+| Dzień po dniu | ciąg dni z rzędu z co najmniej 20 minutami ruchu | od 3 do 365 dni |
+
+Cel dzienny to **8 000 kroków, nie 10 000**: metaanaliza Palucha i in. (Lancet Public Health,
+2022) pokazuje, że korzyść dla zdrowia rośnie mniej więcej do 6–8 tysięcy u starszych i 8–10
+u młodszych, a dalej się wypłaszcza. Okrągłe dziesięć tysięcy wymyśliła reklama krokomierza.
+**Żadna odznaka nie liczy kalorii**, bo kalorie rosną razem z masą ciała — odznaka przychodziłaby
+szybciej temu, kto waży więcej.
+
+**Usunięcie wpisu cofa to, co dał** — tak jak przy przekąskach. Poprawka kroków na ten sam dzień
+w dół (literówka „90 000” zamiast „9 000”) też cofa progi, których nowa liczba nie uzasadnia.
+Doświadczenie cofa się samo, bo i tak liczy się od zera z wpisów.
 
 Pusty dzień ma żart, jak przekąski — z bieżni, roweru i telefonu, nigdy z wagi ani z jedzenia.
 Obok stoją kalorie i masa ciała, a to najłatwiejsze miejsce, żeby komuś dokuczyć; test pilnuje
@@ -577,15 +610,15 @@ src/
     energy.ts               kalorie: równania ACSM, tabela roweru z Compendium, profile MET ćwiczeń
     energy.test.ts          23 testy równań, płynności marsz–bieg, kroków, roweru i kalorii z serii
     body.ts                 dziennik wagi, waga obowiązująca w danym dniu, wzrost
-    cardio.ts               kroki, bieżnia i rower: zapis, zakresy, zastępowanie kroków dnia
+    cardio.ts               kroki, bieżnia i rower: zapis, zakresy, minuty ruchu WHO, statystyki
     burn.ts                 kalorie z zapisów: wpis, trening, ćwiczenie, przekąska, cały dzień
-    cardio.test.ts          20 testów wpisów, wagi w czasie i kalorii z zapisów
+    cardio.test.ts          27 testów wpisów, wagi w czasie, kalorii i minut ruchu według WHO
     find.ts                 wyszukiwanie ćwiczenia: polski alfabet, ogonki opcjonalne, podświetlenie
     find.test.ts            9 testów kolejności, dopasowania i podświetlenia
     exbadges.ts             odznaki ćwiczeń: cztery rodziny na ruch, progi z objętości sesji
     exbadges.test.ts        15 testów okresów, progów, zdobywania i cofania odznak ćwiczeń
     xp.ts                   punkty doświadczenia, poziomy i tytuły postaci
-    xp.test.ts              12 testów źródeł doświadczenia, sufitu przekąsek i poziomów
+    xp.test.ts              14 testów źródeł doświadczenia, sufitów przekąsek i cardio, poziomów
     quips.ts                humor: porównania liczb, odmiana, zestawy tekstów
     quips.test.ts           21 testów puent, odmiany, dopisków i granic porównań
     pose.test.ts            24 testy szkieletu, cyklu, katalogu ruchów i mimiki
@@ -596,7 +629,7 @@ src/
     progression.test.ts     40 testów silnika progresji
     schedule.test.ts        30 testów kalendarza, przypisania i rotacji
     score.test.ts           15 testów punktacji i dziennika
-    badges.test.ts          29 testów odznak, dorobku i podpowiedzi
+    badges.test.ts          33 testy odznak, dorobku, kroków i cardio oraz podpowiedzi
     history.test.ts         14 testów historii ćwiczenia i kierunku zmiany
     metrics.test.ts         40 testów warstwy liczb
   storage/storage.ts        zapis z kolejkowaniem, dwa środowiska
@@ -624,7 +657,7 @@ src/
     Support.test.ts         4 testy chowania paska, długości i głosu jego tekstów
     TopBar.tsx              przyklejony pasek aplikacji: tytuł, wstecz, ustawienia, pasek wsparcia
     Gorilla.tsx             obsada: Gustaw, Gosia i Trener Siwy, siedemnaście min
-    cast.test.ts            16 testów obsady, pasm, blankietu, miny postaci i rady dnia
+    cast.test.ts            17 testów obsady, pasm, blankietu, miny postaci i rady dnia
     Achievements.tsx        zakładka osiągnięć: dorobek w liczbach i odznaki z progami
     VideoEmbed.tsx          odtwarzacz YouTube ładowany dopiero po kliknięciu
   App.tsx                   spina stan i widoki
@@ -750,7 +783,7 @@ nie dług do odrobienia — wychodzenie z minusa zniechęca skuteczniej niż cok
 **Osiem stopni**, od „Gościa z ulicy” po „Pomnik za życia” — to stopień w planie, nie poziom postaci. Pierwszy awans wypada po niecałym tygodniu regularnych
 treningów, żeby pierwsza nagroda nie była odległa o miesiąc.
 
-**Odznaki mają progi, nie jeden koniec.** 61 rodzin ogólnych i 348 progów, a do tego po cztery
+**Odznaki mają progi, nie jeden koniec.** 68 rodzin ogólnych i 398 progów, a do tego po cztery
 rodziny na każde ćwiczenie biblioteki (o nich niżej). Rodzina „Powtórzenia" ma dziesięć
 progów od 500 do miliona, „Utrzymany rytm" siedem od czterech tygodni do dwóch lat. Zdobyty próg
 nie kończy tematu, tylko odsłania następny — a pasek postępu mówi, ile brakuje. Zamiast ściany
@@ -812,6 +845,7 @@ postać: Gustaw albo Gosia, do wyboru w profilu.
 | Pierwszy zamknięty trening danego dnia | 100 |
 | Każdy kolejny trening tego samego dnia | 20 |
 | Przekąska ruchowa | 15, do sześciu dziennie |
+| Kroki i cardio: minuta ruchu umiarkowanego (intensywna ×2, kroki ponad 5 000) | 1, do 50 dziennie |
 | Próg odznaki: brąz / srebro / złoto / platyna / szmaragd | 20 / 40 / 80 / 150 / 300 |
 | Próg odznaki ćwiczenia | połowa powyższego |
 
@@ -833,8 +867,8 @@ goryl z miną zależną od tego, kiedy był ostatni ruch (i zawsze tym samym zda
 najbliższy nowy tytuł, skąd przyszło doświadczenie i wybór postaci. Po treningu podsumowanie
 mówi, ile doszło, a awans dostaje własne okno po odznakach.
 
-**Nic nie jest zapamiętane.** Suma liczy się od zera z dziennika, przekąsek i dat zdobycia
-odznak. Nie ma licznika, który mógłby rozjechać się z historią po imporcie danych.
+**Nic nie jest zapamiętane.** Suma liczy się od zera z dziennika, przekąsek, wpisów kroków
+i cardio oraz dat zdobycia odznak. Nie ma licznika, który mógłby rozjechać się z historią po imporcie danych.
 
 ## Kolory
 

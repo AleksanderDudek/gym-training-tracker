@@ -31,11 +31,11 @@ import { LOADING, SAVED, SNACK_SAVED, daySeed, pick } from './engine/quips';
 import { progressSubject, punchline } from './engine/share';
 import { bandFor, BAND_MOOD, BAND_NAME } from './components/BadgeArt';
 import { addSnack, removeSnack, snacksOf, snacksOn, validSnack } from './engine/snacks';
-import { XP, levelFor, xpSummary } from './engine/xp';
+import { XP, cardioXp, levelFor, xpSummary } from './engine/xp';
 import type { LevelState } from './engine/xp';
 import { SnackEntry, SnacksPage, snackLabel } from './components/Snacks';
 import { CardioEntry, CardioPage, cardioLabel, kcalText } from './components/Cardio';
-import { addCardio, removeCardio, validCardio } from './engine/cardio';
+import { addCardio, minutesByDay, removeCardio, validCardio } from './engine/cardio';
 import { removeBodyWeight, setBodyWeight, validBody, validHeight } from './engine/body';
 import { cardioBurn, workoutBurn } from './engine/burn';
 import { LevelUp, avatarOf } from './components/Character';
@@ -315,23 +315,43 @@ export default function App() {
    * a nie do wpisu, bo przyda się też treningom i kolejnym spacerom.
    */
   const logCardio = (input: CardioInput, day: string, kg: number | null) => {
+    const before = levelNow(state);
     const next = clone(state);
     if (kg !== null) setBodyWeight(next, kg, dayKey(Date.now()));
     const { entry, replaced } = addCardio(next, input, day);
+    // Nowa liczba kroków na ten sam dzień bywa poprawką literówki w dół — wtedy cofa progi,
+    // których historia już nie uzasadnia, tak jak usunięcie wpisu.
+    const revoked = replaced ? revokeUnmet(next, badgeCtx(next), (d) => d.group === 'cardio') : 0;
+    const fresh = syncBadges(next, badgeCtx(next));
     commit(next);
     const b = cardioBurn(next, entry);
+    const dayXp = (s: AppState): number => cardioXp(minutesByDay(s)[day] ?? 0);
+    const gained = dayXp(next) - dayXp(state);
     setToastMsg(
-      `Zapisane: ${cardioLabel(entry)}${b ? ` · ${kcalText(b.active)}` : ''}.` +
+      `Zapisane: ${cardioLabel(entry)}${b ? ` · ${kcalText(b.active)}` : ''}` +
+        (gained > 0 ? ` · +${gained} XP` : dayXp(next) >= XP.cardioCap ? ' · bez XP, limit dnia' : '') +
+        '.' +
         (replaced ? ' Poprzednia liczba kroków z tego dnia zastąpiona.' : '') +
+        (revoked ? ` Cofnięte progi, których nowa liczba nie uzasadnia: ${revoked}.` : '') +
         (b ? '' : ' Kalorie pokażą się po wpisaniu wagi.'),
     );
+    void (async () => {
+      if (fresh.length) await sayBadges(fresh, metrics(next), 'Przy tym wpisie');
+      await sayLevel(before, next);
+    })();
   };
 
+  /** Usunięcie wpisu to poprawka pomyłki — cofa progi kroków i cardio, które dała. */
   const deleteCardio = (key: string) => {
     const next = clone(state);
     if (!removeCardio(next, key)) return;
+    const revoked = revokeUnmet(next, badgeCtx(next), (d) => d.group === 'cardio');
     commit(next);
-    setToastMsg('Wpis usunięty.');
+    setToastMsg(
+      revoked
+        ? `Wpis usunięty razem z ${revoked === 1 ? 'progiem, który dał' : `progami, które dał (${revoked})`}.`
+        : 'Wpis usunięty.',
+    );
   };
 
   const setWeight = (kg: number) => {

@@ -1,9 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import { freshState } from './plan';
 import { addSnack } from './snacks';
+import { addCardio } from './cardio';
 import { achCtx, syncBadges, tierKey } from './badges';
 import { exFamilyId } from './exbadges';
-import { LEVEL_TITLES, XP, levelFor, snackXpLeft, titleFor, xpForLevel, xpItems, xpSummary } from './xp';
+import {
+  LEVEL_TITLES,
+  XP,
+  cardioXp,
+  levelFor,
+  snackXpLeft,
+  titleFor,
+  xpForLevel,
+  xpItems,
+  xpSummary,
+} from './xp';
 import type { LogEntry } from '../types';
 
 const entry = (iso: string): LogEntry => ({
@@ -34,6 +45,28 @@ describe('źródła doświadczenia', () => {
     expect(sum.parts.przekaska).toBe((XP.snackCap + 1) * XP.snack);
     expect(snackXpLeft(s, '2026-09-27')).toBe(0);
     expect(snackXpLeft(s, '2026-09-28')).toBe(XP.snackCap - 1);
+  });
+
+  it('kroki i cardio płacą za minuty ruchu, do dziennego sufitu', () => {
+    const s = freshState();
+    // 30 minut marszu na bieżni i 8 000 kroków (30 minut z nadwyżki) — jednego dnia.
+    addCardio(s, { kind: 'treadmill', kmh: 5, min: 30, grade: 0 }, '2026-09-27');
+    addCardio(s, { kind: 'steps', steps: 8000 }, '2026-09-27');
+    // Następnego dnia sam spacer poniżej bazy — zero minut, zero punktów.
+    addCardio(s, { kind: 'steps', steps: 4000 }, '2026-09-28');
+    const items = xpItems(s).filter((i) => i.source === 'cardio');
+    expect(items).toEqual([{ day: '2026-09-27', source: 'cardio', xp: XP.cardioCap }]);
+    expect(cardioXp(12.7)).toBe(12);
+    expect(cardioXp(500)).toBe(XP.cardioCap);
+  });
+
+  it('sufit cardio trzyma spacer poniżej treningu, a ruch dziś liczy się jako ruch', () => {
+    expect(XP.cardioCap).toBeLessThan(XP.workout);
+    const s = freshState();
+    addCardio(s, { kind: 'bike', kmh: 20, min: 25 }, '2026-09-28');
+    const sum = xpSummary(s, '2026-09-28');
+    expect(sum.parts.cardio).toBe(XP.cardioCap);
+    expect(sum.move).toBe(XP.cardioCap);
   });
 
   it('próg odznaki płaci według tworzywa, a odznaka ćwiczenia połowę', () => {

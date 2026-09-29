@@ -299,6 +299,8 @@ export type AchGroup =
   | 'utrzymanie'
   /** Przekąski ruchowe: ile, jak często, jak różnorodnie. */
   | 'przekaski'
+  /** Kroki, bieżnia i rower: suma, dni z celem, tygodnie według WHO, ciąg dni w ruchu. */
+  | 'cardio'
   /** Odznaki pojedynczego ćwiczenia: dzień, tydzień, miesiąc i suma — z treningów i przekąsek. */
   | 'cwiczenia'
   /** Terminy planu: seria, realizacja, domknięte tygodnie. */

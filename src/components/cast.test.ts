@@ -10,6 +10,7 @@ import { inlineVars } from '../engine/share';
 import { characterMood } from './Character';
 import { freshState } from '../engine/plan';
 import { addSnack } from '../engine/snacks';
+import { addCardio } from '../engine/cardio';
 import { tierKey } from '../engine/badges';
 import { xpSummary } from '../engine/xp';
 
@@ -156,6 +157,16 @@ describe('mina postaci', () => {
     expect(characterMood(s, xpSummary(s, today), today).mood).toBe('happy');
     s.log = [workout(`${today}T18:00:00Z`)];
     expect(characterMood(s, xpSummary(s, today), today).mood).toBe('proud');
+  });
+
+  it('kroki i cardio też są ruchem — liczy się dzień wpisu, nie chwila zapisu', () => {
+    const s = freshState();
+    addCardio(s, { kind: 'steps', steps: 9000 }, today);
+    expect(characterMood(s, xpSummary(s, today), today).mood).toBe('happy');
+    const y = freshState();
+    // Kroki z wczoraj wpisane dziś rano: wczoraj w ruchu, a nie dziś.
+    addCardio(y, { kind: 'steps', steps: 9000 }, '2026-09-26', Date.parse(`${today}T07:00:00Z`));
+    expect(characterMood(y, xpSummary(y, today), today).line).toBe('Wczoraj w ruchu');
   });
 
   it('bez żadnego ruchu postać czeka, a mina zawsze ma zdanie obok', () => {

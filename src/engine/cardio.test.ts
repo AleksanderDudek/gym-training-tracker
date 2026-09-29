@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { freshState } from './plan';
 import {
+  ACTIVE_DAY_MIN,
+  BASE_STEPS,
+  STEP_GOAL,
+  WHO_WEEK_MIN,
+  activeMinutes,
   addCardio,
+  cardioStats,
+  minutesByDay,
+  weekMinutes,
   cardioOf,
   cardioOn,
   inputProblem,
@@ -265,5 +273,90 @@ describe('kalorie z zapisów', () => {
       setsEnergy('goblet', Array.from({ length: p.sets }, () => ({ reps: p.target })), 105).active,
       6,
     );
+  });
+});
+
+describe('minuty ruchu', () => {
+  it('kroki liczą się dopiero ponad bazę, po 100 na minutę', () => {
+    const s = freshState();
+    const low = addCardio(s, { kind: 'steps', steps: 4000 }, '2026-09-27').entry;
+    const high = addCardio(s, { kind: 'steps', steps: 10_000 }, '2026-09-28').entry;
+    expect(activeMinutes(s, low)).toBe(0);
+    expect(activeMinutes(s, high)).toBe((10_000 - BASE_STEPS) / 100);
+  });
+
+  it('bieżnia i rower: umiarkowanie minuta za minutę, intensywnie podwójnie, lekko zero', () => {
+    const s = withWeight(80);
+    const walk = addCardio(s, { kind: 'treadmill', kmh: 5, min: 30, grade: 0 }, '2026-09-28').entry;
+    const run = addCardio(s, { kind: 'treadmill', kmh: 10, min: 30, grade: 0 }, '2026-09-28').entry;
+    const stroll = addCardio(s, { kind: 'treadmill', kmh: 2, min: 30, grade: 0 }, '2026-09-28').entry;
+    const hard = addCardio(s, { kind: 'ergo', watts: 200, min: 20 }, '2026-09-28').entry;
+    expect(activeMinutes(s, walk)).toBe(30);
+    expect(activeMinutes(s, run)).toBe(60);
+    expect(activeMinutes(s, stroll)).toBe(0);
+    expect(activeMinutes(s, hard)).toBe(40);
+    expect(minutesByDay(s)['2026-09-28']).toBe(130);
+  });
+
+  it('rower z mocą bez ważenia dostaje intensywność z przeciętnej wagi, a nie zero', () => {
+    const s = freshState();
+    const e = addCardio(s, { kind: 'ergo', watts: 120, min: 30 }, '2026-09-28').entry;
+    expect(activeMinutes(s, e)).toBeGreaterThan(0);
+  });
+
+  it('tydzień liczy się od poniedziałku do niedzieli', () => {
+    const s = freshState();
+    // 2026-09-28 to poniedziałek, 2026-09-27 — niedziela poprzedniego tygodnia.
+    addCardio(s, { kind: 'bike', kmh: 20, min: 60 }, '2026-09-27');
+    addCardio(s, { kind: 'bike', kmh: 20, min: 45 }, '2026-09-28');
+    addCardio(s, { kind: 'bike', kmh: 20, min: 30 }, '2026-10-04');
+    expect(weekMinutes(s, '2026-10-01')).toBe(2 * (45 + 30));
+    expect(weekMinutes(s, '2026-09-27')).toBe(2 * 60);
+  });
+});
+
+describe('statystyki kroków i cardio', () => {
+  it('pusty stan daje same zera', () => {
+    expect(cardioStats(freshState())).toEqual({
+      steps: 0,
+      bestDaySteps: 0,
+      goalDays: 0,
+      sessions: 0,
+      km: 0,
+      whoWeeks: 0,
+      run: 0,
+    });
+  });
+
+  it('sumy, rekord dnia, dni z celem, wyjścia i kilometry', () => {
+    const s = freshState();
+    addCardio(s, { kind: 'steps', steps: STEP_GOAL }, '2026-09-26');
+    addCardio(s, { kind: 'steps', steps: 12_000 }, '2026-09-27');
+    addCardio(s, { kind: 'steps', steps: 3000 }, '2026-09-28');
+    addCardio(s, { kind: 'treadmill', kmh: 6, min: 30, grade: 0 }, '2026-09-28');
+    addCardio(s, { kind: 'bike', kmh: 20, min: 9 }, '2026-09-28');
+    addCardio(s, { kind: 'ergo', watts: 150, min: 40 }, '2026-09-28');
+    const st = cardioStats(s);
+    expect(st.steps).toBe(23_000);
+    expect(st.bestDaySteps).toBe(12_000);
+    expect(st.goalDays).toBe(2);
+    // Dziewięć minut roweru to rozgrzewka, nie wyjście.
+    expect(st.sessions).toBe(2);
+    // Kroki ok. 16,2 km + bieżnia 3 km + rower 3 km; rower stacjonarny drogi nie ma.
+    expect(st.km).toBe(22);
+  });
+
+  it('tydzień WHO i ciąg dni aktywnych', () => {
+    const s = freshState();
+    // Pięć dni po 35 minut marszu na bieżni: 175 minut w jednym tygodniu.
+    ['2026-09-28', '2026-09-29', '2026-09-30', '2026-10-01', '2026-10-02'].forEach((d) =>
+      addCardio(s, { kind: 'treadmill', kmh: 5, min: 35, grade: 0 }, d),
+    );
+    // Przerwa, potem dzień poniżej progu aktywności — nie przedłuża ciągu.
+    addCardio(s, { kind: 'treadmill', kmh: 5, min: ACTIVE_DAY_MIN - 5, grade: 0 }, '2026-10-05');
+    const st = cardioStats(s);
+    expect(35 * 5).toBeGreaterThanOrEqual(WHO_WEEK_MIN);
+    expect(st.whoWeeks).toBe(1);
+    expect(st.run).toBe(5);
   });
 });

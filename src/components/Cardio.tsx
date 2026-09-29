@@ -11,7 +11,21 @@ import {
   weightOn,
 } from '../engine/body';
 import { cardioBurn, cardioDays, dayBurn } from '../engine/burn';
-import { cardioOf, cardioOn, inputProblem, lastOf, normalize, sportOf, stepsOn } from '../engine/cardio';
+import {
+  BASE_STEPS,
+  WHO_WEEK_MIN,
+  activeMinutes,
+  cardioOf,
+  cardioOn,
+  inputProblem,
+  lastOf,
+  minutesByDay,
+  normalize,
+  sportOf,
+  stepsOn,
+  weekMinutes,
+} from '../engine/cardio';
+import { XP, cardioXp } from '../engine/xp';
 import { RUN_MIN_KMH, STEP_CADENCE, WALK_MAX_KMH, cardioEnergy, roundKcal } from '../engine/energy';
 import { CARDIO_EMPTY, daySeed, pick, plural } from '../engine/quips';
 import { addDays, dayKey, weekdayOf } from '../engine/schedule';
@@ -78,6 +92,47 @@ const dm = (key: string): string => {
 };
 
 const WEEKDAY = ['', 'pn', 'wt', 'śr', 'cz', 'pt', 'sb', 'nd'];
+
+const baseSteps = BASE_STEPS.toLocaleString('pl-PL');
+
+/**
+ * Minuty ruchu dnia i doświadczenie z nich. Przy suficie zdanie mówi wprost, że kolejny wpis
+ * doda już tylko kalorie i postęp odznak — żeby nikt nie wpisywał dalej po punkty.
+ */
+function moveLine(state: AppState, day: string): string {
+  const m = Math.floor(minutesByDay(state)[day] ?? 0);
+  if (!m) return `Minut ruchu jeszcze nie ma — z kroków liczy się to, co ponad ${baseSteps}.`;
+  const xp = cardioXp(m);
+  return `Minuty ruchu: ${m} · +${xp} XP${xp >= XP.cardioCap ? ' — limit dnia, dalej rosną już tylko odznaki' : ''}.`;
+}
+
+/**
+ * Bieżący tydzień od poniedziałku na tle zalecenia WHO. Pasek zielony, bo zieleń znaczy tu
+ * postęp — jak w punktach planu i paskach odznak.
+ */
+function WhoWeek({ state, today }: { state: AppState; today: string }) {
+  const m = Math.floor(weekMinutes(state, today));
+  const done = m >= WHO_WEEK_MIN;
+  return (
+    <>
+      <div
+        className="rank-bar"
+        role="progressbar"
+        aria-label="Minuty ruchu w tym tygodniu na tle zalecenia WHO"
+        aria-valuemin={0}
+        aria-valuemax={WHO_WEEK_MIN}
+        aria-valuenow={Math.min(m, WHO_WEEK_MIN)}
+      >
+        <i style={{ width: `${Math.max(2, Math.min(100, Math.round((m / WHO_WEEK_MIN) * 100)))}%` }} />
+      </div>
+      <p className="tight" style={{ marginBottom: 12 }}>
+        {done
+          ? `Ten tydzień: ${m} minut ruchu — zalecenie WHO (${WHO_WEEK_MIN}) spełnione.`
+          : `Ten tydzień: ${m} z ${WHO_WEEK_MIN} minut ruchu zalecanych przez WHO. Minuta intensywna liczy się podwójnie.`}
+      </p>
+    </>
+  );
+}
 
 /* ---------------- Skróty ---------------- */
 
@@ -147,12 +202,14 @@ export function CardioCard({ state }: { state: AppState }) {
               ? `Kalorie ponad spoczynek${d.workouts ? `; z treningu dochodzi ${kcalText(d.workouts)}` : ''}.`
               : 'Kalorie policzę, gdy podasz wagę — zapyta o nią formularz.'}
           </p>
+          <p className="tight">{moveLine(state, today)}</p>
         </>
       ) : (
         <>
           <h2 className="today-name">Kroki, bieżnia, rower</h2>
           <p className="tight">
-            Przepisz liczby z telefonu, bieżni albo licznika roweru — kalorie policzę z twojej wagi.
+            Przepisz liczby z telefonu, bieżni albo licznika roweru — kalorie policzę z twojej wagi,
+            a minuty ruchu dadzą doświadczenie postaci i odznaki.
           </p>
         </>
       )}
@@ -243,6 +300,20 @@ export function CardioEntry({
   // Droga i czas nie zależą od wagi, więc bez niej liczymy je dla dowolnej — kalorii wtedy nie pokazujemy.
   const preview = clean && !problem ? cardioEnergy(clean, kg ?? 70, heightOf(state)) : null;
   const prevSteps = kind === 'steps' && dayOk ? stepsOn(state, day) : 0;
+  const mins =
+    clean && !problem ? Math.floor(activeMinutes(state, { ...clean, key: '', day, at: '' })) : 0;
+  const minsText =
+    !clean || problem
+      ? null
+      : clean.kind === 'steps'
+        ? mins
+          ? `${mins} min ruchu z nadwyżki ponad ${baseSteps} kroków`
+          : `do minut ruchu liczy się to, co ponad ${baseSteps} kroków`
+        : !mins
+          ? 'za lekko na minuty ruchu — to mniej niż 3 MET'
+          : mins > clean.min
+            ? `${mins} min ruchu — intensywnie, więc minuty liczą się podwójnie`
+            : `${mins} min ruchu`;
 
   const lastSteps = lastOf(state, 'steps');
   const lastRun = lastOf(state, 'treadmill');
@@ -433,6 +504,7 @@ export function CardioEntry({
                     .filter(Boolean)
                     .join(' · ')}
             </p>
+            {minsText && <p className="tight">{minsText}</p>}
           </div>
         )}
         {problem && <p className="tight cardio-note warn">{problem}</p>}
@@ -554,6 +626,7 @@ export function CardioPage({
             ? ` Z treningu ${kcalText(d.workouts)}${d.snacks ? `, z przekąsek ${kcalText(d.snacks)}` : ''}. Razem ${kcalText(d.total)} ponad spoczynek.`
             : ''}
         </p>
+        {todays.length > 0 && <p className="tight">{moveLine(state, today)}</p>}
         {todays.map((c) => (
           <CardioItem key={c.key} state={state} c={c} onDelete={onDelete} />
         ))}
@@ -561,6 +634,7 @@ export function CardioPage({
 
       <div className="sect-label">Ostatnie siedem dni</div>
       <div className="grp">
+        <WhoWeek state={state} today={today} />
         {latest ? (
           <KcalWeek state={state} today={today} />
         ) : (
@@ -602,7 +676,7 @@ export function CardioPage({
       )}
 
       <div className="grp" style={{ marginTop: 14 }}>
-        <h2>Jak liczymy kalorie</h2>
+        <h2>Jak liczymy kalorie i minuty ruchu</h2>
         <p>
           <b>Kalorie aktywne.</b> Liczba mówi, ile ruch spalił ponad spoczynek — tak ACSM liczy wydatek
           przy planowaniu ruchu i tak zegarki podają „energię aktywną”. Bieżnia i rower zwykle pokazują
@@ -626,6 +700,14 @@ export function CardioPage({
           <b>Trening siłowy.</b> Każde ćwiczenie ma wartość MET z Compendium dla swojego rodzaju pracy —
           od 2,8 dla deski do 9,8 dla swingów — a czas liczy się z serii, tempa i typowych przerw, nie
           z zegara sesji. Zegar mierzy też telefon odłożony na godzinę; serie mierzą pracę.
+        </p>
+        <p>
+          <b>Minuty ruchu, doświadczenie i odznaki.</b> WHO zaleca 150–300 minut ruchu umiarkowanego
+          tygodniowo, a minutę intensywną liczy za dwie. Tu tak samo: bieżnia i rower od 3 MET to
+          minuty umiarkowane, od 6 MET — podwójne. Z kroków liczy się nadwyżka ponad {baseSteps}{' '}
+          (tyle robi się bez wychodzenia z domu), po 100 na minutę. Minuta to {XP.cardioPerMin} XP,
+          do {XP.cardioCap} dziennie — połowa treningu, bo spacer ma dokładać, a nie zastępować.
+          Odznaki liczą kroki, kilometry i minuty, nigdy kalorie: te rosną razem z wagą.
         </p>
         <p className="tight">
           To szacunek. Pomiar tlenu u konkretnej osoby potrafi odbiec o 20–30% — w obie strony.
@@ -758,7 +840,7 @@ export function CardioSummary({ state }: { state: AppState }) {
       <h2>Kroki i cardio</h2>
       <p className="tight">
         {count
-          ? `Ostatnie 7 dni: ${stepsText(steps)}${kcal !== null ? `, ${kcalText(kcal)} z kroków, bieżni i roweru` : ''}. Wpisów od początku: ${count}.`
+          ? `Ostatnie 7 dni: ${stepsText(steps)}${kcal !== null ? `, ${kcalText(kcal)} z kroków, bieżni i roweru` : ''}. W tym tygodniu ${Math.floor(weekMinutes(state, today))} z ${WHO_WEEK_MIN} minut ruchu zalecanych przez WHO. Wpisów od początku: ${count}.`
           : 'Jeszcze bez wpisów. Przepisz kroki z telefonu albo wynik z bieżni i roweru — kalorie policzą się z twojej wagi.'}
       </p>
       <div style={{ marginTop: 10 }}>

@@ -2,6 +2,7 @@ import type { AppState } from '../types';
 import { achievementById, bandFor } from './badges';
 import { addDays, dayKey } from './schedule';
 import { snacksOf } from './snacks';
+import { minutesByDay } from './cardio';
 
 /**
  * Punkty doświadczenia i poziom postaci.
@@ -17,6 +18,10 @@ import { snacksOf } from './snacks';
  *   lepszej progresji — a doświadczenie za objętość rosłoby najszybciej tuż przed kontuzją.
  * - **Przekąski mają dzienny sufit.** Sześć dziennie daje doświadczenie, kolejne liczą się
  *   już tylko do odznak. Sens przekąsek to ruch rozłożony w ciągu dnia, a nie klikanie.
+ * - **Kroki i cardio płacą za minuty ruchu, nie za liczby.** Minuta umiarkowana to punkt,
+ *   intensywna — dwa, jak w zaleceniach WHO; dzienny sufit trzyma to poniżej treningu.
+ *   Wpis jest ręczny i nikt go nie sprawdza, więc sufit jest też zabezpieczeniem przed zerem
+ *   dopisanym przez pomyłkę.
  * - **Nic nie jest zapamiętane.** Suma liczy się od zera z dziennika, przekąsek i dat
  *   zdobycia odznak — nie ma licznika, który mógłby się rozjechać z historią po imporcie.
  */
@@ -29,6 +34,14 @@ export const XP = {
   snack: 15,
   /** …ale tylko tyle przekąsek dziennie daje doświadczenie. */
   snackCap: 6,
+  /** Minuta ruchu umiarkowanego z kroków i cardio (intensywna liczy się podwójnie)… */
+  cardioPerMin: 1,
+  /**
+   * …do tylu punktów dziennie. Połowa treningu: 50 minut to z nawiązką dzienna porcja z WHO
+   * (150–300 minut tygodniowo), a spacer nie może być wart więcej niż sesja, wokół której
+   * zbudowana jest cała aplikacja.
+   */
+  cardioCap: 50,
   /** Próg odznaki według tworzywa: brąz, srebro, złoto, platyna, szmaragd. */
   band: [0, 20, 40, 80, 150, 300],
   /**
@@ -38,7 +51,11 @@ export const XP = {
   exerciseShare: 0.5,
 } as const;
 
-export type XpSource = 'trening' | 'przekaska' | 'odznaka';
+export type XpSource = 'trening' | 'przekaska' | 'cardio' | 'odznaka';
+
+/** Doświadczenie z kroków i cardio za jeden dzień z danej liczby minut ruchu. */
+export const cardioXp = (minutes: number): number =>
+  Math.min(XP.cardioCap, Math.floor(minutes * XP.cardioPerMin));
 
 export interface XpItem {
   /** Dzień `yyyy-mm-dd`, w którym doświadczenie wpadło. */
@@ -71,6 +88,11 @@ export function xpItems(state: AppState): XpItem[] {
       out.push({ day, source: 'przekaska', xp: n < XP.snackCap ? XP.snack : 0 });
     });
 
+  Object.entries(minutesByDay(state)).forEach(([day, min]) => {
+    const xp = cardioXp(min);
+    if (xp > 0) out.push({ day, source: 'cardio', xp });
+  });
+
   // Klucz progu to `rodzina:numer`, a w rodzinie ćwiczenia samo id ma dwukropki
   // (`ex:pompki:dzien:2`) — dlatego numer odcinany jest od końca.
   Object.entries(state.award.badges).forEach(([key, day]) => {
@@ -93,7 +115,7 @@ export interface XpSummary {
   total: number;
   today: number;
   /**
-   * Dzisiejsze doświadczenie z samego ruchu — treningów i przekąsek. Próg odznaki bywa
+   * Dzisiejsze doświadczenie z samego ruchu — treningów, przekąsek, kroków i cardio. Próg odznaki bywa
    * dopisany dziś, choć ruch był wcześniej (upływ czasu, dopięcie po aktualizacji), więc
    * o tym, czy ktoś się dziś ruszał, mówi tylko ta liczba.
    */
@@ -105,7 +127,7 @@ export interface XpSummary {
 
 export function xpSummary(state: AppState, today: string = dayKey(Date.now())): XpSummary {
   const from = addDays(today, -6);
-  const parts: Record<XpSource, number> = { trening: 0, przekaska: 0, odznaka: 0 };
+  const parts: Record<XpSource, number> = { trening: 0, przekaska: 0, cardio: 0, odznaka: 0 };
   let total = 0;
   let now = 0;
   let move = 0;
