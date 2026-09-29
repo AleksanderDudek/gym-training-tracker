@@ -8,6 +8,7 @@ import {
   REST,
   SAVED,
   SNACK_EMPTY,
+  CARDIO_EMPTY,
   SNACK_SAVED,
   daySeed,
   massJoke,
@@ -117,7 +118,7 @@ describe('porównania czasu i powtórzeń', () => {
 
 describe('zestawy tekstów', () => {
   it('każdy zestaw ma z czego losować i nie powtarza się w środku', () => {
-    [CHEERS, SAVED, REST, LATE, EMPTY_SHELF, LOADING, SNACK_SAVED, SNACK_EMPTY, LEVEL_UP].forEach((list) => {
+    [CHEERS, SAVED, REST, LATE, EMPTY_SHELF, LOADING, SNACK_SAVED, SNACK_EMPTY, CARDIO_EMPTY, LEVEL_UP].forEach((list) => {
       expect(list.length).toBeGreaterThanOrEqual(3);
       expect(new Set(list).size).toBe(list.length);
       list.forEach((t) => expect(t.length).toBeGreaterThan(12));
@@ -130,6 +131,14 @@ describe('zestawy tekstów', () => {
     [...SNACK_SAVED, ...SNACK_EMPTY, ...LEVEL_UP].forEach((t) => {
       expect(t).not.toMatch(SHAMING);
       expect(t).not.toMatch(/wstyd|leń|słab|wymówk|żałos|porażk|wreszcie|dopiero teraz/i);
+    });
+  });
+
+  it('pusty dzień cardio nie mówi o wadze ani o jedzeniu', () => {
+    // Obok stoją kalorie i masa ciała — żart o nich trafiłby w człowieka, a nie w bieżnię.
+    CARDIO_EMPTY.forEach((t) => {
+      expect(t).not.toMatch(SHAMING);
+      expect(t).not.toMatch(/wag[aię]|kilo|brzuch|boczk|tłuszcz|jedzeni|pączk|ciast|dieta|schudn|gruby|chud/i);
     });
   });
 

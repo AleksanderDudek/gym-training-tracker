@@ -17,6 +17,8 @@ import { achCtx, exerciseProgress } from '../engine/badges';
 import { snackStats, snacksOf, snacksOn } from '../engine/snacks';
 import { dayKey } from '../engine/schedule';
 import { plural } from '../engine/quips';
+import { rowBurn, workoutBurn } from '../engine/burn';
+import { BodyCard, CardioSummary, kcalText } from './Cardio';
 import type { AppState, ExerciseId } from '../types';
 
 /**
@@ -110,7 +112,21 @@ function ExerciseBadgesBlock({ state, id }: { state: AppState; id: ExerciseId })
   );
 }
 
-export function ProfileView({ state, onAvatar }: { state: AppState; onAvatar: (a: Avatar) => void }) {
+export function ProfileView({
+  state,
+  onAvatar,
+  onWeight,
+  onHeight,
+  onDeleteWeight,
+  onToast,
+}: {
+  state: AppState;
+  onAvatar: (a: Avatar) => void;
+  onWeight: (kg: number) => void;
+  onHeight: (cm: number | null) => void;
+  onDeleteWeight: (day: string) => void;
+  onToast: (m: string) => void;
+}) {
   const m = metrics(state);
   const done = doneExercises(state);
   const [allHistory, setAllHistory] = useState(false);
@@ -158,8 +174,16 @@ export function ProfileView({ state, onAvatar }: { state: AppState; onAvatar: (a
         )}
       </div>
 
+      <BodyCard
+        state={state}
+        onWeight={onWeight}
+        onHeight={onHeight}
+        onDeleteWeight={onDeleteWeight}
+        onToast={onToast}
+      />
       <LoadGauge state={state} />
       <SnackSummary state={state} />
+      <CardioSummary state={state} />
 
       <div className="sect-label">Twoje ćwiczenia</div>
       {!done.length ? (
@@ -199,22 +223,28 @@ export function ProfileView({ state, onAvatar }: { state: AppState; onAvatar: (a
         />
       ) : (
         <>
-          {shownHistory.map((e, idx) => (
-            <div className="h-item" key={`${e.date}-${idx}`}>
-              <div className="h-date">{dm(e.date)}</div>
-              <div>
+          {shownHistory.map((e, idx) => {
+            const burn = workoutBurn(state, e);
+            return (
+              <div className="h-item" key={`${e.date}-${idx}`}>
+                <div className="h-date">{dm(e.date)}</div>
                 <div>
-                  <b>{e.workout}</b>
+                  <div>
+                    <b>{e.workout}</b>
+                  </div>
+                  <div className="h-detail">
+                    {e.items
+                      .map((i) => `${EX[i.id]?.name ?? i.id} ${i.sets.map((s) => s.reps).join('/')}`)
+                      .join(' · ')}
+                  </div>
                 </div>
-                <div className="h-detail">
-                  {e.items
-                    .map((i) => `${EX[i.id]?.name ?? i.id} ${i.sets.map((s) => s.reps).join('/')}`)
-                    .join(' · ')}
+                <div className="streak">
+                  {num(sessionTonnage(e))} kg·p
+                  {burn && <span className="kcal-line">{kcalText(burn.active)}</span>}
                 </div>
               </div>
-              <div className="streak">{num(sessionTonnage(e))} kg·p</div>
-            </div>
-          ))}
+            );
+          })}
           {history.length > shownHistory.length && (
             <div className="wrap">
               <button
@@ -349,6 +379,8 @@ export function ExerciseStatsPage({ state, id }: { state: AppState; id: Exercise
   const e1rms = rows.map((r) => r.e1rm).filter((v): v is number => v !== null);
   const span = weeksBetween(rows[0]!.date, rows[rows.length - 1]!.date);
   const chart = e1rms.length >= 3 ? e1rms : rows.map((r) => r.total);
+  const burns = rows.map((r) => rowBurn(state, id, r));
+  const kcalAll = burns.every((b) => b !== null) ? burns.reduce<number>((a, b) => a + (b ?? 0), 0) : null;
   const chartLabel = e1rms.length >= 3 ? 'szacowane maksimum (kg)' : `wynik sesji (${unit})`;
 
   return (
@@ -409,15 +441,21 @@ export function ExerciseStatsPage({ state, id }: { state: AppState; id: Exercise
         <p className="tight" style={{ marginTop: 10 }}>
           Pierwszy raz {dmy(rows[0]!.date)}, ostatni {agoLabel(rows[rows.length - 1]!.date)}.
           {p.e1rm ? ` Aktualne szacowane maksimum: ${p.e1rm} kg.` : ''}
+          {kcalAll !== null
+            ? ` Łącznie ${kcalText(kcalAll)} ponad spoczynek, z serii i przerw.`
+            : ' Wpisz wagę w profilu, a przy każdej sesji pojawią się kalorie.'}
         </p>
       </div>
 
       <ExerciseBadgesBlock state={state} id={id} />
 
       <div className="sect-label">Sesja po sesji</div>
-      {[...rows].reverse().map((r, i) => (
-        <SessionRow key={`${r.date}-${i}`} row={r} unit={unit} />
-      ))}
+      {rows
+        .map((r, i) => ({ r, kcal: burns[i] ?? null }))
+        .reverse()
+        .map(({ r, kcal }, i) => (
+          <SessionRow key={`${r.date}-${i}`} row={r} unit={unit} kcal={kcal} />
+        ))}
 
       <div className="wrap">
         <div className="actions">
@@ -436,7 +474,7 @@ const EFFORT_MARK: Record<string, string> = {
   max: 'na maksa',
 };
 
-function SessionRow({ row, unit }: { row: ExerciseRow; unit: string }) {
+function SessionRow({ row, unit, kcal }: { row: ExerciseRow; unit: string; kcal: number | null }) {
   return (
     <div className="h-item">
       <div className="h-date">{dm(row.date)}</div>
@@ -450,6 +488,7 @@ function SessionRow({ row, unit }: { row: ExerciseRow; unit: string }) {
         <div className="h-detail">
           {EFFORT_MARK[row.effort] ?? row.effort}
           {row.e1rm !== null && ` · 1RM ≈ ${row.e1rm} kg`}
+          {kcal !== null && ` · ${kcalText(kcal)}`}
         </div>
       </div>
       <div className="streak">

@@ -199,15 +199,19 @@ export function Segmented<T extends string>({
   options,
   value,
   onChange,
+  label,
 }: {
   options: { key: T; label: ReactNode }[];
   value: T;
   onChange: (v: T) => void;
+  /** Nazwa grupy dla czytnika ekranu — sam rząd przycisków nie mówi, o co pyta. */
+  label?: string;
 }) {
   return (
-    <div className="seg">
+    <div className="seg" role={label ? 'group' : undefined} aria-label={label}>
       {options.map((o) => (
-        <button key={o.key} aria-pressed={value === o.key} onClick={() => onChange(o.key)}>
+        // `type="button"`, bo przełącznik stoi też w formularzach — domyślny `submit` wysyłałby je.
+        <button type="button" key={o.key} aria-pressed={value === o.key} onClick={() => onChange(o.key)}>
           {o.label}
         </button>
       ))}

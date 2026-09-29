@@ -3,6 +3,8 @@ import {
   SETTINGS_PATH,
   TABS,
   activeTab,
+  cardioAddPath,
+  cardioPath,
   exercisePath,
   isTabRoot,
   parseHash,
@@ -51,6 +53,8 @@ describe('trasy', () => {
       { kind: 'exstats', id: 'swing2' },
       { kind: 'snacks' },
       { kind: 'snackAdd', id: 'swing2' },
+      { kind: 'cardio' },
+      { kind: 'cardioAdd', sport: 'bike' },
       { kind: 'tab', tab: 'set' },
     ];
     subpages.forEach((r) => {
@@ -127,6 +131,24 @@ describe('trasy', () => {
     // Dawne linki `#/przekaski/<id>` prowadziły do formularza z tym ćwiczeniem — dalej prowadzą.
     expect(parseHash('#/przekaski/squat_air')).toEqual({ kind: 'snackAdd', id: 'squat_air' });
     expect(activeTab({ kind: 'snackAdd' })).toBe('train' as TabKey);
+  });
+
+  it('kroki i cardio mają adresy bez zakładki, a formularz mówi adresem, co się wpisuje', () => {
+    expect(TABS.some((t) => t.path.includes('cardio'))).toBe(false);
+    expect(parseHash(cardioPath())).toEqual({ kind: 'cardio' });
+    (['steps', 'treadmill', 'bike'] as const).forEach((sport) =>
+      expect(parseHash(cardioAddPath(sport))).toEqual({ kind: 'cardioAdd', sport }),
+    );
+    expect(cardioAddPath()).toBe('#/cardio/kroki');
+    expect(parseHash('#/cardio/bieznia')).toEqual({ kind: 'cardioAdd', sport: 'treadmill' });
+    // Nieznany rodzaj otwiera kroki, zamiast wyrzucać na ekran startowy.
+    expect(parseHash('#/cardio/kajak')).toEqual({ kind: 'cardioAdd', sport: 'steps' });
+    expect(parseHash('#/cardio/constructor')).toEqual({ kind: 'cardioAdd', sport: 'steps' });
+    expect(parseHash('#/cardio/toString')).toEqual({ kind: 'cardioAdd', sport: 'steps' });
+    expect(activeTab({ kind: 'cardio' })).toBe('train' as TabKey);
+    expect(activeTab({ kind: 'cardioAdd', sport: 'bike' })).toBe('train' as TabKey);
+    expect(screenOf({ kind: 'cardioAdd', sport: 'treadmill' }).title).toBe('Bieżnia');
+    expect(isTabRoot(cardioPath())).toBe(false);
   });
 
   it('identyfikator ze znakami specjalnymi przechodzi w obie strony', () => {

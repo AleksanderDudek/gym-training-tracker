@@ -205,6 +205,16 @@ export const SNACK_EMPTY: readonly string[] = [
   'Pompki przy biurku. Nikt nie patrzy, a jak patrzy — zazdrości.',
 ];
 
+/**
+ * Pusty dzień kroków i cardio. Żart idzie z bieżni, roweru i telefonu — nigdy z wagi ani
+ * z jedzenia: obok stoją kalorie i masa ciała, a to najłatwiejsze miejsce, żeby komuś dokuczyć.
+ */
+export const CARDIO_EMPTY: readonly string[] = [
+  'Telefon liczy kroki po cichu, nawet w drodze po pilota. Szkoda, żeby się marnowały.',
+  'Bieżnia: jedyne miejsce, w którym idzie się godzinę i nie gubi drogi.',
+  'Rower stacjonarny nigdzie nie jedzie, ale kalorie z niego są jak najbardziej prawdziwe.',
+];
+
 /** Awans postaci. Żart o goryla i o stadzie, nigdy o tym, ile komuś brakowało. */
 export const LEVEL_UP: readonly string[] = [
   'Grzbiet jeszcze nie srebrny, ale ambicje już tak.',

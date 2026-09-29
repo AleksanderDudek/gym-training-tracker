@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { IconName } from './components/icons';
-import type { ExerciseId, Route, TabKey } from './types';
+import type { CardioSport, ExerciseId, Route, TabKey } from './types';
 
 /**
  * Trasy trzymają się w części hash adresu, bo GitHub Pages serwuje wyłącznie pliki
@@ -60,6 +60,24 @@ export const snacksPath = (): string => '#/przekaski';
 export const snackAddPath = (id?: ExerciseId): string =>
   id ? `#/przekaski/${encodeURIComponent(id)}` : '#/przekaski/dodaj';
 
+/**
+ * Kroki, bieżnia i rower. Też bez zakładki, z tych samych powodów co przekąski: historia pod
+ * `#/cardio` i zapis pod `#/cardio/kroki`, `#/cardio/bieznia`, `#/cardio/rower` — adres mówi,
+ * co się wpisuje, więc skrót z ekranu Dziś otwiera od razu właściwy formularz.
+ */
+export const cardioPath = (): string => '#/cardio';
+
+const SPORT_SLUG: Record<CardioSport, string> = { steps: 'kroki', treadmill: 'bieznia', bike: 'rower' };
+
+export const cardioAddPath = (sport: CardioSport = 'steps'): string => `#/cardio/${SPORT_SLUG[sport]}`;
+
+const SPORT_BY_SLUG = Object.fromEntries(
+  Object.entries(SPORT_SLUG).map(([k, v]) => [v, k as CardioSport]),
+) as Record<string, CardioSport>;
+
+/** Nazwa formularza w pasku aplikacji — to, co się wpisuje. */
+export const SPORT_TITLE: Record<CardioSport, string> = { steps: 'Kroki', treadmill: 'Bieżnia', bike: 'Rower' };
+
 /** Czy od uruchomienia była już jakaś zmiana trasy w aplikacji. */
 let movedInApp = false;
 
@@ -97,6 +115,10 @@ export function screenOf(route: Route): Screen {
       return { title: 'Przekąski', parent: '#/sesja' };
     case 'snackAdd':
       return { title: 'Przekąska', parent: '#/sesja' };
+    case 'cardio':
+      return { title: 'Kroki i cardio', parent: '#/sesja' };
+    case 'cardioAdd':
+      return { title: SPORT_TITLE[route.sport ?? 'steps'], parent: '#/sesja' };
   }
 }
 
@@ -146,6 +168,12 @@ export function parseHash(hash: string): Route {
     if (!second) return { kind: 'snacks' };
     return second === 'dodaj' ? { kind: 'snackAdd' } : { kind: 'snackAdd', id: second };
   }
+  if (head === 'cardio') {
+    if (!second) return { kind: 'cardio' };
+    // Nieznany rodzaj otwiera kroki — zapis zawsze ma dokąd prowadzić. `hasOwn`, bo ręcznie
+    // wpisane `#/cardio/constructor` trafiłoby inaczej w prototyp obiektu zamiast w zapas.
+    return { kind: 'cardioAdd', sport: Object.hasOwn(SPORT_BY_SLUG, second) ? SPORT_BY_SLUG[second] : 'steps' };
+  }
   const tab = TAB_BY_PATH[head];
   return tab ? { kind: 'tab', tab } : { kind: 'tab', tab: 'train' };
 }
@@ -188,8 +216,8 @@ export function useRoute(): Route {
 
 /**
  * Który przycisk nawigacji ma być podświetlony. Podstrona ćwiczenia należy do atlasu,
- * a jego historia do profilu — ten sam ruch, dwa różne pytania. Przekąski i lista treningów
- * należą do ekranu Dziś: to ta sama odpowiedź na pytanie „co robię dzisiaj”.
+ * a jego historia do profilu — ten sam ruch, dwa różne pytania. Przekąski, kroki i lista
+ * treningów należą do ekranu Dziś: to ta sama odpowiedź na pytanie „co robię dzisiaj”.
  */
 export const activeTab = (route: Route): TabKey =>
   route.kind === 'tab'
@@ -198,6 +226,9 @@ export const activeTab = (route: Route): TabKey =>
       : route.tab
     : route.kind === 'exstats'
       ? 'prog'
-      : route.kind === 'snacks' || route.kind === 'snackAdd'
+      : route.kind === 'snacks' ||
+          route.kind === 'snackAdd' ||
+          route.kind === 'cardio' ||
+          route.kind === 'cardioAdd'
         ? 'train'
         : 'atlas';

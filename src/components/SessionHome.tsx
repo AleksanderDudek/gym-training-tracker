@@ -4,6 +4,8 @@ import { LATE, REST, daySeed, pick } from '../engine/quips';
 import { SupportLine } from './Support';
 import { CharacterStrip } from './Character';
 import { SnackCard } from './Snacks';
+import { CardioCard, kcalText } from './Cardio';
+import { plannedBurn } from '../engine/burn';
 import type { AppState, Workout } from '../types';
 
 /** Co plan mówi na dziś. `due` to termin do zrobienia, `rest` to dzień bez terminu. */
@@ -45,6 +47,7 @@ export function SessionHome({
   onStart: (id: string) => void;
 }) {
   const w = today.workout;
+  const burn = w ? plannedBurn(state, w) : null;
 
   return (
     <>
@@ -75,6 +78,12 @@ export function SessionHome({
               : 'Zrobiony dziś liczy się w pełni.'}
             {today.points ? ` Do wzięcia ${today.points} pkt.` : ''}
           </p>
+          {burn && (
+            <p className="tight" style={{ marginTop: 6 }}>
+              Na twoim poziomie to ok. {Math.round(burn.secs / 60)} min serii z przerwami i{' '}
+              {kcalText(burn.active)} ponad spoczynek.
+            </p>
+          )}
           <div className="actions">
             <button className="btn wide" onClick={() => onStart(w.id)}>
               Zacznij: {w.name}
@@ -129,6 +138,7 @@ export function SessionHome({
 
       {/* Przekąska pod treningiem, nie nad nim: kto przyszedł trenować, najpierw widzi trening. */}
       <SnackCard state={state} />
+      <CardioCard state={state} />
 
       <div className="wrap">
         {/*

@@ -143,6 +143,40 @@ export interface Snack {
   w: number | null;
 }
 
+/**
+ * Ruch liczony gdzie indziej i wpisywany ręcznie: kroki z telefonu albo zegarka, bieżnia
+ * i rower. Aplikacja nie mierzy tego sama — przeglądarka nie ma dostępu do krokomierza
+ * systemu — więc wpis to liczby przepisane z innego urządzenia, a kalorie liczą się z nich.
+ */
+export type CardioSport = 'steps' | 'treadmill' | 'bike';
+
+/**
+ * Co przepisano z urządzenia. Rower ma dwa warianty, bo licznik na zewnątrz pokazuje
+ * prędkość, a rower stacjonarny — moc; prędkość na jego wyświetlaczu to umowna liczba.
+ */
+export type CardioInput =
+  | { kind: 'steps'; steps: number }
+  /** Nachylenie w procentach, jak na wyświetlaczu bieżni. Zero to płasko. */
+  | { kind: 'treadmill'; kmh: number; min: number; grade: number }
+  | { kind: 'bike'; kmh: number; min: number }
+  | { kind: 'ergo'; watts: number; min: number };
+
+export type Cardio = CardioInput & {
+  /** Klucz do usuwania — jak w przekąskach, ze znacznika czasu i numeru w tej samej ms. */
+  key: string;
+  /** Dzień ruchu, `yyyy-mm-dd`. Kroki wpisuje się często dzień później, więc to nie chwila zapisu. */
+  day: string;
+  /** Chwila zapisu, ISO — do kolejności na liście. */
+  at: string;
+};
+
+/** Masa ciała z jednego dnia. Kalorie liczą się z wagi, która obowiązywała w dniu ruchu. */
+export interface BodyWeight {
+  /** `yyyy-mm-dd`. Jeden wpis na dzień — kolejny tego samego dnia go zastępuje. */
+  day: string;
+  kg: number;
+}
+
 export interface Workout {
   id: string;
   name: string;
@@ -316,6 +350,8 @@ export interface AppState {
     ladders?: Partial<Record<Gear, number[]>>;
     /** Postać, która rośnie razem z punktami doświadczenia. Brak oznacza Gustawa. */
     avatar?: 'gustaw' | 'gosia';
+    /** Wzrost w cm — tylko do długości kroku. Brak oznacza przeciętne 170 cm. */
+    height?: number;
   };
   prog: Record<ExerciseId, Progress>;
   workouts: Workout[];
@@ -323,6 +359,10 @@ export interface AppState {
   log: LogEntry[];
   /** Przekąski ruchowe — osobno od dziennika, bo dziennik to treningi, a plan liczy się z niego. */
   snacks: Snack[];
+  /** Kroki, bieżnia i rower wpisane ręcznie. Osobno od dziennika — to nie trening siłowy. */
+  cardio: Cardio[];
+  /** Waga ciała w czasie, rosnąco po dniu. Z niej liczą się kalorie. */
+  body: BodyWeight[];
   plan: ActivePlan | null;
   notice: Notice | null;
   /** Dziennik zdarzeń, których nie da się odtworzyć z kalendarza. */
@@ -364,7 +404,11 @@ export type Route =
   /** Przekąski ruchowe: dzisiejsze, tydzień i historia. */
   | { kind: 'snacks' }
   /** Zapis jednej przekąski. Z identyfikatorem — od razu z tym ćwiczeniem, bez wyboru. */
-  | { kind: 'snackAdd'; id?: ExerciseId | undefined };
+  | { kind: 'snackAdd'; id?: ExerciseId | undefined }
+  /** Kroki, bieżnia i rower: dziś, tydzień, historia i kalorie. */
+  | { kind: 'cardio' }
+  /** Zapis kroków, bieżni albo roweru. Bez rodzaju — kroki, bo to najczęstszy wpis. */
+  | { kind: 'cardioAdd'; sport?: CardioSport | undefined };
 
 /** Materiał wideo pokazujący technikę ćwiczenia. */
 export interface VideoRef {

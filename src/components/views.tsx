@@ -15,6 +15,8 @@ import { ExerciseCard } from './ExerciseCard';
 import { SupportLine } from './Support';
 import { OWN_WORKOUT_JOKES, WORKOUT_JOKES } from '../data/exjokes';
 import { pick } from '../engine/quips';
+import { plannedBurn } from '../engine/burn';
+import { kcalText } from './Cardio';
 import type { AppState, EffortKey, ExerciseId, ReadyKey, SetResult, Workout } from '../types';
 
 /* ---------------- Sesja ---------------- */
@@ -80,6 +82,20 @@ export function SessionView({
         </button>
       </div>
     </div>
+  );
+}
+
+/**
+ * Czego się spodziewać: czas serii z przerwami i kalorie na obecnym poziomie. Bez wagi
+ * zostaje sam czas — kalorii nie zgadujemy.
+ */
+function WorkoutEstimate({ state, w }: { state: AppState; w: Workout }) {
+  const b = plannedBurn(state, w);
+  if (!b || !w.items.length) return null;
+  return (
+    <p className="tight">
+      Ok. {Math.round(b.secs / 60)} min serii z przerwami · {kcalText(b.active)} ponad spoczynek
+    </p>
   );
 }
 
@@ -171,6 +187,7 @@ export function WorkoutsView({
               {WORKOUT_JOKES[w.id] ?? pick(OWN_WORKOUT_JOKES, w.name.length + w.items.length)}
             </p>
             <p>{w.items.map((i) => ex(i.ex).name).join(' · ')}</p>
+            <WorkoutEstimate state={state} w={w} />
             <div className="btnrow">
               <button className="btn sm" onClick={() => onStart(w.id)}>
                 Zacznij

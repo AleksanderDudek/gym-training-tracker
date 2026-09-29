@@ -19,7 +19,7 @@ Pozostałe polecenia:
 npm run build      # produkcyjny build do dist/, z listą plików dla service workera
 npm run preview    # podgląd builda — tu działa też praca offline
 npm run typecheck  # tsc --noEmit
-npm test           # 341 testów silnika, biblioteki, odznak, ruchu, mimiki, obsady i tras (vitest)
+npm test           # 388 testów silnika, kalorii, biblioteki, odznak, ruchu, mimiki, obsady i tras (vitest)
 ```
 
 Build jest w pełni statyczny (`base: './'`), więc `dist/` można wrzucić na dowolny hosting plików
@@ -235,7 +235,7 @@ i drugi, obok wyniku sesji, po każdym zamkniętym treningu.
 | Plan | `#/plan` | Kalendarz terminów, punkty, stopień, dziennik zdarzeń. |
 | Atlas | `#/cwiczenia` | 105 ćwiczeń z filtrem sprzętu; każde ma własny adres do wysłania. |
 | Osiągnięcia | `#/osiagniecia` | Dorobek w liczbach, progi najbliższe zdobycia, 61 rodzin odznak i odznaki każdego zrobionego ćwiczenia. |
-| Profil | `#/profil` | Postać i doświadczenie, twoje liczby, obciążenie, przekąski, lista zrobionych ćwiczeń i historia treningów. |
+| Profil | `#/profil` | Postać i doświadczenie, twoje liczby, waga i wzrost, obciążenie, przekąski, kroki i cardio, lista zrobionych ćwiczeń i historia treningów z kaloriami. |
 
 Podstrony mają własne adresy i strzałkę wstecz w pasku aplikacji:
 
@@ -244,6 +244,8 @@ Podstrony mają własne adresy i strzałkę wstecz w pasku aplikacji:
 | Treningi — wszystkie do wyboru i kreator własnych | `#/treningi` | Dziś |
 | Przekąski — dziś, tydzień, historia | `#/przekaski` | Dziś |
 | Zapis przekąski | `#/przekaski/dodaj`, `#/przekaski/<id>` | Dziś |
+| Kroki i cardio — dziś, tydzień, historia, jak liczymy kalorie | `#/cardio` | Dziś |
+| Zapis kroków, bieżni albo roweru | `#/cardio/kroki`, `#/cardio/bieznia`, `#/cardio/rower` | Dziś |
 | Ćwiczenie — technika i wideo | `#/cwiczenia/<id>` | Atlas |
 | Historia ćwiczenia | `#/profil/<id>` | Profil |
 | Ustawienia | `#/ustawienia` | przycisk w pasku aplikacji |
@@ -406,6 +408,80 @@ Przekąska wisi pod treningiem z planu, nie nad nim: kto przyszedł trenować, n
 trening. Na ekranie przekąsek nie ma baneru wsparcia — to narzędzie do szybkiego zapisu,
 a kawa poczeka.
 
+## Kroki, cardio i kalorie
+
+**Aplikacja nie mierzy kroków — przyjmuje je.** Krokomierz telefonu liczy system (chip ruchu
+w iPhonie, czujnik kroków w Androidzie) i żadna przeglądarka nie daje do niego dostępu, także
+aplikacja zainstalowana na ekranie głównym. Akcelerometr strony działa tylko przy włączonym
+ekranie i otwartej karcie, więc liczyłby wyłącznie spacer z telefonem w dłoni. Zamiast udawać
+pomiar, aplikacja przyjmuje liczby z urządzenia, które mierzy naprawdę, i liczy z nich kalorie.
+
+**Trzy rodzaje wpisu, jedna droga: rodzaj → liczby z wyświetlacza → zapis.**
+
+- **Kroki** — liczba z całego dnia z telefonu albo zegarka. Drugi wpis kroków na ten sam dzień
+  zastępuje pierwszy: wieczorem wpisuje się stan licznika, a nie przyrost od południa.
+- **Bieżnia** — średnia prędkość, czas i nachylenie w procentach (puste znaczy płasko).
+- **Rower** — średnia prędkość z licznika albo, na rowerze stacjonarnym, moc w watach.
+  Prędkość na wyświetlaczu roweru stacjonarnego to umowna liczba; waty mówią, ile było pracy.
+
+Dzień wybiera się przełącznikiem „Dziś / Wczoraj / Inny dzień”, bo kroki wpisuje się często
+nazajutrz rano. Bieżnia i rower się sumują — to osobne wyjścia. Pod formularzem stoi uwaga
+o podwójnym liczeniu: marsz na bieżni z telefonem w kieszeni jest już w krokach.
+
+**Kalorie liczą się już w trakcie pisania**, zanim ktoś naciśnie „Zapisz”, żeby dało się je
+porównać z bieżnią. Podgląd pokazuje dwie liczby: kalorie **aktywne** (ponad spoczynek, to
+główna liczba w całej aplikacji) i sumę **razem ze spoczynkiem** — tę zwykle pokazuje
+wyświetlacz. Aktywne, bo tak ACSM liczy wydatek przy planowaniu ruchu i tak zegarki podają
+„energię aktywną”; suma z bieżni dolicza godzinę siedzenia, która i tak by się spaliła.
+
+**Skąd liczby:**
+
+| Ruch | Metoda | Źródło |
+| --- | --- | --- |
+| Kroki | droga = kroki × krok (41,4% wzrostu, bez wzrostu 70 cm), koszt marszu ACSM | równanie ACSM na marsz |
+| Bieżnia | marsz: 0,1·v + 1,8·v·nachylenie + 3,5; bieg: 0,2·v + 0,9·v·nachylenie + 3,5 | równania ACSM |
+| Rower, prędkość | tabela MET według prędkości, liniowo między środkami przedziałów | Compendium 2024, kody 01018–01060 |
+| Rower, moc | 1,8 · waty · 6,12 / masa + 7 | równanie ACSM dla cykloergometru |
+| Ćwiczenia siłowe | MET rodzaju pracy × czas serii z przerwami | Compendium 2024, m.in. 02052, 02054, 02058 |
+
+Między 6 a 8 km/h bieżnia przechodzi **płynnie** od wzoru na marsz do wzoru na bieg — twarde
+przełączenie dawało skok z 4,8 na 8,6 MET przy jednej dziesiątej km/h. Tabela roweru jest
+połączona liniowo z tego samego powodu. Test pilnuje, żeby żaden krok o 0,1 km/h nie skakał.
+
+**Kalorie treningu liczą się z serii, nie z zegara sesji.** Zegar mierzy też telefon odłożony
+na godzinę i sesję zamkniętą następnego dnia. Każde ćwiczenie ma profil: MET z Compendium dla
+rodzaju pracy (swingi 9,8, przysiady i martwe ciągi 5,0, trening oporowy 3,5, kalistenika 3,8,
+deska i brzuch 2,8, noszenie ciężaru 6,0), tempo na powtórzenie i typową przerwę. MET treningu
+oporowego to średnia z całej sesji razem z przerwami, więc przerwa liczy się po tym samym MET.
+Wyjątkiem jest ruch ciągły — skakanka, ergometr, liny, sanie — gdzie MET opisuje samą pracę,
+a przerwa idzie spokojniej, po 2 MET. Turecki wstaw i kompleks mają własne tempo, bo jedno
+„powtórzenie” to pół minuty albo trzy ruchy.
+
+Przy 80 kg wychodzi to tak: 10 tysięcy kroków ≈ 270 kcal, pół godziny bieżni 5 km/h ≈ 95 kcal
+(135 razem ze spoczynkiem, jak na wyświetlaczu), godzina roweru 20 km/h ≈ 535 kcal, Trening A
+na domyślnym poziomie ≈ 200 kcal w ok. 40 minut. To szacunek — pomiar tlenu u konkretnej osoby
+potrafi odbiec o 20–30%, dlatego przy każdej liczbie stoi tylda, a większe liczby idą co 5 kcal.
+
+**Kalorie są wszędzie, gdzie jest ruch:** w podsumowaniu po zamkniętym treningu (suma i rozbicie
+na ćwiczenia), w historii treningów w profilu, przy każdej sesji w historii ćwiczenia (i suma
+z całej historii), w szacunku „ile to potrwa i ile spali” przy treningu na dziś i na liście
+treningów, na podstronie ćwiczenia w atlasie (pozycja Compendium i jedna sesja na twoim poziomie),
+a na ekranie kroków — dzień i siedem dni ze wszystkiego razem: wpisów, treningów i przekąsek.
+
+**Waga jest dziennikiem, nie jedną liczbą.** Kalorie zależą od wagi wprost, a waga się zmienia —
+często właśnie dlatego, że ktoś liczy kalorie. Każdy ruch liczy się z wagi obowiązującej w jego
+dniu, więc nowe ważenie nie przepisuje historii. Ruch sprzed pierwszego ważenia bierze pierwsze
+ważenie. **Bez wagi aplikacja nie zgaduje** — zapisuje drogę i czas, a kalorie pokazuje, gdy
+tylko waga się pojawi, także dla wcześniejszych wpisów. Formularz pyta o wagę sam, dopóki jej
+nie ma; później zmienia się ją w profilu, obok opcjonalnego wzrostu (tylko do długości kroku).
+
+**Ruch wpisany ręcznie nie jest treningiem**, tak jak przekąska: nie trafia do dziennika,
+nie rusza poziomów, planu ani odznak i nie daje doświadczenia. Liczy się do kalorii dnia.
+
+Pusty dzień ma żart, jak przekąski — z bieżni, roweru i telefonu, nigdy z wagi ani z jedzenia.
+Obok stoją kalorie i masa ciała, a to najłatwiejsze miejsce, żeby komuś dokuczyć; test pilnuje
+słów.
+
 ## Atlas i sprzęt
 
 Biblioteka ma **105 ćwiczeń** w siedmiu partiach ruchu: zawias biodrowy, przysiad, ciągnięcie,
@@ -475,7 +551,7 @@ dostaje rzadsze `setInterval`, więc licznik oparty na tyknięciach zostawałby 
 src/
   types.ts                  wszystkie typy domenowe
   routing.ts                trasy w hashu adresu, sześć zakładek i dwie rodziny podstron
-  routing.test.ts           18 testów tras, zakładek, ekranów, przekąsek i starych adresów
+  routing.test.ts           19 testów tras, zakładek, ekranów, przekąsek, cardio i starych adresów
   data/exercises.ts         biblioteka 105 ćwiczeń, drabiny sprzętu, cztery treningi
   data/exjokes.ts           dopiski do 105 ćwiczeń i do gotowych treningów
   data/moves.ts             osiemnaście wzorców ruchu jako klatki kluczowe
@@ -498,6 +574,12 @@ src/
     snacks.ts               przekąski ruchowe: zapis, skróty, podpowiedź, dzień po ćwiczeniu, liczby
     snacks.test.ts          17 testów zapisu, skrótów, granicy z treningiem i liczb przekąsek
     volume.ts               objętość ćwiczenia w dniu, tygodniu i miesiącu kalendarzowym
+    energy.ts               kalorie: równania ACSM, tabela roweru z Compendium, profile MET ćwiczeń
+    energy.test.ts          23 testy równań, płynności marsz–bieg, kroków, roweru i kalorii z serii
+    body.ts                 dziennik wagi, waga obowiązująca w danym dniu, wzrost
+    cardio.ts               kroki, bieżnia i rower: zapis, zakresy, zastępowanie kroków dnia
+    burn.ts                 kalorie z zapisów: wpis, trening, ćwiczenie, przekąska, cały dzień
+    cardio.test.ts          20 testów wpisów, wagi w czasie i kalorii z zapisów
     find.ts                 wyszukiwanie ćwiczenia: polski alfabet, ogonki opcjonalne, podświetlenie
     find.test.ts            9 testów kolejności, dopasowania i podświetlenia
     exbadges.ts             odznaki ćwiczeń: cztery rodziny na ruch, progi z objętości sesji
@@ -505,7 +587,7 @@ src/
     xp.ts                   punkty doświadczenia, poziomy i tytuły postaci
     xp.test.ts              12 testów źródeł doświadczenia, sufitu przekąsek i poziomów
     quips.ts                humor: porównania liczb, odmiana, zestawy tekstów
-    quips.test.ts           20 testów puent, odmiany, dopisków i granic porównań
+    quips.test.ts           21 testów puent, odmiany, dopisków i granic porównań
     pose.test.ts            24 testy szkieletu, cyklu, katalogu ruchów i mimiki
     badges.ts               katalog odznak z progami, postęp, migracja starych kluczy
     journal.ts              dziennik zdarzeń wyprowadzany z kalendarza
@@ -534,6 +616,7 @@ src/
     Intro.tsx               opcjonalne wprowadzenie, cztery ekrany
     Share.tsx               przycisk udostępniania, obsada blankietu i ścieżka zapasowa
     Snacks.tsx              przekąski ruchowe: karta na ekranie sesji, widok zapisu i historia
+    Cardio.tsx              kroki i cardio: karta, formularz z podglądem kalorii, historia, waga
     Character.tsx           postać: karta w profilu, pasek na ekranie sesji, okno awansu
     ExerciseBadges.tsx      wiersz odznaki ćwiczenia z bieżącym okresem i rekordem
     ExercisePicker.tsx      pole wyboru ćwiczenia z podpowiedziami (wzorzec combobox)
@@ -1008,6 +1091,12 @@ Przekąski mają w zapisie własną listę (`snacks`), obok dziennika treningów
 siedzi w ustawieniach (`cfg.avatar`). Zapis sprzed przekąsek wczytuje się z pustą listą, a przy
 wczytaniu i imporcie odpadają wpisy z nieznanym ćwiczeniem, zepsutą datą albo zerowym wynikiem.
 Doświadczenie i poziom postaci — jak punkty planu — są wyprowadzane, nie zapisywane.
+
+Kroki, bieżnia i rower mają listę `cardio`, a ważenia — listę `body` (po dniu, jedno na dzień);
+wzrost siedzi w `cfg.height`. Zapisywane są liczby z wyświetlacza, **nigdy kalorie**: kalorie
+liczą się przy każdym otwarciu z wpisu i wagi z jego dnia, więc poprawka wzoru albo pierwsze
+ważenie od razu obejmuje całą historię. Przy wczytaniu i imporcie odpadają wpisy spoza zakresów
+(to literówki) i ważenia z zepsutą datą; wzrost spoza ludzkiego zakresu jest pomijany.
 
 ## Zastrzeżenie
 

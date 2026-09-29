@@ -10,6 +10,9 @@ import { exercisePath, go, snackAddPath } from '../routing';
 import { Chip, EmptyState } from './ui';
 import { VideoEmbed } from './VideoEmbed';
 import { SupportLine } from './Support';
+import { kcalText } from './Cardio';
+import { profileOf } from '../engine/energy';
+import { exercisePlannedBurn } from '../engine/burn';
 import type { AppState, ExerciseId, Gear } from '../types';
 
 /* ---------------- Spis ćwiczeń ---------------- */
@@ -84,6 +87,24 @@ export function AtlasView({ state }: { state: AppState }) {
 
 /* ---------------- Podstrona ćwiczenia ---------------- */
 
+/**
+ * Wydatek energii ruchu: z której pozycji Compendium bierze się liczba i ile wychodzi jedna
+ * sesja na obecnym poziomie. Bez wagi zostaje sama pozycja — kalorii nie zgadujemy.
+ */
+function ExerciseEnergy({ state, id }: { state: AppState; id: ExerciseId }) {
+  const prof = profileOf(id);
+  const b = exercisePlannedBurn(state, id);
+  const p = P(state, id);
+  return (
+    <p className="tight">
+      Wydatek energii: {prof.label}, {prof.met.toLocaleString('pl-PL')} MET (Compendium {prof.code}).
+      {b
+        ? ` Na twoim poziomie (${p.sets} × ${p.target}${ex(id).unit === 'secs' ? ' s' : ''}) to ok. ${Math.max(1, Math.round(b.secs / 60))} min z przerwami i ${kcalText(b.active)} ponad spoczynek.`
+        : ' Po wpisaniu wagi w profilu policzę tu kalorie jednej sesji.'}
+    </p>
+  );
+}
+
 export function ExercisePage({ state, id }: { state: AppState; id: ExerciseId }) {
   const m = EX[id];
 
@@ -132,6 +153,7 @@ export function ExercisePage({ state, id }: { state: AppState; id: ExerciseId })
           {m.unit === 'secs' && ' — w sesji dostajesz stoper albo odliczanie'}. Sprzęt:{' '}
           <b>{GEAR_LABEL[gearOf(id)]}</b>.
         </p>
+        <ExerciseEnergy state={state} id={id} />
         {/* Krótka seria tego ruchu poza treningiem — prosto z miejsca, w którym ktoś go ogląda. */}
         <div style={{ marginTop: 10 }}>
           <button className="btn ghost sm" onClick={() => go(snackAddPath(id))}>

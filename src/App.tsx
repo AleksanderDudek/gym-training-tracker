@@ -34,12 +34,17 @@ import { addSnack, removeSnack, snacksOf, snacksOn, validSnack } from './engine/
 import { XP, levelFor, xpSummary } from './engine/xp';
 import type { LevelState } from './engine/xp';
 import { SnackEntry, SnacksPage, snackLabel } from './components/Snacks';
+import { CardioEntry, CardioPage, cardioLabel, kcalText } from './components/Cardio';
+import { addCardio, removeCardio, validCardio } from './engine/cardio';
+import { removeBodyWeight, setBodyWeight, validBody, validHeight } from './engine/body';
+import { cardioBurn, workoutBurn } from './engine/burn';
 import { LevelUp, avatarOf } from './components/Character';
 import type { Avatar } from './components/Character';
 import type {
   ActivePlan,
   AppState,
   AchievementHit,
+  CardioInput,
   Change,
   EffortKey,
   ExerciseId,
@@ -61,6 +66,13 @@ const levelNow = (s: AppState): LevelState => levelFor(xpSummary(s).total);
  */
 function restoreExtras(next: AppState, saved: Partial<AppState>): void {
   next.snacks = Array.isArray(saved.snacks) ? saved.snacks.filter(validSnack) : [];
+  next.cardio = Array.isArray(saved.cardio) ? saved.cardio.filter(validCardio) : [];
+  // Ważenia po dniu i bez powtórzeń: waga z dnia bierze ostatnie ważenie przed nim,
+  // więc lista musi być posortowana, a dzień — jeden.
+  const byDay = new Map<string, NonNullable<AppState['body']>[number]>();
+  (Array.isArray(saved.body) ? saved.body.filter(validBody) : []).forEach((b) => byDay.set(b.day, b));
+  next.body = [...byDay.values()].sort((a, b) => a.day.localeCompare(b.day));
+  if (next.cfg.height !== undefined && !validHeight(next.cfg.height)) delete next.cfg.height;
   if (typeof saved.supportSnooze === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(saved.supportSnooze))
     next.supportSnooze = saved.supportSnooze;
   if (next.cfg.avatar !== undefined && next.cfg.avatar !== 'gustaw' && next.cfg.avatar !== 'gosia')
@@ -296,6 +308,59 @@ export default function App() {
     commit(next);
   };
 
+  /* ---------- kroki, cardio i waga ---------- */
+
+  /**
+   * Zapis ruchu. Waga wpisana w formularzu to dzisiejsze ważenie — idzie do dziennika wagi,
+   * a nie do wpisu, bo przyda się też treningom i kolejnym spacerom.
+   */
+  const logCardio = (input: CardioInput, day: string, kg: number | null) => {
+    const next = clone(state);
+    if (kg !== null) setBodyWeight(next, kg, dayKey(Date.now()));
+    const { entry, replaced } = addCardio(next, input, day);
+    commit(next);
+    const b = cardioBurn(next, entry);
+    setToastMsg(
+      `Zapisane: ${cardioLabel(entry)}${b ? ` · ${kcalText(b.active)}` : ''}.` +
+        (replaced ? ' Poprzednia liczba kroków z tego dnia zastąpiona.' : '') +
+        (b ? '' : ' Kalorie pokażą się po wpisaniu wagi.'),
+    );
+  };
+
+  const deleteCardio = (key: string) => {
+    const next = clone(state);
+    if (!removeCardio(next, key)) return;
+    commit(next);
+    setToastMsg('Wpis usunięty.');
+  };
+
+  const setWeight = (kg: number) => {
+    // Pierwsze ważenie obowiązuje też wstecz — ruch sprzed niego nie ma innej wagi.
+    const first = !state.body?.length;
+    const next = clone(state);
+    const b = setBodyWeight(next, kg, dayKey(Date.now()));
+    commit(next);
+    setToastMsg(
+      `Waga zapisana: ${b.kg.toLocaleString('pl-PL')} kg. ` +
+        (first ? 'Kalorie policzone — także dla wcześniejszych wpisów.' : 'Kalorie od dziś liczą się z niej.'),
+    );
+  };
+
+  const deleteWeight = (day: string) => {
+    const next = clone(state);
+    if (!removeBodyWeight(next, day)) return;
+    commit(next);
+    setToastMsg('Ważenie usunięte.');
+  };
+
+  const setHeight = (cm: number | null) => {
+    const next = clone(state);
+    if (cm === null) delete next.cfg.height;
+    else next.cfg.height = cm;
+    commit(next);
+    setToastMsg(cm === null ? 'Wzrost usunięty — krok liczony dla 170 cm.' : `Wzrost zapisany: ${cm} cm.`);
+  };
+
   const cancelSession = async () => {
     const ok = await ask(
       'Porzucić trening?',
@@ -394,6 +459,7 @@ export default function App() {
     const m = metrics(next);
     const after = levelNow(next);
     const gained = after.xp - xpBefore;
+    const burn = workoutBurn(next, next.log[next.log.length - 1]!);
     const subject = {
       kind: 'session' as const,
       seed: m.workouts,
@@ -436,6 +502,18 @@ export default function App() {
           Postać: +{gained} XP · poziom {after.level}, {after.title}
           {after.level > before.level ? ' — awans!' : `, do kolejnego ${after.toNext} XP`}
         </p>
+        {burn ? (
+          <>
+            <p className="xpline">
+              Ruch: {kcalText(burn.active)} ponad spoczynek · ok. {Math.round(burn.secs / 60)} min serii z przerwami
+            </p>
+            <p className="kcal-split">
+              {burn.items.map((i) => `${ex(i.id).name} ${kcalText(i.active).replace('≈ ', '')}`).join(' · ')}
+            </p>
+          </>
+        ) : (
+          <p className="kcal-split">Wpisz wagę w profilu, a policzę też kalorie tego treningu.</p>
+        )}
         <div className="after">
           <ShareButton subject={subject} label="Udostępnij wynik" />
           <ShareButton
@@ -837,6 +915,18 @@ export default function App() {
         />
       )}
 
+      {route.kind === 'cardio' && <CardioPage state={state} onDelete={deleteCardio} />}
+      {route.kind === 'cardioAdd' && (
+        // Klucz za adresem: skrót z innym rodzajem ruchu zaczyna czysty formularz.
+        <CardioEntry
+          key={route.sport ?? 'steps'}
+          state={state}
+          sport={route.sport ?? 'steps'}
+          onLog={logCardio}
+          onToast={setToastMsg}
+        />
+      )}
+
       {view === 'train' &&
         (current ? (
           <SessionView
@@ -863,7 +953,16 @@ export default function App() {
           />
         ))}
 
-      {view === 'prog' && <ProfileView state={state} onAvatar={setAvatar} />}
+      {view === 'prog' && (
+        <ProfileView
+          state={state}
+          onAvatar={setAvatar}
+          onWeight={setWeight}
+          onHeight={setHeight}
+          onDeleteWeight={deleteWeight}
+          onToast={setToastMsg}
+        />
+      )}
 
       {view === 'ach' && <Achievements state={state} />}
 
