@@ -146,7 +146,7 @@ export function CharacterStrip({ state }: { state: AppState }) {
   const sum = xpSummary(state);
   const lv = levelFor(sum.total);
   return (
-    <a className="charstrip" href="#/profil" aria-label={`Postać: poziom ${lv.level}, ${lv.title}. Szczegóły w profilu.`}>
+    <a className="charstrip" href="#/profil">
       <span className="charstrip-lvl">
         <small>poziom</small>
         {lv.level}

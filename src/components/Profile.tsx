@@ -9,7 +9,6 @@ import { P, planLabel } from '../engine/plan';
 import { exercisePath, go, snackAddPath, snacksPath, statsPath } from '../routing';
 import { Chip, EmptyState, Sparkline, Trendline } from './ui';
 import { LoadGauge } from './views';
-import { SupportLine } from './Support';
 import { CharacterCard } from './Character';
 import type { Avatar } from './Character';
 import { ExerciseBadgeRow, badgeTally } from './ExerciseBadges';
@@ -68,7 +67,7 @@ function SnackSummary({ state }: { state: AppState }) {
   const today = snacksOn(state, dayKey(Date.now())).length;
   return (
     <div className="grp">
-      <h3>Przekąski ruchowe</h3>
+      <h2>Przekąski ruchowe</h2>
       <p className="tight">
         {st.count
           ? `${st.count} ${plural(st.count, SNACK_FORMS)} od początku, dziś ${today}. Najdłuższy ciąg: ${st.run} ${plural(st.run, ['dzień', 'dni', 'dni'])} z rzędu, różnych ćwiczeń: ${st.distinct}.`
@@ -133,7 +132,6 @@ export function ProfileView({ state, onAvatar }: { state: AppState; onAvatar: (a
   return (
     <>
       <div className="wrap">
-        <h2>Profil</h2>
         <p className="lead">
           Wszystko, co zrobiłeś, policzone w jednym miejscu. Bez konta, bez maila i bez
           wysyłania czegokolwiek na zewnątrz — te liczby nie opuszczają tej przeglądarki.
@@ -230,9 +228,6 @@ export function ProfileView({ state, onAvatar }: { state: AppState; onAvatar: (a
         </>
       )}
 
-      <div className="wrap">
-        <SupportLine seed={m.workouts + 1} />
-      </div>
     </>
   );
 }
@@ -285,9 +280,6 @@ export function ExerciseStatsPage({ state, id }: { state: AppState; id: Exercise
   if (!m) {
     return (
       <div className="wrap">
-        <button className="back" onClick={() => go('#/profil')}>
-          ← Profil
-        </button>
         <EmptyState
           title="Nie ma takiego ćwiczenia"
           text={`Identyfikator „${id}” do niczego nie pasuje.`}
@@ -302,11 +294,6 @@ export function ExerciseStatsPage({ state, id }: { state: AppState; id: Exercise
     const snacked = snacksOf(state).some((s) => s.ex === id);
     return (
       <>
-        <div className="wrap">
-          <button className="back" onClick={() => go('#/profil')}>
-            ← Profil
-          </button>
-        </div>
         <div className="wrap">
           {snacked ? (
             <div className="ex-hero">
@@ -363,12 +350,6 @@ export function ExerciseStatsPage({ state, id }: { state: AppState; id: Exercise
   return (
     <>
       <div className="wrap">
-        <button className="back" onClick={() => go('#/profil')}>
-          ← Profil
-        </button>
-      </div>
-
-      <div className="wrap">
         <div className="ex-hero">
           <Chip state={state} id={id} />
           <div>
@@ -382,7 +363,7 @@ export function ExerciseStatsPage({ state, id }: { state: AppState; id: Exercise
       </div>
 
       <div className="grp">
-        <h3>Jak to szło</h3>
+        <h2>Jak to szło</h2>
         {t ? (
           <>
             <p className={`trend ${t.dir}`}>{VERDICT[t.dir](t, unit)}</p>

@@ -10,21 +10,24 @@ import type { ExerciseId, Route, TabKey } from './types';
  */
 
 /**
- * Zakładki dolnego paska. Sześć, nie siedem: przy siedmiu na ekranie 320 px na pozycję
- * wypada 45 px, czyli poniżej minimum 44 px z wytycznych Apple i 48 px z Material Design,
- * a etykiety trzeba ścisnąć do 9,5 px. Ustawienia schodzą do nagłówka — to ekran otwierany
- * raz na miesiąc, a dolny pasek jest od miejsc odwiedzanych codziennie.
+ * Zakładki dolnego paska. Pięć, bo tyle przewidują i wytyczne Material 3 („od trzech do
+ * pięciu”), i Apple HIG (najwyżej pięć na iPhonie) — przy pięciu każda pozycja ma na ekranie
+ * 320 px 64 px szerokości, a etykieta mieści się w jednym słowie.
+ *
+ * Kolejność idzie od codziennego do okazjonalnego, a profil stoi na końcu, jak w większości
+ * aplikacji. Treningi nie mają własnej zakładki: to lista do wyboru, na którą i tak prowadzi
+ * „Wybierz dowolny trening” z ekranu Dziś — są jego podstroną. Ustawienia siedzą w pasku
+ * aplikacji, bo otwiera się je raz na miesiąc.
  */
 export const TABS: { key: TabKey; label: string; path: string; icon: IconName }[] = [
-  { key: 'train', label: 'Twoja sesja', path: '#/sesja', icon: 'session' },
+  { key: 'train', label: 'Dziś', path: '#/sesja', icon: 'session' },
   { key: 'plan', label: 'Plan', path: '#/plan', icon: 'plan' },
-  { key: 'work', label: 'Treningi', path: '#/treningi', icon: 'workouts' },
-  { key: 'prog', label: 'Profil', path: '#/profil', icon: 'profile' },
-  { key: 'ach', label: 'Osiągnięcia', path: '#/osiagniecia', icon: 'awards' },
   { key: 'atlas', label: 'Atlas', path: '#/cwiczenia', icon: 'atlas' },
+  { key: 'ach', label: 'Osiągnięcia', path: '#/osiagniecia', icon: 'awards' },
+  { key: 'prog', label: 'Profil', path: '#/profil', icon: 'profile' },
 ];
 
-/** Ustawienia mają własny przycisk w nagłówku — poza dolnym paskiem, ale wciąż jeden klik. */
+/** Ustawienia mają własny przycisk w pasku aplikacji — poza dolnym paskiem, ale wciąż jeden klik. */
 export const SETTINGS_PATH = '#/ustawienia';
 
 const TAB_BY_PATH: Record<string, TabKey> = {
@@ -60,6 +63,65 @@ export const snackAddPath = (id?: ExerciseId): string =>
 /** Czy od uruchomienia była już jakaś zmiana trasy w aplikacji. */
 let movedInApp = false;
 
+/** Ekran: tytuł w pasku aplikacji i dokąd prowadzi strzałka wstecz. Zakładki nie mają rodzica. */
+export interface Screen {
+  title: string;
+  parent: string | null;
+}
+
+const TAB_SCREEN: Record<TabKey, Screen> = {
+  train: { title: 'Dziś', parent: null },
+  plan: { title: 'Plan', parent: null },
+  atlas: { title: 'Atlas', parent: null },
+  ach: { title: 'Osiągnięcia', parent: null },
+  prog: { title: 'Profil', parent: null },
+  work: { title: 'Treningi', parent: '#/sesja' },
+  set: { title: 'Ustawienia', parent: '#/profil' },
+};
+
+/**
+ * Tytuł i rodzic ekranu. Podstrona ćwiczenia nosi w pasku nazwę rodzaju, a nie ćwiczenia:
+ * nazwa stoi dużą czcionką w treści, a powtórzona w pasku byłaby tą samą informacją dwa razy.
+ */
+export function screenOf(route: Route): Screen {
+  switch (route.kind) {
+    case 'tab':
+      return TAB_SCREEN[route.tab];
+    case 'atlas':
+      return TAB_SCREEN.atlas;
+    case 'exercise':
+      return { title: 'Ćwiczenie', parent: '#/cwiczenia' };
+    case 'exstats':
+      return { title: 'Twoja historia', parent: '#/profil' };
+    case 'snacks':
+      return { title: 'Przekąski', parent: '#/sesja' };
+    case 'snackAdd':
+      return { title: 'Przekąska', parent: '#/sesja' };
+  }
+}
+
+const HOME = '#/sesja';
+const norm = (hash: string): string => (hash && hash !== '#/' && hash !== '#' ? hash : HOME);
+
+/** Bieżący adres, z pustym sprowadzonym do ekranu Dziś. */
+export const currentPath = (): string => norm(window.location.hash);
+
+/** Czy adres to korzeń zakładki — tam przewinięcie się pamięta. */
+export const isTabRoot = (hash: string): boolean => TABS.some((t) => t.path === norm(hash));
+
+/*
+ * Pamięć przewinięcia. Każda zakładka wraca tam, gdzie ktoś ją zostawił, a powrót strzałką
+ * z podstrony wraca na to samo miejsce listy — tak działają paski zakładek w iOS i Material.
+ * Wejście w nową podstronę zaczyna się od góry. Wstecz rozpoznajemy po własnym stosie
+ * adresów: zdarzenie `popstate` przeglądarki odpala się różnie przy zmianie samego hasha.
+ */
+const scrollMemo = new Map<string, number>();
+const trail: string[] = [];
+
+if (typeof window !== 'undefined' && 'scrollRestoration' in window.history) {
+  window.history.scrollRestoration = 'manual';
+}
+
 /**
  * Powrót tam, skąd ktoś przyszedł — po zapisie przekąski na ekran sesji, do atlasu albo do
  * historii ćwiczenia. Przycisk „wstecz” przeglądarki zna tę drogę lepiej niż jakakolwiek
@@ -67,7 +129,10 @@ let movedInApp = false;
  * wyprowadziłoby go ze strony, więc wtedy idzie na ekran zapasowy.
  */
 export const goBack = (fallback: string): void => {
-  if (movedInApp && window.history.length > 1) window.history.back();
+  // O cofnięciu decyduje własny stos tras, a nie `history.length`: po wejściu z linku
+  // i jednym kroku wstecz historia przeglądarki ma dwa wpisy, ale w aplikacji nie ma już
+  // dokąd wrócić — kolejne `back()` nic by nie zrobiło albo wyprowadziło ze strony.
+  if (movedInApp && trail.length > 1) window.history.back();
   else go(fallback);
 };
 
@@ -85,8 +150,13 @@ export function parseHash(hash: string): Route {
   return tab ? { kind: 'tab', tab } : { kind: 'tab', tab: 'train' };
 }
 
-/** Zmiana trasy przez hash, więc przycisk „wstecz” w przeglądarce działa bez dodatkowego kodu. */
-export const go = (path: string): void => {
+/**
+ * Zmiana trasy przez hash, więc przycisk „wstecz” w przeglądarce działa bez dodatkowego kodu.
+ * `top` zapomina zapamiętane przewinięcie celu — po starcie treningu albo planu ekran ma się
+ * zacząć od góry, a nie tam, gdzie ktoś zostawił go przed chwilą w innym stanie.
+ */
+export const go = (path: string, opts?: { top?: boolean }): void => {
+  if (opts?.top) scrollMemo.delete(norm(path));
   if (window.location.hash === path) return;
   window.location.hash = path;
 };
@@ -95,10 +165,19 @@ export function useRoute(): Route {
   const [route, setRoute] = useState<Route>(() => parseHash(window.location.hash));
 
   useEffect(() => {
-    const onChange = () => {
+    if (!trail.length) trail.push(norm(window.location.hash));
+    const onChange = (e: HashChangeEvent) => {
       movedInApp = true;
+      const from = norm(new URL(e.oldURL).hash);
+      const to = norm(window.location.hash);
+      scrollMemo.set(from, window.scrollY);
+      const back = trail.length > 1 && trail[trail.length - 2] === to;
+      if (back) trail.pop();
+      else trail.push(to);
       setRoute(parseHash(window.location.hash));
-      window.scrollTo({ top: 0 });
+      const y = back || isTabRoot(to) ? (scrollMemo.get(to) ?? 0) : 0;
+      // Dwie klatki: w pierwszej React podmienia ekran, w drugiej jest już co przewijać.
+      requestAnimationFrame(() => requestAnimationFrame(() => window.scrollTo(0, y)));
     };
     window.addEventListener('hashchange', onChange);
     return () => window.removeEventListener('hashchange', onChange);
@@ -109,12 +188,14 @@ export function useRoute(): Route {
 
 /**
  * Który przycisk nawigacji ma być podświetlony. Podstrona ćwiczenia należy do atlasu,
- * a jego historia do profilu — ten sam ruch, dwa różne pytania. Przekąski należą do sesji:
- * to ta sama odpowiedź na pytanie „co robię dzisiaj”, tylko w mniejszej porcji.
+ * a jego historia do profilu — ten sam ruch, dwa różne pytania. Przekąski i lista treningów
+ * należą do ekranu Dziś: to ta sama odpowiedź na pytanie „co robię dzisiaj”.
  */
 export const activeTab = (route: Route): TabKey =>
   route.kind === 'tab'
-    ? route.tab
+    ? route.tab === 'work'
+      ? 'train'
+      : route.tab
     : route.kind === 'exstats'
       ? 'prog'
       : route.kind === 'snacks' || route.kind === 'snackAdd'

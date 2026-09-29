@@ -23,7 +23,6 @@ import { snapshot } from '../engine/snapshot';
 import { progressSubject } from '../engine/share';
 import { rankFor } from '../engine/score';
 import { ShareButton } from './Share';
-import { SupportLine } from './Support';
 import { dayKey } from '../engine/schedule';
 import type { AppState } from '../types';
 
@@ -115,7 +114,7 @@ function Totals({ m }: { m: Metrics }) {
 
   return (
     <div className="grp">
-      <h3>W liczbach</h3>
+      <h2>W liczbach</h2>
       <div className="tiles">
         {tiles.map(([v, l]) => (
           <div className="tile" key={l}>
@@ -153,7 +152,7 @@ function Shelf({ rows }: { rows: AchProgress[] }) {
   if (!owned.length)
     return (
       <div className="grp">
-        <h3>Półka</h3>
+        <h2>Półka</h2>
         <p className="tight">
           {pick(EMPTY_SHELF, daySeed())} Pierwszy zapisany trening zdejmuje kłódkę — dalej
           odznaki rosną same.
@@ -163,7 +162,7 @@ function Shelf({ rows }: { rows: AchProgress[] }) {
 
   return (
     <div className="grp">
-      <h3>Półka</h3>
+      <h2>Półka</h2>
       <p className="tight">Najmocniejsze tworzywa na przodzie.</p>
       <div className="shelf">
         {owned.map(({ r, band }) => (
@@ -208,7 +207,7 @@ function Closest({ rows }: { rows: AchProgress[] }) {
 
   return (
     <div className="grp">
-      <h3>Najbliżej zdobycia</h3>
+      <h2>Najbliżej zdobycia</h2>
       <p className="tight">
         Pięć progów, do których brakuje najmniej. Rekordy dnia i tygodnia liczą się od początku
         bieżącego okresu — przekąska jeszcze dziś może któryś domknąć.
@@ -248,7 +247,6 @@ export function Achievements({ state }: { state: AppState }) {
   return (
     <>
       <div className="wrap">
-        <h2>Osiągnięcia</h2>
         <p className="lead">
           Każda rodzina odznak ma kilka progów, więc zdobyta odznaka nie kończy tematu, tylko
           pokazuje następny krok. Nic tu nie zależy od tego, jak ciężko trenujesz —
@@ -260,7 +258,7 @@ export function Achievements({ state }: { state: AppState }) {
       <Totals m={ctx.metrics} />
 
       <div className="grp">
-        <h3>Pochwal się</h3>
+        <h2>Pochwal się</h2>
         <p className="tight">
           Cały dorobek na jednej karcie: stopień, liczby i porównanie, którego nikt nie prosił.
         </p>
@@ -344,9 +342,6 @@ export function Achievements({ state }: { state: AppState }) {
         )}
       </div>
 
-      <div className="wrap">
-        <SupportLine seed={rows.length} />
-      </div>
     </>
   );
 }

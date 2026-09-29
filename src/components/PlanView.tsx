@@ -18,7 +18,6 @@ import { POINTS, pointsToday } from '../engine/score';
 import { dayKey, daysBetween, planWeekdays } from '../engine/schedule';
 import { snapshot } from '../engine/snapshot';
 import type { Snapshot } from '../engine/snapshot';
-import { SupportLine } from './Support';
 import { Segmented } from './ui';
 import type {
   AppState,
@@ -82,7 +81,6 @@ function Catalogue({
   return (
     <>
       <div className="wrap">
-        <h2>Plan treningowy</h2>
         <p className="lead">
           Dwanaście tygodni rozpisane na konkretne dni. Aplikacja pilnuje terminów: liczy
           zrobione i opuszczone, przyznaje punkty za trzymanie się kalendarza i sama decyduje,
@@ -91,7 +89,7 @@ function Catalogue({
       </div>
 
       <div className="grp">
-        <h3>Płeć</h3>
+        <h2>Płeć</h2>
         <p className="tight">
           Wpływa wyłącznie na ciężary startowe. Program, rotacja treningów i zasady progresji są
           identyczne — różni się przeciętny punkt wyjścia obciążenia, nie sposób trenowania.
@@ -106,7 +104,7 @@ function Catalogue({
       </div>
 
       <div className="grp">
-        <h3>Poziom</h3>
+        <h2>Poziom</h2>
         <Segmented
           value={level}
           onChange={setLevel}
@@ -116,7 +114,7 @@ function Catalogue({
       </div>
 
       <div className="grp">
-        <h3>Treningów w tygodniu</h3>
+        <h2>Treningów w tygodniu</h2>
         <div className="freq">
           {FREQUENCIES.map((n) => (
             <button
@@ -135,7 +133,7 @@ function Catalogue({
       </div>
 
       <div className="grp">
-        <h3>Dzień startu</h3>
+        <h2>Dzień startu</h2>
         <p className="tight">
           Terminy liczą się od tego dnia. Dni tygodnia sprzed startu nie są zaległościami.
         </p>
@@ -149,7 +147,7 @@ function Catalogue({
       </div>
 
       <div className="grp">
-        <h3>Dni treningowe</h3>
+        <h2>Dni treningowe</h2>
         <p className="tight">
           Domyślnie tak, żeby przerwy między treningami były równe. Zmień, jeśli tydzień
           wygląda u ciebie inaczej — silnik i tak liczy terminy z tego, co tu wybierzesz.
@@ -174,7 +172,7 @@ function Catalogue({
       </div>
 
       <div className="grp">
-        <h3>Gdy trening się nie odbędzie</h3>
+        <h2>Gdy trening się nie odbędzie</h2>
         <Segmented
           value={policy}
           onChange={setPolicy}
@@ -191,7 +189,7 @@ function Catalogue({
       </div>
 
       <div className="grp">
-        <h3>{t.name}</h3>
+        <h2>{t.name}</h2>
         <p style={{ marginTop: 8 }}>
           Układ rotacji:{' '}
           {t.cycle.map((c, i) => (
@@ -352,9 +350,9 @@ function BadgeLine({ state }: { state: AppState }) {
   const { have, total } = achievementCount(state);
   return (
     <div className="grp">
-      <h3>
+      <h2>
         Odznaki {have}/{total}
-      </h3>
+      </h2>
       <p className="tight">
         Pełna lista z progami i postępem jest w zakładce <b>Osiągnięcia</b>. Terminy planu
         odblokowują rodziny „Seria w terminie”, „Bez pudła”, „Czysty tydzień” i „Nadrabiacz”.
@@ -375,7 +373,7 @@ function Journal({ snap, state }: { snap: Snapshot; state: AppState }) {
 
   return (
     <div className="grp">
-      <h3>Dziennik</h3>
+      <h2>Dziennik</h2>
       <p className="tight">
         Każdy termin zostawia ślad — także ten, w którym nic się nie wydarzyło.
       </p>
@@ -438,7 +436,7 @@ function ActivePlanView({
 
       {tips.map((a) => (
         <div className="grp" key={a.kind}>
-          <h3>{a.title}</h3>
+          <h2>{a.title}</h2>
           <p className="tight" style={a.level === 'warn' ? { color: 'var(--warn)' } : undefined}>
             {a.text}
           </p>
@@ -458,7 +456,7 @@ function ActivePlanView({
 
       {stats.next && (
         <div className="grp">
-          <h3>Najbliższy termin</h3>
+          <h2>Najbliższy termin</h2>
           <p className="tight">
             {stats.next.date === today
               ? 'Dzisiaj'
@@ -470,7 +468,7 @@ function ActivePlanView({
       )}
 
       <div className="grp">
-        <h3>Rytm i przerwy</h3>
+        <h2>Rytm i przerwy</h2>
         <p className="tight">
           Dni treningowe: {planWeekdays(template, snap.plan).map((w) => WD[w - 1]).join(', ')}.
           Najdłuższa zaplanowana przerwa to <b>{gapDays(stats.maxGap)}</b>.
@@ -522,7 +520,6 @@ function ActivePlanView({
             Zakończ plan
           </button>
         </div>
-        <SupportLine seed={state.log.length + 2} />
       </div>
     </>
   );

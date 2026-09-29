@@ -1,7 +1,9 @@
 import { SUPPORT_URL } from '../engine/share';
-import { COACH_TIPS, daySeed, pick } from '../engine/quips';
+import { COACH_TIPS, SUPPORT_SHORT, daySeed, pick } from '../engine/quips';
+import { addDays } from '../engine/schedule';
 import { Gorilla } from './Gorilla';
 import { Icon } from './icons';
+import type { AppState } from '../types';
 
 /**
  * Wsparcie autora — z Trenerem Siwym.
@@ -47,18 +49,61 @@ export function SupportLine({
   );
 }
 
-/** Kubek w nagłówku. Zawsze widoczny, nigdy nie zajmuje drogi. */
-export function SupportButton() {
+/** Na ile dni × chowa pasek wsparcia. Tydzień: dość, żeby odpocząć, za mało, żeby zapomnieć. */
+export const SNOOZE_DAYS = 7;
+
+/** Dzień, do którego pasek zostaje schowany po stuknięciu w ×. */
+export const snoozeUntil = (today: string): string => addDays(today, SNOOZE_DAYS);
+
+/** Czy pasek wsparcia jest teraz schowany. */
+export const supportSnoozed = (state: AppState, today: string): boolean =>
+  !!state.supportSnooze && today < state.supportSnooze;
+
+/**
+ * Cienki pasek wsparcia na górze aplikacji. Jedyna stała prośba — zastąpił kubek w nagłówku
+ * i banery na dole zakładek, więc żaden ekran nie prosi dwa razy.
+ *
+ * Przykleja się razem z paskiem aplikacji i niczego nie zasłania. Cały jest jednym odnośnikiem,
+ * a × chowa go na tydzień: prośba, której nie da się odsunąć, przestaje być prośbą. W trakcie
+ * treningu go nie ma — wtedy liczy się tylko seria.
+ */
+export function SupportStrip({ onSnooze }: { onSnooze: () => void }) {
   return (
-    <a
-      className="gearbtn coffeebtn"
-      href={SUPPORT_URL}
-      target="_blank"
-      rel="noopener noreferrer"
-      aria-label="Postaw autorowi kawę"
-      title="Postaw autorowi kawę"
-    >
-      <Icon name="coffee" size={21} />
-    </a>
+    <div className="strip">
+      <a className="strip-link" href={SUPPORT_URL} target="_blank" rel="noopener noreferrer">
+        <span className="strip-ico" aria-hidden="true">
+          <Icon name="coffee" size={17} />
+        </span>
+        <span className="strip-text">{pick(SUPPORT_SHORT, daySeed())}</span>
+        <span className="strip-cta">Postaw kawę</span>
+      </a>
+      <button
+        className="strip-close"
+        onClick={onSnooze}
+        aria-label={`Schowaj pasek wsparcia na ${SNOOZE_DAYS} dni`}
+        title={`Schowaj na ${SNOOZE_DAYS} dni`}
+      >
+        ×
+      </button>
+    </div>
+  );
+}
+
+/**
+ * Rada dnia bez prośby. Na ekranie Dziś rada zostaje — ma wartość sama w sobie i to po nią
+ * wraca się jutro — ale prośba o kawę stoi już na górze, w pasku wsparcia, więc tu jej nie ma.
+ */
+export function TipCard({ seed = daySeed() }: { seed?: number }) {
+  const t = pick(COACH_TIPS, seed);
+  return (
+    <div className="tipcard">
+      <span className="tipcard-art" aria-hidden="true">
+        <Gorilla who="siwy" mood={t.mood} size={112} />
+      </span>
+      <span className="tipcard-body">
+        <span className="mbanner-eyebrow">Rada dnia · Trener Siwy</span>
+        <span className="tipcard-tip">{t.tip}</span>
+      </span>
+    </div>
   );
 }

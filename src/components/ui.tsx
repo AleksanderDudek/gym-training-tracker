@@ -97,7 +97,7 @@ export function Banner({ notice, who = 'gustaw' }: { notice: Notice; who?: 'gust
         <Gorilla who={cast.who} mood={cast.mood} crop="face" size={44} />
       </span>
       <div>
-        <h4>{notice.title}</h4>
+        <h2>{notice.title}</h2>
         <p>{notice.text}</p>
       </div>
     </div>

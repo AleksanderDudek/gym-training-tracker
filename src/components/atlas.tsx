@@ -9,7 +9,6 @@ import { P, exercisesByGroup, levelLabel, planLabel } from '../engine/plan';
 import { exercisePath, go, snackAddPath } from '../routing';
 import { Chip, EmptyState } from './ui';
 import { VideoEmbed } from './VideoEmbed';
-import { SupportLine } from './Support';
 import type { AppState, ExerciseId, Gear } from '../types';
 
 /* ---------------- Spis ćwiczeń ---------------- */
@@ -36,7 +35,6 @@ export function AtlasView({ state }: { state: AppState }) {
   return (
     <>
       <div className="wrap">
-        <h2>Atlas ćwiczeń</h2>
         <p className="lead">
           Każde ćwiczenie ma własną podstronę z opisem techniki, a te z pierwszej biblioteki także
           z filmami. Adres podstrony da się wysłać albo zapisać w zakładkach.
@@ -76,9 +74,6 @@ export function AtlasView({ state }: { state: AppState }) {
           })}
         </div>
       ))}
-      <div className="wrap">
-        <SupportLine seed={total} />
-      </div>
     </>
   );
 }
@@ -91,9 +86,6 @@ export function ExercisePage({ state, id }: { state: AppState; id: ExerciseId })
   if (!m) {
     return (
       <div className="wrap">
-        <button className="back" onClick={() => go('#/cwiczenia')}>
-          ← Atlas ćwiczeń
-        </button>
         <EmptyState
           title="Nie ma takiego ćwiczenia"
           text={`Identyfikator „${id}” do niczego nie pasuje. Wróć do spisu i wybierz ruch z listy.`}
@@ -111,12 +103,6 @@ export function ExercisePage({ state, id }: { state: AppState; id: ExerciseId })
   return (
     <>
       <div className="wrap">
-        <button className="back" onClick={() => go('#/cwiczenia')}>
-          ← Atlas ćwiczeń
-        </button>
-      </div>
-
-      <div className="wrap">
         <div className="ex-hero">
           <Chip state={state} id={id} />
           <div>
@@ -130,7 +116,7 @@ export function ExercisePage({ state, id }: { state: AppState; id: ExerciseId })
       </div>
 
       <div className="grp">
-        <h3>Na co uważać</h3>
+        <h2>Na co uważać</h2>
         <p>{m.hint}</p>
         {EX_JOKES[id] && <p className="exjoke">{EX_JOKES[id]}</p>}
         <p className="tight">
@@ -152,7 +138,7 @@ export function ExercisePage({ state, id }: { state: AppState; id: ExerciseId })
 
       {stages && (
         <div className="grp">
-          <h3>Etapy trudności</h3>
+          <h2>Etapy trudności</h2>
           <ol className="stages">
             {stages.map((s, i) => (
               <li key={s} className={i === (p.stage ?? 0) ? 'now' : i < (p.stage ?? 0) ? 'past' : ''}>

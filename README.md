@@ -16,10 +16,10 @@ npm run dev        # serwer deweloperski na http://localhost:5173
 Pozostałe polecenia:
 
 ```bash
-npm run build      # produkcyjny build do dist/
-npm run preview    # podgląd builda
+npm run build      # produkcyjny build do dist/, z listą plików dla service workera
+npm run preview    # podgląd builda — tu działa też praca offline
 npm run typecheck  # tsc --noEmit
-npm test           # 236 testów silnika, biblioteki, odznak, ruchu, mimiki i tras (vitest)
+npm test           # 341 testów silnika, biblioteki, odznak, ruchu, mimiki, obsady i tras (vitest)
 ```
 
 Build jest w pełni statyczny (`base: './'`), więc `dist/` można wrzucić na dowolny hosting plików
@@ -184,35 +184,30 @@ i sylwetka stoją pośrodku, a tytuł karty bez grafiki zaczyna się niżej. Idz
 **przed** napisami, więc gdy długi tytuł jednak do niej dosięgnie, wydrukuje się na niej —
 prawdziwa pieczęć też nie zjada tekstu, który już był na kartce.
 
-**Wsparcie** jest widoczne z każdego ekranu — kubek w nagłówku, obok ustawień — i ma dziesięć
-stałych miejsc poza nim: ekran startowy, góra podsumowania po zamkniętej sesji, okno zdobytej
-odznaki, koniec wprowadzenia oraz dół zakładek Plan, Treningi, Profil, Osiągnięcia, Atlas
-i Ustawienia. Zasady bez zmian: nigdy nie blokuje drogi, nigdy nie pojawia się w trakcie
-treningu, nigdy nie prosi dwa razy na tym samym ekranie. Rad jest dwanaście i rotują dzień
-po dniu, więc ten sam komunikat nie wisi w kółko. Żart idzie z aplikacji i z autora, nigdy
-z czytającego — nie ma tu liczników zbiórki, pasków „do celu" ani zdań o tym, jak bardzo
-autor potrzebuje.
+**Wsparcie ma jedno stałe miejsce: cienki pasek na samej górze**, przyklejony razem z paskiem
+aplikacji. Jedno krótkie zdanie, które zmienia się co dzień („Zero reklam. Kawa mile widziana.”),
+i „Postaw kawę →”; cały pasek jest jednym odnośnikiem do buycoffee.to. Zastąpił kubek w nagłówku
+i banery na dole zakładek Plan, Treningi, Profil, Osiągnięcia, Atlas i Ustawienia — żaden ekran
+nie prosi dwa razy.
 
-**Baner daje, zanim poprosi.** Prowadzi rada dnia od Trenera Siwego — konkretna wskazówka
-treningowa, która ma wartość sama w sobie i zmienia się co dzień, więc jutro jest po co wrócić.
-Dopiero pod nią stoi żart o espresso i przycisk. Kolejność jest tu całym pomysłem: stary
-srebrnogrzbiety częstuje wiedzą, a kawa jest uśmiechem w odpowiedzi — nie prośbą kogoś, kto
-czegoś potrzebuje. Test pilnuje, żeby rada nigdy nie mówiła o kawie, a żart zawsze.
+Zasady bez zmian: nigdy nie blokuje drogi, nigdy nie pojawia się w trakcie treningu — pasek
+znika, gdy tylko ruszy sesja — i nigdy nie prosi dwa razy na tym samym ekranie. **Krzyżyk chowa
+pasek na tydzień.** Prośba, której nie da się odsunąć, przestaje być prośbą; po tygodniu wraca
+sama. Gdy pasek jest schowany, kawę da się postawić z Ustawień — tylko wtedy stoi tam baner.
+Tekst nigdy nie łamie się na dwa wiersze: test pilnuje długości, a na wąskim ekranie zdanie
+skraca się wielokropkiem, a wezwanie zostaje całe. Kolor paska systemowego idzie za paskiem —
+ciepły, gdy stoi pasek wsparcia, jasny, gdy go nie ma.
 
-Cała powierzchnia baneru jest jednym odnośnikiem, więc nie trzeba trafiać w przycisk.
-Wersja pełna (z popiersiem trenera) stoi na ekranie startowym, w podsumowaniu sesji i na
-zakładkach; wersja w linii (sama głowa) w Ustawieniach, na końcu wprowadzenia i w oknie
-zdobytej odznaki, gdzie scena ma już swoją postać.
+**Rada dnia została, prośba odeszła na górę.** Na ekranie Dziś Trener Siwy dalej daje radę dnia —
+konkretną wskazówkę, która ma wartość sama w sobie i zmienia się co dzień, więc jutro jest po co
+wrócić. Ale bez przycisku kawy: ten stoi już w pasku wsparcia. Ramka rady jest srebrna, nie
+pomarańczowa, żeby nie wyglądała jak kolejna prośba. Test dalej pilnuje, żeby rada nigdy nie
+mówiła o kawie.
 
-**Miejsce w układzie zależy od tego, po co ktoś przyszedł.** Na ekranie startowym baner stoi
-**pod** oboma wyjściami do treningu, bo kto przyszedł ćwiczyć, ten najpierw widzi przycisk
-startu. W podsumowaniu sesji jest odwrotnie, na samej górze: to jedyna chwila, w której
-aplikacja właśnie coś dla kogoś zrobiła, a lista zmian bywa długa i dół okna trzeba by
-doscrollować. Na pozostałych zakładkach zamyka ekran.
-
-**Czego nie ma:** dwóch próśb na jednym ekranie (blok spod przycisków udostępniania zniknął),
-banera w trakcie sesji, w kreatorze własnego treningu i w katalogu planów. To są zadania
-w toku — kawa poczeka, aż ktoś je skończy.
+Pełny baner z trenerem i przyciskiem zostaje tam, gdzie aplikacja właśnie coś dla kogoś zrobiła
+albo gdzie paska nie widać: na górze podsumowania po zamkniętej sesji, w oknie zdobytej odznaki
+i na końcu wprowadzenia. Żart idzie z aplikacji i z autora, nigdy z czytającego — nie ma tu
+liczników zbiórki, pasków „do celu" ani zdań o tym, jak bardzo autor potrzebuje.
 
 **Dorobek udostępnisz w każdej chwili** — przycisk „Udostępnij dorobek" w zakładce Osiągnięcia
 i drugi, obok wyniku sesji, po każdym zamkniętym treningu.
@@ -221,55 +216,85 @@ i drugi, obok wyniku sesji, po każdym zamkniętym treningu.
 
 | Zakładka | Adres | Co robi |
 | --- | --- | --- |
-| Twoja sesja | `#/sesja` | Co masz dziś do zrobienia według planu, pasek postaci i przekąska ruchowa; w trakcie — bieżąca sesja. |
+| Dziś | `#/sesja` | Co masz dziś do zrobienia według planu, pasek postaci, przekąska ruchowa i rada dnia; w trakcie — bieżąca sesja. |
 | Plan | `#/plan` | Kalendarz terminów, punkty, stopień, dziennik zdarzeń. |
-| Profil | `#/profil` | Postać i doświadczenie, twoje liczby, obciążenie, przekąski, lista zrobionych ćwiczeń i historia treningów. |
-| Osiągnięcia | `#/osiagniecia` | Dorobek w liczbach, progi najbliższe zdobycia, 61 rodzin odznak i odznaki każdego zrobionego ćwiczenia. |
-| Treningi | `#/treningi` | Wszystkie treningi do wyboru i kreator własnych. |
 | Atlas | `#/cwiczenia` | 105 ćwiczeń z filtrem sprzętu; każde ma własny adres do wysłania. |
+| Osiągnięcia | `#/osiagniecia` | Dorobek w liczbach, progi najbliższe zdobycia, 61 rodzin odznak i odznaki każdego zrobionego ćwiczenia. |
+| Profil | `#/profil` | Postać i doświadczenie, twoje liczby, obciążenie, przekąski, lista zrobionych ćwiczeń i historia treningów. |
 
-Dwa adresy prowadzą do podstron: `#/cwiczenia/<id>` to technika i wideo, `#/profil/<id>` to
-historia tego samego ruchu. Stary `#/poziomy` dalej działa i wchodzi do profilu.
+Podstrony mają własne adresy i strzałkę wstecz w pasku aplikacji:
 
-Przekąski ruchowe mają dwa adresy: `#/przekaski` to historia, a `#/przekaski/<id>` i
-`#/przekaski/dodaj` to zapis jednej przekąski — z wybranym ćwiczeniem albo z wyborem. Nie mają
-zakładki: siódma pozycja w pasku zeszłaby poniżej celu dotykowego. Wchodzi się do nich z ekranu sesji, z profilu i z podstrony ćwiczenia, a pasek
-podświetla wtedy „Twoją sesję” — to ta sama odpowiedź na pytanie „co robię dzisiaj”.
+| Podstrona | Adres | Należy do |
+| --- | --- | --- |
+| Treningi — wszystkie do wyboru i kreator własnych | `#/treningi` | Dziś |
+| Przekąski — dziś, tydzień, historia | `#/przekaski` | Dziś |
+| Zapis przekąski | `#/przekaski/dodaj`, `#/przekaski/<id>` | Dziś |
+| Ćwiczenie — technika i wideo | `#/cwiczenia/<id>` | Atlas |
+| Historia ćwiczenia | `#/profil/<id>` | Profil |
+| Ustawienia | `#/ustawienia` | przycisk w pasku aplikacji |
 
-Ustawienia (`#/ustawienia`) mają przycisk w nagłówku, nie w dolnym pasku: drabina kettlebli,
-poziomy startowe, eksport, import i kasowanie danych to ekran otwierany raz na miesiąc.
+**Treningi nie mają już zakładki.** To lista do wyboru, na którą i tak prowadzi „Wybierz dowolny
+trening” z ekranu Dziś — jest jego podstroną, a dolny pasek zmieścił się w pięciu pozycjach.
+Ustawienia siedzą w pasku aplikacji, bo otwiera się je raz na miesiąc.
 
 Osiągnięcia mają własną zakładkę, bo liczą się z całej historii, a nie z kalendarza planu —
 i mają być widoczne również wtedy, gdy żaden plan nie jest uruchomiony.
 
-**Zakładka „Twoja sesja” odpowiada na jedno pytanie: co robię dzisiaj.** Gdy plan ma termin —
-pokazuje ten jeden trening i przycisk startu. Gdy terminu nie ma — mówi, kiedy wypada następny.
-Gdy sesja już trwa — pokazuje ją. Lista wszystkich treningów mieszka w zakładce „Treningi”,
-bo ekran z ośmioma równorzędnymi przyciskami nie podpowiada niczego.
+**Ekran Dziś odpowiada na jedno pytanie: co robię dzisiaj.** Gdy plan ma termin — pokazuje ten
+jeden trening i przycisk startu. Gdy terminu nie ma — mówi, kiedy wypada następny. Gdy sesja już
+trwa — pokazuje ją. Lista wszystkich treningów jest podstroną, bo ekran z ośmioma równorzędnymi
+przyciskami nie podpowiada niczego.
 
-Stary adres `#/trening` dalej działa — zapisane linki i zakładki przeglądarki nie przestają
-prowadzić tam, gdzie prowadziły.
+Stare adresy dalej działają — `#/trening` i `#/poziomy`, a także dawne linki do formularza
+przekąski — zapisane linki i zakładki przeglądarki nie przestają prowadzić tam, gdzie prowadziły.
 
 ## Nawigacja i cele dotykowe
 
-**Sześć zakładek, nie siedem.** Przy siedmiu na ekranie 320 px na pozycję wypadało 45 px
-wysokości i 42 px szerokości, a etykiety trzeba było ścisnąć do 9,5 px — poniżej minimum
-44 px z wytycznych Apple, 48 dp z Material Design i poniżej czytelności każdej znanej
-podziałki typograficznej. Ustawienia zeszły do przycisku w nagłówku, bo dolny pasek jest od
-miejsc odwiedzanych codziennie, a nie od ekranu otwieranego raz na miesiąc.
+Nawigacja idzie za wzorcem aplikacji mobilnych z wytycznych Material 3 i Apple HIG: zakładki
+na dole do ruchu w bok, pasek aplikacji na górze do ruchu w głąb.
 
-**Ikona nad etykietą.** Pozwala trzymać tekst na 10,5–11 px zamiast 9,5 px i daje drugi,
-szybszy do rozpoznania znacznik niż samo słowo. Ikony są rysowane inline, jedną siatką 24×24
-i jedną grubością linii — bez zewnętrznych zasobów i bez zależności.
+**Pięć zakładek.** Tyle przewidują obie wytyczne — Material 3 „od trzech do pięciu”, iOS
+najwyżej pięć na iPhonie. Każda pozycja ma na ekranie 320 px **64 × 64 px**, a etykieta mieści
+się w jednym słowie („Dziś”, a nie „Twoja sesja”) i ma 12 px. Aktywna zakładka niesie trzy
+sygnały naraz: „pigułkę” za ikoną jak w Material 3, kolor i pogrubienie.
 
-Po zmianie każda zakładka ma **53 × 56 px** przy szerokości ekranu 320 px, a stan aktywny
-niesie trzy sygnały naraz: pasek nad pozycją, kolor i pogrubienie.
+**Pasek aplikacji zamiast nagłówka.** Wielki napis „GYM TRACKER” na każdym ekranie zajmował
+ćwierć wysokości telefonu i nie mówił, gdzie się jest. Teraz przyklejony pasek ma tytuł ekranu —
+na ekranie Dziś z datą, w trakcie sesji z nazwą treningu i postępem — znak aplikacji na
+korzeniach zakładek i strzałkę wstecz na podstronach. Przyciski „← Atlas ćwiczeń” w treści
+zniknęły: wstecz jest zawsze w tym samym miejscu. Po przewinięciu pasek dostaje cień, bo tak
+Material 3 i iOS pokazują, że treść wjeżdża pod spód.
 
-**Cele dotykowe w całej aplikacji** przeszły przez ten sam próg 44 px: przyciski, rozwijacze,
-przełączniki, filtry sprzętu, odhaczanie terminu w kalendarzu i odnośniki tekstowe. Kółko
-odhaczenia ma dalej 24 px średnicy, ale obszar kliknięcia 44 px — inaczej domknięcie terminu
-było loterią. Audyt w przeglądarce na siedmiu ekranach nie znajduje już ani jednego celu
-poniżej progu.
+**Wstecz wraca tam, skąd się przyszło.** Strzałka korzysta z historii przeglądarki, więc z zapisu
+przekąski otwartego w atlasie wraca do atlasu, a z listy treningów na ekran Dziś. Adres otwarty
+wprost, bez historii w aplikacji, wraca do rodzica ekranu, a nie wyprowadza ze strony.
+
+**Każda zakładka pamięta miejsce.** Przełączenie zakładek wraca na to samo przewinięcie, a powrót
+strzałką z podstrony — na to samo miejsce listy, z którego się weszło. Nowa podstrona zaczyna się
+od góry. Stuknięcie w zakładkę, na której się jest, przewija ją na górę. Tak zachowują się paski
+zakładek w iOS i Androidzie; wcześniej każde przejście rzucało na początek ekranu.
+
+**Klawiatura nie przykrywa pola.** Na telefonie klawiatura podnosi przyklejony dolny pasek nad
+siebie i zasłania nim pole, w które się pisze. Na czas pisania dolny pasek znika i wraca, gdy
+fokus opuści pole. Tylko na ekranach dotykowych — przy myszy i klawiaturze fizycznej nie ma czego
+przykrywać.
+
+**Stuknięcie bez czekania.** Kontrolki mają `touch-action: manipulation`: bez podwójnego
+stuknięcia do powiększenia przeglądarka nie czeka na drugie stuknięcie i reaguje od razu. Pola
+formularzy mają 17 px, więc iOS nie powiększa strony przy wejściu w pole.
+
+**Ikona nad etykietą.** Ikony są rysowane inline, jedną siatką 24×24 i jedną grubością linii —
+bez zewnętrznych zasobów i bez zależności.
+
+**Cele dotykowe w całej aplikacji** trzymają próg 44 px: przyciski, rozwijacze, przełączniki,
+filtry sprzętu, odhaczanie terminu w kalendarzu, strzałka wstecz, krzyżyk paska wsparcia
+i odnośniki tekstowe. Kółko odhaczenia ma 24 px średnicy, ale obszar kliknięcia 44 px.
+
+**Na komputerze aplikacja zostaje kolumną telefonu.** Treść i zakładki trzymają kolumnę 640 px
+na środku, jak każda PWA otwarta w szerokim oknie — sekcje nie rozlewają się na 1600 px.
+
+**Nagłówki idą po kolei.** Tytuł w pasku aplikacji jest `h1`, sekcje ekranu `h2`. Audyt
+Lighthouse (telefon): dostępność 100, SEO 100.
 
 ## Profil — historia bez konta
 
@@ -435,7 +460,7 @@ dostaje rzadsze `setInterval`, więc licznik oparty na tyknięciach zostawałby 
 src/
   types.ts                  wszystkie typy domenowe
   routing.ts                trasy w hashu adresu, sześć zakładek i dwie rodziny podstron
-  routing.test.ts           14 testów tras, zakładek, przekąsek i starych adresów
+  routing.test.ts           18 testów tras, zakładek, ekranów, przekąsek i starych adresów
   data/exercises.ts         biblioteka 105 ćwiczeń, drabiny sprzętu, cztery treningi
   data/exjokes.ts           dopiski do 105 ćwiczeń i do gotowych treningów
   data/moves.ts             osiemnaście wzorców ruchu jako klatki kluczowe
@@ -497,13 +522,21 @@ src/
     Character.tsx           postać: karta w profilu, pasek na ekranie sesji, okno awansu
     ExerciseBadges.tsx      wiersz odznaki ćwiczenia z bieżącym okresem i rekordem
     ExercisePicker.tsx      pole wyboru ćwiczenia z podpowiedziami (wzorzec combobox)
-    Support.tsx             baner wsparcia: rada dnia Trenera Siwego i espresso
+    Support.tsx             pasek wsparcia na górze, rada dnia i baner z espresso
+    Support.test.ts         3 testy chowania paska i długości jego tekstów
+    TopBar.tsx              przyklejony pasek aplikacji: tytuł, wstecz, ustawienia, pasek wsparcia
     Gorilla.tsx             obsada: Gustaw, Gosia i Trener Siwy, siedemnaście min
     cast.test.ts            16 testów obsady, pasm, blankietu, miny postaci i rady dnia
     Achievements.tsx        zakładka osiągnięć: dorobek w liczbach i odznaki z progami
     VideoEmbed.tsx          odtwarzacz YouTube ładowany dopiero po kliknięciu
   App.tsx                   spina stan i widoki
-  main.tsx                  punkt wejścia
+  main.tsx                  punkt wejścia i rejestracja service workera
+scripts/
+  precache.mjs              po buildzie: wersja i lista plików do sw.js
+public/
+  manifest.webmanifest      manifest aplikacji do zainstalowania
+  sw.js                     service worker: praca offline
+  icons/                    ikony: zwykłe, maskowalna, iOS i wektorowa
   styles.css                arkusz stylów
   styles.contrast.test.ts   7 testów kontrastu tokenów, liczonych wprost z arkusza
 ```
@@ -901,6 +934,38 @@ Czego z systemu **nie** ma w aplikacji i dlaczego:
   zamiast ją zastępować.
 - **Popiersia w plikach SVG i PNG** — obsada jest komponentem, a nie zestawem obrazków, więc
   nie ma czego kopiować do paczki. Grafiki poza aplikacją bierze się z systemu.
+
+## Aplikacja do zainstalowania (PWA)
+
+GYM TRACKER instaluje się na ekranie głównym telefonu i działa bez sieci — dane i tak nigdy
+nie opuszczają przeglądarki, więc offline brakowało dotąd tylko samej aplikacji.
+
+- **Manifest** (`public/manifest.webmanifest`): nazwa, tryb `standalone` bez paska przeglądarki,
+  orientacja pionowa, kolory tła i paska, start na ekranie Dziś, skróty z ikony („Przekąska
+  ruchowa”, „Osiągnięcia”).
+- **Ikony** w `public/icons/`: znak aplikacji — pomarańczowa hantla z ikony ekranu Dziś na stali
+  kamizelki trenera. Zwykła 192 i 512 px, **maskowalna** 512 px ze znakiem w strefie bezpiecznej
+  (Android przycina ją do koła, kwadratu albo kropli), pełny kwadrat 180 px dla iOS, który sam
+  zaokrągla rogi, i wektorowa do karty przeglądarki.
+- **Service worker** (`public/sw.js`) z trzema strategiami. Strona: najpierw sieć, potem kopia —
+  nowe wdrożenie wchodzi od razu, gdy jest zasięg, a bez zasięgu otwiera się ostatnia wersja;
+  kopią zostaje tylko odpowiedź HTML. Skrypty, style i ikony: najpierw kopia. Kroje pisma
+  z Google Fonts: kopia od razu, odświeżenie w tle. Filmy z YouTube'a idą prosto do sieci —
+  offline i tak by nie ruszyły.
+- **Offline od pierwszej wizyty.** `npm run build` kończy się skryptem `scripts/precache.mjs`,
+  który wpisuje do `dist/sw.js` wersję buildu i listę plików. Instalacja od razu zapisuje skrypt
+  i style tej wersji — bez tego zapisywały się dopiero przy drugiej wizycie, a pierwsze
+  uruchomienie bez zasięgu kończyło się pustą stroną. Każde wdrożenie ma nową wersję, więc
+  aktywacja kasuje stare kopie, także ikon i manifestu, które nie mają hasza w nazwie.
+- **Rejestracja tylko w wersji zbudowanej** — w trybie deweloperskim service worker trzymałby
+  stare pliki. W osadzonym artefakcie, gdzie rejestracja bywa zablokowana, aplikacja działa jak
+  dotąd, online.
+- **iOS**: `apple-touch-icon`, tryb pełnoekranowy, tytuł pod ikoną i pasek statusu. Przyklejony
+  pasek na górze i dolna nawigacja mają marginesy na wycięcie ekranu (`safe-area-inset`), więc
+  nic nie wchodzi pod zegar, aparat ani pasek gestów.
+
+Sprawdzone w Chrome na wersji produkcyjnej: service worker przejmuje stronę, manifest i ikony się
+ładują, a po odcięciu sieci zaraz po pierwszej wizycie aplikacja otwiera się w całości.
 
 ## Publikacja
 

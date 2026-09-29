@@ -4,11 +4,14 @@ import {
   TABS,
   activeTab,
   exercisePath,
+  isTabRoot,
   parseHash,
+  screenOf,
   snackAddPath,
   snacksPath,
   statsPath,
 } from './routing';
+import type { Route } from './types';
 import type { TabKey } from './types';
 
 describe('trasy', () => {
@@ -24,10 +27,45 @@ describe('trasy', () => {
     });
   });
 
-  it('dolny pasek trzyma się sześciu pozycji', () => {
-    // Siedem pozycji na ekranie 320 px daje 45 px na pozycję — poniżej minimum 48 px.
-    expect(TABS.length).toBeLessThanOrEqual(6);
+  it('dolny pasek ma od trzech do pięciu pozycji, jak w Material 3 i Apple HIG', () => {
+    expect(TABS.length).toBeGreaterThanOrEqual(3);
+    expect(TABS.length).toBeLessThanOrEqual(5);
     TABS.forEach((t) => expect(t.icon.length).toBeGreaterThan(2));
+  });
+
+  it('etykiety zakładek to jedno słowo — dwa łamałyby się pod ikoną', () => {
+    TABS.forEach((t) => expect(t.label).not.toMatch(/\s/));
+  });
+
+  it('treningi są podstroną ekranu Dziś: mają adres, nie mają zakładki', () => {
+    expect(TABS.some((t) => t.key === 'work')).toBe(false);
+    expect(parseHash('#/treningi')).toEqual({ kind: 'tab', tab: 'work' });
+    expect(activeTab({ kind: 'tab', tab: 'work' })).toBe('train' as TabKey);
+    expect(screenOf({ kind: 'tab', tab: 'work' }).parent).toBe('#/sesja');
+  });
+
+  it('korzenie zakładek nie mają strzałki wstecz, podstrony mają', () => {
+    TABS.forEach((t) => expect(screenOf(parseHash(t.path)).parent, t.path).toBeNull());
+    const subpages: Route[] = [
+      { kind: 'exercise', id: 'swing2' },
+      { kind: 'exstats', id: 'swing2' },
+      { kind: 'snacks' },
+      { kind: 'snackAdd', id: 'swing2' },
+      { kind: 'tab', tab: 'set' },
+    ];
+    subpages.forEach((r) => {
+      const s = screenOf(r);
+      expect(s.parent, r.kind).toBeTruthy();
+      expect(s.title.length, r.kind).toBeGreaterThan(2);
+    });
+  });
+
+  it('przewinięcie pamięta się na korzeniach zakładek, a pusty adres to ekran Dziś', () => {
+    expect(isTabRoot('#/cwiczenia')).toBe(true);
+    expect(isTabRoot('')).toBe(true);
+    expect(isTabRoot('#/')).toBe(true);
+    expect(isTabRoot(exercisePath('swing2'))).toBe(false);
+    expect(isTabRoot(snackAddPath())).toBe(false);
   });
 
   it('ustawienia są poza paskiem, ale wciąż mają działający adres', () => {
@@ -39,7 +77,7 @@ describe('trasy', () => {
     expect(parseHash('#/sesja')).toEqual({ kind: 'tab', tab: 'train' });
     expect(parseHash('#/trening')).toEqual({ kind: 'tab', tab: 'train' });
     expect(TABS.find((t) => t.key === 'train')?.path).toBe('#/sesja');
-    expect(TABS.find((t) => t.key === 'train')?.label).toBe('Twoja sesja');
+    expect(TABS.find((t) => t.key === 'train')?.label).toBe('Dziś');
   });
 
   it('osiągnięcia mają własny adres', () => {

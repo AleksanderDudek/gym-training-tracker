@@ -18,13 +18,14 @@ import { achCtx, migrateBadges, revokeUnmet, syncBadges } from './engine/badges'
 import { pointsToday, rankFor } from './engine/score';
 import { seedFromPlan } from './engine/plan';
 import { planById, planId } from './data/plans';
-import { SETTINGS_PATH, TABS, activeTab, go, useRoute } from './routing';
+import { TABS, activeTab, currentPath, go, screenOf, useRoute } from './routing';
 import { Icon } from './components/icons';
 import { BadgeDefs } from './components/BadgeArt';
 import { Celebrate } from './components/Celebrate';
 import { Intro } from './components/Intro';
 import { ShareButton } from './components/Share';
-import { SupportButton, SupportLine } from './components/Support';
+import { SupportLine, snoozeUntil, supportSnoozed } from './components/Support';
+import { TopBar } from './components/TopBar';
 import { metrics } from './engine/metrics';
 import { LOADING, SAVED, SNACK_SAVED, daySeed, pick } from './engine/quips';
 import { progressSubject, punchline } from './engine/share';
@@ -60,6 +61,8 @@ const levelNow = (s: AppState): LevelState => levelFor(xpSummary(s).total);
  */
 function restoreExtras(next: AppState, saved: Partial<AppState>): void {
   next.snacks = Array.isArray(saved.snacks) ? saved.snacks.filter(validSnack) : [];
+  if (typeof saved.supportSnooze === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(saved.supportSnooze))
+    next.supportSnooze = saved.supportSnooze;
   if (next.cfg.avatar !== undefined && next.cfg.avatar !== 'gustaw' && next.cfg.avatar !== 'gosia')
     delete next.cfg.avatar;
 }
@@ -130,6 +133,22 @@ export default function App() {
     })();
   }, []);
 
+  // Wprowadzenie wchodzi samo tylko przy pierwszym uruchomieniu i nigdy w trakcie sesji —
+  // kto już trenuje, ten nie potrzebuje wycieczki po ekranach. Z ustawień da się je otworzyć
+  // ponownie w dowolnym momencie.
+  const showIntro =
+    replayIntro || (!!state && !state.introSeen && !state.log.length && !state.session);
+  // Pasek wsparcia: nie w trakcie treningu, nie pod wprowadzeniem, nie w tygodniu po schowaniu.
+  const strip =
+    !!state && !state.session && !showIntro && !supportSnoozed(state, dayKey(Date.now()));
+  // Kolor paska systemowego idzie za tym, co stoi na samej górze: tło wprowadzenia, ciepły
+  // pasek wsparcia albo jasny pasek aplikacji. Przed wczytaniem zostaje kolor z `index.html`,
+  // żeby start nie mrugał dwoma kolorami.
+  const topColor = !state ? null : showIntro ? '#D7D9D3' : strip ? '#F7E8E0' : '#FAFAF8';
+  useEffect(() => {
+    if (topColor) document.querySelector('meta[name="theme-color"]')?.setAttribute('content', topColor);
+  }, [topColor]);
+
   const commit = useCallback((next: AppState) => {
     setState(next);
     void queueSave(next, setSaveBroken);
@@ -171,11 +190,6 @@ export default function App() {
   const d = daysSince(state);
   const rate = weeklyRate(state);
   const ratio = acwr(state);
-  // Wprowadzenie samo z siebie wchodzi tylko przy pierwszym uruchomieniu i nigdy w trakcie
-  // sesji — kto już trenuje, ten nie potrzebuje wycieczki po ekranach. Z ustawień da się
-  // je otworzyć ponownie w dowolnym momencie.
-  const firstRun = !state.introSeen && !state.log.length && !state.session;
-  const showIntro = replayIntro || firstRun;
 
   const closeIntro = () => {
     setReplayIntro(false);
@@ -191,7 +205,7 @@ export default function App() {
     const next = clone(state);
     next.session = { workout: id, started: new Date().toISOString(), ready: 'ok', res: {}, done: {}, skip: {} };
     commit(next);
-    go('#/sesja');
+    go('#/sesja', { top: true });
     window.scrollTo({ top: 0 });
   };
 
@@ -561,7 +575,7 @@ export default function App() {
     });
     syncBadges(next, badgeCtx(next));
     commit(next);
-    go('#/plan');
+    go('#/plan', { top: true });
 
     const first = snapshot(next)?.stats.next;
     await say(
@@ -713,9 +727,9 @@ export default function App() {
     commit(freshState());
   };
 
-  /* ---------- nagłówek ---------- */
+  /* ---------- pasek aplikacji ---------- */
 
-  // W trakcie sesji nagłówek pokazuje postęp, a nie statystyki sprzed tygodni — to jedyna
+  // W trakcie sesji pasek aplikacji pokazuje postęp, a nie statystyki sprzed tygodni — to jedyna
   // liczba, której ktoś w połowie treningu naprawdę szuka.
   const sessionProgress = current
     ? `${Object.keys(state.session!.done).length} z ${current.items.length} ćwiczeń zapisanych`
@@ -733,33 +747,38 @@ export default function App() {
     ratio !== null ? `obciążenie ${ratio.toFixed(2)}` : null,
   ].filter(Boolean);
 
+  const today = dayKey(Date.now());
+  const screen = screenOf(route);
+  const inSession = view === 'train' && !!current;
+  const title = inSession ? current!.name : screen.title;
+  const subtitle = inSession
+    ? sessionProgress
+    : view === 'train'
+      ? new Date().toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long' })
+      : null;
+  // Klucz strony: nowy ekran wjeżdża od nowa, ten sam ekran z nowymi danymi — nie.
+  const pageKey =
+    route.kind === 'tab' ? `tab:${route.tab}` : `${route.kind}:${'id' in route ? (route.id ?? '') : ''}`;
+
+  const snoozeSupport = () => {
+    const next = clone(state);
+    next.supportSnooze = snoozeUntil(today);
+    commit(next);
+    setToastMsg('Pasek wsparcia wróci za tydzień. Kawę da się postawić też z Ustawień.');
+  };
+
   return (
     <>
-      <div className="wrap">
-        <header>
-          <div className="meta">
-            <span>
-              {state.session
-                ? 'sesja w toku'
-                : `${state.log.length} ${state.log.length === 1 ? 'zapisany trening' : 'zapisanych treningów'}`}
-            </span>
-            <span className="headtools">
-              <SupportButton />
-              <a
-              className="gearbtn"
-              href={SETTINGS_PATH}
-              aria-label="Ustawienia"
-              aria-current={view === 'set' ? 'page' : 'false'}
-            >
-              <Icon name="settings" size={21} />
-              </a>
-            </span>
-          </div>
-          <h1>{current ? current.name : 'GYM TRACKER'}</h1>
-          <div className="subline">{sessionProgress ?? subline.join(' · ')}</div>
-        </header>
-      </div>
+      <TopBar
+        title={title}
+        subtitle={subtitle}
+        parent={inSession ? null : screen.parent}
+        strip={strip}
+        onSnooze={snoozeSupport}
+        settings={!screen.parent && !inSession}
+      />
 
+      <main className="page" key={pageKey}>
       {view !== null && (
       <div className="wrap">
         {saveBroken && (
@@ -839,15 +858,7 @@ export default function App() {
           <SessionHome
             state={state}
             today={todayPlan}
-            lastLabel={
-              d === null
-                ? null
-                : d === 0
-                  ? 'Ostatni trening: dzisiaj.'
-                  : d === 1
-                    ? 'Ostatni trening: wczoraj.'
-                    : `Ostatni trening: ${d} dni temu.`
-            }
+            statsLine={subline.join(' · ')}
             onStart={startSession}
           />
         ))}
@@ -905,13 +916,28 @@ export default function App() {
         />
       )}
 
+      </main>
+
       <nav aria-label="Główna nawigacja">
         {TABS.map((t) => {
           const on = activeTab(route) === t.key;
           return (
-            <a key={t.key} href={t.path} aria-current={on ? 'page' : 'false'}>
-              <Icon name={t.icon} />
-              <span>{t.label}</span>
+            <a
+              key={t.key}
+              href={t.path}
+              aria-current={on ? 'page' : 'false'}
+              onClick={(e) => {
+                // Stuknięcie w zakładkę, na której się jest, przewija na górę — jak w iOS i Androidzie.
+                if (!on || currentPath() !== t.path) return;
+                e.preventDefault();
+                const calm = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+                window.scrollTo({ top: 0, behavior: calm ? 'auto' : 'smooth' });
+              }}
+            >
+              <span className="navpill">
+                <Icon name={t.icon} />
+              </span>
+              <span className="navlabel">{t.label}</span>
             </a>
           );
         })}

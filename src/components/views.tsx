@@ -12,7 +12,8 @@ import {
 import { acwr } from '../engine/math';
 import { P, exercisesByGroup } from '../engine/plan';
 import { ExerciseCard } from './ExerciseCard';
-import { SupportLine } from './Support';
+import { SupportLine, supportSnoozed } from './Support';
+import { dayKey } from '../engine/schedule';
 import { OWN_WORKOUT_JOKES, WORKOUT_JOKES } from '../data/exjokes';
 import { pick } from '../engine/quips';
 import type { AppState, EffortKey, ExerciseId, ReadyKey, SetResult, Workout } from '../types';
@@ -45,7 +46,7 @@ export function SessionView({
 
   return (
     <div className="wrap">
-      {/* Nazwa treningu i stan sesji stoją w nagłówku aplikacji — tu byłyby drugi raz. */}
+      {/* Nazwa treningu i stan sesji stoją w pasku aplikacji — tu byłyby drugi raz. */}
       <div className="segline">Jak się dziś czujesz? Wpływa na dzisiejsze cele, nie na twoje poziomy.</div>
       <div className="seg">
         {(Object.keys(READY) as ReadyKey[]).map((k) => (
@@ -90,7 +91,7 @@ export function LoadGauge({ state }: { state: AppState }) {
   if (a === null) {
     return (
       <div className="gauge">
-        <h3 style={{ margin: '0 0 4px', fontSize: 15 }}>Obciążenie w czasie</h3>
+        <h2 style={{ margin: '0 0 4px', fontSize: 15 }}>Obciążenie w czasie</h2>
         <p style={{ margin: 0, fontSize: 13, color: 'var(--ink-soft)' }}>
           Wskaźnik pojawi się po dwóch tygodniach i czterech zapisanych treningach.
         </p>
@@ -107,9 +108,9 @@ export function LoadGauge({ state }: { state: AppState }) {
 
   return (
     <div className="gauge">
-      <h3 style={{ margin: '0 0 4px', fontSize: 15 }}>
+      <h2 style={{ margin: '0 0 4px', fontSize: 15 }}>
         Obciążenie w czasie — {a.toFixed(2)}
-      </h3>
+      </h2>
       <p style={{ margin: 0, fontSize: 13, color: 'var(--ink-soft)' }}>
         Tonaż z 7 dni podzielony przez średnią tygodniową z 28 dni.
       </p>
@@ -166,7 +167,7 @@ export function WorkoutsView({
         return (
           <div className={`grp${plannedId === w.id ? ' today' : ''}`} key={w.id}>
             {plannedId === w.id && <div className="today-tag">Dziś według planu</div>}
-            <h3>{w.name}</h3>
+            <h2>{w.name}</h2>
             <p className="exjoke">
               {WORKOUT_JOKES[w.id] ?? pick(OWN_WORKOUT_JOKES, w.name.length + w.items.length)}
             </p>
@@ -198,7 +199,7 @@ export function WorkoutsView({
 
       {draft && (
         <div className="grp">
-          <h3>{state.workouts.find((w) => w.id === draft.id) ? 'Edytuj trening' : 'Nowy trening'}</h3>
+          <h2>{state.workouts.find((w) => w.id === draft.id) ? 'Edytuj trening' : 'Nowy trening'}</h2>
           <p>Nazwa i lista ćwiczeń. Powtórzenia, serie i ciężar prowadzi silnik progresji.</p>
           <input
             type="text"
@@ -284,13 +285,6 @@ export function WorkoutsView({
           </div>
         </div>
       )}
-      {/* Baner tylko na spisie treningów. W trakcie układania własnego nikt nie chce
-          kawy — chce skończyć listę ćwiczeń. */}
-      {!draft && (
-        <div className="wrap">
-          <SupportLine seed={state.log.length} />
-        </div>
-      )}
     </>
   );
 }
@@ -322,7 +316,7 @@ export function SettingsView({
   return (
     <>
       <div className="grp">
-        <h3>Dostępne kettlebelle</h3>
+        <h2>Dostępne kettlebelle</h2>
         <p>
           Wagi po przecinku. Progresja dobiera ciężary wyłącznie z tej listy — ale tylko dla
           ćwiczeń z kettlebellem. Sztanga, hantle i maszyny mają własne drabiny, bo skaczą
@@ -347,7 +341,7 @@ export function SettingsView({
       </div>
 
       <div className="grp">
-        <h3>Kalibracja</h3>
+        <h2>Kalibracja</h2>
         <p>
           Nowe ćwiczenie zaczyna od jednej serii próbnej na lekkim obciążeniu i wchodzi po
           drabinie w górę, aż wynik wpadnie w zakres powtórzeń. Później co kilka sesji wraca test
@@ -366,7 +360,7 @@ export function SettingsView({
       </div>
 
       <div className="grp">
-        <h3>Poziomy startowe</h3>
+        <h2>Poziomy startowe</h2>
         <p>
           Ręczna korekta, gdy znasz swój poziom i nie chcesz czekać na próbę. Ustawienie ciężaru
           zamyka fazę próbną tego ćwiczenia.
@@ -403,12 +397,20 @@ export function SettingsView({
         })}
       </div>
 
-      <div className="wrap">
-        <SupportLine compact />
-      </div>
+      {/* Przy widocznym pasku wsparcia prośba stoi już na górze ekranu. Gdy ktoś go schował,
+          tu zostaje jedyne miejsce, z którego da się postawić kawę — bez szukania. */}
+      {supportSnoozed(state, dayKey(Date.now())) && (
+        <div className="grp">
+          <h2>Wsparcie autora</h2>
+          <p className="tight">
+            Pasek wsparcia na górze jest schowany do {state.supportSnooze}. Wróci sam.
+          </p>
+          <SupportLine compact />
+        </div>
+      )}
 
       <div className="grp">
-        <h3>Wprowadzenie</h3>
+        <h2>Wprowadzenie</h2>
         <p>Cztery ekrany o tym, jak aplikacja prowadzi trening. Można je otworzyć kiedykolwiek.</p>
         <button className="btn ghost sm" onClick={onIntro}>
           Pokaż wprowadzenie
@@ -416,7 +418,7 @@ export function SettingsView({
       </div>
 
       <div className="grp">
-        <h3>Kopia danych</h3>
+        <h2>Kopia danych</h2>
         <p>Eksport zapisuje wszystko do pliku JSON. Import nadpisuje bieżące dane.</p>
         <div className="btnrow">
           <button className="btn" onClick={onExport}>
@@ -439,7 +441,7 @@ export function SettingsView({
       </div>
 
       <div className="grp">
-        <h3>Jak działa progresja</h3>
+        <h2>Jak działa progresja</h2>
         <p className="tight">Silnik opiera się na kilku zasadach z literatury treningowej:</p>
         <p>
           <b>Poziom z pomiaru, nie z tabelki.</b> Każde ćwiczenie zaczyna od serii próbnej i wchodzi
@@ -489,7 +491,7 @@ export function SettingsView({
       </div>
 
       <div className="grp">
-        <h3>Reset</h3>
+        <h2>Reset</h2>
         <p>Kasuje historię, poziomy i własne treningi. Nie da się tego cofnąć.</p>
         <button className="btn ghost" onClick={onReset}>
           Usuń wszystkie dane

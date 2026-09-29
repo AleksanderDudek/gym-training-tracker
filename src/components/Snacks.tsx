@@ -115,9 +115,9 @@ export function SnackCard({ state }: { state: AppState }) {
       <div className="today-tag light">Przekąska ruchowa</div>
       {n ? (
         <>
-          <h3 className="today-name">
+          <h2 className="today-name">
             Dziś {n} {plural(n, SNACK_FORMS)} · +{Math.min(n, XP.snackCap) * XP.snack} XP
-          </h3>
+          </h2>
           <p className="tight">
             {left
               ? `Jeszcze ${left} ${plural(left, SNACK_FORMS)} da dziś doświadczenie.`
@@ -126,7 +126,7 @@ export function SnackCard({ state }: { state: AppState }) {
         </>
       ) : (
         <>
-          <h3 className="today-name">Krótka seria poza treningiem</h3>
+          <h2 className="today-name">Krótka seria poza treningiem</h2>
           <p className="tight">
             Wybierz ćwiczenie, a liczbę wpiszesz na następnym ekranie. Przekąska nie zmienia planu
             ani poziomów — rośnie za to postać i odznaki ćwiczeń.
@@ -253,10 +253,6 @@ export function SnackEntry({
   return (
     <>
       <div className="wrap">
-        <button className="back" onClick={() => goBack('#/sesja')}>
-          ← Wróć
-        </button>
-        <h2>Przekąska ruchowa</h2>
         <p className="lead">
           {m
             ? `Wpisz, ile było ${what}, i zapisz.`
@@ -428,10 +424,6 @@ export function SnacksPage({ state, onDelete }: { state: AppState; onDelete: (ke
   return (
     <>
       <div className="wrap">
-        <button className="back" onClick={() => go('#/sesja')}>
-          ← Twoja sesja
-        </button>
-        <h2>Przekąski ruchowe</h2>
         <p className="lead">
           Krótka seria poza treningiem: dziesięć przysiadów przy czajniku, minuta deski w przerwie.
           Kilka takich w ciągu dnia przerywa siedzenie i poprawia wydolność. Przekąska nie zmienia
@@ -440,7 +432,7 @@ export function SnacksPage({ state, onDelete }: { state: AppState; onDelete: (ke
       </div>
 
       <div className="grp">
-        <h3>Dodaj przekąskę</h3>
+        <h2>Dodaj przekąskę</h2>
         <p className="tight">Wybierz ćwiczenie — liczbę wpiszesz na następnym ekranie.</p>
         <SnackShortcuts state={state} today={today} />
       </div>

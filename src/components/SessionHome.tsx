@@ -1,7 +1,7 @@
 import { ex } from '../data/exercises';
 import { go } from '../routing';
 import { LATE, REST, daySeed, pick } from '../engine/quips';
-import { SupportLine } from './Support';
+import { TipCard } from './Support';
 import { CharacterStrip } from './Character';
 import { SnackCard } from './Snacks';
 import type { AppState, Workout } from '../types';
@@ -28,20 +28,20 @@ const shortDate = (key: string): string => {
 const days = (n: number): string => (n === 1 ? 'jutro' : `za ${n} dni`);
 
 /**
- * Ekran startowy sesji. Odpowiada na jedno pytanie: co robię dzisiaj. Lista wszystkich
- * treningów mieszka w zakładce Treningi — tutaj jest jedna rekomendacja i jedno wyjście
- * w bok, bo ekran z ośmioma równorzędnymi przyciskami nie podpowiada niczego.
+ * Ekran Dziś. Odpowiada na jedno pytanie: co robię dzisiaj. Lista wszystkich treningów
+ * jest jego podstroną — tutaj jest jedna rekomendacja i jedno wyjście w bok, bo ekran
+ * z ośmioma równorzędnymi przyciskami nie podpowiada niczego.
  */
 export function SessionHome({
   state,
   today,
-  lastLabel,
+  statsLine,
   onStart,
 }: {
   state: AppState;
   today: TodayPlan;
-  /** Jednozdaniowe podsumowanie ostatniego treningu. */
-  lastLabel: string | null;
+  /** Ostatni trening, tempo i obciążenie jednym wierszem — to, co wisiało w starym nagłówku. */
+  statsLine: string;
   onStart: (id: string) => void;
 }) {
   const w = today.workout;
@@ -49,7 +49,7 @@ export function SessionHome({
   return (
     <>
       <div className="wrap">
-        <h2>Twoja sesja</h2>
+        <p className="statline">{statsLine}</p>
         <p className="lead">
           {today.kind === 'due'
             ? 'Plan ma na dziś konkretny trening. Zacznij go jednym przyciskiem albo wybierz coś innego.'
@@ -65,7 +65,7 @@ export function SessionHome({
           <div className="today-tag">
             {today.late ? 'Termin do nadrobienia' : 'Dziś według planu'}
           </div>
-          <h3 className="today-name">{w.name}</h3>
+          <h2 className="today-name">{w.name}</h2>
           <p className="tight">
             {w.items.length} ćwiczeń · {w.items.map((i) => ex(i.ex).name).join(' · ')}
           </p>
@@ -86,11 +86,11 @@ export function SessionHome({
       {today.kind === 'rest' && (
         <div className="grp">
           <div className="today-tag light">Dzień bez terminu</div>
-          <h3 className="today-name">
+          <h2 className="today-name">
             {today.nextDate
               ? `Następny termin ${today.nextIn === 0 ? 'dzisiaj' : days(today.nextIn ?? 1)}`
               : 'Plan nie ma już terminów'}
-          </h3>
+          </h2>
           {today.nextDate && (
             <p className="tight">
               {shortDate(today.nextDate)} — {today.nextName}. Przerwa też pracuje: w niej rośnie siła.
@@ -102,7 +102,7 @@ export function SessionHome({
       {today.kind === 'none' && (
         <div className="grp">
           <div className="today-tag light">Bez planu</div>
-          <h3 className="today-name">Nikt nie pilnuje terminów</h3>
+          <h2 className="today-name">Nikt nie pilnuje terminów</h2>
           <p className="tight">
             Plan rozpisuje dwanaście tygodni na konkretne dni, liczy realizację i sam decyduje,
             który trening wypada następny — także wtedy, gdy poprzedni się nie odbył. Nie obraża
@@ -132,11 +132,10 @@ export function SessionHome({
 
       <div className="wrap">
         {/*
-          Baner stoi pod obiema drogami wyjścia z ekranu, nie nad nimi: kto przyszedł
-          trenować, ten najpierw widzi przycisk startu. Kto się rozgląda — widzi kawę.
+          Rada dnia zamyka ekran — po nią wraca się jutro. Prośba o kawę stoi już w pasku
+          na górze, więc tu została sama rada: jeden ekran, jedna prośba.
         */}
-        <SupportLine />
-        {lastLabel && <p className="disclaimer">{lastLabel}</p>}
+        <TipCard />
       </div>
     </>
   );

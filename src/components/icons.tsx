@@ -14,7 +14,8 @@ export type IconName =
   | 'atlas'
   | 'settings'
   | 'coffee'
-  | 'profile';
+  | 'profile'
+  | 'back';
 
 const PATHS: Record<IconName, ReactNode> = {
   // Hantla: dwa obciążniki i gryf.
@@ -78,6 +79,8 @@ const PATHS: Record<IconName, ReactNode> = {
       <circle cx="14.5" cy="13.5" r="1.4" />
     </>
   ),
+  // Szewron w lewo: wstecz w pasku aplikacji, tak jak w iOS i Material.
+  back: <path d="M15 5l-7 7 7 7" />,
   // Suwaki — czytelniejsze w małym rozmiarze niż zębatka.
   settings: (
     <>

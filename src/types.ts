@@ -330,6 +330,8 @@ export interface AppState {
   award: Award;
   /** Dzień, w którym wprowadzenie zostało przejrzane albo pominięte. */
   introSeen?: string;
+  /** Do którego dnia (`yyyy-mm-dd`, bez niego) schowany jest pasek wsparcia na górze. */
+  supportSnooze?: string;
 }
 
 /** Pojedyncza zmiana poziomu po zamkniętym treningu. */

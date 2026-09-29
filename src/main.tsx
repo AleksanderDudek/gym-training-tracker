@@ -11,3 +11,14 @@ createRoot(root).render(
     <App />
   </StrictMode>,
 );
+
+/*
+ * Praca offline. Tylko w wersji zbudowanej: w trybie deweloperskim service worker trzymałby
+ * stare pliki i każda zmiana wymagałaby twardego odświeżenia. W osadzonym artefakcie
+ * rejestracja bywa zablokowana — wtedy aplikacja po prostu działa jak dotąd, online.
+ */
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => undefined);
+  });
+}
