@@ -2,14 +2,15 @@ import { SUPPORT_URL } from '../engine/share';
 import { COACH_TIPS, SUPPORT_SHORT, daySeed, pick } from '../engine/quips';
 import { addDays } from '../engine/schedule';
 import { Gorilla } from './Gorilla';
-import { Icon } from './icons';
+import type { CoachMood } from './Gorilla';
 import type { AppState } from '../types';
 
 /**
  * Wsparcie autora — z Trenerem Siwym.
  *
- * Trzy zasady bez zmian: nigdy nie blokuje drogi (żadnego okna do zamknięcia), nigdy nie
- * pojawia się w trakcie treningu i nigdy nie prosi dwa razy na tym samym ekranie.
+ * Dwa miejsca, jeden styl: cienki pasek pod paskiem aplikacji i duży baner na dole zakładek
+ * (decyzja autora — oba zostają). Zasady bez zmian: nigdy nie blokuje drogi (żadnego okna do
+ * zamknięcia) i nigdy nie pojawia się w trakcie treningu.
  *
  * Zmienia się kolejność. Najpierw trener daje radę dnia — coś, co ma wartość samo w sobie
  * i po co można wrócić jutro, bo rada będzie inna. Dopiero potem pada żart o espresso
@@ -59,23 +60,33 @@ export const snoozeUntil = (today: string): string => addDays(today, SNOOZE_DAYS
 export const supportSnoozed = (state: AppState, today: string): boolean =>
   !!state.supportSnooze && today < state.supportSnooze;
 
+/** Miny Siwego w pasku — te, które dobrze wyglądają w samej twarzy. */
+const STRIP_MOODS: readonly CoachMood[] = ['wink', 'coffee', 'approve', 'calm'];
+
 /**
- * Cienki pasek wsparcia na górze aplikacji. Jedyna stała prośba — zastąpił kubek w nagłówku
- * i banery na dole zakładek, więc żaden ekran nie prosi dwa razy.
+ * Cienki pasek wsparcia pod paskiem aplikacji. Zastąpił kubek w nagłówku; duży baner na dole
+ * zakładek zostaje obok niego — pasek przypomina, baner zamyka ekran radą dnia.
  *
- * Przykleja się razem z paskiem aplikacji i niczego nie zasłania. Cały jest jednym odnośnikiem,
- * a × chowa go na tydzień: prośba, której nie da się odsunąć, przestaje być prośbą. W trakcie
+ * Wygląda i mówi jak duży baner Trenera Siwego, tylko w jednym wierszu: jego twarz, żart
+ * o espresso w jego stylu i ten sam przycisk „Postaw espresso”. Stoi pod paskiem aplikacji,
+ * nie nad nim — na samej górze zostaje tytuł ekranu, a prośba jest drugą rzeczą, nie pierwszą.
+ * Przykleja się razem z paskiem i niczego nie zasłania. Cały jest jednym odnośnikiem, a ×
+ * chowa go na tydzień: prośba, której nie da się odsunąć, przestaje być prośbą. W trakcie
  * treningu go nie ma — wtedy liczy się tylko seria.
  */
 export function SupportStrip({ onSnooze }: { onSnooze: () => void }) {
+  const seed = daySeed();
   return (
     <div className="strip">
       <a className="strip-link" href={SUPPORT_URL} target="_blank" rel="noopener noreferrer">
-        <span className="strip-ico" aria-hidden="true">
-          <Icon name="coffee" size={17} />
+        <span className="strip-face" aria-hidden="true">
+          <Gorilla who="siwy" mood={pick(STRIP_MOODS, seed)} crop="face" size={30} />
         </span>
-        <span className="strip-text">{pick(SUPPORT_SHORT, daySeed())}</span>
-        <span className="strip-cta">Postaw kawę</span>
+        <span className="strip-text">{pick(SUPPORT_SHORT, seed)}</span>
+        <span className="strip-cta">
+          <span className="cta-long">Postaw espresso</span>
+          <span className="cta-short">Espresso</span>
+        </span>
       </a>
       <button
         className="strip-close"
@@ -85,25 +96,6 @@ export function SupportStrip({ onSnooze }: { onSnooze: () => void }) {
       >
         ×
       </button>
-    </div>
-  );
-}
-
-/**
- * Rada dnia bez prośby. Na ekranie Dziś rada zostaje — ma wartość sama w sobie i to po nią
- * wraca się jutro — ale prośba o kawę stoi już na górze, w pasku wsparcia, więc tu jej nie ma.
- */
-export function TipCard({ seed = daySeed() }: { seed?: number }) {
-  const t = pick(COACH_TIPS, seed);
-  return (
-    <div className="tipcard">
-      <span className="tipcard-art" aria-hidden="true">
-        <Gorilla who="siwy" mood={t.mood} size={112} />
-      </span>
-      <span className="tipcard-body">
-        <span className="mbanner-eyebrow">Rada dnia · Trener Siwy</span>
-        <span className="tipcard-tip">{t.tip}</span>
-      </span>
     </div>
   );
 }

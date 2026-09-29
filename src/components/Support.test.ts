@@ -15,11 +15,16 @@ describe('pasek wsparcia', () => {
     expect(supportSnoozed(s, '2026-10-06')).toBe(false);
   });
 
-  it('teksty paska mieszczą się w jednym wierszu na telefonie', () => {
-    // Pasek ma trzydzieści kilka pikseli; na ekranie 360 px obok wezwania mieści się ok. 36 znaków.
+  it('teksty paska mieszczą się w dwóch krótkich wierszach na telefonie', () => {
+    // Obok twarzy i przycisku zostaje na telefonie ok. 25 znaków na wiersz, a pasek ma najwyżej dwa.
     expect(SUPPORT_SHORT.length).toBeGreaterThanOrEqual(5);
     expect(new Set(SUPPORT_SHORT).size).toBe(SUPPORT_SHORT.length);
-    SUPPORT_SHORT.forEach((t) => expect(t.length, t).toBeLessThanOrEqual(36));
+    SUPPORT_SHORT.forEach((t) => expect(t.length, t).toBeLessThanOrEqual(46));
+  });
+
+  it('pasek mówi głosem Siwego i o kawie — jak duży baner', () => {
+    SUPPORT_SHORT.forEach((t) => expect(t, t).toMatch(/siwy|goryl|srebrn|stad/i));
+    SUPPORT_SHORT.forEach((t) => expect(t, t).toMatch(/kaw|espresso|czarn|filiżan/i));
   });
 
   it('pasek nie naciska i nie robi wyrzutów', () => {

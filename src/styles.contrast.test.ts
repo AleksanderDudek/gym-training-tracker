@@ -36,7 +36,7 @@ const BACKDROPS = ['bg', 'surface', 'surface-2'] as const;
 
 describe('kontrast tokenów', () => {
   it('przyciemnione akcenty nadają się na tekst na każdym tle', () => {
-    for (const accent of ['c-orange-ink', 'c-blue-ink', 'c-green-ink']) {
+    for (const accent of ['c-orange-ink', 'c-blue-ink', 'c-green-ink', 'c-gold-ink']) {
       for (const bd of BACKDROPS) {
         expect(ratio(token(accent), token(bd)), `${accent} na --${bd}`).toBeGreaterThanOrEqual(4.5);
       }
@@ -46,7 +46,7 @@ describe('kontrast tokenów', () => {
   it('czyste akcenty nie nadają się na tekst — i dlatego mają wersje ink', () => {
     // Gdyby któryś kiedyś przeskoczył próg, podział na dwa tokeny przestaje mieć sens
     // i trzeba go usunąć, a nie zostawiać jako zabobon.
-    const pure = ['c-orange', 'c-blue'].map((t) => ratio(token(t), token('surface')));
+    const pure = ['c-orange', 'c-blue', 'c-gold'].map((t) => ratio(token(t), token('surface')));
     expect(Math.max(...pure)).toBeLessThan(4.5);
   });
 
@@ -57,7 +57,15 @@ describe('kontrast tokenów', () => {
   });
 
   it('biały napis na przycisku kawy jest czytelny', () => {
-    expect(ratio('#ffffff', token('c-orange-ink'))).toBeGreaterThanOrEqual(4.5);
+    // Przycisk „Postaw espresso” jest złoty — w dużym banerze i w pasku wsparcia.
+    expect(ratio('#ffffff', token('c-gold-ink'))).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('tekst i wezwanie na złotym tle wsparcia są czytelne', () => {
+    expect(ratio(token('ink'), token('c-gold-bg'))).toBeGreaterThanOrEqual(4.5);
+    expect(ratio(token('c-gold-ink'), token('c-gold-bg'))).toBeGreaterThanOrEqual(4.5);
+    // Ramka paska odcina go od jasnego tła, bo samo złote wypełnienie różni się od niego o włos.
+    expect(ratio(token('c-gold-ink'), token('surface'))).toBeGreaterThanOrEqual(3);
   });
 
   it('tekst drugiego planu i stany czytają się na każdym tle', () => {
@@ -83,7 +91,9 @@ describe('kontrast tokenów', () => {
   it('tło baneru wsparcia nie udaje granicy', () => {
     // Wypełnienie jest za blisko teł strony, żeby cokolwiek wyznaczać — dlatego baner
     // ma ramkę. Test pilnuje, żeby nikt ramki nie skasował jako „zbędnej”.
-    expect(ratio(token('c-orange-bg'), token('surface'))).toBeLessThan(3);
-    expect(css).toMatch(/\.mbanner\{[^}]*border:1px solid var\(--c-orange-ink\)/);
+    expect(ratio(token('c-gold-bg'), token('surface'))).toBeLessThan(3);
+    expect(css).toMatch(/\.mbanner\{[^}]*border:1px solid var\(--c-gold-ink\)/);
+    // Pasek wsparcia pod paskiem aplikacji tak samo: odcina go ramka, nie wypełnienie.
+    expect(css).toMatch(/\.strip\{[^}]*border-bottom:1px solid var\(--c-gold-ink\)/);
   });
 });

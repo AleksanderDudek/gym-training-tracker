@@ -42,9 +42,10 @@ głowa osadzona nisko, przedramię niemal tak grube jak ramię, naga twarz w ksz
 wypełnienia, emocja w brwiach, oczach i ustach.
 
 **Kolory pochodzą od postaci, nie odwrotnie.** Stal to kamizelka trenera — i dlatego stal jest
-kolorem akcji. Pomarańcz to opaski i smycz, więc pomarańcz oznacza aktywną zakładkę i wsparcie.
+kolorem akcji. Pomarańcz to opaski i smycz, więc pomarańcz oznacza aktywną zakładkę i puenty.
 Błękit to koszulka Gustawa, zieleń top Gosi, srebro grzbiet Siwego. Paleta interfejsu i paleta
-obsady to jedna lista, nie dwie.
+obsady to jedna lista, nie dwie. Jedyny kolor spoza obsady to złoto wsparcia — wzięte z medalu
+„złoto” i z cremy espresso, którym Siwy częstuje w banerach.
 
 **Zasady, których pilnuje test.** Postać reaguje, nigdy nie informuje: każdy stan — pasmo
 odznaki, liczba, nazwa — stoi obok niej napisany słowem, więc nic nie ginie przy wyłączonych
@@ -184,30 +185,44 @@ i sylwetka stoją pośrodku, a tytuł karty bez grafiki zaczyna się niżej. Idz
 **przed** napisami, więc gdy długi tytuł jednak do niej dosięgnie, wydrukuje się na niej —
 prawdziwa pieczęć też nie zjada tekstu, który już był na kartce.
 
-**Wsparcie ma jedno stałe miejsce: cienki pasek na samej górze**, przyklejony razem z paskiem
-aplikacji. Jedno krótkie zdanie, które zmienia się co dzień („Zero reklam. Kawa mile widziana.”),
-i „Postaw kawę →”; cały pasek jest jednym odnośnikiem do buycoffee.to. Zastąpił kubek w nagłówku
-i banery na dole zakładek Plan, Treningi, Profil, Osiągnięcia, Atlas i Ustawienia — żaden ekran
-nie prosi dwa razy.
+**Wsparcie ma dwa miejsca i jeden styl: cienki pasek pod paskiem aplikacji i duży baner na dole
+zakładek.** Oba mówią głosem Trenera Siwego i oba są złote.
 
-Zasady bez zmian: nigdy nie blokuje drogi, nigdy nie pojawia się w trakcie treningu — pasek
-znika, gdy tylko ruszy sesja — i nigdy nie prosi dwa razy na tym samym ekranie. **Krzyżyk chowa
-pasek na tydzień.** Prośba, której nie da się odsunąć, przestaje być prośbą; po tygodniu wraca
-sama. Gdy pasek jest schowany, kawę da się postawić z Ustawień — tylko wtedy stoi tam baner.
-Tekst nigdy nie łamie się na dwa wiersze: test pilnuje długości, a na wąskim ekranie zdanie
-skraca się wielokropkiem, a wezwanie zostaje całe. Kolor paska systemowego idzie za paskiem —
-ciepły, gdy stoi pasek wsparcia, jasny, gdy go nie ma.
+**Pasek** stoi pod paskiem aplikacji, nie nad nim — na samej górze zostaje tytuł ekranu, a prośba
+jest drugą rzeczą, nie pierwszą. Przykleja się razem z paskiem aplikacji. W środku to samo co
+w dużym banerze, tylko w jednym wierszu: twarz Siwego (mina zmienia się co dzień), żart o espresso
+w jego stylu („Siwy przyjmuje wpłaty także w espresso.”, „Stado działa na bananach i małej
+czarnej.”) i przycisk espresso. Cały pasek jest jednym odnośnikiem do buycoffee.to. Tekst ma
+najwyżej dwa krótkie wiersze — test pilnuje długości i tego, że każdy żart jest o Siwym i o kawie.
+Na telefonie przycisk mówi krótko „Espresso →”, bo pełne „Postaw espresso” zabierało żartowi tyle
+miejsca, że ucinał się w pół zdania; pełne zostaje na szerszych ekranach. Na najwęższych (poniżej
+360 px) znika twarz. Pasek ma 44 px, więc krzyżyk jest pełnym celem dotykowym.
 
-**Rada dnia została, prośba odeszła na górę.** Na ekranie Dziś Trener Siwy dalej daje radę dnia —
-konkretną wskazówkę, która ma wartość sama w sobie i zmienia się co dzień, więc jutro jest po co
-wrócić. Ale bez przycisku kawy: ten stoi już w pasku wsparcia. Ramka rady jest srebrna, nie
-pomarańczowa, żeby nie wyglądała jak kolejna prośba. Test dalej pilnuje, żeby rada nigdy nie
-mówiła o kawie.
+**Baner na dole** zostaje tam, gdzie był: ekran Dziś, Plan z uruchomionym planem, Treningi,
+Profil, Osiągnięcia, Atlas i — w wersji w linii — Ustawienia; do tego góra podsumowania po
+zamkniętej sesji, okno zdobytej odznaki i koniec wprowadzenia. Prowadzi rada dnia od Trenera
+Siwego — konkretna wskazówka treningowa, która ma wartość sama w sobie i zmienia się co dzień,
+więc jutro jest po co wrócić. Dopiero pod nią stoi żart o espresso i przycisk „Postaw espresso”.
+Test pilnuje, żeby rada nigdy nie mówiła o kawie, a żart zawsze. Pasek przypomina, baner zamyka
+ekran — dwa miejsca to decyzja autora.
 
-Pełny baner z trenerem i przyciskiem zostaje tam, gdzie aplikacja właśnie coś dla kogoś zrobiła
-albo gdzie paska nie widać: na górze podsumowania po zamkniętej sesji, w oknie zdobytej odznaki
-i na końcu wprowadzenia. Żart idzie z aplikacji i z autora, nigdy z czytającego — nie ma tu
-liczników zbiórki, pasków „do celu" ani zdań o tym, jak bardzo autor potrzebuje.
+**Złoto, nie pomarańcz i nie zieleń.** Wsparcie było wcześniej pomarańczowe, jak aktywna
+zakładka. Teraz ma własny kolor: złoto z medalu i cremy espresso. Zieleń odpadła, bo znaczy tu
+postęp i sukces — punkty planu, paski odznak, stan „ok” — a jasnozielony pasek zlałby się
+z szarozielonym tłem aplikacji. Złote tło odcina od jasnego tła ramka w `--c-gold-ink`, bo
+samo wypełnienie różni się od niego o włos; test pilnuje, żeby nikt jej nie skasował.
+
+Zasady bez zmian: nigdy nie blokuje drogi i nigdy nie pojawia się w trakcie treningu — pasek
+znika, gdy tylko ruszy sesja, a baneru nie ma na ekranie sesji, w kreatorze własnego treningu
+i w katalogu planów. **Krzyżyk chowa pasek na tydzień** — prośba, której nie da się odsunąć,
+przestaje być prośbą; po tygodniu wraca sama. Żart idzie z aplikacji, z goryla i z kawy, nigdy
+z czytającego — nie ma tu liczników zbiórki, pasków „do celu" ani zdań o tym, jak bardzo autor
+potrzebuje.
+
+**Miejsce w układzie zależy od tego, po co ktoś przyszedł.** Na ekranie Dziś baner stoi **pod**
+wyjściami do treningu i przekąski, bo kto przyszedł ćwiczyć, ten najpierw widzi przycisk startu.
+W podsumowaniu sesji jest odwrotnie, na samej górze: to jedyna chwila, w której aplikacja właśnie
+coś dla kogoś zrobiła. Na pozostałych zakładkach zamyka ekran.
 
 **Dorobek udostępnisz w każdej chwili** — przycisk „Udostępnij dorobek" w zakładce Osiągnięcia
 i drugi, obok wyniku sesji, po każdym zamkniętym treningu.
@@ -522,8 +537,8 @@ src/
     Character.tsx           postać: karta w profilu, pasek na ekranie sesji, okno awansu
     ExerciseBadges.tsx      wiersz odznaki ćwiczenia z bieżącym okresem i rekordem
     ExercisePicker.tsx      pole wyboru ćwiczenia z podpowiedziami (wzorzec combobox)
-    Support.tsx             pasek wsparcia na górze, rada dnia i baner z espresso
-    Support.test.ts         3 testy chowania paska i długości jego tekstów
+    Support.tsx             złoty pasek wsparcia pod paskiem aplikacji i baner Siwego z espresso
+    Support.test.ts         4 testy chowania paska, długości i głosu jego tekstów
     TopBar.tsx              przyklejony pasek aplikacji: tytuł, wstecz, ustawienia, pasek wsparcia
     Gorilla.tsx             obsada: Gustaw, Gosia i Trener Siwy, siedemnaście min
     cast.test.ts            16 testów obsady, pasm, blankietu, miny postaci i rady dnia
@@ -538,7 +553,7 @@ public/
   sw.js                     service worker: praca offline
   icons/                    ikony: zwykłe, maskowalna, iOS i wektorowa
   styles.css                arkusz stylów
-  styles.contrast.test.ts   7 testów kontrastu tokenów, liczonych wprost z arkusza
+  styles.contrast.test.ts   8 testów kontrastu tokenów, liczonych wprost z arkusza
 ```
 
 Silnik jest w całości oddzielony od interfejsu. `engine/` nie importuje niczego z Reacta, funkcje
@@ -782,8 +797,9 @@ niż standard, żeby biel trzymała 4,6:1. Kafelek w trakcie przejścia ma dwa k
 numer siedzi tam na własnej, stalowej etykiecie.
 
 **Progi pilnuje test, nie pamięć.** `styles.contrast.test.ts` czyta arkusz, wyciąga z niego
-tokeny i liczy kontrast po WCAG: wersje `ink` powyżej 4,5:1 na każdym tle, `--edge` powyżej
-3:1, biel na przycisku kawy powyżej 4,5:1, tusze stanów powyżej 4,5:1 i każdy kafelek ciężaru
+tokeny i liczy kontrast po WCAG: wersje `ink` powyżej 4,5:1 na każdym tle (także złota wsparcia),
+`--edge` powyżej 3:1, biel na złotym przycisku kawy i tekst na złotym tle wsparcia powyżej 4,5:1,
+tusze stanów powyżej 4,5:1 i każdy kafelek ciężaru
 z właściwym kolorem liczby. Sprawdza też rzecz odwrotną — że czyste akcenty
 nadal **nie** nadają się na tekst, bo gdyby kiedyś przeskoczyły próg, podział na dwa tokeny
 byłby już tylko zabobonem.

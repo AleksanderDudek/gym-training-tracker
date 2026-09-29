@@ -256,18 +256,19 @@ export const SUPPORT: readonly string[] = [
 ];
 
 /**
- * Pasek wsparcia na górze aplikacji. Jedno krótkie zdanie — pasek ma trzydzieści kilka pikseli
- * i nie może się łamać na dwa wiersze na wąskim telefonie. Ton ten sam co w dłuższych wersjach:
- * żart z aplikacji i z kawy, nigdy z czytającego i nigdy z pozycji kogoś, kto czegoś potrzebuje.
+ * Pasek wsparcia pod paskiem aplikacji — w głosie Trenera Siwego, tak jak żarty o espresso
+ * w dużym banerze. Stary srebrnogrzbiety częstuje kawą jak radą: z klasą, z przymrużeniem oka,
+ * nigdy z pozycji kogoś, kto czegoś potrzebuje, i nigdy kosztem czytającego. Najwyżej dwa
+ * krótkie wiersze na telefonie — pasek ma zostać cienki.
  */
 export const SUPPORT_SHORT: readonly string[] = [
-  'Darmowa aplikacja, płatne espresso.',
-  'Zero reklam. Kawa mile widziana.',
-  'Bez kont i abonamentu. Z kawą.',
-  'Progresja liniowa, cennik: zero.',
-  'Siwy przyjmuje wpłaty w espresso.',
-  'Kod pisany po małej czarnej.',
-  'Tu nie ma premium. Jest kawa.',
+  'Siwy przyjmuje wpłaty także w espresso.',
+  'Stary goryl pije małą czarną. Z klasą.',
+  'Siwy trzyma filiżankę małym palcem.',
+  'Kawa nigdy nie jest porażką. Siwy sprawdził.',
+  'Srebrny grzbiet rośnie latami. I na espresso.',
+  'Stado działa na bananach i małej czarnej.',
+  'Espresso w nagrodę? Siwy nie odmówi.',
 ];
 
 /**

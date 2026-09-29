@@ -9,6 +9,7 @@ import { P, exercisesByGroup, levelLabel, planLabel } from '../engine/plan';
 import { exercisePath, go, snackAddPath } from '../routing';
 import { Chip, EmptyState } from './ui';
 import { VideoEmbed } from './VideoEmbed';
+import { SupportLine } from './Support';
 import type { AppState, ExerciseId, Gear } from '../types';
 
 /* ---------------- Spis ćwiczeń ---------------- */
@@ -74,6 +75,9 @@ export function AtlasView({ state }: { state: AppState }) {
           })}
         </div>
       ))}
+      <div className="wrap">
+        <SupportLine seed={total} />
+      </div>
     </>
   );
 }

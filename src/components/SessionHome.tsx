@@ -1,7 +1,7 @@
 import { ex } from '../data/exercises';
 import { go } from '../routing';
 import { LATE, REST, daySeed, pick } from '../engine/quips';
-import { TipCard } from './Support';
+import { SupportLine } from './Support';
 import { CharacterStrip } from './Character';
 import { SnackCard } from './Snacks';
 import type { AppState, Workout } from '../types';
@@ -132,10 +132,11 @@ export function SessionHome({
 
       <div className="wrap">
         {/*
-          Rada dnia zamyka ekran — po nią wraca się jutro. Prośba o kawę stoi już w pasku
-          na górze, więc tu została sama rada: jeden ekran, jedna prośba.
+          Baner stoi pod obiema drogami wyjścia z ekranu, nie nad nimi: kto przyszedł
+          trenować, ten najpierw widzi przycisk startu. Kto się rozgląda — widzi radę dnia
+          i kawę.
         */}
-        <TipCard />
+        <SupportLine />
       </div>
     </>
   );

@@ -19,6 +19,7 @@ import { dayKey, daysBetween, planWeekdays } from '../engine/schedule';
 import { snapshot } from '../engine/snapshot';
 import type { Snapshot } from '../engine/snapshot';
 import { Segmented } from './ui';
+import { SupportLine } from './Support';
 import type {
   AppState,
   PlanLevel,
@@ -520,6 +521,7 @@ function ActivePlanView({
             Zakończ plan
           </button>
         </div>
+        <SupportLine seed={state.log.length + 2} />
       </div>
     </>
   );

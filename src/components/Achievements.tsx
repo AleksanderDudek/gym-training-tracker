@@ -16,6 +16,7 @@ import type { ExFamily } from '../engine/exbadges';
 import { ex } from '../data/exercises';
 import { go, statsPath } from '../routing';
 import { ExerciseBadgeRow, badgeTally } from './ExerciseBadges';
+import { SupportLine } from './Support';
 import { BAND_NAME, BadgeMedal, bandFor } from './BadgeArt';
 import type { Metrics } from '../engine/metrics';
 import { EMPTY_SHELF, daySeed, massJoke, pick, repsJoke, timeJoke } from '../engine/quips';
@@ -342,6 +343,9 @@ export function Achievements({ state }: { state: AppState }) {
         )}
       </div>
 
+      <div className="wrap">
+        <SupportLine seed={rows.length} />
+      </div>
     </>
   );
 }

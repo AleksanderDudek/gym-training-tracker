@@ -11,7 +11,7 @@ import { SupportStrip } from './Support';
  * wstecz po lewej (hierarchia), a zakładki na dole zostają od nawigacji w bok. Po przewinięciu
  * pasek dostaje cień — tak Material 3 i iOS pokazują, że treść wjeżdża pod spód.
  *
- * Nad paskiem, w tym samym przyklejonym bloku, stoi cienki pasek wsparcia. Oba mają margines
+ * Pod paskiem, w tym samym przyklejonym bloku, stoi cienki pasek wsparcia. Blok ma margines
  * na wycięcie ekranu (`safe-area-inset-top`), więc w trybie aplikacji nic nie wchodzi pod
  * zegar ani pod aparat.
  */
@@ -65,7 +65,6 @@ export function TopBar({
 
   return (
     <div className={`topbar${scrolled ? ' scrolled' : ''}${strip ? ' with-strip' : ''}`}>
-      {strip && <SupportStrip onSnooze={onSnooze} />}
       <header className="appbar">
         {parent ? (
           <button className="appbar-btn back-btn" onClick={() => goBack(parent)} aria-label="Wstecz">
@@ -84,6 +83,7 @@ export function TopBar({
           </a>
         )}
       </header>
+      {strip && <SupportStrip onSnooze={onSnooze} />}
     </div>
   );
 }

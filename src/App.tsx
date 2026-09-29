@@ -141,10 +141,10 @@ export default function App() {
   // Pasek wsparcia: nie w trakcie treningu, nie pod wprowadzeniem, nie w tygodniu po schowaniu.
   const strip =
     !!state && !state.session && !showIntro && !supportSnoozed(state, dayKey(Date.now()));
-  // Kolor paska systemowego idzie za tym, co stoi na samej górze: tło wprowadzenia, ciepły
-  // pasek wsparcia albo jasny pasek aplikacji. Przed wczytaniem zostaje kolor z `index.html`,
-  // żeby start nie mrugał dwoma kolorami.
-  const topColor = !state ? null : showIntro ? '#D7D9D3' : strip ? '#F7E8E0' : '#FAFAF8';
+  // Kolor paska systemowego idzie za tym, co stoi na samej górze: tło wprowadzenia albo jasny
+  // pasek aplikacji — pasek wsparcia stoi pod nim, więc go nie zmienia. Przed wczytaniem zostaje
+  // kolor z `index.html`, ten sam co paska aplikacji, żeby start nie mrugał.
+  const topColor = !state ? null : showIntro ? '#D7D9D3' : '#FAFAF8';
   useEffect(() => {
     if (topColor) document.querySelector('meta[name="theme-color"]')?.setAttribute('content', topColor);
   }, [topColor]);

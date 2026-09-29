@@ -12,8 +12,7 @@ import {
 import { acwr } from '../engine/math';
 import { P, exercisesByGroup } from '../engine/plan';
 import { ExerciseCard } from './ExerciseCard';
-import { SupportLine, supportSnoozed } from './Support';
-import { dayKey } from '../engine/schedule';
+import { SupportLine } from './Support';
 import { OWN_WORKOUT_JOKES, WORKOUT_JOKES } from '../data/exjokes';
 import { pick } from '../engine/quips';
 import type { AppState, EffortKey, ExerciseId, ReadyKey, SetResult, Workout } from '../types';
@@ -285,6 +284,13 @@ export function WorkoutsView({
           </div>
         </div>
       )}
+      {/* Baner tylko na spisie treningów. W trakcie układania własnego nikt nie chce
+          kawy — chce skończyć listę ćwiczeń. */}
+      {!draft && (
+        <div className="wrap">
+          <SupportLine seed={state.log.length} />
+        </div>
+      )}
     </>
   );
 }
@@ -397,17 +403,9 @@ export function SettingsView({
         })}
       </div>
 
-      {/* Przy widocznym pasku wsparcia prośba stoi już na górze ekranu. Gdy ktoś go schował,
-          tu zostaje jedyne miejsce, z którego da się postawić kawę — bez szukania. */}
-      {supportSnoozed(state, dayKey(Date.now())) && (
-        <div className="grp">
-          <h2>Wsparcie autora</h2>
-          <p className="tight">
-            Pasek wsparcia na górze jest schowany do {state.supportSnooze}. Wróci sam.
-          </p>
-          <SupportLine compact />
-        </div>
-      )}
+      <div className="wrap">
+        <SupportLine compact />
+      </div>
 
       <div className="grp">
         <h2>Wprowadzenie</h2>

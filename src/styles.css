@@ -32,6 +32,14 @@
     --c-mid:#b0aea5;    --c-sand:#e8e6dc;
 
     /*
+     * Złoto — kolor wsparcia. Wzięte z tworzywa medalu „złoto” i z cremy espresso. Nie zieleń:
+     * zieleń znaczy tu postęp i sukces (punkty planu, paski odznak, stan „ok”), a jasnozielony
+     * pasek zlałby się z szarozielonym tłem aplikacji. Wersja `ink` trzyma ≥ 5:1 na każdym tle,
+     * biel na niej 7,2:1.
+     */
+    --c-gold:#d9a157;   --c-gold-ink:#74511a; --c-gold-bg:#f7ebcb;
+
+    /*
      * Obsada: goryle. Sierść, naga skóra i pysk to wyłącznie kolory ilustracji — nigdy
      * tekst ani tło. Srebro jest zarezerwowane dla trenera: u goryla srebrny grzbiet
      * przychodzi z wiekiem, więc to kolor doświadczenia, nie dekoracja.
@@ -69,11 +77,10 @@
    * do pola, przejście klawiszem Tab i `scrollIntoView` zostawiają nad nim wysokość paska.
    */
   html{scroll-padding-top:calc(64px + env(safe-area-inset-top))}
-  html:has(.topbar.with-strip){scroll-padding-top:calc(105px + env(safe-area-inset-top))}
+  html:has(.topbar.with-strip){scroll-padding-top:calc(118px + env(safe-area-inset-top))}
 
   .topbar{position:sticky;top:0;z-index:35;background:var(--surface);
     padding-top:env(safe-area-inset-top);transition:box-shadow .2s ease-out}
-  .topbar.with-strip{background:var(--c-orange-bg)}
   .topbar.scrolled{box-shadow:0 1px 0 var(--line),0 6px 16px rgba(30,35,32,.08)}
 
   /* Pasek na całą szerokość, a jego zawartość w tej samej kolumnie 640 px co treść. */
@@ -94,27 +101,42 @@
   .back-btn{margin-left:-8px}
 
   /*
-   * Pasek wsparcia: cienki, ciepły, cały klikalny. Tekst nigdy nie łamie się na dwa wiersze —
-   * na wąskim ekranie skraca się wielokropkiem, a wezwanie po prawej zostaje całe.
+   * Pasek wsparcia: ten sam język co duży baner Siwego — złote tło, ciemnozłota ramka, gruby
+   * złoty pasek z lewej, twarz trenera, żart i przycisk „Postaw espresso” — tylko w jednym
+   * wierszu. Najwyżej dwa wiersze tekstu; na wąskim ekranie zdanie skraca się wielokropkiem,
+   * a przycisk zostaje cały. 44 px wysokości, więc krzyżyk jest pełnym celem dotykowym.
    */
-  .strip{display:flex;align-items:stretch;min-height:40px;background:var(--c-orange-bg);
-    border-bottom:1px solid rgba(148,69,44,.22);max-width:none}
-  .strip-link{flex:1;min-width:0;display:flex;align-items:center;gap:8px;min-height:40px;
-    padding:0 4px 0 max(14px,calc((100% - 640px) / 2 + 14px));
-    color:var(--ink);text-decoration:none;font-size:13px;-webkit-tap-highlight-color:transparent}
+  .strip{display:flex;align-items:stretch;min-height:44px;background:var(--c-gold-bg);
+    border-top:1px solid var(--c-gold-ink);border-bottom:1px solid var(--c-gold-ink);
+    box-shadow:inset 5px 0 0 var(--c-gold)}
+  .strip-link{flex:1;min-width:0;display:flex;align-items:center;gap:10px;min-height:44px;
+    padding:5px 4px 5px max(14px,calc((100% - 640px) / 2 + 14px));
+    color:var(--ink);text-decoration:none;-webkit-tap-highlight-color:transparent}
   .strip-link:focus-visible{outline:2px solid var(--steel);outline-offset:-2px}
-  .strip-ico{flex:none;display:grid;place-items:center;color:var(--c-orange-ink)}
-  .strip-text{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .strip-cta{flex:none;font-weight:600;color:var(--c-orange-ink);white-space:nowrap}
+  .strip-face{flex:none;line-height:0;margin:-1px 0 -3px}
+  .strip-text{flex:1;min-width:0;font-size:13px;line-height:1.3;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .strip-cta{flex:none;font-family:var(--body);font-weight:600;font-size:12.5px;line-height:1;
+    white-space:nowrap;color:#fff;background:var(--c-gold-ink);border-radius:999px;padding:8px 11px}
   .strip-cta::after{content:' \2192'}
-  /* Krzyżyk ma 44 px szerokości; w pionie cel sięga dwa piksele poza pasek z każdej strony. */
-  .strip-close{flex:none;position:relative;width:44px;border:0;background:none;padding:0;
+  .cta-short{display:none}
+  .strip-link:hover .strip-cta{background:var(--ink)}
+  .strip-close{flex:none;width:44px;border:0;background:none;padding:0;
     margin-right:max(0px,calc((100vw - 640px) / 2));
-    color:var(--ink-soft);font-size:20px;line-height:1;cursor:pointer;
+    color:var(--c-gold-ink);font-size:20px;line-height:1;cursor:pointer;
     -webkit-tap-highlight-color:transparent}
-  .strip-close::before{content:'';position:absolute;inset:-2px 0}
-  .strip-close:active{background:rgba(148,69,44,.08)}
+  .strip-close:active{background:rgba(116,81,26,.1)}
   .strip-close:focus-visible{outline:2px solid var(--steel);outline-offset:-2px}
+  /*
+   * Na telefonie przycisk mówi krótko „Espresso →” — pełne „Postaw espresso” zabierało żartowi
+   * tyle miejsca, że ucinał się w pół zdania. Pełne zostaje na szerszych ekranach i w dużym
+   * banerze. Na najwęższych znika jeszcze twarz, żeby żart miał gdzie stanąć.
+   */
+  @media (max-width:479px){
+    .cta-long{display:none}
+    .cta-short{display:inline}
+  }
+  @media (max-width:359px){.strip-face{display:none}}
 
   /* Treść pod paskiem aplikacji: nowy ekran wjeżdża krótko od dołu, jak w natywnych aplikacjach. */
   .page{padding-top:14px;max-width:640px;margin:0 auto}
@@ -676,14 +698,14 @@
    * tylko tam, gdzie ruch jest dozwolony.
    */
   .mbanner{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:end;
-    background:var(--c-orange-bg);border:1px solid var(--c-orange-ink);
-    border-left:5px solid var(--c-orange);border-radius:var(--r);
+    background:var(--c-gold-bg);border:1px solid var(--c-gold-ink);
+    border-left:5px solid var(--c-gold);border-radius:var(--r);
     padding:12px 14px 0 6px;margin:14px 0;text-decoration:none;color:var(--ink);
     overflow:hidden;-webkit-tap-highlight-color:transparent}
   .mbanner-art{align-self:end;margin-bottom:-2px}
   .mbanner-body{display:grid;gap:9px;justify-items:start;padding-bottom:12px;align-self:center}
   .mbanner-eyebrow{font-family:var(--display);font-size:11px;letter-spacing:.14em;
-    text-transform:uppercase;color:var(--c-orange-ink)}
+    text-transform:uppercase;color:var(--c-gold-ink)}
   .mbanner-tip{font-family:var(--display);font-weight:600;font-size:18px;line-height:1.2;color:var(--ink)}
   .mbanner-line{font-size:13.5px;line-height:1.45;color:var(--ink)}
   .mbanner-url{font-size:11.5px;color:var(--ink-soft)}
@@ -773,7 +795,7 @@
     margin:0 0 10px;max-width:62ch}
 
 
-  .btn.coffee{background:var(--c-orange-ink);border-color:var(--c-orange-ink);color:#fff}
+  .btn.coffee{background:var(--c-gold-ink);border-color:var(--c-gold-ink);color:#fff}
 
   .grp h2 .ico,.grp h3 .ico{vertical-align:-3px;margin-right:5px;color:var(--c-orange)}
   .mq-sweat path{fill:var(--c-blue);stroke:none;opacity:.7}
@@ -920,15 +942,3 @@
 
   .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
     clip:rect(0,0,0,0);white-space:nowrap;border:0}
-
-  /* ---------------- Rada dnia bez prośby ---------------- */
-
-  /* Ta sama rada co w banerze wsparcia, ale bez przycisku — dlatego chłodna, srebrna ramka. */
-  .tipcard{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:end;
-    background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--silver);
-    border-radius:var(--r);padding:12px 14px 0 6px;margin:18px 0 14px;overflow:hidden}
-  .tipcard-art{align-self:end;margin-bottom:-2px;line-height:0}
-  .tipcard-body{display:grid;gap:7px;padding-bottom:14px;align-self:center}
-  .tipcard .mbanner-eyebrow{color:var(--ink-soft)}
-  .tipcard-tip{font-family:var(--display);font-weight:600;font-size:18px;line-height:1.2;color:var(--ink)}
-  @media (max-width:430px){.tipcard-art svg{width:96px;height:auto}}

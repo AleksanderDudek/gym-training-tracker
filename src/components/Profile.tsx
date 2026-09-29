@@ -12,6 +12,7 @@ import { LoadGauge } from './views';
 import { CharacterCard } from './Character';
 import type { Avatar } from './Character';
 import { ExerciseBadgeRow, badgeTally } from './ExerciseBadges';
+import { SupportLine } from './Support';
 import { achCtx, exerciseProgress } from '../engine/badges';
 import { snackStats, snacksOf, snacksOn } from '../engine/snacks';
 import { dayKey } from '../engine/schedule';
@@ -228,6 +229,9 @@ export function ProfileView({ state, onAvatar }: { state: AppState; onAvatar: (a
         </>
       )}
 
+      <div className="wrap">
+        <SupportLine seed={m.workouts + 1} />
+      </div>
     </>
   );
 }
