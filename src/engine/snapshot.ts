@@ -1,4 +1,4 @@
-import { planById } from '../data/plans';
+import { planOf } from '../data/plans';
 import type { ActivePlan, AppState, PlanTemplate } from '../types';
 import { buildSchedule, dayKey, logDays, planStats } from './schedule';
 import type { PlanStats, Schedule } from './schedule';
@@ -27,7 +27,7 @@ export function snapshot(
   today: string = dayKey(Date.now()),
 ): Snapshot | null {
   const plan = state.plan;
-  const template = plan ? planById(plan.templateId) : undefined;
+  const template = plan ? planOf(state, plan.templateId) : undefined;
   if (!plan || !template) return null;
 
   const schedule = buildSchedule(template, plan, logDays(state), today);

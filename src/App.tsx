@@ -5,20 +5,22 @@ import { P, freshState } from './engine/plan';
 import { applyLayoff, applyResult } from './engine/progression';
 import { queueSave, store } from './storage/storage';
 import { Banner, Modal, Toast, useModal } from './components/ui';
-import { SessionView, SettingsView, WorkoutsView } from './components/views';
+import { SessionView, SettingsView } from './components/views';
+import { WorkoutBuilder, WorkoutLibrary, WorkoutPreview } from './components/Workouts';
+import { PlanBuilder, PlanCatalog, PlanDetail } from './components/Plans';
 import { ExerciseStatsPage, ProfileView } from './components/Profile';
 import { SessionHome } from './components/SessionHome';
 import type { TodayPlan } from './components/SessionHome';
 import { AtlasView, ExercisePage } from './components/atlas';
-import { PlanView } from './components/PlanView';
+import { Catalogue, PlanView } from './components/PlanView';
 import { Achievements } from './components/Achievements';
 import { dayKey, daysBetween } from './engine/schedule';
 import { bankPoints, snapshot } from './engine/snapshot';
 import { achCtx, migrateBadges, revokeUnmet, syncBadges } from './engine/badges';
 import { pointsToday, rankFor } from './engine/score';
 import { seedFromPlan } from './engine/plan';
-import { planById, planId } from './data/plans';
-import { TABS, activeTab, currentPath, go, screenOf, useRoute } from './routing';
+import { loadFactorFor, planOf, planById, planId } from './data/plans';
+import { PLANS_PATH, TABS, activeTab, currentPath, go, goBack, screenOf, useRoute } from './routing';
 import { Icon } from './components/icons';
 import { BadgeDefs } from './components/BadgeArt';
 import { Celebrate } from './components/Celebrate';
@@ -73,10 +75,45 @@ function restoreExtras(next: AppState, saved: Partial<AppState>): void {
   (Array.isArray(saved.body) ? saved.body.filter(validBody) : []).forEach((b) => byDay.set(b.day, b));
   next.body = [...byDay.values()].sort((a, b) => a.day.localeCompare(b.day));
   if (next.cfg.height !== undefined && !validHeight(next.cfg.height)) delete next.cfg.height;
+  // Plany własne: tylko te, które da się rozpisać na kalendarz — bez tego plan z zepsutym
+  // zapisem wywróciłby ekran planu, a nie tylko zniknął z listy.
+  next.plans = Array.isArray(saved.plans)
+    ? saved.plans.filter(validOwnPlan).map((t) => ({
+        ...t,
+        // Pola potrzebne dopiero przy starcie — z ręcznie poprawionego pliku bywają puste.
+        level: (['zero', 'base', 'strong'] as const).includes(t.level) ? t.level : 'base',
+        sex: (['f', 'm', 'any'] as const).includes(t.sex) ? t.sex : 'any',
+        loadFactor: Number.isFinite(t.loadFactor) ? t.loadFactor : loadFactorFor('base', 'any'),
+        daysPerWeek: t.weekdays.length,
+        desc: typeof t.desc === 'string' ? t.desc : '',
+      }))
+    : [];
   if (typeof saved.supportSnooze === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(saved.supportSnooze))
     next.supportSnooze = saved.supportSnooze;
   if (next.cfg.avatar !== undefined && next.cfg.avatar !== 'gustaw' && next.cfg.avatar !== 'gosia')
     delete next.cfg.avatar;
+}
+
+const isDay = (n: unknown): boolean => Number.isInteger(n) && (n as number) >= 1 && (n as number) <= 7;
+
+/** Czy zapisany plan własny nadaje się do rozpisania. */
+function validOwnPlan(t: Partial<PlanTemplate> | null | undefined): t is PlanTemplate {
+  return (
+    !!t &&
+    t.kind === 'own' &&
+    typeof t.id === 'string' &&
+    typeof t.name === 'string' &&
+    Number.isInteger(t.weeks) &&
+    t.weeks! >= 1 &&
+    t.weeks! <= 52 &&
+    Array.isArray(t.weekdays) &&
+    t.weekdays.length > 0 &&
+    t.weekdays.every(isDay) &&
+    Array.isArray(t.cycle) &&
+    t.cycle.length > 0 &&
+    t.cycle.every((c) => typeof c === 'string') &&
+    (t.deload === undefined || (Array.isArray(t.deload) && t.deload.every((w) => Number.isInteger(w))))
+  );
 }
 
 /** Nazwa stopnia na teraz. Bez planu punkty są tylko te z dorobku. */
@@ -184,6 +221,7 @@ export default function App() {
         workout: w,
         late: daysBetween(due.date, snap.today),
         points: pointsToday(snap.stats, snap.today).now,
+        deload: due.deload,
       };
     const next = snap.stats.next;
     return {
@@ -215,7 +253,18 @@ export default function App() {
 
   const startSession = (id: string) => {
     const next = clone(state);
-    next.session = { workout: id, started: new Date().toISOString(), ready: 'ok', res: {}, done: {}, skip: {} };
+    // Tydzień lżejszy dotyczy treningu z planu na dziś — sesja dodatkowa idzie normalnie.
+    const due = snapshot(state)?.stats.due;
+    const deload = !!due?.deload && due.workout === id;
+    next.session = {
+      workout: id,
+      started: new Date().toISOString(),
+      ready: 'ok',
+      res: {},
+      done: {},
+      skip: {},
+      ...(deload ? { deload: true } : {}),
+    };
     commit(next);
     go('#/sesja', { top: true });
     window.scrollTo({ top: 0 });
@@ -439,7 +488,12 @@ export default function App() {
         ) : (
           <p>Wszystkie {logged.length} ćwiczeń ma wynik.</p>
         )}
-        {blockJump && (
+        {session.deload ? (
+          <p style={{ marginTop: 12 }}>
+            Tydzień lżejszy: wyniki trafią do historii, ale poziomy zostaną bez zmian — ani w górę,
+            ani w dół.
+          </p>
+        ) : blockJump && (
           <p style={{ marginTop: 12 }}>
             Skoki na cięższe obciążenie są dziś wstrzymane — {reason}. Cele powtórzeń rosną normalnie.
           </p>
@@ -454,11 +508,14 @@ export default function App() {
     const xpBefore = xpSummary(state).total;
     const next = clone(state);
     const changes: Change[] = [];
-    logged.forEach((i) => {
-      const r = next.session!.res[i.ex]!;
-      const c = applyResult(next, i.ex, r.rows, r.effort, blockJump);
-      if (c) changes.push(c);
-    });
+    // Tydzień lżejszy nie jest oceniany: mniej serii to plan, a nie porażka, a zapas powtórzeń
+    // to cel, a nie sygnał za lekkiego ciężaru.
+    if (!session.deload)
+      logged.forEach((i) => {
+        const r = next.session!.res[i.ex]!;
+        const c = applyResult(next, i.ex, r.rows, r.effort, blockJump);
+        if (c) changes.push(c);
+      });
 
     next.log.push({
       date: new Date().toISOString(),
@@ -512,6 +569,8 @@ export default function App() {
               ))}
             </ul>
           </>
+        ) : session.deload ? (
+          <p>Tydzień lżejszy — poziomy bez zmian. Kolejny mocny trening startuje z tego samego miejsca.</p>
         ) : (
           <p>
             Bez zmian poziomów. Cel rośnie, gdy każda seria dobije do wyznaczonej liczby i zostanie
@@ -650,7 +709,7 @@ export default function App() {
   const startPlan = async (t: PlanTemplate, opts: PlanOptions) => {
     const next = clone(state);
     const banked = next.plan ? bankPoints(next) : 0;
-    const seeded = seedFromPlan(next, t.loadFactor);
+    const seeded = seedFromPlan(next, opts.loadFactor ?? t.loadFactor);
     const plan: ActivePlan = {
       templateId: t.id,
       start: opts.start,
@@ -673,7 +732,7 @@ export default function App() {
     });
     syncBadges(next, badgeCtx(next));
     commit(next);
-    go('#/plan', { top: true });
+    go('#/plan', { top: true, replace: true });
 
     const first = snapshot(next)?.stats.next;
     await say(
@@ -699,7 +758,9 @@ export default function App() {
   /** Zmiana częstotliwości na podpowiedź silnika. Plan startuje od dziś, dorobek zostaje. */
   const changeFrequency = async (days: number) => {
     const t = state.plan ? planById(state.plan.templateId) : undefined;
-    if (!t) return;
+    // Zmiana częstotliwości istnieje tylko w konfiguratorze klasycznym — plan z celem i własny
+    // mają rotację ułożoną pod konkretną liczbę dni.
+    if (!t || (t.kind ?? 'classic') !== 'classic') return;
     const target = planById(planId(t.level, t.sex, days));
     if (!target) return;
     const ok = await ask(
@@ -771,6 +832,73 @@ export default function App() {
     });
     next.plan = null;
     commit(next);
+  };
+
+  /* ---------- treningi i plany własne ---------- */
+
+  const saveWorkout = (w: Workout) => {
+    const next = clone(state);
+    const i = next.workouts.findIndex((x) => x.id === w.id);
+    if (i > -1) next.workouts[i] = w;
+    else next.workouts.push(w);
+    commit(next);
+    setToastMsg(`Zapisany: ${w.name}.`);
+  };
+
+  /**
+   * Trening użyty w planie własnym albo w uruchomionym planie nie znika po cichu — plan
+   * wskazywałby wtedy dzień bez treningu. Najpierw trzeba zmienić plan.
+   */
+  const deleteWorkout = async (w: Workout) => {
+    if (state.session?.workout === w.id) {
+      setToastMsg(`„${w.name}” właśnie trwa — najpierw zamknij albo porzuć sesję.`);
+      return;
+    }
+    const inPlans = (state.plans ?? []).filter((p) => p.cycle.includes(w.id));
+    const activeT = state.plan ? planOf(state, state.plan.templateId) : undefined;
+    if (inPlans.length || activeT?.cycle.includes(w.id)) {
+      setToastMsg(
+        `„${w.name}” jest w planie ${[...new Set([...inPlans, ...(activeT ? [activeT] : [])].map((p) => `„${p.name}”`))].join(', ')} — najpierw zmień plan.`,
+      );
+      return;
+    }
+    const ok = await ask('Usunąć trening?', <p>„{w.name}” zniknie z listy. Poziomy ćwiczeń zostaną nietknięte.</p>, 'Usuń');
+    if (!ok) return;
+    const next = clone(state);
+    next.workouts = next.workouts.filter((x) => x.id !== w.id);
+    commit(next);
+    go('#/treningi', { replace: true });
+  };
+
+  const savePlan = (t: PlanTemplate) => {
+    const next = clone(state);
+    next.plans ??= [];
+    const i = next.plans.findIndex((x) => x.id === t.id);
+    if (i > -1) next.plans[i] = t;
+    else next.plans.push(t);
+    // Uruchomiony plan trzyma dni wybrane przy starcie. Kreator planu własnego ustala dni
+    // wprost, więc po edycji kalendarz ma iść za nimi — inaczej tabela tygodnia i kalendarz
+    // mówiłyby co innego.
+    if (next.plan?.templateId === t.id) next.plan.weekdays = [...t.weekdays];
+    commit(next);
+    setToastMsg(
+      state.plan?.templateId === t.id
+        ? `Plan zapisany. Kalendarz przeliczy się z nowego układu.`
+        : `Plan zapisany: ${t.name}. Zacznij go, kiedy chcesz.`,
+    );
+  };
+
+  const deletePlan = async (t: PlanTemplate) => {
+    if (state.plan?.templateId === t.id) {
+      setToastMsg('To twój aktualny plan. Najpierw go zakończ — punkty przejdą do dorobku.');
+      return;
+    }
+    const ok = await ask('Usunąć plan?', <p>„{t.name}” zniknie z katalogu. Treningi i historia zostaną.</p>, 'Usuń');
+    if (!ok) return;
+    const next = clone(state);
+    next.plans = (next.plans ?? []).filter((x) => x.id !== t.id);
+    commit(next);
+    go(PLANS_PATH, { replace: true });
   };
 
   const exportData = () => {
@@ -913,11 +1041,26 @@ export default function App() {
       {view === 'plan' && (
         <PlanView
           state={state}
-          onStart={(t, o) => void startPlan(t, o)}
           onStop={() => void stopPlan()}
           onTick={tickDay}
           onFrequency={(n) => void changeFrequency(n)}
         />
+      )}
+      {route.kind === 'plans' && <PlanCatalog state={state} />}
+      {route.kind === 'planClassic' && (
+        <Catalogue onStart={(t, o) => void startPlan(t, o)} onCancel={() => goBack(PLANS_PATH)} />
+      )}
+      {route.kind === 'planDetail' && (
+        <PlanDetail
+          key={route.id}
+          state={state}
+          id={route.id}
+          onStart={(t, o) => void startPlan(t, o)}
+          onDelete={(t) => void deletePlan(t)}
+        />
+      )}
+      {route.kind === 'planEdit' && (
+        <PlanBuilder key={route.id ?? 'nowy'} state={state} id={route.id} onSave={savePlan} onToast={setToastMsg} />
       )}
 
       {route.kind === 'atlas' && <AtlasView state={state} />}
@@ -986,31 +1129,17 @@ export default function App() {
 
       {view === 'ach' && <Achievements state={state} />}
 
-      {view === 'work' && (
-        <WorkoutsView
+      {view === 'work' && <WorkoutLibrary state={state} plannedId={plannedId} onStart={startSession} />}
+      {route.kind === 'workout' && (
+        <WorkoutPreview state={state} id={route.id} onStart={startSession} onDelete={(w) => void deleteWorkout(w)} />
+      )}
+      {route.kind === 'workoutEdit' && (
+        <WorkoutBuilder
+          key={`${route.id ?? ''}:${route.from ?? ''}`}
           state={state}
-          plannedId={plannedId}
-          onStart={startSession}
-          onSaveWorkout={(w) => {
-            const next = clone(state);
-            const i = next.workouts.findIndex((x) => x.id === w.id);
-            if (i > -1) next.workouts[i] = w;
-            else next.workouts.push(w);
-            commit(next);
-          }}
-          onDelete={(w) => {
-            void (async () => {
-              const ok = await ask(
-                'Usunąć trening?',
-                <p>„{w.name}” zniknie z listy. Poziomy ćwiczeń zostaną nietknięte.</p>,
-                'Usuń',
-              );
-              if (!ok) return;
-              const next = clone(state);
-              next.workouts = next.workouts.filter((x) => x.id !== w.id);
-              commit(next);
-            })();
-          }}
+          id={route.id}
+          from={route.from}
+          onSave={saveWorkout}
           onSetsChange={(id, sets) => {
             const next = clone(state);
             const p = P(next, id);

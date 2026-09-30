@@ -8,6 +8,7 @@ import type {
   StageKey,
   Workout,
 } from '../types';
+import { LIBRARY } from './workouts';
 
 /**
  * Kolory z zawodowego standardu kettlebli — obciążenie rozpoznajesz zanim przeczytasz liczbę.
@@ -1098,17 +1099,26 @@ export const EX: Record<ExerciseId, Exercise> = {
 export const ALL: ExerciseId[] = Object.keys(EX);
 export const WEIGHTED: ExerciseId[] = ALL.filter((id) => EX[id]!.def.w !== undefined);
 
-export const BUILTIN: Workout[] = [
+/**
+ * Pierwsze cztery treningi — kettlebell i masa ciała, na nich stoją plany klasyczne. Kolejność
+ * ćwiczeń idzie za doradcą: ruch wybuchowy, wielostawowe, a spacery z ciężarem, brzuch i łydki
+ * na koniec. Spacer farmera przed podciąganiem albo pompkami zabierał chwyt i stabilizację
+ * ruchowi, któremu były bardziej potrzebne.
+ */
+const KB_BASICS: Workout[] = [
   {
     id: 'A',
     name: 'Trening A',
+    kind: 'full',
+    gear: 'kb',
+    desc: 'Całe ciało z kettlebell: swing, goblet, wiosłowanie, floor press i podciąganie.',
     items: [
       { ex: 'swing2' },
       { ex: 'goblet' },
       { ex: 'row' },
       { ex: 'floor' },
-      { ex: 'carry' },
       { ex: 'pullup' },
+      { ex: 'carry' },
       { ex: 'core' },
       { ex: 'calf' },
     ],
@@ -1116,19 +1126,25 @@ export const BUILTIN: Workout[] = [
   {
     id: 'B',
     name: 'Trening B',
+    kind: 'full',
+    gear: 'kb',
+    desc: 'Druga połowa pary: swing jednorącz, wykrok, wyciskanie, RDL i pompki.',
     items: [
       { ex: 'swing1' },
       { ex: 'lunge' },
       { ex: 'press' },
       { ex: 'rdl' },
-      { ex: 'farmer' },
       { ex: 'pushup' },
+      { ex: 'farmer' },
       { ex: 'calf1' },
     ],
   },
   {
     id: 'C',
     name: 'Trening C — całe ciało',
+    kind: 'full',
+    gear: 'kb',
+    desc: 'Turecki wstaw, kompleks i goblet — mniej ćwiczeń, więcej ruchu w każdym.',
     items: [{ ex: 'tgu' }, { ex: 'complex' }, { ex: 'goblet' }, { ex: 'farmer' }, { ex: 'core' }],
   },
   {
@@ -1137,9 +1153,15 @@ export const BUILTIN: Workout[] = [
     // wytrzymać przez trzy miesiące.
     id: 'D',
     name: 'Trening D — lekki',
-    items: [{ ex: 'carry' }, { ex: 'core' }, { ex: 'calf' }, { ex: 'calf1' }, { ex: 'curl' }],
+    kind: 'light',
+    gear: 'kb',
+    desc: 'Bez ciężkiego zawiasu, przysiadu i wyciskania. Na dni między mocnymi treningami.',
+    items: [{ ex: 'curl' }, { ex: 'carry' }, { ex: 'core' }, { ex: 'calf' }, { ex: 'calf1' }],
   },
 ];
+
+/** Wszystkie gotowe treningi: cztery pierwsze i biblioteka z podziałami i partiami. */
+export const BUILTIN: Workout[] = [...KB_BASICS, ...LIBRARY];
 
 export const ex = (id: ExerciseId): Exercise => {
   const e = EX[id];

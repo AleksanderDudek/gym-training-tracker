@@ -19,7 +19,7 @@ Pozostałe polecenia:
 npm run build      # produkcyjny build do dist/, z listą plików dla service workera
 npm run preview    # podgląd builda — tu działa też praca offline
 npm run typecheck  # tsc --noEmit
-npm test           # 402 testy silnika, kalorii, biblioteki, odznak, ruchu, mimiki, obsady i tras (vitest)
+npm test           # 427 testów silnika, doradcy, kalorii, biblioteki, odznak, ruchu, mimiki, obsady i tras (vitest)
 ```
 
 Build jest w pełni statyczny (`base: './'`), więc `dist/` można wrzucić na dowolny hosting plików
@@ -232,8 +232,8 @@ i drugi, obok wyniku sesji, po każdym zamkniętym treningu.
 | Zakładka | Adres | Co robi |
 | --- | --- | --- |
 | Dziś | `#/sesja` | Co masz dziś do zrobienia według planu, pasek postaci, przekąska ruchowa i rada dnia; w trakcie — bieżąca sesja. |
-| Plan | `#/plan` | Kalendarz terminów, punkty, stopień, dziennik zdarzeń. |
-| Atlas | `#/cwiczenia` | 105 ćwiczeń z filtrem sprzętu; każde ma własny adres do wysłania. |
+| Treningi | `#/treningi` | 27 gotowych treningów (całe ciało, push/pull/nogi, góra/dół, partie) i własne, z filtrem sprzętu i rodzaju; druga sekcja to atlas 105 ćwiczeń (`#/cwiczenia`). |
+| Plan | `#/plan` | Uruchomiony plan: kalendarz terminów, punkty, stopień, dziennik. Bez planu — katalog: plany z celem, własne i klasyczny. |
 | Osiągnięcia | `#/osiagniecia` | Dorobek w liczbach, progi najbliższe zdobycia, 68 rodzin odznak i odznaki każdego zrobionego ćwiczenia. |
 | Profil | `#/profil` | Postać i doświadczenie, twoje liczby, waga i wzrost, obciążenie, przekąski, kroki i cardio, lista zrobionych ćwiczeń i historia treningów z kaloriami. |
 
@@ -241,26 +241,35 @@ Podstrony mają własne adresy i strzałkę wstecz w pasku aplikacji:
 
 | Podstrona | Adres | Należy do |
 | --- | --- | --- |
-| Treningi — wszystkie do wyboru i kreator własnych | `#/treningi` | Dziś |
+| Podgląd treningu — serie, mięśnie, doradca, start | `#/treningi/<id>` | Treningi |
+| Kreator treningu: nowy, kopia gotowego, edycja własnego | `#/treningi/nowy`, `#/treningi/nowy/<id>`, `#/treningi/<id>/edytuj` | Treningi |
+| Katalog planów | `#/plany` | Plan |
+| Podgląd planu z doradcą i startem | `#/plany/<id>` | Plan |
+| Kreator planu: nowy, edycja własnego | `#/plany/nowy`, `#/plany/<id>/edytuj` | Plan |
+| Plan klasyczny z kettlebell — konfigurator | `#/plany/klasyczny` | Plan |
 | Przekąski — dziś, tydzień, historia | `#/przekaski` | Dziś |
 | Zapis przekąski | `#/przekaski/dodaj`, `#/przekaski/<id>` | Dziś |
 | Kroki i cardio — dziś, tydzień, historia, jak liczymy kalorie | `#/cardio` | Dziś |
 | Zapis kroków, bieżni albo roweru | `#/cardio/kroki`, `#/cardio/bieznia`, `#/cardio/rower` | Dziś |
-| Ćwiczenie — technika i wideo | `#/cwiczenia/<id>` | Atlas |
+| Ćwiczenie — technika i wideo | `#/cwiczenia/<id>` | Treningi |
 | Historia ćwiczenia | `#/profil/<id>` | Profil |
 | Ustawienia | `#/ustawienia` | przycisk w pasku aplikacji |
 
-**Treningi nie mają już zakładki.** To lista do wyboru, na którą i tak prowadzi „Wybierz dowolny
-trening” z ekranu Dziś — jest jego podstroną, a dolny pasek zmieścił się w pięciu pozycjach.
-Ustawienia siedzą w pasku aplikacji, bo otwiera się je raz na miesiąc.
+**Treningi mają zakładkę, a atlas jest jej drugą sekcją.** Odkąd treningi to biblioteka z podglądem
+i kreatorem, a nie cztery zestawy do wyboru, zasłużyły na miejsce w dolnym pasku. Szósta zakładka
+zeszłaby jednak poniżej celu dotykowego i poza wytyczne Material 3 i Apple HIG (najwyżej pięć),
+więc atlas wszedł do Treningów: trening to zestaw ćwiczeń, a obie listy odpowiadają na pytanie
+„co mogę zrobić”. Przełącznik „Treningi · Ćwiczenia” stoi na górze obu sekcji, każda ma własny adres,
+a podstrona ćwiczenia podświetla Treningi. Ustawienia siedzą w pasku aplikacji, bo otwiera się je
+raz na miesiąc.
 
 Osiągnięcia mają własną zakładkę, bo liczą się z całej historii, a nie z kalendarza planu —
 i mają być widoczne również wtedy, gdy żaden plan nie jest uruchomiony.
 
 **Ekran Dziś odpowiada na jedno pytanie: co robię dzisiaj.** Gdy plan ma termin — pokazuje ten
 jeden trening i przycisk startu. Gdy terminu nie ma — mówi, kiedy wypada następny. Gdy sesja już
-trwa — pokazuje ją. Lista wszystkich treningów jest podstroną, bo ekran z ośmioma równorzędnymi
-przyciskami nie podpowiada niczego.
+trwa — pokazuje ją. Pełna lista treningów mieszka w zakładce Treningi, bo ekran z dwudziestoma
+siedmioma równorzędnymi przyciskami nie podpowiada niczego.
 
 Stare adresy dalej działają — `#/trening` i `#/poziomy`, a także dawne linki do formularza
 przekąski — zapisane linki i zakładki przeglądarki nie przestają prowadzić tam, gdzie prowadziły.
@@ -583,15 +592,17 @@ dostaje rzadsze `setInterval`, więc licznik oparty na tyknięciach zostawałby 
 ```
 src/
   types.ts                  wszystkie typy domenowe
-  routing.ts                trasy w hashu adresu, sześć zakładek i dwie rodziny podstron
-  routing.test.ts           19 testów tras, zakładek, ekranów, przekąsek, cardio i starych adresów
+  routing.ts                trasy w hashu adresu, pięć zakładek, sekcja atlasu i podstrony
+  routing.test.ts           22 testy tras, zakładek, ekranów, treningów, planów, przekąsek i starych adresów
   data/exercises.ts         biblioteka 105 ćwiczeń, drabiny sprzętu, cztery treningi
   data/exjokes.ts           dopiski do 105 ćwiczeń i do gotowych treningów
   data/moves.ts             osiemnaście wzorców ruchu jako klatki kluczowe
   data/anim.ts              przypisanie ćwiczeń do wzorców
   data/exercises.test.ts    14 testów spójności biblioteki i drabin
   data/videos.ts            filmy instruktażowe, 4 na ćwiczenie
-  data/plans.ts             katalog 54 planów: poziom × płeć × częstotliwość
+  data/plans.ts             54 plany klasyczne (poziom × płeć × częstotliwość) i 10 planów z celem
+  data/workouts.ts          biblioteka 23 treningów: podziały, całe ciało i partie na dwa zestawy sprzętu
+  data/muscles.ts           16 grup mięśni, główne i pomocnicze każdego ćwiczenia, izolacje
   engine/
     math.ts                 wzór Epleya, tonaż, wskaźnik obciążenia w czasie
     plan.ts                 stan początkowy, recepta na dziś, mieszane obciążenie
@@ -607,6 +618,8 @@ src/
     snacks.ts               przekąski ruchowe: zapis, skróty, podpowiedź, dzień po ćwiczeniu, liczby
     snacks.test.ts          17 testów zapisu, skrótów, granicy z treningiem i liczb przekąsek
     volume.ts               objętość ćwiczenia w dniu, tygodniu i miesiącu kalendarzowym
+    design.ts               doradca: serie ułamkowe na partie, kolejność, przegląd treningu i planu
+    design.test.ts          22 testy mięśni, doradcy, biblioteki, planów z celem i tygodnia lżejszego
     energy.ts               kalorie: równania ACSM, tabela roweru z Compendium, profile MET ćwiczeń
     energy.test.ts          23 testy równań, płynności marsz–bieg, kroków, roweru i kalorii z serii
     body.ts                 dziennik wagi, waga obowiązująca w danym dniu, wzrost
@@ -636,9 +649,12 @@ src/
   components/
     ui.tsx                  modal, toast, baner, pusty stan, kafelek, przełącznik, dwa wykresy
     ExerciseCard.tsx        karta ćwiczenia z formularzem serii
-    views.tsx               wybór treningu, sesja, obciążenie, kreator, ustawienia
+    views.tsx               sesja, obciążenie, ustawienia
     atlas.tsx               spis ćwiczeń i podstrona pojedynczego ćwiczenia
-    PlanView.tsx            katalog planów, kalendarz, punkty i dziennik
+    Workouts.tsx            zakładka Treningi: biblioteka z filtrami, podgląd, kreator z doradcą
+    Plans.tsx               katalog planów, podgląd planu ze startem, kreator planu na 4–48 tygodni
+    Design.tsx              paski mięśni, uwagi doradcy, przełącznik sekcji i filtry
+    PlanView.tsx            konfigurator klasyczny, kalendarz, punkty i dziennik
     SessionHome.tsx         ekran „co robię dzisiaj”
     Profile.tsx             profil: liczby, lista zrobionych ćwiczeń, historia i podstrony
     Timer.tsx               stoper i odliczanie dla ćwiczeń na czas
@@ -718,8 +734,8 @@ wtedy, gdy autor skasuje film.
 
 ## Plan treningowy
 
-Zakładka „Plan" rozpisuje dwanaście tygodni na konkretne daty i pilnuje terminów także wtedy,
-gdy trening się nie odbył. Dzień startu i dni tygodnia wybiera użytkownik — to jedyne dwie
+Plan klasyczny rozpisuje dwanaście tygodni na konkretne daty i pilnuje terminów także wtedy,
+gdy trening się nie odbył (plany z celem i własne — w części „Treningi, plany i doradca”). Dzień startu i dni tygodnia wybiera użytkownik — to jedyne dwie
 rzeczy, których żaden algorytm nie zgadnie za człowieka.
 
 **Katalog ma 54 warianty**, generowane z reguł, nie pisane ręcznie: trzy poziomy (od zera,
@@ -735,6 +751,94 @@ występuje wcale, przy siedmiu zajmuje cztery dni z siedmiu.
 **Płeć przestawia wyłącznie ciężary startowe.** Program, rotacja treningów i zasady progresji są
 identyczne. Start planu ustawia ciężary tylko w ćwiczeniach bez historii: gdzie jest już
 zalogowany wynik, tam zmierzony poziom bije każdą tabelkę.
+
+## Treningi, plany i doradca
+
+Treningi i plany da się układać samemu, a doradca na bieżąco mówi, czy to ma sens. Liczy to,
+co da się policzyć z listy ćwiczeń, i porównuje z badaniami oraz stanowiskami ACSM. Nie ocenia
+gustu — trening z samych przysiadów jest dozwolony, tylko doradca powie, ile z tego to już
+głównie zmęczenie.
+
+**Mięśnie, nie wzorce.** Każde ze 105 ćwiczeń ma główne i pomocnicze mięśnie z szesnastu grup
+(`data/muscles.ts`): klatka, plecy (najszersze i środek), trzy aktony barku, biceps, triceps,
+przedramiona, brzuch, prostowniki, pośladki, czworogłowe, tył uda, przywodziciele i łydki. Serie
+liczą się **ułamkowo**, jak w metaanalizie Pelland i in. (2025): główny mięsień dostaje całą serię,
+pomocniczy pół. Seria wybuchowa (swing) i podchód na czas (deska, spacer) nie idą do upadku, więc
+same liczą się za pół. Przysiad nie liczy się tyłowi uda — u Kubo i in. (2019) nie urósł ani
+przy płytkim, ani przy głębokim.
+
+**Zasady doradcy — i skąd się biorą:**
+
+| Zasada | Próg | Źródło |
+| --- | --- | --- |
+| Serie na partię w jednej sesji | ostrzeżenie powyżej ok. 11 | Remmert i in. 2025 (preprint SportRxiv): wypłaszczenie przyrostu ok. 11 serii ułamkowych na sesję |
+| Serie na partię tygodniowo | poniżej 4 — podtrzymanie; 10–20 — cel; powyżej 20 — wskazówka | Iversen i in. 2021; Schoenfeld, Ogborn i Krieger 2017; Baz-Valle i in. 2022; stanowisko ACSM 2026 |
+| Częstotliwość | partia z 8+ seriami raz w tygodniu — wskazówka, żeby rozłożyć na dwa dni | Schoenfeld i in. 2016 i 2019: przy tej samej objętości częstotliwość ma małe znaczenie dla masy, pomaga sile |
+| Przerwa dla tej samej partii | wskazówka, gdy partia trenuje ciężko dwa dni z rzędu (także z niedzieli na poniedziałek) | ACSM 2011 (Garber i in.): 48 godzin — zalecenie ekspertów |
+| Kolejność ćwiczeń | wybuchowe → wielostawowe → izolacje → brzuch, łydki, spacery | ACSM 2009; Nunes i in. 2021: siła rośnie najbardziej w ćwiczeniu robionym pierwsze, na masę kolejność wpływa niewiele |
+| Pchanie i ciągnięcie | tygodniowo pchanie ponad 1,2× ciągnięcia, w treningu góry ponad 1,5× — wskazówka | praktyka trenerska; Kolber i in. 2014, 2017 — obserwacje u ćwiczących z bólem barku |
+| Tydzień lżejszy | co 6 tygodni (4–8), o ok. 40% mniej serii | Rogerson i in. 2024: średnio co 5,6 tygodnia; Bell i in. 2023 (Delphi): objętość ma spaść — o ile, to już praktyka |
+| Dni w tygodniu | 1 — wskazówka (WHO: co najmniej 2); 7 — ostrzeżenie, zero dnia wolnego | WHO 2020 (Bull i in.) |
+| Czas treningu | powyżej 75 minut — wskazówka, powyżej 90 — ostrzeżenie | brak twardych badań — praktyka; przerwy liczone jak w ACSM 2009 (2 min przy wielostawowych) |
+
+Brzuch, chwyt i łydki pracują pomocniczo w prawie każdym ćwiczeniu i szybko się regenerują —
+liczone połówkami z każdego ruchu dałyby dwadzieścia kilka serii „na brzuch” w zwykłym planie,
+więc dla nich doradca nie stosuje górnej granicy tygodnia ani zasady 48 godzin. **Ostrzeżenie**
+(czerwone) pojawia się tylko tam, gdzie badania są twarde albo ryzyko oczywiste; reszta to
+**wskazówki**, bo zalecenia ekspertów to nie wyroki.
+
+**Kreator treningu** pokazuje to wszystko na żywo: po każdym dodanym ćwiczeniu przelicza paski
+mięśni z kreską limitu sesji, czas i uwagi. Rodzaj treningu (push, pull, nogi, góra, dół, całe
+ciało, partia) mówi mu, czego się spodziewać — od push nikt nie oczekuje wiosłowania, od nóg oba
+wzorce: kolano i biodro. Przycisk „Ułóż kolejność według zasad” przestawia listę jednym dotknięciem.
+Gotowy trening da się skopiować i zmienić pod siebie. Liczba serii należy do ćwiczenia, nie do
+treningu — kreator mówi to wprost, bo zmiana działa wszędzie tam, gdzie ćwiczenie występuje.
+
+**Biblioteka**: 27 treningów, każdy przechodzi przez doradcę bez uwag — pilnuje tego test. Dwa
+zestawy sprzętu (siłownia oraz kettlebell z masą ciała, który zmieści się w domu), a w każdym
+podziały push/pull/nogi i góra/dół, całe ciało i partie: pośladki, klatka, plecy, barki, ramiona,
+brzuch. Treningi A–D zostały, zmieniła się tylko kolejność: spacer z ciężarem przed podciąganiem
+albo pompkami zabierał chwyt ruchowi, któremu był bardziej potrzebny.
+
+**Plany z celem** — dziesięć, na 30, 60 i 90 dni: start od zera, brzuch i core, pośladki (w domu
+i na siłowni), góra/dół z kettlebell i na siłowni, push/pull/nogi, mocna klatka, plecy i postawa,
+siła całego ciała. Każdy daje głównym partiom 10–20 serii tygodniowo, rozkłada je na co najmniej
+dwa dni i nie trenuje tej samej partii ciężko dwa dni z rzędu — to też sprawdza test. Plany na 60
+i 90 dni mają tydzień lżejszy (szósty, przy 90 dniach także dwunasty), nigdy ostatni.
+
+**Czego się spodziewać — uczciwie.** Każdy plan mówi, co zwykle daje taki czas u zaczynających:
+po 30 dniach głównie siła i technika (mięśnie rosną już po 3–4 tygodniach o kilka procent — Seynnes
+i in. 2007, DeFreitas i in. 2011 — ale w lustrze tego nie widać), po 60 dniach zwykle +5–10%
+przekroju mięśni, po 90 — do tego często +20–30% siły w głównych ćwiczeniach (Kubo i in. 2019).
+U kogoś, kto trenuje od lat, te liczby będą mniejsze, i plan mówi to wprost.
+
+**Plan własny** układa się na 4–48 tygodni: dni tygodnia, trening na każdy dzień i tydzień lżejszy
+(co 4, 5, 6 albo 8 tygodni, albo wcale). Doradca planu liczy tydzień po tygodniu — gdy rotacja jest
+dłuższa niż tydzień, aż wzorzec wróci do początku — i pokazuje serie tygodniowo na tle zielonego
+pola 10–20. Start każdego planu, także z celem i własnego, pyta o dzień, dni tygodnia, zasadę
+opuszczonego treningu i punkt wyjścia ciężarów (poziom i płeć — tylko dla ćwiczeń jeszcze bez
+wyniku).
+
+**Tydzień lżejszy działa w sesji, nie tylko w kalendarzu.** Trening z planu w takim tygodniu ma
+o ok. 40% mniej serii i bez testu „ile dasz radę”, a wynik trafia do historii, ale nie rusza poziomów
+— ani w górę, ani w dół. Lżejszy tydzień ma dać zmęczeniu zejść, a nie zostać źle oceniony. Sesja
+dodatkowa w tym tygodniu idzie normalnie.
+
+Plan klasyczny (poziom × płeć × 2–7 treningów w tygodniu na A–D) działa jak dotąd, pod
+`#/plany/klasyczny`. Tylko w nim jest podpowiedź „przejdź na rzadszy/gęstszy wariant” — plany
+z celem i własne mają rotację ułożoną pod konkretną liczbę dni. Trening użyty w planie własnym albo
+w uruchomionym planie nie da się usunąć, dopóki plan go wskazuje.
+
+**Źródła:** ACSM 2009 (MSSE 41:687), ACSM 2011 (Garber i in., MSSE 43:1334), ACSM 2026 (Currier
+i in., MSSE 58:851), WHO 2020 (Bull i in., BJSM 54:1451), Schoenfeld, Ogborn i Krieger 2016 (Sports
+Med 46:1689) i 2017 (J Sports Sci 35:1073), Schoenfeld, Grgic i Krieger 2019 (J Sports Sci 37:1286),
+Baz-Valle i in. 2022 (J Hum Kinet 81:199), Pelland i in. 2025 (Sports Med, doi 10.1007/s40279-025-02344-w),
+Remmert i in. 2025 (SportRxiv, doi 10.51224/SRXIV.537), Iversen i in. 2021 (Sports Med 51:2079),
+Nunes i in. 2021 (Eur J Sport Sci 21:149), Simão i in. 2012 (Sports Med 42:251), Bell i in. 2023
+(Sports Med Open 9:87), Rogerson i in. 2024 (Sports Med Open 10:26), Kolber i in. 2014 (JSCR 28:1081)
+i 2017 (JSCR 31:1024), Kubo i in. 2019 (Eur J Appl Physiol 119:1933), Plotkin i in. 2023 (Front
+Physiol 14:1279170), Seynnes i in. 2007 (J Appl Physiol 102:368), DeFreitas i in. 2011 (Eur J Appl
+Physiol 111:2785).
 
 ## Terminy, nie tylko treningi
 

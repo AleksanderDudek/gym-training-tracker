@@ -1,8 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import {
+  PLANS_PATH,
+  PLAN_CLASSIC_PATH,
+  PLAN_NEW_PATH,
   SETTINGS_PATH,
   TABS,
   activeTab,
+  planEditPath,
+  planPath,
+  workoutEditPath,
+  workoutNewPath,
+  workoutPath,
   cardioAddPath,
   cardioPath,
   exercisePath,
@@ -39,11 +47,42 @@ describe('trasy', () => {
     TABS.forEach((t) => expect(t.label).not.toMatch(/\s/));
   });
 
-  it('treningi są podstroną ekranu Dziś: mają adres, nie mają zakładki', () => {
-    expect(TABS.some((t) => t.key === 'work')).toBe(false);
+  it('treningi mają zakładkę, a atlas ćwiczeń jest jej drugą sekcją', () => {
+    expect(TABS.find((t) => t.key === 'work')?.path).toBe('#/treningi');
+    expect(TABS.some((t) => t.key === 'atlas')).toBe(false);
     expect(parseHash('#/treningi')).toEqual({ kind: 'tab', tab: 'work' });
-    expect(activeTab({ kind: 'tab', tab: 'work' })).toBe('train' as TabKey);
-    expect(screenOf({ kind: 'tab', tab: 'work' }).parent).toBe('#/sesja');
+    expect(activeTab({ kind: 'tab', tab: 'work' })).toBe('work' as TabKey);
+    expect(screenOf({ kind: 'tab', tab: 'work' }).parent).toBeNull();
+    // Atlas nie ma strzałki wstecz — to sekcja z przełącznikiem, a nie podstrona.
+    expect(screenOf({ kind: 'atlas' }).parent).toBeNull();
+    expect(activeTab({ kind: 'atlas' })).toBe('work' as TabKey);
+  });
+
+  it('podgląd i kreator treningu mają adresy w zakładce Treningi', () => {
+    expect(parseHash(workoutPath('push-gym'))).toEqual({ kind: 'workout', id: 'push-gym' });
+    expect(parseHash(workoutNewPath())).toEqual({ kind: 'workoutEdit', from: undefined });
+    expect(parseHash(workoutNewPath('A'))).toEqual({ kind: 'workoutEdit', from: 'A' });
+    expect(parseHash(workoutEditPath('w123'))).toEqual({ kind: 'workoutEdit', id: 'w123' });
+    (
+      [{ kind: 'workout', id: 'A' }, { kind: 'workoutEdit' }, { kind: 'exercise', id: 'swing2' }] as Route[]
+    ).forEach((r) => {
+      expect(activeTab(r), r.kind).toBe('work' as TabKey);
+      expect(screenOf(r).parent, r.kind).toBeTruthy();
+    });
+  });
+
+  it('katalog, podgląd, kreator planów i konfigurator klasyczny należą do Planu', () => {
+    expect(parseHash(PLANS_PATH)).toEqual({ kind: 'plans' });
+    expect(parseHash(PLAN_CLASSIC_PATH)).toEqual({ kind: 'planClassic' });
+    expect(parseHash(PLAN_NEW_PATH)).toEqual({ kind: 'planEdit' });
+    expect(parseHash(planPath('cel-ppl-60'))).toEqual({ kind: 'planDetail', id: 'cel-ppl-60' });
+    expect(parseHash(planEditPath('p1'))).toEqual({ kind: 'planEdit', id: 'p1' });
+    (
+      [{ kind: 'plans' }, { kind: 'planClassic' }, { kind: 'planDetail', id: 'x' }, { kind: 'planEdit' }] as Route[]
+    ).forEach((r) => {
+      expect(activeTab(r), r.kind).toBe('plan' as TabKey);
+      expect(screenOf(r).parent, r.kind).toBeTruthy();
+    });
   });
 
   it('korzenie zakładek nie mają strzałki wstecz, podstrony mają', () => {
@@ -100,9 +139,9 @@ describe('trasy', () => {
     expect(parseHash(exercisePath('swing2'))).toEqual({ kind: 'exercise', id: 'swing2' });
   });
 
-  it('podstrona ćwiczenia podświetla atlas', () => {
-    expect(activeTab({ kind: 'exercise', id: 'swing2' })).toBe('atlas' as TabKey);
-    expect(activeTab({ kind: 'atlas' })).toBe('atlas' as TabKey);
+  it('podstrona ćwiczenia podświetla Treningi, bo atlas jest ich sekcją', () => {
+    expect(activeTab({ kind: 'exercise', id: 'swing2' })).toBe('work' as TabKey);
+    expect(activeTab({ kind: 'atlas' })).toBe('work' as TabKey);
   });
 
   it('profil ma zakładkę, podstrony ćwiczeń i stary adres poziomów', () => {
@@ -149,6 +188,11 @@ describe('trasy', () => {
     expect(activeTab({ kind: 'cardioAdd', sport: 'bike' })).toBe('train' as TabKey);
     expect(screenOf({ kind: 'cardioAdd', sport: 'treadmill' }).title).toBe('Bieżnia');
     expect(isTabRoot(cardioPath())).toBe(false);
+  });
+
+  it('zepsuty adres nie wywraca aplikacji — zostaje surowy fragment', () => {
+    expect(() => parseHash('#/treningi/%E0%A4%A')).not.toThrow();
+    expect(parseHash('#/treningi/%E0%A4%A')).toEqual({ kind: 'workout', id: '%E0%A4%A' });
   });
 
   it('identyfikator ze znakami specjalnymi przechodzi w obie strony', () => {

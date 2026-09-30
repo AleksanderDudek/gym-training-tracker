@@ -132,6 +132,13 @@ export function levelLabel(state: AppState, id: ExerciseId): string {
 }
 
 /**
+ * Tydzień lżejszy zostawia tyle serii. Konsensus Bell i in. (2023) zgodził się tylko co do
+ * tego, że objętość ma spaść — o ile, to już praktyka: najczęściej o 30–50%. Czterdzieści
+ * procent mniej to środek; przy trzech seriach zostają dwie, przy jednej — jedna.
+ */
+export const DELOAD_SHARE = 0.6;
+
+/**
  * Recepta na dziś: lista serii z konkretnym ciężarem i celem.
  * W trakcie przejścia na cięższy kettlebell zwraca obciążenie mieszane.
  */
@@ -145,8 +152,9 @@ export function plan(state: AppState, id: ExerciseId): PlannedSet[] {
   // Kalibracja: jedna seria, żeby zobaczyć, na czym ktoś realnie stoi. Balistyka dostaje
   // sztywną liczbę powtórzeń — swing na maksa psuje technikę, a to ruch o prędkość, nie o zmęczenie.
   if (p.phase === 'calib') {
-    return m.mode === 'ballistic'
-      ? [{ w: p.weight, reps: m.def.target }]
+    // W tygodniu lżejszym próba czeka — seria zwykła, bez „ile dasz radę”.
+    return m.mode === 'ballistic' || state.session?.deload
+      ? [{ w: p.weight, reps: m.mode === 'ballistic' ? m.def.target : p.min }]
       : [{ w: p.weight, reps: p.min, amrap: true }];
   }
 
@@ -157,6 +165,13 @@ export function plan(state: AppState, id: ExerciseId): PlannedSet[] {
       out.push({ w: p.weight, reps: Math.max(1, p.target + adj) });
   } else {
     for (let i = 0; i < p.sets; i++) out.push({ w: p.weight, reps: Math.max(1, p.target + adj) });
+  }
+
+  // Tydzień lżejszy: mniej serii, najpierw odpadają cięższe z przejścia, i bez testu
+  // „ile dasz radę” — lżejszy tydzień nie jest od sprawdzania formy.
+  if (state.session?.deload) {
+    const keep = Math.max(1, Math.round(out.length * DELOAD_SHARE));
+    return [...out.filter((r) => !r.heavy), ...out.filter((r) => r.heavy)].slice(0, keep);
   }
 
   // Test kontrolny: ostatnia seria bez sufitu. Sprawdza, czy poziom nie odjechał w górę

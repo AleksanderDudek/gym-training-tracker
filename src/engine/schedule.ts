@@ -92,6 +92,7 @@ export function buildSchedule(
         filled: null,
         late: 0,
         source: null,
+        deload: template.deload?.includes(w + 1) ?? false,
       });
     }
   }

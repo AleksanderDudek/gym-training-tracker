@@ -11,6 +11,7 @@ import { Chip, EmptyState } from './ui';
 import { VideoEmbed } from './VideoEmbed';
 import { SupportLine } from './Support';
 import { kcalText } from './Cardio';
+import { SectionSwitch } from './Design';
 import { profileOf } from '../engine/energy';
 import { exercisePlannedBurn } from '../engine/burn';
 import type { AppState, ExerciseId, Gear } from '../types';
@@ -39,6 +40,7 @@ export function AtlasView({ state }: { state: AppState }) {
   return (
     <>
       <div className="wrap">
+        <SectionSwitch on="atlas" />
         <p className="lead">
           Każde ćwiczenie ma własną podstronę z opisem techniki, a te z pierwszej biblioteki także
           z filmami. Adres podstrony da się wysłać albo zapisać w zakładkach.

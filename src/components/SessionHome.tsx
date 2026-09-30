@@ -15,6 +15,8 @@ export interface TodayPlan {
   workout?: Workout;
   /** Ile dni po terminie. Zero znaczy dzisiaj. */
   late?: number;
+  /** Termin z tygodnia lżejszego. */
+  deload?: boolean;
   points?: number;
   /** Data i nazwa najbliższego terminu — dla `rest`. */
   nextDate?: string;
@@ -67,6 +69,7 @@ export function SessionHome({
         <div className="grp today">
           <div className="today-tag">
             {today.late ? 'Termin do nadrobienia' : 'Dziś według planu'}
+            {today.deload ? ' · tydzień lżejszy' : ''}
           </div>
           <h2 className="today-name">{w.name}</h2>
           <p className="tight">
@@ -78,6 +81,12 @@ export function SessionHome({
               : 'Zrobiony dziś liczy się w pełni.'}
             {today.points ? ` Do wzięcia ${today.points} pkt.` : ''}
           </p>
+          {today.deload && (
+            <p className="tight" style={{ marginTop: 6 }}>
+              Tydzień lżejszy: mniej serii (z trzech zostają dwie) i bez serii „ile dasz radę”. Zostaw
+              2–3 powtórzenia zapasu — wynik trafi do historii, ale nie zmieni poziomów.
+            </p>
+          )}
           {burn && (
             <p className="tight" style={{ marginTop: 6 }}>
               Na twoim poziomie to ok. {Math.round(burn.secs / 60)} min serii z przerwami i{' '}
@@ -113,7 +122,7 @@ export function SessionHome({
           <div className="today-tag light">Bez planu</div>
           <h2 className="today-name">Nikt nie pilnuje terminów</h2>
           <p className="tight">
-            Plan rozpisuje dwanaście tygodni na konkretne dni, liczy realizację i sam decyduje,
+            Plan rozpisuje od 4 do 48 tygodni na konkretne dni, liczy realizację i sam decyduje,
             który trening wypada następny — także wtedy, gdy poprzedni się nie odbył. Nie obraża
             się i nie przypomina o sobie w nocy.
           </p>

@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import {
   ALL,
-  BUILTIN,
   GEAR_LABEL,
   READY,
   WEIGHTED,
@@ -13,10 +12,6 @@ import { acwr } from '../engine/math';
 import { P, exercisesByGroup } from '../engine/plan';
 import { ExerciseCard } from './ExerciseCard';
 import { SupportLine } from './Support';
-import { OWN_WORKOUT_JOKES, WORKOUT_JOKES } from '../data/exjokes';
-import { pick } from '../engine/quips';
-import { plannedBurn } from '../engine/burn';
-import { kcalText } from './Cardio';
 import type { AppState, EffortKey, ExerciseId, ReadyKey, SetResult, Workout } from '../types';
 
 /* ---------------- Sesja ---------------- */
@@ -48,6 +43,15 @@ export function SessionView({
   return (
     <div className="wrap">
       {/* Nazwa treningu i stan sesji stoją w pasku aplikacji — tu byłyby drugi raz. */}
+      {session.deload && (
+        <div className="dnote tip" style={{ marginTop: 12 }}>
+          <b>Tydzień lżejszy</b>
+          <p className="tight">
+            Mniej serii niż zwykle i bez testu „ile dasz radę”. Zostaw 2–3 powtórzenia zapasu — wynik
+            trafi do historii, ale poziomy zostaną bez zmian.
+          </p>
+        </div>
+      )}
       <div className="segline">Jak się dziś czujesz? Wpływa na dzisiejsze cele, nie na twoje poziomy.</div>
       <div className="seg">
         {(Object.keys(READY) as ReadyKey[]).map((k) => (
@@ -82,20 +86,6 @@ export function SessionView({
         </button>
       </div>
     </div>
-  );
-}
-
-/**
- * Czego się spodziewać: czas serii z przerwami i kalorie na obecnym poziomie. Bez wagi
- * zostaje sam czas — kalorii nie zgadujemy.
- */
-function WorkoutEstimate({ state, w }: { state: AppState; w: Workout }) {
-  const b = plannedBurn(state, w);
-  if (!b || !w.items.length) return null;
-  return (
-    <p className="tight">
-      Ok. {Math.round(b.secs / 60)} min serii z przerwami · {kcalText(b.active)} ponad spoczynek
-    </p>
   );
 }
 
@@ -144,173 +134,6 @@ export function LoadGauge({ state }: { state: AppState }) {
 }
 
 /* ---------------- Kreator treningów ---------------- */
-
-export function WorkoutsView({
-  state,
-  plannedId,
-  onStart,
-  onSaveWorkout,
-  onDelete,
-  onSetsChange,
-  onToast,
-}: {
-  state: AppState;
-  /** Trening, który wypada dziś według planu — dostaje znacznik i pierwszeństwo wzrokowe. */
-  plannedId?: string | undefined;
-  onStart: (id: string) => void;
-  onSaveWorkout: (w: Workout) => void;
-  onDelete: (w: Workout) => void;
-  onSetsChange: (id: ExerciseId, sets: number) => void;
-  onToast: (m: string) => void;
-}) {
-  const [draft, setDraft] = useState<Workout | null>(null);
-  const all = [...BUILTIN, ...state.workouts];
-  const groups = exercisesByGroup();
-
-  const openBuilder = (w: Workout | null) =>
-    setDraft(
-      w
-        ? { id: w.id, name: w.name, items: w.items.map((i) => ({ ex: i.ex })) }
-        : { id: `w${Date.now()}`, name: '', items: [] },
-    );
-
-  return (
-    <>
-      <div className="sect-label">Twoje treningi</div>
-      {all.map((w) => {
-        const own = !BUILTIN.find((b) => b.id === w.id);
-        return (
-          <div className={`grp${plannedId === w.id ? ' today' : ''}`} key={w.id}>
-            {plannedId === w.id && <div className="today-tag">Dziś według planu</div>}
-            <h2>{w.name}</h2>
-            <p className="exjoke">
-              {WORKOUT_JOKES[w.id] ?? pick(OWN_WORKOUT_JOKES, w.name.length + w.items.length)}
-            </p>
-            <p>{w.items.map((i) => ex(i.ex).name).join(' · ')}</p>
-            <WorkoutEstimate state={state} w={w} />
-            <div className="btnrow">
-              <button className="btn sm" onClick={() => onStart(w.id)}>
-                Zacznij
-              </button>
-              {own && (
-                <>
-                  <button className="btn sm ghost" onClick={() => openBuilder(w)}>
-                    Edytuj
-                  </button>
-                  <button className="btn sm ghost" onClick={() => onDelete(w)}>
-                    Usuń
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-        );
-      })}
-
-      <div className="wrap actions">
-        <button className="btn wide" onClick={() => openBuilder(null)}>
-          Ułóż nowy trening
-        </button>
-      </div>
-
-      {draft && (
-        <div className="grp">
-          <h2>{state.workouts.find((w) => w.id === draft.id) ? 'Edytuj trening' : 'Nowy trening'}</h2>
-          <p>Nazwa i lista ćwiczeń. Powtórzenia, serie i ciężar prowadzi silnik progresji.</p>
-          <input
-            type="text"
-            placeholder="np. Trening C — sam swing i core"
-            value={draft.name}
-            onChange={(e) => setDraft({ ...draft, name: e.target.value })}
-          />
-
-          {!draft.items.length ? (
-            <p style={{ margin: '10px 0 0' }}>Dodaj pierwsze ćwiczenie z listy poniżej.</p>
-          ) : (
-            draft.items.map((it, idx) => (
-              <div className="bitem" key={it.ex}>
-                <span>{ex(it.ex).name}</span>
-                <select
-                  value={P(state, it.ex).sets}
-                  onChange={(e) => onSetsChange(it.ex, Number(e.target.value))}
-                >
-                  {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
-                    <option key={n} value={n}>
-                      {n} serie
-                    </option>
-                  ))}
-                </select>
-                <button
-                  title="Usuń"
-                  onClick={() =>
-                    setDraft({ ...draft, items: draft.items.filter((_, i) => i !== idx) })
-                  }
-                >
-                  ×
-                </button>
-              </div>
-            ))
-          )}
-
-          <div style={{ height: 12 }} />
-          <select
-            value=""
-            onChange={(e) => {
-              if (!e.target.value) return;
-              setDraft({ ...draft, items: [...draft.items, { ex: e.target.value }] });
-            }}
-          >
-            <option value="">Dodaj ćwiczenie…</option>
-            {Object.entries(groups).map(([g, ids]) => {
-              const free = ids.filter((id) => !draft.items.find((i) => i.ex === id));
-              if (!free.length) return null;
-              return (
-                <optgroup label={g} key={g}>
-                  {free.map((id) => (
-                    <option key={id} value={id}>
-                      {ex(id).name}
-                    </option>
-                  ))}
-                </optgroup>
-              );
-            })}
-          </select>
-
-          <div style={{ height: 10 }} />
-          <div className="btnrow">
-            <button
-              className="btn"
-              onClick={() => {
-                if (!draft.name.trim()) {
-                  onToast('Nadaj treningowi nazwę.');
-                  return;
-                }
-                if (!draft.items.length) {
-                  onToast('Dodaj przynajmniej jedno ćwiczenie.');
-                  return;
-                }
-                onSaveWorkout({ ...draft, name: draft.name.trim() });
-                setDraft(null);
-              }}
-            >
-              Zapisz trening
-            </button>
-            <button className="btn ghost" onClick={() => setDraft(null)}>
-              Anuluj
-            </button>
-          </div>
-        </div>
-      )}
-      {/* Baner tylko na spisie treningów. W trakcie układania własnego nikt nie chce
-          kawy — chce skończyć listę ćwiczeń. */}
-      {!draft && (
-        <div className="wrap">
-          <SupportLine seed={state.log.length} />
-        </div>
-      )}
-    </>
-  );
-}
 
 /* ---------------- Ustawienia ---------------- */
 

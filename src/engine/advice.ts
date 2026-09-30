@@ -80,6 +80,9 @@ export function advise(
 
   const perWeek = planWeekdays(template, plan).length;
   const adherence = stats.adherence ?? 100;
+  // Rzadszy albo gęstszy wariant istnieje tylko w konfiguratorze klasycznym. Plan z celem
+  // i własny mają rotację ułożoną pod konkretną liczbę dni — tam podpowiedź zmiany nie ma sensu.
+  if ((template.kind ?? 'classic') !== 'classic') return out;
 
   if (stats.elapsed >= 6 && adherence < 60 && perWeek > 2) {
     out.push({

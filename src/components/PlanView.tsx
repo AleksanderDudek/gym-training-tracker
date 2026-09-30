@@ -20,6 +20,8 @@ import { snapshot } from '../engine/snapshot';
 import type { Snapshot } from '../engine/snapshot';
 import { Segmented } from './ui';
 import { SupportLine } from './Support';
+import { PlanCatalog } from './Plans';
+import { PLANS_PATH, go } from '../routing';
 import type {
   AppState,
   PlanLevel,
@@ -46,14 +48,18 @@ const sessionsWord = (n: number): string => {
   return !teen && last >= 2 && last <= 4 ? 'treningi' : 'treningów';
 };
 
-const workoutName = (id: string): string => BUILTIN.find((w) => w.id === id)?.name ?? id;
+/** Nazwa treningu z rotacji — gotowego albo własnego. */
+const nameIn =
+  (state: AppState) =>
+  (id: string): string =>
+    [...BUILTIN, ...state.workouts].find((w) => w.id === id)?.name ?? id;
 
 /** Sama liczba dni z odmianą. Kontekst („przerwy”, „to …”) dokłada miejsce użycia. */
 const gapDays = (n: number): string => (n === 1 ? '1 dzień' : `${n} dni`);
 
 /* ---------------- Katalog ---------------- */
 
-function Catalogue({
+export function Catalogue({
   onStart,
   onCancel,
 }: {
@@ -227,7 +233,15 @@ function Catalogue({
 
 /* ---------------- Kalendarz ---------------- */
 
-function DayRow({ d, onTick }: { d: PlannedDay; onTick: (i: number) => void }) {
+function DayRow({
+  d,
+  onTick,
+  workoutName,
+}: {
+  d: PlannedDay;
+  onTick: (i: number) => void;
+  workoutName: (id: string) => string;
+}) {
   const mark =
     d.status === 'done' ? (d.late === 0 ? '✓' : '↺') : d.status === 'missed' ? '–' : '';
   const tickable = d.status !== 'future' && d.source !== 'log';
@@ -367,6 +381,7 @@ function BadgeLine({ state }: { state: AppState }) {
 
 function Journal({ snap, state }: { snap: Snapshot; state: AppState }) {
   const [all, setAll] = useState(false);
+  const workoutName = nameIn(state);
   const items = journal(snap.schedule, state.events, workoutName).filter(
     (e) => e.date <= snap.today,
   );
@@ -416,6 +431,7 @@ function ActivePlanView({
   onFrequency: (days: number) => void;
 }) {
   const { template, schedule, stats, today } = snap;
+  const workoutName = nameIn(state);
   const days = schedule.days;
   const weeks = [...new Set(days.map((d) => d.week))];
   const [open, setOpen] = useState<number>(stats.week);
@@ -491,7 +507,10 @@ function ActivePlanView({
               aria-expanded={open === w}
               onClick={() => setOpen(open === w ? -1 : w)}
             >
-              <span>Tydzień {w}</span>
+              <span>
+                Tydzień {w}
+                {rows[0]?.deload && <i className="wk-deload"> · lżejszy</i>}
+              </span>
               <span className="wk-sum">
                 {done}/{rows.length}
                 {rows.some((d) => d.status === 'today') ? ' · dziś' : ''}
@@ -501,7 +520,7 @@ function ActivePlanView({
             {open === w && (
               <div className="wk-body">
                 {rows.map((d) => (
-                  <DayRow key={d.index} d={d} onTick={onTick} />
+                  <DayRow key={d.index} d={d} onTick={onTick} workoutName={workoutName} />
                 ))}
               </div>
             )}
@@ -529,38 +548,28 @@ function ActivePlanView({
 
 /* ---------------- Wejście ---------------- */
 
+/**
+ * Zakładka Plan: uruchomiony plan z kalendarzem albo — gdy żadnego nie ma — katalog planów.
+ * Zmiana planu prowadzi do katalogu pod własnym adresem, więc „wstecz” wraca do kalendarza.
+ */
 export function PlanView({
   state,
-  onStart,
   onStop,
   onTick,
   onFrequency,
 }: {
   state: AppState;
-  onStart: (t: PlanTemplate, o: PlanOptions) => void;
   onStop: () => void;
   onTick: (index: number) => void;
   onFrequency: (days: number) => void;
 }) {
-  const [picking, setPicking] = useState(false);
   const snap = snapshot(state);
-
-  if (!snap || picking)
-    return (
-      <Catalogue
-        onStart={(t, o) => {
-          setPicking(false);
-          onStart(t, o);
-        }}
-        onCancel={snap ? () => setPicking(false) : undefined}
-      />
-    );
-
+  if (!snap) return <PlanCatalog state={state} />;
   return (
     <ActivePlanView
       state={state}
       snap={snap}
-      onChange={() => setPicking(true)}
+      onChange={() => go(PLANS_PATH)}
       onStop={onStop}
       onTick={onTick}
       onFrequency={onFrequency}

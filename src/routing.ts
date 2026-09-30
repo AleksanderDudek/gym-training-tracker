@@ -15,14 +15,15 @@ import type { CardioSport, ExerciseId, Route, TabKey } from './types';
  * 320 px 64 px szerokości, a etykieta mieści się w jednym słowie.
  *
  * Kolejność idzie od codziennego do okazjonalnego, a profil stoi na końcu, jak w większości
- * aplikacji. Treningi nie mają własnej zakładki: to lista do wyboru, na którą i tak prowadzi
- * „Wybierz dowolny trening” z ekranu Dziś — są jego podstroną. Ustawienia siedzą w pasku
- * aplikacji, bo otwiera się je raz na miesiąc.
+ * aplikacji. Treningi mają zakładkę, odkąd są czymś więcej niż listą czterech zestawów:
+ * biblioteka podziałów i partii, podgląd i kreator z doradcą. Atlas ćwiczeń wszedł do tej
+ * samej zakładki jako druga sekcja — trening to zestaw ćwiczeń, a obie listy odpowiadają na
+ * pytanie „co mogę zrobić”. Ustawienia siedzą w pasku aplikacji, bo otwiera się je raz na miesiąc.
  */
 export const TABS: { key: TabKey; label: string; path: string; icon: IconName }[] = [
   { key: 'train', label: 'Dziś', path: '#/sesja', icon: 'session' },
+  { key: 'work', label: 'Treningi', path: '#/treningi', icon: 'workouts' },
   { key: 'plan', label: 'Plan', path: '#/plan', icon: 'plan' },
-  { key: 'atlas', label: 'Atlas', path: '#/cwiczenia', icon: 'atlas' },
   { key: 'ach', label: 'Osiągnięcia', path: '#/osiagniecia', icon: 'awards' },
   { key: 'prog', label: 'Profil', path: '#/profil', icon: 'profile' },
 ];
@@ -45,6 +46,25 @@ const TAB_BY_PATH: Record<string, TabKey> = {
 };
 
 export const exercisePath = (id: ExerciseId): string => `#/cwiczenia/${encodeURIComponent(id)}`;
+
+/** Atlas ćwiczeń — druga sekcja zakładki Treningi. */
+export const ATLAS_PATH = '#/cwiczenia';
+
+/** Podgląd treningu: ćwiczenia z seriami, mięśnie, doradca i start. */
+export const workoutPath = (id: string): string => `#/treningi/${encodeURIComponent(id)}`;
+
+/** Kreator: pusty albo z kopią gotowego treningu. */
+export const workoutNewPath = (from?: string): string =>
+  from ? `#/treningi/nowy/${encodeURIComponent(from)}` : '#/treningi/nowy';
+
+export const workoutEditPath = (id: string): string => `#/treningi/${encodeURIComponent(id)}/edytuj`;
+
+/** Katalog planów, konfigurator klasyczny, podgląd planu i kreator. */
+export const PLANS_PATH = '#/plany';
+export const PLAN_CLASSIC_PATH = '#/plany/klasyczny';
+export const PLAN_NEW_PATH = '#/plany/nowy';
+export const planPath = (id: string): string => `#/plany/${encodeURIComponent(id)}`;
+export const planEditPath = (id: string): string => `#/plany/${encodeURIComponent(id)}/edytuj`;
 
 /** Historia ćwiczenia w profilu. Osobny adres, więc da się ją wysłać albo zapisać. */
 export const statsPath = (id: ExerciseId): string => `#/profil/${encodeURIComponent(id)}`;
@@ -93,7 +113,7 @@ const TAB_SCREEN: Record<TabKey, Screen> = {
   atlas: { title: 'Atlas', parent: null },
   ach: { title: 'Osiągnięcia', parent: null },
   prog: { title: 'Profil', parent: null },
-  work: { title: 'Treningi', parent: '#/sesja' },
+  work: { title: 'Treningi', parent: null },
   set: { title: 'Ustawienia', parent: '#/profil' },
 };
 
@@ -106,7 +126,20 @@ export function screenOf(route: Route): Screen {
     case 'tab':
       return TAB_SCREEN[route.tab];
     case 'atlas':
-      return TAB_SCREEN.atlas;
+      // Druga sekcja zakładki Treningi — przełącznik u góry ekranu, więc bez strzałki wstecz.
+      return { title: 'Ćwiczenia', parent: null };
+    case 'workout':
+      return { title: 'Trening', parent: '#/treningi' };
+    case 'workoutEdit':
+      return { title: route.id ? 'Edycja treningu' : 'Nowy trening', parent: '#/treningi' };
+    case 'plans':
+      return { title: 'Plany', parent: '#/plan' };
+    case 'planClassic':
+      return { title: 'Plan klasyczny', parent: PLANS_PATH };
+    case 'planDetail':
+      return { title: 'Plan', parent: PLANS_PATH };
+    case 'planEdit':
+      return { title: route.id ? 'Edycja planu' : 'Nowy plan', parent: PLANS_PATH };
     case 'exercise':
       return { title: 'Ćwiczenie', parent: '#/cwiczenia' };
     case 'exstats':
@@ -128,8 +161,9 @@ const norm = (hash: string): string => (hash && hash !== '#/' && hash !== '#' ? 
 /** Bieżący adres, z pustym sprowadzonym do ekranu Dziś. */
 export const currentPath = (): string => norm(window.location.hash);
 
-/** Czy adres to korzeń zakładki — tam przewinięcie się pamięta. */
-export const isTabRoot = (hash: string): boolean => TABS.some((t) => t.path === norm(hash));
+/** Czy adres to korzeń zakładki albo jej sekcji — tam przewinięcie się pamięta. */
+export const isTabRoot = (hash: string): boolean =>
+  TABS.some((t) => t.path === norm(hash)) || norm(hash) === ATLAS_PATH;
 
 /*
  * Pamięć przewinięcia. Każda zakładka wraca tam, gdzie ktoś ją zostawił, a powrót strzałką
@@ -159,7 +193,15 @@ export const goBack = (fallback: string): void => {
 };
 
 export function parseHash(hash: string): Route {
-  const parts = hash.replace(/^#\/?/, '').split('/').filter(Boolean).map(decodeURIComponent);
+  // Ręcznie zepsuty adres (`%E0%A4%A`) nie może wywrócić aplikacji — zostaje wtedy surowy fragment.
+  const decode = (x: string): string => {
+    try {
+      return decodeURIComponent(x);
+    } catch {
+      return x;
+    }
+  };
+  const parts = hash.replace(/^#\/?/, '').split('/').filter(Boolean).map(decode);
   const [head, second] = parts;
   if (!head) return { kind: 'tab', tab: 'train' };
   if (head === 'cwiczenia') return second ? { kind: 'exercise', id: second } : { kind: 'atlas' };
@@ -167,6 +209,18 @@ export function parseHash(hash: string): Route {
   if (head === 'przekaski') {
     if (!second) return { kind: 'snacks' };
     return second === 'dodaj' ? { kind: 'snackAdd' } : { kind: 'snackAdd', id: second };
+  }
+  if (head === 'treningi' && second) {
+    const third = parts[2];
+    if (second === 'nowy') return { kind: 'workoutEdit', from: third };
+    return third === 'edytuj' ? { kind: 'workoutEdit', id: second } : { kind: 'workout', id: second };
+  }
+  if (head === 'plany') {
+    const third = parts[2];
+    if (!second) return { kind: 'plans' };
+    if (second === 'klasyczny') return { kind: 'planClassic' };
+    if (second === 'nowy') return { kind: 'planEdit' };
+    return third === 'edytuj' ? { kind: 'planEdit', id: second } : { kind: 'planDetail', id: second };
   }
   if (head === 'cardio') {
     if (!second) return { kind: 'cardio' };
@@ -183,9 +237,22 @@ export function parseHash(hash: string): Route {
  * `top` zapomina zapamiętane przewinięcie celu — po starcie treningu albo planu ekran ma się
  * zacząć od góry, a nie tam, gdzie ktoś zostawił go przed chwilą w innym stanie.
  */
-export const go = (path: string, opts?: { top?: boolean }): void => {
+export const go = (path: string, opts?: { top?: boolean; replace?: boolean }): void => {
   if (opts?.top) scrollMemo.delete(norm(path));
   if (window.location.hash === path) return;
+  // Zapis z kreatora zastępuje kreator w historii: „wstecz” z podglądu nie ma wracać do
+  // formularza, który właśnie się zamknął.
+  if (opts?.replace) {
+    // Cel jest tym samym ekranem, z którego się przyszło (podgląd → edycja → zapis): cofnięcie
+    // zamiast podmiany, inaczej w historii zostałyby dwa takie same wpisy pod rząd.
+    if (trail.length > 1 && trail[trail.length - 2] === norm(path)) {
+      window.history.back();
+      return;
+    }
+    trail.pop();
+    window.location.replace(path);
+    return;
+  }
   window.location.hash = path;
 };
 
@@ -215,20 +282,31 @@ export function useRoute(): Route {
 }
 
 /**
- * Który przycisk nawigacji ma być podświetlony. Podstrona ćwiczenia należy do atlasu,
- * a jego historia do profilu — ten sam ruch, dwa różne pytania. Przekąski, kroki i lista
- * treningów należą do ekranu Dziś: to ta sama odpowiedź na pytanie „co robię dzisiaj”.
+ * Który przycisk nawigacji ma być podświetlony. Atlas, podstrona ćwiczenia, podgląd i kreator
+ * treningu należą do Treningów; historia ćwiczenia do profilu — ten sam ruch, dwa różne
+ * pytania. Katalog i kreator planów należą do Planu. Przekąski i kroki należą do ekranu Dziś:
+ * to ta sama odpowiedź na pytanie „co robię dzisiaj”.
  */
-export const activeTab = (route: Route): TabKey =>
-  route.kind === 'tab'
-    ? route.tab === 'work'
-      ? 'train'
-      : route.tab
-    : route.kind === 'exstats'
-      ? 'prog'
-      : route.kind === 'snacks' ||
-          route.kind === 'snackAdd' ||
-          route.kind === 'cardio' ||
-          route.kind === 'cardioAdd'
-        ? 'train'
-        : 'atlas';
+export function activeTab(route: Route): TabKey {
+  switch (route.kind) {
+    case 'tab':
+      return route.tab === 'atlas' ? 'work' : route.tab;
+    case 'exstats':
+      return 'prog';
+    case 'snacks':
+    case 'snackAdd':
+    case 'cardio':
+    case 'cardioAdd':
+      return 'train';
+    case 'plans':
+    case 'planClassic':
+    case 'planDetail':
+    case 'planEdit':
+      return 'plan';
+    case 'atlas':
+    case 'exercise':
+    case 'workout':
+    case 'workoutEdit':
+      return 'work';
+  }
+}

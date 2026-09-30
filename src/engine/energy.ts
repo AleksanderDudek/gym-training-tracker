@@ -1,4 +1,5 @@
 import { EX } from '../data/exercises';
+import { ISOLATION } from '../data/muscles';
 import type { CardioInput, ExerciseId } from '../types';
 
 /**
@@ -281,7 +282,10 @@ export function profileOf(id: ExerciseId): EnergyProfile {
                   : RESISTANCE
                 : CALISTHENICS);
   const tempo = TEMPO[id];
-  return tempo ? { ...base, tempo } : base;
+  // Przerwa: wielostawowe 2 minuty, izolacje krócej — tak zaleca ACSM (2009): 2–3 minuty przy
+  // ciężkich ruchach wielostawowych, 1–2 przy dodatkowych.
+  const rest = base === RESISTANCE && !ISOLATION.has(id) ? 120 : base.rest;
+  return tempo || rest !== base.rest ? { ...base, tempo: tempo ?? base.tempo, rest } : base;
 }
 
 export interface SetsBurn {

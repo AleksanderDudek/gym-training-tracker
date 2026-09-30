@@ -896,6 +896,74 @@
   /* Rozbicie kalorii treningu na ćwiczenia — drobnym drukiem, pod główną liczbą. */
   p.kcal-split{margin:4px 0 0;font-size:12.5px;color:var(--ink-soft);line-height:1.45}
 
+  /* ---------------- Treningi, plany i doradca ---------------- */
+
+  /* Przełącznik sekcji zakładki Treningi — odnośniki w stroju przełącznika segmentowego. */
+  .sect-switch{margin:14px 0 12px}
+  .seg a{display:flex;align-items:center;justify-content:center;font-size:13.5px;padding:11px 6px;
+    min-height:48px;background:var(--surface-2);border:1px solid var(--edge);border-radius:var(--r);
+    color:var(--ink-soft);text-decoration:none;-webkit-tap-highlight-color:transparent}
+  .seg a[aria-current=page]{background:var(--steel);border-color:var(--steel);color:#fff;font-weight:600}
+
+  /* Filtry, które się zawijają — przełącznik segmentowy mieści najwyżej trzy pozycje. */
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 2px}
+  .chips button{font:inherit;font-size:13.5px;padding:9px 12px;min-height:44px;background:var(--surface-2);
+    border:1px solid var(--edge);border-radius:22px;color:var(--ink-soft);cursor:pointer;
+    -webkit-tap-highlight-color:transparent}
+  .chips button[aria-pressed=true]{background:var(--steel);border-color:var(--steel);color:#fff;font-weight:600}
+
+  .wcard h2.today-name{margin-bottom:2px}
+  .wmeta{font-family:var(--display);font-size:13.5px;color:var(--c-blue-ink);margin:0 0 6px}
+  .grp p.warnline,p.warnline{color:var(--warn)}
+  .wex .h-date{min-width:18px;text-align:right;color:var(--ink-soft)}
+  .wex-name{font-weight:600;color:var(--ink);text-decoration:none}
+  .wex-name:hover{text-decoration:underline}
+
+  /* Paski mięśni: nazwa, pasek z kreską limitu sesji albo zielonym polem 10–20, liczba. */
+  .mbars{display:grid;gap:7px;margin-top:10px}
+  .mbar{display:grid;grid-template-columns:minmax(0,11.5em) 1fr auto;gap:10px;align-items:center;font-size:13px}
+  .mbar-name{color:var(--ink);overflow-wrap:anywhere}
+  .mbar-track{position:relative;height:10px;background:var(--surface-2);border-radius:5px;overflow:hidden}
+  .mbar-track i{position:absolute;left:0;top:0;bottom:0;background:var(--c-blue);border-radius:5px}
+  .mbar-track b{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--steel)}
+  .mbar-track em{position:absolute;top:0;bottom:0;background:var(--c-green);opacity:.28}
+  .mbar.over .mbar-track i{background:var(--c-orange)}
+  .mbar.over .mbar-val{color:var(--warn)}
+  .mbar-val{font-family:var(--display);font-size:14px;color:var(--ink-soft);min-width:3.2em;text-align:right}
+  .mbar-val small{font-size:12px}
+  @media (max-width:380px){.mbar{grid-template-columns:minmax(0,8.5em) 1fr auto}}
+
+  /* Uwagi doradcy: kolor tylko jako dodatek — poziom mówi też tytuł. */
+  .dnotes{display:grid;gap:8px;margin:8px 0 4px}
+  .dnote{border-left:3px solid var(--edge);background:var(--surface-2);padding:9px 11px;border-radius:var(--r)}
+  .dnote b{display:block;font-size:14px;margin-bottom:2px}
+  .dnote.warn{border-left-color:var(--warn)}
+  .dnote.warn b{color:var(--warn)}
+  .dnote.tip{border-left-color:var(--c-blue-ink)}
+  .dnote.good{border-left-color:var(--ok)}
+  .dnote.good b{color:var(--ok)}
+  .dnote p.tight{margin:0}
+
+  /* Kreator: lista ćwiczeń z seriami i przestawianiem. */
+  .builder label.fld,.builder div.fld{margin-top:10px}
+  .bl-list{display:grid;gap:6px;margin:12px 0 6px}
+  .bl-item{display:grid;grid-template-columns:22px 1fr 76px 40px 40px 40px;gap:6px;align-items:center;
+    border-top:1px solid var(--surface-2);padding-top:6px}
+  .bl-no{font-family:var(--display);color:var(--ink-soft);text-align:right}
+  .bl-name{font-weight:600;font-size:14.5px;overflow-wrap:anywhere}
+  .bl-item select{padding:9px 6px;font-size:15px}
+  .bl-item button{font:inherit;font-size:17px;min-height:44px;background:var(--surface-2);
+    border:1px solid var(--edge);border-radius:var(--r);color:var(--steel);cursor:pointer}
+  .bl-item button:disabled{opacity:.35;cursor:default}
+  .stepper input[type=range]{width:100%;accent-color:var(--steel);min-height:44px}
+
+  /* Tydzień planu słowami. */
+  .plan-week{display:grid;gap:4px;margin:8px 0 2px}
+  .pw-row{display:grid;grid-template-columns:3.5em 1fr;gap:10px;align-items:baseline;font-size:14px;
+    min-height:32px}
+  .pw-day{font-family:var(--display);color:var(--ink-soft)}
+  .wk-deload{font-style:normal;font-family:var(--body);font-size:12.5px;color:var(--c-blue-ink)}
+
   /* ---------------- Postać i doświadczenie ---------------- */
 
   /*

@@ -107,6 +107,11 @@ export interface Session {
   workout: string;
   started: string;
   ready: ReadyKey;
+  /**
+   * Sesja z tygodnia lżejszego w planie. Mniej serii, a wynik nie rusza poziomów ani w górę,
+   * ani w dół — lżejszy tydzień ma dać odpocząć, a nie zostać źle oceniony.
+   */
+  deload?: boolean;
   res: Record<ExerciseId, ExerciseResult>;
   done: Record<ExerciseId, boolean>;
   skip: Record<ExerciseId, boolean>;
@@ -177,10 +182,37 @@ export interface BodyWeight {
   kg: number;
 }
 
+/**
+ * Rodzaj treningu. Mówi, czego od niego oczekiwać, i steruje doradcą: od treningu „push”
+ * nikt nie oczekuje ciągnięcia, a od całego ciała — tak.
+ */
+export type WorkoutKind =
+  | 'full'
+  | 'push'
+  | 'pull'
+  | 'legs'
+  | 'upper'
+  | 'lower'
+  | 'glutes'
+  | 'chest'
+  | 'back'
+  | 'shoulders'
+  | 'arms'
+  | 'core'
+  | 'light';
+
+/** Sprzęt treningu: kettlebell z masą ciała (także w domu) albo pełna siłownia. */
+export type WorkoutGear = 'kb' | 'gym';
+
 export interface Workout {
   id: string;
   name: string;
   items: { ex: ExerciseId }[];
+  /** Brak u treningów zapisanych przed rodzajami — doradca stosuje wtedy tylko zasady ogólne. */
+  kind?: WorkoutKind;
+  gear?: WorkoutGear;
+  /** Jedno–dwa zdania: dla kogo i po co. */
+  desc?: string;
 }
 
 export interface Notice {
@@ -193,6 +225,12 @@ export interface Notice {
 export type Sex = 'f' | 'm' | 'any';
 
 export type PlanLevel = 'zero' | 'base' | 'strong';
+
+/**
+ * Skąd plan: konfigurator klasyczny (poziom × płeć × częstotliwość), plan z celem
+ * (30/60/90 dni) albo ułożony samodzielnie.
+ */
+export type PlanKind = 'classic' | 'goal' | 'own';
 
 /** Gotowy plan treningowy: rotacja treningów rozpisana na tygodnie. */
 export interface PlanTemplate {
@@ -209,6 +247,19 @@ export interface PlanTemplate {
   /** Dni tygodnia, 1 = poniedziałek … 7 = niedziela. */
   weekdays: number[];
   desc: string;
+  /** Brak oznacza plan klasyczny — tak wyglądały wszystkie plany przed planami z celem. */
+  kind?: PlanKind;
+  /** Tygodnie lżejsze (deload), numerowane od 1. */
+  deload?: number[];
+  /** Co ile tygodni lżejszy — zapamiętane w planie własnym, żeby edycja długości go nie gubiła. 0 — wcale. */
+  deloadEvery?: number;
+  /** Cel jednym zdaniem. */
+  goal?: string;
+  /** Czego się spodziewać po tym czasie — uczciwie, z badań, bez obietnic z reklamy. */
+  expect?: string;
+  gear?: WorkoutGear;
+  /** Etykieta długości („30 dni”) — tygodnie i tak liczą się z `weeks`. */
+  days?: number;
 }
 
 /** Co się dzieje z treningiem, którego termin przepadł. */
@@ -237,6 +288,8 @@ export interface PlanOptions {
   start: string;
   weekdays: number[];
   policy: PlanPolicy;
+  /** Mnożnik ciężarów startowych wybrany przy starcie. Brak — ten z szablonu. */
+  loadFactor?: number;
 }
 
 /**
@@ -259,6 +312,8 @@ export interface PlannedDay {
   filled: string | null;
   /** Ile dni po terminie. 0 znaczy w terminie. */
   late: number;
+  /** Termin z tygodnia lżejszego. */
+  deload: boolean;
   /** Skąd wiadomo, że termin zrealizowany: z historii treningów czy z ręcznego odhaczenia. */
   source: 'log' | 'tick' | null;
 }
@@ -357,6 +412,8 @@ export interface AppState {
   };
   prog: Record<ExerciseId, Progress>;
   workouts: Workout[];
+  /** Plany ułożone samodzielnie. Gotowe plany mieszkają w kodzie, nie w zapisie. */
+  plans?: PlanTemplate[];
   session: Session | null;
   log: LogEntry[];
   /** Przekąski ruchowe — osobno od dziennika, bo dziennik to treningi, a plan liczy się z niego. */
@@ -407,6 +464,18 @@ export type Route =
   | { kind: 'snacks' }
   /** Zapis jednej przekąski. Z identyfikatorem — od razu z tym ćwiczeniem, bez wyboru. */
   | { kind: 'snackAdd'; id?: ExerciseId | undefined }
+  /** Podgląd treningu: ćwiczenia, serie, mięśnie, doradca i start. */
+  | { kind: 'workout'; id: string }
+  /** Kreator treningu: nowy, kopia gotowego (`from`) albo edycja własnego (`id`). */
+  | { kind: 'workoutEdit'; id?: string | undefined; from?: string | undefined }
+  /** Katalog planów: z celem, klasyczny i własne. */
+  | { kind: 'plans' }
+  /** Konfigurator klasycznego planu z kettlebell. */
+  | { kind: 'planClassic' }
+  /** Podgląd planu z celem albo własnego razem ze startem. */
+  | { kind: 'planDetail'; id: string }
+  /** Kreator planu: nowy albo edycja własnego. */
+  | { kind: 'planEdit'; id?: string | undefined }
   /** Kroki, bieżnia i rower: dziś, tydzień, historia i kalorie. */
   | { kind: 'cardio' }
   /** Zapis kroków, bieżni albo roweru. Bez rodzaju — kroki, bo to najczęstszy wpis. */
