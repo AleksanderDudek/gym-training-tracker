@@ -34,6 +34,8 @@ export const ANIM: Partial<Record<ExerciseId, MoveName>> = {
   lunge: 'lunge',
   lunge_walk: 'lunge',
   bulgarian: 'lunge',
+  lunge_bw: 'lunge',
+  split_bw: 'lunge',
   stepup: 'lunge',
   legext: 'legExtension',
 

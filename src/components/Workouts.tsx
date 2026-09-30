@@ -20,7 +20,19 @@ import type { AppState, ExerciseId, Workout, WorkoutGear, WorkoutKind } from '..
  * i kreator z doradcą, który w trakcie układania mówi, czy trening ma sens.
  */
 
-export const GEAR_WORKOUT: Record<WorkoutGear, string> = { kb: 'kettlebell i dom', gym: 'siłownia' };
+export const GEAR_WORKOUT: Record<WorkoutGear, string> = {
+  none: 'bez sprzętu',
+  kb: 'kettlebell',
+  gym: 'siłownia',
+};
+
+/** Filtr sprzętu — ten sam w bibliotece treningów i w katalogu planów. */
+export const GEAR_FILTER: { key: 'all' | WorkoutGear; label: string }[] = [
+  { key: 'all', label: 'Każdy' },
+  { key: 'none', label: 'Bez sprzętu' },
+  { key: 'kb', label: 'Kettlebell' },
+  { key: 'gym', label: 'Siłownia' },
+];
 
 const EX_FORMS = ['ćwiczenie', 'ćwiczenia', 'ćwiczeń'] as const;
 
@@ -144,16 +156,7 @@ export function WorkoutLibrary({
       </div>
 
       <div className="grp">
-        <Segmented
-          label="Sprzęt"
-          value={gear}
-          onChange={setGear}
-          options={[
-            { key: 'all', label: 'Każdy sprzęt' },
-            { key: 'kb', label: 'Kettlebell i dom' },
-            { key: 'gym', label: 'Siłownia' },
-          ]}
-        />
+        <Segmented label="Sprzęt" value={gear} onChange={setGear} options={GEAR_FILTER} />
         <Chips label="Rodzaj treningu" value={group} onChange={setGroup} options={GROUPS} />
       </div>
 

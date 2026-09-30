@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { EX, GEAR_LABEL, STAGES, ex, gearOf } from '../data/exercises';
+import { EX, GEAR_LABEL, STAGES, ex, gearOf, NO_EQUIPMENT } from '../data/exercises';
 import { VIDEOS } from '../data/videos';
 import { ANIM } from '../data/anim';
 import { EX_JOKES } from '../data/exjokes';
@@ -18,9 +18,15 @@ import type { AppState, ExerciseId, Gear } from '../types';
 
 /* ---------------- Spis ćwiczeń ---------------- */
 
-/** Filtry sprzętu. „Wszystko” zostaje pierwsze, bo to domyślny widok. */
-const GEAR_FILTERS: (Gear | 'all')[] = [
+/**
+ * Filtry sprzętu. „Wszystko” zostaje pierwsze, bo to domyślny widok. „Bez sprzętu” to nie
+ * sprzęt, tylko jego brak: masa ciała bez drążka, kółka i skakanki — to, co zrobisz w domu
+ * na podłodze, przy ścianie, krześle i stole.
+ */
+type AtlasFilter = Gear | 'all' | 'none';
+const GEAR_FILTERS: AtlasFilter[] = [
   'all',
+  'none',
   'kettlebell',
   'barbell',
   'dumbbell',
@@ -30,8 +36,9 @@ const GEAR_FILTERS: (Gear | 'all')[] = [
 
 export function AtlasView({ state }: { state: AppState }) {
   const groups = exercisesByGroup();
-  const [gear, setGear] = useState<Gear | 'all'>('all');
-  const match = (id: ExerciseId): boolean => gear === 'all' || gearOf(id) === gear;
+  const [gear, setGear] = useState<AtlasFilter>('all');
+  const match = (id: ExerciseId): boolean =>
+    gear === 'all' || (gear === 'none' ? NO_EQUIPMENT.has(id) : gearOf(id) === gear);
   const shown = Object.entries(groups)
     .map(([g, ids]) => [g, ids.filter(match)] as const)
     .filter(([, ids]) => ids.length);
@@ -48,7 +55,7 @@ export function AtlasView({ state }: { state: AppState }) {
         <div className="gearfilter">
           {GEAR_FILTERS.map((g) => (
             <button key={g} aria-pressed={gear === g} onClick={() => setGear(g)}>
-              {g === 'all' ? 'wszystko' : GEAR_LABEL[g]}
+              {g === 'all' ? 'wszystko' : g === 'none' ? 'bez sprzętu' : GEAR_LABEL[g]}
             </button>
           ))}
         </div>

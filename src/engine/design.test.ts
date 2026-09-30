@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ALL, BUILTIN, EX } from '../data/exercises';
+import { ALL, BUILTIN, EX, NO_EQUIPMENT } from '../data/exercises';
 import { EX_MUSCLES, MUSCLES, STABILIZERS } from '../data/muscles';
 import { GOAL_PLANS, PLANS, planOf } from '../data/plans';
 import { LIBRARY } from '../data/workouts';
@@ -75,6 +75,29 @@ describe('doradca treningu', () => {
           expect(['kettlebell', 'bodyweight', undefined], `${w.id}: ${i.ex}`).toContain(EX[i.ex]!.gear),
         );
     });
+  });
+
+  it('bez sprzętu znaczy bez sprzętu: tylko ćwiczenia z listy, bez ciężaru, drążka i kółka', () => {
+    NO_EQUIPMENT.forEach((id) => {
+      expect(EX[id], id).toBeDefined();
+      expect(EX[id]!.def.w, id).toBeUndefined();
+    });
+    ['pullup', 'chinup', 'legraise_hang', 'abwheel', 'jumprope', 'boxjump'].forEach((id) =>
+      expect(NO_EQUIPMENT.has(id), id).toBe(false),
+    );
+    const none = LIBRARY.filter((w) => w.gear === 'none');
+    (['full', 'upper', 'lower', 'legs', 'push', 'glutes', 'core'] as const).forEach((k) =>
+      expect(none.some((w) => w.kind === k), k).toBe(true),
+    );
+    none.forEach((w) => w.items.forEach((i) => expect(NO_EQUIPMENT.has(i.ex), `${w.id}: ${i.ex}`).toBe(true)));
+  });
+
+  it('plany bez sprzętu składają się wyłącznie z treningów bez sprzętu i mają każdą długość', () => {
+    const none = GOAL_PLANS.filter((t) => t.gear === 'none');
+    expect(new Set(none.map((t) => t.days))).toEqual(new Set([30, 60, 90]));
+    none.forEach((t) =>
+      t.cycle.forEach((c) => expect(BUILTIN.find((w) => w.id === c)?.gear, `${t.id}: ${c}`).toBe('none')),
+    );
   });
 
   it('za dużo serii na jedną partię w sesji to ostrzeżenie', () => {

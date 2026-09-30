@@ -911,6 +911,8 @@
     border:1px solid var(--edge);border-radius:22px;color:var(--ink-soft);cursor:pointer;
     -webkit-tap-highlight-color:transparent}
   .chips button[aria-pressed=true]{background:var(--steel);border-color:var(--steel);color:#fff;font-weight:600}
+  /* Filtr długości i filtr sprzętu jeden pod drugim — z odstępem, żeby nie czytały się jak jeden rząd. */
+  .chips + .seg,.seg + .chips{margin-top:10px}
 
   .wcard h2.today-name{margin-bottom:2px}
   .wmeta{font-family:var(--display);font-size:13.5px;color:var(--c-blue-ink);margin:0 0 6px}

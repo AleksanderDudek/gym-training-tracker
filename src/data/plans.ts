@@ -272,6 +272,80 @@ export const GOAL_PLANS: PlanTemplate[] = [
     'Wyraźnie mocniejsze i pełniejsze pośladki — hip thrust, przysiady i martwy ciąg.',
     'Pośladki dwa razy w tygodniu, prawie 20 serii — górna granica tego, co się jeszcze opłaca. Klatka tylko na podtrzymanie. Tygodnie lżejsze: szósty i dwunasty.',
   ),
+
+  /*
+   * ---------------- Bez sprzętu ----------------
+   *
+   * Podłoga, ściana, krzesło i solidny stół. Progresja idzie powtórzeniami i etapami trudności
+   * (pompki, przysiad jednonóż, core), a nie ciężarem. Uczciwie: bez drążka biceps pracuje tylko
+   * pomocniczo przy wiosłowaniu pod stołem, więc doradca zaznaczy go jako słabo obciążony.
+   */
+  goal(
+    'cel-bez-start-30',
+    'Bez sprzętu — start, 30 dni',
+    30,
+    'none',
+    'zero',
+    3,
+    ['full-none', 'full-none-b'],
+    'Ruszyć z miejsca bez siłowni i bez zakupów: przysiad, pompki, wiosłowanie pod stołem i core.',
+    'Trzy treningi całego ciała na zmianę A i B, po 25 minut — poniedziałek, środa, piątek. Każda partia dwa–trzy razy w tygodniu, zawsze z dniem przerwy.',
+  ),
+  goal(
+    'cel-bez-brzuch-30',
+    'Brzuch bez sprzętu — 30 dni',
+    30,
+    'none',
+    'zero',
+    3,
+    ['full-none-c', 'core-none', 'full-none'],
+    'Mocniejszy brzuch i stabilny tułów na samej macie.',
+    'Dwa treningi całego ciała i kwadrans brzucha pomiędzy nimi. Tył uda i biceps dostają tu mało — to plan pod tułów.',
+  ),
+  goal(
+    'cel-bez-cialo-60',
+    'Całe ciało bez sprzętu — 60 dni',
+    60,
+    'none',
+    'zero',
+    3,
+    ['full-none', 'full-none-b', 'full-none-c'],
+    'Siła i kondycja całego ciała w domu, trzy razy w tygodniu po pół godziny.',
+    'Trzy różne treningi całego ciała — A, B i C — każdy raz w tygodniu, z dniem przerwy między nimi. Szósty tydzień lżejszy.',
+  ),
+  goal(
+    'cel-bez-posladki-60',
+    'Pośladki bez sprzętu — 60 dni',
+    60,
+    'none',
+    'base',
+    3,
+    ['glutes-none', 'upper-none', 'full-none-b'],
+    'Silniejsze i pełniejsze pośladki na macie i z krzesłem.',
+    'Pośladki dwa razy w tygodniu — w dniu pośladków i w treningu całego ciała — a góra pomiędzy. Biceps tylko pomocniczo. Szósty tydzień lżejszy.',
+  ),
+  goal(
+    'cel-bez-gora-dol-60',
+    'Góra i dół bez sprzętu — 60 dni',
+    60,
+    'none',
+    'base',
+    4,
+    ['upper-none', 'lower-none', 'upper-none', 'legs-none'],
+    'Więcej objętości niż całe ciało: cztery dni w tygodniu, każda partia dwa razy.',
+    'Góra, dół, dzień wolny, góra, nogi. Biceps pracuje tylko pomocniczo przy wiosłowaniu — bez drążka inaczej się nie da. Szósty tydzień lżejszy.',
+  ),
+  goal(
+    'cel-bez-sila-90',
+    'Siła z masą ciała — 90 dni',
+    90,
+    'none',
+    'base',
+    4,
+    ['upper-none', 'lower-none', 'upper-none', 'legs-none'],
+    'Pompki w staniu na rękach przy ścianie i przysiad jednonóż — siła, którą widać bez ciężarów.',
+    'Ten sam układ góra/dół na trzy miesiące: dość czasu, żeby przejść kolejne etapy pompek i przysiadu jednonóż. Biceps tylko pomocniczo. Tygodnie lżejsze: szósty i dwunasty.',
+  ),
 ];
 
 /** Plan klasyczny albo z celem — bez planów własnych, które mieszkają w zapisie. */

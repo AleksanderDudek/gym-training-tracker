@@ -23,7 +23,7 @@ import {
   workoutPath,
 } from '../routing';
 import { Chips, DesignNotes, WeeklyBars } from './Design';
-import { GEAR_WORKOUT, allWorkouts } from './Workouts';
+import { GEAR_FILTER, GEAR_WORKOUT, allWorkouts } from './Workouts';
 import { EmptyState, Segmented } from './ui';
 import type { AppState, PlanLevel, PlanOptions, PlanPolicy, PlanTemplate, Sex, WorkoutGear } from '../types';
 
@@ -106,16 +106,7 @@ export function PlanCatalog({ state }: { state: AppState }) {
             { key: '90', label: '90 dni' },
           ]}
         />
-        <Segmented
-          label="Sprzęt"
-          value={gear}
-          onChange={setGear}
-          options={[
-            { key: 'all', label: 'Każdy sprzęt' },
-            { key: 'kb', label: 'Kettlebell i dom' },
-            { key: 'gym', label: 'Siłownia' },
-          ]}
-        />
+        <Segmented label="Sprzęt" value={gear} onChange={setGear} options={GEAR_FILTER} />
       </div>
       {goals.map((t) => (
         <PlanCard key={t.id} t={t} active={t.id === active} />

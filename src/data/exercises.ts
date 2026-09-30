@@ -353,6 +353,16 @@ export const EX: Record<ExerciseId, Exercise> = {
     def: { sets: 3, minSets: 3, maxSets: 5, target: 15, min: 12, max: 25 },
     hint: 'Napięcie z pośladków, nie z lędźwi. Pięty pod kolanami.',
   },
+  glutebridge1: {
+    name: 'Mostek biodrowy jednonóż',
+    group: 'Zawias biodrowy',
+    gear: 'bodyweight',
+    mode: 'body',
+    unit: 'reps',
+    side: true,
+    def: { sets: 3, minSets: 3, maxSets: 5, target: 10, min: 8, max: 20 },
+    hint: 'Miednica równo, bez opadania na bok. Druga noga zgięta albo wyprostowana w górę.',
+  },
   goodmorning: {
     name: 'Good morning',
     group: 'Zawias biodrowy',
@@ -515,6 +525,26 @@ export const EX: Record<ExerciseId, Exercise> = {
     def: { sets: 3, minSets: 3, maxSets: 5, target: 20, min: 15, max: 35 },
     hint: 'Pełny zakres i równe tempo. To rozgrzewka i nauka wzorca, nie wyścig.',
   },
+  lunge_bw: {
+    name: 'Wykrok wsteczny bez obciążenia',
+    group: 'Przysiad',
+    gear: 'bodyweight',
+    mode: 'body',
+    unit: 'reps',
+    side: true,
+    def: { sets: 3, minSets: 3, maxSets: 5, target: 12, min: 10, max: 20 },
+    hint: 'Krok w tył, kolano tylnej nogi prawie dotyka podłogi. Ciężar na pięcie przedniej stopy.',
+  },
+  split_bw: {
+    name: 'Przysiad bułgarski z nogą na krześle',
+    group: 'Przysiad',
+    gear: 'bodyweight',
+    mode: 'body',
+    unit: 'reps',
+    side: true,
+    def: { sets: 3, minSets: 3, maxSets: 5, target: 10, min: 8, max: 20 },
+    hint: 'Tylna stopa na krześle, przednia na tyle daleko, żeby kolano nie uciekało przed palce. Lekki skłon tułowia bierze pośladek.',
+  },
   sissy: {
     name: 'Sissy squat',
     group: 'Przysiad',
@@ -607,6 +637,15 @@ export const EX: Record<ExerciseId, Exercise> = {
     unit: 'reps',
     def: { sets: 3, target: 15, min: 12, max: 20, w: 15 },
     hint: 'Lina na wysokości twarzy, łokcie wyżej niż nadgarstki. Lekko i dużo powtórzeń.',
+  },
+  y_raise: {
+    name: 'Unoszenie ramion w literę Y leżąc',
+    group: 'Ciągnięcie',
+    gear: 'bodyweight',
+    mode: 'body',
+    unit: 'reps',
+    def: { sets: 3, minSets: 3, maxSets: 5, target: 12, min: 10, max: 20 },
+    hint: 'Leżysz przodem, kciuki w górę, łopatki w dół i do siebie. Ruch mały, ale czysty — bez odrywania klatki od podłogi.',
   },
   shrug: {
     name: 'Wzruszanie ramion',
@@ -1098,6 +1137,41 @@ export const EX: Record<ExerciseId, Exercise> = {
 
 export const ALL: ExerciseId[] = Object.keys(EX);
 export const WEIGHTED: ExerciseId[] = ALL.filter((id) => EX[id]!.def.w !== undefined);
+
+/**
+ * Ćwiczenia bez sprzętu: podłoga, ściana, krzesło albo kanapa i solidny stół — pod nim
+ * wiosłuje się w australijskim podciąganiu, bo bez drążka to jedyne porządne ciągnięcie.
+ * Drążek, guma, skakanka i kółko to już sprzęt, choć mały. Ostatnie etapy pompek, przysiadu
+ * jednonóż i pracy nad core potrzebują drążka albo ciężaru — dochodzi się do nich po miesiącach.
+ */
+export const NO_EQUIPMENT = new Set<ExerciseId>([
+  'squat_air',
+  'lunge_bw',
+  'split_bw',
+  'pistol',
+  'sissy',
+  'glutebridge',
+  'glutebridge1',
+  'hyper',
+  'nordic',
+  'calf',
+  'calf1',
+  'tibialis',
+  'copenhagen',
+  'pushup',
+  'pushup_diamond',
+  'pushup_pike',
+  'hspu',
+  'dip_bench',
+  'row_inverted',
+  'y_raise',
+  'burpee',
+  'plank',
+  'plank_side',
+  'deadbug',
+  'hollow',
+  'core',
+]);
 
 /**
  * Pierwsze cztery treningi — kettlebell i masa ciała, na nich stoją plany klasyczne. Kolejność

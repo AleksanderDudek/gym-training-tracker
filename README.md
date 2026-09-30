@@ -2,7 +2,7 @@
 
 Aplikacja do prowadzenia treningu siłowego z automatyczną progresją. Wybierasz trening, wpisujesz
 wyniki, a silnik sam decyduje, kiedy podnieść powtórzenia i kiedy wejść na cięższe obciążenie.
-Atlas obejmuje 105 ćwiczeń: kettlebell, sztanga, hantle, maszyny i kalistenika.
+Atlas obejmuje 109 ćwiczeń: kettlebell, sztanga, hantle, maszyny i kalistenika — 26 z nich zrobisz bez żadnego sprzętu.
 
 React 18 + TypeScript + Vite. Bez backendu — dane leżą w przeglądarce, z eksportem i importem do pliku.
 
@@ -19,7 +19,7 @@ Pozostałe polecenia:
 npm run build      # produkcyjny build do dist/, z listą plików dla service workera
 npm run preview    # podgląd builda — tu działa też praca offline
 npm run typecheck  # tsc --noEmit
-npm test           # 427 testów silnika, doradcy, kalorii, biblioteki, odznak, ruchu, mimiki, obsady i tras (vitest)
+npm test           # 429 testów silnika, doradcy, kalorii, biblioteki, odznak, ruchu, mimiki, obsady i tras (vitest)
 ```
 
 Build jest w pełni statyczny (`base: './'`), więc `dist/` można wrzucić na dowolny hosting plików
@@ -232,7 +232,7 @@ i drugi, obok wyniku sesji, po każdym zamkniętym treningu.
 | Zakładka | Adres | Co robi |
 | --- | --- | --- |
 | Dziś | `#/sesja` | Co masz dziś do zrobienia według planu, pasek postaci, przekąska ruchowa i rada dnia; w trakcie — bieżąca sesja. |
-| Treningi | `#/treningi` | 27 gotowych treningów (całe ciało, push/pull/nogi, góra/dół, partie) i własne, z filtrem sprzętu i rodzaju; druga sekcja to atlas 105 ćwiczeń (`#/cwiczenia`). |
+| Treningi | `#/treningi` | 36 gotowych treningów (całe ciało, push/pull/nogi, góra/dół, partie) i własne, z filtrem sprzętu (bez sprzętu, kettlebell, siłownia) i rodzaju; druga sekcja to atlas 109 ćwiczeń (`#/cwiczenia`). |
 | Plan | `#/plan` | Uruchomiony plan: kalendarz terminów, punkty, stopień, dziennik. Bez planu — katalog: plany z celem, własne i klasyczny. |
 | Osiągnięcia | `#/osiagniecia` | Dorobek w liczbach, progi najbliższe zdobycia, 68 rodzin odznak i odznaki każdego zrobionego ćwiczenia. |
 | Profil | `#/profil` | Postać i doświadczenie, twoje liczby, waga i wzrost, obciążenie, przekąski, kroki i cardio, lista zrobionych ćwiczeń i historia treningów z kaloriami. |
@@ -388,7 +388,7 @@ analizę dnia dla wybranego ćwiczenia: ile łącznie, z ilu przekąsek i ile z 
 brakuje do kolejnego progu dnia.
 
 **Ćwiczenie wybiera się pisaniem, nie przewijaniem.** Pole działa jak wyszukiwarka: po wejściu
-pokazuje wszystkie 105 ćwiczeń według polskiego alfabetu (Ł po L, Ś po S), ustawione na tym
+pokazuje wszystkie 109 ćwiczeń według polskiego alfabetu (Ł po L, Ś po S), ustawione na tym
 wybranym, a każda litera zawęża listę. Szuka po początkach słów — „pomp” daje wszystkie pompki,
 „hantle” ćwiczenia z hantlami, „zawias” całą partię — a gdy tak nic nie pasuje, także w środku
 słowa. Ogonki są opcjonalne: „wioslowanie” znajduje „Wiosłowanie”, bo na telefonie tak się
@@ -526,7 +526,7 @@ słów.
 
 ## Atlas i sprzęt
 
-Biblioteka ma **105 ćwiczeń** w siedmiu partiach ruchu: zawias biodrowy, przysiad, ciągnięcie,
+Biblioteka ma **109 ćwiczeń** w siedmiu partiach ruchu: zawias biodrowy, przysiad, ciągnięcie,
 pchanie, całe ciało, core i carry, nogi dodatkowo. Obok pierwotnych dziewiętnastu ćwiczeń
 kettlebellowych stoją teraz sztanga, hantle, maszyny i kalistenika. Atlas filtruje się po sprzęcie.
 
@@ -594,14 +594,14 @@ src/
   types.ts                  wszystkie typy domenowe
   routing.ts                trasy w hashu adresu, pięć zakładek, sekcja atlasu i podstrony
   routing.test.ts           22 testy tras, zakładek, ekranów, treningów, planów, przekąsek i starych adresów
-  data/exercises.ts         biblioteka 105 ćwiczeń, drabiny sprzętu, cztery treningi
-  data/exjokes.ts           dopiski do 105 ćwiczeń i do gotowych treningów
+  data/exercises.ts         biblioteka 109 ćwiczeń, drabiny sprzętu, lista „bez sprzętu”, cztery treningi
+  data/exjokes.ts           dopiski do 109 ćwiczeń i do gotowych treningów
   data/moves.ts             osiemnaście wzorców ruchu jako klatki kluczowe
   data/anim.ts              przypisanie ćwiczeń do wzorców
   data/exercises.test.ts    14 testów spójności biblioteki i drabin
   data/videos.ts            filmy instruktażowe, 4 na ćwiczenie
-  data/plans.ts             54 plany klasyczne (poziom × płeć × częstotliwość) i 10 planów z celem
-  data/workouts.ts          biblioteka 23 treningów: podziały, całe ciało i partie na dwa zestawy sprzętu
+  data/plans.ts             54 plany klasyczne (poziom × płeć × częstotliwość) i 16 planów z celem
+  data/workouts.ts          biblioteka 32 treningów: podziały, całe ciało i partie na trzy zestawy sprzętu
   data/muscles.ts           16 grup mięśni, główne i pomocnicze każdego ćwiczenia, izolacje
   engine/
     math.ts                 wzór Epleya, tonaż, wskaźnik obciążenia w czasie
@@ -619,7 +619,7 @@ src/
     snacks.test.ts          17 testów zapisu, skrótów, granicy z treningiem i liczb przekąsek
     volume.ts               objętość ćwiczenia w dniu, tygodniu i miesiącu kalendarzowym
     design.ts               doradca: serie ułamkowe na partie, kolejność, przegląd treningu i planu
-    design.test.ts          22 testy mięśni, doradcy, biblioteki, planów z celem i tygodnia lżejszego
+    design.test.ts          24 testy mięśni, doradcy, biblioteki, bez sprzętu, planów z celem i tygodnia lżejszego
     energy.ts               kalorie: równania ACSM, tabela roweru z Compendium, profile MET ćwiczeń
     energy.test.ts          23 testy równań, płynności marsz–bieg, kroków, roweru i kalorii z serii
     body.ts                 dziennik wagi, waga obowiązująca w danym dniu, wzrost
@@ -759,7 +759,7 @@ co da się policzyć z listy ćwiczeń, i porównuje z badaniami oraz stanowiska
 gustu — trening z samych przysiadów jest dozwolony, tylko doradca powie, ile z tego to już
 głównie zmęczenie.
 
-**Mięśnie, nie wzorce.** Każde ze 105 ćwiczeń ma główne i pomocnicze mięśnie z szesnastu grup
+**Mięśnie, nie wzorce.** Każde ze 109 ćwiczeń ma główne i pomocnicze mięśnie z szesnastu grup
 (`data/muscles.ts`): klatka, plecy (najszersze i środek), trzy aktony barku, biceps, triceps,
 przedramiona, brzuch, prostowniki, pośladki, czworogłowe, tył uda, przywodziciele i łydki. Serie
 liczą się **ułamkowo**, jak w metaanalizie Pelland i in. (2025): główny mięsień dostaje całą serię,
@@ -794,17 +794,29 @@ wzorce: kolano i biodro. Przycisk „Ułóż kolejność według zasad” przest
 Gotowy trening da się skopiować i zmienić pod siebie. Liczba serii należy do ćwiczenia, nie do
 treningu — kreator mówi to wprost, bo zmiana działa wszędzie tam, gdzie ćwiczenie występuje.
 
-**Biblioteka**: 27 treningów, każdy przechodzi przez doradcę bez uwag — pilnuje tego test. Dwa
-zestawy sprzętu (siłownia oraz kettlebell z masą ciała, który zmieści się w domu), a w każdym
-podziały push/pull/nogi i góra/dół, całe ciało i partie: pośladki, klatka, plecy, barki, ramiona,
-brzuch. Treningi A–D zostały, zmieniła się tylko kolejność: spacer z ciężarem przed podciąganiem
+**Biblioteka**: 36 treningów, każdy przechodzi przez doradcę bez uwag — pilnuje tego test. Trzy
+zestawy sprzętu — bez sprzętu, kettlebell z masą ciała i siłownia — a w każdym całe ciało, podziały
+i partie: pośladki, klatka, plecy, barki, ramiona, brzuch. Treningi A–D zostały, zmieniła się tylko kolejność: spacer z ciężarem przed podciąganiem
 albo pompkami zabierał chwyt ruchowi, któremu był bardziej potrzebny.
 
-**Plany z celem** — dziesięć, na 30, 60 i 90 dni: start od zera, brzuch i core, pośladki (w domu
-i na siłowni), góra/dół z kettlebell i na siłowni, push/pull/nogi, mocna klatka, plecy i postawa,
-siła całego ciała. Każdy daje głównym partiom 10–20 serii tygodniowo, rozkłada je na co najmniej
+**Plany z celem** — szesnaście, na 30, 60 i 90 dni: start od zera, brzuch i core, pośladki (bez
+sprzętu, z kettlebell i na siłowni), góra/dół, push/pull/nogi, mocna klatka, plecy i postawa, siła
+całego ciała i siła z masą ciała. Każdy daje głównym partiom 10–20 serii tygodniowo, rozkłada je na co najmniej
 dwa dni i nie trenuje tej samej partii ciężko dwa dni z rzędu — to też sprawdza test. Plany na 60
 i 90 dni mają tydzień lżejszy (szósty, przy 90 dniach także dwunasty), nigdy ostatni.
+
+**Bez sprzętu znaczy naprawdę bez sprzętu**: podłoga, ściana, krzesło albo kanapa i solidny stół.
+Drążek, guma, kółko i skakanka to już sprzęt, choć mały — lista `NO_EQUIPMENT` w `data/exercises.ts`
+mówi, co się mieści, a test pilnuje, żeby treningi i plany bez sprzętu brały tylko z niej. Na tę
+okazję atlas dostał cztery ćwiczenia, których brakowało: wykrok wsteczny bez obciążenia, przysiad
+bułgarski z nogą na krześle, mostek biodrowy jednonóż i unoszenie ramion w literę Y leżąc (na tył
+barków i dolne kaptury — u ćwiczących z bólem barku bywają słabsze, Kolber i in. 2017). Bez drążka
+jedynym porządnym ciągnięciem jest australijskie podciąganie pod stołem, dlatego zamiast dnia pull
+są treningi góry z wiosłowaniem i literą Y, a biceps pracuje tylko pomocniczo — doradca to zaznacza
+i plany mówią o tym wprost. Progresja idzie powtórzeniami i etapami trudności (pompki, przysiad
+jednonóż, pompki w staniu na rękach), a nie ciężarem. Dziewięć treningów i sześć planów: start
+i brzuch na 30 dni, całe ciało, pośladki oraz góra/dół na 60, siła z masą ciała na 90. W atlasie
+filtr „bez sprzętu” pokazuje 26 takich ćwiczeń.
 
 **Czego się spodziewać — uczciwie.** Każdy plan mówi, co zwykle daje taki czas u zaczynających:
 po 30 dniach głównie siła i technika (mięśnie rosną już po 3–4 tygodniach o kilka procent — Seynnes
@@ -917,7 +929,7 @@ Pięć grup:
 - **Terminy** — zależne od uruchomionego planu: seria w terminie, brak pudła, czyste tygodnie,
   nadrobienia.
 
-**Odznaki ćwiczeń.** Każde ze 105 ćwiczeń ma cztery rodziny: rekord dnia, tygodnia i miesiąca
+**Odznaki ćwiczeń.** Każde ze 109 ćwiczeń ma cztery rodziny: rekord dnia, tygodnia i miesiąca
 kalendarzowego oraz sumę z całej historii — razem 420 rodzin i 2 205 progów. To jedyne odznaki,
 do których przekąska dokłada się na równi z treningiem: pompka przy biurku jest tą samą pompką.
 

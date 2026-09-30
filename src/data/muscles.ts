@@ -139,6 +139,7 @@ export const EX_MUSCLES: Record<ExerciseId, MuscleUse> = {
   rdl_single: u(['dwuglowe', 'posladki'], ['prostowniki', 'brzuch']),
   hipthrust: u(['posladki'], ['dwuglowe']),
   glutebridge: u(['posladki'], ['dwuglowe']),
+  glutebridge1: u(['posladki'], ['dwuglowe', 'brzuch']),
   goodmorning: u(['dwuglowe', 'prostowniki'], ['posladki']),
   hyper: u(['prostowniki', 'posladki'], ['dwuglowe']),
   nordic: u(['dwuglowe'], ['lydki']),
@@ -158,6 +159,8 @@ export const EX_MUSCLES: Record<ExerciseId, MuscleUse> = {
   lunge_walk: u(['czworoglowe', 'posladki'], ['przywodziciele', 'brzuch']),
   pistol: u(['czworoglowe', 'posladki'], ['brzuch']),
   squat_air: u(['czworoglowe', 'posladki']),
+  lunge_bw: u(['czworoglowe', 'posladki'], ['przywodziciele', 'brzuch']),
+  split_bw: u(['czworoglowe', 'posladki'], ['przywodziciele', 'dwuglowe']),
   sissy: u(['czworoglowe']),
   legext: u(['czworoglowe']),
 
@@ -170,6 +173,8 @@ export const EX_MUSCLES: Record<ExerciseId, MuscleUse> = {
   latpulldown: u(['najszersze'], ['biceps', 'plecy-gora']),
   chinup: u(['najszersze'], ['plecy-gora', 'biceps', 'przedramiona']),
   facepull: u(['bark-tyl'], ['plecy-gora']),
+  // Dolne kaptury i tył barku — u ćwiczących z bólem barku bywają słabsze (Kolber i in. 2017).
+  y_raise: u(['bark-tyl', 'plecy-gora'], ['prostowniki']),
   shrug: u(['plecy-gora'], ['przedramiona']),
   pullover: u(['najszersze'], ['klatka', 'triceps']),
   curl_bb: u(['biceps'], ['przedramiona']),
@@ -290,4 +295,6 @@ export const ISOLATION = new Set<ExerciseId>([
   'hyper',
   'pullthrough',
   'glutebridge',
+  'glutebridge1',
+  'y_raise',
 ]);

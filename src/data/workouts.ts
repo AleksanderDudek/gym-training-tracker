@@ -3,8 +3,9 @@ import type { Workout, WorkoutKind } from '../types';
 /**
  * Biblioteka gotowych treningów.
  *
- * Dwa zestawy sprzętu: siłownia (sztanga, hantle, maszyny, wyciągi — kettlebell też się
- * znajdzie) i kettlebell z masą ciała, który zmieści się w domu. W każdym trzy rodziny:
+ * Trzy zestawy sprzętu: bez sprzętu (podłoga, ściana, krzesło i solidny stół), kettlebell
+ * z masą ciała i siłownia (sztanga, hantle, maszyny, wyciągi — kettlebell też się znajdzie).
+ * W każdym trzy rodziny:
  *
  * - **podziały** — push/pull/nogi i góra/dół, do planów na cztery–sześć dni w tygodniu;
  * - **całe ciało** — do planów na dwa–trzy dni, zalecane przez ACSM na początek;
@@ -131,6 +132,86 @@ export const LIBRARY: Workout[] = [
     'gym',
     'Unoszenie nóg, kółko, Pallof press i spacer farmera. Krótki — do dołożenia albo na dzień lżejszy.',
     ['legraise_hang', 'abwheel', 'pallof', 'farmer'],
+  ),
+
+  /*
+   * ---------------- Bez sprzętu ----------------
+   *
+   * Bez drążka ciągnięcia jest mało, więc zamiast osobnego dnia pull są treningi góry
+   * z wiosłowaniem pod stołem i unoszeniem w literę Y. Progresja idzie powtórzeniami
+   * i etapami trudności (pompki, przysiad jednonóż, core), a nie ciężarem.
+   */
+  w(
+    'full-none',
+    'Całe ciało bez sprzętu A',
+    'full',
+    'none',
+    'Przysiad, pompki, wiosłowanie pod stołem, mostek i deska. Podłoga i solidny stół — nic więcej.',
+    ['squat_air', 'pushup', 'row_inverted', 'glutebridge', 'plank'],
+  ),
+  w(
+    'full-none-b',
+    'Całe ciało bez sprzętu B',
+    'full',
+    'none',
+    'Wykrok wsteczny, pompki w podporze przodem, wiosłowanie pod stołem, wyprosty i dead bug.',
+    ['lunge_bw', 'pushup_pike', 'row_inverted', 'hyper', 'deadbug'],
+  ),
+  w(
+    'full-none-c',
+    'Całe ciało bez sprzętu C',
+    'full',
+    'none',
+    'Burpee na rozgrzanie, przysiad bułgarski z nogą na krześle, pompki diamentowe, wiosłowanie i hollow.',
+    ['burpee', 'split_bw', 'pushup_diamond', 'row_inverted', 'y_raise', 'hollow'],
+  ),
+  w(
+    'upper-none',
+    'Góra bez sprzętu',
+    'upper',
+    'none',
+    'Pompki i wiosłowanie pod stołem na zmianę, pompki w podporze, na krześle i litera Y na tył barków.',
+    ['pushup', 'row_inverted', 'pushup_pike', 'dip_bench', 'y_raise'],
+  ),
+  w(
+    'lower-none',
+    'Dół bez sprzętu',
+    'lower',
+    'none',
+    'Przysiad, przysiad bułgarski na krześle, mostek jednonóż, nordic curl ze stopami pod kanapą i łydki.',
+    ['squat_air', 'split_bw', 'glutebridge1', 'nordic', 'calf1'],
+  ),
+  w(
+    'push-none',
+    'Push bez sprzętu',
+    'push',
+    'none',
+    'Cztery rodzaje pompek — klasyczne, w podporze przodem, diamentowe i na krześle. Klatka, barki, triceps.',
+    ['pushup', 'pushup_pike', 'pushup_diamond', 'dip_bench'],
+  ),
+  w(
+    'glutes-none',
+    'Pośladki bez sprzętu',
+    'glutes',
+    'none',
+    'Przysiad bułgarski na krześle, mostek jednonóż, wyprosty i deska bokiem. Pełny trening pośladków na macie.',
+    ['split_bw', 'glutebridge1', 'hyper', 'plank_side'],
+  ),
+  w(
+    'core-none',
+    'Brzuch bez sprzętu',
+    'core',
+    'none',
+    'Dead bug, hollow, praca nad core i deska bokiem. Kwadrans na macie.',
+    ['deadbug', 'core', 'hollow', 'plank_side'],
+  ),
+  w(
+    'legs-none',
+    'Nogi bez sprzętu',
+    'legs',
+    'none',
+    'Wykrok wsteczny, przysiad jednonóż do krzesła, mostek i nordic curl — nogi, które nie potrzebują sztangi.',
+    ['lunge_bw', 'pistol', 'glutebridge', 'nordic', 'calf'],
   ),
 
   /* ---------------- Kettlebell i masa ciała ---------------- */

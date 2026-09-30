@@ -201,8 +201,11 @@ export type WorkoutKind =
   | 'core'
   | 'light';
 
-/** Sprzęt treningu: kettlebell z masą ciała (także w domu) albo pełna siłownia. */
-export type WorkoutGear = 'kb' | 'gym';
+/**
+ * Sprzęt treningu: bez sprzętu (podłoga, ściana, krzesło, stół), kettlebell z masą ciała
+ * albo pełna siłownia.
+ */
+export type WorkoutGear = 'none' | 'kb' | 'gym';
 
 export interface Workout {
   id: string;
