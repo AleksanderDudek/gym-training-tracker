@@ -206,13 +206,14 @@ export const SNACK_EMPTY: readonly string[] = [
 ];
 
 /**
- * Pusty dzień kroków i cardio. Żart idzie z bieżni, roweru i telefonu — nigdy z wagi ani
+ * Pusty dzień kroków i cardio. Żart idzie z bieżni, roweru, parkietu i telefonu — nigdy z wagi ani
  * z jedzenia: obok stoją kalorie i masa ciała, a to najłatwiejsze miejsce, żeby komuś dokuczyć.
  */
 export const CARDIO_EMPTY: readonly string[] = [
   'Telefon liczy kroki po cichu, nawet w drodze po pilota. Szkoda, żeby się marnowały.',
   'Bieżnia: jedyne miejsce, w którym idzie się godzinę i nie gubi drogi.',
   'Rower stacjonarny nigdzie nie jedzie, ale kalorie z niego są jak najbardziej prawdziwe.',
+  'Parkiet czeka. Instruktor już liczy: pięć, sześć, siedem, osiem.',
 ];
 
 /** Awans postaci. Żart o goryla i o stadzie, nigdy o tym, ile komuś brakowało. */

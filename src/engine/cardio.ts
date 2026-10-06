@@ -1,15 +1,16 @@
 import type { AppState, Cardio, CardioInput, CardioSport } from '../types';
 import { heightOf, weightOn } from './body';
-import { STEP_CADENCE, cardioEnergy } from './energy';
+import { DANCE_MET, DANCE_SHARE, STEP_CADENCE, cardioEnergy } from './energy';
 import { daysBetween, mondayOf } from './schedule';
 
 /**
- * Kroki, bieżnia i rower wpisane ręcznie.
+ * Kroki, bieżnia, rower i taniec wpisane ręcznie.
  *
  * Przeglądarka nie ma dostępu do krokomierza telefonu — liczy go system, a strona nie dostaje
  * z niego ani kroku. Zamiast udawać pomiar, aplikacja przyjmuje liczby z urządzenia, które
  * mierzy naprawdę: kroki z telefonu albo zegarka, prędkość i czas z bieżni, prędkość albo moc
- * z roweru. Z nich i z wagi liczą się kalorie.
+ * z roweru, a przy zajęciach tańca — czas i to, ile z niego było tańcem. Z nich i z wagi
+ * liczą się kalorie.
  *
  * Wpisy mieszkają osobno od dziennika treningów, tak jak przekąski: dziennik karmi progresję
  * i kalendarz planu, a spacer nie może podnieść celu przysiadów ani domknąć terminu.
@@ -35,6 +36,9 @@ const within = (v: unknown, r: Range): v is number =>
   typeof v === 'number' && Number.isFinite(v) && v >= r.min && v <= r.max;
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Klucz z listy, a nie z prototypu — `constructor` z importowanego pliku to nie rodzaj tańca. */
+const oneOf = (v: unknown, table: object): boolean => typeof v === 'string' && Object.hasOwn(table, v);
 
 /** Zapisy starsze niż ta funkcja nie mają listy — traktujemy to jak pustą. */
 export const cardioOf = (state: AppState): Cardio[] => state.cardio ?? [];
@@ -66,6 +70,10 @@ export function inputProblem(c: CardioInput): string | null {
     case 'ergo':
       if (!within(c.watts, L.watts)) return `Moc od ${L.watts.min} do ${L.watts.max} W.`;
       return minutes();
+    case 'dance':
+      if (!oneOf(c.style, DANCE_MET)) return 'Wybierz taniec: w parze albo solo.';
+      if (!oneOf(c.mix, DANCE_SHARE)) return 'Wybierz, ile było tańca, a ile tłumaczenia.';
+      return minutes();
     default:
       return 'Nieznany rodzaj ruchu.';
   }
@@ -86,6 +94,8 @@ export function normalize(c: CardioInput): CardioInput {
       return { kind: 'bike', kmh: r1(c.kmh), min: Math.round(c.min) };
     case 'ergo':
       return { kind: 'ergo', watts: Math.round(c.watts), min: Math.round(c.min) };
+    case 'dance':
+      return { kind: 'dance', style: c.style, mix: c.mix, min: Math.round(c.min) };
   }
 }
 
@@ -107,7 +117,7 @@ export const validCardio = (c: unknown): c is Cardio => {
 /**
  * Dopisuje ruch i go zwraca. Kroki to suma dnia z telefonu, więc drugi wpis kroków na ten
  * sam dzień **zastępuje** pierwszy — wieczorem wpisuje się stan licznika, a nie przyrost od
- * południa. Bieżnia i rower to osobne wyjścia, więc się sumują.
+ * południa. Bieżnia, rower i zajęcia tańca to osobne wyjścia, więc się sumują.
  */
 export function addCardio(
   state: AppState,
@@ -191,7 +201,7 @@ export const WHO_WEEK_MIN = 150;
 /** Dzień aktywny: tyle minut, ile wychodzi ze 150 rozłożonych na tydzień. */
 export const ACTIVE_DAY_MIN = 20;
 
-/** Bieżnia albo rower od tylu minut liczą się jako wyjście — krótsze to rozgrzewka. */
+/** Bieżnia, rower albo zajęcia tańca od tylu minut liczą się jako wyjście — krótsze to rozgrzewka. */
 export const SESSION_MIN = 10;
 
 /**
@@ -200,14 +210,23 @@ export const SESSION_MIN = 10;
  */
 const INTENSITY_KG = 75;
 
+/** Mnożnik minuty: intensywna razy dwa, umiarkowana raz, lżejsza niż 3 MET zero. */
+const intensity = (met: number): number => (met >= VIGOROUS_MET ? 2 : met >= MODERATE_MET ? 1 : 0);
+
 /**
  * Minuty ruchu w przeliczeniu na umiarkowany: intensywny razy dwa, lżejszy niż 3 MET zero.
  * Kroki — z nadwyżki ponad 5 000, przy 100 krokach na minutę.
+ *
+ * Z zajęć tańca liczy się sam taniec, z intensywnością tańca, a nie średniej zajęć. Godzina
+ * pół na pół to pół godziny salsy i pół godziny stania — średnia wyszłaby tuż nad progiem
+ * i dała całą godzinę ruchu, a po dorzuceniu tłumaczenia ani minuty. WHO od 2020 roku liczy
+ * każdy ruch, bez minimalnej długości odcinka, więc kawałki tańca między objaśnieniami
+ * wchodzą w całości.
  */
 export function activeMinutes(state: AppState, c: Cardio): number {
   if (c.kind === 'steps') return Math.max(0, c.steps - BASE_STEPS) / STEP_CADENCE;
-  const met = cardioEnergy(c, weightOn(state, c.day) ?? INTENSITY_KG, heightOf(state)).met;
-  return c.min * (met >= VIGOROUS_MET ? 2 : met >= MODERATE_MET ? 1 : 0);
+  if (c.kind === 'dance') return c.min * DANCE_SHARE[c.mix] * intensity(DANCE_MET[c.style]);
+  return c.min * intensity(cardioEnergy(c, weightOn(state, c.day) ?? INTENSITY_KG, heightOf(state)).met);
 }
 
 /** Minuty ruchu na dzień `yyyy-mm-dd`. Dni bez wpisu nie ma w wyniku. */
@@ -236,7 +255,9 @@ export interface CardioStats {
   goalDays: number;
   /** Bieżnia i rower od dziesięciu minut. */
   sessions: number;
-  /** Droga z kroków, bieżni i roweru, w pełnych kilometrach. */
+  /** Zajęcia tańca od dziesięciu minut. */
+  dances: number;
+  /** Droga z kroków, bieżni i roweru, w pełnych kilometrach. Taniec drogi nie ma. */
   km: number;
   /** Tygodnie od poniedziałku do niedzieli ze 150 minutami ruchu. */
   whoWeeks: number;
@@ -250,12 +271,17 @@ export function cardioStats(state: AppState): CardioStats {
   const stepsByDay: Record<string, number> = {};
   let steps = 0;
   let sessions = 0;
+  let dances = 0;
   let km = 0;
   list.forEach((c) => {
     if (c.kind === 'steps') {
       steps += c.steps;
       stepsByDay[c.day] = (stepsByDay[c.day] ?? 0) + c.steps;
-    } else if (c.min >= SESSION_MIN) sessions++;
+    } else if (c.min >= SESSION_MIN) {
+      // Krótsze to rozgrzewka — ani wyjście, ani zajęcia.
+      if (c.kind === 'dance') dances++;
+      else sessions++;
+    }
     // Droga nie zależy od wagi — liczymy ją dla dowolnej, żeby odznaka nie czekała na ważenie.
     km += cardioEnergy(c, INTENSITY_KG, height).km ?? 0;
   });
@@ -280,6 +306,7 @@ export function cardioStats(state: AppState): CardioStats {
     bestDaySteps: Math.max(0, ...Object.values(stepsByDay)),
     goalDays: Object.values(stepsByDay).filter((n) => n >= STEP_GOAL).length,
     sessions,
+    dances,
     km: Math.floor(km),
     whoWeeks: [...perWeek.values()].filter((m) => m >= WHO_WEEK_MIN).length,
     run: best,

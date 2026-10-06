@@ -355,6 +355,19 @@ describe('odznaki kroków i cardio', () => {
     expect(Object.keys(s.award.badges).some((k) => k.startsWith('kroki'))).toBe(false);
   });
 
+  it('zajęcia tańca mają własną rodzinę i dokładają minuty do tygodnia WHO', () => {
+    const s = freshState();
+    // 2026-09-28 to poniedziałek: trzy razy po godzinie tańca w parze bez przerw, 3 × 51 minut.
+    ['2026-09-28', '2026-09-30', '2026-10-02'].forEach((d) =>
+      addCardio(s, { kind: 'dance', style: 'pair', mix: 'full', min: 60 }, d),
+    );
+    const got = syncBadges(s, achCtx(s, null, null, '2026-10-02')).map((h) => h.ach.id);
+    expect(got).toContain('taniec');
+    expect(got).toContain('cardio-who');
+    expect(got).not.toContain('cardio-sesje');
+    expect(got).not.toContain('cardio-dystans');
+  });
+
   it('bieżnia i rower dokładają wyjścia i kilometry', () => {
     const s = freshState();
     addCardio(s, { kind: 'bike', kmh: 25, min: 30 }, day);

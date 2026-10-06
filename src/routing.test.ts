@@ -175,7 +175,7 @@ describe('trasy', () => {
   it('kroki i cardio mają adresy bez zakładki, a formularz mówi adresem, co się wpisuje', () => {
     expect(TABS.some((t) => t.path.includes('cardio'))).toBe(false);
     expect(parseHash(cardioPath())).toEqual({ kind: 'cardio' });
-    (['steps', 'treadmill', 'bike'] as const).forEach((sport) =>
+    (['steps', 'treadmill', 'bike', 'dance'] as const).forEach((sport) =>
       expect(parseHash(cardioAddPath(sport))).toEqual({ kind: 'cardioAdd', sport }),
     );
     expect(cardioAddPath()).toBe('#/cardio/kroki');
@@ -187,6 +187,8 @@ describe('trasy', () => {
     expect(activeTab({ kind: 'cardio' })).toBe('train' as TabKey);
     expect(activeTab({ kind: 'cardioAdd', sport: 'bike' })).toBe('train' as TabKey);
     expect(screenOf({ kind: 'cardioAdd', sport: 'treadmill' }).title).toBe('Bieżnia');
+    expect(parseHash('#/cardio/taniec')).toEqual({ kind: 'cardioAdd', sport: 'dance' });
+    expect(screenOf({ kind: 'cardioAdd', sport: 'dance' }).title).toBe('Taniec');
     expect(isTabRoot(cardioPath())).toBe(false);
   });
 

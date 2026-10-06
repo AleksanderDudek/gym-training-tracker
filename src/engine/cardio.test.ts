@@ -3,6 +3,7 @@ import { freshState } from './plan';
 import {
   ACTIVE_DAY_MIN,
   BASE_STEPS,
+  SESSION_MIN,
   STEP_GOAL,
   WHO_WEEK_MIN,
   activeMinutes,
@@ -142,6 +143,62 @@ describe('wpis ruchu', () => {
     addCardio(s, { kind: 'bike', kmh: 24, min: 30 }, '2026-09-28', at('2026-09-28T10:00:00Z'));
     expect(lastOf(s, 'bike')?.kmh).toBe(24);
     expect(lastOf(s, 'ergo')).toBeNull();
+  });
+});
+
+describe('zajęcia tańca', () => {
+  const day = '2026-10-05';
+
+  it('dwa wyjścia na parkiet tego samego dnia się sumują, jak bieżnia', () => {
+    const s = freshState();
+    addCardio(s, { kind: 'dance', style: 'pair', mix: 'half', min: 60 }, day, at('2026-10-05T17:00:00Z'));
+    addCardio(s, { kind: 'dance', style: 'solo', mix: 'full', min: 45 }, day, at('2026-10-05T19:00:00Z'));
+    expect(cardioOn(s, day).map((c) => c.kind)).toEqual(['dance', 'dance']);
+    expect(sportOf(cardioOn(s, day)[0]!)).toBe('dance');
+    expect(lastOf(s, 'dance')?.style).toBe('solo');
+  });
+
+  it('odrzuca nieznany rodzaj tańca, nieznany podział zajęć i zły czas', () => {
+    const ok = { kind: 'dance', style: 'pair', mix: 'half', min: 60 } as const;
+    expect(inputProblem(ok)).toBeNull();
+    expect(inputProblem({ ...ok, style: 'disco' } as never)).toMatch(/taniec/i);
+    expect(inputProblem({ ...ok, mix: 'all' } as never)).toMatch(/tańca/i);
+    expect(inputProblem({ ...ok, min: 0 })).toMatch(/minut/);
+    // Klucze z prototypu obiektu to nie rodzaj tańca — import pliku nie może ich przemycić.
+    expect(inputProblem({ ...ok, style: 'constructor' } as never)).not.toBeNull();
+    expect(validCardio({ ...ok, style: 'toString', key: 'k', day, at: '2026-10-05T18:00:00.000Z' })).toBe(false);
+    expect(validCardio({ ...ok, key: 'k', day, at: '2026-10-05T18:00:00.000Z' })).toBe(true);
+  });
+
+  it('czas zajęć idzie w pełnych minutach, rodzaj i podział zostają', () => {
+    expect(normalize({ kind: 'dance', style: 'solo', mix: 'talk', min: 59.6 })).toEqual({
+      kind: 'dance',
+      style: 'solo',
+      mix: 'talk',
+      min: 60,
+    });
+  });
+
+  it('minuty ruchu to tylko czas tańca — tłumaczenie się nie liczy, waga też nie', () => {
+    const s = freshState();
+    const full = addCardio(s, { kind: 'dance', style: 'pair', mix: 'full', min: 60 }, day).entry;
+    const half = addCardio(s, { kind: 'dance', style: 'pair', mix: 'half', min: 60 }, day).entry;
+    const talk = addCardio(s, { kind: 'dance', style: 'solo', mix: 'talk', min: 60 }, day).entry;
+    expect(activeMinutes(s, full)).toBeCloseTo(51, 5);
+    expect(activeMinutes(s, half)).toBeCloseTo(30, 5);
+    expect(activeMinutes(s, talk)).toBeCloseTo(15, 5);
+    setBodyWeight(s, 120, '2026-01-01');
+    expect(activeMinutes(s, full)).toBeCloseTo(51, 5);
+  });
+
+  it('zajęcia od dziesięciu minut to osobna statystyka, bez kilometrów i bez wyjść na bieżnię', () => {
+    const s = freshState();
+    addCardio(s, { kind: 'dance', style: 'pair', mix: 'half', min: 90 }, day);
+    addCardio(s, { kind: 'dance', style: 'solo', mix: 'full', min: SESSION_MIN - 1 }, day);
+    const st = cardioStats(s);
+    expect(st.dances).toBe(1);
+    expect(st.sessions).toBe(0);
+    expect(st.km).toBe(0);
   });
 });
 
@@ -322,6 +379,7 @@ describe('statystyki kroków i cardio', () => {
       bestDaySteps: 0,
       goalDays: 0,
       sessions: 0,
+      dances: 0,
       km: 0,
       whoWeeks: 0,
       run: 0,

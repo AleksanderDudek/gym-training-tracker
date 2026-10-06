@@ -81,13 +81,19 @@ export const snackAddPath = (id?: ExerciseId): string =>
   id ? `#/przekaski/${encodeURIComponent(id)}` : '#/przekaski/dodaj';
 
 /**
- * Kroki, bieżnia i rower. Też bez zakładki, z tych samych powodów co przekąski: historia pod
- * `#/cardio` i zapis pod `#/cardio/kroki`, `#/cardio/bieznia`, `#/cardio/rower` — adres mówi,
- * co się wpisuje, więc skrót z ekranu Dziś otwiera od razu właściwy formularz.
+ * Kroki, bieżnia, rower i taniec. Też bez zakładki, z tych samych powodów co przekąski: historia
+ * pod `#/cardio` i zapis pod `#/cardio/kroki`, `#/cardio/bieznia`, `#/cardio/rower`,
+ * `#/cardio/taniec` — adres mówi, co się wpisuje, więc skrót z ekranu Dziś otwiera od razu
+ * właściwy formularz.
  */
 export const cardioPath = (): string => '#/cardio';
 
-const SPORT_SLUG: Record<CardioSport, string> = { steps: 'kroki', treadmill: 'bieznia', bike: 'rower' };
+const SPORT_SLUG: Record<CardioSport, string> = {
+  steps: 'kroki',
+  treadmill: 'bieznia',
+  bike: 'rower',
+  dance: 'taniec',
+};
 
 export const cardioAddPath = (sport: CardioSport = 'steps'): string => `#/cardio/${SPORT_SLUG[sport]}`;
 
@@ -96,7 +102,12 @@ const SPORT_BY_SLUG = Object.fromEntries(
 ) as Record<string, CardioSport>;
 
 /** Nazwa formularza w pasku aplikacji — to, co się wpisuje. */
-export const SPORT_TITLE: Record<CardioSport, string> = { steps: 'Kroki', treadmill: 'Bieżnia', bike: 'Rower' };
+export const SPORT_TITLE: Record<CardioSport, string> = {
+  steps: 'Kroki',
+  treadmill: 'Bieżnia',
+  bike: 'Rower',
+  dance: 'Taniec',
+};
 
 /** Czy od uruchomienia była już jakaś zmiana trasy w aplikacji. */
 let movedInApp = false;

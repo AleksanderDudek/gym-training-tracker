@@ -144,6 +144,14 @@ const ART: Record<string, ReactNode> = {
       <path d="M12 3.5a8.5 8.5 0 0 1 0 17Z" fill="currentColor" stroke="none" />
     </>
   ),
+  // Dwie ósemki na wspólnej belce — taniec bez rysowania tancerza, którego w 25 px nie widać.
+  note: (
+    <>
+      <path d="M9.5 17.5V6.5l10-2.5v11" />
+      <circle cx="7" cy="17.5" r="2.5" />
+      <circle cx="17" cy="15" r="2.5" />
+    </>
+  ),
   trophy: (
     <>
       <path d="M7.5 4h9v4.8a4.5 4.5 0 0 1-9 0V4Z" />

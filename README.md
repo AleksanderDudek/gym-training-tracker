@@ -19,7 +19,7 @@ Pozostałe polecenia:
 npm run build      # produkcyjny build do dist/, z listą plików dla service workera
 npm run preview    # podgląd builda — tu działa też praca offline
 npm run typecheck  # tsc --noEmit
-npm test           # 429 testów silnika, doradcy, kalorii, biblioteki, odznak, ruchu, mimiki, obsady i tras (vitest)
+npm test           # 438 testów silnika, doradcy, kalorii, biblioteki, odznak, ruchu, mimiki, obsady i tras (vitest)
 ```
 
 Build jest w pełni statyczny (`base: './'`), więc `dist/` można wrzucić na dowolny hosting plików
@@ -234,7 +234,7 @@ i drugi, obok wyniku sesji, po każdym zamkniętym treningu.
 | Dziś | `#/sesja` | Co masz dziś do zrobienia według planu, pasek postaci, przekąska ruchowa i rada dnia; w trakcie — bieżąca sesja. |
 | Treningi | `#/treningi` | 36 gotowych treningów (całe ciało, push/pull/nogi, góra/dół, partie) i własne, z filtrem sprzętu (bez sprzętu, kettlebell, siłownia) i rodzaju; druga sekcja to atlas 109 ćwiczeń (`#/cwiczenia`). |
 | Plan | `#/plan` | Uruchomiony plan: kalendarz terminów, punkty, stopień, dziennik. Bez planu — katalog: plany z celem, własne i klasyczny. |
-| Osiągnięcia | `#/osiagniecia` | Dorobek w liczbach, progi najbliższe zdobycia, 68 rodzin odznak i odznaki każdego zrobionego ćwiczenia. |
+| Osiągnięcia | `#/osiagniecia` | Dorobek w liczbach, progi najbliższe zdobycia, 69 rodzin odznak i odznaki każdego zrobionego ćwiczenia. |
 | Profil | `#/profil` | Postać i doświadczenie, twoje liczby, waga i wzrost, obciążenie, przekąski, kroki i cardio, lista zrobionych ćwiczeń i historia treningów z kaloriami. |
 
 Podstrony mają własne adresy i strzałkę wstecz w pasku aplikacji:
@@ -250,7 +250,7 @@ Podstrony mają własne adresy i strzałkę wstecz w pasku aplikacji:
 | Przekąski — dziś, tydzień, historia | `#/przekaski` | Dziś |
 | Zapis przekąski | `#/przekaski/dodaj`, `#/przekaski/<id>` | Dziś |
 | Kroki i cardio — dziś, tydzień, historia, jak liczymy kalorie | `#/cardio` | Dziś |
-| Zapis kroków, bieżni albo roweru | `#/cardio/kroki`, `#/cardio/bieznia`, `#/cardio/rower` | Dziś |
+| Zapis kroków, bieżni, roweru albo zajęć tańca | `#/cardio/kroki`, `#/cardio/bieznia`, `#/cardio/rower`, `#/cardio/taniec` | Dziś |
 | Ćwiczenie — technika i wideo | `#/cwiczenia/<id>` | Treningi |
 | Historia ćwiczenia | `#/profil/<id>` | Profil |
 | Ustawienia | `#/ustawienia` | przycisk w pasku aplikacji |
@@ -425,17 +425,22 @@ aplikacja zainstalowana na ekranie głównym. Akcelerometr strony działa tylko 
 ekranie i otwartej karcie, więc liczyłby wyłącznie spacer z telefonem w dłoni. Zamiast udawać
 pomiar, aplikacja przyjmuje liczby z urządzenia, które mierzy naprawdę, i liczy z nich kalorie.
 
-**Trzy rodzaje wpisu, jedna droga: rodzaj → liczby z wyświetlacza → zapis.**
+**Cztery rodzaje wpisu, jedna droga: rodzaj → liczby z wyświetlacza → zapis.**
 
 - **Kroki** — liczba z całego dnia z telefonu albo zegarka. Drugi wpis kroków na ten sam dzień
   zastępuje pierwszy: wieczorem wpisuje się stan licznika, a nie przyrost od południa.
 - **Bieżnia** — średnia prędkość, czas i nachylenie w procentach (puste znaczy płasko).
 - **Rower** — średnia prędkość z licznika albo, na rowerze stacjonarnym, moc w watach.
   Prędkość na wyświetlaczu roweru stacjonarnego to umowna liczba; waty mówią, ile było pracy.
+- **Taniec** — zajęcia w parze albo solo: czas całych zajęć i to, ile z nich było tańcem.
+  Trzy możliwości słowami z sali: „cały czas taniec” (80–90% ruchu), „pół na pół” (połowa
+  tańca, połowa tłumaczenia) i „dużo tłumaczenia” (20–30% ruchu). Rodzaj i podział podpowiada
+  ostatni wpis, bo ta sama szkoła zwykle uczy tak samo co tydzień.
 
 Dzień wybiera się przełącznikiem „Dziś / Wczoraj / Inny dzień”, bo kroki wpisuje się często
-nazajutrz rano. Bieżnia i rower się sumują — to osobne wyjścia. Pod formularzem stoi uwaga
-o podwójnym liczeniu: marsz na bieżni z telefonem w kieszeni jest już w krokach.
+nazajutrz rano. Bieżnia, rower i taniec się sumują — to osobne wyjścia. Pod formularzem stoi
+uwaga o podwójnym liczeniu: marsz na bieżni z telefonem w kieszeni jest już w krokach, a telefon
+noszony na zajęciach liczy też kroki taneczne.
 
 **Kalorie liczą się już w trakcie pisania**, zanim ktoś naciśnie „Zapisz”, żeby dało się je
 porównać z bieżnią. Podgląd pokazuje dwie liczby: kalorie **aktywne** (ponad spoczynek, to
@@ -451,11 +456,20 @@ wyświetlacz. Aktywne, bo tak ACSM liczy wydatek przy planowaniu ruchu i tak zeg
 | Bieżnia | marsz: 0,1·v + 1,8·v·nachylenie + 3,5; bieg: 0,2·v + 0,9·v·nachylenie + 3,5 | równania ACSM |
 | Rower, prędkość | tabela MET według prędkości, liniowo między środkami przedziałów | Compendium 2024, kody 01018–01060 |
 | Rower, moc | 1,8 · waty · 6,12 / masa + 7 | równanie ACSM dla cykloergometru |
+| Taniec | udział tańca × MET tańca + reszta × 1,5 MET słuchania | Compendium 2024: para 4,8 (03090), solo 5,0 (03010), stanie 1,5 (07041) |
 | Ćwiczenia siłowe | MET rodzaju pracy × czas serii z przerwami | Compendium 2024, m.in. 02052, 02054, 02058 |
 
 Między 6 a 8 km/h bieżnia przechodzi **płynnie** od wzoru na marsz do wzoru na bieg — twarde
 przełączenie dawało skok z 4,8 na 8,6 MET przy jednej dziesiątej km/h. Tabela roweru jest
 połączona liniowo z tego samego powodu. Test pilnuje, żeby żaden krok o 0,1 km/h nie skakał.
+
+**Zajęcia tańca to dwa kawałki: taniec i słuchanie.** Taniec z partnerem bierze wartość salsy
+z partnerem (4,8 MET) — bliżej zajęć w szkole tańca niż towarzyski rekreacyjny (6,0), który
+zakłada taniec bez przerw. Solo bierze kod zajęć baletu, nowoczesnego i jazzu (5,0), najszerszy
+dla tańca bez partnera. Kiedy instruktor tłumaczy, stoi się i przestępuje z nogi na nogę —
+1,5 MET. Do rachunku idą środki przedziałów: 85%, 50% i 25% tańca. Godzina w parze przy 80 kg
+to ≈ 265 kcal ponad spoczynek przy tańcu bez przerw, ≈ 170 pół na pół i ≈ 105 przy dużej
+ilości tłumaczenia. Taniec nie ma drogi, więc nie dokłada kilometrów.
 
 **Kalorie treningu liczą się z serii, nie z zegara sesji.** Zegar mierzy też telefon odłożony
 na godzinę i sesję zamkniętą następnego dnia. Każde ćwiczenie ma profil: MET z Compendium dla
@@ -489,7 +503,12 @@ i nie rusza poziomów ćwiczeń ani planu. Daje za to doświadczenie postaci i w
 
 **Doświadczenie płaci za minuty ruchu, nie za liczby.** Miarą są minuty według zaleceń WHO
 (150–300 tygodniowo): bieżnia i rower od 3 MET to minuty umiarkowane, od 6 MET — podwójne, bo
-tak WHO przelicza bieg na marsz; lżej niż 3 MET to zero. Z kroków liczy się nadwyżka ponad
+tak WHO przelicza bieg na marsz; lżej niż 3 MET to zero. **Z zajęć tańca liczy się sam taniec**,
+z intensywnością tańca, a nie średniej zajęć: godzina pół na pół to 30 minut ruchu
+umiarkowanego. Średnia z tłumaczeniem wyszłaby tuż nad progiem 3 MET i dała całą godzinę, a przy
+dużej ilości tłumaczenia — zero; jedno i drugie mija się z tym, co działo się na sali. WHO od
+2020 roku liczy każdy ruch bez minimalnej długości odcinka, więc kawałki tańca między
+objaśnieniami wchodzą w całości. Z kroków liczy się nadwyżka ponad
 5 000 — tyle robi się bez wychodzenia z domu, poniżej zaczyna się według badań Tudor-Locke
 tryb siedzący — przy 100 krokach na minutę. **Minuta to 1 XP, do 50 dziennie.** Sufit to
 połowa treningu: 50 minut to z nawiązką dzienna porcja z WHO, a spacer ma dokładać, a nie
@@ -498,7 +517,7 @@ sprawdza, więc sufit jest też bezpiecznikiem na zero dopisane przez pomyłkę.
 mówi, ile minut da wpis, karta na ekranie Dziś — ile ich dziś jest i ile dały XP, a ekran kroków
 pokazuje pasek bieżącego tygodnia na tle 150 minut WHO.
 
-**Siedem rodzin odznak w grupie „Kroki i cardio”:**
+**Osiem rodzin odznak w grupie „Kroki i cardio”:**
 
 | Rodzina | Co liczy | Progi |
 | --- | --- | --- |
@@ -506,8 +525,9 @@ pokazuje pasek bieżącego tygodnia na tle 150 minut WHO.
 | Dzień na nogach | najwięcej kroków w jednym dniu | od 5 do 30 tys. |
 | Osiem tysięcy | dni z co najmniej 8 000 kroków | od 1 do 730 dni |
 | Bieżnia i rower | wyjścia od dziesięciu minut | od 1 do 400 |
+| Na parkiecie | zajęcia tańca od dziesięciu minut | od 1 do 200 |
 | Kilometry | droga z kroków, bieżni i roweru na zewnątrz | od 10 do 5 000 km |
-| Tydzień według WHO | tygodnie pn–nd ze 150 minutami ruchu | od 1 do 104 |
+| Tydzień według WHO | tygodnie pn–nd ze 150 minutami ruchu, także z tańca | od 1 do 104 |
 | Dzień po dniu | ciąg dni z rzędu z co najmniej 20 minutami ruchu | od 3 do 365 dni |
 
 Cel dzienny to **8 000 kroków, nie 10 000**: metaanaliza Palucha i in. (Lancet Public Health,
@@ -520,7 +540,7 @@ szybciej temu, kto waży więcej.
 w dół (literówka „90 000” zamiast „9 000”) też cofa progi, których nowa liczba nie uzasadnia.
 Doświadczenie cofa się samo, bo i tak liczy się od zera z wpisów.
 
-Pusty dzień ma żart, jak przekąski — z bieżni, roweru i telefonu, nigdy z wagi ani z jedzenia.
+Pusty dzień ma żart, jak przekąski — z bieżni, roweru, parkietu i telefonu, nigdy z wagi ani z jedzenia.
 Obok stoją kalorie i masa ciała, a to najłatwiejsze miejsce, żeby komuś dokuczyć; test pilnuje
 słów.
 
@@ -620,12 +640,12 @@ src/
     volume.ts               objętość ćwiczenia w dniu, tygodniu i miesiącu kalendarzowym
     design.ts               doradca: serie ułamkowe na partie, kolejność, przegląd treningu i planu
     design.test.ts          24 testy mięśni, doradcy, biblioteki, bez sprzętu, planów z celem i tygodnia lżejszego
-    energy.ts               kalorie: równania ACSM, tabela roweru z Compendium, profile MET ćwiczeń
-    energy.test.ts          23 testy równań, płynności marsz–bieg, kroków, roweru i kalorii z serii
+    energy.ts               kalorie: równania ACSM, tabela roweru i tańca z Compendium, profile MET ćwiczeń
+    energy.test.ts          26 testów równań, płynności marsz–bieg, kroków, roweru, tańca i kalorii z serii
     body.ts                 dziennik wagi, waga obowiązująca w danym dniu, wzrost
-    cardio.ts               kroki, bieżnia i rower: zapis, zakresy, minuty ruchu WHO, statystyki
+    cardio.ts               kroki, bieżnia, rower i taniec: zapis, zakresy, minuty ruchu WHO, statystyki
     burn.ts                 kalorie z zapisów: wpis, trening, ćwiczenie, przekąska, cały dzień
-    cardio.test.ts          27 testów wpisów, wagi w czasie, kalorii i minut ruchu według WHO
+    cardio.test.ts          32 testy wpisów, tańca, wagi w czasie, kalorii i minut ruchu według WHO
     find.ts                 wyszukiwanie ćwiczenia: polski alfabet, ogonki opcjonalne, podświetlenie
     find.test.ts            9 testów kolejności, dopasowania i podświetlenia
     exbadges.ts             odznaki ćwiczeń: cztery rodziny na ruch, progi z objętości sesji
@@ -642,7 +662,7 @@ src/
     progression.test.ts     40 testów silnika progresji
     schedule.test.ts        30 testów kalendarza, przypisania i rotacji
     score.test.ts           15 testów punktacji i dziennika
-    badges.test.ts          33 testy odznak, dorobku, kroków i cardio oraz podpowiedzi
+    badges.test.ts          34 testy odznak, dorobku, kroków, cardio i tańca oraz podpowiedzi
     history.test.ts         14 testów historii ćwiczenia i kierunku zmiany
     metrics.test.ts         40 testów warstwy liczb
   storage/storage.ts        zapis z kolejkowaniem, dwa środowiska
@@ -665,7 +685,7 @@ src/
     Intro.tsx               opcjonalne wprowadzenie, cztery ekrany
     Share.tsx               przycisk udostępniania, obsada blankietu i ścieżka zapasowa
     Snacks.tsx              przekąski ruchowe: karta na ekranie sesji, widok zapisu i historia
-    Cardio.tsx              kroki i cardio: karta, formularz z podglądem kalorii, historia, waga
+    Cardio.tsx              kroki, cardio i taniec: karta, formularz z podglądem kalorii, historia, waga
     Character.tsx           postać: karta w profilu, pasek na ekranie sesji, okno awansu
     ExerciseBadges.tsx      wiersz odznaki ćwiczenia z bieżącym okresem i rekordem
     ExercisePicker.tsx      pole wyboru ćwiczenia z podpowiedziami (wzorzec combobox)
@@ -899,7 +919,7 @@ nie dług do odrobienia — wychodzenie z minusa zniechęca skuteczniej niż cok
 **Osiem stopni**, od „Gościa z ulicy” po „Pomnik za życia” — to stopień w planie, nie poziom postaci. Pierwszy awans wypada po niecałym tygodniu regularnych
 treningów, żeby pierwsza nagroda nie była odległa o miesiąc.
 
-**Odznaki mają progi, nie jeden koniec.** 68 rodzin ogólnych i 398 progów, a do tego po cztery
+**Odznaki mają progi, nie jeden koniec.** 69 rodzin ogólnych i 405 progów, a do tego po cztery
 rodziny na każde ćwiczenie biblioteki (o nich niżej). Rodzina „Powtórzenia" ma dziesięć
 progów od 500 do miliona, „Utrzymany rytm" siedem od czterech tygodni do dwóch lat. Zdobyty próg
 nie kończy tematu, tylko odsłania następny — a pasek postępu mówi, ile brakuje. Zamiast ściany

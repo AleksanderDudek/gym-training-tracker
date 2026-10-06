@@ -1,6 +1,6 @@
 import { EX } from '../data/exercises';
 import { ISOLATION } from '../data/muscles';
-import type { CardioInput, ExerciseId } from '../types';
+import type { CardioInput, DanceMix, DanceStyle, ExerciseId } from '../types';
 
 /**
  * Kalorie z ruchu.
@@ -13,7 +13,7 @@ import type { CardioInput, ExerciseId } from '../types';
  *   z mocą w watach. To te same wzory, z których liczą kalorie same bieżnie i rowery,
  *   więc wynik da się porównać z wyświetlaczem;
  * - **Compendium of Physical Activities 2024** (pacompendium.com) — jazda na rowerze według
- *   prędkości i ćwiczenia siłowe. Kod aktywności stoi przy każdej liczbie.
+ *   prędkości, taniec i ćwiczenia siłowe. Kod aktywności stoi przy każdej liczbie.
  *
  * Aplikacja pokazuje kalorie **aktywne** — ponad to, co ciało spaliłoby w tym czasie, siedząc
  * (MET − 1). Tak liczy ACSM przy planowaniu wydatku energii i tak podaje „energię aktywną”
@@ -125,6 +125,34 @@ export function bikeMet(kmh: number): number {
 export const ergoMet = (watts: number, kg: number): number =>
   ((1.8 * watts * 6.12) / kg + 2 * REST_VO2) / REST_VO2;
 
+/* ---------------- Zajęcia tańca ---------------- */
+
+/**
+ * MET samego tańca, z Compendium 2024. Para — salsa z partnerem (03090); bliżej zajęć w szkole
+ * tańca niż towarzyski rekreacyjny (03042, 6,0), który zakłada taniec bez przerw. Solo —
+ * balet, nowoczesny albo jazz na zajęciach (03010), najszerszy kod dla tańca bez partnera.
+ */
+export const DANCE_MET: Record<DanceStyle, number> = { pair: 4.8, solo: 5.0 };
+
+/**
+ * Część zajęć, która jest tańcem — środki przedziałów: cały czas w ruchu to 80–90%, pół na
+ * pół 50%, dużo tłumaczenia 20–30%. Reszta to słuchanie instruktora i patrzenie, jak pokazuje.
+ */
+export const DANCE_SHARE: Record<DanceMix, number> = { full: 0.85, half: 0.5, talk: 0.25 };
+
+/**
+ * Słuchanie instruktora: stanie z przestępowaniem z nogi na nogę (Compendium 2024, 07041).
+ * Spokojniej niż oddech po interwale (`RECOVERY_MET`), bo tu nie ma długu tlenowego do spłacenia.
+ */
+export const LISTEN_MET = 1.5;
+
+/**
+ * Średni MET zajęć — taniec i słuchanie ważone czasem. Kalorie są liniowe względem MET, więc
+ * to samo, co policzyć oba kawałki osobno i dodać.
+ */
+export const danceMet = (style: DanceStyle, mix: DanceMix): number =>
+  DANCE_SHARE[mix] * DANCE_MET[style] + (1 - DANCE_SHARE[mix]) * LISTEN_MET;
+
 /* ---------------- Ruch wpisany ręcznie ---------------- */
 
 export interface Burn {
@@ -135,7 +163,7 @@ export interface Burn {
   active: number;
   /** Kalorie razem ze spoczynkiem. */
   total: number;
-  /** Droga w km. Rower stacjonarny z mocą jej nie ma. */
+  /** Droga w km. Rower stacjonarny z mocą i taniec jej nie mają. */
   km: number | null;
 }
 
@@ -160,6 +188,8 @@ export function cardioEnergy(c: CardioInput, kg: number, heightCm?: number): Bur
       return burn(bikeMet(c.kmh), kg, c.min * 60, (c.kmh * c.min) / 60);
     case 'ergo':
       return burn(ergoMet(c.watts, kg), kg, c.min * 60, null);
+    case 'dance':
+      return burn(danceMet(c.style, c.mix), kg, c.min * 60, null);
   }
 }
 

@@ -652,7 +652,7 @@ const DEFS: AchDef[] = [
   /*
    * ---------------- Kroki i cardio ----------------
    *
-   * Liczą kroki, kilometry i minuty ruchu, nigdy kalorie. Kalorie rosną z masą ciała, więc
+   * Liczą kroki, kilometry, zajęcia i minuty ruchu, nigdy kalorie. Kalorie rosną z masą ciała, więc
    * odznaka za nie przychodziłaby szybciej temu, kto waży więcej — a waga to ostatnia rzecz,
    * za którą aplikacja ma kogoś nagradzać albo karać.
    */
@@ -704,6 +704,18 @@ const DEFS: AchDef[] = [
     value: (c) => c.metrics.cardio.sessions,
   },
   {
+    id: 'taniec',
+    group: 'cardio',
+    mark: '',
+    art: 'note',
+    name: 'Na parkiecie',
+    desc: 'Zajęcia tańca w parze albo solo trwające co najmniej dziesięć minut.',
+    quip: 'Instruktor liczył do ośmiu. Ty liczysz zajęcia.',
+    unit: 'zajęć',
+    tiers: [1, 5, 10, 25, 50, 100, 200],
+    value: (c) => c.metrics.cardio.dances,
+  },
+  {
     id: 'cardio-dystans',
     group: 'cardio',
     mark: '',
@@ -721,7 +733,7 @@ const DEFS: AchDef[] = [
     mark: '',
     art: 'calendarCheck',
     name: 'Tydzień według WHO',
-    desc: 'Tygodnie od poniedziałku do niedzieli ze 150 minutami ruchu umiarkowanego z kroków, bieżni i roweru. Minuta intensywna liczy się podwójnie.',
+    desc: 'Tygodnie od poniedziałku do niedzieli ze 150 minutami ruchu umiarkowanego z kroków, bieżni, roweru i tańca. Minuta intensywna liczy się podwójnie.',
     quip: 'Zalecenie odhaczone. Rzadki przypadek, gdy urzędowa tabelka ma rację.',
     unit: 'tygodni',
     tiers: [1, 4, 12, 26, 52, 104],
@@ -733,7 +745,7 @@ const DEFS: AchDef[] = [
     mark: '',
     art: 'wave',
     name: 'Dzień po dniu',
-    desc: 'Najdłuższy ciąg dni z rzędu z co najmniej 20 minutami ruchu — z kroków ponad 5 000, bieżni albo roweru.',
+    desc: 'Najdłuższy ciąg dni z rzędu z co najmniej 20 minutami ruchu — z kroków ponad 5 000, bieżni, roweru albo tańca.',
     quip: 'Codziennie kawałek drogi. Suma robi się sama.',
     unit: 'dni',
     tiers: [3, 7, 14, 30, 60, 100, 200, 365],
@@ -853,7 +865,7 @@ export const GROUP_NOTE: Record<Achievement['group'], string> = {
   utrzymanie: 'Nie o to, ile urosło, tylko o to, że nic się nie osypało.',
   przekaski: 'Krótkie serie poza treningiem. Liczy się, jak często — nie ile naraz.',
   cardio:
-    'Kroki, bieżnia i rower wpisane ręcznie. Liczą się kroki, kilometry i minuty ruchu według zaleceń WHO — nie kalorie, bo te rosną razem z wagą.',
+    'Kroki, bieżnia, rower i taniec wpisane ręcznie. Liczą się kroki, kilometry, zajęcia i minuty ruchu według zaleceń WHO — nie kalorie, bo te rosną razem z wagą.',
   terminy: 'Zależne od uruchomionego planu i jego kalendarza.',
   cwiczenia:
     'Każde ćwiczenie ma rekord dnia, tygodnia i miesiąca kalendarzowego oraz sumę — z treningów i przekąsek razem. Widać tylko ruchy, które już robisz.',

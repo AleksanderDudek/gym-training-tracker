@@ -23,7 +23,7 @@ const num = (n: number): string => Math.round(n).toLocaleString('pl-PL');
 
 export const avatarOf = (state: AppState): Avatar => state.cfg.avatar ?? 'gustaw';
 
-/** Ostatni dzień z jakimkolwiek ruchem — treningiem, przekąską, krokami albo cardio. */
+/** Ostatni dzień z jakimkolwiek ruchem — treningiem, przekąską, krokami, cardio albo tańcem. */
 export function lastActiveDay(state: AppState): string | null {
   const days = [
     ...state.log.map((e) => dayKey(e.date)),
@@ -129,7 +129,8 @@ export function CharacterCard({ state, onAvatar }: { state: AppState; onAvatar: 
           <p className="tight">
             <b>Kroki i cardio: {XP.cardioPerMin} XP za minutę ruchu</b>, do {XP.cardioCap} dziennie.
             Minuta intensywna (bieg, szybki rower) liczy się podwójnie, jak w zaleceniach WHO;
-            z kroków liczy się to, co ponad {BASE_STEPS.toLocaleString('pl-PL')}, przy 100 na minutę.
+            z kroków liczy się to, co ponad {BASE_STEPS.toLocaleString('pl-PL')}, przy 100 na minutę,
+            a z zajęć tańca — sam taniec, bez tłumaczenia.
             Sufit to połowa treningu — spacer ma dokładać, a nie zastępować.
           </p>
           <p className="tight">

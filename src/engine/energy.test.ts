@@ -2,9 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { ALL, BUILTIN, EX } from '../data/exercises';
 import {
   BIKE_POINTS,
+  DANCE_MET,
+  DANCE_SHARE,
+  LISTEN_MET,
   activeKcal,
   bikeMet,
   cardioEnergy,
+  danceMet,
   ergoMet,
   profileOf,
   roundKcal,
@@ -132,6 +136,37 @@ describe('bieżnia i rower jako wpis', () => {
   it('rower stacjonarny z mocą nie ma drogi', () => {
     expect(cardioEnergy({ kind: 'ergo', watts: 120, min: 40 }, 75).km).toBeNull();
     expect(cardioEnergy({ kind: 'bike', kmh: 20, min: 60 }, 75).km).toBe(20);
+  });
+});
+
+describe('zajęcia tańca', () => {
+  it('MET zajęć to średnia z tańca i słuchania, ważona tym, ile czasu idzie na taniec', () => {
+    expect(DANCE_MET).toEqual({ pair: 4.8, solo: 5.0 });
+    expect(LISTEN_MET).toBe(1.5);
+    expect(DANCE_SHARE).toEqual({ full: 0.85, half: 0.5, talk: 0.25 });
+    expect(danceMet('pair', 'full')).toBeCloseTo(0.85 * 4.8 + 0.15 * 1.5, 5);
+    expect(danceMet('pair', 'half')).toBeCloseTo(3.15, 5);
+    expect(danceMet('solo', 'talk')).toBeCloseTo(0.25 * 5 + 0.75 * 1.5, 5);
+  });
+
+  it('więcej tłumaczenia to mniej kalorii, a solo spala odrobinę więcej niż para', () => {
+    (['pair', 'solo'] as const).forEach((style) => {
+      expect(danceMet(style, 'full')).toBeGreaterThan(danceMet(style, 'half'));
+      expect(danceMet(style, 'half')).toBeGreaterThan(danceMet(style, 'talk'));
+      // Nawet zajęcia, na których głównie się słucha, spalają więcej niż stanie w miejscu.
+      expect(danceMet(style, 'talk')).toBeGreaterThan(LISTEN_MET);
+    });
+    expect(danceMet('solo', 'full')).toBeGreaterThan(danceMet('pair', 'full'));
+  });
+
+  it('godzina tańca w parze przy 80 kg: od ok. 105 do ok. 265 kcal ponad spoczynek, bez drogi', () => {
+    const at = (mix: 'full' | 'half' | 'talk') => cardioEnergy({ kind: 'dance', style: 'pair', mix, min: 60 }, 80);
+    expect(roundKcal(at('full').active)).toBe(265);
+    expect(roundKcal(at('half').active)).toBe(170);
+    expect(roundKcal(at('talk').active)).toBe(105);
+    expect(at('full').secs).toBe(3600);
+    expect(at('full').km).toBeNull();
+    expect(at('full').total - at('full').active).toBeCloseTo(80, 5);
   });
 });
 

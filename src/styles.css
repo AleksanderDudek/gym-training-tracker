@@ -227,6 +227,8 @@
     line-height:1.25;-webkit-tap-highlight-color:transparent}
   .seg button:active{background:var(--line)}
   .seg button[aria-pressed=true]{background:var(--steel);border-color:var(--steel);color:#fff;font-weight:600}
+  /* Druga linijka opcji — doprecyzowanie, nie osobna etykieta; kolor dziedziczy, żeby kontrast szedł za przyciskiem. */
+  .seg button small{display:block;font-size:11.5px;font-weight:400;margin-top:2px}
 
   /* Reguła celuje w klasę, nie w znacznik: przyciskiem bywa też odnośnik i etykieta pola. */
   .btn{font:inherit;font-weight:600;font-size:15px;padding:13px 18px;min-height:48px;

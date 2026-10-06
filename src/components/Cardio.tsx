@@ -26,15 +26,22 @@ import {
   weekMinutes,
 } from '../engine/cardio';
 import { XP, cardioXp } from '../engine/xp';
-import { RUN_MIN_KMH, STEP_CADENCE, WALK_MAX_KMH, cardioEnergy, roundKcal } from '../engine/energy';
+import {
+  DANCE_SHARE,
+  RUN_MIN_KMH,
+  STEP_CADENCE,
+  WALK_MAX_KMH,
+  cardioEnergy,
+  roundKcal,
+} from '../engine/energy';
 import { CARDIO_EMPTY, daySeed, pick, plural } from '../engine/quips';
 import { addDays, dayKey, weekdayOf } from '../engine/schedule';
 import { cardioAddPath, cardioPath, go, goBack } from '../routing';
 import { Segmented } from './ui';
-import type { AppState, Cardio, CardioInput, CardioSport } from '../types';
+import type { AppState, Cardio, CardioInput, CardioSport, DanceMix, DanceStyle } from '../types';
 
 /**
- * Kroki, bieżnia i rower — ruch mierzony gdzie indziej, wpisywany tutaj.
+ * Kroki, bieżnia, rower i taniec — ruch mierzony gdzie indziej, wpisywany tutaj.
  *
  * Aplikacja w przeglądarce nie dostanie kroków z krokomierza telefonu, więc nie udaje, że
  * je mierzy. Droga jest ta sama co przy przekąskach: rodzaj → liczby z wyświetlacza → zapis,
@@ -63,7 +70,19 @@ export const durText = (secs: number): string => {
 const STEP_FORMS = ['krok', 'kroki', 'kroków'] as const;
 export const stepsText = (n: number): string => `${n.toLocaleString('pl-PL')} ${plural(n, STEP_FORMS)}`;
 
-/** „Bieżnia 6 km/h · 30 min · 3%”, „Rower 140 W · 45 min”, „8 421 kroków”. */
+const DANCE_NAME: Record<DanceStyle, string> = { pair: 'Taniec w parze', solo: 'Taniec solo' };
+
+/**
+ * Podział zajęć słowami użytkownika. Przedziały zamiast jednej liczby, bo tak się to pamięta;
+ * w rachunku stoją ich środki (`DANCE_SHARE`).
+ */
+const MIX: Record<DanceMix, { name: string; share: string; short: string }> = {
+  full: { name: 'Cały czas taniec', share: '80–90% tańca', short: 'cały czas taniec' },
+  half: { name: 'Pół na pół', share: 'połowa tańca', short: 'pół na pół z tłumaczeniem' },
+  talk: { name: 'Dużo tłumaczenia', share: '20–30% tańca', short: 'dużo tłumaczenia' },
+};
+
+/** „Bieżnia 6 km/h · 30 min · 3%”, „Rower 140 W · 45 min”, „8 421 kroków”, „Taniec w parze · 60 min · pół na pół”. */
 export function cardioLabel(c: CardioInput): string {
   switch (c.kind) {
     case 'steps':
@@ -74,6 +93,8 @@ export function cardioLabel(c: CardioInput): string {
       return `Rower ${decimal(c.kmh)} km/h · ${c.min} min`;
     case 'ergo':
       return `Rower ${c.watts} W · ${c.min} min`;
+    case 'dance':
+      return `${DANCE_NAME[c.style]} · ${c.min} min · ${MIX[c.mix].short}`;
   }
 }
 
@@ -140,9 +161,10 @@ const SHORTCUTS: { sport: CardioSport; name: string; sub: string }[] = [
   { sport: 'steps', name: 'Kroki z telefonu', sub: 'liczba z całego dnia' },
   { sport: 'treadmill', name: 'Bieżnia', sub: 'prędkość, czas i nachylenie' },
   { sport: 'bike', name: 'Rower', sub: 'prędkość albo moc i czas' },
+  { sport: 'dance', name: 'Taniec', sub: 'zajęcia w parze albo solo' },
 ];
 
-/** Trzy wejścia do formularza. Po zapisie przycisk mówi, co już dziś jest. */
+/** Wejścia do formularza, po jednym na rodzaj. Po zapisie przycisk mówi, co już dziś jest. */
 function CardioShortcuts({ state, today }: { state: AppState; today: string }) {
   const todays = cardioOn(state, today);
   return (
@@ -206,10 +228,10 @@ export function CardioCard({ state }: { state: AppState }) {
         </>
       ) : (
         <>
-          <h2 className="today-name">Kroki, bieżnia, rower</h2>
+          <h2 className="today-name">Kroki, bieżnia, rower, taniec</h2>
           <p className="tight">
-            Przepisz liczby z telefonu, bieżni albo licznika roweru — kalorie policzę z twojej wagi,
-            a minuty ruchu dadzą doświadczenie postaci i odznaki.
+            Przepisz liczby z telefonu, bieżni albo licznika roweru, a po zajęciach tańca — ich czas.
+            Kalorie policzę z twojej wagi, a minuty ruchu dadzą doświadczenie postaci i odznaki.
           </p>
         </>
       )}
@@ -229,6 +251,7 @@ const SPORTS: { key: CardioSport; label: string }[] = [
   { key: 'steps', label: 'Kroki' },
   { key: 'treadmill', label: 'Bieżnia' },
   { key: 'bike', label: 'Rower' },
+  { key: 'dance', label: 'Taniec' },
 ];
 
 const LEAD: Record<CardioSport, string> = {
@@ -237,13 +260,30 @@ const LEAD: Record<CardioSport, string> = {
   treadmill:
     'Średnia prędkość i czas z wyświetlacza bieżni. Nachylenie w procentach — puste znaczy płasko.',
   bike: 'Na zewnątrz — średnia prędkość z licznika. Na rowerze stacjonarnym wybierz moc: prędkość na jego wyświetlaczu to umowna liczba, a waty mówią, ile naprawdę pracy poszło.',
+  dance:
+    'Czas całych zajęć i to, ile z nich naprawdę tańczysz. Kiedy instruktor tłumaczy i pokazuje, stoisz — dlatego kalorie liczą się z obu części, a minuty ruchu tylko z tańca.',
 };
+
+const DANCE_STYLES: { key: DanceStyle; label: string }[] = [
+  { key: 'pair', label: 'W parze' },
+  { key: 'solo', label: 'Solo' },
+];
+
+const MIX_OPTIONS = (Object.keys(MIX) as DanceMix[]).map((key) => ({
+  key,
+  label: (
+    <>
+      {MIX[key].name}
+      <small>{MIX[key].share}</small>
+    </>
+  ),
+}));
 
 type When = 'today' | 'yesterday' | 'other';
 type Fields = { steps: string; kmh: string; min: string; grade: string; watts: string; kg: string };
 
 /**
- * Zapis kroków, bieżni albo roweru. Rodzaj przychodzi z adresu, ale da się go przełączyć
+ * Zapis kroków, bieżni, roweru albo zajęć tańca. Rodzaj przychodzi z adresu, ale da się go przełączyć
  * na miejscu — bez zmiany adresu, żeby „wstecz” po zapisie wracało tam, skąd ktoś przyszedł,
  * a nie do poprzedniego rodzaju. Pola są puste: podpowiedź mówi tylko, ile było ostatnio.
  */
@@ -267,6 +307,10 @@ export function CardioEntry({
   const [bikeMode, setBikeMode] = useState<'kmh' | 'watts'>(
     lastErgo && (!lastBike || lastErgo.at > lastBike.at) ? 'watts' : 'kmh',
   );
+  // Taniec i podział zajęć z ostatniego wpisu — ta sama szkoła zwykle uczy tak samo co tydzień.
+  const lastDance = lastOf(state, 'dance');
+  const [danceStyle, setDanceStyle] = useState<DanceStyle>(lastDance?.style ?? 'pair');
+  const [danceMix, setDanceMix] = useState<DanceMix>(lastDance?.mix ?? 'half');
   const [when, setWhen] = useState<When>('today');
   const [other, setOther] = useState(addDays(today, -2));
   const [f, setF] = useState<Fields>({ steps: '', kmh: '', min: '', grade: '', watts: '', kg: '' });
@@ -279,22 +323,22 @@ export function CardioEntry({
   const kg = known ?? (validWeight(typedKg) ? typedKg : null);
 
   const filled = (...xs: string[]): boolean => xs.every((x) => x.trim() !== '');
-  const input: CardioInput | null =
-    kind === 'steps'
-      ? filled(f.steps)
-        ? { kind: 'steps', steps: num(f.steps) }
-        : null
-      : kind === 'treadmill'
-        ? filled(f.kmh, f.min)
+  const inputOf = (): CardioInput | null => {
+    switch (kind) {
+      case 'steps':
+        return filled(f.steps) ? { kind: 'steps', steps: num(f.steps) } : null;
+      case 'treadmill':
+        return filled(f.kmh, f.min)
           ? { kind: 'treadmill', kmh: num(f.kmh), min: num(f.min), grade: filled(f.grade) ? num(f.grade) : 0 }
-          : null
-        : bikeMode === 'kmh'
-          ? filled(f.kmh, f.min)
-            ? { kind: 'bike', kmh: num(f.kmh), min: num(f.min) }
-            : null
-          : filled(f.watts, f.min)
-            ? { kind: 'ergo', watts: num(f.watts), min: num(f.min) }
-            : null;
+          : null;
+      case 'bike':
+        if (bikeMode === 'kmh') return filled(f.kmh, f.min) ? { kind: 'bike', kmh: num(f.kmh), min: num(f.min) } : null;
+        return filled(f.watts, f.min) ? { kind: 'ergo', watts: num(f.watts), min: num(f.min) } : null;
+      case 'dance':
+        return filled(f.min) ? { kind: 'dance', style: danceStyle, mix: danceMix, min: num(f.min) } : null;
+    }
+  };
+  const input = inputOf();
   const clean = input ? normalize(input) : null;
   const problem = clean ? inputProblem(clean) : null;
   // Droga i czas nie zależą od wagi, więc bez niej liczymy je dla dowolnej — kalorii wtedy nie pokazujemy.
@@ -309,16 +353,21 @@ export function CardioEntry({
         ? mins
           ? `${mins} min ruchu z nadwyżki ponad ${baseSteps} kroków`
           : `do minut ruchu liczy się to, co ponad ${baseSteps} kroków`
-        : !mins
-          ? 'za lekko na minuty ruchu — to mniej niż 3 MET'
-          : mins > clean.min
-            ? `${mins} min ruchu — intensywnie, więc minuty liczą się podwójnie`
-            : `${mins} min ruchu`;
+        : clean.kind === 'dance'
+          ? mins
+            ? `${mins} min ruchu — liczy się sam taniec, bez tłumaczenia`
+            : 'za mało tańca na pełną minutę ruchu'
+          : !mins
+            ? 'za lekko na minuty ruchu — to mniej niż 3 MET'
+            : mins > clean.min
+              ? `${mins} min ruchu — intensywnie, więc minuty liczą się podwójnie`
+              : `${mins} min ruchu`;
 
   const lastSteps = lastOf(state, 'steps');
   const lastRun = lastOf(state, 'treadmill');
   const hintOf = (v: number | undefined): string => (v === undefined ? '' : `ostatnio ${decimal(v)}`);
-  const lastTimed = kind === 'treadmill' ? lastRun : bikeMode === 'kmh' ? lastBike : lastErgo;
+  const lastTimed =
+    kind === 'dance' ? lastDance : kind === 'treadmill' ? lastRun : bikeMode === 'kmh' ? lastBike : lastErgo;
 
   const save = (e: FormEvent) => {
     e.preventDefault();
@@ -328,7 +377,13 @@ export function CardioEntry({
     }
     if (!clean) {
       onToast(
-        kind === 'steps' ? 'Wpisz liczbę kroków.' : bikeMode === 'watts' && kind === 'bike' ? 'Wpisz moc i czas.' : 'Wpisz prędkość i czas.',
+        kind === 'steps'
+          ? 'Wpisz liczbę kroków.'
+          : kind === 'dance'
+            ? 'Wpisz czas zajęć.'
+            : bikeMode === 'watts' && kind === 'bike'
+              ? 'Wpisz moc i czas.'
+              : 'Wpisz prędkość i czas.',
       );
       return;
     }
@@ -362,6 +417,20 @@ export function CardioEntry({
             value={bikeMode}
             onChange={setBikeMode}
           />
+        )}
+        {kind === 'dance' && (
+          <>
+            <Segmented label="Taniec" options={DANCE_STYLES} value={danceStyle} onChange={setDanceStyle} />
+            <span className="seg-label" aria-hidden="true">
+              ile z zajęć to taniec
+            </span>
+            <Segmented
+              label="Ile z zajęć to taniec, a ile tłumaczenie"
+              options={MIX_OPTIONS}
+              value={danceMix}
+              onChange={setDanceMix}
+            />
+          </>
         )}
         <span className="seg-label" aria-hidden="true">
           kiedy
@@ -399,7 +468,23 @@ export function CardioEntry({
           </label>
         )}
 
-        {kind !== 'steps' && (
+        {kind === 'dance' && (
+          <label className="fld cardio-main">
+            <span>czas całych zajęć, min</span>
+            <input
+              type="number"
+              inputMode="numeric"
+              enterKeyHint="done"
+              min={1}
+              autoFocus
+              placeholder={hintOf(lastDance?.min)}
+              value={f.min}
+              onChange={set('min')}
+            />
+          </label>
+        )}
+
+        {kind !== 'steps' && kind !== 'dance' && (
           <div className="snack-row">
             {kind === 'bike' && bikeMode === 'watts' ? (
               <label className="fld">
@@ -487,6 +572,7 @@ export function CardioEntry({
                 <p className="tight">
                   ponad spoczynek
                   {clean.kind !== 'steps' &&
+                    clean.kind !== 'dance' &&
                     ` · razem ze spoczynkiem ${kcalText(preview.total)} — tę liczbę zwykle pokazuje ${clean.kind === 'treadmill' ? 'bieżnia' : 'rower'}`}
                 </p>
               </>
@@ -496,7 +582,9 @@ export function CardioEntry({
             <p className="tight">
               {clean.kind === 'steps'
                 ? `ok. ${kmText(preview.km ?? 0)} · ok. ${durText(preview.secs)} marszu przy ${STEP_CADENCE} krokach na minutę`
-                : [
+                : clean.kind === 'dance'
+                  ? `ok. ${Math.round(clean.min * DANCE_SHARE[clean.mix])} min tańca, reszta to słuchanie · średnio ${pl(preview.met, 1)} MET`
+                  : [
                     preview.km !== null ? kmText(preview.km) : null,
                     clean.kind === 'treadmill' ? paceWord(clean.kmh) : null,
                     `${pl(preview.met, 1)} MET`,
@@ -518,7 +606,9 @@ export function CardioEntry({
         <p className="hint cardio-foot">
           {kind === 'steps'
             ? 'Spacer na bieżni z telefonem w kieszeni jest już w krokach. Wpisz jedno albo drugie — inaczej ten sam marsz policzy się dwa razy.'
-            : 'Jeśli telefon był przy tobie, jego kroki mogą już zawierać ten ruch. Wpisz jedno albo drugie — inaczej policzy się dwa razy.'}
+            : kind === 'dance'
+              ? 'Telefon w kieszeni liczy też kroki taneczne. Jeśli był przy tobie na zajęciach, kroki z tego dnia mają już kawałek tańca — kalorie wyjdą wtedy trochę za wysoko.'
+              : 'Jeśli telefon był przy tobie, jego kroki mogą już zawierać ten ruch. Wpisz jedno albo drugie — inaczej policzy się dwa razy.'}
         </p>
       </div>
     </>
@@ -595,9 +685,9 @@ export function CardioPage({
     <>
       <div className="wrap">
         <p className="lead">
-          Ruch zmierzony telefonem, zegarkiem, bieżnią albo rowerem — przepisany tutaj. Kalorie liczą
-          się z twojej wagi i są szacunkiem: aktywne, czyli ponad to, co ciało spaliłoby w tym czasie
-          w spoczynku.
+          Ruch zmierzony telefonem, zegarkiem, bieżnią albo rowerem i zajęcia tańca — przepisane tutaj.
+          Kalorie liczą się z twojej wagi i są szacunkiem: aktywne, czyli ponad to, co ciało spaliłoby
+          w tym czasie w spoczynku.
         </p>
       </div>
 
@@ -697,6 +787,13 @@ export function CardioPage({
           dokładniejsze, bo waty to praca, a prędkość zależy od wiatru, opon i roweru.
         </p>
         <p>
+          <b>Taniec.</b> Compendium 2024 daje tańcowi z partnerem 4,8 MET (salsa, kod 03090), a solo
+          — balet, nowoczesny, jazz na zajęciach — 5,0 (kod 03010). Część zajęć to słuchanie
+          instruktora: stanie z przestępowaniem z nogi na nogę, 1,5 MET (kod 07041). „Cały czas
+          taniec” liczy się jako 85% tańca, „pół na pół” — 50%, „dużo tłumaczenia” — 25%. Kalorie idą
+          z obu części, minuty ruchu — tylko z tańca.
+        </p>
+        <p>
           <b>Trening siłowy.</b> Każde ćwiczenie ma wartość MET z Compendium dla swojego rodzaju pracy —
           od 2,8 dla deski do 9,8 dla swingów — a czas liczy się z serii, tempa i typowych przerw, nie
           z zegara sesji. Zegar mierzy też telefon odłożony na godzinę; serie mierzą pracę.
@@ -705,9 +802,10 @@ export function CardioPage({
           <b>Minuty ruchu, doświadczenie i odznaki.</b> WHO zaleca 150–300 minut ruchu umiarkowanego
           tygodniowo, a minutę intensywną liczy za dwie. Tu tak samo: bieżnia i rower od 3 MET to
           minuty umiarkowane, od 6 MET — podwójne. Z kroków liczy się nadwyżka ponad {baseSteps}{' '}
-          (tyle robi się bez wychodzenia z domu), po 100 na minutę. Minuta to {XP.cardioPerMin} XP,
+          (tyle robi się bez wychodzenia z domu), po 100 na minutę, a z zajęć tańca — sam taniec,
+          bez tłumaczenia. Minuta to {XP.cardioPerMin} XP,
           do {XP.cardioCap} dziennie — połowa treningu, bo spacer ma dokładać, a nie zastępować.
-          Odznaki liczą kroki, kilometry i minuty, nigdy kalorie: te rosną razem z wagą.
+          Odznaki liczą kroki, kilometry, zajęcia i minuty, nigdy kalorie: te rosną razem z wagą.
         </p>
         <p className="tight">
           To szacunek. Pomiar tlenu u konkretnej osoby potrafi odbiec o 20–30% — w obie strony.
@@ -772,7 +870,7 @@ export function BodyCard({
       <p className="tight">
         {latest
           ? `Ostatnie ważenie: ${decimal(latest.kg)} kg, ${dm(latest.day)}. Kalorie liczą się z wagi z dnia ruchu, więc nowe ważenie nie zmienia historii.`
-          : 'Z wagi liczą się kalorie kroków, bieżni, roweru i treningów. Wystarczy wpisać ją raz i aktualizować co jakiś czas.'}
+          : 'Z wagi liczą się kalorie kroków, bieżni, roweru, tańca i treningów. Wystarczy wpisać ją raz i aktualizować co jakiś czas.'}
       </p>
       <form className="body-row" onSubmit={saveKg} noValidate>
         <label className="fld">
@@ -840,8 +938,8 @@ export function CardioSummary({ state }: { state: AppState }) {
       <h2>Kroki i cardio</h2>
       <p className="tight">
         {count
-          ? `Ostatnie 7 dni: ${stepsText(steps)}${kcal !== null ? `, ${kcalText(kcal)} z kroków, bieżni i roweru` : ''}. W tym tygodniu ${Math.floor(weekMinutes(state, today))} z ${WHO_WEEK_MIN} minut ruchu zalecanych przez WHO. Wpisów od początku: ${count}.`
-          : 'Jeszcze bez wpisów. Przepisz kroki z telefonu albo wynik z bieżni i roweru — kalorie policzą się z twojej wagi.'}
+          ? `Ostatnie 7 dni: ${stepsText(steps)}${kcal !== null ? `, ${kcalText(kcal)} z kroków, bieżni, roweru i tańca` : ''}. W tym tygodniu ${Math.floor(weekMinutes(state, today))} z ${WHO_WEEK_MIN} minut ruchu zalecanych przez WHO. Wpisów od początku: ${count}.`
+          : 'Jeszcze bez wpisów. Przepisz kroki z telefonu, wynik z bieżni i roweru albo czas zajęć tańca — kalorie policzą się z twojej wagi.'}
       </p>
       <div style={{ marginTop: 10 }}>
         <button className="btn ghost sm" onClick={() => go(count ? cardioPath() : cardioAddPath())}>

@@ -149,11 +149,21 @@ export interface Snack {
 }
 
 /**
- * Ruch liczony gdzie indziej i wpisywany ręcznie: kroki z telefonu albo zegarka, bieżnia
- * i rower. Aplikacja nie mierzy tego sama — przeglądarka nie ma dostępu do krokomierza
- * systemu — więc wpis to liczby przepisane z innego urządzenia, a kalorie liczą się z nich.
+ * Ruch liczony gdzie indziej i wpisywany ręcznie: kroki z telefonu albo zegarka, bieżnia,
+ * rower i zajęcia tańca. Aplikacja nie mierzy tego sama — przeglądarka nie ma dostępu do
+ * krokomierza systemu — więc wpis to liczby przepisane z innego urządzenia albo z zegara
+ * na ścianie sali, a kalorie liczą się z nich.
  */
-export type CardioSport = 'steps' | 'treadmill' | 'bike';
+export type CardioSport = 'steps' | 'treadmill' | 'bike' | 'dance';
+
+/** Taniec w parze (salsa, bachata, towarzyski, swing) albo solo (jazz, nowoczesny, balet, hip-hop). */
+export type DanceStyle = 'pair' | 'solo';
+
+/**
+ * Ile z zajęć to taniec, a ile słuchanie instruktora: cały czas w ruchu, pół na pół albo
+ * głównie tłumaczenie. Zajęć nie mierzy żaden wyświetlacz, ale to każdy pamięta.
+ */
+export type DanceMix = 'full' | 'half' | 'talk';
 
 /**
  * Co przepisano z urządzenia. Rower ma dwa warianty, bo licznik na zewnątrz pokazuje
@@ -164,7 +174,9 @@ export type CardioInput =
   /** Nachylenie w procentach, jak na wyświetlaczu bieżni. Zero to płasko. */
   | { kind: 'treadmill'; kmh: number; min: number; grade: number }
   | { kind: 'bike'; kmh: number; min: number }
-  | { kind: 'ergo'; watts: number; min: number };
+  | { kind: 'ergo'; watts: number; min: number }
+  /** Czas całych zajęć — razem z tłumaczeniem, które `mix` potem odejmuje. */
+  | { kind: 'dance'; style: DanceStyle; mix: DanceMix; min: number };
 
 export type Cardio = CardioInput & {
   /** Klucz do usuwania — jak w przekąskach, ze znacznika czasu i numeru w tej samej ms. */
@@ -357,7 +369,7 @@ export type AchGroup =
   | 'utrzymanie'
   /** Przekąski ruchowe: ile, jak często, jak różnorodnie. */
   | 'przekaski'
-  /** Kroki, bieżnia i rower: suma, dni z celem, tygodnie według WHO, ciąg dni w ruchu. */
+  /** Kroki, bieżnia, rower i taniec: suma, dni z celem, tygodnie według WHO, ciąg dni w ruchu. */
   | 'cardio'
   /** Odznaki pojedynczego ćwiczenia: dzień, tydzień, miesiąc i suma — z treningów i przekąsek. */
   | 'cwiczenia'
@@ -421,7 +433,7 @@ export interface AppState {
   log: LogEntry[];
   /** Przekąski ruchowe — osobno od dziennika, bo dziennik to treningi, a plan liczy się z niego. */
   snacks: Snack[];
-  /** Kroki, bieżnia i rower wpisane ręcznie. Osobno od dziennika — to nie trening siłowy. */
+  /** Kroki, bieżnia, rower i taniec wpisane ręcznie. Osobno od dziennika — to nie trening siłowy. */
   cardio: Cardio[];
   /** Waga ciała w czasie, rosnąco po dniu. Z niej liczą się kalorie. */
   body: BodyWeight[];
@@ -479,9 +491,9 @@ export type Route =
   | { kind: 'planDetail'; id: string }
   /** Kreator planu: nowy albo edycja własnego. */
   | { kind: 'planEdit'; id?: string | undefined }
-  /** Kroki, bieżnia i rower: dziś, tydzień, historia i kalorie. */
+  /** Kroki, bieżnia, rower i taniec: dziś, tydzień, historia i kalorie. */
   | { kind: 'cardio' }
-  /** Zapis kroków, bieżni albo roweru. Bez rodzaju — kroki, bo to najczęstszy wpis. */
+  /** Zapis kroków, bieżni, roweru albo zajęć tańca. Bez rodzaju — kroki, bo to najczęstszy wpis. */
   | { kind: 'cardioAdd'; sport?: CardioSport | undefined };
 
 /** Materiał wideo pokazujący technikę ćwiczenia. */
