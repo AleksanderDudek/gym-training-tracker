@@ -19,7 +19,7 @@ Pozostałe polecenia:
 npm run build      # produkcyjny build do dist/, z listą plików dla service workera
 npm run preview    # podgląd builda — tu działa też praca offline
 npm run typecheck  # tsc --noEmit
-npm test           # 450 testów silnika, doradcy, kalorii, biblioteki, odznak, ruchu, mimiki, obsady, scen i tras (vitest)
+npm test           # 487 testów silnika, doradcy, kalorii, biblioteki, odznak, ruchu, mimiki, obsady, scen, tras i serwera przypomnień (vitest)
 ```
 
 Build jest w pełni statyczny (`base: './'`), więc `dist/` można wrzucić na dowolny hosting plików
@@ -657,6 +657,8 @@ src/
   data/scenes.ts            sceny ilustracji: 36 treningów, 16 planów z celem, 3 poziomy i własne
   engine/
     math.ts                 wzór Epleya, tonaż, wskaźnik obciążenia w czasie
+    reminders.ts            lista przypomnień na 21 dni: trening z planu o 7:30, ruch o 19:30
+    reminders.test.ts       11 testów list, godzin, dnia lokalnego i kontraktu z serwerem
     plan.ts                 stan początkowy, recepta na dziś, mieszane obciążenie
     progression.ts          silnik: ocena sesji, awanse, przejścia, regres, przerwy
     hints.ts                teksty podpowiedzi i wyjaśnień
@@ -730,13 +732,24 @@ src/
     cast.test.ts            17 testów obsady, pasm, blankietu, miny postaci i rady dnia
     Achievements.tsx        zakładka osiągnięć: dorobek w liczbach i odznaki z progami
     VideoEmbed.tsx          odtwarzacz YouTube ładowany dopiero po kliknięciu
+    Reminders.tsx           karta przypomnień w ustawieniach: zgoda, rano i wieczorem
+  push.ts                   przypomnienia w przeglądarce: zgoda, subskrypcja Web Push, wysyłka listy
+  push.test.ts              5 testów stanu przypomnień na telefonie i klucza serwera
   App.tsx                   spina stan i widoki
   main.tsx                  punkt wejścia i rejestracja service workera
+server/push/                serwer przypomnień (Cloudflare Worker, cron co 5 minut, baza D1)
+  webpush.ts                szyfrowanie RFC 8291 i podpis VAPID na samym WebCrypto
+  schedule.ts               co komu wysłać: czas lokalny, okno 90 minut, raz dziennie
+  api.ts                    zapis i wypisanie subskrypcji, walidacja, przebieg crona
+  store.ts                  subskrypcje w D1 albo w pamięci
+  worker.ts                 punkt wejścia Workera
+  *.test.ts                 20 testów: wektor RFC, token VAPID, harmonogram, API i cron
+  README.md                 wdrożenie krok po kroku
 scripts/
   precache.mjs              po buildzie: wersja i lista plików do sw.js
 public/
   manifest.webmanifest      manifest aplikacji do zainstalowania
-  sw.js                     service worker: praca offline
+  sw.js                     service worker: praca offline i powiadomienia
   icons/                    ikony: zwykłe, maskowalna, iOS i wektorowa
   styles.css                arkusz stylów
   styles.contrast.test.ts   8 testów kontrastu tokenów, liczonych wprost z arkusza
@@ -1272,6 +1285,32 @@ nie opuszczają przeglądarki, więc offline brakowało dotąd tylko samej aplik
 
 Sprawdzone w Chrome na wersji produkcyjnej: service worker przejmuje stronę, manifest i ikony się
 ładują, a po odcięciu sieci zaraz po pierwszej wizycie aplikacja otwiera się w całości.
+
+## Przypomnienia
+
+Rano o 7:30 — w dni, w które plan ma trening („Dziś trening: Trening A”). Wieczorem o 19:30 —
+codziennie, żeby wpisać kroki, bieżnię, rower albo taniec z całego dnia. Godziny według zegara
+telefonu, na Androidzie i na iPhonie. Włącza się je w Ustawieniach, każde osobno.
+
+**Dlaczego potrzebny jest serwer.** Strona nie umie zaplanować powiadomienia na 7:30. API, które
+miało to robić (Notification Triggers), wycofano z Chrome, Safari nigdy go nie miał, a iOS
+usypia aplikację w tle — żaden zegar w JavaScripcie nie dotrwa do rana. Działa tylko Web Push:
+o czasie wysyła serwer, a telefon pokazuje. Na iPhonie od iOS 16.4 i tylko w aplikacji dodanej
+do ekranu początkowego; karta mówi wtedy wprost, jak ją dodać.
+
+**Serwer nic nie wie o treningach.** Aplikacja sama układa listę gotowych przypomnień na trzy
+tygodnie i przysyła ją przy każdym otwarciu; serwer (`server/push`, Cloudflare Worker z cronem
+co 5 minut) tylko pilnuje zegara. Dostaje adres powiadomień telefonu, strefę czasową i teksty
+— bez planu, historii i danych o człowieku. Gdy ktoś przestaje otwierać aplikację, przypomnienia
+same się kończą. Konta nie ma: subskrypcję zna tylko telefon, który ją założył.
+
+**Zgoda dopiero po stuknięciu** w „Włącz przypomnienia”, nigdy przy starcie aplikacji —
+pytanie bez kontekstu przeglądarki karzą wyciszeniem, a ludzie odmawiają, zanim wiedzą, o co
+chodzi. Teksty przypomnień zapraszają, nie naciskają, i nie mają rodzaju gramatycznego, bo
+dostaje je i Gustaw, i Gosia — pilnuje tego test.
+
+Wdrożenie serwera i dwie zmienne w GitHubie (`PUSH_API`, `VAPID_PUBLIC_KEY`): `server/push/README.md`.
+Bez nich karty przypomnień nie ma, a aplikacja działa jak dotąd.
 
 ## Publikacja
 

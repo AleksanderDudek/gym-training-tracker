@@ -2,3 +2,7 @@ node_modules
 dist
 *.local
 tsconfig.tsbuildinfo
+
+# Serwer przypomnień: klucz prywatny VAPID i pliki robocze wranglera
+server/push/vapid-private.jwk.json
+server/push/.wrangler

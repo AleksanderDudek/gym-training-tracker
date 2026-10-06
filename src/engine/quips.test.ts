@@ -9,6 +9,8 @@ import {
   SAVED,
   SNACK_EMPTY,
   CARDIO_EMPTY,
+  REMINDER_EVENING,
+  REMINDER_MORNING,
   SNACK_SAVED,
   daySeed,
   massJoke,
@@ -118,7 +120,7 @@ describe('porównania czasu i powtórzeń', () => {
 
 describe('zestawy tekstów', () => {
   it('każdy zestaw ma z czego losować i nie powtarza się w środku', () => {
-    [CHEERS, SAVED, REST, LATE, EMPTY_SHELF, LOADING, SNACK_SAVED, SNACK_EMPTY, CARDIO_EMPTY, LEVEL_UP].forEach((list) => {
+    [CHEERS, SAVED, REST, LATE, EMPTY_SHELF, LOADING, SNACK_SAVED, SNACK_EMPTY, CARDIO_EMPTY, LEVEL_UP, REMINDER_MORNING, REMINDER_EVENING].forEach((list) => {
       expect(list.length).toBeGreaterThanOrEqual(3);
       expect(new Set(list).size).toBe(list.length);
       list.forEach((t) => expect(t.length).toBeGreaterThan(12));
@@ -139,6 +141,15 @@ describe('zestawy tekstów', () => {
     CARDIO_EMPTY.forEach((t) => {
       expect(t).not.toMatch(SHAMING);
       expect(t).not.toMatch(/wag[aię]|kilo|brzuch|boczk|tłuszcz|jedzeni|pączk|ciast|dieta|schudn|gruby|chud/i);
+    });
+  });
+
+  it('przypomnienia zapraszają, nie naciskają — telefon i tak już zadzwonił', () => {
+    [...REMINDER_MORNING, ...REMINDER_EVENING].forEach((t) => {
+      expect(t).not.toMatch(SHAMING);
+      expect(t).not.toMatch(/musisz|koniecznie|nie zapomnij|wstyd|leń|wymówk|wreszcie|znowu/i);
+      // Bez czasowników w rodzaju męskim albo żeńskim: przypomnienie dostaje Gustaw i Gosia.
+      expect(t).not.toMatch(/(łeś|łaś)(?![a-ząćęłńóśźż])/i);
     });
   });
 

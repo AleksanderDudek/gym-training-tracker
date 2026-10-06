@@ -115,3 +115,48 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(staleWhileRevalidate(request));
   }
 });
+
+/*
+ * Przypomnienia (Web Push). Treść przychodzi zaszyfrowana z serwera przypomnień (`server/push`)
+ * i jest gotowa do pokazania — service worker nie liczy niczego sam. Każde `push` musi
+ * skończyć się powiadomieniem: Chrome inaczej pokazuje własne „strona zaktualizowana w tle”,
+ * a Safari po kilku cichych wiadomościach odbiera subskrypcję.
+ */
+self.addEventListener('push', (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {
+    data = { body: event.data ? event.data.text() : '' };
+  }
+  // Tylko trasy aplikacji — powiadomienie nie otwiera cudzych stron.
+  const url = typeof data.url === 'string' && /^#\/[\w/-]*$/.test(data.url) ? data.url : '#/sesja';
+  event.waitUntil(
+    self.registration.showNotification(data.title || 'GYM TRACKER', {
+      body: data.body || '',
+      icon: './icons/icon-192.png',
+      // Ten sam rodzaj zastępuje poprzednie powiadomienie zamiast piętrzyć je w szufladzie.
+      tag: data.tag || 'gym-tracker',
+      lang: 'pl',
+      data: { url },
+    }),
+  );
+});
+
+/** Stuknięcie otwiera aplikację na właściwym ekranie — w oknie, które już jest, jeśli jest. */
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = new URL(`./${event.notification.data?.url || '#/sesja'}`, self.registration.scope).href;
+  event.waitUntil(
+    (async () => {
+      const wins = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+      const open = wins.find((c) => c.url.startsWith(self.registration.scope));
+      if (open) {
+        await open.focus();
+        if ('navigate' in open) await open.navigate(target).catch(() => undefined);
+        return;
+      }
+      await self.clients.openWindow(target);
+    })(),
+  );
+});

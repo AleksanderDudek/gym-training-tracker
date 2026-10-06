@@ -1,0 +1,21 @@
+# Serwer przypomnień GYM TRACKERA — Cloudflare Worker z cronem i bazą D1.
+# Wdrożenie krok po kroku: README.md w tym katalogu.
+name = "gym-tracker-push"
+main = "worker.ts"
+compatibility_date = "2026-10-01"
+
+# Co pięć minut: przypomnienie wychodzi najpóźniej kilka minut po swojej godzinie.
+[triggers]
+crons = ["*/5 * * * *"]
+
+[vars]
+# Klucz publiczny VAPID — wpisuje go `node keys.mjs`. Prywatny idzie do sekretów, nie tutaj.
+VAPID_PUBLIC_KEY = ""
+VAPID_SUBJECT = "https://aleksanderdudek.github.io/gym-training-tracker/"
+ALLOWED_ORIGINS = "https://aleksanderdudek.github.io,http://localhost:5173,http://localhost:4173"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "gym-tracker-push"
+# Identyfikator z `npx wrangler d1 create gym-tracker-push`.
+database_id = "WPISZ-ID-BAZY"

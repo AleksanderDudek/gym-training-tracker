@@ -53,9 +53,11 @@ import type {
   PlanOptions,
   PlanTemplate,
   ReadyKey,
+  ReminderPrefs,
   SetResult,
   Workout,
 } from './types';
+import { pushConfigured, syncReminders } from './push';
 
 const clone = (s: AppState): AppState => JSON.parse(JSON.stringify(s)) as AppState;
 
@@ -92,6 +94,9 @@ function restoreExtras(next: AppState, saved: Partial<AppState>): void {
     next.supportSnooze = saved.supportSnooze;
   if (next.cfg.avatar !== undefined && next.cfg.avatar !== 'gustaw' && next.cfg.avatar !== 'gosia')
     delete next.cfg.avatar;
+  const r = next.cfg.reminders;
+  if (r !== undefined && (typeof r !== 'object' || typeof r.morning !== 'boolean' || typeof r.evening !== 'boolean'))
+    delete next.cfg.reminders;
 }
 
 const isDay = (n: unknown): boolean => Number.isInteger(n) && (n as number) >= 1 && (n as number) <= 7;
@@ -202,6 +207,23 @@ export default function App() {
     setState(next);
     void queueSave(next, setSaveBroken);
   }, []);
+
+  // Lista przypomnień na serwerze idzie za stanem: po zmianie planu albo zapisanym treningu
+  // i po powrocie do aplikacji następnego dnia. Bez serwera w buildzie, bez zgody albo bez
+  // zmian w liście nic nie wychodzi do sieci.
+  useEffect(() => {
+    if (!state || !pushConfigured()) return;
+    const sync = () => void syncReminders(state);
+    const t = window.setTimeout(sync, 2000);
+    const back = () => {
+      if (document.visibilityState === 'visible') sync();
+    };
+    document.addEventListener('visibilitychange', back);
+    return () => {
+      window.clearTimeout(t);
+      document.removeEventListener('visibilitychange', back);
+    };
+  }, [state]);
 
   if (!state) return <div className="empty">{pick(LOADING, daySeed())}</div>;
 
@@ -646,6 +668,12 @@ export default function App() {
   };
 
   /* ---------- ustawienia i dane ---------- */
+
+  const setReminders = (r: ReminderPrefs) => {
+    const next = clone(state);
+    next.cfg.reminders = r;
+    commit(next);
+  };
 
   const setWeights = (list: number[]) => {
     if (list.length < 2) {
@@ -1154,6 +1182,8 @@ export default function App() {
       {view === 'set' && (
         <SettingsView
           state={state}
+          onReminders={setReminders}
+          onToast={setToastMsg}
           onIntro={() => setReplayIntro(true)}
           onWeights={setWeights}
           onStartWeight={setStartWeight}

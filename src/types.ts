@@ -424,6 +424,11 @@ export interface AppState {
     avatar?: 'gustaw' | 'gosia';
     /** Wzrost w cm — tylko do długości kroku. Brak oznacza przeciętne 170 cm. */
     height?: number;
+    /**
+     * Które przypomnienia wysyłać, gdy na tym telefonie są włączone. Sama subskrypcja należy
+     * do urządzenia i w zapisie jej nie ma — import danych na innym telefonie przenosi tylko wybór.
+     */
+    reminders?: ReminderPrefs;
   };
   prog: Record<ExerciseId, Progress>;
   workouts: Workout[];
@@ -446,6 +451,12 @@ export interface AppState {
   introSeen?: string;
   /** Do którego dnia (`yyyy-mm-dd`, bez niego) schowany jest pasek wsparcia na górze. */
   supportSnooze?: string;
+}
+
+/** Przypomnienia: rano w dni treningu z planu, wieczorem o krokach i ruchu z dnia. */
+export interface ReminderPrefs {
+  morning: boolean;
+  evening: boolean;
 }
 
 /** Pojedyncza zmiana poziomu po zamkniętym treningu. */

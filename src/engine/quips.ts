@@ -216,6 +216,28 @@ export const CARDIO_EMPTY: readonly string[] = [
   'Parkiet czeka. Instruktor już liczy: pięć, sześć, siedem, osiem.',
 ];
 
+/**
+ * Poranne przypomnienie w dniu treningu z planu. Zaproszenie, nie rozkaz: o 7:30 ktoś jeszcze
+ * pije kawę, a trening może zrobić wieczorem — liczy się dzień, nie godzina.
+ */
+export const REMINDER_MORNING: readonly string[] = [
+  'Plan ma dziś termin. Zrobiony do północy liczy się w pełni.',
+  'Siwy już grzeje kawę. Trening poczeka, aż wypijesz swoją.',
+  'Dziś dzień treningu. Ciężary leżą tam, gdzie zawsze — cierpliwe jak trener.',
+  'Termin na dziś. Jeden trening bliżej końca planu.',
+];
+
+/**
+ * Wieczorne przypomnienie o krokach i ruchu z dnia. Pyta o liczby z telefonu i zegarka,
+ * nigdy o to, czy ktoś się ruszał — dzień bez ruchu też jest dniem.
+ */
+export const REMINDER_EVENING: readonly string[] = [
+  'Ile kroków pokazuje telefon? Wpisz je, a minuty ruchu i XP policzą się same.',
+  'Bieżnia, rower, taniec? Minuta wpisu — kalorie i odznaki zrobią resztę.',
+  'Przepisz kroki z dzisiaj, zanim licznik w telefonie wyzeruje się o północy.',
+  'Krótki wpis na koniec dnia: kroki z telefonu i to, co było poza treningiem.',
+];
+
 /** Awans postaci. Żart o goryla i o stadzie, nigdy o tym, ile komuś brakowało. */
 export const LEVEL_UP: readonly string[] = [
   'Grzbiet jeszcze nie srebrny, ale ambicje już tak.',

@@ -11,8 +11,9 @@ import {
 import { acwr } from '../engine/math';
 import { P, exercisesByGroup } from '../engine/plan';
 import { ExerciseCard } from './ExerciseCard';
+import { RemindersCard } from './Reminders';
 import { SupportLine } from './Support';
-import type { AppState, EffortKey, ExerciseId, ReadyKey, SetResult, Workout } from '../types';
+import type { AppState, EffortKey, ExerciseId, ReadyKey, ReminderPrefs, SetResult, Workout } from '../types';
 
 /* ---------------- Sesja ---------------- */
 
@@ -146,8 +147,12 @@ export function SettingsView({
   onReset,
   onRecalibrate,
   onIntro,
+  onReminders,
+  onToast,
 }: {
   state: AppState;
+  onReminders: (p: ReminderPrefs) => void;
+  onToast: (m: string) => void;
   onWeights: (list: number[]) => void;
   onStartWeight: (id: ExerciseId, w: number) => void;
   onExport: () => void;
@@ -161,6 +166,8 @@ export function SettingsView({
 
   return (
     <>
+      <RemindersCard state={state} onPrefs={onReminders} onToast={onToast} />
+
       <div className="grp">
         <h2>Dostępne kettlebelle</h2>
         <p>
