@@ -70,6 +70,35 @@ function Prop({ at, gear, spot }: { at: Pt | null; gear: Gear; spot: PropSpot })
 const line = (a: Pt, b: Pt): string => polyline([a, b]);
 const limb = (a: Pt, b: Pt, c: Pt): string => polyline([a, b, c]);
 
+/**
+ * Budowa sylwetki. W atlasie manekin stoi sam w kadrze 160×150 i ma pokazać technikę, więc
+ * kreska jest szczupła. W scenie do karty treningu albo planu (`SceneArt`) ten sam ruch
+ * zajmuje połowę obrazka szerokości telefonu, obok stoi popiersie kibica — przy szczupłej
+ * kresce goryl wyglądałby przy nim jak patyczak. Wersja sceniczna ma kończyny półtora raza
+ * grubsze i głowę 1,4 raza większą, tak jak w ilustracjach systemu projektowego.
+ */
+export type Build = 'atlas' | 'scene';
+
+const BUILD: Record<
+  Build,
+  {
+    arm: number;
+    armFar: number;
+    legFar: number;
+    torso: number;
+    shirt: number;
+    leg: number;
+    foot: number;
+    hand: number;
+    head: number;
+    /** Przy większej głowie kropelki potu odsuwają się od niej, żeby nie wpaść na kontur. */
+    sweat: number;
+  }
+> = {
+  atlas: { arm: 10, armFar: 8, legFar: 8, torso: 17, shirt: 13, leg: 9, foot: 5, hand: 4.6, head: 1, sweat: 1 },
+  scene: { arm: 15, armFar: 12, legFar: 11, torso: 25, shirt: 19, leg: 12, foot: 7, hand: 6.4, head: 1.4, sweat: 1.08 },
+};
+
 /** Kończyna z konturem: najpierw gruba kreska `--ink`, na niej sierść. */
 function Fur({ d, w }: { d: string; w: number }) {
   return (
@@ -90,17 +119,21 @@ function GorillaHead({
   angle,
   effort,
   who,
+  scale = 1,
 }: {
   at: Pt;
   angle: number;
   effort: number;
   who: 'gustaw' | 'gosia';
+  /** Powiększenie wokół środka głowy — w scenie głowa musi być czytelna z daleka. */
+  scale?: number;
 }) {
   const f = face(effort);
   const { x, y } = at;
   const browY = y - 4.6;
+  const grow = scale === 1 ? '' : ` translate(${x} ${y}) scale(${scale}) translate(${-x} ${-y})`;
   return (
-    <g transform={`rotate(${angle.toFixed(1)} ${x.toFixed(1)} ${y.toFixed(1)})`}>
+    <g transform={`rotate(${angle.toFixed(1)} ${x.toFixed(1)} ${y.toFixed(1)})${grow}`}>
       {who === 'gosia' && (
         <g>
           <circle cx={x - 3} cy={y - 13} r={4.2} fill="var(--fur)" stroke="var(--ink)" strokeWidth="1.8" />
@@ -136,12 +169,12 @@ function GorillaHead({
  * sylwetka, która wyraźnie się męczy, jest zabawniejsza i lepiej pokazuje, gdzie wysiłek
  * jest największy. Pojawiają się tylko w okolicach dołu ruchu i tylko tam, gdzie jest ciężko.
  */
-function Sweat({ at, effort }: { at: Pt; effort: number }) {
+function Sweat({ at, effort, spread = 1 }: { at: Pt; effort: number; spread?: number }) {
   if (effort <= 0.05) return null;
   const drops = [
-    { dx: -14, dy: -6 },
-    { dx: 13, dy: -9 },
-    { dx: -18, dy: 4 },
+    { dx: -14 * spread, dy: -6 },
+    { dx: 13 * spread, dy: -9 * spread },
+    { dx: -18 * spread, dy: 4 * spread },
   ];
   return (
     <g className="mq-sweat" opacity={Math.min(1, effort)}>
@@ -168,6 +201,7 @@ export function Mannequin({
   phase,
   size = 168,
   who = 'gustaw',
+  build = 'atlas',
 }: {
   move: MoveName;
   gear: Gear;
@@ -175,6 +209,7 @@ export function Mannequin({
   size?: number;
   /** Kto pokazuje ruch. Gosia jest rysowana nieco drobniej, jak w reszcie obsady. */
   who?: 'gustaw' | 'gosia';
+  build?: Build;
 }) {
   const m = MOVES[move];
   const s = skeleton(sampleCycle(m.frames, phase));
@@ -186,6 +221,9 @@ export function Mannequin({
   // Gosia rysowana drobniej, tak samo jak w popiersiach obsady; koszulka trzyma kolor postaci.
   const k = who === 'gosia' ? 0.9 : 1;
   const top = who === 'gustaw' ? 'var(--c-blue)' : 'var(--c-green)';
+  const b = BUILD[build];
+  // Ławka i drążek w scenie stoją na piaskowym tle, na którym cienka linia `--line` ginie.
+  const sceneCls = build === 'scene' ? 'mq-scene strong' : 'mq-scene';
 
   return (
     <svg
@@ -198,31 +236,31 @@ export function Mannequin({
     >
       <line className="mq-ground" x1="10" y1={STAGE.ground} x2={STAGE.w - 10} y2={STAGE.ground} />
       {m.scene === 'bench' && (
-        <g className="mq-scene">
+        <g className={sceneCls}>
           <rect x="30" y="100" width="76" height="8" rx="2" />
           <line x1="44" y1="108" x2="44" y2={STAGE.ground} />
           <line x1="96" y1="108" x2="96" y2={STAGE.ground} />
         </g>
       )}
       {m.scene === 'bar' && (
-        <g className="mq-scene">
+        <g className={sceneCls}>
           <line x1="34" y1="6" x2="122" y2="6" strokeWidth="4" />
         </g>
       )}
       {/* Dalsza ręka i noga przygaszone kryciem — to głębia, nie stan interfejsu. */}
       <g opacity="0.55">
-        <Fur d={limb(s.neck, s.elbowF, s.wristF)} w={8 * k} />
-        <Fur d={limb(s.hip, s.kneeF, s.ankleF)} w={8 * k} />
+        <Fur d={limb(s.neck, s.elbowF, s.wristF)} w={b.armFar * k} />
+        <Fur d={limb(s.hip, s.kneeF, s.ankleF)} w={b.legFar * k} />
       </g>
-      <Fur d={line(s.hip, s.neck)} w={17 * k} />
-      <path d={line(s.hip, s.neck)} stroke={top} strokeWidth={13 * k} strokeLinecap="round" fill="none" />
-      <Fur d={limb(s.hip, s.kneeN, s.ankleN)} w={9 * k} />
-      <Fur d={line(s.ankleN, s.toeN)} w={5} />
-      <GorillaHead at={s.head} angle={headAngle(s)} effort={effort} who={who} />
-      <Fur d={limb(s.neck, s.elbowN, s.wristN)} w={10 * k} />
-      <circle cx={s.wristN.x} cy={s.wristN.y} r={4.6 * k} fill="var(--hide)" stroke="var(--ink)" strokeWidth="1.6" />
+      <Fur d={line(s.hip, s.neck)} w={b.torso * k} />
+      <path d={line(s.hip, s.neck)} stroke={top} strokeWidth={b.shirt * k} strokeLinecap="round" fill="none" />
+      <Fur d={limb(s.hip, s.kneeN, s.ankleN)} w={b.leg * k} />
+      <Fur d={line(s.ankleN, s.toeN)} w={b.foot} />
+      <GorillaHead at={s.head} angle={headAngle(s)} effort={effort} who={who} scale={b.head} />
+      <Fur d={limb(s.neck, s.elbowN, s.wristN)} w={b.arm * k} />
+      <circle cx={s.wristN.x} cy={s.wristN.y} r={b.hand * k} fill="var(--hide)" stroke="var(--ink)" strokeWidth="1.6" />
       <Prop at={prop} gear={gear} spot={m.prop} />
-      <Sweat at={s.head} effort={effort} />
+      <Sweat at={s.head} effort={effort} spread={b.sweat} />
     </svg>
   );
 }

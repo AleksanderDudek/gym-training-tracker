@@ -19,7 +19,7 @@ Pozostałe polecenia:
 npm run build      # produkcyjny build do dist/, z listą plików dla service workera
 npm run preview    # podgląd builda — tu działa też praca offline
 npm run typecheck  # tsc --noEmit
-npm test           # 438 testów silnika, doradcy, kalorii, biblioteki, odznak, ruchu, mimiki, obsady i tras (vitest)
+npm test           # 450 testów silnika, doradcy, kalorii, biblioteki, odznak, ruchu, mimiki, obsady, scen i tras (vitest)
 ```
 
 Build jest w pełni statyczny (`base: './'`), więc `dist/` można wrzucić na dowolny hosting plików
@@ -51,8 +51,9 @@ obsady to jedna lista, nie dwie. Jedyny kolor spoza obsady to złoto wsparcia �
 odznaki, liczba, nazwa — stoi obok niej napisany słowem, więc nic nie ginie przy wyłączonych
 obrazkach ani przy czytniku ekranu. Radość rośnie razem z pasmem (`BAND_MOOD`: 0 tęsknota →
 5 euforia), a nie skacze. Siwy tylko doradza i wspiera — nigdy nie beszta i o nic nie błaga.
-Jedna postać na ekran i nigdy w trakcie serii. Wyjątkiem jest blankiet do wpisu — to nie ekran,
-tylko dokument z dwoma portretami w narożnikach (o nim niżej, w części o tonie).
+Jedna postać na ekran i nigdy w trakcie serii. Wyjątki są dwa: blankiet do wpisu — to nie ekran,
+tylko dokument z dwoma portretami w narożnikach (o nim niżej, w części o tonie) — i ilustracje
+kart treningów i planów, w których obsada gra scenkę, a nie mówi do użytkownika.
 
 **Twoja postać to Gustaw albo Gosia** — do wyboru w profilu. Rośnie razem z punktami
 doświadczenia, od „Świeżo z dżungli” po srebrny grzbiet (o tym niżej, w części o postaci).
@@ -60,6 +61,36 @@ doświadczenia, od „Świeżo z dżungli” po srebrny grzbiet (o tym niżej, w
 Kto gdzie stoi: ostrzeżenie mówi Siwy (spokojna rada), dobra wiadomość to radość podopiecznego,
 pusta lista to tęsknota, stoper ma kibica, który męczy się w ostatniej jednej trzeciej podchodu,
 a okno kasowania danych — trenera, bo to on pilnuje, żeby nikt nie skasował sobie roku pracy.
+
+## Ilustracje treningów i planów
+
+Każdy trening i każdy plan ma zabawną scenkę z obsadą — z systemu projektowego (`WorkoutArt`,
+`PlanArt`, grupy zasobów „Workout art” i „Plan art”). Tło według sprzętu (mieszkanie, mieszkanie
+z kettlebell, siłownia), wykonawca w ruchu z silnika póz, kibic w popiersiu, jeden gag i dymek:
+Gustaw robi przysiad ze sztangą, a Gosia patrzy z przerażeniem na schody — „A potem schody…”.
+W planach zawsze stoi Trener Siwy, a kartka kalendarza w rogu mówi 30, 60 albo 90 DNI. Plany
+klasyczne mają scenę na poziom, a własne treningi i plany — wspólną.
+
+- **Gdzie:** na karcie treningu i planu nad tytułem (Treningi, katalog planów, plan klasyczny),
+  na całą szerokość pod paskiem aplikacji w podglądzie treningu, w podglądzie planu,
+  w konfiguratorze planu klasycznego (scena idzie za wybranym poziomem) i na zakładce Plan.
+- **Format 2:1**, szerokość treści karty: 332, 362 i 402 px na telefonach 360, 390 i 430 px,
+  najwyżej 612 px na komputerze.
+- **SVG, nie PNG.** System ma też eksporty PNG 1200×600 — 57 plików, razem ok. 5 MB. W aplikacji
+  ta sama scena rysuje się z kodu: zero zapytań, działa offline bez dokładania megabajtów do
+  pamięci service workera, jest ostra przy DPR 3 i bierze kolory z tokenów. PNG zostają do
+  udostępnień poza aplikacją.
+- **Na obrazku nie ma informacji.** Tytuł, dane i przyciski są w HTML-u, a dymek powtarza się
+  w tekście zastępczym, więc czytnik ekranu dostaje ten sam żart.
+- Manekin w scenie ma **budowę sceniczną** (`build="scene"`): kończyny półtora raza grubsze,
+  głowa 1,4 raza większa. W atlasie stoi sam w kadrze, więc zostaje szczupły; w scenie obok
+  popiersia kibica wyglądałby jak patyczak.
+
+Test pilnuje, żeby tabela scen trzymała się aplikacji: każdy trening z biblioteki i każdy plan
+z celem ma swoją scenę, kalendarz pokazuje długość planu, tło pasuje do sprzętu, miny pasują do
+postaci, dymek mieści się w kadrze i powtarza w tekście zastępczym, a każdy obrazek na liście
+przycina się własnym `clipPath`. Test tła złapał jedną rzecz z systemu: „Siła z masą ciała —
+90 dni” to plan bez sprzętu, a miała w tle kettlebell — w aplikacji stoi w mieszkaniu bez niego.
 
 ## Ton
 
@@ -623,6 +654,7 @@ src/
   data/plans.ts             54 plany klasyczne (poziom × płeć × częstotliwość) i 16 planów z celem
   data/workouts.ts          biblioteka 32 treningów: podziały, całe ciało i partie na trzy zestawy sprzętu
   data/muscles.ts           16 grup mięśni, główne i pomocnicze każdego ćwiczenia, izolacje
+  data/scenes.ts            sceny ilustracji: 36 treningów, 16 planów z celem, 3 poziomy i własne
   engine/
     math.ts                 wzór Epleya, tonaż, wskaźnik obciążenia w czasie
     plan.ts                 stan początkowy, recepta na dziś, mieszane obciążenie
@@ -681,7 +713,9 @@ src/
     BadgeArt.tsx            medale odznak: tworzywa, piktogramy, pasma progów
     Celebrate.tsx           moment zdobycia — medal, promienie, konfetti
     icons.tsx               ikony nawigacji
-    Mannequin.tsx           postać wykonująca ruch i jej zegar
+    Mannequin.tsx           postać wykonująca ruch i jej zegar, w budowie atlasu i sceny
+    SceneArt.tsx            ilustracje kart treningów i planów 2:1 z systemu projektowego
+    scenes.test.ts          12 testów zgodności scen z biblioteką, sprzętem, dymkiem i obrazkiem
     Intro.tsx               opcjonalne wprowadzenie, cztery ekrany
     Share.tsx               przycisk udostępniania, obsada blankietu i ścieżka zapasowa
     Snacks.tsx              przekąski ruchowe: karta na ekranie sesji, widok zapisu i historia
@@ -1188,8 +1222,8 @@ badania nad roztrenowaniem pokazują, że nawet po 12 tygodniach przerwy siła s
 
 Paleta, obsada i reguły kontrastu mają jedno źródło poza kodem: system projektowy GYM TRACKER
 (artefakt „Design System”), zbudowany z tego repozytorium i rozwinięty o rzeczy, których w nim
-nie było. Ten kierunek — z systemu do kodu — dotyczy trzech rzeczy: poprawek kontrastu,
-obsady goryli i baneru z radą dnia. Reszta poszła w drugą stronę: tokeny, komponenty i teksty
+nie było. Ten kierunek — z systemu do kodu — dotyczy czterech rzeczy: poprawek kontrastu,
+obsady goryli, baneru z radą dnia i ilustracji treningów i planów. Reszta poszła w drugą stronę: tokeny, komponenty i teksty
 system wziął stąd.
 
 Czego z systemu **nie** ma w aplikacji i dlaczego:
@@ -1203,6 +1237,9 @@ Czego z systemu **nie** ma w aplikacji i dlaczego:
   zamiast ją zastępować.
 - **Popiersia w plikach SVG i PNG** — obsada jest komponentem, a nie zestawem obrazków, więc
   nie ma czego kopiować do paczki. Grafiki poza aplikacją bierze się z systemu.
+- **Ilustracje treningów i planów w PNG** — z tego samego powodu: scena jest komponentem
+  (`SceneArt.tsx`), a 57 plików po ok. 90 kB to 5 MB w pamięci service workera za obrazki,
+  które kod rysuje w kilku kilobajtach.
 
 ## Aplikacja do zainstalowania (PWA)
 

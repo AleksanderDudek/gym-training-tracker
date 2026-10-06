@@ -11,6 +11,7 @@ import { exercisePath, go, goBack, planPath, workoutEditPath, workoutNewPath, wo
 import { kcalText } from './Cardio';
 import { Chips, DesignNotes, MuscleBars, SectionSwitch } from './Design';
 import { ExercisePicker } from './ExercisePicker';
+import { WorkoutArt } from './SceneArt';
 import { EmptyState, Segmented } from './ui';
 import { SupportLine } from './Support';
 import type { AppState, ExerciseId, Workout, WorkoutGear, WorkoutKind } from '../types';
@@ -99,6 +100,7 @@ function WorkoutCard({
   const top = r.loads.slice(0, 3).map((l) => lower(MUSCLE_NAME[l.muscle]));
   return (
     <div className={`grp wcard${planned ? ' today' : ''}`}>
+      <WorkoutArt id={w.id} />
       {planned && <div className="today-tag">Dziś według planu</div>}
       <h2 className="today-name">{w.name}</h2>
       <p className="wmeta">{metaLine(state, w, r.secs)}</p>
@@ -238,6 +240,9 @@ export function WorkoutPreview({
 
   return (
     <>
+      <div className="scene-hero">
+        <WorkoutArt id={w.id} />
+      </div>
       <div className="wrap">
         <h2 className="ex-h">{w.name}</h2>
         <p className="wmeta">{metaLine(state, w, r.secs)}</p>

@@ -21,6 +21,7 @@ import type { Snapshot } from '../engine/snapshot';
 import { Segmented } from './ui';
 import { SupportLine } from './Support';
 import { PlanCatalog } from './Plans';
+import { PlanArt } from './SceneArt';
 import { PLANS_PATH, go } from '../routing';
 import type {
   AppState,
@@ -87,6 +88,10 @@ export function Catalogue({
 
   return (
     <>
+      {/* Scena idzie za wybranym poziomem — od zera, podstawowy, mocny. */}
+      <div className="scene-hero">
+        <PlanArt plan={t} />
+      </div>
       <div className="wrap">
         <p className="lead">
           Dwanaście tygodni rozpisane na konkretne dni. Aplikacja pilnuje terminów: liczy
@@ -440,6 +445,9 @@ function ActivePlanView({
 
   return (
     <>
+      <div className="scene-hero">
+        <PlanArt plan={template} />
+      </div>
       <div className="wrap">
         <h2>{template.name}</h2>
         <p className="lead">

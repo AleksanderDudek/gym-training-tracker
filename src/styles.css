@@ -640,6 +640,8 @@
   .mq-scrub input{width:100%;min-height:44px}
   .mq-scene *{fill:none;stroke:var(--line);stroke-width:3;stroke-linecap:round}
   .mq-scene rect{fill:var(--line);stroke:none}
+  .mq-scene.strong *{stroke:var(--edge)}
+  .mq-scene.strong rect{fill:var(--edge)}
 
   /* ---------------- Udostępnianie i wsparcie ---------------- */
 
@@ -917,6 +919,18 @@
   .chips + .seg,.seg + .chips{margin-top:10px}
 
   .wcard h2.today-name{margin-bottom:2px}
+  /* Ilustracje treningów i planów z systemu projektowego: 2:1, szerokość treści karty —
+     332 / 362 / 402 px na telefonach 360 / 390 / 430, najwyżej 612 px. Piaskowe tło stoi,
+     zanim SVG się narysuje, żeby karta nie mrugała bielą. Na podstronie obraz idzie na całą
+     szerokość kolumny pod paskiem aplikacji. */
+  .scene-art{display:block;width:100%;height:auto;aspect-ratio:2/1;border:1px solid var(--line);
+    border-radius:var(--r);background:var(--c-sand)}
+  .wcard .scene-art{margin:0 0 12px}
+  .scene-hero{margin-bottom:12px}
+  /* Pierwsza na stronie dochodzi do paska aplikacji — bez pasa tła nad obrazem. Zakładki mają
+     przed treścią miejsce na baner; puste się nie liczy, z banerem obraz stoi pod nim. */
+  .page > .scene-hero:first-child,.page > .wrap:empty:first-child + .scene-hero{margin-top:-14px}
+  .scene-hero .scene-art{border-radius:0;border-left:0;border-right:0}
   .wmeta{font-family:var(--display);font-size:13.5px;color:var(--c-blue-ink);margin:0 0 6px}
   .grp p.warnline,p.warnline{color:var(--warn)}
   .wex .h-date{min-width:18px;text-align:right;color:var(--ink-soft)}

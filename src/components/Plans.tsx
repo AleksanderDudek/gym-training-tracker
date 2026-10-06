@@ -23,6 +23,7 @@ import {
   workoutPath,
 } from '../routing';
 import { Chips, DesignNotes, WeeklyBars } from './Design';
+import { PlanArt } from './SceneArt';
 import { GEAR_FILTER, GEAR_WORKOUT, allWorkouts } from './Workouts';
 import { EmptyState, Segmented } from './ui';
 import type { AppState, PlanLevel, PlanOptions, PlanPolicy, PlanTemplate, Sex, WorkoutGear } from '../types';
@@ -58,6 +59,7 @@ function planMeta(t: PlanTemplate): string {
 function PlanCard({ t, active }: { t: PlanTemplate; active: boolean }) {
   return (
     <div className={`grp wcard${active ? ' today' : ''}`}>
+      <PlanArt plan={t} />
       {active && <div className="today-tag">Twój plan teraz</div>}
       <h2 className="today-name">{t.name}</h2>
       <p className="wmeta">{planMeta(t)}</p>
@@ -72,6 +74,9 @@ function PlanCard({ t, active }: { t: PlanTemplate; active: boolean }) {
 }
 
 type Length = 'all' | '30' | '60' | '90';
+
+/** Karta planu klasycznego w katalogu: scena poziomu podstawowego — środek drabiny, regularność. */
+const CLASSIC_CARD = { id: 'classic', kind: 'classic', level: 'base' } as const;
 
 /** Katalog planów. Na górze plany z celem, potem własne i konfigurator klasyczny. */
 export function PlanCatalog({ state }: { state: AppState }) {
@@ -130,7 +135,8 @@ export function PlanCatalog({ state }: { state: AppState }) {
       </div>
 
       <div className="sect-label">Plan klasyczny z kettlebell</div>
-      <div className="grp">
+      <div className="grp wcard">
+        <PlanArt plan={CLASSIC_CARD} />
         <p className="tight">
           Dwanaście tygodni na treningach A–D, z doborem poziomu, płci i liczby treningów w tygodniu
           od dwóch do siedmiu. Pierwszy plan tej aplikacji — dalej działa jak dotąd.
@@ -292,6 +298,9 @@ export function PlanDetail({
 
   return (
     <>
+      <div className="scene-hero">
+        <PlanArt plan={t} />
+      </div>
       <div className="wrap">
         <h2 className="ex-h">{t.name}</h2>
         <p className="wmeta">{planMeta(t)}</p>
