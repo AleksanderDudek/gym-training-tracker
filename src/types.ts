@@ -224,6 +224,12 @@ export type WorkoutKind =
  */
 export type WorkoutGear = 'none' | 'kb' | 'gym';
 
+/**
+ * Profil: trening ogólnorozwojowy z akcentem na jeden cel — podciąganie, chwyt, piłka nożna,
+ * bieganie, padel i tenis albo zdrowe plecy.
+ */
+export type ProfileKey = 'podciaganie' | 'chwyt' | 'pilka' | 'bieganie' | 'padel' | 'plecy';
+
 export interface Workout {
   id: string;
   name: string;
@@ -237,6 +243,8 @@ export interface Workout {
   gear?: WorkoutGear;
   /** Jedno–dwa zdania: dla kogo i po co. */
   desc?: string;
+  /** Trening z profilu — ogólnorozwojowy z akcentem. */
+  profile?: ProfileKey;
 }
 
 export interface Notice {
@@ -284,6 +292,8 @@ export interface PlanTemplate {
   gear?: WorkoutGear;
   /** Etykieta długości („30 dni”) — tygodnie i tak liczą się z `weeks`. */
   days?: number;
+  /** Plan ogólnorozwojowy z profilem. */
+  profile?: ProfileKey;
 }
 
 /** Co się dzieje z treningiem, którego termin przepadł. */

@@ -172,6 +172,7 @@ export const EX_MUSCLES: Record<ExerciseId, MuscleUse> = {
   row_inverted: u(['plecy-gora', 'najszersze'], ['biceps', 'bark-tyl', 'brzuch']),
   latpulldown: u(['najszersze'], ['biceps', 'plecy-gora']),
   chinup: u(['najszersze'], ['plecy-gora', 'biceps', 'przedramiona']),
+  dead_hang: u(['przedramiona'], ['najszersze', 'plecy-gora']),
   facepull: u(['bark-tyl'], ['plecy-gora']),
   // Dolne kaptury i tył barku — u ćwiczących z bólem barku bywają słabsze (Kolber i in. 2017).
   y_raise: u(['bark-tyl', 'plecy-gora'], ['prostowniki']),

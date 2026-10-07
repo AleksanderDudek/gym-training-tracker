@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { BUILTIN, EX, ex } from '../data/exercises';
 import { OWN_WORKOUT_JOKES, WORKOUT_JOKES } from '../data/exjokes';
 import { EX_MUSCLES, MUSCLE_NAME } from '../data/muscles';
-import { GOAL_PLANS } from '../data/plans';
+import { GOAL_PLANS, PROFILE_PLANS } from '../data/plans';
 import { plannedBurn } from '../engine/burn';
 import { KIND_LABEL, RULES, dose, reviewWorkout } from '../engine/design';
 import { planLabel } from '../engine/plan';
@@ -40,9 +40,9 @@ export const GEAR_FILTER: { key: 'all' | WorkoutGear; label: string }[] = [
 
 const EX_FORMS = ['ćwiczenie', 'ćwiczenia', 'ćwiczeń'] as const;
 
-type Group = 'all' | 'full' | 'split' | 'ul' | 'part' | 'own';
+type Group = 'all' | 'full' | 'split' | 'ul' | 'part' | 'profile' | 'own';
 
-const GROUP_OF: Record<WorkoutKind, Exclude<Group, 'all' | 'own'>> = {
+const GROUP_OF: Record<WorkoutKind, Exclude<Group, 'all' | 'own' | 'profile'>> = {
   full: 'full',
   light: 'full',
   push: 'split',
@@ -64,6 +64,7 @@ const GROUPS: { key: Group; label: string }[] = [
   { key: 'split', label: 'Push · pull · nogi' },
   { key: 'ul', label: 'Góra · dół' },
   { key: 'part', label: 'Partie' },
+  { key: 'profile', label: 'Z profilem' },
   { key: 'own', label: 'Twoje' },
 ];
 
@@ -138,6 +139,10 @@ export function WorkoutLibrary({
   const shown = allWorkouts(state).filter((w) => {
     const own = isOwn(w);
     if (group === 'own') return own;
+    // Treningi profili są wariantami całego ciała — trzydzieści dwa warianty na liście
+    // wszystkich zakryłyby resztę, więc mają własną grupę.
+    if (group === 'profile') return !!w.profile && (gear === 'all' || w.gear === gear);
+    if (w.profile) return false;
     if (group !== 'all' && (!w.kind || GROUP_OF[w.kind] !== group)) return false;
     // Własne treningi nie mają przypisanego sprzętu — widać je przy każdym filtrze sprzętu.
     return gear === 'all' || own || w.gear === gear;
@@ -240,7 +245,7 @@ export function WorkoutPreview({
   const own = isOwn(w);
   const ids = w.items.map((i) => i.ex);
   const r = reviewWorkout(state, ids, w.kind, w.items.map((i) => !!i.pair));
-  const plans = [...GOAL_PLANS, ...(state.plans ?? [])].filter((p) => p.cycle.includes(w.id));
+  const plans = [...GOAL_PLANS, ...PROFILE_PLANS, ...(state.plans ?? [])].filter((p) => p.cycle.includes(w.id));
 
   return (
     <>

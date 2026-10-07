@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import {
   GOAL_PLANS,
+  PROFILE_PLANS,
   LEVELS,
   LEVEL_DESC,
   LEVEL_LABEL,
@@ -27,7 +28,10 @@ import { PlanArt } from './SceneArt';
 import { HealthNote } from './Health';
 import { GEAR_FILTER, GEAR_WORKOUT, allWorkouts } from './Workouts';
 import { EmptyState, Segmented } from './ui';
-import type { AppState, PlanLevel, PlanOptions, PlanPolicy, PlanTemplate, Sex, WorkoutGear } from '../types';
+import type { AppState, PlanLevel, PlanOptions, PlanPolicy, PlanTemplate, ProfileKey, Sex, WorkoutGear } from '../types';
+import { PROFILES, PROFILE_KEYS } from '../data/profiles';
+import { EX } from '../data/exercises';
+import { snackAddPath } from '../routing';
 
 /**
  * Plany: katalog (z celem, własne i klasyczny), podgląd z doradcą i startem oraz kreator
@@ -88,6 +92,8 @@ export function PlanCatalog({ state }: { state: AppState }) {
     (t) => (len === 'all' || String(t.days) === len) && (gear === 'all' || t.gear === gear),
   );
   const own = state.plans ?? [];
+  const [prof, setProf] = useState<ProfileKey | ''>('');
+  const profiled = PROFILE_PLANS.filter((t) => t.profile === prof && (gear === 'all' || t.gear === gear));
 
   return (
     <>
@@ -122,6 +128,29 @@ export function PlanCatalog({ state }: { state: AppState }) {
           <p className="tight">Żaden plan nie pasuje do filtrów.</p>
         </div>
       )}
+
+      <div className="sect-label">Ogólnorozwojowe z profilem</div>
+      <div className="grp">
+        <p className="tight">
+          Całe ciało trzy razy w tygodniu przez 60 dni, z akcentem na to, co uprawiasz albo chcesz
+          poprawić: ćwiczenie priorytetowe na początku, dwa dodatki na końcu i przekąski między
+          treningami. Sprzęt wybierasz filtrem wyżej.
+        </p>
+        <Chips
+          label="Profil"
+          value={prof}
+          onChange={setProf}
+          options={PROFILE_KEYS.map((k) => ({ key: k, label: PROFILES[k].name }))}
+        />
+        {prof && !profiled.length && (
+          <p className="tight" style={{ marginTop: 8 }}>
+            {PROFILES[prof].name} potrzebuje drążka albo ciężaru — wybierz kettlebell albo siłownię.
+          </p>
+        )}
+      </div>
+      {profiled.map((t) => (
+        <PlanCard key={t.id} t={t} active={t.id === active} />
+      ))}
 
       <div className="sect-label">Twoje plany</div>
       {own.map((t) => (
@@ -324,6 +353,24 @@ export function PlanDetail({
             : 'Bez tygodnia lżejszego — przy tej długości nie jest potrzebny.'}
         </p>
       </div>
+
+      {t.profile && (
+        <div className="grp">
+          <h2>Przekąski profilu</h2>
+          <p className="tight">
+            W dni bez treningu 1–3 krótkie serie z zapasem 2–3 powtórzeń, rozłożone w ciągu dnia —
+            nie do zmęczenia, tylko do powtórzenia ruchu. Liczą się do odznak i doświadczenia, nie
+            ruszają poziomów ani kalendarza.
+          </p>
+          <ul className="ptlist">
+            {PROFILES[t.profile].snacks.map((x) => (
+              <li key={x}>
+                <a href={snackAddPath(x)}>{EX[x]?.name ?? x}</a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {t.expect && (
         <div className="grp">

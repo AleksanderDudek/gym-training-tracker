@@ -1,4 +1,5 @@
 import type { ExerciseId } from '../types';
+import { PROFILES, PROFILE_KEYS, gearsOf, profileWorkoutId } from './profiles';
 
 /**
  * Dopiski do ćwiczeń. Stoją obok wskazówki technicznej, nigdy zamiast niej — `hint` mówi,
@@ -56,6 +57,7 @@ export const EX_JOKES: Partial<Record<ExerciseId, string>> = {
   row_inverted: 'Podciąganie dla tych, którzy jeszcze nie podciągają. Bez wstydu.',
   latpulldown: 'Drążek do klatki. Nie za kark — kark też ma swoje prawa.',
   chinup: 'Jak podciąganie, tylko trudniej i z mniejszym uzasadnieniem.',
+  dead_hang: 'Goryl robi to całe życie dla przyjemności. Ty masz stoper i plan.',
   facepull: 'Ćwiczenie dla barków, które siedzenie przy biurku zdążyło popsuć.',
   shrug: 'Wzruszanie ramionami z obciążeniem. Idealne po trudnej rozmowie.',
   pullover: 'Ruch z lat siedemdziesiątych. Działał wtedy, działa dalej.',
@@ -171,6 +173,12 @@ export const WORKOUT_JOKES: Record<string, string> = {
   'shoulders-kb': 'Ciężar nad głową w marszu. Najdziwniejszy spacer po mieszkaniu w tym tygodniu.',
   'arms-kb': 'Ramiona z masą ciała i jednym kettlebell. Rękawy krótsze niż wczoraj.',
   'core-kb': 'Dwadzieścia minut dla tułowia. Deska bokiem nigdy nie trwała tak długo.',
+  // Treningi profili: jeden dopisek na profil, wspólny dla A i B i każdego sprzętu.
+  ...Object.fromEntries(
+    PROFILE_KEYS.flatMap((k) =>
+      gearsOf(k).flatMap((g) => [0, 1].map((v) => [profileWorkoutId(k, g, v as 0 | 1), PROFILES[k].joke])),
+    ),
+  ),
 };
 
 /** Dla treningów ułożonych samodzielnie. Losowane, żeby nie było jednego zdania na zawsze. */

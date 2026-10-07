@@ -2,7 +2,7 @@
 
 Aplikacja do prowadzenia treningu siłowego z automatyczną progresją. Wybierasz trening, wpisujesz
 wyniki, a silnik sam decyduje, kiedy podnieść powtórzenia i kiedy wejść na cięższe obciążenie.
-Atlas obejmuje 109 ćwiczeń: kettlebell, sztanga, hantle, maszyny i kalistenika — 26 z nich zrobisz bez żadnego sprzętu.
+Atlas obejmuje 110 ćwiczeń: kettlebell, sztanga, hantle, maszyny i kalistenika — 26 z nich zrobisz bez żadnego sprzętu.
 
 React 18 + TypeScript + Vite. Bez backendu — dane leżą w przeglądarce, z eksportem i importem do pliku.
 
@@ -263,7 +263,7 @@ i drugi, obok wyniku sesji, po każdym zamkniętym treningu.
 | Zakładka | Adres | Co robi |
 | --- | --- | --- |
 | Dziś | `#/sesja` | Co masz dziś do zrobienia według planu, pasek postaci, przekąska ruchowa i rada dnia; w trakcie — bieżąca sesja. |
-| Treningi | `#/treningi` | 36 gotowych treningów (całe ciało, push/pull/nogi, góra/dół, partie) i własne, z filtrem sprzętu (bez sprzętu, kettlebell, siłownia) i rodzaju; druga sekcja to atlas 109 ćwiczeń (`#/cwiczenia`). |
+| Treningi | `#/treningi` | 36 gotowych treningów (całe ciało, push/pull/nogi, góra/dół, partie), 32 z profilem i własne, z filtrem sprzętu (bez sprzętu, kettlebell, siłownia) i rodzaju; druga sekcja to atlas 110 ćwiczeń (`#/cwiczenia`). |
 | Plan | `#/plan` | Uruchomiony plan: kalendarz terminów, punkty, stopień, dziennik. Bez planu — katalog: plany z celem, własne i klasyczny. |
 | Osiągnięcia | `#/osiagniecia` | Dorobek w liczbach, progi najbliższe zdobycia, 69 rodzin odznak i odznaki każdego zrobionego ćwiczenia. |
 | Profil | `#/profil` | Postać i doświadczenie, twoje liczby, waga i wzrost, obciążenie, przekąski, kroki i cardio, lista zrobionych ćwiczeń i historia treningów z kaloriami. |
@@ -419,7 +419,7 @@ analizę dnia dla wybranego ćwiczenia: ile łącznie, z ilu przekąsek i ile z 
 brakuje do kolejnego progu dnia.
 
 **Ćwiczenie wybiera się pisaniem, nie przewijaniem.** Pole działa jak wyszukiwarka: po wejściu
-pokazuje wszystkie 109 ćwiczeń według polskiego alfabetu (Ł po L, Ś po S), ustawione na tym
+pokazuje wszystkie 110 ćwiczeń według polskiego alfabetu (Ł po L, Ś po S), ustawione na tym
 wybranym, a każda litera zawęża listę. Szuka po początkach słów — „pomp” daje wszystkie pompki,
 „hantle” ćwiczenia z hantlami, „zawias” całą partię — a gdy tak nic nie pasuje, także w środku
 słowa. Ogonki są opcjonalne: „wioslowanie” znajduje „Wiosłowanie”, bo na telefonie tak się
@@ -577,7 +577,7 @@ słów.
 
 ## Atlas i sprzęt
 
-Biblioteka ma **109 ćwiczeń** w siedmiu partiach ruchu: zawias biodrowy, przysiad, ciągnięcie,
+Biblioteka ma **110 ćwiczeń** w siedmiu partiach ruchu: zawias biodrowy, przysiad, ciągnięcie,
 pchanie, całe ciało, core i carry, nogi dodatkowo. Obok pierwotnych dziewiętnastu ćwiczeń
 kettlebellowych stoją teraz sztanga, hantle, maszyny i kalistenika. Atlas filtruje się po sprzęcie.
 
@@ -645,17 +645,19 @@ src/
   types.ts                  wszystkie typy domenowe
   routing.ts                trasy w hashu adresu, pięć zakładek, sekcja atlasu i podstrony
   routing.test.ts           22 testy tras, zakładek, ekranów, treningów, planów, przekąsek i starych adresów
-  data/exercises.ts         biblioteka 109 ćwiczeń, drabiny sprzętu, lista „bez sprzętu”, cztery treningi
-  data/exjokes.ts           dopiski do 109 ćwiczeń i do gotowych treningów
+  data/exercises.ts         biblioteka 110 ćwiczeń, drabiny sprzętu, lista „bez sprzętu”, cztery treningi, treningi profili
+  data/exjokes.ts           dopiski do 110 ćwiczeń i do gotowych treningów
   data/moves.ts             osiemnaście wzorców ruchu jako klatki kluczowe
   data/anim.ts              przypisanie ćwiczeń do wzorców
   data/exercises.test.ts    14 testów spójności biblioteki i drabin
   data/videos.ts            filmy instruktażowe, 4 na ćwiczenie
-  data/plans.ts             54 plany klasyczne (poziom × płeć × częstotliwość) i 16 planów z celem
+  data/plans.ts             54 plany klasyczne, 16 planów z celem i 16 ogólnorozwojowych z profilem
   data/workouts.ts          biblioteka 32 treningów: podziały, całe ciało i partie na trzy zestawy sprzętu
   data/muscles.ts           16 grup mięśni, główne i pomocnicze każdego ćwiczenia, izolacje
   data/scenes.ts            sceny ilustracji: 36 treningów, 16 planów z celem, 3 poziomy i własne
   data/stations.ts          stanowisko każdego ćwiczenia: sprzęt, maszyna, zamienniki; dom i siłownia
+  data/profiles.ts          sześć profili: priorytet, dodatki, przekąski, uzasadnienie ze źródłami
+  data/profiles.test.ts     5 testów profili: priorytet na początku, dodatki, limity serii, sceny
   engine/
     math.ts                 wzór Epleya, tonaż, wskaźnik obciążenia w czasie
     reminders.ts            lista przypomnień na 21 dni: trening z planu o 7:30, ruch o 19:30
@@ -859,6 +861,37 @@ floor press ↔ podciąganie, spacer sam, brzuch ↔ łydki. Kreator własnego t
 po blokach: para stoi na miejscu ważniejszego ćwiczenia, więc łydki na suwnicy zaraz po
 wypychaniu to jedno stanowisko, a nie „łydki przed izolacją”.
 
+## Plany ogólnorozwojowe z profilem
+
+Sześć profili: **podciąganie, chwyt, piłka nożna, bieganie, padel i tenis, zdrowe plecy**.
+Każdy to całe ciało trzy razy w tygodniu przez 60 dni (A i B na zmianę, tydzień lżejszy
+w szóstym), z akcentem na jeden cel — 16 planów na sprzęt, na którym profil ma sens
+(podciąganie i chwyt potrzebują drążka i ciężaru), i 32 treningi.
+
+- **Ćwiczenie priorytetowe na początek**, zaraz po ruchu wybuchowym: siła rośnie najbardziej
+  w tym, co idzie pierwsze, na świeżo (Simão i in., 2012; Nunes i in., 2021). Gdy ma ten sam
+  wzorzec co ćwiczenie bazy, zastępuje je — wykrok zamiast gobleta, przysiad bułgarski zamiast
+  przysiadu bez obciążenia. Wskoki niczego nie zastępują: dokładają moc, siłę dalej buduje przysiad.
+- **Dwa dodatki na koniec** zamiast zwykłej końcówki (brzuch, łydki) — trening nie rośnie,
+  zmienia akcent. Spacer zostaje, chyba że dodatek robi to samo (zwis i spacer farmera to oba
+  chwyt).
+- **Przekąski profilu** w podglądzie planu — 1–3 krótkie serie z zapasem w dni bez treningu.
+
+| Profil | Priorytet | Dodatki | Dlaczego |
+| --- | --- | --- | --- |
+| Podciąganie | podciąganie | zwis na drążku, hollow | chwyt i napięcie ciała to dwa najczęstsze hamulce podciągania |
+| Chwyt | — | zwis, spacer farmera | chwyt rośnie od trzymania ciężaru w czasie |
+| Piłka nożna | przysiad bułgarski / wykrok, na siłowni wskoki | nordic curl, plank kopenhaski | nordic: ok. połowa mniej naderwań tyłu uda (van der Horst 2015, van Dyk 2019); kopenhaski: ok. 40% mniej urazów pachwiny (Harøy 2019) |
+| Bieganie | jedna noga | wspięcia jednonóż, plank kopenhaski | siła poprawia ekonomię biegu (Blagrove 2018) |
+| Padel i tenis | — | tył barków (y-raise, face pull), tułów (skręty, Pallof, dead bug) | bark nad głową setki razy w meczu, skręt przez tułów |
+| Zdrowe plecy | — | dead bug, wyprosty albo tył barków | ćwiczenia zmniejszają ból krzyża i nawroty (Cochrane, Hayden 2021) |
+
+Profil może też **zdjąć ćwiczenie z bazy**, gdy dodatki robią to samo: plany profili trzymają
+się tych samych zasad co plany z celem — test pilnuje, żeby żadna partia nie przekroczyła
+ok. 20 serii tygodniowo. Tak wypadł RDL w piłce na siłowni (tył uda robi nordic, zawias —
+martwy ciąg w B), a w padlu bez sprzętu zwykłe pompki zastąpiły pompki w podporze przodem
+(tył barków robi już y-raise). Nowe ćwiczenie w atlasie: **zwis na drążku**.
+
 ## Treningi, plany i doradca
 
 Treningi i plany da się układać samemu, a doradca na bieżąco mówi, czy to ma sens. Liczy to,
@@ -866,7 +899,7 @@ co da się policzyć z listy ćwiczeń, i porównuje z badaniami oraz stanowiska
 gustu — trening z samych przysiadów jest dozwolony, tylko doradca powie, ile z tego to już
 głównie zmęczenie.
 
-**Mięśnie, nie wzorce.** Każde ze 109 ćwiczeń ma główne i pomocnicze mięśnie z szesnastu grup
+**Mięśnie, nie wzorce.** Każde ze 110 ćwiczeń ma główne i pomocnicze mięśnie z szesnastu grup
 (`data/muscles.ts`): klatka, plecy (najszersze i środek), trzy aktony barku, biceps, triceps,
 przedramiona, brzuch, prostowniki, pośladki, czworogłowe, tył uda, przywodziciele i łydki. Serie
 liczą się **ułamkowo**, jak w metaanalizie Pelland i in. (2025): główny mięsień dostaje całą serię,
@@ -1036,8 +1069,8 @@ Pięć grup:
 - **Terminy** — zależne od uruchomionego planu: seria w terminie, brak pudła, czyste tygodnie,
   nadrobienia.
 
-**Odznaki ćwiczeń.** Każde ze 109 ćwiczeń ma cztery rodziny: rekord dnia, tygodnia i miesiąca
-kalendarzowego oraz sumę z całej historii — razem 420 rodzin i 2 205 progów. To jedyne odznaki,
+**Odznaki ćwiczeń.** Każde ze 110 ćwiczeń ma cztery rodziny: rekord dnia, tygodnia i miesiąca
+kalendarzowego oraz sumę z całej historii — razem 440 rodzin i 2 310 progów. To jedyne odznaki,
 do których przekąska dokłada się na równi z treningiem: pompka przy biurku jest tą samą pompką.
 
 - **Okresy są kalendarzowe, nie przesuwane.** Tydzień od poniedziałku, miesiąc od pierwszego.

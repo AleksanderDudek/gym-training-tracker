@@ -4,11 +4,15 @@ import type {
   Exercise,
   ExerciseId,
   Gear,
+  ProfileKey,
   ReadyKey,
   StageKey,
   Workout,
+  WorkoutGear,
 } from '../types';
 import { LIBRARY } from './workouts';
+import { PROFILES, PROFILE_BASE, PROFILE_KEYS, gearsOf, profileWorkoutId } from './profiles';
+import { EX_MUSCLES } from './muscles';
 
 /**
  * Kolory z zawodowego standardu kettlebli — obciążenie rozpoznajesz zanim przeczytasz liczbę.
@@ -629,6 +633,15 @@ export const EX: Record<ExerciseId, Exercise> = {
     def: { sets: 3, minSets: 2, maxSets: 5, target: 5, min: 3, max: 12 },
     hint: 'Szerzej niż barki, ale nie skrajnie. Pełny zwis na dole liczy się do powtórzenia.',
   },
+  dead_hang: {
+    name: 'Zwis na drążku',
+    group: 'Ciągnięcie',
+    gear: 'bodyweight',
+    mode: 'carry',
+    unit: 'secs',
+    def: { sets: 3, target: 20, min: 10, max: 60 },
+    hint: 'Pełny chwyt kciukiem dookoła drążka, barki lekko ściągnięte w dół — nie wisisz na więzadłach.',
+  },
   facepull: {
     name: 'Face pull',
     group: 'Ciągnięcie',
@@ -1238,8 +1251,72 @@ const KB_BASICS: Workout[] = [
   },
 ];
 
-/** Wszystkie gotowe treningi: cztery pierwsze i biblioteka z podziałami i partiami. */
-export const BUILTIN: Workout[] = [...KB_BASICS, ...LIBRARY];
+/**
+ * Końcówka bazowego treningu, którą zastępują dodatki profilu: sam brzuch i łydki. Spacery
+ * zostają — spacer farmera bywa jedynym ciągnięciem w treningu, a bez niego całe ciało
+ * przestaje być całym ciałem.
+ */
+const isFinisher = (id: ExerciseId): boolean =>
+  (EX_MUSCLES[id]?.p ?? []).every((m) => m === 'brzuch' || m === 'lydki');
+
+/**
+ * Trening z profilu: bazowe całe ciało (A albo B dla sprzętu) bez zwykłej końcówki,
+ * z ćwiczeniem priorytetowym na początku — zaraz po ruchu wybuchowym — i dwoma dodatkami
+ * profilu na końcu. Para z bazy, której jedno ćwiczenie wypadło, zostaje seriami pod rząd.
+ */
+function profileWorkout(k: ProfileKey, g: WorkoutGear, v: 0 | 1): Workout {
+  const spec = PROFILES[k];
+  const base = [...KB_BASICS, ...LIBRARY].find((w) => w.id === PROFILE_BASE[g][v])!;
+  const lead = spec.lead?.[g];
+  const [x1, x2] = spec.extras[g]!;
+  const moved = new Set([lead, x1, x2, ...(spec.drop?.[g] ?? [])]);
+  // Spacer, który robi to samo co dodatek (zwis i spacer farmera to oba chwyt), wypada —
+  // inaczej trening rośnie o ćwiczenie, które niczego nowego nie wnosi.
+  const extraMuscles = new Set([x1, x2].flatMap((x) => EX_MUSCLES[x]?.p ?? []));
+  const redundant = (id: ExerciseId): boolean =>
+    EX[id]!.mode === 'carry' && (EX_MUSCLES[id]?.p ?? []).some((m) => extraMuscles.has(m));
+  // Ćwiczenie priorytetowe zastępuje bazowe o tym samym wzorcu (wykrok zamiast gobleta,
+  // przysiad bułgarski zamiast przysiadu bez obciążenia). Ruch wybuchowy niczego nie zastępuje:
+  // wskoki dokładają moc, a siłę dalej buduje przysiad.
+  const leadP = lead && EX[lead]!.mode !== 'ballistic' ? [...(EX_MUSCLES[lead]?.p ?? [])].sort().join() : null;
+  const replaced = (id: ExerciseId): boolean => leadP !== null && [...(EX_MUSCLES[id]?.p ?? [])].sort().join() === leadP;
+  const keep = (id: ExerciseId): boolean => !moved.has(id) && !isFinisher(id) && !redundant(id) && !replaced(id);
+  const swap = spec.swap?.[g] ?? {};
+  const items: Workout['items'] = [];
+  base.items.forEach((it, i) => {
+    if (!keep(it.ex)) return;
+    const prev = base.items[i - 1];
+    const ex = swap[it.ex] ?? it.ex;
+    items.push(it.pair && prev && keep(prev.ex) ? { ex, pair: true } : { ex });
+  });
+  if (lead) {
+    let at = 0;
+    while (at < items.length && EX[items[at]!.ex]!.mode === 'ballistic' && !items[at + 1]?.pair) at++;
+    items.splice(at, 0, { ex: lead });
+  }
+  // Dodatki przed spacerami, które zostały na końcu: spacer i brzuch kończą trening, bo
+  // stabilizują każde wcześniejsze ćwiczenie.
+  let end = items.length;
+  while (end > 0 && EX[items[end - 1]!.ex]!.mode === 'carry' && !items[end - 1]!.pair) end--;
+  items.splice(end, 0, { ex: x1 }, spec.pairExtras ? { ex: x2, pair: true } : { ex: x2 });
+  return {
+    id: profileWorkoutId(k, g, v),
+    name: `${spec.name} — całe ciało ${v ? 'B' : 'A'}`,
+    kind: 'full',
+    gear: g,
+    profile: k,
+    desc: `${base.desc ?? ''} Profil: ${EX[lead ?? '']?.name.toLowerCase() ?? 'akcent'}${lead ? ' na początek' : ''}, na koniec ${EX[x1]!.name.toLowerCase()} i ${EX[x2]!.name.toLowerCase()}.`.trim(),
+    items,
+  };
+}
+
+/** Treningi profili: po dwa (A i B) na każdy profil i sprzęt, na którym profil jest dostępny. */
+export const PROFILE_WORKOUTS: Workout[] = PROFILE_KEYS.flatMap((k) =>
+  gearsOf(k).flatMap((g) => [profileWorkout(k, g, 0), profileWorkout(k, g, 1)]),
+);
+
+/** Wszystkie gotowe treningi: cztery pierwsze, biblioteka z podziałami i partiami oraz profile. */
+export const BUILTIN: Workout[] = [...KB_BASICS, ...LIBRARY, ...PROFILE_WORKOUTS];
 
 export const ex = (id: ExerciseId): Exercise => {
   const e = EX[id];

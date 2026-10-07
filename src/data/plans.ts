@@ -1,4 +1,5 @@
 import type { AppState, PlanLevel, PlanTemplate, Sex, WorkoutGear } from '../types';
+import { PROFILES, PROFILE_KEYS, gearsOf, profilePlanId, profileWorkoutId } from './profiles';
 
 export const PLAN_WEEKS = 12;
 
@@ -348,9 +349,30 @@ export const GOAL_PLANS: PlanTemplate[] = [
   ),
 ];
 
-/** Plan klasyczny albo z celem — bez planów własnych, które mieszkają w zapisie. */
+/**
+ * Plany ogólnorozwojowe z profilem: 60 dni, trzy treningi całego ciała w tygodniu, A i B
+ * na zmianę, z akcentem profilu (`data/profiles.ts`). Po jednym na profil i sprzęt.
+ */
+export const PROFILE_PLANS: PlanTemplate[] = PROFILE_KEYS.flatMap((k) =>
+  gearsOf(k).map((g) => ({
+    ...goal(
+      profilePlanId(k, g),
+      `${PROFILES[k].name} — ogólnorozwojowy, 60 dni`,
+      60,
+      g,
+      'base',
+      3,
+      [profileWorkoutId(k, g, 0), profileWorkoutId(k, g, 1)],
+      PROFILES[k].goal,
+      `Trzy treningi całego ciała w tygodniu, A i B na zmianę — cała reszta ciała dalej rośnie. ${PROFILES[k].why}`,
+    ),
+    profile: k,
+  })),
+);
+
+/** Plan klasyczny, z celem albo z profilem — bez planów własnych, które mieszkają w zapisie. */
 export const planById = (id: string): PlanTemplate | undefined =>
-  PLANS.find((p) => p.id === id) ?? GOAL_PLANS.find((p) => p.id === id);
+  PLANS.find((p) => p.id === id) ?? GOAL_PLANS.find((p) => p.id === id) ?? PROFILE_PLANS.find((p) => p.id === id);
 
 /** Dowolny plan, także własny. */
 export const planOf = (state: AppState, id: string): PlanTemplate | undefined =>

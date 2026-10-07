@@ -155,6 +155,7 @@ export const STATIONS: Record<ExerciseId, Station> = {
   row_inverted: s(['table']),
   latpulldown: s([], 'wyciąg górny', ['chinup', 'pullup']),
   chinup: s(['bar']),
+  dead_hang: s(['bar']),
   facepull: s(['cable'], undefined, ['y_raise']),
   y_raise: s(['mat']),
   shrug: s(['dumbbells']),
@@ -225,7 +226,7 @@ export function stationFor(id: ExerciseId, gear: WorkoutGear | undefined): Stati
   if (gear !== 'gym') return base;
   switch (id) {
     case 'hyper':
-      return s(['roman'], 'ławka do wyprostów (rzymska)', ['glutebridge']);
+      return s([], 'ławka do wyprostów (rzymska)', ['glutebridge']);
     case 'row_inverted':
       return s(['rack'], undefined, ['row_db']);
     case 'dip_bench':

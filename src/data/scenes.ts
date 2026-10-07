@@ -1,5 +1,6 @@
 import type { CoachMood, TraineeMood, Who } from '../components/Gorilla';
-import type { Gear, PlanLevel, PlanTemplate } from '../types';
+import type { Gear, PlanLevel, PlanTemplate, ProfileKey, WorkoutGear } from '../types';
+import { parseProfileId } from './profiles';
 import type { MoveName } from './moves';
 
 /**
@@ -156,17 +157,54 @@ export const LEVEL_SCENES: Record<PlanLevel, Scene> = {
 /** Plan ułożony samodzielnie. */
 export const OWN_PLAN_SCENE: Scene = { set: 'home', fan: { who: 'siwy', mood: 'wise' }, fan2: { who: 'gosia', mood: 'proud' }, bubble: ['Twój plan,', 'twoje zasady'], by: 'fan', big: '?', alt: 'Gosia z własnym planem, Trener Siwy: „Twój plan, twoje zasady”' };
 
-/** Trening z biblioteki dostaje swoją scenę, własny — wspólną. */
-export const workoutScene = (id: string): Scene =>
-  Object.hasOwn(WORKOUT_SCENES, id) ? WORKOUT_SCENES[id]! : OWN_WORKOUT_SCENE;
+/* ---------------- Profile ---------------- */
+
+/**
+ * Jedna scena na profil — ten sam żart w planie i w obu treningach, bo profil to jedna
+ * historia. W planie kibicuje Trener Siwy z kartką 60 dni, w treningu — drugi podopieczny.
+ */
+const PROFILE_ACT: Record<ProfileKey, { act: Actor; does: string; bubble: string[]; mood: CoachMood }> = {
+  podciaganie: { act: { who: 'gosia', move: 'pullup', gear: 'bodyweight' }, does: 'Gosia podciąga się na drążku', bubble: ['Najpierw drążek,', 'potem reszta.'], mood: 'approve' },
+  chwyt: { act: { who: 'gustaw', move: 'carry', gear: 'kettlebell' }, does: 'Gustaw niesie kettlebelle', bubble: ['Uścisk dłoni?', 'Na własną odpowiedzialność.'], mood: 'wink' },
+  pilka: { act: { who: 'gustaw', move: 'lunge', gear: 'bodyweight' }, does: 'Gustaw robi wykrok', bubble: ['Nogi do gry,', 'nie na ławkę.'], mood: 'approve' },
+  bieganie: { act: { who: 'gosia', move: 'calf', gear: 'bodyweight' }, does: 'Gosia wspina się na palce', bubble: ['Łydki biegną', 'pierwsze.'], mood: 'wise' },
+  padel: { act: { who: 'gustaw', move: 'lunge', gear: 'bodyweight' }, does: 'Gustaw robi wykrok jak do piłki przy ścianie', bubble: ['Ściana odbija.', 'Ty też.'], mood: 'wink' },
+  plecy: { act: { who: 'gosia', move: 'plank', gear: 'bodyweight' }, does: 'Gosia trzyma deskę', bubble: ['Biurko przegrało.', 'Plecy wygrały.'], mood: 'calm' },
+};
+
+const SET_OF: Record<WorkoutGear, Setting> = { none: 'home', kb: 'kb', gym: 'gym' };
+
+export function profileScene(k: ProfileKey, gear: WorkoutGear, plan: boolean): Scene {
+  const p = PROFILE_ACT[k];
+  const other = p.act.who === 'gosia' ? 'gustaw' : 'gosia';
+  const fan: Fan = plan ? { who: 'siwy', mood: p.mood } : { who: other, mood: 'happy' };
+  const fanName = plan ? 'Trener Siwy' : other === 'gosia' ? 'Gosia' : 'Gustaw';
+  return {
+    set: SET_OF[gear],
+    act: p.act,
+    fan,
+    bubble: p.bubble,
+    by: 'fan',
+    ...(plan ? { big: '60' } : {}),
+    alt: `${p.does}, ${fanName}: „${p.bubble.join(' ')}”`,
+  };
+}
+
+/** Trening z biblioteki dostaje swoją scenę, trening profilu — scenę profilu, własny — wspólną. */
+export function workoutScene(id: string): Scene {
+  if (Object.hasOwn(WORKOUT_SCENES, id)) return WORKOUT_SCENES[id]!;
+  const prof = parseProfileId(id);
+  return prof ? profileScene(prof.key, prof.gear, false) : OWN_WORKOUT_SCENE;
+}
 
 /**
  * Plan z celem — po identyfikatorze, klasyczny — po poziomie, własny — scena wspólna.
  * Po rodzaju, a nie po kształcie identyfikatora: plan własny też ma poziom, więc zgadywanie
  * z przedrostka dałoby mu scenę planu klasycznego.
  */
-export function planScene(t: Pick<PlanTemplate, 'id' | 'kind' | 'level'>): Scene {
+export function planScene(t: Pick<PlanTemplate, 'id' | 'kind' | 'level' | 'profile' | 'gear'>): Scene {
   if (t.kind === 'own') return OWN_PLAN_SCENE;
+  if (t.profile) return profileScene(t.profile, t.gear ?? 'kb', true);
   if (t.kind === 'goal') return Object.hasOwn(PLAN_SCENES, t.id) ? PLAN_SCENES[t.id]! : OWN_PLAN_SCENE;
   return LEVEL_SCENES[t.level] ?? OWN_PLAN_SCENE;
 }

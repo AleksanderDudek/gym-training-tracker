@@ -3,7 +3,8 @@ import { createElement, Fragment } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { BUILTIN } from '../data/exercises';
 import { MOVES } from '../data/moves';
-import { GOAL_PLANS, LEVELS, PLANS } from '../data/plans';
+import { GOAL_PLANS, LEVELS, PLANS, PROFILE_PLANS } from '../data/plans';
+import { PROFILE_GEARS, PROFILE_KEYS } from '../data/profiles';
 import {
   LEVEL_SCENES,
   OWN_PLAN_SCENE,
@@ -11,6 +12,7 @@ import {
   PLAN_SCENES,
   WORKOUT_SCENES,
   planScene,
+  profileScene,
   workoutScene,
 } from '../data/scenes';
 import type { Scene, Setting } from '../data/scenes';
@@ -30,6 +32,12 @@ const ALL: [string, Scene][] = [
   ...Object.entries(LEVEL_SCENES),
   ['own-workout', OWN_WORKOUT_SCENE],
   ['own-plan', OWN_PLAN_SCENE],
+  ...PROFILE_KEYS.flatMap((k) =>
+    PROFILE_GEARS.flatMap((g): [string, Scene][] => [
+      [`profil-${k}-${g}-plan`, profileScene(k, g, true)],
+      [`profil-${k}-${g}-trening`, profileScene(k, g, false)],
+    ]),
+  ),
 ];
 
 /** Plan bez sprzętu nie może mieć w tle kettlebella, a plan na siłownię — dywanu w salonie. */
@@ -37,7 +45,9 @@ const SETS: Record<WorkoutGear, Setting[]> = { none: ['home'], kb: ['kb', 'home'
 
 describe('sceny treningów i planów', () => {
   it('każdy trening z biblioteki ma własną scenę i nie ma scen bez treningu', () => {
-    expect(Object.keys(WORKOUT_SCENES).sort()).toEqual(BUILTIN.map((w) => w.id).sort());
+    expect(Object.keys(WORKOUT_SCENES).sort()).toEqual(BUILTIN.filter((w) => !w.profile).map((w) => w.id).sort());
+    // Treningi profili mają scenę swojego profilu, nie wspólną scenę treningu własnego.
+    BUILTIN.filter((w) => w.profile).forEach((w) => expect(workoutScene(w.id), w.id).not.toBe(OWN_WORKOUT_SCENE));
   });
 
   it('każdy plan z celem ma własną scenę, a kalendarz pokazuje jego długość', () => {
@@ -48,8 +58,8 @@ describe('sceny treningów i planów', () => {
 
   it('tło pasuje do sprzętu treningu i planu', () => {
     const bad = [
-      ...BUILTIN.filter((w) => w.gear && !SETS[w.gear].includes(WORKOUT_SCENES[w.id]!.set)).map((w) => w.id),
-      ...GOAL_PLANS.filter((p) => p.gear && !SETS[p.gear].includes(PLAN_SCENES[p.id]!.set)).map((p) => p.id),
+      ...BUILTIN.filter((w) => w.gear && !SETS[w.gear].includes(workoutScene(w.id).set)).map((w) => w.id),
+      ...[...GOAL_PLANS, ...PROFILE_PLANS].filter((p) => p.gear && !SETS[p.gear].includes(planScene(p).set)).map((p) => p.id),
     ];
     expect(bad).toEqual([]);
   });
@@ -66,10 +76,10 @@ describe('sceny treningów i planów', () => {
   });
 
   it('w planach zawsze stoi Trener Siwy, w treningach ćwiczy jeden podopieczny, a kibicuje drugi', () => {
-    [...Object.values(PLAN_SCENES), ...Object.values(LEVEL_SCENES), OWN_PLAN_SCENE].forEach((s) =>
+    [...Object.values(PLAN_SCENES), ...Object.values(LEVEL_SCENES), OWN_PLAN_SCENE, ...PROFILE_PLANS.map(planScene)].forEach((s) =>
       expect([s.fan?.who, s.fan2?.who]).toContain('siwy'),
     );
-    Object.entries(WORKOUT_SCENES).forEach(([id, s]) => {
+    [...Object.entries(WORKOUT_SCENES), ...BUILTIN.filter((w) => w.profile).map((w): [string, Scene] => [w.id, workoutScene(w.id)])].forEach(([id, s]) => {
       expect(s.fan?.who, id).not.toBe('siwy');
       expect(s.fan?.who, id).not.toBe(s.act?.who);
     });

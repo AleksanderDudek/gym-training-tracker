@@ -252,6 +252,7 @@ const KB_BALLISTIC_IDS = new Set<ExerciseId>(['swing2', 'swing1', 'clean_kb', 's
 const BALLISTIC_IDS = new Set<ExerciseId>(['burpee']);
 
 const LIGHT_IDS = new Set<ExerciseId>([
+  'dead_hang',
   'plank',
   'plank_side',
   'hollow',

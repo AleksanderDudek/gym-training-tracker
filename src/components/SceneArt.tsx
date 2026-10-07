@@ -442,7 +442,7 @@ export const WorkoutArt = memo(function WorkoutArt({ id, className }: { id: stri
   return <SceneSvg s={workoutScene(id)} className={className} />;
 });
 
-type PlanArtProps = { plan: Pick<PlanTemplate, 'id' | 'kind' | 'level'>; className?: string };
+type PlanArtProps = { plan: Pick<PlanTemplate, 'id' | 'kind' | 'level' | 'profile' | 'gear'>; className?: string };
 
 /**
  * Ilustracja planu: z celem — po identyfikatorze, klasyczny — po poziomie, własny — wspólna.
@@ -454,5 +454,10 @@ export const PlanArt = memo(
     return <SceneSvg s={planScene(plan)} className={className} />;
   },
   (a: PlanArtProps, b: PlanArtProps) =>
-    a.className === b.className && a.plan.id === b.plan.id && a.plan.kind === b.plan.kind && a.plan.level === b.plan.level,
+    a.className === b.className &&
+    a.plan.id === b.plan.id &&
+    a.plan.kind === b.plan.kind &&
+    a.plan.level === b.plan.level &&
+    a.plan.profile === b.plan.profile &&
+    a.plan.gear === b.plan.gear,
 );
