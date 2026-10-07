@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Icon } from './icons';
 import type { IconName } from './icons';
+import { HealthNote } from './Health';
 import { SupportLine } from './Support';
 
 /**
@@ -66,6 +67,8 @@ export function Intro({ onDone }: { onDone: () => void }) {
         <p className="intro-body">{step.body}</p>
 
         {last && <SupportLine seed={STEPS.length} compact />}
+        {/* Na każdym ekranie, nie tylko na ostatnim — wprowadzenie da się pominąć z pierwszego. */}
+        <HealthNote />
 
         <div className="intro-dots" aria-hidden="true">
           {STEPS.map((s, n) => (

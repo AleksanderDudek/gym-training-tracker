@@ -809,6 +809,7 @@ export function CardioPage({
         </p>
         <p className="tight">
           To szacunek. Pomiar tlenu u konkretnej osoby potrafi odbiec o 20–30% — w obie strony.
+          Kalorie nie są zaleceniem żywieniowym — ile i co jeść, ustala się z dietetykiem.
         </p>
       </div>
     </>

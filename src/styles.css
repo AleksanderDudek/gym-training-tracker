@@ -918,6 +918,8 @@
   /* Filtr długości i filtr sprzętu jeden pod drugim — z odstępem, żeby nie czytały się jak jeden rząd. */
   .chips + .seg,.seg + .chips{margin-top:10px}
 
+  /* Zastrzeżenie zdrowotne: mały druk, ale pełny kontrast — `ink-soft`, nie przezroczystość. */
+  .health-note{font-size:12.5px;color:var(--ink-soft);margin:10px 0 0}
   .wcard h2.today-name{margin-bottom:2px}
   /* Ilustracje treningów i planów z systemu projektowego: 2:1, szerokość treści karty —
      332 / 362 / 402 px na telefonach 360 / 390 / 430, najwyżej 612 px. Piaskowe tło stoi,

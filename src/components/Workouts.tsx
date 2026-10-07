@@ -12,6 +12,7 @@ import { kcalText } from './Cardio';
 import { Chips, DesignNotes, MuscleBars, SectionSwitch } from './Design';
 import { ExercisePicker } from './ExercisePicker';
 import { WorkoutArt } from './SceneArt';
+import { HealthNote } from './Health';
 import { EmptyState, Segmented } from './ui';
 import { SupportLine } from './Support';
 import type { AppState, ExerciseId, Workout, WorkoutGear, WorkoutKind } from '../types';
@@ -287,6 +288,10 @@ export function WorkoutPreview({
       <div className="grp">
         <h2>Doradca</h2>
         <DesignNotes notes={r.notes} />
+      </div>
+
+      <div className="wrap">
+        <HealthNote style={{ marginTop: 12 }} />
       </div>
 
       {plans.length > 0 && (

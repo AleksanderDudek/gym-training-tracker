@@ -1346,6 +1346,14 @@ ważenie od razu obejmuje całą historię. Przy wczytaniu i imporcie odpadają 
 
 ## Zastrzeżenie
 
-Aplikacja nie zastępuje trenera ani fizjoterapeuty. Przy bólu, kontuzji lub chorobie skonsultuj plan
-ze specjalistą.
+Aplikacja nie zastępuje fizjoterapeuty, dietetyka ani konsultacji lekarskiej. Zanim zaczniesz,
+porozmawiaj z lekarzem, jeśli masz chorobę serca, nadciśnienie, cukrzycę albo inną chorobę
+przewlekłą, jesteś w ciąży lub po porodzie, wracasz po urazie albo operacji, czujesz ból w klatce
+piersiowej przy wysiłku albo zdarzają ci się zawroty i omdlenia (za PAR-Q+ i ACSM). Przerwij
+trening przy bólu w klatce, duszności większej niż zwykła zadyszka, zawrotach, kołataniu serca
+albo ostrym bólu stawu czy kręgosłupa. Kalorie są szacunkiem, nie zaleceniem żywieniowym.
+
+W aplikacji krótka wersja stoi we wprowadzeniu (na każdym ekranie, bo da się je pominąć
+z pierwszego), przed startem planu, pod podglądem treningu i przy kaloriach, a pełna — w Ustawieniach
+(„Zdrowie i bezpieczeństwo”). Tekst ma jedno źródło: `components/Health.tsx`.
 

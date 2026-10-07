@@ -22,6 +22,7 @@ import { Segmented } from './ui';
 import { SupportLine } from './Support';
 import { PlanCatalog } from './Plans';
 import { PlanArt } from './SceneArt';
+import { HealthNote } from './Health';
 import { PLANS_PATH, go } from '../routing';
 import type {
   AppState,
@@ -231,6 +232,7 @@ export function Catalogue({
             </button>
           )}
         </div>
+        <HealthNote style={{ marginTop: 10 }} />
       </div>
     </>
   );

@@ -11,6 +11,7 @@ import {
 import { acwr } from '../engine/math';
 import { P, exercisesByGroup } from '../engine/plan';
 import { ExerciseCard } from './ExerciseCard';
+import { HealthCard } from './Health';
 import { RemindersCard } from './Reminders';
 import { SupportLine } from './Support';
 import type { AppState, EffortKey, ExerciseId, ReadyKey, ReminderPrefs, SetResult, Workout } from '../types';
@@ -335,6 +336,8 @@ export function SettingsView({
         </p>
       </div>
 
+      <HealthCard />
+
       <div className="grp">
         <h2>Reset</h2>
         <p>Kasuje historię, poziomy i własne treningi. Nie da się tego cofnąć.</p>
@@ -344,7 +347,7 @@ export function SettingsView({
       </div>
 
       <footer>
-        Dane trzymane lokalnie. Przy bólu lub kontuzji skonsultuj plan z fizjoterapeutą.
+        Dane trzymane lokalnie. Aplikacja nie zastępuje fizjoterapeuty, dietetyka ani lekarza.
         <br />
         Ćwiczeń w bibliotece: {ALL.length}.
       </footer>

@@ -24,6 +24,7 @@ import {
 } from '../routing';
 import { Chips, DesignNotes, WeeklyBars } from './Design';
 import { PlanArt } from './SceneArt';
+import { HealthNote } from './Health';
 import { GEAR_FILTER, GEAR_WORKOUT, allWorkouts } from './Workouts';
 import { EmptyState, Segmented } from './ui';
 import type { AppState, PlanLevel, PlanOptions, PlanPolicy, PlanTemplate, Sex, WorkoutGear } from '../types';
@@ -266,6 +267,7 @@ function StartForm({
           Zacznij ten plan
         </button>
       </div>
+      <HealthNote style={{ marginTop: 10 }} />
     </div>
   );
 }
