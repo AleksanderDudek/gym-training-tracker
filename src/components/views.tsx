@@ -185,8 +185,10 @@ export function SettingsView({
   onIntro,
   onReminders,
   onToast,
+  onFeedback,
 }: {
   state: AppState;
+  onFeedback?: (() => void) | undefined;
   onReminders: (p: ReminderPrefs) => void;
   onToast: (m: string) => void;
   onWeights: (list: number[]) => void;
@@ -203,6 +205,20 @@ export function SettingsView({
   return (
     <>
       <RemindersCard state={state} onPrefs={onReminders} onToast={onToast} />
+
+      {onFeedback && (
+        <div className="grp">
+          <h2>Uwagi i błędy</h2>
+          <p className="tight">
+            Coś nie działa, czegoś brakuje, coś jest niejasne? Napisz — wiadomość trafia prosto do
+            autora, a zrzut ekranu i ślad wizyty pomagają odtworzyć problem. To samo okno otwiera
+            dymek w pasku na górze, z każdego ekranu.
+          </p>
+          <button className="btn ghost sm" onClick={onFeedback}>
+            Napisz do autora
+          </button>
+        </div>
+      )}
 
       <div className="grp">
         <h2>Dostępne kettlebelle</h2>

@@ -59,6 +59,9 @@ import type {
   Workout,
 } from './types';
 import { pushConfigured, syncReminders } from './push';
+import { apiConfigured } from './api';
+import { attachTrail, trail } from './trail';
+import { FeedbackDialog } from './components/Feedback';
 import { withExtension, withWeekdays } from './engine/planedit';
 
 const clone = (s: AppState): AppState => JSON.parse(JSON.stringify(s)) as AppState;
@@ -160,6 +163,14 @@ const badgeCtx = (s: AppState) => {
 export default function App() {
   const [state, setState] = useState<AppState | null>(null);
   const route = useRoute();
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const closeFeedback = useCallback(() => setFeedbackOpen(false), []);
+
+  // Ślad wizyty do wiadomości z uwagą — tylko w pamięci, patrz `trail.ts`.
+  useEffect(() => attachTrail(), []);
+  useEffect(() => {
+    trail.view(`${currentPath()} · ${screenOf(route).title}`);
+  }, [route]);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [saveBroken, setSaveBroken] = useState(false);
   const [replayIntro, setReplayIntro] = useState(false);
@@ -1122,7 +1133,18 @@ export default function App() {
         strip={strip}
         onSnooze={snoozeSupport}
         settings={!screen.parent && !inSession}
+        onFeedback={apiConfigured() ? () => setFeedbackOpen(true) : undefined}
       />
+      {feedbackOpen && (
+        <FeedbackDialog
+          state={state}
+          onClose={closeFeedback}
+          onSent={() => {
+            setFeedbackOpen(false);
+            setToastMsg('Dzięki! Wiadomość poszła do autora.');
+          }}
+        />
+      )}
 
       <main className="page" key={pageKey}>
       {view !== null && (
@@ -1277,6 +1299,7 @@ export default function App() {
       {view === 'set' && (
         <SettingsView
           state={state}
+          onFeedback={apiConfigured() ? () => setFeedbackOpen(true) : undefined}
           onReminders={setReminders}
           onToast={setToastMsg}
           onIntro={() => setReplayIntro(true)}

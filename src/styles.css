@@ -323,6 +323,23 @@
    * Treść okna przewija się, przyciski zostają. Bez tego długa lista ćwiczeń albo wysoka
    * scena z medalem spychały główną akcję pod krawędź na niższych ekranach.
    */
+  /* Okno „Napisz do autora”: na telefonie od dołu, jak arkusz; wyżej — wyśrodkowane. */
+  .fb{position:fixed;inset:0;background:rgba(30,35,32,.55);display:flex;align-items:flex-end;
+    justify-content:center;z-index:60}
+  .fb-box{background:var(--surface);width:100%;max-width:520px;max-height:92vh;overflow:auto;
+    padding:18px 16px calc(16px + env(safe-area-inset-bottom));border-radius:var(--r) var(--r) 0 0}
+  @media (min-width:640px){.fb{align-items:center}.fb-box{border-radius:var(--r)}}
+  .fb-box h2{margin:0 0 4px}
+  .fb-box textarea{width:100%;font:inherit;font-size:16px;padding:10px;border:1px solid var(--edge);
+    border-radius:var(--r);background:var(--surface);color:var(--ink);resize:vertical}
+  .fb-shot{margin:8px 0}
+  .fb-shot-row{display:grid;grid-template-columns:auto 64px 1fr;gap:10px;align-items:center;font-size:14px;margin-bottom:8px}
+  .fb-shot-row input{width:22px;height:22px}
+  .fb-shot-row img{width:64px;height:auto;max-height:110px;object-fit:cover;object-position:top;border:1px solid var(--line)}
+  .fb-file{display:inline-flex;align-items:center;cursor:pointer}
+  .fb-hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+  .fb-note details{margin-top:4px}
+  .fb-note summary{cursor:pointer;font-weight:600}
   .mbox{background:var(--surface);max-width:460px;width:100%;padding:20px;border-radius:var(--r);
     max-height:86vh;display:flex;flex-direction:column;overflow:hidden}
   .mbox h3{margin:0 0 8px;font-family:var(--display);font-weight:600;font-size:22px;line-height:1.15}

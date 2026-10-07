@@ -3,7 +3,7 @@ import { freshState } from './plan';
 import { EVENING_AT, HORIZON_DAYS, MORNING_AT, localDay, reminderItems, remindersOf } from './reminders';
 import { GOAL_PLANS } from '../data/plans';
 import { REMINDER_EVENING, REMINDER_MORNING } from './quips';
-import { validItem } from '../../server/push/api';
+import { validItem } from '../../server/api/api';
 import type { AppState, LogEntry } from '../types';
 
 /**

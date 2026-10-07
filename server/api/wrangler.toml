@@ -1,6 +1,7 @@
-# Serwer przypomnień GYM TRACKERA — Cloudflare Worker z cronem i bazą D1.
+# Serwer aplikacji GYM TRACKER — przypomnienia push i uwagi od użytkowników.
+# Cloudflare Worker z cronem i bazą D1. Sekrety: VAPID_PRIVATE_JWK i ADMIN_TOKEN (hasło do listy uwag).
 # Wdrożenie krok po kroku: README.md w tym katalogu.
-name = "gym-tracker-push"
+name = "gym-tracker-api"
 main = "worker.ts"
 compatibility_date = "2026-10-01"
 
@@ -16,6 +17,6 @@ ALLOWED_ORIGINS = "https://aleksanderdudek.github.io,http://localhost:5173,http:
 
 [[d1_databases]]
 binding = "DB"
-database_name = "gym-tracker-push"
-# Identyfikator z `npx wrangler d1 create gym-tracker-push`.
+database_name = "gym-tracker-api"
+# Identyfikator z `npx wrangler d1 create gym-tracker-api`.
 database_id = "WPISZ-ID-BAZY"

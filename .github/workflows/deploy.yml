@@ -32,11 +32,12 @@ jobs:
       # Wdrożenie idzie dopiero po typach i testach silnika progresji.
       - run: npm run typecheck
       - run: npm test
-      # Serwer przypomnień (server/push): adres i klucz publiczny VAPID ze zmiennych repozytorium
-      # (Settings → Secrets and variables → Actions → Variables). Puste — aplikacja bez przypomnień.
+      # Serwer aplikacji (server/api — przypomnienia i uwagi): adres i klucz publiczny VAPID ze
+      # zmiennych repozytorium (Settings → Secrets and variables → Actions → Variables).
+      # Puste — aplikacja bez przypomnień i bez formularza uwag.
       - run: npm run build
         env:
-          VITE_PUSH_API: ${{ vars.PUSH_API }}
+          VITE_API_URL: ${{ vars.API_URL }}
           VITE_VAPID_PUBLIC_KEY: ${{ vars.VAPID_PUBLIC_KEY }}
 
       - uses: actions/configure-pages@v5

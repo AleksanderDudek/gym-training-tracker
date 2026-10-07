@@ -15,7 +15,8 @@ export type IconName =
   | 'settings'
   | 'coffee'
   | 'profile'
-  | 'back';
+  | 'back'
+  | 'feedback';
 
 const PATHS: Record<IconName, ReactNode> = {
   // Hantla: dwa obciążniki i gryf.
@@ -81,6 +82,13 @@ const PATHS: Record<IconName, ReactNode> = {
   ),
   // Szewron w lewo: wstecz w pasku aplikacji, tak jak w iOS i Material.
   back: <path d="M15 5l-7 7 7 7" />,
+  // Dymek z dwiema kreskami tekstu — „napisz do autora”.
+  feedback: (
+    <>
+      <path d="M5 4.5h14a1.5 1.5 0 0 1 1.5 1.5v9a1.5 1.5 0 0 1-1.5 1.5h-8.5L6 20v-3.5H5A1.5 1.5 0 0 1 3.5 15V6A1.5 1.5 0 0 1 5 4.5Z" />
+      <path d="M7.5 9h9M7.5 12.5h6" />
+    </>
+  ),
   // Suwaki — czytelniejsze w małym rozmiarze niż zębatka.
   settings: (
     <>

@@ -1,3 +1,4 @@
+import { API_URL, apiConfigured } from './api';
 import { localDay, reminderItems, remindersOf } from './engine/reminders';
 import type { AppState } from './types';
 
@@ -11,14 +12,13 @@ import type { AppState } from './types';
  * do rana. Działa tylko Web Push: o czasie powiadomienie wysyła serwer, a telefon je pokazuje
  * — także na iPhonie, od iOS 16.4, w aplikacji dodanej do ekranu początkowego.
  *
- * Adres serwera i jego klucz publiczny przychodzą z buildu (`VITE_PUSH_API`,
+ * Adres serwera i jego klucz publiczny przychodzą z buildu (`VITE_API_URL`,
  * `VITE_VAPID_PUBLIC_KEY`). Bez nich aplikacja działa jak dotąd, a karty przypomnień nie ma.
  */
 
-export const PUSH_API = String(import.meta.env.VITE_PUSH_API ?? '').replace(/\/+$/, '');
 export const VAPID_KEY = String(import.meta.env.VITE_VAPID_PUBLIC_KEY ?? '');
 
-export const pushConfigured = (): boolean => PUSH_API !== '' && VAPID_KEY !== '';
+export const pushConfigured = (): boolean => apiConfigured() && VAPID_KEY !== '';
 
 /**
  * - `unconfigured` — build bez serwera przypomnień;
@@ -146,7 +146,7 @@ export async function syncReminders(state: AppState, force = false): Promise<boo
     });
     const mark = fingerprint(body);
     if (!force && recalled() === mark) return true;
-    const res = await fetch(`${PUSH_API}/subscribe`, {
+    const res = await fetch(`${API_URL}/subscribe`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body,
@@ -186,7 +186,7 @@ export async function disablePush(): Promise<PushState> {
   try {
     const sub = await (await registration())?.pushManager.getSubscription();
     if (sub) {
-      await fetch(`${PUSH_API}/unsubscribe`, {
+      await fetch(`${API_URL}/unsubscribe`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ endpoint: sub.endpoint }),

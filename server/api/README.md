@@ -1,7 +1,11 @@
-# Serwer przypomnień
+# Serwer aplikacji
 
-Cloudflare Worker, który o 7:30 przypomina o treningu z planu, a o 19:30 o wpisaniu kroków
-i ruchu z dnia — o czasie lokalnym telefonu, na Androidzie i iPhonie.
+Cloudflare Worker z dwoma zadaniami:
+
+- **przypomnienia** — o 7:30 o treningu z planu, o 19:30 o wpisaniu kroków i ruchu z dnia,
+  o czasie lokalnym telefonu, na Androidzie i iPhonie;
+- **uwagi od użytkowników** — wiadomość z formularza w aplikacji (e-mail, treść, zrzut ekranu,
+  ślad wizyty) i lista dla autora za hasłem.
 
 ## Dlaczego serwer
 
@@ -30,19 +34,22 @@ początkowego.
 Potrzebne konto Cloudflare (darmowy plan wystarcza: cron, baza D1). Wszystko z tego katalogu.
 
 ```bash
-cd server/push
+cd server/api
 npx wrangler login
 
 # 1. Baza
-npx wrangler d1 create gym-tracker-push        # identyfikator wpisz do wrangler.toml (database_id)
-npx wrangler d1 execute gym-tracker-push --remote --file=schema.sql
+npx wrangler d1 create gym-tracker-api        # identyfikator wpisz do wrangler.toml (database_id)
+npx wrangler d1 execute gym-tracker-api --remote --file=schema.sql
 
 # 2. Klucze VAPID: publiczny wpisze się do wrangler.toml, prywatny idzie do sekretów
 node keys.mjs
 npx wrangler secret put VAPID_PRIVATE_JWK < vapid-private.jwk.json
 
-# 3. Serwer
-npx wrangler deploy                            # wypisze adres, np. https://gym-tracker-push.<konto>.workers.dev
+# 3. Hasło do listy uwag (co najmniej 16 znaków; bez niego listy nie ma)
+npx wrangler secret put ADMIN_TOKEN
+
+# 4. Serwer
+npx wrangler deploy                            # wypisze adres, np. https://gym-tracker-api.<konto>.workers.dev
 ```
 
 Potem w GitHubie: **Settings → Secrets and variables → Actions → Variables** dwie zmienne
@@ -50,18 +57,19 @@ Potem w GitHubie: **Settings → Secrets and variables → Actions → Variables
 
 | Zmienna | Wartość |
 | --- | --- |
-| `PUSH_API` | adres Workera z `wrangler deploy` |
+| `API_URL` | adres Workera z `wrangler deploy` (bez ukośnika na końcu) |
 | `VAPID_PUBLIC_KEY` | klucz publiczny wypisany przez `node keys.mjs` |
 
 Następne wdrożenie strony (push na `main`) zbuduje aplikację z kartą „Przypomnienia”
-w Ustawieniach. Bez tych zmiennych karty nie ma, a aplikacja działa jak dotąd.
+w Ustawieniach i dymkiem „Napisz do autora” w pasku. Bez tych zmiennych nie ma ani jednego,
+ani drugiego, a aplikacja działa jak dotąd.
 
 Plik `vapid-private.jwk.json` jest poza gitem. Nie generuj kluczy drugi raz — nowy klucz
 odcina wszystkie istniejące subskrypcje (skrypt odmówi, jeśli plik już jest).
 
 ## Lokalnie
 
-`npm test` w katalogu głównym obejmuje też serwer (`server/push/*.test.ts`). Worker lokalnie:
+`npm test` w katalogu głównym obejmuje też serwer (`server/api/*.test.ts`). Worker lokalnie:
 `npx wrangler dev --test-scheduled`, a przebieg crona: `curl "http://localhost:8787/__scheduled"`.
 
 ## Limity
@@ -69,3 +77,26 @@ odcina wszystkie istniejące subskrypcje (skrypt odmówi, jeśli plik już jest)
 Darmowy plan Workers daje 10 ms procesora na przebieg crona; jedno przypomnienie to ułamek
 milisekundy, więc mieści się kilkanaście na przebieg, a reszta wychodzi w następnym (co 5 minut,
 okno 90 minut). Dla kilkuset osób wystarczy; przy większym ruchu — plan płatny Workers.
+
+## Uwagi od użytkowników
+
+Dymek w pasku aplikacji (na każdym ekranie) i przycisk w Ustawieniach otwierają okno: e-mail
+(opcjonalnie, do odpowiedzi), treść i zrzut ekranu — zrobiony automatycznie z ekranu pod oknem
+albo wybrany z galerii. Do wiadomości dochodzi ślad wizyty (`src/trail.ts`): ekran, z którego
+ktoś pisze, czas wizyty i czas z aplikacją na ekranie, kolejne ekrany, stuknięcia i błędy
+aplikacji, przeglądarka i rozmiar ekranu. Ślad żyje tylko w pamięci karty i wychodzi wyłącznie
+z wiadomością; liczby w etykietach stuknięć są zamienione na `#`.
+
+**Czytanie:** `https://<adres Workera>/admin/feedback` — przeglądarka zapyta o hasło (login
+dowolny, hasło to `ADMIN_TOKEN`). Najnowsze na górze, z miniaturą zrzutu i rozwijanym śladem.
+Strona ma `Content-Security-Policy: default-src 'none'` i escapuje wszystko, co ktoś wpisał —
+treść od obcych ludzi nie wykona się jako kod. Albo bez przeglądarki:
+
+```bash
+npx wrangler d1 execute gym-tracker-api --remote \
+  --command "SELECT datetime(created/1000,'unixepoch'), email, view, text FROM feedback ORDER BY created DESC LIMIT 20"
+```
+
+**Ochrona:** limit 10 wiadomości na godzinę z jednego adresu (IP tylko jako skrót SHA-256
+z solą — samego adresu baza nie zna), ukryte pole-pułapka na boty, treść do 4000 znaków,
+zrzut tylko jako obraz (JPEG, PNG, WebP) do ok. 1,5 MB, CORS tylko dla strony aplikacji.

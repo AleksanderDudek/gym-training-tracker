@@ -117,7 +117,7 @@ self.addEventListener('fetch', (event) => {
 });
 
 /*
- * Przypomnienia (Web Push). Treść przychodzi zaszyfrowana z serwera przypomnień (`server/push`)
+ * Przypomnienia (Web Push). Treść przychodzi zaszyfrowana z serwera przypomnień (`server/api`)
  * i jest gotowa do pokazania — service worker nie liczy niczego sam. Każde `push` musi
  * skończyć się powiadomieniem: Chrome inaczej pokazuje własne „strona zaktualizowana w tle”,
  * a Safari po kilku cichych wiadomościach odbiera subskrypcję.

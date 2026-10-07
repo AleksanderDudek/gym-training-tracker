@@ -19,7 +19,7 @@ Pozostałe polecenia:
 npm run build      # produkcyjny build do dist/, z listą plików dla service workera
 npm run preview    # podgląd builda — tu działa też praca offline
 npm run typecheck  # tsc --noEmit
-npm test           # 487 testów silnika, doradcy, kalorii, biblioteki, odznak, ruchu, mimiki, obsady, scen, tras i serwera przypomnień (vitest)
+npm test           # 529 testów silnika, doradcy, kalorii, biblioteki, odznak, ruchu, obsady, scen, struktury, profili, tras i serwera (vitest)
 ```
 
 Build jest w pełni statyczny (`base: './'`), więc `dist/` można wrzucić na dowolny hosting plików
@@ -745,17 +745,22 @@ src/
     Structure.tsx           „przed treningiem”: przygotuj, rozgrzewka; nagłówki par i wskazówki serii
     Health.tsx              zastrzeżenie zdrowotne: krótka wersja i pełna karta
     Boost.tsx               „Na postęp w dzień wolny” na zakładce Plan i ekranie Dziś
+    Feedback.tsx            okno „Napisz do autora”: e-mail, wiadomość, zrzut ekranu
+  api.ts                    adres serwera aplikacji z buildu (`VITE_API_URL`)
   push.ts                   przypomnienia w przeglądarce: zgoda, subskrypcja Web Push, wysyłka listy
+  trail.ts                  ślad wizyty: ekrany, stuknięcia, błędy, czas — tylko w pamięci
+  trail.test.ts             4 testy kolejności, maskowania liczb, limitu i czasu aktywnego
+  feedback.ts               wiadomość do autora: kontekst, zrzut ekranu, obraz z galerii, wysyłka
   push.test.ts              5 testów stanu przypomnień na telefonie i klucza serwera
   App.tsx                   spina stan i widoki
   main.tsx                  punkt wejścia i rejestracja service workera
-server/push/                serwer przypomnień (Cloudflare Worker, cron co 5 minut, baza D1)
+server/api/                 serwer aplikacji: przypomnienia i uwagi (Cloudflare Worker, cron, D1)
   webpush.ts                szyfrowanie RFC 8291 i podpis VAPID na samym WebCrypto
   schedule.ts               co komu wysłać: czas lokalny, okno 90 minut, raz dziennie
-  api.ts                    zapis i wypisanie subskrypcji, walidacja, przebieg crona
+  api.ts                    subskrypcje, przebieg crona, uwagi i lista dla autora za hasłem
   store.ts                  subskrypcje w D1 albo w pamięci
   worker.ts                 punkt wejścia Workera
-  *.test.ts                 20 testów: wektor RFC, token VAPID, harmonogram, API i cron
+  *.test.ts                 28 testów: wektor RFC, VAPID, harmonogram, API, cron, uwagi i podgląd
   README.md                 wdrożenie krok po kroku
 scripts/
   precache.mjs              po buildzie: wersja i lista plików do sw.js
@@ -1391,6 +1396,30 @@ nie opuszczają przeglądarki, więc offline brakowało dotąd tylko samej aplik
 Sprawdzone w Chrome na wersji produkcyjnej: service worker przejmuje stronę, manifest i ikony się
 ładują, a po odcięciu sieci zaraz po pierwszej wizycie aplikacja otwiera się w całości.
 
+## Uwagi do autora
+
+Dymek w pasku aplikacji — na każdym ekranie — i przycisk w Ustawieniach otwierają małe okno:
+**e-mail** (opcjonalnie, tylko do odpowiedzi), **wiadomość** i **zrzut ekranu**. Zrzut robi się
+sam, z ekranu pod oknem (`html-to-image`, ładowane dopiero przy otwarciu okna), można go
+odznaczyć albo podmienić obrazem z galerii — zmniejszonym do 1600 px i JPEG-a.
+
+Razem z wiadomością idzie **ślad wizyty**, który pozwala odtworzyć problem: ekran, z którego
+ktoś pisze, czas wizyty i czas z aplikacją na ekranie, kolejne ekrany i stuknięcia po kolei,
+błędy aplikacji, przeglądarka, rozmiar ekranu, strefa czasowa, liczba zapisanych treningów
+i nazwa planu. Ślad zbiera jedno nasłuchiwanie kliknięć (`src/trail.ts`), więc nie rozjedzie się
+z aplikacją, gdy dojdzie nowy przycisk.
+
+**Dlaczego nie całkiem niewidocznie.** Wprowadzenie obiecuje „bez kont, bez reklam, bez
+śledzenia”, a RODO wymaga powiedzenia, co się zbiera, w chwili zbierania. Dlatego ślad żyje
+tylko w pamięci karty, nie zapisuje się w przeglądarce i wychodzi wyłącznie z wiadomością,
+którą ktoś sam wysyła; liczby w etykietach (wagi, kroki) są zamienione na `#`, a samo okno
+nie trafia do śladu. W oknie stoi jedna linijka „wysyłam też informacje techniczne” i rozwijane
+„co dokładnie” — bez przeszkadzania, ale bez ukrywania.
+
+Wiadomości trafiają do serwera aplikacji (`server/api`, ten sam co przypomnienia), a autor
+czyta je na stronie za hasłem — z miniaturą zrzutu i rozwijanym śladem. Szczegóły, limity
+i ochrona przed botami: `server/api/README.md`.
+
 ## Przypomnienia
 
 Rano o 7:30 — w dni, w które plan ma trening („Dziś trening: Trening A”). Wieczorem o 19:30 —
@@ -1404,7 +1433,7 @@ o czasie wysyła serwer, a telefon pokazuje. Na iPhonie od iOS 16.4 i tylko w ap
 do ekranu początkowego; karta mówi wtedy wprost, jak ją dodać.
 
 **Serwer nic nie wie o treningach.** Aplikacja sama układa listę gotowych przypomnień na trzy
-tygodnie i przysyła ją przy każdym otwarciu; serwer (`server/push`, Cloudflare Worker z cronem
+tygodnie i przysyła ją przy każdym otwarciu; serwer (`server/api`, Cloudflare Worker z cronem
 co 5 minut) tylko pilnuje zegara. Dostaje adres powiadomień telefonu, strefę czasową i teksty
 — bez planu, historii i danych o człowieku. Gdy ktoś przestaje otwierać aplikację, przypomnienia
 same się kończą. Konta nie ma: subskrypcję zna tylko telefon, który ją założył.
@@ -1414,7 +1443,8 @@ pytanie bez kontekstu przeglądarki karzą wyciszeniem, a ludzie odmawiają, zan
 chodzi. Teksty przypomnień zapraszają, nie naciskają, i nie mają rodzaju gramatycznego, bo
 dostaje je i Gustaw, i Gosia — pilnuje tego test.
 
-Wdrożenie serwera i dwie zmienne w GitHubie (`PUSH_API`, `VAPID_PUBLIC_KEY`): `server/push/README.md`.
+Wdrożenie serwera i dwie zmienne w GitHubie (`API_URL`, `VAPID_PUBLIC_KEY`): `server/api/README.md`.
+Ten sam serwer przyjmuje uwagi od użytkowników (o nich wyżej).
 Bez nich karty przypomnień nie ma, a aplikacja działa jak dotąd.
 
 ## Publikacja

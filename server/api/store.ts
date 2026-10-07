@@ -5,17 +5,50 @@ import type { ReminderItem, SubRecord } from './schedule';
  * w pamięci, a gdyby kiedyś trzeba było przenieść serwer na inną platformę, zmienia się
  * tylko ten plik.
  */
+/** Wiadomość od użytkownika. Adresu IP nie ma — tylko jego skrót do limitu wiadomości na godzinę. */
+export interface FeedbackRecord {
+  id: string;
+  /** ms */
+  created: number;
+  email: string | null;
+  text: string;
+  /** Ekran, z którego przyszła wiadomość. */
+  view: string;
+  /** Ślad wizyty i dane techniczne jako JSON. */
+  context: string;
+  /** Zrzut ekranu jako `data:` URL. */
+  screenshot: string | null;
+  ipHash: string;
+}
+
+export type FeedbackSummary = Omit<FeedbackRecord, 'screenshot' | 'ipHash'> & { hasShot: boolean };
+
 export interface Store {
   all(): Promise<SubRecord[]>;
   /** Nowa lista przypomnień. Lista wysłanych zostaje — inaczej to samo przyszłoby dwa razy. */
   upsert(r: Omit<SubRecord, 'sent'>): Promise<void>;
   markSent(endpoint: string, sent: string[]): Promise<void>;
   remove(endpoint: string): Promise<void>;
+  addFeedback(f: FeedbackRecord): Promise<void>;
+  /** Najnowsze najpierw. */
+  listFeedback(limit: number): Promise<FeedbackSummary[]>;
+  feedbackShot(id: string): Promise<string | null>;
+  /** Ile wiadomości przyszło z tego skrótu adresu od `since` (ms). */
+  recentFeedback(ipHash: string, since: number): Promise<number>;
 }
+
+const summary = ({ screenshot, ipHash: _ip, ...f }: FeedbackRecord): FeedbackSummary => ({ ...f, hasShot: !!screenshot });
 
 export function memoryStore(): Store {
   const m = new Map<string, SubRecord>();
+  const fb: FeedbackRecord[] = [];
   return {
+    addFeedback: async (f) => {
+      fb.push(structuredClone(f));
+    },
+    listFeedback: async (limit) => [...fb].sort((a, b) => b.created - a.created).slice(0, limit).map(summary),
+    feedbackShot: async (id) => fb.find((f) => f.id === id)?.screenshot ?? null,
+    recentFeedback: async (ipHash, since) => fb.filter((f) => f.ipHash === ipHash && f.created >= since).length,
     all: async () => [...m.values()].map((r) => structuredClone(r)),
     upsert: async (r) => {
       m.set(r.endpoint, { ...structuredClone(r), sent: m.get(r.endpoint)?.sent ?? [] });
@@ -60,8 +93,44 @@ const parse = <T>(s: string, fallback: T): T => {
   }
 };
 
+interface FeedbackRow {
+  id: string;
+  created: number;
+  email: string | null;
+  text: string;
+  view: string;
+  context: string;
+  has_shot: number;
+}
+
 export function d1Store(db: D1Database): Store {
   return {
+    addFeedback: async (f) => {
+      await db
+        .prepare('INSERT INTO feedback (id, created, email, text, view, context, screenshot, ip_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+        .bind(f.id, f.created, f.email, f.text, f.view, f.context, f.screenshot, f.ipHash)
+        .run();
+    },
+    listFeedback: async (limit) => {
+      const { results } = await db
+        .prepare(
+          'SELECT id, created, email, text, view, context, screenshot IS NOT NULL AS has_shot FROM feedback ORDER BY created DESC LIMIT ?',
+        )
+        .bind(limit)
+        .all<FeedbackRow>();
+      return results.map(({ has_shot, ...r }) => ({ ...r, hasShot: !!has_shot }));
+    },
+    feedbackShot: async (id) => {
+      const { results } = await db.prepare('SELECT screenshot FROM feedback WHERE id = ?').bind(id).all<{ screenshot: string | null }>();
+      return results[0]?.screenshot ?? null;
+    },
+    recentFeedback: async (ipHash, since) => {
+      const { results } = await db
+        .prepare('SELECT COUNT(*) AS n FROM feedback WHERE ip_hash = ? AND created >= ?')
+        .bind(ipHash, since)
+        .all<{ n: number }>();
+      return results[0]?.n ?? 0;
+    },
     all: async () => {
       const { results } = await db.prepare('SELECT * FROM subs').all<Row>();
       return results.map((r) => ({

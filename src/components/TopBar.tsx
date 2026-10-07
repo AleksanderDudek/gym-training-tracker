@@ -50,6 +50,7 @@ export function TopBar({
   strip,
   onSnooze,
   settings,
+  onFeedback,
 }: {
   title: string;
   subtitle?: string | null | undefined;
@@ -60,6 +61,8 @@ export function TopBar({
   onSnooze: () => void;
   /** Czy w pasku stoi wejście do ustawień — tylko na korzeniach zakładek. */
   settings: boolean;
+  /** Okno „Napisz do autora” — na każdym ekranie, bo liczy się, z którego ktoś pisze. Brak — bez serwera. */
+  onFeedback?: (() => void) | undefined;
 }) {
   const scrolled = useScrolled();
 
@@ -77,6 +80,11 @@ export function TopBar({
           <h1 className="appbar-title">{title}</h1>
           {subtitle && <div className="appbar-sub">{subtitle}</div>}
         </div>
+        {onFeedback && (
+          <button className="appbar-btn" onClick={onFeedback} aria-label="Napisz do autora — uwaga albo błąd">
+            <Icon name="feedback" size={22} />
+          </button>
+        )}
         {settings && (
           <a className="appbar-btn" href={SETTINGS_PATH} aria-label="Ustawienia">
             <Icon name="settings" size={22} />

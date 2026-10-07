@@ -9,7 +9,7 @@ import { snapshot } from './snapshot';
  * rowerze, bieżni i tańcu z całego dnia.
  *
  * Telefon sam układa listę gotowych wiadomości na trzy tygodnie i wysyła ją serwerowi, który
- * tylko pilnuje zegara (`server/push`). Plan, historia i nazwy treningów nie wychodzą
+ * tylko pilnuje zegara (`server/api`). Plan, historia i nazwy treningów nie wychodzą
  * z telefonu w innej postaci niż tytuł przypomnienia. Lista odświeża się przy każdym otwarciu
  * aplikacji; gdy ktoś przestanie ją otwierać, przypomnienia skończą się po trzech tygodniach.
  */
@@ -24,7 +24,7 @@ export const DEFAULT_REMINDERS: ReminderPrefs = { morning: true, evening: true }
 
 export const remindersOf = (state: AppState): ReminderPrefs => state.cfg.reminders ?? DEFAULT_REMINDERS;
 
-/** Kształt, który przyjmuje serwer (`server/push/schedule.ts`). */
+/** Kształt, który przyjmuje serwer (`server/api/schedule.ts`). */
 export interface ReminderItem {
   tag: 'trening' | 'ruch';
   date: string;
