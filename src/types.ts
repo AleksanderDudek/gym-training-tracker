@@ -115,6 +115,11 @@ export interface Session {
   res: Record<ExerciseId, ExerciseResult>;
   done: Record<ExerciseId, boolean>;
   skip: Record<ExerciseId, boolean>;
+  /**
+   * Zamiany na dziś: ćwiczenie z treningu → zamiennik (maszyna zajęta, brak sprzętu).
+   * Sam trening zostaje bez zmian; wynik i progresja idą do ćwiczenia naprawdę zrobionego.
+   */
+  swap?: Record<ExerciseId, ExerciseId>;
 }
 
 export interface LogItem {
@@ -222,7 +227,11 @@ export type WorkoutGear = 'none' | 'kb' | 'gym';
 export interface Workout {
   id: string;
   name: string;
-  items: { ex: ExerciseId }[];
+  /**
+   * Ćwiczenia po kolei. `pair` — „na zmianę z poprzednim”: seria jednego, przerwa, seria
+   * drugiego, przerwa, aż oba skończą serie. Brak oznacza serie pod rząd.
+   */
+  items: { ex: ExerciseId; pair?: boolean }[];
   /** Brak u treningów zapisanych przed rodzajami — doradca stosuje wtedy tylko zasady ogólne. */
   kind?: WorkoutKind;
   gear?: WorkoutGear;

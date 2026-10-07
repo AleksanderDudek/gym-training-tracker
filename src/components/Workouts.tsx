@@ -12,6 +12,8 @@ import { kcalText } from './Cardio';
 import { Chips, DesignNotes, MuscleBars, SectionSwitch } from './Design';
 import { ExercisePicker } from './ExercisePicker';
 import { WorkoutArt } from './SceneArt';
+import { PairHead, PrepCard, blocksOf, cueFor, tagOf } from './Structure';
+import { pairProblems } from '../engine/structure';
 import { HealthNote } from './Health';
 import { EmptyState, Segmented } from './ui';
 import { SupportLine } from './Support';
@@ -97,7 +99,7 @@ function WorkoutCard({
   planned: boolean;
   onStart: (id: string) => void;
 }) {
-  const r = reviewWorkout(state, w.items.map((i) => i.ex), w.kind);
+  const r = reviewWorkout(state, w.items.map((i) => i.ex), w.kind, w.items.map((i) => !!i.pair));
   const top = r.loads.slice(0, 3).map((l) => lower(MUSCLE_NAME[l.muscle]));
   return (
     <div className={`grp wcard${planned ? ' today' : ''}`}>
@@ -188,7 +190,7 @@ export function WorkoutLibrary({
 }
 
 /** Ćwiczenie w podglądzie: kolejność, recepta na dziś i partie, które pracują. */
-function ExerciseLine({ state, id, n }: { state: AppState; id: ExerciseId; n: number }) {
+function ExerciseLine({ state, id, n, cue }: { state: AppState; id: ExerciseId; n: string; cue?: string }) {
   const use = EX_MUSCLES[id];
   return (
     <div className="h-item wex">
@@ -198,6 +200,7 @@ function ExerciseLine({ state, id, n }: { state: AppState; id: ExerciseId; n: nu
           {EX[id]?.name ?? id}
         </a>
         <div className="h-detail">{EX[id] ? planLabel(state, id) : 'ćwiczenie spoza atlasu'}</div>
+        {cue && <div className="h-detail ex-cue">{cue}</div>}
         {use && (
           <div className="h-detail">
             {use.p.map((m) => lower(MUSCLE_NAME[m])).join(', ')}
@@ -236,7 +239,7 @@ export function WorkoutPreview({
 
   const own = isOwn(w);
   const ids = w.items.map((i) => i.ex);
-  const r = reviewWorkout(state, ids, w.kind);
+  const r = reviewWorkout(state, ids, w.kind, w.items.map((i) => !!i.pair));
   const plans = [...GOAL_PLANS, ...(state.plans ?? [])].filter((p) => p.cycle.includes(w.id));
 
   return (
@@ -270,10 +273,23 @@ export function WorkoutPreview({
         </div>
       </div>
 
-      <div className="sect-label">Ćwiczenia i serie na dziś</div>
-      {ids.map((x, i) => (
-        <ExerciseLine key={`${x}-${i}`} state={state} id={x} n={i + 1} />
-      ))}
+      <PrepCard state={state} workout={w} />
+
+      <div className="sect-label">Kolejność i serie na dziś</div>
+      {blocksOf(w.items).map((b) => {
+        const sets = (id: ExerciseId) => dose(state, id).sets;
+        const lines = b.ids.map((x, i) => (
+          <ExerciseLine key={`${x}-${b.n}`} state={state} id={x} n={tagOf(b, i)} cue={cueFor(b, i, sets)} />
+        ));
+        return b.kind === 'pair' ? (
+          <div className="pairbox" key={`p${b.n}`}>
+            <PairHead b={b} sets={sets} />
+            {lines}
+          </div>
+        ) : (
+          lines
+        );
+      })}
 
       <div className="grp" style={{ marginTop: 14 }}>
         <h2>Które partie pracują</h2>
@@ -335,6 +351,11 @@ export function WorkoutBuilder({
   const [name, setName] = useState(editing ? editing.name : source ? `${source.name} — moja wersja` : '');
   const [kind, setKind] = useState<WorkoutKind | ''>(source?.kind ?? '');
   const [items, setItems] = useState<ExerciseId[]>(source ? source.items.map((i) => i.ex) : []);
+  // Ćwiczenia robione „na zmianę z poprzednim”. Flaga należy do ćwiczenia, więc para
+  // przeżywa przesuwanie w górę i w dół razem z nim.
+  const [paired, setPaired] = useState<Set<ExerciseId>>(
+    () => new Set(source?.items.filter((i) => i.pair).map((i) => i.ex) ?? []),
+  );
   // Klucz pola wyboru: po dodaniu ćwiczenia pole zaczyna od nowa, gotowe na kolejne.
   const [pickKey, setPickKey] = useState(0);
 
@@ -349,7 +370,15 @@ export function WorkoutBuilder({
       </div>
     );
 
-  const r = reviewWorkout(state, items, kind || undefined);
+  const pairs = items.map((x, i) => i > 0 && paired.has(x));
+  const r = reviewWorkout(state, items, kind || undefined, pairs);
+  const blocks = blocksOf(items.map((x, i) => ({ ex: x, pair: pairs[i] })));
+  const togglePair = (x: ExerciseId) => {
+    const next = new Set(paired);
+    if (next.has(x)) next.delete(x);
+    else next.add(x);
+    setPaired(next);
+  };
 
   const add = (x: ExerciseId) => {
     setPickKey((k) => k + 1);
@@ -379,7 +408,8 @@ export function WorkoutBuilder({
     const w: Workout = {
       id: editing?.id ?? `w${Date.now()}`,
       name: name.trim(),
-      items: items.map((x) => ({ ex: x })),
+      // Tylko pary, które naprawdę powstały — trzecie „na zmianę” z rzędu nic nie znaczy.
+      items: blocks.flatMap((b) => b.ids.map((x, i) => (i ? { ex: x, pair: true } : { ex: x }))),
       ...(kind ? { kind } : {}),
     };
     onSave(w);
@@ -433,6 +463,18 @@ export function WorkoutBuilder({
                   </option>
                 ))}
               </select>
+              <button
+                type="button"
+                className="bl-pair"
+                onClick={() => togglePair(x)}
+                // Do pary dochodzi się tylko z ćwiczeniem, które samo nie jest jeszcze w parze.
+                disabled={!i || pairs[i - 1]}
+                aria-pressed={pairs[i] ?? false}
+                aria-label={`Na zmianę z poprzednim: ${ex(x).name}`}
+                title="Na zmianę z poprzednim"
+              >
+                ↔
+              </button>
               <button type="button" onClick={() => move(i, -1)} disabled={!i} aria-label={`W górę: ${ex(x).name}`}>
                 ↑
               </button>
@@ -457,9 +499,19 @@ export function WorkoutBuilder({
         {items.length > 0 && (
           <p className="hint">
             Liczba serii należy do ćwiczenia, nie do treningu — zmienia się wszędzie, gdzie to ćwiczenie
-            występuje, i dalej prowadzi ją silnik progresji.
+            występuje, i dalej prowadzi ją silnik progresji. ↔ łączy ćwiczenie z poprzednim w parę
+            robioną na zmianę.
           </p>
         )}
+        {blocks
+          .filter((b) => b.kind === 'pair')
+          .map((b) => ({ b, why: pairProblems(b.ids[0]!, b.ids[1]!, undefined) }))
+          .filter((x) => x.why.length)
+          .map(({ b, why }) => (
+            <p className="tight warnline" key={b.n}>
+              Para {b.n}: {why.join(' ')}
+            </p>
+          ))}
 
         <ExercisePicker key={pickKey} label="dodaj ćwiczenie" value={null} onChange={add} />
 

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ALL, BUILTIN, ex } from './data/exercises';
+import { ALL, BUILTIN, EX, ex } from './data/exercises';
 import { acwr, daysSince, epley, round1, weeklyRate } from './engine/math';
 import { P, freshState } from './engine/plan';
 import { applyLayoff, applyResult } from './engine/progression';
@@ -94,6 +94,13 @@ function restoreExtras(next: AppState, saved: Partial<AppState>): void {
     next.supportSnooze = saved.supportSnooze;
   if (next.cfg.avatar !== undefined && next.cfg.avatar !== 'gustaw' && next.cfg.avatar !== 'gosia')
     delete next.cfg.avatar;
+  // Zamiany ćwiczeń w trwającej sesji: tylko istniejące ćwiczenia, inaczej sesja by się wywróciła.
+  if (next.session?.swap !== undefined) {
+    const raw: unknown = next.session.swap;
+    const ok = raw && typeof raw === 'object' ? Object.entries(raw).filter(([a, b]) => EX[a] && typeof b === 'string' && EX[b]) : [];
+    if (ok.length) next.session.swap = Object.fromEntries(ok) as Record<string, string>;
+    else delete next.session.swap;
+  }
   const r = next.cfg.reminders;
   if (r !== undefined && (typeof r !== 'object' || typeof r.morning !== 'boolean' || typeof r.evening !== 'boolean'))
     delete next.cfg.reminders;
@@ -230,7 +237,12 @@ export default function App() {
   // Cztery zakładki aplikacji renderują się po staremu; atlas i podstrony ćwiczeń mają własne gałęzie.
   const view = route.kind === 'tab' ? route.tab : null;
   const workouts: Workout[] = [...BUILTIN, ...state.workouts];
-  const current = state.session ? workouts.find((w) => w.id === state.session!.workout) : undefined;
+  const planned = state.session ? workouts.find((w) => w.id === state.session!.workout) : undefined;
+  // Zamiany na dziś (zajęta maszyna, brak sprzętu) podmieniają ćwiczenie tylko w tej sesji —
+  // zapis, progresja i podsumowanie widzą to, co naprawdę zrobiono.
+  const swap = state.session?.swap;
+  const current =
+    planned && swap ? { ...planned, items: planned.items.map((i) => ({ ...i, ex: swap[i.ex] ?? i.ex })) } : planned;
   // Co wypada dziś według planu — razem z terminem zaległym, ale wciąż do nadrobienia.
   const snap = snapshot(state);
   const todayPlan: TodayPlan = (() => {
@@ -290,6 +302,23 @@ export default function App() {
     commit(next);
     go('#/sesja', { top: true });
     window.scrollTo({ top: 0 });
+  };
+
+  /** Zamiana ćwiczenia na dziś. Zamiana na oryginał cofa zamianę. */
+  const swapExercise = (orig: ExerciseId, to: ExerciseId) => {
+    const next = clone(state);
+    const s = next.session!;
+    const live = s.swap?.[orig] ?? orig;
+    delete s.res[live];
+    delete s.done[live];
+    delete s.skip[live];
+    const map = { ...(s.swap ?? {}) };
+    if (to === orig) delete map[orig];
+    else map[orig] = to;
+    if (Object.keys(map).length) s.swap = map;
+    else delete s.swap;
+    commit(next);
+    setToastMsg(to === orig ? `Wracasz do: ${ex(orig).name}.` : `Na dziś: ${ex(to).name} zamiast ${ex(orig).name}.`);
   };
 
   const saveExercise = (id: ExerciseId, rows: SetResult[], effort: EffortKey) => {
@@ -1123,6 +1152,8 @@ export default function App() {
           <SessionView
             state={state}
             workout={current}
+            planned={planned!}
+            onSwap={swapExercise}
             onReady={(r: ReadyKey) => {
               const next = clone(state);
               next.session!.ready = r;

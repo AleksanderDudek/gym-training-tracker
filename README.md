@@ -655,9 +655,13 @@ src/
   data/workouts.ts          biblioteka 32 treningów: podziały, całe ciało i partie na trzy zestawy sprzętu
   data/muscles.ts           16 grup mięśni, główne i pomocnicze każdego ćwiczenia, izolacje
   data/scenes.ts            sceny ilustracji: 36 treningów, 16 planów z celem, 3 poziomy i własne
+  data/stations.ts          stanowisko każdego ćwiczenia: sprzęt, maszyna, zamienniki; dom i siłownia
   engine/
     math.ts                 wzór Epleya, tonaż, wskaźnik obciążenia w czasie
     reminders.ts            lista przypomnień na 21 dni: trening z planu o 7:30, ruch o 19:30
+    blocks.ts               bloki treningu: serie pod rząd albo para na zmianę
+    structure.ts            zasady par, przerwy, przygotowanie stanowiska, rozgrzewka
+    structure.test.ts       16 testów par w całej bibliotece, stanowisk, talerzy, rozgrzewki i zamian
     reminders.test.ts       11 testów list, godzin, dnia lokalnego i kontraktu z serwerem
     plan.ts                 stan początkowy, recepta na dziś, mieszane obciążenie
     progression.ts          silnik: ocena sesji, awanse, przejścia, regres, przerwy
@@ -733,6 +737,8 @@ src/
     Achievements.tsx        zakładka osiągnięć: dorobek w liczbach i odznaki z progami
     VideoEmbed.tsx          odtwarzacz YouTube ładowany dopiero po kliknięciu
     Reminders.tsx           karta przypomnień w ustawieniach: zgoda, rano i wieczorem
+    Structure.tsx           „przed treningiem”: przygotuj, rozgrzewka; nagłówki par i wskazówki serii
+    Health.tsx              zastrzeżenie zdrowotne: krótka wersja i pełna karta
   push.ts                   przypomnienia w przeglądarce: zgoda, subskrypcja Web Push, wysyłka listy
   push.test.ts              5 testów stanu przypomnień na telefonie i klucza serwera
   App.tsx                   spina stan i widoki
@@ -818,6 +824,40 @@ występuje wcale, przy siedmiu zajmuje cztery dni z siedmiu.
 **Płeć przestawia wyłącznie ciężary startowe.** Program, rotacja treningów i zasady progresji są
 identyczne. Start planu ustawia ciężary tylko w ćwiczeniach bez historii: gdzie jest już
 zalogowany wynik, tam zmierzony poziom bije każdą tabelkę.
+
+## Kolejność, pary i przygotowanie stanowiska
+
+Każdy trening mówi, **co i kiedy robić**. Podgląd i sesja zaczynają się od karty „Przed
+treningiem”, a ćwiczenia stoją w blokach: `1`, `2A`/`2B`, `3`…
+
+- **Przygotuj.** Konkretne kettlebelle z wagami z twojego poziomu („16 kg — swing, goblet”),
+  sztanga z talerzami na stronę („60 kg — po 20 kg na stronę”), hantle, a do tego ławka, drążek,
+  krzesło oparte o ścianę, stół do australijskiego podciągania, mata. Na siłowni lista maszyn
+  do znalezienia, zanim padnie pierwsza seria — każde ćwiczenie z własnym zamiennikiem na
+  wypadek, gdy maszyna jest zajęta. W sesji przycisk „Zamień” podmienia ćwiczenie tylko na dziś:
+  wynik i progresja idą do tego, co naprawdę zrobiono, a trening zostaje bez zmian.
+- **Rozgrzewka.** Ogólna (siłownia: 5 min rower, bieżnia albo ergometr; dom: marsz, pajacyki,
+  krążenia) i serie dochodzące: do każdego ciężkiego ruchu ze sztangą pusty gryf × 10, ok. 50% × 5
+  i 75% × 3, zaokrąglone do 2,5 kg; pierwsze ćwiczenie treningu dostaje swoje wejście zawsze.
+- **Serie pod rząd albo na zmianę.** Para to seria A, 60–90 s przerwy, seria B, przerwa — aż obie
+  skończą serie. Skraca trening bez straty powtórzeń, gdy ćwiczenia nie męczą tych samych mięśni
+  (Robbins i in., 2010; przegląd Weakley i in., 2017), najlepiej przeciwstawnych, jak pchanie
+  i ciągnięcie. Zasady, których pilnuje test na całej bibliotece:
+  - ruch wybuchowy (swing, burpee) i ciężki ruch ze sztangą (przysiad, martwy ciąg, wyciskanie)
+    zawsze sam, z pełną przerwą 2–3 min;
+  - para nie męczy tej samej partii — dwa uginania na biceps na zmianę to dwa słabsze uginania;
+  - na siłowni para trzyma najwyżej jedno stanowisko: ten sam wyciąg (rozpiętki i prostowanie
+    ramion), tę samą suwnicę (wypychanie i wspięcia) albo maszynę z hantlami obok. Dwie maszyny
+    naraz w szczycie to maszyna, którą ktoś zajmie, zanim się wróci;
+  - dni samego pchania i samego brzucha zostają bez par — każda para męczyłaby te same mięśnie.
+- **Przerwy** z rodzaju pracy: ciężkie wielostawowe 2–3 min, pozostałe 60–90 s, brzuch i łydki
+  30–60 s. Czas treningu liczy pary uczciwie — przerwa jednego ćwiczenia to praca drugiego.
+
+Przegląd biblioteki dał 44 pary w 36 treningach, np. trening A: swing sam, goblet ↔ wiosłowanie,
+floor press ↔ podciąganie, spacer sam, brzuch ↔ łydki. Kreator własnego treningu ma przycisk ↔
+„na zmianę z poprzednim” i od razu mówi, gdy para łamie którąś z zasad. Doradca liczy kolejność
+po blokach: para stoi na miejscu ważniejszego ćwiczenia, więc łydki na suwnicy zaraz po
+wypychaniu to jedno stanowisko, a nie „łydki przed izolacją”.
 
 ## Treningi, plany i doradca
 

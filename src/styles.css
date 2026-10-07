@@ -918,6 +918,28 @@
   /* Filtr długości i filtr sprzętu jeden pod drugim — z odstępem, żeby nie czytały się jak jeden rząd. */
   .chips + .seg,.seg + .chips{margin-top:10px}
 
+  /* Instrukcja treningu: przygotowanie, rozgrzewka, pary na zmianę. */
+  .prep h3.prep-h{font-family:var(--display);font-weight:600;font-size:15px;letter-spacing:.02em;
+    text-transform:uppercase;color:var(--ink);margin:14px 0 4px}
+  .prep h3.prep-h:first-of-type{margin-top:4px}
+  .prep-list{margin:4px 0 8px;padding-left:18px;font-size:14px;line-height:1.45}
+  .prep-list li{margin:3px 0}
+  details.prep-session{margin:12px 0;background:var(--surface);border:1px solid var(--line);
+    border-radius:var(--r);padding:10px 12px}
+  details.prep-session summary{cursor:pointer;font-weight:600;min-height:28px}
+  .ex-tag{display:inline-block;min-width:22px;margin-right:6px;padding:0 4px;border-radius:2px;
+    background:var(--steel);color:#fff;font-family:var(--display);font-size:13px;text-align:center}
+  .ex-cue{display:block;font-size:12.5px;color:var(--ink-soft);margin-top:2px}
+  /* Para: ramka z nagłówkiem, nie kreska z lewej — tę system projektowy odrzuca jako szablon. */
+  .pairbox{border:1px solid var(--edge);border-radius:var(--r);background:var(--surface);margin:10px 0;overflow:hidden}
+  .pair-head{padding:10px 12px;font-size:13.5px;line-height:1.4;color:var(--ink);background:var(--surface-2);
+    border-bottom:1px solid var(--line)}
+  .pair-head b{display:block;font-family:var(--display);font-size:15px;color:var(--c-blue-ink)}
+  .pair-head span{color:var(--ink-soft)}
+  .bl-item .bl-pair[aria-pressed=true]{background:var(--steel);border-color:var(--steel);color:#fff}
+  .swaprow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:8px 0;font-size:13px;color:var(--ink-soft)}
+  .swaprow span{flex-basis:100%}
+
   /* Zastrzeżenie zdrowotne: mały druk, ale pełny kontrast — `ink-soft`, nie przezroczystość. */
   .health-note{font-size:12.5px;color:var(--ink-soft);margin:10px 0 0}
   .wcard h2.today-name{margin-bottom:2px}

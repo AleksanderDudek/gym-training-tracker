@@ -1186,15 +1186,17 @@ const KB_BASICS: Workout[] = [
     kind: 'full',
     gear: 'kb',
     desc: 'Całe ciało z kettlebell: swing, goblet, wiosłowanie, floor press i podciąganie.',
+    // Swing sam, na świeżo; potem dwie pary dół + ciągnięcie i pchanie + ciągnięcie,
+    // spacer sam (chwyt i brzuch), na koniec brzuch na zmianę z łydkami.
     items: [
       { ex: 'swing2' },
       { ex: 'goblet' },
-      { ex: 'row' },
+      { ex: 'row', pair: true },
       { ex: 'floor' },
-      { ex: 'pullup' },
+      { ex: 'pullup', pair: true },
       { ex: 'carry' },
       { ex: 'core' },
-      { ex: 'calf' },
+      { ex: 'calf', pair: true },
     ],
   },
   {
@@ -1206,11 +1208,11 @@ const KB_BASICS: Workout[] = [
     items: [
       { ex: 'swing1' },
       { ex: 'lunge' },
-      { ex: 'press' },
+      { ex: 'press', pair: true },
       { ex: 'rdl' },
-      { ex: 'pushup' },
+      { ex: 'pushup', pair: true },
       { ex: 'farmer' },
-      { ex: 'calf1' },
+      { ex: 'calf1', pair: true },
     ],
   },
   {
@@ -1219,7 +1221,8 @@ const KB_BASICS: Workout[] = [
     kind: 'full',
     gear: 'kb',
     desc: 'Turecki wstaw, kompleks i goblet — mniej ćwiczeń, więcej ruchu w każdym.',
-    items: [{ ex: 'tgu' }, { ex: 'complex' }, { ex: 'goblet' }, { ex: 'farmer' }, { ex: 'core' }],
+    // Turecki wstaw i kompleks to nauka ruchu i dużo zmęczenia — oba sami, z pełną przerwą.
+    items: [{ ex: 'tgu' }, { ex: 'complex' }, { ex: 'goblet' }, { ex: 'farmer' }, { ex: 'core', pair: true }],
   },
   {
     // Dzień lekki. Nie „to samo, tylko słabiej” — po prostu bez ciężkiego zawiasu, przysiadu
@@ -1230,7 +1233,8 @@ const KB_BASICS: Workout[] = [
     kind: 'light',
     gear: 'kb',
     desc: 'Bez ciężkiego zawiasu, przysiadu i wyciskania. Na dni między mocnymi treningami.',
-    items: [{ ex: 'curl' }, { ex: 'carry' }, { ex: 'core' }, { ex: 'calf' }, { ex: 'calf1' }],
+    // Dwie pary i brzuch na koniec: łydki obu rodzajów nie idą w parze ze sobą.
+    items: [{ ex: 'curl' }, { ex: 'calf', pair: true }, { ex: 'carry' }, { ex: 'calf1', pair: true }, { ex: 'core' }],
   },
 ];
 

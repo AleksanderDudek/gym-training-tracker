@@ -14,6 +14,13 @@ import type { Workout, WorkoutKind } from '../types';
  * Każdy trening przechodzi przez doradcę bez ostrzeżeń — pilnuje tego test. W praktyce
  * znaczy to: żadna partia nie dostaje w jednej sesji więcej niż ok. dziesięciu serii,
  * ruchy wielostawowe idą przed izolacjami, a brzuch, łydki i spacery na końcu.
+ *
+ * **Pary na zmianę** zapisuje `'a+b'`: seria a, przerwa, seria b, przerwa — aż oba skończą
+ * serie. Każdy trening był przejrzany pod tym kątem (`engine/structure.ts` mówi, na jakich
+ * zasadach): ruch wybuchowy i ciężki ruch ze sztangą zawsze sam; para tylko z ćwiczeń, które
+ * nie męczą tej samej partii; na siłowni para trzyma najwyżej jedno stanowisko — ten sam
+ * wyciąg, tę samą suwnicę albo maszynę z hantlami obok. Dni samego pchania i samego brzucha
+ * zostają bez par: tam każda para męczyłaby te same mięśnie.
  */
 
 const w = (
@@ -23,7 +30,17 @@ const w = (
   gear: Workout['gear'],
   desc: string,
   items: string[],
-): Workout => ({ id, name, kind, gear, desc, items: items.map((ex) => ({ ex })) });
+): Workout => ({
+  id,
+  name,
+  kind,
+  gear,
+  desc,
+  items: items.flatMap((x) => {
+    const [a, b] = x.split('+');
+    return b ? [{ ex: a! }, { ex: b, pair: true }] : [{ ex: a! }];
+  }),
+});
 
 export const LIBRARY: Workout[] = [
   /* ---------------- Siłownia: podziały ---------------- */
@@ -33,7 +50,7 @@ export const LIBRARY: Workout[] = [
     'push',
     'gym',
     'Dzień pchania z układu push/pull/nogi. Dwa wyciskania na klatkę, jedno nad głowę, potem izolacje.',
-    ['bench', 'bench_incline', 'ohp_db', 'fly_cable', 'lateral', 'pushdown'],
+    ['bench', 'bench_incline', 'ohp_db', 'fly_cable+pushdown', 'lateral'],
   ),
   w(
     'pull-gym',
@@ -41,7 +58,7 @@ export const LIBRARY: Workout[] = [
     'pull',
     'gym',
     'Dzień ciągnięcia: z góry i poziomo sztangą, tył barków, a biceps dwoma uginaniami na koniec.',
-    ['latpulldown', 'row_bb', 'facepull', 'curl_db', 'curl_hammer'],
+    ['latpulldown', 'row_bb', 'facepull+curl_db', 'curl_hammer'],
   ),
   w(
     'legs-gym',
@@ -49,7 +66,7 @@ export const LIBRARY: Workout[] = [
     'legs',
     'gym',
     'Oba wzorce nóg: kolano (przysiad, suwnica) i biodro (RDL), tył uda, łydki i brzuch na koniec.',
-    ['squat_back', 'rdl_bb', 'legpress', 'legcurl', 'calf_press', 'legraise_hang'],
+    ['squat_back', 'rdl_bb', 'legpress+calf_press', 'legcurl', 'legraise_hang'],
   ),
   w(
     'upper-gym',
@@ -57,7 +74,7 @@ export const LIBRARY: Workout[] = [
     'upper',
     'gym',
     'Górna połowa w równowadze: każde pchanie ma swoje ciągnięcie. Do układu góra/dół.',
-    ['bench', 'row_bb', 'ohp_db', 'latpulldown', 'lateral', 'curl_db', 'pushdown'],
+    ['bench', 'row_bb', 'ohp_db+latpulldown', 'lateral+curl_db', 'pushdown'],
   ),
   w(
     'lower-gym',
@@ -73,7 +90,7 @@ export const LIBRARY: Workout[] = [
     'full',
     'gym',
     'Przysiad, wyciskanie, wiosłowanie i RDL w jednej sesji. Do planu na dwa–trzy dni w tygodniu.',
-    ['squat_back', 'bench', 'row_cable', 'rdl_db', 'ohp_db', 'plank'],
+    ['squat_back', 'bench', 'row_cable+rdl_db', 'ohp_db+plank'],
   ),
   w(
     'full-gym-b',
@@ -81,7 +98,7 @@ export const LIBRARY: Workout[] = [
     'full',
     'gym',
     'Druga połowa pary: martwy ciąg, wyciskanie żołnierskie, podciąganie i przysiad bułgarski.',
-    ['deadlift', 'ohp_bb', 'chinup', 'bulgarian', 'pallof'],
+    ['deadlift', 'ohp_bb', 'chinup+bulgarian', 'pallof'],
   ),
 
   /* ---------------- Siłownia: partie ---------------- */
@@ -91,7 +108,7 @@ export const LIBRARY: Workout[] = [
     'glutes',
     'gym',
     'Hip thrust i przysiad bułgarski, do tego odwodzenie na bok pośladka. Ok. dziesięciu serii — tyle naraz jeszcze się opłaca.',
-    ['hipthrust', 'bulgarian', 'legcurl', 'abduction', 'plank_side'],
+    ['hipthrust', 'bulgarian', 'legcurl', 'abduction+plank_side'],
   ),
   w(
     'chest-gym',
@@ -99,7 +116,7 @@ export const LIBRARY: Workout[] = [
     'chest',
     'gym',
     'Płasko, na skosie i rozpiętki, a do każdego pchania ciągnięcie: wiosłowanie i face pull trzymają barki w miejscu.',
-    ['bench', 'bench_incline', 'row_cable', 'fly_cable', 'facepull'],
+    ['bench', 'bench_incline', 'row_cable', 'fly_cable+facepull'],
   ),
   w(
     'back-gym',
@@ -115,7 +132,7 @@ export const LIBRARY: Workout[] = [
     'shoulders',
     'gym',
     'Wszystkie trzy aktony: przód z wyciskań, bok z unoszenia, tył z face pulla. Kaptury na koniec.',
-    ['ohp_bb', 'arnold', 'lateral', 'facepull', 'shrug'],
+    ['ohp_bb', 'arnold', 'lateral+facepull', 'shrug'],
   ),
   w(
     'arms-gym',
@@ -123,7 +140,7 @@ export const LIBRARY: Workout[] = [
     'arms',
     'gym',
     'Wąskie wyciskanie na start, potem uginania i prostowania na zmianę. Dodatek, nie podstawa planu.',
-    ['bench_close', 'curl_bb', 'skullcrusher', 'curl_hammer', 'pushdown', 'curl_preacher'],
+    ['bench_close', 'skullcrusher+curl_bb', 'pushdown+curl_hammer', 'curl_preacher'],
   ),
   w(
     'core-gym',
@@ -131,7 +148,7 @@ export const LIBRARY: Workout[] = [
     'core',
     'gym',
     'Unoszenie nóg, kółko, Pallof press i spacer farmera. Krótki — do dołożenia albo na dzień lżejszy.',
-    ['legraise_hang', 'abwheel', 'pallof', 'farmer'],
+    ['legraise_hang', 'abwheel', 'pallof+farmer'],
   ),
 
   /*
@@ -147,7 +164,7 @@ export const LIBRARY: Workout[] = [
     'full',
     'none',
     'Przysiad, pompki, wiosłowanie pod stołem, mostek i deska. Podłoga i solidny stół — nic więcej.',
-    ['squat_air', 'pushup', 'row_inverted', 'glutebridge', 'plank'],
+    ['squat_air+pushup', 'row_inverted+glutebridge', 'plank'],
   ),
   w(
     'full-none-b',
@@ -155,7 +172,7 @@ export const LIBRARY: Workout[] = [
     'full',
     'none',
     'Wykrok wsteczny, pompki w podporze przodem, wiosłowanie pod stołem, wyprosty i dead bug.',
-    ['lunge_bw', 'pushup_pike', 'row_inverted', 'hyper', 'deadbug'],
+    ['lunge_bw+pushup_pike', 'row_inverted+hyper', 'deadbug'],
   ),
   w(
     'full-none-c',
@@ -163,7 +180,7 @@ export const LIBRARY: Workout[] = [
     'full',
     'none',
     'Burpee na rozgrzanie, przysiad bułgarski z nogą na krześle, pompki diamentowe, wiosłowanie i hollow.',
-    ['burpee', 'split_bw', 'pushup_diamond', 'row_inverted', 'y_raise', 'hollow'],
+    ['burpee', 'split_bw+pushup_diamond', 'row_inverted', 'y_raise+hollow'],
   ),
   w(
     'upper-none',
@@ -171,7 +188,7 @@ export const LIBRARY: Workout[] = [
     'upper',
     'none',
     'Pompki i wiosłowanie pod stołem na zmianę, pompki w podporze, na krześle i litera Y na tył barków.',
-    ['pushup', 'row_inverted', 'pushup_pike', 'dip_bench', 'y_raise'],
+    ['pushup+row_inverted', 'pushup_pike+y_raise', 'dip_bench'],
   ),
   w(
     'lower-none',
@@ -179,7 +196,7 @@ export const LIBRARY: Workout[] = [
     'lower',
     'none',
     'Przysiad, przysiad bułgarski na krześle, mostek jednonóż, nordic curl ze stopami pod kanapą i łydki.',
-    ['squat_air', 'split_bw', 'glutebridge1', 'nordic', 'calf1'],
+    ['squat_air', 'split_bw', 'glutebridge1', 'nordic+calf1'],
   ),
   w(
     'push-none',
@@ -195,7 +212,7 @@ export const LIBRARY: Workout[] = [
     'glutes',
     'none',
     'Przysiad bułgarski na krześle, mostek jednonóż, wyprosty i deska bokiem. Pełny trening pośladków na macie.',
-    ['split_bw', 'glutebridge1', 'hyper', 'plank_side'],
+    ['split_bw', 'glutebridge1', 'hyper+plank_side'],
   ),
   w(
     'core-none',
@@ -211,7 +228,7 @@ export const LIBRARY: Workout[] = [
     'legs',
     'none',
     'Wykrok wsteczny, przysiad jednonóż do krzesła, mostek i nordic curl — nogi, które nie potrzebują sztangi.',
-    ['lunge_bw', 'pistol', 'glutebridge', 'nordic', 'calf'],
+    ['lunge_bw', 'pistol', 'glutebridge', 'nordic+calf'],
   ),
 
   /* ---------------- Kettlebell i masa ciała ---------------- */
@@ -237,7 +254,7 @@ export const LIBRARY: Workout[] = [
     'legs',
     'kb',
     'Goblet, RDL i wykrok, potem nordic curl na tył uda i wspięcia na łydki.',
-    ['goblet', 'rdl', 'lunge', 'nordic', 'calf1'],
+    ['goblet', 'rdl', 'lunge', 'nordic+calf1'],
   ),
   w(
     'upper-kb',
@@ -245,7 +262,7 @@ export const LIBRARY: Workout[] = [
     'upper',
     'kb',
     'Pchanie i ciągnięcie po równo: wyciskanie z wiosłowaniem, floor press z podciąganiem.',
-    ['press', 'row', 'floor', 'pullup', 'pushup', 'curl'],
+    ['press+row', 'floor+pullup', 'pushup+curl'],
   ),
   w(
     'lower-kb',
@@ -253,7 +270,7 @@ export const LIBRARY: Workout[] = [
     'lower',
     'kb',
     'Swing na rozgrzanie bioder, goblet i wykrok, nordic curl i łydki.',
-    ['swing2', 'goblet', 'lunge', 'nordic', 'calf'],
+    ['swing2', 'goblet', 'lunge', 'nordic+calf'],
   ),
   w(
     'glutes-kb',
@@ -261,7 +278,7 @@ export const LIBRARY: Workout[] = [
     'glutes',
     'kb',
     'Zawias, wykrok i mostek biodrowy, na koniec deska bokiem na boczną część pośladka.',
-    ['rdl', 'lunge', 'glutebridge', 'plank_side'],
+    ['rdl', 'lunge', 'glutebridge+plank_side'],
   ),
   w(
     'chest-kb',
@@ -269,7 +286,7 @@ export const LIBRARY: Workout[] = [
     'chest',
     'kb',
     'Floor press, pompki i dipy, a wiosłowanie na koniec — dla równowagi barków.',
-    ['floor', 'pushup', 'dip', 'row'],
+    ['floor+row', 'pushup', 'dip'],
   ),
   w(
     'shoulders-kb',
@@ -277,7 +294,7 @@ export const LIBRARY: Workout[] = [
     'shoulders',
     'kb',
     'Wyciskanie, pompki w podporze przodem i spacer z ciężarem nad głową. Wiosłowanie na tył barków.',
-    ['press', 'pushup_pike', 'row', 'carry_oh'],
+    ['press+row', 'pushup_pike', 'carry_oh'],
   ),
   w(
     'arms-kb',
@@ -285,7 +302,7 @@ export const LIBRARY: Workout[] = [
     'arms',
     'kb',
     'Podciąganie nachwytem, pompki diamentowe i na ławce, uginanie z kettlebell.',
-    ['chinup', 'pushup_diamond', 'dip_bench', 'curl'],
+    ['chinup+pushup_diamond', 'dip_bench+curl'],
   ),
   w(
     'core-kb',

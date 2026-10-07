@@ -11,6 +11,9 @@ import {
 import { acwr } from '../engine/math';
 import { P, exercisesByGroup } from '../engine/plan';
 import { ExerciseCard } from './ExerciseCard';
+import { PairHead, PrepContent, blocksOf, cueFor, tagOf } from './Structure';
+import { plan } from '../engine/plan';
+import { altsFor } from '../engine/structure';
 import { HealthCard } from './Health';
 import { RemindersCard } from './Reminders';
 import { SupportLine } from './Support';
@@ -21,6 +24,8 @@ import type { AppState, EffortKey, ExerciseId, ReadyKey, ReminderPrefs, SetResul
 export function SessionView({
   state,
   workout,
+  planned,
+  onSwap,
   onReady,
   onSave,
   onClear,
@@ -30,7 +35,11 @@ export function SessionView({
   onToast,
 }: {
   state: AppState;
+  /** Trening na dziś — z zamianami. */
   workout: Workout;
+  /** Trening, jak go zapisano — bez zamian; z niego biorą się zamienniki. */
+  planned: Workout;
+  onSwap: (orig: ExerciseId, to: ExerciseId) => void;
   onReady: (r: ReadyKey) => void;
   onSave: (id: ExerciseId, rows: SetResult[], effort: EffortKey) => void;
   onClear: (id: ExerciseId) => void;
@@ -41,6 +50,13 @@ export function SessionView({
 }) {
   const session = state.session!;
   const doneCount = Object.keys(session.done).length;
+  // Ćwiczenie na dziś → ćwiczenie z treningu. Kolejność pozycji się nie zmienia.
+  const origOf = new Map(workout.items.map((it, i) => [it.ex, planned.items[i]?.ex ?? it.ex]));
+  const swapsFor = (live: ExerciseId) => {
+    const orig = origOf.get(live) ?? live;
+    const alts = altsFor(orig, planned).filter((a) => a === live || !workout.items.some((it) => it.ex === a));
+    return { orig, options: live === orig ? alts : [orig, ...alts.filter((a) => a !== live)] };
+  };
 
   return (
     <div className="wrap">
@@ -63,20 +79,39 @@ export function SessionView({
         ))}
       </div>
 
+      {/* Otwarte, dopóki nic nie zapisano — potem zwija się, żeby nie odpychać serii w dół. */}
+      <details className="prep prep-session" open={doneCount === 0}>
+        <summary>Przygotowanie stanowiska i rozgrzewka</summary>
+        <PrepContent state={state} workout={workout} />
+      </details>
+
       <div className="list">
-        {workout.items.map((i) => (
-          <ExerciseCard
-            key={`${i.ex}-${session.started}-${session.ready}-${session.done[i.ex] ? 1 : 0}-${
-              session.skip[i.ex] ? 1 : 0
-            }`}
-            state={state}
-            id={i.ex}
-            onSave={onSave}
-            onClear={onClear}
-            onSkip={onSkip}
-            onToast={onToast}
-          />
-        ))}
+        {blocksOf(workout.items).map((b) => {
+          const sets = (id: ExerciseId) => plan(state, id).length;
+          const cards = b.ids.map((id, i) => (
+            <ExerciseCard
+              key={`${id}-${session.started}-${session.ready}-${session.done[id] ? 1 : 0}-${session.skip[id] ? 1 : 0}`}
+              state={state}
+              id={id}
+              tag={tagOf(b, i)}
+              cue={cueFor(b, i, sets)}
+              swaps={swapsFor(id)}
+              onSwap={onSwap}
+              onSave={onSave}
+              onClear={onClear}
+              onSkip={onSkip}
+              onToast={onToast}
+            />
+          ));
+          return b.kind === 'pair' ? (
+            <div className="pairbox" key={`p${b.n}`}>
+              <PairHead b={b} sets={sets} />
+              {cards}
+            </div>
+          ) : (
+            cards
+          );
+        })}
       </div>
 
       <div className="actions">

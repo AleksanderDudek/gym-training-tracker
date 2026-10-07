@@ -15,9 +15,16 @@ interface Props {
   onClear: (id: ExerciseId) => void;
   onSkip: (id: ExerciseId) => void;
   onToast: (msg: string) => void;
+  /** Miejsce w treningu: „3” albo „2A” w parze. */
+  tag?: string | undefined;
+  /** Jak robić: „3 serie pod rząd · przerwa 2–3 min” albo „na zmianę z 2B …”. */
+  cue?: string | undefined;
+  /** Zamiana na dziś: ćwiczenie z treningu i to, na co da się je zamienić (z nim samym, gdy już zamienione). */
+  swaps?: { orig: ExerciseId; options: ExerciseId[] } | undefined;
+  onSwap?: ((orig: ExerciseId, to: ExerciseId) => void) | undefined;
 }
 
-export function ExerciseCard({ state, id, onSave, onClear, onSkip, onToast }: Props) {
+export function ExerciseCard({ state, id, onSave, onClear, onSkip, onToast, tag, cue, swaps, onSwap }: Props) {
   const session = state.session!;
   const m = ex(id);
   const p = P(state, id);
@@ -66,8 +73,12 @@ export function ExerciseCard({ state, id, onSave, onClear, onSkip, onToast }: Pr
       <button className="ex-head" aria-expanded={open} onClick={() => setOpen(!open)}>
         <Chip state={state} id={id} />
         <span>
-          <span className="ex-name">{m.name}</span>
+          <span className="ex-name">
+            {tag && <b className="ex-tag">{tag}</b>}
+            {m.name}
+          </span>
           <span className="ex-target">{planLabel(state, id)}</span>
+          {cue && <span className="ex-cue">{cue}</span>}
         </span>
         <span className="tick">{skipped ? '–' : '✓'}</span>
       </button>
@@ -79,6 +90,20 @@ export function ExerciseCard({ state, id, onSave, onClear, onSkip, onToast }: Pr
           <a className="vidlink" href={exercisePath(id)}>
             Zobacz technikę na wideo →
           </a>
+          {swaps && onSwap && swaps.options.length > 0 && !saved && (
+            <div className="swaprow">
+              <span>
+                {swaps.orig !== id
+                  ? `Zamiennik za: ${ex(swaps.orig).name}.`
+                  : 'Maszyna zajęta albo brak sprzętu? Zamień na dziś:'}
+              </span>
+              {swaps.options.map((o) => (
+                <button key={o} type="button" className="btn ghost sm" onClick={() => onSwap(swaps.orig, o)}>
+                  {o === swaps.orig ? `Wróć do: ${ex(o).name}` : ex(o).name}
+                </button>
+              ))}
+            </div>
+          )}
           <div
             className={`nextlvl${hint.hit ? ' hit' : ''}`}
             dangerouslySetInnerHTML={{ __html: hint.html }}

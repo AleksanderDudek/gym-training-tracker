@@ -1,3 +1,4 @@
+import { blocksOf } from './blocks';
 import { EX } from '../data/exercises';
 import {
   EX_MUSCLES,
@@ -148,12 +149,19 @@ export function orderRank(id: ExerciseId): number {
   return ISOLATION.has(id) ? 2 : 1;
 }
 
-/** Kolejność po zasadach, a w obrębie jednej grupy — ta, którą ktoś wybrał. */
-export const suggestedOrder = (ids: ExerciseId[]): ExerciseId[] =>
-  ids
-    .map((id, i) => ({ id, i, r: orderRank(id) }))
+/**
+ * Kolejność po zasadach, a w obrębie jednej grupy — ta, którą ktoś wybrał. Para idzie jako
+ * całość z miejscem ważniejszego ćwiczenia: łydki na suwnicy zaraz po wypychaniu to jedno
+ * stanowisko, a nie łydki przed izolacją.
+ */
+export const suggestedOrder = (ids: ExerciseId[], pairs: readonly boolean[] = []): ExerciseId[] =>
+  blocksOf(ids.map((ex, i) => ({ ex, pair: pairs[i] })))
+    .map((b, i) => ({ b, i, r: Math.min(...b.ids.map(orderRank)) }))
     .sort((a, b) => a.r - b.r || a.i - b.i)
-    .map((x) => x.id);
+    .flatMap((x) => x.b.ids);
+
+/** Przerwa między ćwiczeniami pary w sekundach — środek zalecanych 60–90 s. */
+export const PAIR_REST = 75;
 
 /* ---------------- Trening ---------------- */
 
@@ -219,16 +227,33 @@ export interface WorkoutReview {
  * Przegląd jednego treningu: serie na partie, czas, kolejność, a przy znanym rodzaju —
  * czy trening robi to, co obiecuje nazwa.
  */
-export function reviewWorkout(state: AppState, ids: ExerciseId[], kind?: WorkoutKind): WorkoutReview {
-  const known = ids.filter((id) => EX[id]);
+export function reviewWorkout(
+  state: AppState,
+  ids: ExerciseId[],
+  kind?: WorkoutKind,
+  /** `pair` każdego ćwiczenia z `ids` — „na zmianę z poprzednim”. */
+  pairs: readonly boolean[] = [],
+): WorkoutReview {
+  const flags = ids.map((id, i) => ({ id, pair: !!pairs[i] })).filter((x) => EX[x.id]);
+  const known = flags.map((x) => x.id);
+  const knownPairs = flags.map((x) => x.pair);
   const loads = workoutLoads(state, known);
   const list = loadList(loads);
   const sets = known.reduce((a, id) => a + dose(state, id).sets, 0);
-  const secs = known.reduce((a, id) => {
+  const energy = (id: ExerciseId) => {
     const d = dose(state, id);
-    return a + setsEnergy(id, Array.from({ length: d.sets }, () => ({ reps: d.target })), 70).secs;
+    return { sets: d.sets, ...setsEnergy(id, Array.from({ length: d.sets }, () => ({ reps: d.target })), 70) };
+  };
+  // Para: przerwa jednego ćwiczenia to czas pracy drugiego, więc liczy się praca obu
+  // i krótka przerwa po każdej serii zamiast pełnej przerwy każdego z osobna.
+  const secs = blocksOf(known.map((ex, i) => ({ ex, pair: knownPairs[i] }))).reduce((a, b) => {
+    if (b.kind === 'straight') return a + energy(b.ids[0]!).secs;
+    return a + b.ids.reduce((t, id) => {
+      const e = energy(id);
+      return t + e.work + e.sets * PAIR_REST;
+    }, 0);
   }, 0);
-  const order = suggestedOrder(known);
+  const order = suggestedOrder(known, knownPairs);
   const orderOk = order.every((id, i) => id === known[i]);
   const notes: DesignNote[] = [];
   if (!known.length) return { loads: list, sets, secs, notes, order, orderOk, ok: true };
