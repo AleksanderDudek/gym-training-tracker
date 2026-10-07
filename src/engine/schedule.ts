@@ -38,9 +38,26 @@ export const weekdayOf = (key: string): number => {
 
 export const mondayOf = (key: string): string => addDays(key, 1 - weekdayOf(key));
 
-/** Dni tygodnia planu: wybór użytkownika bije szablon. */
-export const planWeekdays = (t: PlanTemplate, p: ActivePlan): number[] =>
-  p.weekdays?.length ? [...new Set(p.weekdays)].sort((a, b) => a - b) : t.weekdays;
+const sortDays = (ds: number[]): number[] => [...new Set(ds)].sort((a, b) => a - b);
+
+/** Dni tygodnia ze startu planu: wybór użytkownika bije szablon. */
+const startWeekdays = (t: PlanTemplate, p: ActivePlan): number[] =>
+  p.weekdays?.length ? sortDays(p.weekdays) : t.weekdays;
+
+/** Dni tygodnia obowiązujące w danym dniu — ze zmian w trakcie planu albo ze startu. */
+export function weekdaysOn(t: PlanTemplate, p: ActivePlan, date: string): number[] {
+  const change = [...(p.changes ?? [])].reverse().find((c) => c.from <= date && c.weekdays.length);
+  return change ? sortDays(change.weekdays) : startWeekdays(t, p);
+}
+
+/** Dni tygodnia planu teraz: z ostatniej zmiany albo ze startu. */
+export const planWeekdays = (t: PlanTemplate, p: ActivePlan): number[] => {
+  const last = p.changes?.[p.changes.length - 1];
+  return last?.weekdays.length ? sortDays(last.weekdays) : startWeekdays(t, p);
+};
+
+/** Długość planu w tygodniach razem z dołożonymi na końcu. */
+export const planWeeks = (t: PlanTemplate, p: ActivePlan): number => t.weeks + Math.max(0, p.extraWeeks ?? 0);
 
 /** Plany zapisane przed wprowadzeniem polityki zachowują się jak `shift`. */
 export const planPolicy = (p: ActivePlan): PlanPolicy => p.policy ?? 'shift';
@@ -72,15 +89,16 @@ export function buildSchedule(
   logged: string[],
   today: string = dayKey(Date.now()),
 ): Schedule {
-  const weekdays = planWeekdays(template, plan);
   const monday = mondayOf(plan.start);
   const days: PlannedDay[] = [];
 
-  for (let w = 0; w < template.weeks; w++) {
-    for (const wd of weekdays) {
+  for (let w = 0; w < planWeeks(template, plan); w++) {
+    for (let wd = 1; wd <= 7; wd++) {
       const date = addDays(monday, w * 7 + (wd - 1));
       // Tydzień startowy bywa napoczęty — dni sprzed startu nie są zaległościami.
       if (date < plan.start) continue;
+      // Dni obowiązujące tego dnia: zmiana w trakcie planu działa od swojej daty.
+      if (!weekdaysOn(template, plan, date).includes(wd)) continue;
       days.push({
         index: 0,
         date,

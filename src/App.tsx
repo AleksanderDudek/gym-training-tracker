@@ -51,6 +51,7 @@ import type {
   EffortKey,
   ExerciseId,
   PlanOptions,
+  PlanPolicy,
   PlanTemplate,
   ReadyKey,
   ReminderPrefs,
@@ -58,8 +59,12 @@ import type {
   Workout,
 } from './types';
 import { pushConfigured, syncReminders } from './push';
+import { withExtension, withWeekdays } from './engine/planedit';
 
 const clone = (s: AppState): AppState => JSON.parse(JSON.stringify(s)) as AppState;
+
+/** Dni tygodnia słowami do dziennika planu. */
+const WD_NAME = ['pon', 'wt', 'śr', 'czw', 'pt', 'sob', 'niedz'];
 
 /** Poziom postaci na teraz — liczony od zera z historii, tak jak wszystko inne. */
 const levelNow = (s: AppState): LevelState => levelFor(xpSummary(s).total);
@@ -94,6 +99,20 @@ function restoreExtras(next: AppState, saved: Partial<AppState>): void {
     next.supportSnooze = saved.supportSnooze;
   if (next.cfg.avatar !== undefined && next.cfg.avatar !== 'gustaw' && next.cfg.avatar !== 'gosia')
     delete next.cfg.avatar;
+  // Zmiany dni w trakcie planu i przedłużenie: tylko poprawne daty, dni 1–7 i rozsądna liczba tygodni.
+  if (next.plan) {
+    const ch: unknown = next.plan.changes;
+    const ok = Array.isArray(ch)
+      ? ch.filter(
+          (c): c is { from: string; weekdays: number[] } =>
+            !!c && typeof c.from === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(c.from) && Array.isArray(c.weekdays) && c.weekdays.length > 0 && c.weekdays.every(isDay),
+        )
+      : [];
+    if (ok.length) next.plan.changes = ok.sort((a, b) => a.from.localeCompare(b.from));
+    else delete next.plan.changes;
+    const x = next.plan.extraWeeks;
+    if (x !== undefined && !(Number.isInteger(x) && x >= 0 && x <= 52)) delete next.plan.extraWeeks;
+  }
   // Zamiany ćwiczeń w trwającej sesji: tylko istniejące ćwiczenia, inaczej sesja by się wywróciła.
   if (next.session?.swap !== undefined) {
     const raw: unknown = next.session.swap;
@@ -850,6 +869,50 @@ export default function App() {
   };
 
   /**
+   * Zmiana dni treningowych od dziś. Terminy sprzed zmiany zostają — razem z punktami,
+   * serią i odznakami — bo kalendarz przed dziś liczy się ze starych dni.
+   */
+  const changeWeekdays = (days: number[]) => {
+    if (!state.plan || !days.length) return;
+    const next = clone(state);
+    const today = dayKey(Date.now());
+    next.plan = withWeekdays(next.plan!, today, days);
+    next.events.push({
+      id: `plan-days:${today}:${days.join('')}`,
+      date: today,
+      kind: 'plan-swap',
+      title: `Nowe dni treningowe: ${days.map((d) => WD_NAME[d - 1]).join(', ')}`,
+      text: 'Od dziś. Terminy, które minęły, zostają bez zmian.',
+    });
+    commit(next);
+    setToastMsg('Dni planu zmienione od dziś.');
+  };
+
+  const changePolicy = (policy: PlanPolicy) => {
+    if (!state.plan) return;
+    const next = clone(state);
+    next.plan!.policy = policy;
+    commit(next);
+    setToastMsg(policy === 'shift' ? 'Opuszczony trening poczeka na kolejny termin.' : 'Opuszczony trening przepada razem z terminem.');
+  };
+
+  const extendPlan = (weeks: number) => {
+    if (!state.plan) return;
+    const next = clone(state);
+    next.plan = withExtension(next.plan!, weeks);
+    const today = dayKey(Date.now());
+    next.events.push({
+      id: `plan-extend:${today}:${next.plan.extraWeeks}`,
+      date: today,
+      kind: 'plan-swap',
+      title: `Plan dłuższy o ${weeks} tygodnie`,
+      text: 'Kolejne terminy dochodzą na końcu, w tych samych dniach.',
+    });
+    commit(next);
+    setToastMsg(`Plan przedłużony o ${weeks} tygodnie.`);
+  };
+
+  /**
    * Ręczne odhaczenie terminu — dla treningu zrobionego poza aplikacją. Liczy się tak samo
    * jak zapisany, bo aplikacja mierzy regularność, a nie to, gdzie ktoś wpisał powtórzenia.
    */
@@ -1101,6 +1164,7 @@ export default function App() {
           onStop={() => void stopPlan()}
           onTick={tickDay}
           onFrequency={(n) => void changeFrequency(n)}
+          edits={{ onWeekdays: changeWeekdays, onPolicy: changePolicy, onExtend: extendPlan, onStart: startSession }}
         />
       )}
       {route.kind === 'plans' && <PlanCatalog state={state} />}

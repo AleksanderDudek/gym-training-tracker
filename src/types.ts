@@ -314,6 +314,13 @@ export interface ActivePlan {
   policy?: PlanPolicy;
   /** Sesje odhaczone ręcznie — poza tymi, które wynikają z historii treningów. */
   ticked: Record<number, true>;
+  /**
+   * Zmiany dni treningowych w trakcie planu, rosnąco po dniu. Każda działa od swojego dnia —
+   * terminy sprzed niej zostają takie, jakie były, więc punkty i odznaki się nie przepisują.
+   */
+  changes?: { from: string; weekdays: number[] }[];
+  /** Tygodnie dołożone na końcu ponad długość szablonu. */
+  extraWeeks?: number;
 }
 
 /** Ustawienia wybrane w katalogu przy uruchamianiu planu. */

@@ -1,4 +1,5 @@
 import type { ActivePlan, AppState, PlanTemplate } from '../types';
+import { spreadDays } from './planedit';
 import { GRACE_DAYS, dayKey, daysBetween, planWeekdays } from './schedule';
 import type { PlanStats } from './schedule';
 
@@ -9,8 +10,10 @@ export interface Advice {
   level: 'good' | 'warn' | 'plain';
   title: string;
   text: string;
-  /** Propozycja zmiany częstotliwości — do przycisku w widoku planu. */
+  /** Propozycja zmiany częstotliwości planu klasycznego — inny wariant z konfiguratora. */
   freq?: number;
+  /** Propozycja nowych dni planu z celem, z profilem albo własnego — zmiana od dziś. */
+  days?: number[];
 }
 
 /**
@@ -78,27 +81,31 @@ export function advise(
     });
   }
 
-  const perWeek = planWeekdays(template, plan).length;
+  const weekdays = planWeekdays(template, plan);
+  const perWeek = weekdays.length;
   const adherence = stats.adherence ?? 100;
-  // Rzadszy albo gęstszy wariant istnieje tylko w konfiguratorze klasycznym. Plan z celem
-  // i własny mają rotację ułożoną pod konkretną liczbę dni — tam podpowiedź zmiany nie ma sensu.
-  if ((template.kind ?? 'classic') !== 'classic') return out;
+  // Plan klasyczny ma gotowy wariant rzadszy i gęstszy w konfiguratorze. Plan z celem,
+  // z profilem i własny dostają nowe dni od dziś: rotacja treningów idzie dalej, zmienia się
+  // tylko to, w które dni wypada — tak, żeby przerwy były jak najrówniejsze.
+  const classic = (template.kind ?? 'classic') === 'classic';
+  const change = (d: 1 | -1): Pick<Advice, 'freq' | 'days'> =>
+    classic ? { freq: perWeek + d } : { days: spreadDays(weekdays, d) };
 
   if (stats.elapsed >= 6 && adherence < 60 && perWeek > 2) {
     out.push({
       kind: 'slower',
       level: 'warn',
       title: `Realizacja ${adherence}% — plan jest za gęsty`,
-      text: `Z ${stats.elapsed} terminów wyszło ${stats.done}. Wariant ${perWeek - 1}× w tygodniu wytrzymasz, a plan przestanie być listą wyrzutów.`,
-      freq: perWeek - 1,
+      text: `Z ${stats.elapsed} terminów wyszło ${stats.done}. ${perWeek - 1}× w tygodniu wytrzymasz, a plan przestanie być listą wyrzutów.`,
+      ...change(-1),
     });
   } else if (stats.elapsed >= 8 && adherence >= 95 && perWeek < 6) {
     out.push({
       kind: 'faster',
       level: 'good',
       title: `Realizacja ${adherence}% — masz zapas`,
-      text: `Ani jeden termin nie leży. Wariant ${perWeek + 1}× w tygodniu doda jeden trening i nie ruszy zasad progresji.`,
-      freq: perWeek + 1,
+      text: `Ani jeden termin nie leży. ${perWeek + 1}× w tygodniu doda jeden trening i nie ruszy zasad progresji.`,
+      ...change(1),
     });
   }
 

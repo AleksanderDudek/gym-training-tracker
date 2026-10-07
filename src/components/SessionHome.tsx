@@ -6,6 +6,8 @@ import { CharacterStrip } from './Character';
 import { SnackCard } from './Snacks';
 import { CardioCard, kcalText } from './Cardio';
 import { plannedBurn } from '../engine/burn';
+import { dayKey } from '../engine/schedule';
+import { BoostCard } from './Boost';
 import type { AppState, Workout } from '../types';
 
 /** Co plan mówi na dziś. `due` to termin do zrobienia, `rest` to dzień bez terminu. */
@@ -116,6 +118,8 @@ export function SessionHome({
           )}
         </div>
       )}
+
+      {today.kind === 'rest' && <BoostCard state={state} today={dayKey(Date.now())} onStart={onStart} />}
 
       {today.kind === 'none' && (
         <div className="grp">

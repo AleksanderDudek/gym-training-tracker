@@ -937,6 +937,14 @@
   .pair-head b{display:block;font-family:var(--display);font-size:15px;color:var(--c-blue-ink)}
   .pair-head span{color:var(--ink-soft)}
   .bl-item .bl-pair[aria-pressed=true]{background:var(--steel);border-color:var(--steel);color:#fff}
+  .boost{padding:8px 0;border-bottom:1px solid var(--line)}
+  .boost:last-of-type{border-bottom:0}
+  .boost b{display:block;margin-bottom:2px}
+  .boost .btn{margin-top:6px}
+  details.adjust summary{cursor:pointer;list-style:none}
+  details.adjust summary h2{display:inline}
+  details.adjust summary::after{content:' ▾';color:var(--ink-soft)}
+  details.adjust[open] summary::after{content:' ▴'}
   .swaprow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:8px 0;font-size:13px;color:var(--ink-soft)}
   .swaprow span{flex-basis:100%}
 

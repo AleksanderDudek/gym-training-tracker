@@ -180,7 +180,7 @@ export function PlanCatalog({ state }: { state: AppState }) {
 }
 
 /** Wybór dni tygodnia — siedem przełączników. */
-function Weekdays({ value, onChange }: { value: number[]; onChange: (v: number[]) => void }) {
+export function Weekdays({ value, onChange }: { value: number[]; onChange: (v: number[]) => void }) {
   const toggle = (wd: number) => {
     const set = new Set(value);
     if (set.has(wd)) set.delete(wd);

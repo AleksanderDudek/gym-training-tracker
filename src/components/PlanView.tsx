@@ -15,12 +15,13 @@ import { advise } from '../engine/advice';
 import { journal } from '../engine/journal';
 import { achievementCount } from './Achievements';
 import { POINTS, pointsToday } from '../engine/score';
-import { dayKey, daysBetween, planWeekdays } from '../engine/schedule';
+import { dayKey, daysBetween, planPolicy, planWeekdays, planWeeks } from '../engine/schedule';
 import { snapshot } from '../engine/snapshot';
 import type { Snapshot } from '../engine/snapshot';
 import { Segmented } from './ui';
 import { SupportLine } from './Support';
-import { PlanCatalog } from './Plans';
+import { PlanCatalog, Weekdays } from './Plans';
+import { BoostCard } from './Boost';
 import { PlanArt } from './SceneArt';
 import { HealthNote } from './Health';
 import { PLANS_PATH, go } from '../routing';
@@ -429,6 +430,7 @@ function ActivePlanView({
   onStop,
   onTick,
   onFrequency,
+  edits,
 }: {
   state: AppState;
   snap: Snapshot;
@@ -436,6 +438,7 @@ function ActivePlanView({
   onStop: () => void;
   onTick: (i: number) => void;
   onFrequency: (days: number) => void;
+  edits: PlanEdits;
 }) {
   const { template, schedule, stats, today } = snap;
   const workoutName = nameIn(state);
@@ -453,7 +456,7 @@ function ActivePlanView({
       <div className="wrap">
         <h2>{template.name}</h2>
         <p className="lead">
-          Tydzień <b>{stats.week}</b> z {template.weeks} · zrobione <b>{stats.done}</b> z{' '}
+          Tydzień <b>{stats.week}</b> z {planWeeks(template, snap.plan)} · zrobione <b>{stats.done}</b> z{' '}
           {stats.total}
           {stats.adherence !== null && ` · realizacja ${stats.adherence}%`}
         </p>
@@ -478,8 +481,15 @@ function ActivePlanView({
               Przejdź na {a.freq}× w tygodniu
             </button>
           )}
+          {a.days && (
+            <button className="btn sm" style={{ marginTop: 10 }} onClick={() => edits.onWeekdays(a.days!)}>
+              Od dziś: {a.days.map((d) => WD[d - 1]).join(', ')}
+            </button>
+          )}
         </div>
       ))}
+
+      <BoostCard state={state} today={today} onStart={edits.onStart} />
 
       {stats.next && (
         <div className="grp">
@@ -538,6 +548,8 @@ function ActivePlanView({
         );
       })}
 
+      <PlanAdjust key={planWeekdays(template, snap.plan).join()} snap={snap} onChange={onChange} edits={edits} />
+
       <BadgeLine state={state} />
       <Journal snap={snap} state={state} />
 
@@ -562,16 +574,27 @@ function ActivePlanView({
  * Zakładka Plan: uruchomiony plan z kalendarzem albo — gdy żadnego nie ma — katalog planów.
  * Zmiana planu prowadzi do katalogu pod własnym adresem, więc „wstecz” wraca do kalendarza.
  */
+/** Zmiany planu w trakcie — od dziś, bez przepisywania tego, co minęło. */
+export interface PlanEdits {
+  onWeekdays: (days: number[]) => void;
+  onPolicy: (p: PlanPolicy) => void;
+  onExtend: (weeks: number) => void;
+  /** Start treningu dodatkowego z podpowiedzi. */
+  onStart: (workoutId: string) => void;
+}
+
 export function PlanView({
   state,
   onStop,
   onTick,
   onFrequency,
+  edits,
 }: {
   state: AppState;
   onStop: () => void;
   onTick: (index: number) => void;
   onFrequency: (days: number) => void;
+  edits: PlanEdits;
 }) {
   const snap = snapshot(state);
   if (!snap) return <PlanCatalog state={state} />;
@@ -583,6 +606,65 @@ export function PlanView({
       onStop={onStop}
       onTick={onTick}
       onFrequency={onFrequency}
+      edits={edits}
     />
+  );
+}
+
+/** O ile przedłużyć plan jednym stuknięciem: miesiąc, czyli tyle, ile trwa krótki plan z celem. */
+const EXTEND_WEEKS = 4;
+
+/**
+ * Zmiana planu od dziś: dni treningowe, zasada przepadłych terminów i przedłużenie. Nowe dni
+ * działają od dziś — terminy, które minęły, zostają, razem z punktami, seriami i odznakami.
+ */
+function PlanAdjust({ snap, onChange, edits }: { snap: Snapshot; onChange: () => void; edits: PlanEdits }) {
+  const { template, plan, stats } = snap;
+  const now = planWeekdays(template, plan);
+  const [days, setDays] = useState<number[]>(now);
+  const policy = planPolicy(plan);
+  const total = planWeeks(template, plan);
+  const ending = !stats.next || stats.week >= total - 1;
+  const changed = days.join() !== now.join();
+  return (
+    <details className="grp adjust" open={ending}>
+      <summary>
+        <h2>Zmień plan od dziś</h2>
+      </summary>
+      <p className="tight">
+        Zmiany działają od dziś. Terminy, które minęły, zostają takie, jakie były — razem z punktami,
+        seriami i odznakami. Rotacja treningów idzie dalej.
+      </p>
+      <span className="seg-label">dni treningowe</span>
+      <Weekdays value={days} onChange={setDays} />
+      <button className="btn sm" disabled={!changed || !days.length} onClick={() => edits.onWeekdays(days)}>
+        Zapisz dni od dziś
+      </button>
+      <span className="seg-label" style={{ marginTop: 12 }}>
+        gdy termin przepadnie
+      </span>
+      <Segmented
+        label="Gdy termin przepadnie"
+        options={[
+          { key: 'shift' as PlanPolicy, label: 'Trening czeka' },
+          { key: 'fixed' as PlanPolicy, label: 'Trening przepada' },
+        ]}
+        value={policy}
+        onChange={(p) => p !== policy && edits.onPolicy(p)}
+      />
+      <p className="tight">
+        Plan trwa {total} {total === 1 ? 'tydzień' : total < 5 ? 'tygodnie' : 'tygodni'}
+        {plan.extraWeeks ? `, w tym ${plan.extraWeeks} dołożone` : ''}.{' '}
+        {ending ? 'To już końcówka — da się ją przedłużyć bez zakładania nowego planu.' : ''}
+      </p>
+      <div className="btnrow">
+        <button className="btn sm ghost" onClick={() => edits.onExtend(EXTEND_WEEKS)}>
+          Przedłuż o {EXTEND_WEEKS} tygodnie
+        </button>
+        <button className="btn sm ghost" onClick={onChange}>
+          Inny plan z katalogu
+        </button>
+      </div>
+    </details>
   );
 }

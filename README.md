@@ -664,6 +664,9 @@ src/
     blocks.ts               bloki treningu: serie pod rząd albo para na zmianę
     structure.ts            zasady par, przerwy, przygotowanie stanowiska, rozgrzewka
     structure.test.ts       16 testów par w całej bibliotece, stanowisk, talerzy, rozgrzewki i zamian
+    planedit.ts             zmiany planu od dziś: dni z datą, przedłużenie, równe przerwy
+    boost.ts                podpowiedzi postępu w dzień wolny: przekąska i trening dodatkowy
+    planedit.test.ts        9 testów zmian bez przepisywania historii, rytmu i podpowiedzi
     reminders.test.ts       11 testów list, godzin, dnia lokalnego i kontraktu z serwerem
     plan.ts                 stan początkowy, recepta na dziś, mieszane obciążenie
     progression.ts          silnik: ocena sesji, awanse, przejścia, regres, przerwy
@@ -741,6 +744,7 @@ src/
     Reminders.tsx           karta przypomnień w ustawieniach: zgoda, rano i wieczorem
     Structure.tsx           „przed treningiem”: przygotuj, rozgrzewka; nagłówki par i wskazówki serii
     Health.tsx              zastrzeżenie zdrowotne: krótka wersja i pełna karta
+    Boost.tsx               „Na postęp w dzień wolny” na zakładce Plan i ekranie Dziś
   push.ts                   przypomnienia w przeglądarce: zgoda, subskrypcja Web Push, wysyłka listy
   push.test.ts              5 testów stanu przypomnień na telefonie i klucza serwera
   App.tsx                   spina stan i widoki
@@ -806,6 +810,34 @@ czasu stoi tam sama miniatura z `loading="lazy"` — obrazek z CDN, bez skryptó
 ciasteczek, dociągany dopiero wtedy, gdy zbliży się do ekranu. Adres `youtube-nocookie.com`
 odkłada śledzenie do momentu odtworzenia, a zwykły link do YouTube pod spodem działa nawet
 wtedy, gdy autor skasuje film.
+
+## Plan, który się zmienia — i podpowiada, co dorzucić
+
+**Zmiana od dziś, bez przepisywania historii.** Na zakładce Plan karta „Zmień plan od dziś”:
+inne dni treningowe, zasada dla przepadłych terminów („trening czeka” albo „przepada”)
+i przedłużenie o 4 tygodnie, gdy plan się kończy. Dni zapisują się jako zmiana z datą
+(`plan.changes`), a kalendarz liczy każdy dzień z dni, które obowiązywały wtedy — terminy
+sprzed zmiany, realizacja, punkty i odznaki zostają takie, jakie były. Rotacja treningów idzie
+dalej. Zmiana trafia do dziennika planu.
+
+**Doradca rytmu dla każdego planu.** Realizacja poniżej 60% po sześciu terminach: rzadziej;
+95% po ośmiu: gęściej. Plan klasyczny dostaje wtedy inny wariant z konfiguratora, a plan z celem,
+z profilem i własny — nowe dni od dziś, dobrane tak, żeby przerwy były jak najrówniejsze
+(najpierw żadnych dwóch dni z rzędu, potem najmniejszy rozrzut), jednym przyciskiem.
+
+**Na postęp w dzień wolny** — na zakładce Plan i na ekranie Dziś, gdy plan ma wolne:
+
+- **przekąska**: najpierw z profilu planu, potem ćwiczenie, które od dwóch sesji stoi w miejscu
+  (bez sprzętu albo z tym, co i tak jest pod ręką), potem duża partia z mniej niż 10 seriami
+  tygodniowo. 1–3 serie po ok. 60% dzisiejszego celu, z zapasem, rozłożone w ciągu dnia —
+  częstszy bodziec bez zmęczenia przed terminem (Grgic i in., 2018: przy tej samej objętości
+  wyższa częstotliwość pomaga sile);
+- **trening dodatkowy** tylko z zapasem: termin najwcześniej pojutrze, obciążenie ostatnich
+  tygodni w normie (stosunek tygodnia do miesiąca do 1,3), realizacja od 70%. Zawsze lekki —
+  dzień lekki D albo brzuch — a nie kolejny ciężki.
+
+W dzień terminu, przy zaległym terminie i po zrobionym dziś treningu podpowiedzi nie ma:
+wtedy liczy się termin albo przerwa.
 
 ## Plan treningowy
 
