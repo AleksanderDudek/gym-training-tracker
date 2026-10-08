@@ -38,6 +38,8 @@ import type { LevelState } from './engine/xp';
 import { SnackEntry, SnacksPage, snackLabel } from './components/Snacks';
 import { CardioEntry, CardioPage, cardioLabel, kcalText } from './components/Cardio';
 import { addCardio, minutesByDay, removeCardio, validCardio } from './engine/cardio';
+import { mergeWatch, restoreWatch, watchStepsOn } from './engine/watch';
+import type { WatchPayload } from './engine/watch';
 import { removeBodyWeight, setBodyWeight, validBody, validHeight } from './engine/body';
 import { cardioBurn, workoutBurn } from './engine/burn';
 import { LevelUp, avatarOf } from './components/Character';
@@ -60,6 +62,8 @@ import type {
 } from './types';
 import { pushConfigured, syncReminders } from './push';
 import { apiConfigured } from './api';
+import { forgetWatch, garminConfigured, garminKey, pullWatch } from './garmin';
+import type { PullResult } from './garmin';
 import { attachTrail, trail } from './trail';
 import { FeedbackDialog } from './components/Feedback';
 import { withExtension, withWeekdays } from './engine/planedit';
@@ -84,6 +88,9 @@ function restoreExtras(next: AppState, saved: Partial<AppState>): void {
   const byDay = new Map<string, NonNullable<AppState['body']>[number]>();
   (Array.isArray(saved.body) ? saved.body.filter(validBody) : []).forEach((b) => byDay.set(b.day, b));
   next.body = [...byDay.values()].sort((a, b) => a.day.localeCompare(b.day));
+  // Dane z zegarka: przesiane jak paczka — zepsuty dzień odpada, reszta zostaje.
+  const watch = restoreWatch(saved.watch);
+  if (watch) next.watch = watch;
   if (next.cfg.height !== undefined && !validHeight(next.cfg.height)) delete next.cfg.height;
   // Plany własne: tylko te, które da się rozpisać na kalendarz — bez tego plan z zepsutym
   // zapisem wywróciłby ekran planu, a nie tylko zniknął z listy.
@@ -261,6 +268,29 @@ export default function App() {
       document.removeEventListener('visibilitychange', back);
     };
   }, [state]);
+
+  // Dane z zegarka: przy otwarciu i po powrocie do aplikacji, nie częściej niż raz na minutę
+  // (pilnuje tego `pullWatch`). Nigdy w trakcie treningu — nowe odznaki i awans wyskakują
+  // w oknie, a okno w środku serii to ostatnie, czego ktoś potrzebuje.
+  const onWatch = useRef<(p: WatchPayload) => void>(() => undefined);
+  const ready = !!state;
+  const training = !!state?.session;
+  useEffect(() => {
+    if (!ready || training || !garminConfigured()) return;
+    const pull = () =>
+      void pullWatch().then((r) => {
+        if (r.kind === 'ok') onWatch.current(r.payload);
+      });
+    const t = window.setTimeout(pull, 1500);
+    const back = () => {
+      if (document.visibilityState === 'visible') pull();
+    };
+    document.addEventListener('visibilitychange', back);
+    return () => {
+      window.clearTimeout(t);
+      document.removeEventListener('visibilitychange', back);
+    };
+  }, [ready, training]);
 
   if (!state) return <div className="empty">{pick(LOADING, daySeed())}</div>;
 
@@ -462,6 +492,9 @@ export default function App() {
         (gained > 0 ? ` · +${gained} XP` : dayXp(next) >= XP.cardioCap ? ' · bez XP, limit dnia' : '') +
         '.' +
         (replaced ? ' Poprzednia liczba kroków z tego dnia zastąpiona.' : '') +
+        (entry.kind === 'steps' && (watchStepsOn(next, day) ?? 0) > entry.steps
+          ? ` Zegarek podał więcej (${watchStepsOn(next, day)!.toLocaleString('pl-PL')}) — liczy się jego liczba.`
+          : '') +
         (revoked ? ` Cofnięte progi, których nowa liczba nie uzasadnia: ${revoked}.` : '') +
         (b ? '' : ' Kalorie pokażą się po wpisaniu wagi.'),
     );
@@ -469,6 +502,34 @@ export default function App() {
       if (fresh.length) await sayBadges(fresh, metrics(next), 'Przy tym wpisie');
       await sayLevel(before, next);
     })();
+  };
+
+  /**
+   * Paczka z zegarka. Kroki i przejazdy liczą się jak wpisy: dają kalorie, minuty ruchu,
+   * doświadczenie i odznaki. Nowa paczka może też obniżyć kroki dnia (zegarek poprawił
+   * licznik), więc progi, których historia już nie uzasadnia, wracają — jak przy poprawce wpisu.
+   */
+  const applyWatch = (payload: WatchPayload) => {
+    // Paczka, która była w drodze, gdy ruszał trening, poczeka: następne sprawdzenie po
+    // treningu przyniesie ją jeszcze raz, a okno z odznaką nie wskoczy w środek serii.
+    if (state.session) return;
+    const before = levelNow(state);
+    const next = clone(state);
+    if (!mergeWatch(next, payload)) return;
+    revokeUnmet(next, badgeCtx(next), (d) => d.group === 'cardio');
+    const fresh = syncBadges(next, badgeCtx(next));
+    commit(next);
+    void (async () => {
+      if (fresh.length) await sayBadges(fresh, metrics(next), 'Z danymi z zegarka');
+      await sayLevel(before, next);
+    })();
+  };
+  onWatch.current = applyWatch;
+
+  const checkWatch = async (): Promise<PullResult> => {
+    const r = await pullWatch(true);
+    if (r.kind === 'ok') onWatch.current(r.payload);
+    return r;
   };
 
   /** Usunięcie wpisu to poprawka pomyłki — cofa progi kroków i cardio, które dała. */
@@ -1073,14 +1134,19 @@ export default function App() {
   };
 
   const resetAll = async () => {
+    const watch = !!garminKey();
     const ok = await ask(
       'Usunąć wszystkie dane?',
-      <p>Historia, poziomy ćwiczeń i własne treningi znikną bezpowrotnie.</p>,
+      <p>
+        Historia, poziomy ćwiczeń i własne treningi znikną bezpowrotnie.
+        {watch && ' Zegarek Garmin zostanie odłączony — inaczej przysłałby ostatni tydzień z powrotem.'}
+      </p>,
       'Usuń wszystko',
       { who: 'siwy', mood: 'wise' },
     );
     if (!ok) return;
     await store.clear();
+    if (watch) await forgetWatch();
     commit(freshState());
   };
 
@@ -1301,6 +1367,7 @@ export default function App() {
           state={state}
           onFeedback={apiConfigured() ? () => setFeedbackOpen(true) : undefined}
           onReminders={setReminders}
+          onWatchSync={checkWatch}
           onToast={setToastMsg}
           onIntro={() => setReplayIntro(true)}
           onWeights={setWeights}

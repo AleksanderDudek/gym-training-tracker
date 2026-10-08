@@ -16,6 +16,8 @@ import { plan } from '../engine/plan';
 import { altsFor } from '../engine/structure';
 import { HealthCard } from './Health';
 import { RemindersCard } from './Reminders';
+import { GarminCard } from './Garmin';
+import type { PullResult } from '../garmin';
 import { SupportLine } from './Support';
 import type { AppState, EffortKey, ExerciseId, ReadyKey, ReminderPrefs, SetResult, Workout } from '../types';
 
@@ -184,12 +186,14 @@ export function SettingsView({
   onRecalibrate,
   onIntro,
   onReminders,
+  onWatchSync,
   onToast,
   onFeedback,
 }: {
   state: AppState;
   onFeedback?: (() => void) | undefined;
   onReminders: (p: ReminderPrefs) => void;
+  onWatchSync: () => Promise<PullResult>;
   onToast: (m: string) => void;
   onWeights: (list: number[]) => void;
   onStartWeight: (id: ExerciseId, w: number) => void;
@@ -205,6 +209,7 @@ export function SettingsView({
   return (
     <>
       <RemindersCard state={state} onPrefs={onReminders} onToast={onToast} />
+      <GarminCard state={state} onSync={onWatchSync} onToast={onToast} />
 
       {onFeedback && (
         <div className="grp">

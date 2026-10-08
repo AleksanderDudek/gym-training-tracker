@@ -5,7 +5,7 @@ import { XP, levelFor, xpSummary } from '../engine/xp';
 import type { LevelState, XpSummary } from '../engine/xp';
 import { dayKey, daysBetween } from '../engine/schedule';
 import { snacksOf } from '../engine/snacks';
-import { BASE_STEPS, cardioOf } from '../engine/cardio';
+import { BASE_STEPS, activeMinutes, cardioOf } from '../engine/cardio';
 import { LEVEL_UP, pick, plural } from '../engine/quips';
 import type { AppState } from '../types';
 
@@ -29,7 +29,11 @@ export function lastActiveDay(state: AppState): string | null {
     ...state.log.map((e) => dayKey(e.date)),
     ...snacksOf(state).map((s) => dayKey(s.at)),
     // Dzień wpisu, nie chwila zapisu — kroki z wczoraj wpisane dziś rano to ruch wczoraj.
-    ...cardioOf(state).map((c) => c.day),
+    // Zegarek liczy kroki każdego dnia, także po mieszkaniu, więc jego dzień jest ruchem
+    // dopiero z minutami ruchu — inaczej postać nigdy by nie zatęskniła.
+    ...cardioOf(state)
+      .filter((c) => c.src !== 'watch' || activeMinutes(state, c) > 0)
+      .map((c) => c.day),
   ];
   return days.length ? days.reduce((a, b) => (a > b ? a : b)) : null;
 }

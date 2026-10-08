@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<!-- Aplikacja GYM TRACKER na zegarek: w tle co pół godziny wysyła zaszyfrowany tydzień danych.
+     Connect IQ 3.2 to minimum: od tej wersji przebieg w tle może zapisywać do Storage. Urządzenia
+     z listy da się zmienić w SDK (Monkey C: Edit Products) — każde musi mieć API 3.2 albo nowsze. -->
+<iq:manifest version="3" xmlns:iq="http://www.garmin.com/xml/connectiq">
+    <iq:application id="be917461ce72434087a9d8225b2948c4" type="watch-app" name="@Strings.AppName"
+        entry="GymTrackerApp" launcherIcon="@Drawables.LauncherIcon" minApiLevel="3.2.0">
+        <iq:products>
+            <iq:product id="epix2"/>
+            <iq:product id="fenix6"/>
+            <iq:product id="fenix7"/>
+            <iq:product id="fr255"/>
+            <iq:product id="fr265"/>
+            <iq:product id="fr955"/>
+            <iq:product id="fr965"/>
+            <iq:product id="venu2"/>
+            <iq:product id="venu3"/>
+            <iq:product id="vivoactive4"/>
+            <iq:product id="vivoactive5"/>
+        </iq:products>
+        <iq:permissions>
+            <iq:uses-permission id="Background"/>
+            <iq:uses-permission id="Communications"/>
+            <iq:uses-permission id="SensorHistory"/>
+            <iq:uses-permission id="UserProfile"/>
+        </iq:permissions>
+        <iq:languages>
+            <iq:language>pol</iq:language>
+            <iq:language>eng</iq:language>
+        </iq:languages>
+        <iq:barrels/>
+    </iq:application>
+</iq:manifest>

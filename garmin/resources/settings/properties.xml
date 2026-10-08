@@ -1,0 +1,6 @@
+<properties>
+    <!-- Klucz z karty „Zegarek Garmin” w aplikacji: 64 znaki hex. Wkleja go użytkownik. -->
+    <property id="key" type="string"></property>
+    <!-- Adres serwera aplikacji (server/api) — ustawiany przed buildem, użytkownik go nie widzi. -->
+    <property id="api" type="string">https://gym-tracker-api.WPISZ-KONTO.workers.dev</property>
+</properties>

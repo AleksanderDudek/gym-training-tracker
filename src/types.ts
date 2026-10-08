@@ -190,6 +190,8 @@ export type Cardio = CardioInput & {
   day: string;
   /** Chwila zapisu, ISO — do kolejności na liście. */
   at: string;
+  /** Wpis wyprowadzony z danych zegarka — nie leży w zapisie i nie da się go usunąć. */
+  src?: 'watch';
 };
 
 /** Masa ciała z jednego dnia. Kalorie liczą się z wagi, która obowiązywała w dniu ruchu. */
@@ -197,6 +199,55 @@ export interface BodyWeight {
   /** `yyyy-mm-dd`. Jeden wpis na dzień — kolejny tego samego dnia go zastępuje. */
   day: string;
   kg: number;
+}
+
+/** Dzień z krokomierza zegarka. */
+export interface WatchDay {
+  /** `yyyy-mm-dd` według zegara zegarka. */
+  day: string;
+  steps: number;
+  /** Droga w metrach, jak liczy ją zegarek. */
+  m: number | null;
+  floors: number | null;
+  /** Minuty intensywności z zegarka. */
+  active: number | null;
+}
+
+/** Aktywność zapisana na zegarku. Connect IQ podaje tylko rodzaj, start, czas i drogę. */
+export interface WatchActivity {
+  /** Start, sekundy od 1970. Klucz aktywności. */
+  start: number;
+  /** `Activity.Sport` (numeracja FIT): 1 bieg, 2 rower, 11 marsz… */
+  sport: number;
+  sec: number;
+  m: number | null;
+}
+
+/** Zdrowie z zegarka w jednym dniu. `null` — zegarek tego nie mierzy albo leżał na stole. */
+export interface WatchHealth {
+  day: string;
+  /** Średnie tętno spoczynkowe z 7 dni, tak jak podaje je zegarek. */
+  rhr: number | null;
+  hrMin: number | null;
+  hrAvg: number | null;
+  hrMax: number | null;
+  /** Średni stres dnia, 0–100. */
+  stress: number | null;
+  /** Body Battery: najniżej i najwyżej w ciągu dnia, 0–100. */
+  bbMin: number | null;
+  bbMax: number | null;
+  /** Wynik snu z ostatniej nocy, 0–100. */
+  sleep: number | null;
+}
+
+export interface WatchData {
+  /** Czas wysłania ostatniej przyjętej paczki, s od 1970. Starsza paczka nic nie zmienia. */
+  t: number;
+  /** Kiedy ta przeglądarka ją odebrała, ISO. */
+  got: string;
+  days: WatchDay[];
+  acts: WatchActivity[];
+  health: WatchHealth[];
 }
 
 /**
@@ -468,6 +519,8 @@ export interface AppState {
   cardio: Cardio[];
   /** Waga ciała w czasie, rosnąco po dniu. Z niej liczą się kalorie. */
   body: BodyWeight[];
+  /** Dane z zegarka Garmin: liczby, nie wpisy — wpisy ruchu wyprowadza z nich `cardioOf`. */
+  watch?: WatchData;
   plan: ActivePlan | null;
   notice: Notice | null;
   /** Dziennik zdarzeń, których nie da się odtworzyć z kalendarza. */

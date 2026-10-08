@@ -29,3 +29,19 @@ CREATE TABLE IF NOT EXISTS feedback (
   ip_hash    TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS feedback_ip ON feedback (ip_hash, created);
+
+-- Skrzynki zegarka Garmin: najnowsza zaszyfrowana paczka z zegarka. Klucza serwer nie ma —
+-- zna go tylko zegarek i przeglądarka, więc kroki, tętno i sen są dla niego nieczytelne.
+CREATE TABLE IF NOT EXISTS garmin (
+  -- 32 znaki hex wyprowadzone z klucza.
+  box     TEXT PRIMARY KEY,
+  -- Koperta w base64: wersja, IV, AES-256-CBC, HMAC-SHA256.
+  blob    TEXT NOT NULL,
+  -- Ostatni zapis, ms. Po 7 dniach ciszy skrzynka znika.
+  updated INTEGER NOT NULL,
+  -- Założenie, ms, i skrót adresu IP — do limitu nowych skrzynek na godzinę.
+  created INTEGER NOT NULL,
+  ip_hash TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS garmin_ip ON garmin (ip_hash, created);
+CREATE INDEX IF NOT EXISTS garmin_updated ON garmin (updated);

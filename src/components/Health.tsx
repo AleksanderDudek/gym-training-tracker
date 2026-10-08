@@ -13,6 +13,13 @@ import type { CSSProperties } from 'react';
 export const HEALTH_SHORT =
   'GYM TRACKER pomaga planować i zapisywać trening, ale nie zastępuje fizjoterapeuty, dietetyka ani konsultacji lekarskiej.';
 
+/**
+ * Pod liczbami zdrowia z zegarka. Pokazujemy je bez oceny — „za wysokie” albo „w normie”
+ * mówi lekarz, nie aplikacja.
+ */
+export const WATCH_NOTE =
+  'Liczby z czujników zegarka, pokazane bez oceny: tętno spoczynkowe to średnia z ostatnich 7 dni, stres i Body Battery w skali 0–100. Pomiar na nadgarstku bywa niedokładny. Jeśli coś cię niepokoi, porozmawiaj z lekarzem.';
+
 export function HealthNote({ style }: { style?: CSSProperties }) {
   return (
     <p className="hint health-note" style={style}>

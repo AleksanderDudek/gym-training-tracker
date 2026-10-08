@@ -11,6 +11,7 @@ import { characterMood } from './Character';
 import { freshState } from '../engine/plan';
 import { addSnack } from '../engine/snacks';
 import { addCardio } from '../engine/cardio';
+import { mergeWatch } from '../engine/watch';
 import { tierKey } from '../engine/badges';
 import { xpSummary } from '../engine/xp';
 
@@ -167,6 +168,16 @@ describe('mina postaci', () => {
     // Kroki z wczoraj wpisane dziś rano: wczoraj w ruchu, a nie dziś.
     addCardio(y, { kind: 'steps', steps: 9000 }, '2026-09-26', Date.parse(`${today}T07:00:00Z`));
     expect(characterMood(y, xpSummary(y, today), today).line).toBe('Wczoraj w ruchu');
+  });
+
+  it('dzień z zegarka to ruch dopiero z minutami ruchu — sam licznik po mieszkaniu nie', () => {
+    const s = freshState();
+    const at = Date.parse(`${today}T20:00:00Z`) / 1000;
+    const day = (steps: number) => [{ day: today, steps, m: null, floors: null, active: null }];
+    mergeWatch(s, { t: at, days: day(2000), acts: [], health: [] });
+    expect(characterMood(s, xpSummary(s, today), today).line).toBe('Czeka na pierwszy ruch');
+    mergeWatch(s, { t: at + 60, days: day(9000), acts: [], health: [] });
+    expect(characterMood(s, xpSummary(s, today), today).mood).toBe('happy');
   });
 
   it('bez żadnego ruchu postać czeka, a mina zawsze ma zdanie obok', () => {

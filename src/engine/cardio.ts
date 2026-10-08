@@ -2,6 +2,7 @@ import type { AppState, Cardio, CardioInput, CardioSport } from '../types';
 import { heightOf, weightOn } from './body';
 import { DANCE_MET, DANCE_SHARE, STEP_CADENCE, cardioEnergy } from './energy';
 import { daysBetween, mondayOf } from './schedule';
+import { watchEntries } from './watch';
 
 /**
  * Kroki, bieżnia, rower i taniec wpisane ręcznie.
@@ -40,8 +41,6 @@ const DAY = /^\d{4}-\d{2}-\d{2}$/;
 /** Klucz z listy, a nie z prototypu — `constructor` z importowanego pliku to nie rodzaj tańca. */
 const oneOf = (v: unknown, table: object): boolean => typeof v === 'string' && Object.hasOwn(table, v);
 
-/** Zapisy starsze niż ta funkcja nie mają listy — traktujemy to jak pustą. */
-export const cardioOf = (state: AppState): Cardio[] => state.cardio ?? [];
 
 /** Rower stacjonarny z mocą to wciąż rower — w nawigacji i na liście stoją razem. */
 export const sportOf = (c: Pick<CardioInput, 'kind'>): CardioSport => (c.kind === 'ergo' ? 'bike' : c.kind);
@@ -99,6 +98,37 @@ export function normalize(c: CardioInput): CardioInput {
   }
 }
 
+/** Wpisy wpisane ręcznie — tylko te da się usunąć. Zapisy starsze niż lista wczytują się jako pusta. */
+export const manualOf = (state: AppState): Cardio[] => state.cardio ?? [];
+
+/**
+ * Cały ruch, z którego liczą się kalorie, minuty ruchu, doświadczenie i odznaki: wpisy ręczne
+ * i to, co podał zegarek. Kroki mają jeden wpis na dzień, więc z dwóch liczb — wpisanej
+ * i z zegarka — zostaje wyższa. Niższa nie przepada: czeka w zapisie i wraca, gdyby druga
+ * zniknęła. Przy remisie zostaje wpis ręczny, bo ten da się usunąć.
+ */
+export function cardioOf(state: AppState): Cardio[] {
+  const manual = manualOf(state);
+  const watch = watchEntries(state.watch).filter((c) => inputProblem(c) === null);
+  if (!watch.length) return manual;
+  const watchSteps = new Map<string, number>();
+  watch.forEach((c) => {
+    if (c.kind === 'steps') watchSteps.set(c.day, c.steps);
+  });
+  const typedWins = new Set<string>();
+  const out = manual.filter((c) => {
+    if (c.kind !== 'steps') return true;
+    const w = watchSteps.get(c.day);
+    if (w !== undefined && w > c.steps) return false;
+    typedWins.add(c.day);
+    return true;
+  });
+  watch.forEach((c) => {
+    if (c.kind !== 'steps' || !typedWins.has(c.day)) out.push(c);
+  });
+  return out;
+}
+
 /** Czy zapisany wpis da się bezpiecznie wczytać — po imporcie pliku albo ze starego zapisu. */
 export const validCardio = (c: unknown): c is Cardio => {
   if (!c || typeof c !== 'object') return false;
@@ -140,7 +170,7 @@ export function addCardio(
 }
 
 export function removeCardio(state: AppState, key: string): boolean {
-  const list = cardioOf(state);
+  const list = manualOf(state);
   const i = list.findIndex((c) => c.key === key);
   if (i < 0) return false;
   list.splice(i, 1);
@@ -156,6 +186,10 @@ export const cardioOn = (state: AppState, day: string): Cardio[] =>
 /** Kroki z dnia. Jeden wpis na dzień, więc to jego liczba albo zero. */
 export const stepsOn = (state: AppState, day: string): number =>
   cardioOn(state, day).reduce((s, c) => s + (c.kind === 'steps' ? c.steps : 0), 0);
+
+/** Kroki wpisane ręcznie na dzień — zero, gdy wpisu nie ma. Zegarek tu się nie liczy. */
+export const typedStepsOn = (state: AppState, day: string): number =>
+  manualOf(state).find((c): c is Extract<Cardio, { kind: 'steps' }> => c.kind === 'steps' && c.day === day)?.steps ?? 0;
 
 /**
  * Ostatni wpis danego rodzaju — do podpowiedzi w pustym polu. Tylko podpowiedź: pole zostaje
