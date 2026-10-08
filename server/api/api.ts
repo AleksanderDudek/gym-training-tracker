@@ -1,3 +1,4 @@
+import { garmin } from './garmin';
 import { dueItems, isStale, localParts, pruneSent, sentKey } from './schedule';
 import type { ReminderItem } from './schedule';
 import type { FeedbackSummary, Store } from './store';
@@ -5,13 +6,15 @@ import { fromB64u, pushRequest } from './webpush';
 import type { Vapid } from './webpush';
 
 /**
- * Serwer aplikacji: przypomnienia, uwagi od użytkowników i jeden przebieg crona.
+ * Serwer aplikacji: przypomnienia, uwagi od użytkowników, skrzynki zegarka i jeden przebieg crona.
  *
  * - `POST /subscribe` — subskrypcja telefonu, jego strefa czasowa i lista gotowych
  *   przypomnień na najbliższe dni. Każde otwarcie aplikacji przysyła listę od nowa.
  * - `POST /unsubscribe` — wyłączenie przypomnień.
  * - `POST /feedback` — uwaga albo zgłoszenie błędu: e-mail, treść, zrzut ekranu i ślad wizyty.
  * - `GET /admin/feedback` — lista uwag dla autora, za hasłem (`ADMIN_TOKEN`).
+ * - `POST /garmin/push` — zaszyfrowana paczka z zegarka Garmin (serwer nie ma klucza).
+ * - `POST /garmin/pull`, `POST /garmin/forget` — odbiór paczki i odłączenie zegarka.
  * - `tick` — co kilka minut: wyślij to, czemu wybiła godzina.
  *
  * Konta nie ma. Subskrypcję identyfikuje jej własny adres w usłudze powiadomień — losowy,
@@ -141,6 +144,16 @@ export async function handle(req: Request, env: Env, store: Store, now = Date.no
 
   if (path === '/feedback') return feedback(req, data, env, store, now, reply);
 
+  if (path.startsWith('/garmin/')) {
+    const json = (status: number, d: unknown) => {
+      const h = new Headers(headers);
+      h.set('Content-Type', 'application/json');
+      h.set('Cache-Control', 'no-store');
+      return new Response(JSON.stringify(d), { status, headers: h });
+    };
+    return garmin(path, data, () => ipHashOf(req, env), store, now, { reply, json });
+  }
+
   if (path === '/subscribe') {
     const sub = data.subscription as { endpoint?: unknown; keys?: { p256dh?: unknown; auth?: unknown } } | undefined;
     const items = data.items;
@@ -241,6 +254,10 @@ async function sha256(s: string): Promise<string> {
   return [...d].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
+/** Adres IP tylko jako skrót z solą — do limitów, nie do zapisania, kto pisał. */
+const ipHashOf = (req: Request, env: Env): Promise<string> =>
+  sha256(`${req.headers.get('CF-Connecting-IP') ?? 'nieznany'}|${env.VAPID_SUBJECT}`);
+
 async function feedback(
   req: Request,
   data: Record<string, unknown>,
@@ -267,8 +284,7 @@ async function feedback(
   )
     return reply(400, 'zła wiadomość');
 
-  // Adres IP tylko jako skrót z solą — do limitu, nie do zapisania, kto pisał.
-  const ipHash = await sha256(`${req.headers.get('CF-Connecting-IP') ?? 'nieznany'}|${env.VAPID_SUBJECT}`);
+  const ipHash = await ipHashOf(req, env);
   if ((await store.recentFeedback(ipHash, now - 3_600_000)) >= FEEDBACK_PER_HOUR) return reply(429, 'za dużo wiadomości');
 
   await store.addFeedback({

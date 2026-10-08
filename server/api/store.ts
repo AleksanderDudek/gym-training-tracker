@@ -23,6 +23,22 @@ export interface FeedbackRecord {
 
 export type FeedbackSummary = Omit<FeedbackRecord, 'screenshot' | 'ipHash'> & { hasShot: boolean };
 
+/**
+ * Skrzynka zegarka: najnowsza zaszyfrowana paczka z zegarka Garmin. Serwer nie ma klucza —
+ * widzi tylko szyfrogram, czas zapisu i skrót adresu, z którego skrzynkę założono.
+ */
+export interface BoxRecord {
+  /** 32 znaki hex wyprowadzone z klucza, którego serwer nie zna. */
+  box: string;
+  /** Koperta w base64: wersja, IV, szyfrogram, znacznik HMAC. */
+  blob: string;
+  /** Ostatni zapis, ms. Po tygodniu ciszy skrzynka znika. */
+  updated: number;
+  /** Założenie skrzynki, ms — do limitu nowych skrzynek z jednego adresu. */
+  created: number;
+  ipHash: string;
+}
+
 export interface Store {
   all(): Promise<SubRecord[]>;
   /** Nowa lista przypomnień. Lista wysłanych zostaje — inaczej to samo przyszłoby dwa razy. */
@@ -35,6 +51,14 @@ export interface Store {
   feedbackShot(id: string): Promise<string | null>;
   /** Ile wiadomości przyszło z tego skrótu adresu od `since` (ms). */
   recentFeedback(ipHash: string, since: number): Promise<number>;
+  /** Nowa paczka. Założenie i skrót adresu zostają z pierwszego zapisu skrzynki. */
+  putBox(r: BoxRecord): Promise<void>;
+  getBox(box: string): Promise<BoxRecord | null>;
+  removeBox(box: string): Promise<void>;
+  /** Ile skrzynek założono z tego skrótu adresu od `since` (ms). */
+  recentBoxes(ipHash: string, since: number): Promise<number>;
+  /** Kasuje skrzynki bez zapisu od `before` (ms); zwraca, ile ich było. */
+  pruneBoxes(before: number): Promise<number>;
 }
 
 const summary = ({ screenshot, ipHash: _ip, ...f }: FeedbackRecord): FeedbackSummary => ({ ...f, hasShot: !!screenshot });
@@ -42,7 +66,30 @@ const summary = ({ screenshot, ipHash: _ip, ...f }: FeedbackRecord): FeedbackSum
 export function memoryStore(): Store {
   const m = new Map<string, SubRecord>();
   const fb: FeedbackRecord[] = [];
+  const boxes = new Map<string, BoxRecord>();
   return {
+    putBox: async (r) => {
+      const old = boxes.get(r.box);
+      boxes.set(r.box, old ? { ...old, blob: r.blob, updated: r.updated } : { ...r });
+    },
+    getBox: async (box) => {
+      const r = boxes.get(box);
+      return r ? { ...r } : null;
+    },
+    removeBox: async (box) => {
+      boxes.delete(box);
+    },
+    recentBoxes: async (ipHash, since) =>
+      [...boxes.values()].filter((b) => b.ipHash === ipHash && b.created >= since).length,
+    pruneBoxes: async (before) => {
+      let n = 0;
+      for (const [k, b] of boxes)
+        if (b.updated < before) {
+          boxes.delete(k);
+          n++;
+        }
+      return n;
+    },
     addFeedback: async (f) => {
       fb.push(structuredClone(f));
     },
@@ -103,8 +150,50 @@ interface FeedbackRow {
   has_shot: number;
 }
 
+interface BoxRow {
+  box: string;
+  blob: string;
+  updated: number;
+  created: number;
+  ip_hash: string;
+}
+
 export function d1Store(db: D1Database): Store {
   return {
+    putBox: async (r) => {
+      await db
+        .prepare(
+          `INSERT INTO garmin (box, blob, updated, created, ip_hash) VALUES (?, ?, ?, ?, ?)
+           ON CONFLICT(box) DO UPDATE SET blob = excluded.blob, updated = excluded.updated`,
+        )
+        .bind(r.box, r.blob, r.updated, r.created, r.ipHash)
+        .run();
+    },
+    getBox: async (box) => {
+      const { results } = await db
+        .prepare('SELECT box, blob, updated, created, ip_hash FROM garmin WHERE box = ?')
+        .bind(box)
+        .all<BoxRow>();
+      const r = results[0];
+      return r ? { box: r.box, blob: r.blob, updated: r.updated, created: r.created, ipHash: r.ip_hash } : null;
+    },
+    removeBox: async (box) => {
+      await db.prepare('DELETE FROM garmin WHERE box = ?').bind(box).run();
+    },
+    recentBoxes: async (ipHash, since) => {
+      const { results } = await db
+        .prepare('SELECT COUNT(*) AS n FROM garmin WHERE ip_hash = ? AND created >= ?')
+        .bind(ipHash, since)
+        .all<{ n: number }>();
+      return results[0]?.n ?? 0;
+    },
+    pruneBoxes: async (before) => {
+      const { results } = await db
+        .prepare('DELETE FROM garmin WHERE updated < ? RETURNING box')
+        .bind(before)
+        .all<{ box: string }>();
+      return results.length;
+    },
     addFeedback: async (f) => {
       await db
         .prepare('INSERT INTO feedback (id, created, email, text, view, context, screenshot, ip_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
