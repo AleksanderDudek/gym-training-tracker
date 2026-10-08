@@ -36,42 +36,46 @@ Format koperty i paczki opisują `src/watchseal.ts` i `src/engine/watch.ts`. Pli
 sprawdza ten sam wektor co testy aplikacji: jeśli zegarek i przeglądarka się rozjadą, test
 nie przejdzie.
 
-## Build
+## Build i publikacja
 
-Potrzebne: [Connect IQ SDK](https://developer.garmin.com/connect-iq/sdk/) (SDK Manager, konto
-Garmin, urządzenia z listy w `manifest.xml`), Java 17+ i klucz dewelopera.
+Potrzebne: [Connect IQ SDK](https://developer.garmin.com/connect-iq/sdk/) — SDK Manager, konto
+Garmin, najnowsze SDK i urządzenia z `manifest.xml` (co najmniej twój zegarek) — oraz Java 17+.
+Adres serwera (`api` w `resources/settings/properties.xml`) jest już wpisany.
 
 ```bash
 cd garmin
-
-# 1. Adres serwera: wpisz adres Workera (z `wrangler deploy`) w resources/settings/properties.xml,
-#    właściwość `api`, bez ukośnika na końcu.
-
-# 2. Klucz dewelopera — raz, poza gitem.
-openssl genrsa -out developer_key.pem 4096
-openssl pkcs8 -topk8 -inform PEM -outform DER -in developer_key.pem -out developer_key.der -nocrypt
-
-# 3. Build na jedno urządzenie i symulator.
-monkeyc -f monkey.jungle -o bin/gymtracker.prg -y developer_key.der -d fr265
-connectiq &
-monkeydo bin/gymtracker.prg fr265
-
-# 4. Testy w symulatorze (wektor koperty i czytanie klucza).
-monkeyc -f monkey.jungle -o bin/test.prg -y developer_key.der -d fr265 --unit-test
-monkeydo bin/test.prg fr265 -t
-
-# 5. Paczka do sklepu: wszystkie urządzenia z manifestu.
-monkeyc -f monkey.jungle -o bin/gymtracker.iq -y developer_key.der -e -r
+./build.sh test fr265     # testy w symulatorze: wektor koperty i czytanie klucza
+./build.sh run fr265      # aplikacja w symulatorze (ustawienia: File → Edit Persistent Storage)
+./build.sh store          # bin/gymtracker.iq — wszystkie zegarki z manifestu
+./build.sh prg fr265      # bin/gymtracker-fr265.prg — do wgrania przez USB
 ```
 
-Plik `.iq` wgrywa się w [Connect IQ Developer Dashboard](https://apps.garmin.com/developer/).
-Po publikacji adres aplikacji w sklepie trzeba wpisać w GitHubie jako zmienną `GARMIN_APP_URL`
-(Settings → Secrets and variables → Actions → Variables). Dopiero wtedy aplikacja pokaże kartę
-„Zegarek Garmin”. Bez tej zmiennej karty nie ma, a reszta działa jak dotąd.
+Przy pierwszym buildzie skrypt tworzy klucz dewelopera w `~/.garmin/developer_key.der` (albo
+bierze ten z `CIQ_KEY`). **Zrób jego kopię** — każdą kolejną wersję w sklepie trzeba podpisać
+tym samym kluczem, inaczej to będzie nowa aplikacja.
 
-Bez sklepu (na własny zegarek): skopiuj `bin/gymtracker.prg` przez USB do `GARMIN/APPS/`.
-Ustawienia aplikacji wgranej w ten sposób edytuje się w Connect IQ na telefonie albo
-w symulatorze (File → Edit Persistent Storage / App Settings).
+**Najpierw beta, potem sklep.**
+
+1. [Developer Dashboard](https://apps.garmin.com/developer/) → Upload an App → `bin/gymtracker.iq`,
+   zaznacz **Beta App**. Beta widzisz tylko ty i nie przechodzi recenzji.
+2. Zainstaluj ją ze strony apps.garmin.com w przeglądarce (zalogowany tym samym kontem).
+3. Klucz wklej w ustawieniach aplikacji. Uwaga: ustawień bety **nie ma w Garmin Connect** na
+   telefonie — są w **Garmin Express** na komputerze i w aplikacji **Connect IQ** na telefonie.
+   Po publikacji ustawienia są także w Garmin Connect.
+4. Otwórz GYM TRACKER na zegarku, w aplikacji „Sprawdź teraz” — dane powinny przyjść.
+5. Wgraj tę samą paczkę jako zwykłą aplikację: opis i uprawnienia w `store/listing.md`,
+   zrzuty z symulatora. Aplikacja jest bezpłatna i nie prosi o wpłaty, więc weryfikacja
+   „tradera” (DSA) jej nie dotyczy.
+6. Po akceptacji ustaw adres ze sklepu w GitHubie i wdroż stronę jeszcze raz — dopiero wtedy
+   aplikacja pokaże kartę „Zegarek Garmin”:
+
+   ```bash
+   gh variable set GARMIN_APP_URL --body "https://apps.garmin.com/apps/<id>"
+   gh workflow run Deploy
+   ```
+
+Bez sklepu, tylko na swój zegarek: `./build.sh prg <zegarek>` i plik do `GARMIN/APPS/` przez USB.
+Ustawień takiej aplikacji nie zmienisz w Garmin Connect, więc do testów lepsza jest beta.
 
 ## Do sprawdzenia przy pierwszym buildzie
 
@@ -108,3 +112,5 @@ testy nie były puszczone. Przed publikacją:
 | `source/SyncGlance.mc` | podgląd na liście aplikacji |
 | `source/SealTest.mc` | testy: wspólny wektor koperty, czytanie klucza |
 | `resources/settings/` | `key` (dla użytkownika) i `api` (ukryty adres serwera) |
+| `build.sh` | testy, symulator, `.prg` na jeden zegarek, `.iq` do sklepu; klucz dewelopera |
+| `store/listing.md` | opis do sklepu po polsku i angielsku, wyjaśnienie uprawnień |
