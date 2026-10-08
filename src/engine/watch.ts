@@ -184,20 +184,37 @@ export function restoreWatch(v: unknown): WatchData | undefined {
   const t = num(w.t, EPOCH_MIN, Number.MAX_SAFE_INTEGER);
   if (t === null || typeof w.got !== 'string' || Number.isNaN(Date.parse(w.got))) return undefined;
   const all = Number.MAX_SAFE_INTEGER;
+  // Przez `merged`, jak paczka: poprawiony ręcznie plik z dwoma takimi samymi dniami dałby
+  // dwa wpisy kroków na jeden dzień.
   return {
     t,
     got: w.got,
-    days: rows(w.days, all, (x) => {
-      const d = obj(x);
-      return dayRow([d.day, d.steps, d.m, d.floors, d.active]);
-    }),
-    acts: rows(w.acts, all, (x) => {
-      const a = obj(x);
-      return actRow([a.start, a.sport, a.sec, a.m], all);
-    }),
-    health: rows(w.health, all, (x) => {
-      const h = obj(x);
-      return healthRow([h.day, h.rhr, h.hrMin, h.hrAvg, h.hrMax, h.stress, h.bbMin, h.bbMax, h.sleep]);
-    }),
+    days: merged(
+      [],
+      rows(w.days, all, (x) => {
+        const d = obj(x);
+        return dayRow([d.day, d.steps, d.m, d.floors, d.active]);
+      }),
+      (d) => d.day,
+      byDay,
+    ),
+    acts: merged(
+      [],
+      rows(w.acts, all, (x) => {
+        const a = obj(x);
+        return actRow([a.start, a.sport, a.sec, a.m], all);
+      }),
+      (a) => a.start,
+      (a, b) => a.start - b.start,
+    ),
+    health: merged(
+      [],
+      rows(w.health, all, (x) => {
+        const h = obj(x);
+        return healthRow([h.day, h.rhr, h.hrMin, h.hrAvg, h.hrMax, h.stress, h.bbMin, h.bbMax, h.sleep]);
+      }),
+      (h) => h.day,
+      byDay,
+    ),
   };
 }

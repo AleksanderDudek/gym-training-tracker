@@ -62,7 +62,7 @@ import type {
 } from './types';
 import { pushConfigured, syncReminders } from './push';
 import { apiConfigured } from './api';
-import { garminConfigured, pullWatch } from './garmin';
+import { forgetWatch, garminConfigured, garminKey, pullWatch } from './garmin';
 import type { PullResult } from './garmin';
 import { attachTrail, trail } from './trail';
 import { FeedbackDialog } from './components/Feedback';
@@ -510,6 +510,9 @@ export default function App() {
    * licznik), więc progi, których historia już nie uzasadnia, wracają — jak przy poprawce wpisu.
    */
   const applyWatch = (payload: WatchPayload) => {
+    // Paczka, która była w drodze, gdy ruszał trening, poczeka: następne sprawdzenie po
+    // treningu przyniesie ją jeszcze raz, a okno z odznaką nie wskoczy w środek serii.
+    if (state.session) return;
     const before = levelNow(state);
     const next = clone(state);
     if (!mergeWatch(next, payload)) return;
@@ -1131,14 +1134,19 @@ export default function App() {
   };
 
   const resetAll = async () => {
+    const watch = !!garminKey();
     const ok = await ask(
       'Usunąć wszystkie dane?',
-      <p>Historia, poziomy ćwiczeń i własne treningi znikną bezpowrotnie.</p>,
+      <p>
+        Historia, poziomy ćwiczeń i własne treningi znikną bezpowrotnie.
+        {watch && ' Zegarek Garmin zostanie odłączony — inaczej przysłałby ostatni tydzień z powrotem.'}
+      </p>,
       'Usuń wszystko',
       { who: 'siwy', mood: 'wise' },
     );
     if (!ok) return;
     await store.clear();
+    if (watch) await forgetWatch();
     commit(freshState());
   };
 

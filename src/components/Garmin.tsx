@@ -31,7 +31,10 @@ export function GarminCard({
   onSync: () => Promise<PullResult>;
   onToast: (m: string) => void;
 }) {
-  const [key, setKey] = useState<string | null>(() => garminKey());
+  // Klucz czytany przy każdym rysowaniu, nie zapamiętany: „Usuń wszystkie dane” kasuje go spod
+  // karty, a karta ma to od razu pokazać. `bump` tylko przerysowuje po zmianie tutaj.
+  const [, bump] = useState(0);
+  const key = garminKey();
   const [showKey, setShowKey] = useState(false);
   const [paste, setPaste] = useState<string | null>(null);
   const [kind, setKind] = useState<PullResult['kind'] | null>(() => lastPullKind());
@@ -47,7 +50,7 @@ export function GarminCard({
       onToast('Nie udało się zapisać klucza w tej przeglądarce.');
       return;
     }
-    setKey(garminKey());
+    bump((n) => n + 1);
     setShowKey(true);
     setPaste(null);
     setKind(null);
@@ -82,7 +85,7 @@ export function GarminCard({
     await forgetWatch();
     setBusy(false);
     setSure(false);
-    setKey(null);
+    bump((n) => n + 1);
     setShowKey(false);
     setKind(null);
     onToast('Zegarek odłączony. Dane, które już przyszły, zostają w historii. Klucz usuń też z ustawień aplikacji na zegarku.');

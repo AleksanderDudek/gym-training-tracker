@@ -146,6 +146,8 @@ describe('zapis i import', () => {
     expect(restoreWatch(JSON.parse(JSON.stringify(s.watch)))).toEqual(s.watch);
     const broken = restoreWatch({ ...s.watch, days: [{ day: 'wczoraj', steps: 5 }, ...s.watch!.days] });
     expect(broken!.days).toEqual(s.watch!.days);
+    const twice = restoreWatch({ ...s.watch, days: [...s.watch!.days, { ...s.watch!.days[0], steps: 1 }] });
+    expect(twice!.days).toHaveLength(s.watch!.days.length);
     expect(restoreWatch({ t: 'x' })).toBeUndefined();
     expect(restoreWatch(undefined)).toBeUndefined();
   });

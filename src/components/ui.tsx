@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { STAGES, ex, kbColor, kbInkIsLight } from '../data/exercises';
 import { P } from '../engine/plan';
 import { Gorilla } from './Gorilla';
@@ -292,6 +292,10 @@ export function Trendline({ values, label }: { values: number[]; label: string }
 
 export function useModal() {
   const [req, setReq] = useState<ModalRequest | null>(null);
+  // Jedno okno naraz, reszta czeka w kolejce. Bez niej okno otwarte z innego miejsca — np. odznaka
+  // z danych zegarka, które przyszły w tle — nadpisywało to na ekranie, a kod czekający na jego
+  // zamknięcie czekał w nieskończoność i nie pokazywał już niczego dalej.
+  const queue = useRef<Promise<unknown>>(Promise.resolve());
 
   const open = (
     title: string,
@@ -300,21 +304,27 @@ export function useModal() {
     cancel?: string,
     tone?: string,
     cast?: Cast,
-  ): Promise<boolean> =>
-    new Promise((resolve) => {
-      setReq({
-        title,
-        body,
-        ok,
-        cancel,
-        tone,
-        cast,
-        resolve: (v) => {
-          setReq(null);
-          resolve(v);
-        },
-      });
-    });
+  ): Promise<boolean> => {
+    const shown = queue.current.then(
+      () =>
+        new Promise<boolean>((resolve) => {
+          setReq({
+            title,
+            body,
+            ok,
+            cancel,
+            tone,
+            cast,
+            resolve: (v) => {
+              setReq(null);
+              resolve(v);
+            },
+          });
+        }),
+    );
+    queue.current = shown;
+    return shown;
+  };
 
   return {
     req,

@@ -19,7 +19,7 @@ Pozostałe polecenia:
 npm run build      # produkcyjny build do dist/, z listą plików dla service workera
 npm run preview    # podgląd builda — tu działa też praca offline
 npm run typecheck  # tsc --noEmit
-npm test           # 560 testów silnika, doradcy, kalorii, biblioteki, odznak, ruchu, obsady, scen, struktury, profili, tras, zegarka i serwera (vitest)
+npm test           # 561 testów silnika, doradcy, kalorii, biblioteki, odznak, ruchu, obsady, scen, struktury, profili, tras, zegarka i serwera (vitest)
 ```
 
 Build jest w pełni statyczny (`base: './'`), więc `dist/` można wrzucić na dowolny hosting plików
