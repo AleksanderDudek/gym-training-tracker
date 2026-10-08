@@ -1,11 +1,13 @@
 # Serwer aplikacji
 
-Cloudflare Worker z dwoma zadaniami:
+Cloudflare Worker z trzema zadaniami:
 
 - **przypomnienia** — o 7:30 o treningu z planu, o 19:30 o wpisaniu kroków i ruchu z dnia,
   o czasie lokalnym telefonu, na Androidzie i iPhonie;
 - **uwagi od użytkowników** — wiadomość z formularza w aplikacji (e-mail, treść, zrzut ekranu,
-  ślad wizyty) i lista dla autora za hasłem.
+  ślad wizyty) i lista dla autora za hasłem;
+- **skrzynki zegarka Garmin** — zaszyfrowana paczka z zegarka czeka, aż odbierze ją aplikacja.
+  Klucza serwer nie ma.
 
 ## Dlaczego serwer
 
@@ -59,6 +61,7 @@ Potem w GitHubie: **Settings → Secrets and variables → Actions → Variables
 | --- | --- |
 | `API_URL` | adres Workera z `wrangler deploy` (bez ukośnika na końcu) |
 | `VAPID_PUBLIC_KEY` | klucz publiczny wypisany przez `node keys.mjs` |
+| `GARMIN_APP_URL` | adres aplikacji GYM TRACKER w Connect IQ Store — włącza kartę zegarka (`garmin/README.md`) |
 
 Następne wdrożenie strony (push na `main`) zbuduje aplikację z kartą „Przypomnienia”
 w Ustawieniach i dymkiem „Napisz do autora” w pasku. Bez tych zmiennych nie ma ani jednego,
@@ -100,3 +103,35 @@ npx wrangler d1 execute gym-tracker-api --remote \
 **Ochrona:** limit 10 wiadomości na godzinę z jednego adresu (IP tylko jako skrót SHA-256
 z solą — samego adresu baza nie zna), ukryte pole-pułapka na boty, treść do 4000 znaków,
 zrzut tylko jako obraz (JPEG, PNG, WebP) do ok. 1,5 MB, CORS tylko dla strony aplikacji.
+
+## Zegarek Garmin
+
+Aplikacja na zegarek (`garmin/`) co 30 minut odkłada na serwerze zaszyfrowany tydzień danych,
+a aplikacja w przeglądarce odbiera go przy otwarciu.
+
+- `POST /garmin/push {box, blob}` — od zegarka (bez nagłówka Origin, zapytanie idzie przez
+  aplikację Garmin Connect na telefonie). Odpowiedź `200 {"ok":true}`, bo zegarek czeka na JSON.
+- `POST /garmin/pull {box}` — od aplikacji: `{blob, updated}` albo 404, bez pamięci podręcznej.
+- `POST /garmin/forget {box}` — odłączenie zegarka; skrzynka znika od razu.
+
+**Czego serwer nie wie.** `blob` to koperta AES-256-CBC z HMAC-SHA256, a klucz zna tylko zegarek
+i przeglądarka. Tętno, stres i sen to dane o zdrowiu (RODO, art. 9), więc serwer dostaje je
+w postaci, której nie umie odczytać. `box` to 32 znaki hex wyprowadzone z klucza: kto go zna,
+może paczkę nadpisać albo skasować, ale nie odczytać ani podrobić — aplikacja odrzuci kopertę
+bez poprawnego podpisu. W bazie leży szyfrogram, czas zapisu i skrót adresu IP, z którego
+skrzynkę założono.
+
+**Limity.** Jedna paczka na minutę na skrzynkę, 20 nowych skrzynek na godzinę z jednego adresu,
+koperta do 12 000 znaków. Skrzynka bez zapisu przez 7 dni znika przy przebiegu crona — tyle
+dni zegarek i tak wysyła w każdej paczce.
+
+**Wdrożenie przy istniejącym serwerze.** Tabela `garmin` dochodzi w `schema.sql`:
+
+```bash
+npx wrangler d1 execute gym-tracker-api --remote --file=schema.sql   # CREATE … IF NOT EXISTS — reszta zostaje
+npx wrangler deploy
+```
+
+**Koszt.** Zegarek zapisuje 48 razy na dobę. Darmowy plan D1 daje 100 tys. zapisów dziennie,
+czyli wystarcza na około 2 tys. aktywnych zegarków; dalej — plan płatny albo rzadsza wysyłka
+(`Sync.EVERY` w `garmin/source/Sync.mc`).

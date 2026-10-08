@@ -19,7 +19,7 @@ Pozostałe polecenia:
 npm run build      # produkcyjny build do dist/, z listą plików dla service workera
 npm run preview    # podgląd builda — tu działa też praca offline
 npm run typecheck  # tsc --noEmit
-npm test           # 529 testów silnika, doradcy, kalorii, biblioteki, odznak, ruchu, obsady, scen, struktury, profili, tras i serwera (vitest)
+npm test           # 560 testów silnika, doradcy, kalorii, biblioteki, odznak, ruchu, obsady, scen, struktury, profili, tras, zegarka i serwera (vitest)
 ```
 
 Build jest w pełni statyczny (`base: './'`), więc `dist/` można wrzucić na dowolny hosting plików
@@ -455,6 +455,7 @@ w iPhonie, czujnik kroków w Androidzie) i żadna przeglądarka nie daje do nieg
 aplikacja zainstalowana na ekranie głównym. Akcelerometr strony działa tylko przy włączonym
 ekranie i otwartej karcie, więc liczyłby wyłącznie spacer z telefonem w dłoni. Zamiast udawać
 pomiar, aplikacja przyjmuje liczby z urządzenia, które mierzy naprawdę, i liczy z nich kalorie.
+Z zegarka Garmin kroki i przejazdy rowerem przychodzą same — o tym niżej, w części o zegarku.
 
 **Cztery rodzaje wpisu, jedna droga: rodzaj → liczby z wyświetlacza → zapis.**
 
@@ -575,6 +576,52 @@ Pusty dzień ma żart, jak przekąski — z bieżni, roweru, parkietu i telefonu
 Obok stoją kalorie i masa ciała, a to najłatwiejsze miejsce, żeby komuś dokuczyć; test pilnuje
 słów.
 
+## Zegarek Garmin
+
+Kroki, przejazdy rowerem, tętno, stres, Body Battery i sen przychodzą z zegarka same, bez
+przepisywania. Na zegarku działa mała aplikacja GYM TRACKER (`garmin/`, Connect IQ), która co
+pół godziny wysyła zaszyfrowany ostatni tydzień, a aplikacja w przeglądarce odbiera go przy
+otwarciu i po powrocie na ekran.
+
+**Dlaczego własna aplikacja na zegarek.** Oficjalne API Garmina przyjmuje tylko firmy, a od
+wiosny 2026 roku nowych zgłoszeń nie przyjmuje wcale. Logowanie do Garmin Connect cudzym
+hasłem łamie regulamin i kazałoby serwerowi trzymać hasła. Apple Health i Health Connect są
+poza zasięgiem strony. Aplikacja Connect IQ czyta dane na zegarku i wysyła je przez aplikację
+Garmin Connect na telefonie — bez niczyjej zgody i bez haseł.
+
+**Serwer nie umie przeczytać ani jednej liczby.** W karcie „Zegarek Garmin” w ustawieniach
+powstaje klucz (32 losowe bajty), który wkleja się raz w ustawieniach aplikacji na zegarku,
+w Garmin Connect na telefonie. Zegarek szyfruje paczkę AES-256 i podpisuje HMAC-SHA256 kluczami
+wyprowadzonymi z tego klucza; serwer przechowuje tylko najnowszy szyfrogram, najwyżej tydzień.
+Tętno, stres i sen to dane o zdrowiu, więc serwer, który miał nic nie wiedzieć o ludziach,
+dalej nic nie wie. Klucz nie trafia do eksportu danych — plik z kopią treningów nie otwiera
+danych o zdrowiu. Na drugim urządzeniu wkleja się ten sam klucz przez „Mam już klucz”.
+
+**Jak to się liczy.**
+
+- **Kroki** — z dwóch liczb na ten sam dzień, wpisanej i z zegarka, liczy się **wyższa**.
+  Niższa nie przepada: czeka w zapisie i wraca, gdyby druga zniknęła. Przy remisie zostaje
+  wpis ręczny, bo ten da się usunąć. Formularz mówi, co podał zegarek, zanim ktoś wpisze swoją.
+- **Przejazdy rowerem** z drogą stają się wpisami „Rower”: średnia prędkość z drogi i czasu.
+  Formularz roweru ostrzega, że ten przejazd już jest — drugi wpis policzyłby się dwa razy.
+- **Biegi i marsze nie stają się wpisami.** Ich kroki są już w krokach dnia.
+- **Tętno, stres, Body Battery i sen** tylko się pokazują, na ekranie kroków i cardio, bez
+  punktów i bez oceny — „za wysokie” albo „w normie” mówi lekarz, nie aplikacja.
+
+Wpisy z zegarka nie leżą w zapisie: w zapisie są liczby z zegarka (`watch`), a wpisy ruchu
+wyprowadza z nich `cardioOf` przy każdym otwarciu — tak jak wszystko inne. Dlatego kalorie,
+minuty ruchu, doświadczenie i odznaki działają bez jednej zmiany, a wpisu z zegarka nie da się
+usunąć (nie ma krzyżyka): zegarek przysłałby go znowu. Nowa paczka, która obniża kroki dnia
+(zegarek poprawił licznik), cofa progi tak samo jak poprawka wpisu. Paczki nie odbiera się
+w trakcie treningu — okno z odznaką w środku serii to ostatnie, czego ktoś potrzebuje.
+
+Zegarek wysyła za każdym razem cały tydzień, więc dzień bez telefonu w pobliżu uzupełni się
+przy następnej wysyłce. Minimalny zegarek to Connect IQ 3.2; stres i Body Battery wymagają 3.3,
+a wynik snu podają tylko najnowsze modele — gdzie ich nie ma, stoi „—”.
+
+Karta zegarka pojawia się, gdy build zna adres serwera i adres aplikacji w Connect IQ Store
+(zmienna `GARMIN_APP_URL` w GitHubie). Wdrożenie: `garmin/README.md` i `server/api/README.md`.
+
 ## Atlas i sprzęt
 
 Biblioteka ma **110 ćwiczeń** w siedmiu partiach ruchu: zawias biodrowy, przysiad, ciągnięcie,
@@ -689,6 +736,8 @@ src/
     cardio.ts               kroki, bieżnia, rower i taniec: zapis, zakresy, minuty ruchu WHO, statystyki
     burn.ts                 kalorie z zapisów: wpis, trening, ćwiczenie, przekąska, cały dzień
     cardio.test.ts          32 testy wpisów, tańca, wagi w czasie, kalorii i minut ruchu według WHO
+    watch.ts                dane z zegarka: paczka, scalanie po czasie, kroki i przejazdy jako wpisy w locie
+    watch.test.ts           14 testów paczki, scalania, wyższej liczby kroków, przejazdów i importu
     find.ts                 wyszukiwanie ćwiczenia: polski alfabet, ogonki opcjonalne, podświetlenie
     find.test.ts            9 testów kolejności, dopasowania i podświetlenia
     exbadges.ts             odznaki ćwiczeń: cztery rodziny na ruch, progi z objętości sesji
@@ -743,7 +792,8 @@ src/
     VideoEmbed.tsx          odtwarzacz YouTube ładowany dopiero po kliknięciu
     Reminders.tsx           karta przypomnień w ustawieniach: zgoda, rano i wieczorem
     Structure.tsx           „przed treningiem”: przygotuj, rozgrzewka; nagłówki par i wskazówki serii
-    Health.tsx              zastrzeżenie zdrowotne: krótka wersja i pełna karta
+    Health.tsx              zastrzeżenie zdrowotne: krótka wersja, pełna karta i uwaga do liczb z zegarka
+    Garmin.tsx              karta zegarka w ustawieniach: klucz, kroki połączenia, stan, odłączenie
     Boost.tsx               „Na postęp w dzień wolny” na zakładce Plan i ekranie Dziś
     Feedback.tsx            okno „Napisz do autora”: e-mail, wiadomość, zrzut ekranu
   api.ts                    adres serwera aplikacji z buildu (`VITE_API_URL`)
@@ -752,16 +802,22 @@ src/
   trail.test.ts             4 testy kolejności, maskowania liczb, limitu i czasu aktywnego
   feedback.ts               wiadomość do autora: kontekst, zrzut ekranu, obraz z galerii, wysyłka
   push.test.ts              5 testów stanu przypomnień na telefonie i klucza serwera
+  watchseal.ts              koperta zegarka: klucz, klucze pochodne, AES-256-CBC i HMAC-SHA256
+  watchseal.test.ts         5 testów: wektor wspólny z zegarkiem, podróbki, czytanie klucza
+  garmin.ts                 zegarek w przeglądarce: klucz w pamięci strony, odbiór paczki, odłączenie
+  garmin.test.ts            3 testy odpowiedzi serwera i godziny ostatnich danych
   App.tsx                   spina stan i widoki
   main.tsx                  punkt wejścia i rejestracja service workera
-server/api/                 serwer aplikacji: przypomnienia i uwagi (Cloudflare Worker, cron, D1)
+server/api/                 serwer aplikacji: przypomnienia, uwagi i skrzynki zegarka (Cloudflare Worker, cron, D1)
   webpush.ts                szyfrowanie RFC 8291 i podpis VAPID na samym WebCrypto
   schedule.ts               co komu wysłać: czas lokalny, okno 90 minut, raz dziennie
   api.ts                    subskrypcje, przebieg crona, uwagi i lista dla autora za hasłem
-  store.ts                  subskrypcje w D1 albo w pamięci
+  garmin.ts                 skrzynki zegarka: tylko szyfrogram, limity, odbiór i odłączenie
+  store.ts                  subskrypcje, uwagi i skrzynki w D1 albo w pamięci
   worker.ts                 punkt wejścia Workera
-  *.test.ts                 28 testów: wektor RFC, VAPID, harmonogram, API, cron, uwagi i podgląd
+  *.test.ts                 37 testów: wektor RFC, VAPID, harmonogram, API, cron, uwagi, podgląd i skrzynki
   README.md                 wdrożenie krok po kroku
+garmin/                     aplikacja na zegarek (Connect IQ, Monkey C) — opis i build w garmin/README.md
 scripts/
   precache.mjs              po buildzie: wersja i lista plików do sw.js
 public/
@@ -1478,6 +1534,12 @@ wzrost siedzi w `cfg.height`. Zapisywane są liczby z wyświetlacza, **nigdy kal
 liczą się przy każdym otwarciu z wpisu i wagi z jego dnia, więc poprawka wzoru albo pierwsze
 ważenie od razu obejmuje całą historię. Przy wczytaniu i imporcie odpadają wpisy spoza zakresów
 (to literówki) i ważenia z zepsutą datą; wzrost spoza ludzkiego zakresu jest pomijany.
+
+Dane z zegarka mają osobne pole `watch`: dni kroków, aktywności i zdrowie po dniach, czas
+ostatniej przyjętej paczki i chwilę odbioru. To liczby z zegarka, a nie wpisy — wpisy ruchu
+wyprowadza z nich `cardioOf`. Przy wczytaniu i imporcie przechodzą te same zakresy co paczka
+z zegarka. Klucza do zegarka w zapisie nie ma: leży osobno w pamięci strony (`gt-garmin-key`),
+więc eksport nie otwiera danych o zdrowiu.
 
 ## Zastrzeżenie
 

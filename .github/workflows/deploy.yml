@@ -34,11 +34,13 @@ jobs:
       - run: npm test
       # Serwer aplikacji (server/api — przypomnienia i uwagi): adres i klucz publiczny VAPID ze
       # zmiennych repozytorium (Settings → Secrets and variables → Actions → Variables).
-      # Puste — aplikacja bez przypomnień i bez formularza uwag.
+      # Puste — aplikacja bez przypomnień i bez formularza uwag. Adres aplikacji na zegarek
+      # w Connect IQ Store włącza kartę „Zegarek Garmin” (garmin/README.md).
       - run: npm run build
         env:
           VITE_API_URL: ${{ vars.API_URL }}
           VITE_VAPID_PUBLIC_KEY: ${{ vars.VAPID_PUBLIC_KEY }}
+          VITE_GARMIN_APP_URL: ${{ vars.GARMIN_APP_URL }}
 
       - uses: actions/configure-pages@v5
 
