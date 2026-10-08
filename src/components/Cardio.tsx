@@ -23,8 +23,11 @@ import {
   normalize,
   sportOf,
   stepsOn,
+  typedStepsOn,
   weekMinutes,
 } from '../engine/cardio';
+import { watchStepsOn } from '../engine/watch';
+import { WATCH_NOTE } from './Health';
 import { XP, cardioXp } from '../engine/xp';
 import {
   DANCE_SHARE,
@@ -38,7 +41,7 @@ import { CARDIO_EMPTY, daySeed, pick, plural } from '../engine/quips';
 import { addDays, dayKey, weekdayOf } from '../engine/schedule';
 import { cardioAddPath, cardioPath, go, goBack } from '../routing';
 import { Segmented } from './ui';
-import type { AppState, Cardio, CardioInput, CardioSport, DanceMix, DanceStyle } from '../types';
+import type { AppState, Cardio, CardioInput, CardioSport, DanceMix, DanceStyle, WatchHealth } from '../types';
 
 /**
  * Kroki, bieżnia, rower i taniec — ruch mierzony gdzie indziej, wpisywany tutaj.
@@ -343,7 +346,10 @@ export function CardioEntry({
   const problem = clean ? inputProblem(clean) : null;
   // Droga i czas nie zależą od wagi, więc bez niej liczymy je dla dowolnej — kalorii wtedy nie pokazujemy.
   const preview = clean && !problem ? cardioEnergy(clean, kg ?? 70, heightOf(state)) : null;
-  const prevSteps = kind === 'steps' && dayOk ? stepsOn(state, day) : 0;
+  // Wpis ręczny zastępuje się nowym; liczba z zegarka zostaje i wygrywa, jeśli jest wyższa.
+  const prevSteps = kind === 'steps' && dayOk ? typedStepsOn(state, day) : 0;
+  const watchSteps = kind === 'steps' && dayOk ? watchStepsOn(state, day) : null;
+  const watchRides = kind === 'bike' && dayOk ? cardioOn(state, day).filter((c) => c.src === 'watch' && sportOf(c) === 'bike') : [];
   const mins =
     clean && !problem ? Math.floor(activeMinutes(state, { ...clean, key: '', day, at: '' })) : 0;
   const minsText =
@@ -563,6 +569,18 @@ export function CardioEntry({
             z całego dnia.
           </p>
         )}
+        {watchSteps !== null && watchSteps > 0 && (
+          <p className="tight cardio-note">
+            Zegarek podał na ten dzień {stepsText(watchSteps)}. Liczy się wyższa z dwóch liczb, więc
+            niższy wpis niczego nie zmieni.
+          </p>
+        )}
+        {watchRides.length > 0 && (
+          <p className="tight cardio-note">
+            Zegarek podał już przejazd z tego dnia: {watchRides.map((c) => cardioLabel(c)).join(', ')}.
+            Wpisz tylko inny — ten sam policzyłby się dwa razy.
+          </p>
+        )}
 
         {preview && clean && (
           <div className="cardio-preview" aria-live="polite">
@@ -621,16 +639,64 @@ function CardioItem({ state, c, onDelete }: { state: AppState; c: Cardio; onDele
   const b = cardioBurn(state, c);
   // Droga nie zależy od wagi, więc stoi na liście także przed pierwszym ważeniem.
   const km = cardioEnergy(c, 70, heightOf(state)).km;
+  // Wpis z zegarka nie ma krzyżyka: nie leży w zapisie, a zegarek przyśle go znowu.
+  const watch = c.src === 'watch';
   return (
     <div className="cardio-item">
-      <span className="cardio-name">{cardioLabel(c)}</span>
+      <span className="cardio-name">
+        {cardioLabel(c)}
+        {watch && <small className="watch-src"> · z zegarka</small>}
+      </span>
       <span className="snack-amt">
         {[km !== null ? kmText(km) : null, b ? kcalText(b.active) : null].filter(Boolean).join(' · ')}
       </span>
-      <button className="snack-del" onClick={() => onDelete(c.key)} aria-label={`Usuń wpis: ${cardioLabel(c)}`}>
-        ×
-      </button>
+      {watch ? (
+        <span aria-hidden="true" />
+      ) : (
+        <button className="snack-del" onClick={() => onDelete(c.key)} aria-label={`Usuń wpis: ${cardioLabel(c)}`}>
+          ×
+        </button>
+      )}
     </div>
+  );
+}
+
+/** Zdrowie z zegarka: siedem dni, najnowszy na górze. Same liczby, bez oceny — ta należy do lekarza. */
+function WatchHealthDays({ state, today }: { state: AppState; today: string }) {
+  const rows = Array.from({ length: 7 }, (_, i) => addDays(today, -i))
+    .map((d) => state.watch?.health.find((h) => h.day === d))
+    .filter((h): h is WatchHealth => !!h);
+  if (!rows.length) return null;
+  const range = (a: number | null, b: number | null): string =>
+    a === null || b === null ? String(a ?? b) : a === b ? String(a) : `${a}–${b}`;
+  return (
+    <>
+      <div className="sect-label">Z zegarka</div>
+      {rows.map((h) => (
+        <div className="h-item" key={h.day}>
+          <div className="h-date">{dm(h.day)}</div>
+          <div className="h-detail">
+            {[
+              h.rhr !== null ? `tętno spoczynkowe ${h.rhr}` : null,
+              h.hrMin !== null || h.hrMax !== null
+                ? `tętno ${range(h.hrMin, h.hrMax)}${h.hrAvg !== null ? `, średnio ${h.hrAvg}` : ''}`
+                : null,
+              h.stress !== null ? `stres ${h.stress}` : null,
+              h.bbMin !== null || h.bbMax !== null ? `Body Battery ${range(h.bbMin, h.bbMax)}` : null,
+              h.sleep !== null ? `sen ${h.sleep}/100` : null,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          </div>
+          <div className="streak" />
+        </div>
+      ))}
+      <div className="wrap">
+        <p className="hint" style={{ marginTop: 8 }}>
+          {WATCH_NOTE}
+        </p>
+      </div>
+    </>
   );
 }
 
@@ -740,6 +806,8 @@ export function CardioPage({
               : ''}
         </p>
       </div>
+
+      <WatchHealthDays state={state} today={today} />
 
       {past.length > 0 && (
         <>

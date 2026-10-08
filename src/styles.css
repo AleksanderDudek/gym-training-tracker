@@ -911,6 +911,14 @@
   .cardio-item{display:grid;grid-template-columns:1fr auto 44px;gap:8px;align-items:center;
     border-top:1px solid var(--surface-2);min-height:48px;font-size:14px}
   .cardio-name{font-weight:600;padding:12px 0;overflow-wrap:anywhere}
+  /* Zegarek Garmin: klucz do wklejenia, kroki połączenia, wpisy z zegarka. 16 px w polu, bo
+     mniejsza czcionka każe iPhone'owi przybliżać stronę przy stuknięciu. */
+  .watch-key{display:block;width:100%;margin:6px 0 8px;padding:10px;font:16px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;
+    color:var(--ink);background:var(--surface-2);border:1px solid var(--edge);border-radius:3px;resize:none}
+  .watch-steps{margin:10px 0 0;padding-left:22px}
+  .watch-steps li{margin:0 0 10px}
+  .watch-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  .watch-src{color:var(--ink-soft);font-weight:400}
   .body-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;margin:10px 0}
   .body-list{margin-top:6px}
   .kcal-line{display:block;color:var(--c-blue-ink);font-family:var(--display)}
