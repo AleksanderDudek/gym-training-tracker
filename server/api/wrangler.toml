@@ -11,7 +11,7 @@ crons = ["*/5 * * * *"]
 
 [vars]
 # Klucz publiczny VAPID — wpisuje go `node keys.mjs`. Prywatny idzie do sekretów, nie tutaj.
-VAPID_PUBLIC_KEY = ""
+VAPID_PUBLIC_KEY = "BLyuW4cE9mrvjqjWNHDXVWM8Fti5Pk6iYleqDxD1Sc-PCHUHu9P6NFqnyT2pI3cKOk6bJe10jo2GbqXmE3MIGQs"
 VAPID_SUBJECT = "https://aleksanderdudek.github.io/gym-training-tracker/"
 ALLOWED_ORIGINS = "https://aleksanderdudek.github.io,http://localhost:5173,http://localhost:4173"
 
@@ -19,4 +19,4 @@ ALLOWED_ORIGINS = "https://aleksanderdudek.github.io,http://localhost:5173,http:
 binding = "DB"
 database_name = "gym-tracker-api"
 # Identyfikator z `npx wrangler d1 create gym-tracker-api`.
-database_id = "WPISZ-ID-BAZY"
+database_id = "9a18aa6c-4886-40b6-8941-feb1c1ce8d4d"
