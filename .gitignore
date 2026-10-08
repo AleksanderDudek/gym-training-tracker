@@ -6,3 +6,7 @@ tsconfig.tsbuildinfo
 # Serwer przypomnień: klucz prywatny VAPID i pliki robocze wranglera
 server/api/vapid-private.jwk.json
 server/api/.wrangler
+
+# Aplikacja na zegarek: klucz dewelopera i wyniki buildu Connect IQ
+garmin/developer_key.*
+garmin/bin
