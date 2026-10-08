@@ -115,7 +115,7 @@ a aplikacja w przeglądarce odbiera go przy otwarciu.
 - `POST /garmin/forget {box}` — odłączenie zegarka; skrzynka znika od razu.
 
 **Czego serwer nie wie.** `blob` to koperta AES-256-CBC z HMAC-SHA256, a klucz zna tylko zegarek
-i przeglądarka. Tętno, stres i sen to dane o zdrowiu (RODO, art. 9), więc serwer dostaje je
+i przeglądarka. Tętno i stres to dane o zdrowiu (RODO, art. 9), więc serwer dostaje je
 w postaci, której nie umie odczytać. `box` to 32 znaki hex wyprowadzone z klucza: kto go zna,
 może paczkę nadpisać albo skasować, ale nie odczytać ani podrobić — aplikacja odrzuci kopertę
 bez poprawnego podpisu. W bazie leży szyfrogram, czas zapisu i skrót adresu IP, z którego

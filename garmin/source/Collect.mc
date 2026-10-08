@@ -9,10 +9,14 @@ import Toybox.UserProfile;
 // Co zegarek wie o ostatnim tygodniu — w kształcie paczki v1, którą czyta `parsePayload`
 // w aplikacji (src/engine/watch.ts). JSON składany ręcznie, bo Monkey C nie ma serializatora.
 // Wszystkie liczby całkowite; brak pomiaru to null — aplikacja pokaże wtedy „—”.
+//
+// Wyniku snu nie ma: Connect IQ podaje go tylko przez Complications, a te może subskrybować
+// wyłącznie tarcza zegarka, nie aplikacja. Miejsce w paczce zostaje (null), żeby jej format
+// się nie zmieniał.
 (:background)
 module Collect {
     // Kubełki zdrowia: dzień → [tętno min, max, suma, liczba, stres suma, liczba, BB min, max,
-    // tętno spoczynkowe, wynik snu]. Zegarek pamięta próbki czujników krótko, więc kubełek
+    // tętno spoczynkowe, wynik snu (zawsze null — patrz wyżej)]. Zegarek pamięta próbki czujników krótko, więc kubełek
     // dnia rośnie z każdym przebiegiem, a nie liczy się od nowa z całej doby.
     const HEALTH = "health";
     // Do której chwili (s) próbki są już w kubełkach.
@@ -79,7 +83,12 @@ module Collect {
         ]);
     }
 
-    // Aktywności z ostatnich 14 dni: start (s), sport (numeracja FIT), czas (s), droga (m).
+    // Sekundy między epoką FIT (31.12.1989) a 1970.
+    const FIT_EPOCH = 631065600;
+
+    // Aktywności z ostatnich 14 dni: start (s od 1970), sport (numeracja FIT), czas (s), droga (m).
+    // Kolejność historii nie jest opisana, a zegarek trzyma ok. 200 aktywności — przechodzimy
+    // ich dość, żeby świeże nie umknęły, gdyby szły od najstarszej.
     function acts(now) {
         if (!(UserProfile has :getUserActivityHistory)) {
             return "[]";
@@ -88,10 +97,18 @@ module Collect {
         var it = UserProfile.getUserActivityHistory();
         var a = it.next();
         var seen = 0;
-        while (a != null && seen < 40 && rows.size() < 20) {
+        while (a != null && seen < 300 && rows.size() < 20) {
             seen++;
-            if (a.startTime != null && a.duration != null && a.type != null && now - a.startTime.value() <= 14 * 86400) {
-                rows.add(row([num(a.startTime.value()), num(a.type), num(a.duration.value()), num(a.distance)]));
+            if (a.startTime != null && a.duration != null && a.type != null) {
+                var start = a.startTime.value();
+                // Część oprogramowania zegarków podaje start od epoki FIT, a nie od 1970 (błąd
+                // potwierdzony przez Garmina). Przed rokiem 2000 to na pewno ta druga epoka.
+                if (start < 946684800) {
+                    start += FIT_EPOCH;
+                }
+                if (now - start <= 14 * 86400) {
+                    rows.add(row([num(start), num(a.type), num(a.duration.value()), num(a.distance)]));
+                }
             }
             a = it.next();
         }
@@ -126,10 +143,6 @@ module Collect {
         if ((profile has :averageRestingHeartRate) && profile.averageRestingHeartRate != null) {
             b[8] = profile.averageRestingHeartRate;
         }
-        var sleep = sleepScore();
-        if (sleep != null) {
-            b[9] = sleep;
-        }
         store[today] = b;
         store = recent(store);
         Application.Storage.setValue(HEALTH, store);
@@ -163,20 +176,33 @@ module Collect {
     }
 
     // Próbki od `from` do kubełków dnia. what: 0 tętno, 1 stres, 2 Body Battery.
+    // Dzień próbki liczony tylko po przejściu przez północ — `dayOf` przy każdej z kilkuset
+    // próbek mógłby przekroczyć limit czasu przebiegu w tle.
     function fold(store, it, from, what) {
         if (it == null) {
             return;
         }
         var s = it.next();
         var n = 0;
+        var key = null;
+        var b = null;
+        var dayStart = 0;
+        var dayEnd = 0;
         while (s != null && n < MAX_SAMPLES) {
             n++;
             if (s.data != null && s.when != null && s.when.value() > from) {
                 var v = s.data.toNumber();
                 // Poza zakresem to znacznik „brak pomiaru”, a nie wynik.
                 if (what == 0 ? (v >= 25 && v <= 250) : (v >= 0 && v <= 100)) {
-                    var key = dayOf(s.when);
-                    var b = bucket(store, key);
+                    var w = s.when.value();
+                    if (w < dayStart || w >= dayEnd) {
+                        var g = Gregorian.info(s.when, Time.FORMAT_SHORT);
+                        dayStart = w - g.hour * 3600 - g.min * 60 - g.sec;
+                        dayEnd = dayStart + 86400;
+                        key = dayOf(s.when);
+                        b = bucket(store, key);
+                        store[key] = b;
+                    }
                     if (what == 0) {
                         b[0] = (b[0] == null || v < b[0]) ? v : b[0];
                         b[1] = (b[1] == null || v > b[1]) ? v : b[1];
@@ -189,7 +215,6 @@ module Collect {
                         b[6] = (b[6] == null || v < b[6]) ? v : b[6];
                         b[7] = (b[7] == null || v > b[7]) ? v : b[7];
                     }
-                    store[key] = b;
                 }
             }
             s = it.next();
@@ -207,20 +232,5 @@ module Collect {
             }
         }
         return keep;
-    }
-
-    // Wynik snu z ostatniej nocy. Aplikacjom podają go tylko najnowsze zegarki (Complications,
-    // Connect IQ 6.0.2+); gdzie indziej — albo gdy przebieg w tle nie ma do niego dostępu — null.
-    function sleepScore() {
-        if (!(Toybox has :Complications) || !(Toybox.Complications has :COMPLICATION_TYPE_SLEEP_SCORE)) {
-            return null;
-        }
-        try {
-            var c = Toybox.Complications.getComplication(
-                new Toybox.Complications.Id(Toybox.Complications.COMPLICATION_TYPE_SLEEP_SCORE));
-            return (c != null && c.value instanceof Number) ? c.value : null;
-        } catch (e) {
-            return null;
-        }
     }
 }

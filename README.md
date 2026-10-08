@@ -578,7 +578,7 @@ słów.
 
 ## Zegarek Garmin
 
-Kroki, przejazdy rowerem, tętno, stres, Body Battery i sen przychodzą z zegarka same, bez
+Kroki, przejazdy rowerem, tętno, stres i Body Battery przychodzą z zegarka same, bez
 przepisywania. Na zegarku działa mała aplikacja GYM TRACKER (`garmin/`, Connect IQ), która co
 pół godziny wysyła zaszyfrowany ostatni tydzień, a aplikacja w przeglądarce odbiera go przy
 otwarciu i po powrocie na ekran.
@@ -593,7 +593,7 @@ Garmin Connect na telefonie — bez niczyjej zgody i bez haseł.
 powstaje klucz (32 losowe bajty), który wkleja się raz w ustawieniach aplikacji na zegarku,
 w Garmin Connect na telefonie. Zegarek szyfruje paczkę AES-256 i podpisuje HMAC-SHA256 kluczami
 wyprowadzonymi z tego klucza; serwer przechowuje tylko najnowszy szyfrogram, najwyżej tydzień.
-Tętno, stres i sen to dane o zdrowiu, więc serwer, który miał nic nie wiedzieć o ludziach,
+Tętno i stres to dane o zdrowiu, więc serwer, który miał nic nie wiedzieć o ludziach,
 dalej nic nie wie. Klucz nie trafia do eksportu danych — plik z kopią treningów nie otwiera
 danych o zdrowiu. Na drugim urządzeniu wkleja się ten sam klucz przez „Mam już klucz”.
 
@@ -605,7 +605,7 @@ danych o zdrowiu. Na drugim urządzeniu wkleja się ten sam klucz przez „Mam j
 - **Przejazdy rowerem** z drogą stają się wpisami „Rower”: średnia prędkość z drogi i czasu.
   Formularz roweru ostrzega, że ten przejazd już jest — drugi wpis policzyłby się dwa razy.
 - **Biegi i marsze nie stają się wpisami.** Ich kroki są już w krokach dnia.
-- **Tętno, stres, Body Battery i sen** tylko się pokazują, na ekranie kroków i cardio, bez
+- **Tętno, stres i Body Battery** tylko się pokazują, na ekranie kroków i cardio, bez
   punktów i bez oceny — „za wysokie” albo „w normie” mówi lekarz, nie aplikacja.
 
 Wpisy z zegarka nie leżą w zapisie: w zapisie są liczby z zegarka (`watch`), a wpisy ruchu
@@ -616,8 +616,12 @@ usunąć (nie ma krzyżyka): zegarek przysłałby go znowu. Nowa paczka, która 
 w trakcie treningu — okno z odznaką w środku serii to ostatnie, czego ktoś potrzebuje.
 
 Zegarek wysyła za każdym razem cały tydzień, więc dzień bez telefonu w pobliżu uzupełni się
-przy następnej wysyłce. Minimalny zegarek to Connect IQ 3.2; stres i Body Battery wymagają 3.3,
-a wynik snu podają tylko najnowsze modele — gdzie ich nie ma, stoi „—”.
+przy następnej wysyłce. Minimalny zegarek to Connect IQ 3.2; stres i Body Battery wymagają 3.3 —
+gdzie ich nie ma, stoi „—”.
+
+**Snu nie ma i z tej drogi nie będzie.** Wynik snu Connect IQ podaje tylko przez Complications,
+a te może czytać wyłącznie tarcza zegarka — aplikacja dostaje odmowę już przy kompilacji.
+Paczka ma na niego miejsce, a ekran umie go pokazać, gdyby kiedyś przyszedł z innego źródła.
 
 Karta zegarka pojawia się, gdy build zna adres serwera i adres aplikacji w Connect IQ Store
 (zmienna `GARMIN_APP_URL` w GitHubie). Wdrożenie: `garmin/README.md` i `server/api/README.md`.

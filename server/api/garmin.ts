@@ -50,17 +50,19 @@ export async function garmin(
   { reply, json }: Replies,
 ): Promise<Response> {
   if (path === '/garmin/push') {
+    // Zegarkowi zawsze JSON, także przy błędzie: zamówił odpowiedź JSON, a każdą inną Connect IQ
+    // zgłasza jako -400 zamiast prawdziwego kodu — zegarek nie odróżniłby 429 od braku telefonu.
     const blob = cleanBlob(data.blob);
-    if (!validBox(data.box) || !blob) return reply(400, 'zła paczka');
+    if (!validBox(data.box) || !blob) return json(400, { error: 'zła paczka' });
     const old = await store.getBox(data.box);
-    if (old && now - old.updated < PUSH_GAP_MS) return reply(429, 'za często');
+    if (old && now - old.updated < PUSH_GAP_MS) return json(429, { error: 'za często' });
     if (old) await store.putBox({ ...old, blob, updated: now });
     else {
       const ip = await ipHash();
-      if ((await store.recentBoxes(ip, now - 3_600_000)) >= BOXES_PER_HOUR) return reply(429, 'za dużo nowych skrzynek');
+      if ((await store.recentBoxes(ip, now - 3_600_000)) >= BOXES_PER_HOUR)
+        return json(429, { error: 'za dużo nowych skrzynek' });
       await store.putBox({ box: data.box, blob, updated: now, created: now, ipHash: ip });
     }
-    // Odpowiedź z treścią, bo zegarek czeka na JSON — puste 204 bywa dla niego błędem.
     return json(200, { ok: true });
   }
 

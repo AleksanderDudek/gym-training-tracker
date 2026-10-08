@@ -53,7 +53,7 @@ module Sync {
             done = d;
         }
 
-        function onReply(code, data) as Void {
+        function onReply(code as Number, data as Dictionary or String or Null) as Void {
             done.invoke(code);
         }
     }

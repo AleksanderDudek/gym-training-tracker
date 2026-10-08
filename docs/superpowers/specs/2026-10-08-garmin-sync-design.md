@@ -184,3 +184,17 @@ Settings → "Połącz zegarek"
 The Connect IQ SDK is not installed here (downloading devices needs a Garmin login), so the
 watch app is written against the API docs and has not been compiled. First build: follow
 `garmin/README.md` and run the `(:test)` vector in the simulator before publishing.
+
+## Changes after review (2026-10-08)
+
+- **Sleep score dropped.** The compiler rejects `Toybox.Complications` in a `watch-app`
+  (`ComplicationSubscriber` is valid only for watch faces), so the watch sends `null` in the
+  sleep slot. Payload v1 is unchanged and the app still renders sleep if it ever arrives.
+- **`/garmin/push` errors are JSON.** Connect IQ reports a non-JSON body as −400 when JSON was
+  requested, which would hide 429/400 from the watch.
+- **Activity start times** before 2000 are shifted by the FIT epoch (a Garmin firmware bug), and
+  up to 300 history items are scanned.
+- **Modal queue** in `useModal`: a background watch pull no longer replaces an open dialog (which
+  used to leave the awaiting code hanging). Pulls landing during a session are ignored.
+- **Reset disconnects the watch**, so "Usuń wszystkie dane" is not undone by the next pull.
+- **Character mood**: a watch day counts as activity only when it yields movement minutes.

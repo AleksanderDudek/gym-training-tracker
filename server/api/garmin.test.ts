@@ -89,7 +89,11 @@ describe('skrzynka zegarka', () => {
   it('ta sama skrzynka częściej niż raz na minutę dostaje 429', async () => {
     const store = memoryStore();
     await handle(fromWatch({ box: BOX, blob: BLOB }), env, store, T0);
-    expect((await handle(fromWatch({ box: BOX, blob: BLOB }), env, store, T0 + PUSH_GAP_MS - 1)).status).toBe(429);
+    const res = await handle(fromWatch({ box: BOX, blob: BLOB }), env, store, T0 + PUSH_GAP_MS - 1);
+    expect(res.status).toBe(429);
+    // JSON także przy błędzie — inaczej Connect IQ zgłosi -400 zamiast 429.
+    expect(res.headers.get('Content-Type')).toBe('application/json');
+    expect(await res.json()).toEqual({ error: 'za często' });
   });
 
   it('jeden adres zakłada ograniczoną liczbę skrzynek na godzinę', async () => {

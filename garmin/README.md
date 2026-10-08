@@ -2,7 +2,11 @@
 
 Mała aplikacja Connect IQ, która co pół godziny wysyła do serwera GYM TRACKER zaszyfrowany
 tydzień danych z zegarka: kroki, drogę, piętra, minuty intensywności, aktywności, tętno, stres,
-Body Battery, średnie tętno spoczynkowe i — na zegarkach, które go udostępniają — wynik snu.
+Body Battery i średnie tętno spoczynkowe.
+
+Wyniku snu nie ma: Connect IQ podaje go tylko przez Complications, a te może subskrybować
+wyłącznie tarcza zegarka (`ComplicationSubscriber` jest niedozwolone dla `watch-app`). Miejsce
+w paczce zostaje puste.
 
 ## Dlaczego własna aplikacja na zegarek
 
@@ -71,20 +75,24 @@ w symulatorze (File → Edit Persistent Storage / App Settings).
 
 ## Do sprawdzenia przy pierwszym buildzie
 
-Kod napisano według dokumentacji API, bez SDK pod ręką — nie był kompilowany. Przed publikacją:
+Kod skompilował się kompilatorem z Connect IQ SDK 9.2.0 na wszystkie 11 urządzeń z manifestu
+(domyślny poziom sprawdzania typów), razem z buildem testów i paczką do sklepu (`-e -r`).
+Definicje urządzeń pochodziły jednak spoza SDK Managera, a symulatora nie dało się uruchomić —
+testy nie były puszczone. Przed publikacją:
 
-- [ ] **Kompilacja na każde urządzenie z manifestu.** Identyfikatory urządzeń sprawdź
-      w SDK Managerze; nieznany identyfikator zatrzyma build.
-- [ ] **`SealTest` przechodzi.** To jedyny dowód, że zegarek pieczętuje jak przeglądarka.
+- [ ] **Kompilacja z urządzeniami z SDK Managera** — tymi właściwymi, nie zastępczymi.
+- [ ] **`SealTest` przechodzi.** To jedyny dowód, że zegarek pieczętuje jak przeglądarka:
+      wielkość liter hex, base64 bez łamania linii, dopełnienie PKCS#7.
 - [ ] **Przebieg w tle ma dostęp do `ActivityMonitor`, `SensorHistory` i `UserProfile`.**
       W symulatorze: Simulation → Background Events → Temporal Event, potem log serwera.
-- [ ] **`UserActivity.startTime` liczy się od 1970.** Aplikacja odrzuca aktywności sprzed 2015
-      roku — przy epoce Garmina (od 1989) przejazdy po cichu by znikały.
-- [ ] **Wynik snu.** `Complications` z typem `SLEEP_SCORE` może nie być dostępne w tle. Wtedy
-      wynik snu zostaje pusty, reszta działa.
+- [ ] **`UserActivity.startTime`.** Część oprogramowania podaje go od epoki FIT (1989), nie od 1970
+      (błąd zgłoszony Garminowi); `Collect.acts` przelicza czas sprzed 2000 roku. Sprawdź, czy
+      przejazd z dziś ma w aplikacji dzisiejszą datę.
+- [ ] **Pamięć w tle na fēnix 6** (32 kB): paczka, AES, HMAC i base64 mieszczą się z zapasem
+      według obliczeń, ale sprawdź w widoku pamięci symulatora.
 - [ ] **Polskie znaki na ekranie zegarka.** Czcionki systemowe zwykle je mają, ale nie wszędzie.
-- [ ] **Odpowiedź serwera.** Serwer odpowiada `200 {"ok":true}`, a status na zegarku
-      powinien pokazać „Wysłane HH:MM”.
+- [ ] **Odpowiedź serwera.** Serwer odpowiada JSON-em także przy błędach (`429 {"error":…}`),
+      bo inną treść Connect IQ zgłasza jako −400. Status na zegarku: „Wysłane HH:MM”.
 
 ## Pliki
 

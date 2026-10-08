@@ -97,7 +97,7 @@ export function GarminCard({
       {!key ? (
         <>
           <p className="tight">
-            Kroki, przejazdy rowerem, tętno, stres, Body Battery i sen przyjdą z zegarka same — bez
+            Kroki, przejazdy rowerem, tętno, stres i Body Battery przyjdą z zegarka same — bez
             przepisywania. Potrzebna jest mała aplikacja GYM TRACKER na zegarku i jeden klucz wklejony
             w jej ustawienia.
           </p>
