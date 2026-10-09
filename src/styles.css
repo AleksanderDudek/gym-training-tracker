@@ -1149,3 +1149,8 @@
     font-weight:600;overflow-wrap:anywhere;text-decoration:underline dotted;text-underline-offset:3px}
   .bl-swap{grid-column:1/-1;margin:2px 0 8px 28px;padding:10px;background:var(--surface-2);border-radius:var(--r)}
   .bl-swap-opts{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+
+  /* Plakat polecający: podgląd dokładnie tego obrazka, który pójdzie w świat. */
+  .promo-img{display:block;width:100%;aspect-ratio:1/1;height:auto;border:1px solid var(--line);border-radius:var(--r)}
+  .promo-wait{display:grid;place-items:center;background:var(--surface-2);color:var(--ink-soft);font-size:15px;
+    text-align:center;padding:24px}

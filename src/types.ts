@@ -610,7 +610,9 @@ export type Route =
   /** Kroki, bieżnia, rower i taniec: dziś, tydzień, historia i kalorie. */
   | { kind: 'cardio' }
   /** Zapis kroków, bieżni, roweru albo zajęć tańca. Bez rodzaju — kroki, bo to najczęstszy wpis. */
-  | { kind: 'cardioAdd'; sport?: CardioSport | undefined };
+  | { kind: 'cardioAdd'; sport?: CardioSport | undefined }
+  /** Plakat polecający aplikację. */
+  | { kind: 'promo' };
 
 /** Materiał wideo pokazujący technikę ćwiczenia. */
 export interface VideoRef {

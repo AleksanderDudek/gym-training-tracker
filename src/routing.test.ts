@@ -3,6 +3,7 @@ import {
   PLANS_PATH,
   PLAN_CLASSIC_PATH,
   PLAN_NEW_PATH,
+  PROMO_PATH,
   SETTINGS_PATH,
   TABS,
   activeTab,
@@ -207,5 +208,11 @@ describe('trasy', () => {
     expect(parseHash(exercisePath(id))).toEqual({ kind: 'exercise', id });
     expect(parseHash(statsPath(id))).toEqual({ kind: 'exstats', id });
     expect(parseHash(snackAddPath(id))).toEqual({ kind: 'snackAdd', id });
+  });
+
+  it('plakat polecający ma własny adres, wraca do ustawień i podświetla profil', () => {
+    expect(parseHash(PROMO_PATH)).toEqual({ kind: 'promo' });
+    expect(screenOf({ kind: 'promo' })).toEqual({ title: 'Poleć znajomym', parent: SETTINGS_PATH });
+    expect(activeTab({ kind: 'promo' })).toBe('prog' as TabKey);
   });
 });

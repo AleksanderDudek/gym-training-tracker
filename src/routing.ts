@@ -31,6 +31,9 @@ export const TABS: { key: TabKey; label: string; path: string; icon: IconName }[
 /** Ustawienia mają własny przycisk w pasku aplikacji — poza dolnym paskiem, ale wciąż jeden klik. */
 export const SETTINGS_PATH = '#/ustawienia';
 
+/** Plakat polecający aplikację — z ustawień i z profilu. */
+export const PROMO_PATH = '#/polec';
+
 const TAB_BY_PATH: Record<string, TabKey> = {
   sesja: 'train',
   // Stary adres zakładki. Zostaje, żeby zapisane linki i zakładki przeglądarki dalej działały.
@@ -171,6 +174,8 @@ export function screenOf(route: Route): Screen {
       return { title: 'Kroki i cardio', parent: '#/sesja' };
     case 'cardioAdd':
       return { title: SPORT_TITLE[route.sport ?? 'steps'], parent: '#/sesja' };
+    case 'promo':
+      return { title: 'Poleć znajomym', parent: SETTINGS_PATH };
   }
 }
 
@@ -242,6 +247,7 @@ export function parseHash(hash: string): Route {
     if (second === 'nowy') return { kind: 'planEdit' };
     return third === 'edytuj' ? { kind: 'planEdit', id: second } : { kind: 'planDetail', id: second };
   }
+  if (head === 'polec') return { kind: 'promo' };
   if (head === 'cardio') {
     if (!second) return { kind: 'cardio' };
     // Nieznany rodzaj otwiera kroki — zapis zawsze ma dokąd prowadzić. `hasOwn`, bo ręcznie
@@ -312,6 +318,7 @@ export function activeTab(route: Route): TabKey {
     case 'tab':
       return route.tab === 'atlas' ? 'work' : route.tab;
     case 'exstats':
+    case 'promo':
       return 'prog';
     case 'snacks':
     case 'snackAdd':

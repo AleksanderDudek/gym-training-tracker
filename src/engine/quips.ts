@@ -424,14 +424,16 @@ export const SIGNATORIES: readonly string[] = [
 
 /**
  * Zakończenia wpisu. Zaproszenie ma brzmieć jak rzucone mimochodem, a nie jak baner
- * reklamowy — nikt nie udostępnia postów, które wyglądają na sponsorowane.
+ * reklamowy — nikt nie udostępnia postów, które wyglądają na sponsorowane. Każde mówi jednak,
+ * czym jest aplikacja i że kosztuje zero: obcy człowiek pod wpisem nie wie, co to GYM TRACKER,
+ * a „kliknij, żeby się dowiedzieć” klika mało kto.
  */
 export const CTA: readonly string[] = [
-  'Jak ktoś chce sobie policzyć swoje — GYM TRACKER, za darmo:',
-  'Liczy to za mnie darmowa apka, gdyby ktoś pytał:',
-  'Wszystko liczy GYM TRACKER, nie ja:',
-  'Jak ktoś też lubi patrzeć, jak liczby rosną:',
-  'Dla ciekawskich, czym to liczę:',
+  'Liczy to za mnie GYM TRACKER — sam wie, kiedy dołożyć ciężar. Na razie za darmo:',
+  'Progresję prowadzi mi aplikacja, na razie za darmo — gdyby ktoś pytał:',
+  'Wszystko liczy GYM TRACKER, nie ja: serie, przerwy i kiedy dołożyć. Za darmo:',
+  'Jak ktoś też chce trening, który sam wie, kiedy dołożyć — na razie za darmo:',
+  'Dla ciekawskich: aplikacja sama pilnuje serii i ciężarów. Na razie za darmo:',
 ];
 
 /** Potwierdzenia w dymku. */

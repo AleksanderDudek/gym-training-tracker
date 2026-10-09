@@ -30,6 +30,38 @@ export const SUPPORT_URL = 'https://buycoffee.to/uriel';
  */
 export const APP_HOST = APP_URL.replace(/^https?:\/\//, '').replace(/\/$/, '');
 
+/* ---------------- Hasło i polecenie ---------------- */
+
+/**
+ * Hasło aplikacji — na certyfikatach i na plakacie. Ma powiedzieć obcemu człowiekowi, co ta
+ * aplikacja robi, zanim zdąży przewinąć dalej: korzyść, nie lista funkcji. „Sam wie, kiedy
+ * dołożyć” to dokładnie to, czego nie robi zwykły notes z treningiem — progresja dzieje się
+ * bez liczenia, kiedy i o ile podnieść.
+ */
+export const TAGLINE = 'Twój trening sam wie, kiedy dołożyć.';
+
+/** Uczciwie: na razie — bez obietnicy, że zawsze. */
+export const FREE_NOTE = 'Na razie za darmo.';
+
+/** Co jeszcze jest w środku — jedna linijka pod wyjaśnieniem na plakacie. */
+export const PROMO_EXTRAS = 'Plany, przerwy z odliczaniem, odznaki i goryle. W telefonie, bez instalacji.';
+
+/** Jedno zdanie dla tych, którym hasło nie wystarczy. */
+export const PITCH = 'Wpisujesz serie, a aplikacja sama decyduje, kiedy dołożyć powtórzenie albo ciężar.';
+
+/**
+ * Wpis do plakatu z polecenia. Pierwsza osoba i czas teraźniejszy — ani „polecałem”, ani
+ * „polecałam”, bo wysyła go i Gustaw, i Gosia. Każdy mówi, co aplikacja robi i że jest za darmo.
+ */
+export const PROMO_TEXTS: readonly string[] = [
+  'Polecam GYM TRACKER: wpisujesz serie, a aplikacja sama decyduje, kiedy dołożyć powtórzenie albo ciężar. Do tego plany, przerwy z odliczaniem i odznaki. Na razie za darmo, bez konta:',
+  'Trener Siwy szuka podopiecznych. GYM TRACKER prowadzi trening siłowy: pilnuje serii, przerw i postępów. Na razie za darmo:',
+  'Ćwiczę z aplikacją, która sama wie, kiedy dołożyć ciężar. Goryle w zestawie. Na razie za darmo, bez reklam i bez konta:',
+  'Jak ktoś szuka trenera, który nie bierze pieniędzy: GYM TRACKER prowadzi trening, liczy serie i pilnuje postępów. Na razie za darmo:',
+];
+
+export const promoText = (seed: number): string => [pick(PROMO_TEXTS, seed), APP_URL].join('\n');
+
 export interface ShareSubject {
   /** Nagłówek: nazwa odznaki albo nazwa treningu. */
   title: string;
@@ -537,6 +569,31 @@ const STAMP = { x: CARD - 136, y: 278 } as const;
 /** Wstęga z adresem w stopce. */
 const RIBBON = { y: 884, h: 70, edge: 24, tail: 60, drop: 12, notch: 20, pad: 30 } as const;
 
+/** Wiersz hasła tuż nad wstęgą: najpierw co, potem gdzie — jak w każdej reklamie. */
+const SLOGAN_Y = RIBBON.y - 52;
+
+/**
+ * Hasło i „na razie za darmo” w jednym wierszu: hasło atramentem, bezpłatność kolorem pieczęci.
+ * Rozmiar dopasowuje się do szerokości, a oba kawałki stoją razem na środku.
+ */
+function slogan(ctx: CanvasRenderingContext2D, y: number, width = CARD - 200): void {
+  const main = TAGLINE;
+  const free = ` ${FREE_NOTE}`;
+  const font = (px: number) => `600 ${px}px "Oswald", system-ui, sans-serif`;
+  ctx.save();
+  ctx.textBaseline = 'top';
+  ctx.textAlign = 'left';
+  fit(ctx, main + free, font, 34, width, 22);
+  const a = ctx.measureText(main).width;
+  const b = ctx.measureText(free).width;
+  const x = (CARD - a - b) / 2;
+  ctx.fillStyle = INK.dark;
+  ctx.fillText(main, x, y);
+  ctx.fillStyle = INK.accent;
+  ctx.fillText(free, x + a, y);
+  ctx.restore();
+}
+
 /**
  * Najpierw zmienne znane z nazwy, potem wszystko, co ma w `var()` wartość zapasową — tak
  * rysuje obsada (`var(--fur, #3f3c44)`), a samodzielny obrazek żadnej zmiennej nie zna.
@@ -609,6 +666,31 @@ export interface CardArt {
 }
 
 /**
+ * Papier blankietu: tło, kartka i podwójna ramka z zawijasami. Karta ma wyglądać jak
+ * świadectwo wydane przez urząd, który nie istnieje — powaga formy przy błahości treści jest
+ * tu całym żartem. Zawijasy tylko u góry: dolne narożniki zajmuje wstęga i spod niej
+ * wystawały ich końcówki.
+ */
+function paper(ctx: CanvasRenderingContext2D): void {
+  ctx.fillStyle = INK.board;
+  ctx.fillRect(0, 0, CARD, CARD);
+  ctx.fillStyle = INK.paper;
+  ctx.fillRect(56, 56, CARD - 112, CARD - 112);
+  ctx.strokeStyle = INK.rule;
+  ctx.lineWidth = 3;
+  ctx.strokeRect(56, 56, CARD - 112, CARD - 112);
+  ctx.lineWidth = 1;
+  ctx.strokeRect(74, 74, CARD - 148, CARD - 148);
+  flourish(ctx, 92, 92, 1, 1);
+  flourish(ctx, CARD - 92, 92, -1, 1);
+}
+
+const toPng = (c: HTMLCanvasElement): Promise<Blob> =>
+  new Promise((resolve, reject) => {
+    c.toBlob((b) => (b ? resolve(b) : reject(new Error('Nie udało się zapisać obrazka.'))), 'image/png');
+  });
+
+/**
  * Kwadratowa karta do wpisu. Kwadrat, bo mieści się bez przycięcia w każdym serwisie,
  * w którym prostokąt bywa kadrowany inaczej niż autor zakładał.
  */
@@ -623,18 +705,7 @@ export async function shareCard(s: ShareSubject, { medal, faces = [] }: CardArt 
   // Czekamy na kroje pisma: `fillText` przed ich załadowaniem rysuje zapasowym fontem.
   if (document.fonts?.ready) await document.fonts.ready;
 
-  ctx.fillStyle = INK.board;
-  ctx.fillRect(0, 0, CARD, CARD);
-  ctx.fillStyle = INK.paper;
-  ctx.fillRect(56, 56, CARD - 112, CARD - 112);
-
-  // Podwójna ramka i pieczęć: karta ma wyglądać jak świadectwo wydane przez urząd,
-  // który nie istnieje. Powaga formy przy błahości treści jest tu całym żartem.
-  ctx.strokeStyle = INK.rule;
-  ctx.lineWidth = 3;
-  ctx.strokeRect(56, 56, CARD - 112, CARD - 112);
-  ctx.lineWidth = 1;
-  ctx.strokeRect(74, 74, CARD - 148, CARD - 148);
+  paper(ctx);
 
   ctx.textAlign = 'center';
   // Linia bazowa u góry: przy domyślnej („alphabetic”) wysokość wiersza zależy od kroju
@@ -645,16 +716,11 @@ export async function shareCard(s: ShareSubject, { medal, faces = [] }: CardArt 
     kind: '600 30px "IBM Plex Sans", system-ui, sans-serif',
     brand: '600 40px "Oswald", system-ui, sans-serif',
     band: '600 34px "IBM Plex Sans", system-ui, sans-serif',
-    title: '600 76px "Oswald", system-ui, sans-serif',
     line: '400 37px "IBM Plex Sans", system-ui, sans-serif',
     punch: '600 38px "Oswald", system-ui, sans-serif',
     sign: '400 25px "IBM Plex Sans", system-ui, sans-serif',
     serial: '400 23px "IBM Plex Sans", system-ui, sans-serif',
   };
-
-  // Zawijasy tylko u góry: dolne narożniki zajmuje wstęga i spod niej wystawały ich końcówki.
-  flourish(ctx, 92, 92, 1, 1);
-  flourish(ctx, CARD - 92, 92, -1, 1);
 
   // Obsada w narożnikach nagłówka, jak herbowe postacie po bokach godła. Nagłówek jest
   // wąski, więc medaliony nie zabierają treści ani piksela w pionie — a karta bez nich
@@ -695,8 +761,6 @@ export async function shareCard(s: ShareSubject, { medal, faces = [] }: CardArt 
   const img = medal ? await loadSvg(standaloneSvg(medal, 320)).catch(() => null) : null;
   const figure = !img && s.kind === 'progress';
 
-  ctx.font = FONT.title;
-  const titleLines = wrap(ctx, s.title, CARD - 220);
   ctx.font = FONT.line;
   const bodyLines = s.lines.flatMap((l) => wrap(ctx, l, CARD - 200));
   ctx.font = FONT.punch;
@@ -708,17 +772,35 @@ export async function shareCard(s: ShareSubject, { medal, faces = [] }: CardArt 
   // Wiersz nadpisu nad tytułem. Oswald ma wysoki wzrost liter, więc odstęp musi być
   // liczony z zapasem — inaczej wersaliki tytułu dotykają nadpisu.
   const BAND_ROW = 58;
-  const text =
-    (s.band ? BAND_ROW : 0) +
-    titleLines.length * 88 +
-    (bodyLines.length ? 16 + bodyLines.length * 50 : 0) +
-    (punchLines.length ? 22 + punchLines.length * 48 : 0);
 
   // Blok treści jeździ pionowo między nagłówkiem a wstęgą, więc karta bez medalu nie
   // zostawia dziury na środku, a karta z medalem nie wypycha tekstu pod krawędź.
   const top = 238;
-  const bottom = RIBBON.y - 66;
+  // Pole treści kończy się nad wierszem hasła, a nie nad samą wstęgą.
+  const bottom = SLOGAN_Y - 24;
   const band = bottom - top;
+
+  /*
+   * Tytuł maleje, gdy treść nie mieści się w polu. Nazwa własnego treningu nie ma limitu
+   * długości, a „… zaliczony” potrafi zawinąć się na pięć wierszy i zepchnąć puentę na hasło.
+   * Mniejszy krój tytułu to wciąż czytelny dokument; napisy jeden na drugim — już nie.
+   */
+  const rest =
+    (s.band ? BAND_ROW : 0) +
+    (bodyLines.length ? 16 + bodyLines.length * 50 : 0) +
+    (punchLines.length ? 22 + punchLines.length * 48 : 0);
+  let titlePx = 76;
+  let titleLines: string[] = [];
+  let titleRow = 88;
+  for (const px of [76, 66, 58, 50, 44]) {
+    titlePx = px;
+    titleRow = Math.round(px * 1.16);
+    ctx.font = `600 ${px}px "Oswald", system-ui, sans-serif`;
+    titleLines = wrap(ctx, s.title, CARD - 220);
+    if (rest + titleLines.length * titleRow <= band) break;
+  }
+  const titleFont = `600 ${titlePx}px "Oswald", system-ui, sans-serif`;
+  const text = rest + titleLines.length * titleRow;
 
   /*
    * Grafika ustępuje tekstowi. Dwuwierszowy tytuł i dwuwierszowa puenta potrafią zjeść
@@ -749,10 +831,10 @@ export async function shareCard(s: ShareSubject, { medal, faces = [] }: CardArt 
   }
 
   ctx.fillStyle = INK.dark;
-  ctx.font = FONT.title;
+  ctx.font = titleFont;
   titleLines.forEach((l) => {
     ctx.fillText(l, CARD / 2, y);
-    y += 88;
+    y += titleRow;
   });
 
   if (bodyLines.length) {
@@ -779,8 +861,12 @@ export async function shareCard(s: ShareSubject, { medal, faces = [] }: CardArt 
   // blok rósł w dół i zawijas lądował na tekście. Gdy miejsca zabraknie, podpisu nie ma —
   // lepiej dokument bez podpisu niż podpis w poprzek zdania albo na wstędze.
   const signY = y + 26;
-  if (signY + 62 < RIBBON.y - 8) signature(ctx, CARD / 2, signY, pick(SIGNATORIES, seed));
+  if (signY + 62 < SLOGAN_Y - 8) signature(ctx, CARD / 2, signY, pick(SIGNATORIES, seed));
 
+  // Kto zobaczy kartę w cudzym kanale, nie wie, co to GYM TRACKER — hasło mówi to jednym
+  // zdaniem, zanim wzrok zjedzie na adres. Gdyby treść mimo mniejszego tytułu sięgnęła jego
+  // wiersza, hasła nie ma — jak podpisu: lepiej bez niego niż jedno zdanie na drugim.
+  if (y <= SLOGAN_Y - 8) slogan(ctx, SLOGAN_Y);
   ribbon(ctx, APP_HOST, RIBBON.y);
 
   // Numer wydania: wygląda urzędowo, nie znaczy nic. O to chodzi.
@@ -790,9 +876,89 @@ export async function shareCard(s: ShareSubject, { medal, faces = [] }: CardArt 
   ctx.fillStyle = INK.faint;
   ctx.fillText(serial(s), CARD / 2, RIBBON.y + RIBBON.h + RIBBON.drop + 8);
 
-  return new Promise((resolve, reject) => {
-    c.toBlob((b) => (b ? resolve(b) : reject(new Error('Nie udało się zapisać obrazka.'))), 'image/png');
-  });
+  return toPng(c);
+}
+
+/* ---------------- Plakat polecający ---------------- */
+
+/** Obsada plakatu: Siwy pośrodku, podopieczni po bokach. Kopie żywych rysunków, jak portrety na karcie. */
+export interface PromoArt {
+  coach?: SVGSVGElement | null | undefined;
+  left?: SVGSVGElement | null | undefined;
+  right?: SVGSVGElement | null | undefined;
+}
+
+/** Proporcje popiersia goryla (viewBox 312 × 280). */
+const BUST = 280 / 312;
+
+/**
+ * Plakat do polecenia aplikacji: ogłoszenie naboru, które wydaje ten sam urząd, co certyfikaty.
+ * „Trener Siwy szuka podopiecznych”, Siwy wskazuje palcem jak na starym plakacie werbunkowym,
+ * podopieczni po bokach — jeden z telefonem, druga z bicepsem. Pod obsadą hasło, jedno zdanie
+ * o tym, co aplikacja robi, pieczęć „za darmo” i wstęga z adresem. Drobny druk zamiast numeru
+ * wydania, bo ogłoszenie ma regulamin.
+ */
+export async function promoCard({ coach, left, right }: PromoArt = {}): Promise<Blob> {
+  const c = document.createElement('canvas');
+  c.width = CARD;
+  c.height = CARD;
+  const ctx = c.getContext('2d');
+  if (!ctx) throw new Error('Przeglądarka nie udostępnia rysowania na płótnie.');
+  if (document.fonts?.ready) await document.fonts.ready;
+
+  paper(ctx);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+
+  ctx.fillStyle = INK.accent;
+  ctx.font = '600 30px "IBM Plex Sans", system-ui, sans-serif';
+  ctx.fillText('OGŁOSZENIE · NABÓR OTWARTY', CARD / 2, 104);
+  ctx.fillStyle = INK.dark;
+  ctx.font = '600 76px "Oswald", system-ui, sans-serif';
+  ctx.fillText('Trener Siwy', CARD / 2, 146);
+  ctx.fillText('szuka podopiecznych', CARD / 2, 228);
+
+  // Obsada: Siwy większy i wyżej, podopieczni niżej po bokach — stopy (tu: dół popiersia)
+  // na jednej linii, jak na zdjęciu grupowym.
+  const [imgCoach, imgLeft, imgRight] = await Promise.all(
+    [coach, left, right].map((svg) => (svg ? loadSvg(standaloneSvg(svg, 600)).catch(() => null) : Promise.resolve(null))),
+  );
+  const floor = 652;
+  const side = 256;
+  const mid = 340;
+  if (imgLeft) ctx.drawImage(imgLeft, 120, floor - side * BUST, side, side * BUST);
+  if (imgRight) ctx.drawImage(imgRight, CARD - 120 - side, floor - side * BUST, side, side * BUST);
+  if (imgCoach) ctx.drawImage(imgCoach, (CARD - mid) / 2, floor - mid * BUST, mid, mid * BUST);
+  ctx.strokeStyle = INK.rule;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(110, floor);
+  ctx.lineTo(CARD - 110, floor);
+  ctx.stroke();
+
+  // Pieczęć obok uniesionego palca Siwego — ta sama, co na certyfikatach, z innym wyrokiem.
+  // Na obsadzie zakrywała twarze; tu stoi w pustym polu, w które i tak patrzy się po palcu.
+  stamp(ctx, ['ZA DARMO', 'na razie'], CARD - 168, 388);
+
+  ctx.fillStyle = INK.dark;
+  fit(ctx, TAGLINE, (px) => `600 ${px}px "Oswald", system-ui, sans-serif`, 50, CARD - 200, 34);
+  ctx.fillText(TAGLINE, CARD / 2, floor + 22);
+
+  ctx.fillStyle = INK.soft;
+  ctx.font = '400 29px "IBM Plex Sans", system-ui, sans-serif';
+  const pitch = wrap(ctx, PITCH, CARD - 220);
+  pitch.forEach((l, i) => ctx.fillText(l, CARD / 2, floor + 86 + i * 38));
+  ctx.fillStyle = INK.faint;
+  ctx.font = '500 25px "IBM Plex Sans", system-ui, sans-serif';
+  ctx.fillText(PROMO_EXTRAS, CARD / 2, floor + 98 + pitch.length * 38);
+
+  ribbon(ctx, APP_HOST, RIBBON.y);
+
+  ctx.font = '400 23px "IBM Plex Sans", system-ui, sans-serif';
+  ctx.fillStyle = INK.faint;
+  ctx.fillText('Opłata wpisowa: 0 zł · bez konta i bez reklam · zakwasy wliczone', CARD / 2, RIBBON.y + RIBBON.h + RIBBON.drop + 8);
+
+  return toPng(c);
 }
 
 /* ---------------- Wysyłka ---------------- */
@@ -814,8 +980,20 @@ export const canShareFiles = (): boolean =>
  * Najpierw systemowy arkusz z obrazkiem, potem sam tekst, na końcu schowek. Anulowanie
  * arkusza przez użytkownika nie jest błędem i nie może kończyć się komunikatem o awarii.
  */
-export async function share(s: ShareSubject, file?: Blob | null): Promise<ShareResult> {
-  const text = shareText(s);
+export function share(s: ShareSubject, file?: Blob | null): Promise<ShareResult> {
+  return shareRaw({ title: s.title, text: shareText(s), file });
+}
+
+/** Wysyłka dowolnego wpisu z obrazkiem — certyfikatu albo plakatu polecającego. */
+export async function shareRaw({
+  title,
+  text,
+  file,
+}: {
+  title: string;
+  text: string;
+  file?: Blob | null | undefined;
+}): Promise<ShareResult> {
   const nav = typeof navigator !== 'undefined' ? navigator : undefined;
 
   if (nav?.share) {
@@ -828,7 +1006,7 @@ export async function share(s: ShareSubject, file?: Blob | null): Promise<ShareR
       const payload =
         png && hasCanShare && nav.canShare({ files: [png] })
           ? { files: [png], text }
-          : { title: s.title, text, url: APP_URL };
+          : { title, text, url: APP_URL };
       const done = await withTimeout(nav.share(payload).then(() => true), 20_000, false);
       if (done) return 'shared';
     } catch (e) {
