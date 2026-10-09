@@ -131,6 +131,8 @@ export interface LogItem {
 export interface LogEntry {
   date: string;
   workout: string;
+  /** Identyfikator treningu. Wpisy sprzed jego zapisywania mają tylko nazwę. */
+  wid?: string;
   ready: ReadyKey;
   items: LogItem[];
 }

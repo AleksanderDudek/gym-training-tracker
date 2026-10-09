@@ -12,6 +12,7 @@ import {
 } from '../data/muscles';
 import type { MuscleId } from '../data/muscles';
 import { setsEnergy } from './energy';
+import { PAIR_REST } from './rests';
 import type { AppState, ExerciseId, PlanTemplate, Workout, WorkoutKind } from '../types';
 
 /**
@@ -160,8 +161,8 @@ export const suggestedOrder = (ids: ExerciseId[], pairs: readonly boolean[] = []
     .sort((a, b) => a.r - b.r || a.i - b.i)
     .flatMap((x) => x.b.ids);
 
-/** Przerwa między ćwiczeniami pary w sekundach — środek zalecanych 60–90 s. */
-export const PAIR_REST = 75;
+// Przerwa między ćwiczeniami pary mieszka razem z resztą przerw.
+export { PAIR_REST };
 
 /* ---------------- Trening ---------------- */
 
