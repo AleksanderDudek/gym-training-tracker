@@ -19,7 +19,7 @@ Pozostałe polecenia:
 npm run build      # produkcyjny build do dist/, z listą plików dla service workera
 npm run preview    # podgląd builda — tu działa też praca offline
 npm run typecheck  # tsc --noEmit
-npm test           # 599 testów silnika, doradcy, kalorii, biblioteki, odznak, ruchu, obsady, scen, struktury, przerw, prowadzenia sesji, wagi, profili, tras, zegarka i serwera (vitest)
+npm test           # 605 testów silnika, doradcy, kalorii, biblioteki, odznak, ruchu, obsady, scen, struktury, przerw, prowadzenia sesji, wagi, profili, tras, zegarka i serwera (vitest)
 ```
 
 Build jest w pełni statyczny (`base: './'`), więc `dist/` można wrzucić na dowolny hosting plików
@@ -195,6 +195,21 @@ po kliknięciu, a medal wjeżdża w nią jako kopia żywego rysunku ze strony �
 z gradientami, które inaczej zostałyby w osobnym bloku `defs`. Adres stoi w osobnej,
 ostatniej linii wpisu, bo serwisy robią podgląd z ostatniego adresu, a wtrącony w zdanie
 bywa ucinany.
+
+**Hasło nad wstęgą: „Twój trening sam wie, kiedy dołożyć. Na razie za darmo.”** Kto zobaczy
+kartę w cudzym kanale, nie wie, co to GYM TRACKER — hasło mówi to jednym zdaniem, zanim wzrok
+zjedzie na adres, w kolejności z każdej reklamy: korzyść, potem gdzie. Korzyść, a nie lista
+funkcji: notes z treningiem zapisze serie, ale nie powie, kiedy dołożyć — to robi ta aplikacja.
+„Na razie” uczciwie, bez obietnicy, że zawsze. Zdanie zaproszenia we wpisie też mówi, czym jest
+aplikacja i że kosztuje zero.
+
+**Poleć znajomym** (`#/polec`, z Ustawień i z Profilu) to plakat od tego samego urzędu, co
+certyfikaty: „Ogłoszenie · nabór otwarty — Trener Siwy szuka podopiecznych”. Siwy wskazuje
+palcem jak na starym plakacie werbunkowym, Gustaw z telefonem, Gosia z bicepsem; pod nimi hasło,
+jedno zdanie o tym, co aplikacja robi, pieczęć „ZA DARMO · na razie”, wstęga z adresem i drobny
+druk „Opłata wpisowa: 0 zł · zakwasy wliczone”. Strona pokazuje dokładnie ten obrazek, który
+pójdzie w świat, i wpis do niego; „Udostępnij plakat” idzie przez systemowy arkusz z obrazkiem,
+a bez niego zostaje pobranie i skopiowanie linku.
 
 **Karta ma się czytać w miniaturze**, a nie dopiero po powiększeniu — na osi czasu nikt
 w nią nie klika, tylko przewija. Stopnie pisma poszły w górę (tytuł 76 px, wiersze 37 px,
@@ -850,6 +865,7 @@ src/
     scenes.test.ts          12 testów zgodności scen z biblioteką, sprzętem, dymkiem i obrazkiem
     Intro.tsx               opcjonalne wprowadzenie, cztery ekrany
     Share.tsx               przycisk udostępniania, obsada blankietu i ścieżka zapasowa
+    Promo.tsx               „Poleć znajomym”: plakat Trenera Siwego, wpis, udostępnienie i pobranie
     Snacks.tsx              przekąski ruchowe: karta na ekranie sesji, widok zapisu i historia
     Cardio.tsx              kroki, cardio i taniec: karta, formularz z podglądem kalorii, historia, waga
     Character.tsx           postać: karta w profilu, pasek na ekranie sesji, okno awansu
