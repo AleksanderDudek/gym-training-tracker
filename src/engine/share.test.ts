@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { APP_HOST, APP_URL, SUPPORT_URL, inlineVars, shareLinks, shareText } from './share';
+import { APP_HOST, APP_URL, FREE_NOTE, PITCH, PROMO_TEXTS, SUPPORT_URL, TAGLINE, inlineVars, promoText, shareLinks, shareText } from './share';
+import { CTA } from './quips';
 import { STEPS } from '../components/Intro';
 
 const badge = { title: 'Gęsty tydzień', band: 'platyna', lines: ['próg 4 z 6', '5 treningów'] };
@@ -130,5 +131,47 @@ describe('wsparcie i wprowadzenie', () => {
     const last = STEPS[STEPS.length - 1]!;
     expect(last.title.toLowerCase()).toContain('bezpłatn');
     expect(last.body.toLowerCase()).toContain('kaw');
+  });
+});
+
+describe('hasło i polecenie aplikacji', () => {
+  // Te same zakazy, co w przypomnieniach: nic, co komuś dokopie, i nic z rodzajem gramatycznym —
+  // plakat i wpis wysyła Gustaw i Gosia, a czyta każdy.
+  const SHAMING = /wstyd|leń|leni|słab|wymówk|żałos|porażk|gruby|tłust|dieta|schudn|musisz|koniecznie/i;
+  const GENDERED = /(łeś|łaś|łem|łam)(?![a-ząćęłńóśźż])/i;
+  const all = [TAGLINE, FREE_NOTE, PITCH, ...PROMO_TEXTS, ...CTA];
+
+  it('hasło jest krótkie, mówi o korzyści i stoi samo w jednej linijce', () => {
+    expect(TAGLINE.split(' ').length).toBeLessThanOrEqual(7);
+    expect(TAGLINE.toLowerCase()).toContain('trening');
+    expect(FREE_NOTE.toLowerCase()).toContain('za darmo');
+  });
+
+  it('wyjaśnienie mówi, co aplikacja robi sama', () => {
+    expect(PITCH.toLowerCase()).toMatch(/powtórzeni/);
+    expect(PITCH.toLowerCase()).toMatch(/ciężar/);
+  });
+
+  it('teksty polecenia i zaproszenia nie zawstydzają i nie mają rodzaju', () => {
+    all.forEach((t) => {
+      expect(t).not.toMatch(SHAMING);
+      expect(t).not.toMatch(GENDERED);
+    });
+  });
+
+  it('każde zaproszenie we wpisie mówi, że aplikacja jest za darmo', () => {
+    CTA.forEach((t) => expect(t.toLowerCase(), t).toMatch(/za darmo|bezpłatn/));
+  });
+
+  it('wpis polecający: kilka wariantów, za darmo, adres w ostatniej linii, mieści się we wpisie', () => {
+    expect(PROMO_TEXTS.length).toBeGreaterThanOrEqual(3);
+    PROMO_TEXTS.forEach((_, seed) => {
+      const t = promoText(seed);
+      const lines = t.split('\n');
+      expect(lines[lines.length - 1]).toBe(APP_URL);
+      expect(t.toLowerCase()).toMatch(/za darmo/);
+      expect(t.length).toBeLessThanOrEqual(280);
+    });
+    expect(promoText(1)).toBe(promoText(1));
   });
 });

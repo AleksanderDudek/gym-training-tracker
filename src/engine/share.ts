@@ -30,6 +30,35 @@ export const SUPPORT_URL = 'https://buycoffee.to/uriel';
  */
 export const APP_HOST = APP_URL.replace(/^https?:\/\//, '').replace(/\/$/, '');
 
+/* ---------------- Hasło i polecenie ---------------- */
+
+/**
+ * Hasło aplikacji — na certyfikatach i na plakacie. Ma powiedzieć obcemu człowiekowi, co ta
+ * aplikacja robi, zanim zdąży przewinąć dalej: korzyść, nie lista funkcji. „Sam wie, kiedy
+ * dołożyć” to dokładnie to, czego nie robi zwykły notes z treningiem — progresja dzieje się
+ * bez liczenia, kiedy i o ile podnieść.
+ */
+export const TAGLINE = 'Twój trening sam wie, kiedy dołożyć.';
+
+/** Uczciwie: na razie — bez obietnicy, że zawsze. */
+export const FREE_NOTE = 'Na razie za darmo.';
+
+/** Jedno zdanie dla tych, którym hasło nie wystarczy. */
+export const PITCH = 'Wpisujesz serie, a aplikacja sama decyduje, kiedy dołożyć powtórzenie albo ciężar.';
+
+/**
+ * Wpis do plakatu z polecenia. Pierwsza osoba i czas teraźniejszy — ani „polecałem”, ani
+ * „polecałam”, bo wysyła go i Gustaw, i Gosia. Każdy mówi, co aplikacja robi i że jest za darmo.
+ */
+export const PROMO_TEXTS: readonly string[] = [
+  'Polecam GYM TRACKER: wpisujesz serie, a aplikacja sama decyduje, kiedy dołożyć powtórzenie albo ciężar. Do tego plany, przerwy z odliczaniem i odznaki. Na razie za darmo, bez konta:',
+  'Trener Siwy szuka podopiecznych. GYM TRACKER prowadzi trening siłowy: pilnuje serii, przerw i postępów. Na razie za darmo:',
+  'Ćwiczę z aplikacją, która sama wie, kiedy dołożyć ciężar. Goryle w zestawie. Na razie za darmo, bez reklam i bez konta:',
+  'Jak ktoś szuka trenera, który nie bierze pieniędzy: GYM TRACKER prowadzi trening, liczy serie i pilnuje postępów. Na razie za darmo:',
+];
+
+export const promoText = (seed: number): string => [pick(PROMO_TEXTS, seed), APP_URL].join('\n');
+
 export interface ShareSubject {
   /** Nagłówek: nazwa odznaki albo nazwa treningu. */
   title: string;
@@ -537,6 +566,31 @@ const STAMP = { x: CARD - 136, y: 278 } as const;
 /** Wstęga z adresem w stopce. */
 const RIBBON = { y: 884, h: 70, edge: 24, tail: 60, drop: 12, notch: 20, pad: 30 } as const;
 
+/** Wiersz hasła tuż nad wstęgą: najpierw co, potem gdzie — jak w każdej reklamie. */
+const SLOGAN_Y = RIBBON.y - 52;
+
+/**
+ * Hasło i „na razie za darmo” w jednym wierszu: hasło atramentem, bezpłatność kolorem pieczęci.
+ * Rozmiar dopasowuje się do szerokości, a oba kawałki stoją razem na środku.
+ */
+function slogan(ctx: CanvasRenderingContext2D, y: number, width = CARD - 200): void {
+  const main = TAGLINE;
+  const free = ` ${FREE_NOTE}`;
+  const font = (px: number) => `600 ${px}px "Oswald", system-ui, sans-serif`;
+  ctx.save();
+  ctx.textBaseline = 'top';
+  ctx.textAlign = 'left';
+  fit(ctx, main + free, font, 34, width, 22);
+  const a = ctx.measureText(main).width;
+  const b = ctx.measureText(free).width;
+  const x = (CARD - a - b) / 2;
+  ctx.fillStyle = INK.dark;
+  ctx.fillText(main, x, y);
+  ctx.fillStyle = INK.accent;
+  ctx.fillText(free, x + a, y);
+  ctx.restore();
+}
+
 /**
  * Najpierw zmienne znane z nazwy, potem wszystko, co ma w `var()` wartość zapasową — tak
  * rysuje obsada (`var(--fur, #3f3c44)`), a samodzielny obrazek żadnej zmiennej nie zna.
@@ -717,7 +771,8 @@ export async function shareCard(s: ShareSubject, { medal, faces = [] }: CardArt 
   // Blok treści jeździ pionowo między nagłówkiem a wstęgą, więc karta bez medalu nie
   // zostawia dziury na środku, a karta z medalem nie wypycha tekstu pod krawędź.
   const top = 238;
-  const bottom = RIBBON.y - 66;
+  // Pole treści kończy się nad wierszem hasła, a nie nad samą wstęgą.
+  const bottom = SLOGAN_Y - 24;
   const band = bottom - top;
 
   /*
@@ -779,8 +834,11 @@ export async function shareCard(s: ShareSubject, { medal, faces = [] }: CardArt 
   // blok rósł w dół i zawijas lądował na tekście. Gdy miejsca zabraknie, podpisu nie ma —
   // lepiej dokument bez podpisu niż podpis w poprzek zdania albo na wstędze.
   const signY = y + 26;
-  if (signY + 62 < RIBBON.y - 8) signature(ctx, CARD / 2, signY, pick(SIGNATORIES, seed));
+  if (signY + 62 < SLOGAN_Y - 8) signature(ctx, CARD / 2, signY, pick(SIGNATORIES, seed));
 
+  // Kto zobaczy kartę w cudzym kanale, nie wie, co to GYM TRACKER — hasło mówi to jednym
+  // zdaniem, zanim wzrok zjedzie na adres.
+  slogan(ctx, SLOGAN_Y);
   ribbon(ctx, APP_HOST, RIBBON.y);
 
   // Numer wydania: wygląda urzędowo, nie znaczy nic. O to chodzi.
