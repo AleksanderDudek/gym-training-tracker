@@ -314,6 +314,8 @@ export interface Workout {
   desc?: string;
   /** Trening z profilu — ogólnorozwojowy z akcentem. */
   profile?: ProfileKey;
+  /** Własna wersja: gotowy trening, od którego się zaczęła. */
+  base?: string;
 }
 
 export interface Notice {

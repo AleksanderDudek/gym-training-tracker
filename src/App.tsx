@@ -1431,10 +1431,11 @@ export default function App() {
       )}
       {route.kind === 'workoutEdit' && (
         <WorkoutBuilder
-          key={`${route.id ?? ''}:${route.from ?? ''}`}
+          key={`${route.id ?? ''}:${route.from ?? ''}:${route.add ?? ''}`}
           state={state}
           id={route.id}
           from={route.from}
+          add={route.add}
           onSave={saveWorkout}
           onSetsChange={(id, sets) => {
             const next = clone(state);

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { BUILTIN, EX, ex } from '../data/exercises';
 import { OWN_WORKOUT_JOKES, WORKOUT_JOKES } from '../data/exjokes';
 import { EX_MUSCLES, MUSCLE_NAME } from '../data/muscles';
@@ -6,6 +6,7 @@ import { GOAL_PLANS, PROFILE_PLANS } from '../data/plans';
 import { plannedBurn } from '../engine/burn';
 import { KIND_LABEL, RULES, dose, reviewWorkout } from '../engine/design';
 import { planLabel } from '../engine/plan';
+import { similarTo, workoutGear } from '../engine/similar';
 import { pick, plural } from '../engine/quips';
 import { exercisePath, go, goBack, planPath, workoutEditPath, workoutNewPath, workoutPath } from '../routing';
 import { kcalText } from './Cardio';
@@ -122,6 +123,10 @@ function WorkoutCard({
         </button>
         <button className="btn sm ghost" onClick={() => go(workoutPath(w.id))}>
           Podgląd
+        </button>
+        {/* Własna wersja jednym stuknięciem z listy — wcześniej przycisk stał dopiero w podglądzie. */}
+        <button className="btn sm ghost" onClick={() => go(isOwn(w) ? workoutEditPath(w.id) : workoutNewPath(w.id))}>
+          {isOwn(w) ? 'Edytuj' : 'Zmień pod siebie'}
         </button>
       </div>
     </div>
@@ -265,6 +270,16 @@ export function WorkoutPreview({
         <h2 className="ex-h">{w.name}</h2>
         <p className="wmeta">{metaLine(state, w, r.secs)}</p>
         {w.desc && <p className="lead">{w.desc}</p>}
+        {own &&
+          w.base &&
+          (() => {
+            const base = allWorkouts(state).find((x) => x.id === w.base);
+            return base ? (
+              <p className="tight">
+                Twoja wersja treningu <a href={workoutPath(base.id)}>{base.name}</a>.
+              </p>
+            ) : null;
+          })()}
         <p className="exjoke">{WORKOUT_JOKES[w.id] ?? pick(OWN_WORKOUT_JOKES, w.name.length + w.items.length)}</p>
         <div className="actions">
           <button className="btn wide" onClick={() => onStart(w.id)} disabled={!ids.length}>
@@ -356,6 +371,7 @@ export function WorkoutBuilder({
   state,
   id,
   from,
+  add: addOnOpen,
   onSave,
   onSetsChange,
   onToast,
@@ -363,6 +379,8 @@ export function WorkoutBuilder({
   state: AppState;
   id?: string | undefined;
   from?: string | undefined;
+  /** Ćwiczenie dopisane na wejściu — „Dodaj do treningu” w atlasie. Zapisuje dopiero „Zapisz trening”. */
+  add?: string | undefined;
   onSave: (w: Workout) => void;
   onSetsChange: (id: ExerciseId, sets: number) => void;
   onToast: (m: string) => void;
@@ -371,16 +389,22 @@ export function WorkoutBuilder({
   const source = editing ?? (from ? allWorkouts(state).find((w) => w.id === from) : undefined);
   const [name, setName] = useState(editing ? editing.name : source ? `${source.name} — moja wersja` : '');
   const [kind, setKind] = useState<WorkoutKind | ''>(source?.kind ?? '');
-  const [items, setItems] = useState<ExerciseId[]>(source ? source.items.map((i) => i.ex) : []);
+  const sourceItems = source ? source.items.map((i) => i.ex) : [];
+  const extra = addOnOpen && EX[addOnOpen] && !sourceItems.includes(addOnOpen) ? addOnOpen : null;
+  const [items, setItems] = useState<ExerciseId[]>(extra ? [...sourceItems, extra] : sourceItems);
+  // Ćwiczenie, dla którego otwarty jest panel „Zamień”.
+  const [swapFor, setSwapFor] = useState<ExerciseId | null>(null);
   // Ćwiczenia robione „na zmianę z poprzednim”. Flaga należy do ćwiczenia, więc para
   // przeżywa przesuwanie w górę i w dół razem z nim.
   const [paired, setPaired] = useState<Set<ExerciseId>>(
     () => new Set(source?.items.filter((i) => i.pair).map((i) => i.ex) ?? []),
   );
   // Stacje obwodu — tak samo przypięte do ćwiczenia. Przełącznik „Obwód” obejmuje wszystkie.
-  const [circ, setCirc] = useState<Set<ExerciseId>>(
-    () => new Set(source?.items.filter((i) => i.circuit).map((i) => i.ex) ?? []),
-  );
+  const [circ, setCirc] = useState<Set<ExerciseId>>(() => {
+    const all = source?.items.filter((i) => i.circuit).map((i) => i.ex) ?? [];
+    // Dopisane do treningu, który cały jest obwodem, staje się kolejną stacją.
+    return new Set(extra && source?.items.length && all.length === source.items.length ? [...all, extra] : all);
+  });
   // Przerwa po serii: pusta — z rodzaju ćwiczenia, jak zalecają wytyczne; liczba — z treningu.
   const [rest, setRest] = useState<number | ''>(source?.rest ?? '');
   const [roundRest, setRoundRest] = useState<number>(source?.roundRest ?? ROUND_REST);
@@ -424,6 +448,24 @@ export function WorkoutBuilder({
     // Do obwodu z całego treningu nowe ćwiczenie dochodzi jako kolejna stacja.
     if (allCircuit) setCirc(new Set([...circ, x]));
   };
+  /**
+   * Zamiana w miejscu: nowe ćwiczenie staje tam, gdzie stało stare, i przejmuje jego parę albo
+   * miejsce w obwodzie. Usuwanie i dodawanie na końcu gubiło jedno i drugie.
+   */
+  const replace = (old: ExerciseId, neu: ExerciseId) => {
+    setSwapFor(null);
+    if (items.includes(neu)) {
+      onToast(`${ex(neu).name} już jest w treningu.`);
+      return;
+    }
+    setItems(items.map((x) => (x === old ? neu : x)));
+    const carry = (set: Set<ExerciseId>) =>
+      set.has(old) ? new Set([...set].filter((x) => x !== old).concat(neu)) : set;
+    setPaired(carry(paired));
+    setCirc(carry(circ));
+    onToast(`${ex(old).name} → ${ex(neu).name}.`);
+  };
+
   const move = (i: number, d: -1 | 1) => {
     const j = i + d;
     if (j < 0 || j >= items.length) return;
@@ -441,9 +483,14 @@ export function WorkoutBuilder({
       onToast('Dodaj przynajmniej jedno ćwiczenie.');
       return;
     }
+    // Własna wersja pamięta, od czego się zaczęła; kopia własnej — ten sam gotowy początek.
+    const base = editing?.base ?? (source ? (source.base ?? (isOwn(source) ? undefined : source.id)) : undefined);
     const w: Workout = {
       id: editing?.id ?? `w${Date.now()}`,
       name: name.trim(),
+      // Sprzęt z ćwiczeń: od niego zależą stanowiska i zamienniki, a ręcznie łatwo o nim zapomnieć.
+      gear: workoutGear(items),
+      ...(base ? { base } : {}),
       // Tylko pary, które naprawdę powstały — trzecie „na zmianę” z rzędu nic nie znaczy.
       items: blocks.flatMap((b) =>
         b.ids.map((x, i) =>
@@ -465,6 +512,23 @@ export function WorkoutBuilder({
           Dodawaj ćwiczenia, a doradca od razu policzy serie na partie, czas i kolejność. Rodzaj
           treningu mówi mu, czego się spodziewać — od push nikt nie oczekuje wiosłowania.
         </p>
+        {(() => {
+          // Od czego zaczęła się ta wersja — gotowy trening zostaje bez zmian, także w planach.
+          const baseId = editing?.base ?? (source && !editing && !isOwn(source) ? source.id : source?.base);
+          const base = baseId ? allWorkouts(state).find((w) => w.id === baseId) : undefined;
+          return base ? (
+            <p className="tight">
+              Na podstawie: <a href={workoutPath(base.id)}>{base.name}</a>. Oryginał zostaje bez zmian — także
+              w planach, które go używają.
+            </p>
+          ) : null;
+        })()}
+        {extra && (
+          <p className="tight">
+            Dopisane na końcu: <b>{ex(extra).name}</b>. Przesuń je strzałkami albo „Ułóż kolejność według zasad”,
+            a potem zapisz.
+          </p>
+        )}
       </div>
 
       <div className="grp builder">
@@ -532,9 +596,18 @@ export function WorkoutBuilder({
 
         <div className="bl-list">
           {items.map((x, i) => (
-            <div className="bl-item" key={x}>
+            <Fragment key={x}>
+            <div className="bl-item">
               <span className="bl-no">{i + 1}</span>
-              <span className="bl-name">{ex(x).name}</span>
+              <button
+                type="button"
+                className="bl-name"
+                aria-expanded={swapFor === x}
+                aria-label={`Zamień: ${ex(x).name}`}
+                onClick={() => setSwapFor(swapFor === x ? null : x)}
+              >
+                {ex(x).name}
+              </button>
               <select
                 aria-label={`Serie: ${ex(x).name}`}
                 value={dose(state, x).sets}
@@ -559,11 +632,12 @@ export function WorkoutBuilder({
               >
                 ↔
               </button>
-              <button type="button" onClick={() => move(i, -1)} disabled={!i} aria-label={`W górę: ${ex(x).name}`}>
+              <button type="button" className="bl-up" onClick={() => move(i, -1)} disabled={!i} aria-label={`W górę: ${ex(x).name}`}>
                 ↑
               </button>
               <button
                 type="button"
+                className="bl-down"
                 onClick={() => move(i, 1)}
                 disabled={i === items.length - 1}
                 aria-label={`W dół: ${ex(x).name}`}
@@ -572,21 +646,43 @@ export function WorkoutBuilder({
               </button>
               <button
                 type="button"
+                className="bl-del"
                 onClick={() => {
                   setItems(items.filter((_, k) => k !== i));
                   // Usunięte ćwiczenie nie zostawia flag — dodane ponownie zaczyna od zera.
                   setCirc(new Set([...circ].filter((c) => c !== x)));
                   setPaired(new Set([...paired].filter((c) => c !== x)));
+                  if (swapFor === x) setSwapFor(null);
                 }}
                 aria-label={`Usuń: ${ex(x).name}`}
               >
                 ×
               </button>
             </div>
+            {swapFor === x && (
+              <div className="bl-swap">
+                <p className="tight">
+                  Zamień <b>{ex(x).name}</b> na ćwiczenie, które robi podobną robotę:
+                </p>
+                <div className="bl-swap-opts">
+                  {similarTo(x, { exclude: items, gear: workoutGear(items) }).map((o) => (
+                    <button key={o} type="button" className="btn ghost sm" onClick={() => replace(x, o)}>
+                      {ex(o).name}
+                    </button>
+                  ))}
+                </div>
+                <ExercisePicker label="albo dowolne z atlasu" value={null} onChange={(o) => replace(x, o)} />
+                <button type="button" className="btn ghost sm" onClick={() => setSwapFor(null)}>
+                  Zostaw {ex(x).name}
+                </button>
+              </div>
+            )}
+            </Fragment>
           ))}
         </div>
         {items.length > 0 && (
           <p className="hint">
+            Stuknij nazwę ćwiczenia, żeby zamienić je na podobne w tym samym miejscu; × usuwa je z treningu.
             Liczba serii należy do ćwiczenia, nie do treningu — zmienia się wszędzie, gdzie to ćwiczenie
             występuje, i dalej prowadzi ją silnik progresji. ↔ łączy ćwiczenie z poprzednim w parę
             robioną na zmianę. W obwodzie liczba rund to liczba serii najdłuższej stacji, a przerwa po

@@ -1022,8 +1022,18 @@
   /* Kreator: lista ćwiczeń z seriami i przestawianiem. */
   .builder label.fld,.builder div.fld{margin-top:10px}
   .bl-list{display:grid;gap:6px;margin:12px 0 6px}
-  .bl-item{display:grid;grid-template-columns:22px 1fr 76px 40px 40px 40px;gap:6px;align-items:center;
+  /* Nazwa w pierwszym rzędzie, sterowanie w drugim — w jednym rzędzie siedem elementów nie
+     mieściło się na telefonie i × spadał samotnie pod spód. */
+  .bl-item{display:grid;grid-template-columns:22px 1fr repeat(4,44px);gap:6px;align-items:center;
+    grid-template-areas:"no name name name name name" ". sets pair up down del";
     border-top:1px solid var(--surface-2);padding-top:6px}
+  .bl-item .bl-no{grid-area:no}
+  .bl-item .bl-name{grid-area:name}
+  .bl-item select{grid-area:sets}
+  .bl-item .bl-pair{grid-area:pair}
+  .bl-item .bl-up{grid-area:up}
+  .bl-item .bl-down{grid-area:down}
+  .bl-item .bl-del{grid-area:del}
   .bl-no{font-family:var(--display);color:var(--ink-soft);text-align:right}
   .bl-name{font-weight:600;font-size:14.5px;overflow-wrap:anywhere}
   .bl-item select{padding:9px 6px;font-size:15px}
@@ -1133,3 +1143,9 @@
   .guide-foot{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
   .guide-effort .seg{margin-bottom:0}
   @media (prefers-reduced-motion:reduce){.guide-bar i{transition:none}}
+
+  /* Kreator: nazwa ćwiczenia otwiera zamianę w miejscu. */
+  .bl-item button.bl-name{background:none;border:0;padding:6px 0;text-align:left;color:var(--ink);font-size:14.5px;
+    font-weight:600;overflow-wrap:anywhere;text-decoration:underline dotted;text-underline-offset:3px}
+  .bl-swap{grid-column:1/-1;margin:2px 0 8px 28px;padding:10px;background:var(--surface-2);border-radius:var(--r)}
+  .bl-swap-opts{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
