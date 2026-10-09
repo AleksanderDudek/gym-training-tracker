@@ -716,7 +716,6 @@ export async function shareCard(s: ShareSubject, { medal, faces = [] }: CardArt 
     kind: '600 30px "IBM Plex Sans", system-ui, sans-serif',
     brand: '600 40px "Oswald", system-ui, sans-serif',
     band: '600 34px "IBM Plex Sans", system-ui, sans-serif',
-    title: '600 76px "Oswald", system-ui, sans-serif',
     line: '400 37px "IBM Plex Sans", system-ui, sans-serif',
     punch: '600 38px "Oswald", system-ui, sans-serif',
     sign: '400 25px "IBM Plex Sans", system-ui, sans-serif',
@@ -762,8 +761,6 @@ export async function shareCard(s: ShareSubject, { medal, faces = [] }: CardArt 
   const img = medal ? await loadSvg(standaloneSvg(medal, 320)).catch(() => null) : null;
   const figure = !img && s.kind === 'progress';
 
-  ctx.font = FONT.title;
-  const titleLines = wrap(ctx, s.title, CARD - 220);
   ctx.font = FONT.line;
   const bodyLines = s.lines.flatMap((l) => wrap(ctx, l, CARD - 200));
   ctx.font = FONT.punch;
@@ -775,11 +772,6 @@ export async function shareCard(s: ShareSubject, { medal, faces = [] }: CardArt 
   // Wiersz nadpisu nad tytułem. Oswald ma wysoki wzrost liter, więc odstęp musi być
   // liczony z zapasem — inaczej wersaliki tytułu dotykają nadpisu.
   const BAND_ROW = 58;
-  const text =
-    (s.band ? BAND_ROW : 0) +
-    titleLines.length * 88 +
-    (bodyLines.length ? 16 + bodyLines.length * 50 : 0) +
-    (punchLines.length ? 22 + punchLines.length * 48 : 0);
 
   // Blok treści jeździ pionowo między nagłówkiem a wstęgą, więc karta bez medalu nie
   // zostawia dziury na środku, a karta z medalem nie wypycha tekstu pod krawędź.
@@ -787,6 +779,28 @@ export async function shareCard(s: ShareSubject, { medal, faces = [] }: CardArt 
   // Pole treści kończy się nad wierszem hasła, a nie nad samą wstęgą.
   const bottom = SLOGAN_Y - 24;
   const band = bottom - top;
+
+  /*
+   * Tytuł maleje, gdy treść nie mieści się w polu. Nazwa własnego treningu nie ma limitu
+   * długości, a „… zaliczony” potrafi zawinąć się na pięć wierszy i zepchnąć puentę na hasło.
+   * Mniejszy krój tytułu to wciąż czytelny dokument; napisy jeden na drugim — już nie.
+   */
+  const rest =
+    (s.band ? BAND_ROW : 0) +
+    (bodyLines.length ? 16 + bodyLines.length * 50 : 0) +
+    (punchLines.length ? 22 + punchLines.length * 48 : 0);
+  let titlePx = 76;
+  let titleLines: string[] = [];
+  let titleRow = 88;
+  for (const px of [76, 66, 58, 50, 44]) {
+    titlePx = px;
+    titleRow = Math.round(px * 1.16);
+    ctx.font = `600 ${px}px "Oswald", system-ui, sans-serif`;
+    titleLines = wrap(ctx, s.title, CARD - 220);
+    if (rest + titleLines.length * titleRow <= band) break;
+  }
+  const titleFont = `600 ${titlePx}px "Oswald", system-ui, sans-serif`;
+  const text = rest + titleLines.length * titleRow;
 
   /*
    * Grafika ustępuje tekstowi. Dwuwierszowy tytuł i dwuwierszowa puenta potrafią zjeść
@@ -817,10 +831,10 @@ export async function shareCard(s: ShareSubject, { medal, faces = [] }: CardArt 
   }
 
   ctx.fillStyle = INK.dark;
-  ctx.font = FONT.title;
+  ctx.font = titleFont;
   titleLines.forEach((l) => {
     ctx.fillText(l, CARD / 2, y);
-    y += 88;
+    y += titleRow;
   });
 
   if (bodyLines.length) {
@@ -850,8 +864,9 @@ export async function shareCard(s: ShareSubject, { medal, faces = [] }: CardArt 
   if (signY + 62 < SLOGAN_Y - 8) signature(ctx, CARD / 2, signY, pick(SIGNATORIES, seed));
 
   // Kto zobaczy kartę w cudzym kanale, nie wie, co to GYM TRACKER — hasło mówi to jednym
-  // zdaniem, zanim wzrok zjedzie na adres.
-  slogan(ctx, SLOGAN_Y);
+  // zdaniem, zanim wzrok zjedzie na adres. Gdyby treść mimo mniejszego tytułu sięgnęła jego
+  // wiersza, hasła nie ma — jak podpisu: lepiej bez niego niż jedno zdanie na drugim.
+  if (y <= SLOGAN_Y - 8) slogan(ctx, SLOGAN_Y);
   ribbon(ctx, APP_HOST, RIBBON.y);
 
   // Numer wydania: wygląda urzędowo, nie znaczy nic. O to chodzi.

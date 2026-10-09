@@ -95,7 +95,13 @@ export function PromoPage({ onToast }: { onToast: (m: string) => void }) {
             {failed ? 'Plakat się nie narysował — wpis z linkiem i tak da się wysłać.' : 'Siwy przygotowuje plakat…'}
           </div>
         )}
-        <button className="btn wide" style={{ marginTop: 12 }} onClick={() => void send()} disabled={busy}>
+        {/* Czeka na plakat — stuknięcie w pierwszej sekundzie wysłałoby sam tekst bez obrazka. */}
+        <button
+          className="btn wide"
+          style={{ marginTop: 12 }}
+          onClick={() => void send()}
+          disabled={busy || (!src && !failed)}
+        >
           {busy ? 'Przygotowuję…' : 'Udostępnij plakat'}
         </button>
         <div className="btnrow" style={{ marginTop: 8 }}>
