@@ -286,9 +286,14 @@ export interface Workout {
   name: string;
   /**
    * Ćwiczenia po kolei. `pair` — „na zmianę z poprzednim”: seria jednego, przerwa, seria
-   * drugiego, przerwa, aż oba skończą serie. Brak oznacza serie pod rząd.
+   * drugiego, przerwa, aż oba skończą serie. `circuit` — stacja obwodu: sąsiednie stacje idą
+   * runda po rundzie. Brak obu oznacza serie pod rząd.
    */
-  items: { ex: ExerciseId; pair?: boolean }[];
+  items: { ex: ExerciseId; pair?: boolean; circuit?: boolean }[];
+  /** Przerwa po serii w sekundach dla serii pod rząd. Brak — z rodzaju ćwiczenia. */
+  rest?: number;
+  /** Przerwa po rundzie obwodu w sekundach. Brak — dwie minuty. */
+  roundRest?: number;
   /** Brak u treningów zapisanych przed rodzajami — doradca stosuje wtedy tylko zasady ogólne. */
   kind?: WorkoutKind;
   gear?: WorkoutGear;

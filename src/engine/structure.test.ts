@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ALL, BUILTIN, EX } from '../data/exercises';
 import { STATIONS, stationFor } from '../data/stations';
-import { blocksOf } from './blocks';
+import { blocksOf, tagOf } from './blocks';
 import { reviewWorkout } from './design';
 import { freshState } from './plan';
 import { PAIR_REST, isHeavy, pairProblems, platesPerSide, restText, setupFor, warmupFor } from './structure';
@@ -26,6 +26,26 @@ describe('bloki: serie pod rząd i pary na zmianę', () => {
     // Trzecie z rzędu nie dokleja się do pary — para ma dwa ćwiczenia.
     const three = blocksOf([{ ex: 'a' }, { ex: 'b', pair: true }, { ex: 'c', pair: true }]);
     expect(three.map((x) => x.ids.length)).toEqual([2, 1]);
+  });
+
+  it('obwód to sąsiednie stacje z `circuit` — bez limitu dwóch, z własnymi oznaczeniami', () => {
+    const b = blocksOf([
+      { ex: 'a' },
+      { ex: 'b', circuit: true },
+      { ex: 'c', circuit: true },
+      { ex: 'd', circuit: true, pair: true },
+      { ex: 'e' },
+      { ex: 'f', pair: true },
+    ]);
+    expect(b.map((x) => [x.n, x.kind, x.ids])).toEqual([
+      [1, 'straight', ['a']],
+      [2, 'circuit', ['b', 'c', 'd']],
+      [3, 'pair', ['e', 'f']],
+    ]);
+    expect(tagOf(b[1]!, 2)).toBe('2C');
+    // Para nie dokleja się do obwodu ani obwód do pary.
+    const mixed = blocksOf([{ ex: 'a', circuit: true }, { ex: 'b', pair: true }, { ex: 'c', circuit: true }]);
+    expect(mixed.map((x) => x.kind)).toEqual(['circuit', 'straight', 'circuit']);
   });
 
   it('żaden gotowy trening nie ma złej pary', () => {
