@@ -35,8 +35,11 @@ export function SessionView({
   onFinish,
   onCancel,
   onToast,
+  onGuided,
 }: {
   state: AppState;
+  /** Powrót do prowadzenia seria po serii. */
+  onGuided: () => void;
   /** Trening na dziś — z zamianami. */
   workout: Workout;
   /** Trening, jak go zapisano — bez zamian; z niego biorą się zamienniki. */
@@ -72,6 +75,9 @@ export function SessionView({
           </p>
         </div>
       )}
+      <button className="btn ghost sm" style={{ marginTop: 12 }} onClick={onGuided}>
+        Prowadź mnie seria po serii
+      </button>
       <div className="segline">Jak się dziś czujesz? Wpływa na dzisiejsze cele, nie na twoje poziomy.</div>
       <div className="seg">
         {(Object.keys(READY) as ReadyKey[]).map((k) => (

@@ -39,6 +39,10 @@ import { SnackEntry, SnacksPage, snackLabel } from './components/Snacks';
 import { CardioEntry, CardioPage, cardioLabel, kcalText } from './components/Cardio';
 import { addCardio, minutesByDay, removeCardio, validCardio } from './engine/cardio';
 import { mergeWatch, restoreWatch, watchStepsOn } from './engine/watch';
+import { addSet, answerEffort, extendRest, settleOpen, skipRest, startRest, undoSet } from './engine/session';
+import type { RestPlan } from './engine/rests';
+import { sessionSteps } from './engine/steps';
+import { GuidedSession } from './components/Guided';
 import type { WatchPayload } from './engine/watch';
 import { removeBodyWeight, setBodyWeight, validBody, validHeight } from './engine/body';
 import { cardioBurn, workoutBurn } from './engine/burn';
@@ -130,6 +134,7 @@ function restoreExtras(next: AppState, saved: Partial<AppState>): void {
     if (ok.length) next.session.swap = Object.fromEntries(ok) as Record<string, string>;
     else delete next.session.swap;
   }
+  if (next.cfg.view !== undefined && next.cfg.view !== 'guided' && next.cfg.view !== 'list') delete next.cfg.view;
   const r = next.cfg.reminders;
   if (r !== undefined && (typeof r !== 'object' || typeof r.morning !== 'boolean' || typeof r.evening !== 'boolean'))
     delete next.cfg.reminders;
@@ -404,7 +409,44 @@ export default function App() {
       s.skip[id] = true;
       delete s.res[id];
       delete s.done[id];
+      s.ask = (s.ask ?? []).filter((x) => x !== id);
     }
+    commit(next);
+  };
+
+  /* ---------- prowadzenie: seria po serii ---------- */
+
+  /** Jedna seria zapisana, a przerwa po niej rusza od razu — liczona od chwili stuknięcia. */
+  const logSet = (id: ExerciseId, row: SetResult, of: number, rest: RestPlan | null) => {
+    const next = clone(state);
+    addSet(next.session!, id, row, of);
+    startRest(next.session!, rest, Date.now());
+    commit(next);
+  };
+
+  const undoLastSet = (id: ExerciseId) => {
+    const next = clone(state);
+    undoSet(next.session!, id);
+    skipRest(next.session!);
+    commit(next);
+  };
+
+  const rateExercise = (id: ExerciseId, effort: EffortKey) => {
+    const next = clone(state);
+    answerEffort(next.session!, id, effort);
+    commit(next);
+  };
+
+  const restControl = (cmd: 'more' | 'skip') => {
+    const next = clone(state);
+    if (cmd === 'more') extendRest(next.session!, 30, Date.now());
+    else skipRest(next.session!);
+    commit(next);
+  };
+
+  const setSessionView = (view: 'guided' | 'list') => {
+    const next = clone(state);
+    next.cfg.view = view;
     commit(next);
   };
 
@@ -588,8 +630,11 @@ export default function App() {
   const finishSession = async () => {
     const w = current!;
     const session = state.session!;
-    const logged = w.items.filter((i) => session.done[i.ex]);
-    const missing = w.items.filter((i) => !session.done[i.ex] && !session.skip[i.ex]);
+    // Serie z prowadzenia bez zamknięcia ćwiczenia też są wynikiem — trening skończony w połowie
+    // ćwiczenia zapisuje to, co zrobione (`settleOpen`).
+    const hasRows = (id: ExerciseId) => !session.skip[id] && (session.res[id]?.rows.length ?? 0) > 0;
+    const logged = w.items.filter((i) => session.done[i.ex] || hasRows(i.ex));
+    const missing = w.items.filter((i) => !session.done[i.ex] && !session.skip[i.ex] && !hasRows(i.ex));
 
     if (!logged.length) {
       const ok = await ask(
@@ -649,6 +694,7 @@ export default function App() {
     const before = levelNow(state);
     const xpBefore = xpSummary(state).total;
     const next = clone(state);
+    settleOpen(next.session!);
     const changes: Change[] = [];
     // Tydzień lżejszy nie jest oceniany: mniej serii to plan, a nie porażka, a zapas powtórzeń
     // to cel, a nie sygnał za lekkiego ciężaru.
@@ -662,6 +708,7 @@ export default function App() {
     next.log.push({
       date: new Date().toISOString(),
       workout: w.name,
+      wid: w.id,
       ready: session.ready,
       items: logged.map((i) => ({
         id: i.ex,
@@ -1155,7 +1202,13 @@ export default function App() {
   // W trakcie sesji pasek aplikacji pokazuje postęp, a nie statystyki sprzed tygodni — to jedyna
   // liczba, której ktoś w połowie treningu naprawdę szuka.
   const sessionProgress = current
-    ? `${Object.keys(state.session!.done).length} z ${current.items.length} ćwiczeń zapisanych`
+    ? (state.cfg.view ?? 'guided') === 'guided'
+      ? (() => {
+          const steps = sessionSteps(state, current);
+          const done = steps.filter((st) => (state.session!.res[st.ex]?.rows.length ?? 0) >= st.set).length;
+          return `Seria ${Math.min(done + 1, steps.length)} z ${steps.length}`;
+        })()
+      : `${Object.keys(state.session!.done).length} z ${current.items.length} ćwiczeń zapisanych`
     : null;
 
   const subline = [
@@ -1301,8 +1354,28 @@ export default function App() {
 
       {view === 'train' &&
         (current ? (
+          (state.cfg.view ?? 'guided') === 'guided' ? (
+          <GuidedSession
+            state={state}
+            workout={current}
+            onReady={(r: ReadyKey) => {
+              const next = clone(state);
+              next.session!.ready = r;
+              commit(next);
+            }}
+            onLogSet={logSet}
+            onUndo={undoLastSet}
+            onEffort={rateExercise}
+            onRest={restControl}
+            onSkip={skipExercise}
+            onFinish={() => void finishSession()}
+            onList={() => setSessionView('list')}
+            onToast={setToastMsg}
+          />
+          ) : (
           <SessionView
             state={state}
+            onGuided={() => setSessionView('guided')}
             workout={current}
             planned={planned!}
             onSwap={swapExercise}
@@ -1318,6 +1391,7 @@ export default function App() {
             onCancel={() => void cancelSession()}
             onToast={setToastMsg}
           />
+          )
         ) : (
           <SessionHome
             state={state}

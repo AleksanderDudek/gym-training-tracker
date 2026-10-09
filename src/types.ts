@@ -120,6 +120,13 @@ export interface Session {
    * Sam trening zostaje bez zmian; wynik i progresja idą do ćwiczenia naprawdę zrobionego.
    */
   swap?: Record<ExerciseId, ExerciseId>;
+  /**
+   * Trwająca przerwa w prowadzeniu: koniec jako chwila (ms), długość i powód, gdy odbiega od
+   * zwykłej. Zapisana w sesji, więc liczy się dalej po odświeżeniu i przy zgaszonym ekranie.
+   */
+  rest?: { until: number; secs: number; kind?: 'set' | 'pair' | 'move' | 'round' | 'next'; why?: string };
+  /** Ćwiczenia po ostatniej serii, które czekają na ocenę zapasu. */
+  ask?: ExerciseId[];
 }
 
 export interface LogItem {
@@ -513,6 +520,8 @@ export interface AppState {
      * do urządzenia i w zapisie jej nie ma — import danych na innym telefonie przenosi tylko wybór.
      */
     reminders?: ReminderPrefs;
+    /** Widok sesji: prowadzenie seria po serii (domyślnie) albo lista ćwiczeń. */
+    view?: 'guided' | 'list';
   };
   prog: Record<ExerciseId, Progress>;
   workouts: Workout[];
