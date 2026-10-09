@@ -2,12 +2,12 @@ import { EX } from '../data/exercises';
 import { EX_MUSCLES, MUSCLE_NAME } from '../data/muscles';
 import { EQUIP_LABEL, heldOf, stationFor } from '../data/stations';
 import type { Equip } from '../data/stations';
-import { PAIR_REST, orderRank } from './design';
+import { PAIR_REST, circuitProblems, orderRank } from './design';
 import { profileOf } from './energy';
 import { P } from './plan';
 import type { AppState, ExerciseId, Workout, WorkoutGear } from '../types';
 
-export { PAIR_REST };
+export { PAIR_REST, circuitProblems };
 
 /**
  * Jak przeprowadzić trening: co przygotować, jak się rozgrzać i w jakiej kolejności robić

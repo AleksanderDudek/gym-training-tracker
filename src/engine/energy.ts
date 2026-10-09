@@ -338,6 +338,8 @@ export function setsEnergy(
   sets: readonly { reps: number }[],
   kg: number,
   withRest = true,
+  /** Przerwa po serii, gdy trening ma własną — inaczej typowa dla rodzaju pracy. */
+  restSecs?: number,
 ): SetsBurn {
   const e = EX[id];
   if (!e) return { secs: 0, work: 0, active: 0 };
@@ -351,7 +353,7 @@ export function setsEnergy(
     n++;
     work += (e.unit === 'secs' ? amount : amount * p.tempo) * sides;
   });
-  const rest = withRest ? n * p.rest : 0;
+  const rest = withRest ? n * (restSecs ?? p.rest) : 0;
   return {
     secs: work + rest,
     work,

@@ -100,7 +100,11 @@ function WorkoutCard({
   planned: boolean;
   onStart: (id: string) => void;
 }) {
-  const r = reviewWorkout(state, w.items.map((i) => i.ex), w.kind, w.items.map((i) => !!i.pair));
+  const r = reviewWorkout(state, w.items.map((i) => i.ex), w.kind, w.items.map((i) => !!i.pair), {
+    circuit: w.items.map((i) => !!i.circuit),
+    rest: w.rest,
+    roundRest: w.roundRest,
+  });
   const top = r.loads.slice(0, 3).map((l) => lower(MUSCLE_NAME[l.muscle]));
   return (
     <div className={`grp wcard${planned ? ' today' : ''}`}>
@@ -244,7 +248,11 @@ export function WorkoutPreview({
 
   const own = isOwn(w);
   const ids = w.items.map((i) => i.ex);
-  const r = reviewWorkout(state, ids, w.kind, w.items.map((i) => !!i.pair));
+  const r = reviewWorkout(state, ids, w.kind, w.items.map((i) => !!i.pair), {
+    circuit: w.items.map((i) => !!i.circuit),
+    rest: w.rest,
+    roundRest: w.roundRest,
+  });
   const plans = [...GOAL_PLANS, ...PROFILE_PLANS, ...(state.plans ?? [])].filter((p) => p.cycle.includes(w.id));
 
   return (

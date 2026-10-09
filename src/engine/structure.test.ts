@@ -3,7 +3,9 @@ import { ALL, BUILTIN, EX } from '../data/exercises';
 import { STATIONS, stationFor } from '../data/stations';
 import { blocksOf, tagOf } from './blocks';
 import { reviewWorkout } from './design';
-import { freshState } from './plan';
+import { P, freshState } from './plan';
+import { profileOf, setsEnergy } from './energy';
+import { CIRCUIT_MOVE } from './rests';
 import { PAIR_REST, isHeavy, pairProblems, platesPerSide, restText, setupFor, warmupFor } from './structure';
 import type { Workout } from '../types';
 
@@ -182,5 +184,39 @@ describe('zamiana ćwiczenia w sesji', () => {
     // Wspięcia na suwnicy w treningu z wspięciami siedząc dostałyby siebie nawzajem.
     const w: Workout = { id: 'x', name: 'x', gear: 'gym', items: [{ ex: 'calf_press' }, { ex: 'calf_seated' }] };
     expect(altsFor('calf_press', w)).toEqual(['calf1']);
+  });
+});
+
+describe('czas treningu z przerwą treningu i z obwodem', () => {
+  const s = freshState();
+  ['pushup', 'goblet', 'crunch_cable', 'squat_back'].forEach((id) => {
+    const p = P(s, id);
+    p.phase = 'work';
+    p.sets = 3;
+    p.target = 10;
+  });
+
+  it('przerwa z treningu zmienia czas o różnicę na każdej serii', () => {
+    const base = reviewWorkout(s, ['goblet']).secs;
+    const longer = reviewWorkout(s, ['goblet'], undefined, [], { rest: profileOf('goblet').rest + 60 }).secs;
+    expect(longer - base).toBe(3 * 60);
+  });
+
+  it('obwód: praca stacji, przejścia między nimi i pełna przerwa tylko po rundzie', () => {
+    const ids = ['pushup', 'goblet', 'crunch_cable'];
+    const r = reviewWorkout(s, ids, undefined, [], { circuit: [true, true, true], roundRest: 90 });
+    const work = ids.reduce((t, id) => t + setsEnergy(id, [{ reps: 10 }, { reps: 10 }, { reps: 10 }], 70).work, 0);
+    // 9 serii stacji w 3 rundach: 6 przejść i 2 przerwy po rundzie (po ostatniej sesja się kończy).
+    expect(r.secs).toBe(work + 6 * CIRCUIT_MOVE + 2 * 90);
+    // Obwód krótszy niż te same ćwiczenia seriami pod rząd z pełnymi przerwami.
+    expect(r.secs).toBeLessThan(reviewWorkout(s, ids).secs);
+  });
+
+  it('podpowiedź, gdy dwie stacje z rzędu biorą tę samą partię; kolejność w obwodzie jest wolna', () => {
+    const repeat = reviewWorkout(s, ['goblet', 'squat_back', 'pushup'], undefined, [], { circuit: [true, true, true] });
+    expect(repeat.notes.map((n) => n.code)).toContain('circuit-repeat');
+    const mixed = reviewWorkout(s, ['goblet', 'pushup', 'squat_back'], undefined, [], { circuit: [true, true, true] });
+    expect(mixed.notes.map((n) => n.code)).not.toContain('circuit-repeat');
+    expect(mixed.orderOk).toBe(true);
   });
 });
