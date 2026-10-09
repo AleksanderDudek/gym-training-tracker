@@ -127,6 +127,8 @@ export interface Session {
   rest?: { until: number; secs: number; kind?: 'set' | 'pair' | 'move' | 'round' | 'next'; why?: string };
   /** Ćwiczenia po ostatniej serii, które czekają na ocenę zapasu. */
   ask?: ExerciseId[];
+  /** Ćwiczenie ostatnio zapisanej serii — to cofa „Cofnij serię”. */
+  last?: ExerciseId;
 }
 
 export interface LogItem {
@@ -140,6 +142,8 @@ export interface LogEntry {
   workout: string;
   /** Identyfikator treningu. Wpisy sprzed jego zapisywania mają tylko nazwę. */
   wid?: string;
+  /** Sesja z tygodnia lżejszego — mniej serii z założenia, więc nie mówi nic o kondycji. */
+  deload?: boolean;
   ready: ReadyKey;
   items: LogItem[];
 }

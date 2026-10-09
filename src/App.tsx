@@ -39,7 +39,7 @@ import { SnackEntry, SnacksPage, snackLabel } from './components/Snacks';
 import { CardioEntry, CardioPage, cardioLabel, kcalText } from './components/Cardio';
 import { addCardio, minutesByDay, removeCardio, validCardio } from './engine/cardio';
 import { mergeWatch, restoreWatch, watchStepsOn } from './engine/watch';
-import { addSet, answerEffort, extendRest, settleOpen, skipRest, startRest, undoSet } from './engine/session';
+import { addSet, answerEffort, extendRest, forgetAsk, settleOpen, skipRest, startRest, undoSet } from './engine/session';
 import type { RestPlan } from './engine/rests';
 import { sessionSteps } from './engine/steps';
 import { GuidedSession } from './components/Guided';
@@ -378,6 +378,7 @@ export default function App() {
     delete s.res[live];
     delete s.done[live];
     delete s.skip[live];
+    forgetAsk(s, live, to);
     const map = { ...(s.swap ?? {}) };
     if (to === orig) delete map[orig];
     else map[orig] = to;
@@ -392,6 +393,7 @@ export default function App() {
     next.session!.res[id] = { rows, effort };
     next.session!.done[id] = true;
     delete next.session!.skip[id];
+    forgetAsk(next.session!, id);
     commit(next);
   };
 
@@ -399,6 +401,7 @@ export default function App() {
     const next = clone(state);
     delete next.session!.res[id];
     delete next.session!.done[id];
+    forgetAsk(next.session!, id);
     commit(next);
   };
 
@@ -710,6 +713,7 @@ export default function App() {
       date: new Date().toISOString(),
       workout: w.name,
       wid: w.id,
+      ...(session.deload ? { deload: true } : {}),
       ready: session.ready,
       items: logged.map((i) => ({
         id: i.ex,

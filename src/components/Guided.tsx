@@ -6,7 +6,7 @@ import { restBetween, restLabel } from '../engine/rests';
 import { cursorOf, loggedSets, sessionSteps } from '../engine/steps';
 import type { Step } from '../engine/steps';
 import type { RestPlan } from '../engine/rests';
-import { keepAwake, signal, unlockSound } from '../coach';
+import { keepAwake, signalOnce, unlockSound } from '../coach';
 import { exercisePath } from '../routing';
 import { PrepContent } from './Structure';
 import { Segmented } from './ui';
@@ -63,14 +63,22 @@ function targetText(state: AppState, step: Step): string {
   return `${amount}${m.side ? ' na stronę' : ''}${r.w !== null ? ` · ${r.w} kg` : ''}`;
 }
 
-/** Odświeżanie co ćwierć sekundy, dopóki trwa przerwa — licznik liczy się z chwili końca. */
-function useNow(active: boolean): number {
+/**
+ * Odświeżanie co ćwierć sekundy do chwili `until` — licznik liczy się z chwili końca przerwy.
+ * Po końcu odświeżanie staje: telefon z włączonym ekranem nie ma rysować w kółko tego samego.
+ */
+function useNow(until: number | null): number {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    if (!active) return;
-    const t = window.setInterval(() => setNow(Date.now()), 250);
+    if (until === null) return;
+    setNow(Date.now());
+    const t = window.setInterval(() => {
+      const n = Date.now();
+      setNow(n);
+      if (n >= until) window.clearInterval(t);
+    }, 250);
     return () => window.clearInterval(t);
-  }, [active]);
+  }, [until]);
   return now;
 }
 
@@ -82,22 +90,24 @@ export function GuidedSession(props: Props) {
   const anyLogged = Object.values(session.res).some((r) => r.rows.length);
   const [begun, setBegun] = useState(anyLogged);
   const rest = session.rest;
-  const now = useNow(!!rest);
+  const now = useNow(rest?.until ?? null);
   const resting = !!rest && now < rest.until;
 
   // Ekran nie gaśnie, dopóki trwa prowadzenie.
   useEffect(() => keepAwake(), []);
 
-  // Sygnał końca przerwy — raz na przerwę, także gdy licznik doszedł do zera w tle.
-  const signalled = useRef<number | null>(null);
+  // Sygnał końca przerwy — raz na przerwę, także gdy licznik doszedł do zera w tle. Tylko
+  // w tym widoku, który przerwę widział w toku: powrót na ekran po jej końcu już nie piszczy.
+  const sawRunning = useRef(false);
+  if (resting) sawRunning.current = true;
   useEffect(() => {
-    if (rest && now >= rest.until && signalled.current !== rest.until) {
-      signalled.current = rest.until;
-      signal();
-    }
+    if (rest && now >= rest.until && sawRunning.current) signalOnce(rest.until);
   }, [rest, now]);
 
-  const pendingEffort = (session.ask ?? []).filter((id) => session.res[id]);
+  // Pytanie o zapas tylko dla ćwiczenia, które naprawdę ma komplet serii i nie jest zamknięte.
+  const pendingEffort = (session.ask ?? []).filter(
+    (id) => session.res[id] && !session.done[id] && loggedSets(session, id) >= plan(state, id).length,
+  );
 
   if (!begun && !anyLogged)
     return (
@@ -157,13 +167,16 @@ export function GuidedSession(props: Props) {
 
       <div className="guide-foot">
         {(() => {
-          // Cofnięcie dotyczy ostatniej zapisanej serii — tej tuż przed obecnym krokiem.
-          const last = [...steps.slice(0, cursor < 0 ? steps.length : cursor)]
+          // Cofnięcie dotyczy naprawdę ostatniej zapisanej serii; bez zapisu — tej tuż przed
+          // obecnym krokiem (sesje sprzed zapamiętywania ostatniej serii).
+          const byOrder = [...steps.slice(0, cursor < 0 ? steps.length : cursor)]
             .reverse()
-            .find((s) => !session.skip[s.ex] && loggedSets(session, s.ex) >= s.set);
+            .find((s) => !session.skip[s.ex] && loggedSets(session, s.ex) >= s.set)?.ex;
+          const last =
+            session.last && !session.skip[session.last] && loggedSets(session, session.last) > 0 ? session.last : byOrder;
           return last ? (
-            <button className="btn ghost sm" onClick={() => props.onUndo(last.ex)}>
-              Cofnij serię: {ex(last.ex).name}
+            <button className="btn ghost sm" onClick={() => props.onUndo(last)}>
+              Cofnij serię: {ex(last).name}
             </button>
           ) : null;
         })()}
@@ -233,11 +246,16 @@ function SetPanel({
   onSkip: () => void;
 }) {
   const m = ex(step.ex);
-  const r = plan(state, step.ex)[step.set - 1];
+  const rows = plan(state, step.ex);
+  const r = rows[step.set - 1];
   const prev = state.session!.res[step.ex]?.rows[step.set - 2];
+  const prevPlan = rows[step.set - 2];
   const [value, setValue] = useState(r && !r.amrap ? String(r.reps) : '');
-  // Ciężar z poprzedniej serii, jeśli ktoś go zmienił — zwykle zostaje ten sam.
-  const [w, setW] = useState<number | null>(prev?.w ?? r?.w ?? null);
+  // Ciężar z poprzedniej serii tylko wtedy, gdy ktoś go tam zmienił, a plan dla obu serii jest
+  // ten sam. W przejściu na cięższy kettlebell ciężkie serie idą pierwsze — lżejsza seria po nich
+  // ma dostać swój ciężar, a nie ten sprzed chwili.
+  const carried = prev && prevPlan && prev.w !== prevPlan.w && prevPlan.w === r?.w ? prev.w : null;
+  const [w, setW] = useState<number | null>(carried ?? r?.w ?? null);
   const timed = m.unit === 'secs';
   const n = parseInt(value || '0', 10) || 0;
 

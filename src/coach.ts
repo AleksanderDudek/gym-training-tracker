@@ -26,6 +26,18 @@ export function unlockSound(): void {
   }
 }
 
+let signalled: number | null = null;
+
+/**
+ * Koniec przerwy — raz na przerwę, rozpoznaną po chwili końca. Zapamiętane poza komponentem:
+ * widok przerwy znika i wraca (lista, technika, inna zakładka), a sygnał ma paść tylko raz.
+ */
+export function signalOnce(until: number): void {
+  if (signalled === until) return;
+  signalled = until;
+  signal();
+}
+
 /** Koniec przerwy: dwa piknięcia i wibracja. */
 export function signal(): void {
   try {
@@ -55,8 +67,11 @@ export function keepAwake(): () => void {
   let alive = true;
   const take = async () => {
     try {
-      if (alive && document.visibilityState === 'visible' && 'wakeLock' in navigator)
-        lock = await navigator.wakeLock.request('screen');
+      if (!alive || document.visibilityState !== 'visible' || !('wakeLock' in navigator)) return;
+      const l = await navigator.wakeLock.request('screen');
+      // Widok zniknął, zanim przeglądarka dała blokadę — oddajemy ją od razu.
+      if (!alive) void l.release().catch(() => undefined);
+      else lock = l;
     } catch {
       /* Oszczędzanie baterii albo brak zgody — ekran zgaśnie jak zwykle. */
     }

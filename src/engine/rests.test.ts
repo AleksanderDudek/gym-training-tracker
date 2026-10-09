@@ -149,6 +149,19 @@ describe('przerwa po rundzie obwodu w kolejnych sesjach', () => {
     expect(roundRestOf(s, w).secs).toBe(180);
   });
 
+  it('obwód przerwany, bez stacji albo z tygodnia lżejszego nie skraca przerwy; słabnięcie i tak ją wydłuża', () => {
+    const s = freshState();
+    const partial = { ...entry([10]), items: [entry([10]).items[0]!, { ...entry([10]).items[1]!, sets: [{ reps: 10, w: 16 }] }] };
+    s.log = [partial];
+    expect(roundRestOf(s, w).secs).toBe(120);
+    s.log = [{ ...entry([10, 10, 10]), items: [entry([10, 10, 10]).items[0]!] }];
+    expect(roundRestOf(s, w).secs).toBe(120);
+    s.log = [{ ...entry([10, 10, 10]), deload: true }];
+    expect(roundRestOf(s, w).secs).toBe(120);
+    s.log = [{ ...entry([10, 10, 6]), items: [entry([10, 10, 6]).items[0]!] }];
+    expect(roundRestOf(s, w).secs).toBe(135);
+  });
+
   it('starsze wpisy bez identyfikatora treningu rozpoznaje po nazwie; obce treningi się nie liczą', () => {
     const s = freshState();
     s.log = [entry([10, 10, 10], 'solid', undefined), { ...entry([10, 10, 10]), wid: 'inny', workout: 'Inny' }];

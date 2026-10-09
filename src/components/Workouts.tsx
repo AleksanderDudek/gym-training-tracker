@@ -506,7 +506,12 @@ export function WorkoutBuilder({
         <Segmented
           label="Jak robić ćwiczenia"
           value={circ.size ? 'circuit' : 'sets'}
-          onChange={(v) => setCirc(v === 'circuit' ? new Set(items) : new Set())}
+          // Ponowne stuknięcie w zaznaczony wariant niczego nie zmienia — inaczej kopia obwodu
+          // z ćwiczeniem po nim (podciąganie po obwodzie trenera) wciągnęłaby je do stacji.
+          onChange={(v) => {
+            if ((v === 'circuit') === circ.size > 0) return;
+            setCirc(v === 'circuit' ? new Set(items) : new Set());
+          }}
           options={[
             { key: 'sets', label: 'Serie pod rząd' },
             { key: 'circuit', label: 'Obwód — rundy' },
@@ -547,7 +552,7 @@ export function WorkoutBuilder({
                 onClick={() => togglePair(x)}
                 // Do pary dochodzi się tylko z ćwiczeniem, które samo nie jest jeszcze w parze;
                 // w obwodzie par nie ma — stacje i tak idą na zmianę.
-                disabled={!i || pairs[i - 1] || circ.has(x)}
+                disabled={!i || pairs[i - 1] || circ.has(x) || circ.has(items[i - 1]!)}
                 aria-pressed={pairs[i] ?? false}
                 aria-label={`Na zmianę z poprzednim: ${ex(x).name}`}
                 title="Na zmianę z poprzednim"
@@ -567,7 +572,12 @@ export function WorkoutBuilder({
               </button>
               <button
                 type="button"
-                onClick={() => setItems(items.filter((_, k) => k !== i))}
+                onClick={() => {
+                  setItems(items.filter((_, k) => k !== i));
+                  // Usunięte ćwiczenie nie zostawia flag — dodane ponownie zaczyna od zera.
+                  setCirc(new Set([...circ].filter((c) => c !== x)));
+                  setPaired(new Set([...paired].filter((c) => c !== x)));
+                }}
                 aria-label={`Usuń: ${ex(x).name}`}
               >
                 ×

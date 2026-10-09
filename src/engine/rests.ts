@@ -79,12 +79,20 @@ export function roundRestOf(state: AppState, w: Workout): { secs: number; why: s
   const stations = new Set(w.items.filter((i) => i.circuit).map((i) => i.ex));
   let secs = base;
   state.log
-    .filter((e) => (e.wid ? e.wid === w.id : e.workout === w.name))
+    .filter((e) => !e.deload && (e.wid ? e.wid === w.id : e.workout === w.name))
     .forEach((e) => {
       const done = e.items.filter((it) => stations.has(it.id));
       if (!done.length) return;
-      const clean = done.every((it) => it.effort !== 'max' && !faded(it.sets.map((r) => r.reps)));
-      secs = clean ? Math.max(floor, secs - ROUND_STEP) : Math.min(base + ROUND_CAP, secs + ROUND_STEP);
+      const reps = done.map((it) => it.sets.map((r) => r.reps).filter((r) => r > 0));
+      // Słabnięcie albo „Na maksa” wydłuża przerwę nawet w niepełnym obwodzie — to sygnał zmęczenia.
+      if (done.some((it, i) => it.effort === 'max' || faded(reps[i]!))) {
+        secs = Math.min(base + ROUND_CAP, secs + ROUND_STEP);
+        return;
+      }
+      // Skraca tylko komplet: każda stacja i co najmniej dwie rundy. Obwód przerwany po pierwszej
+      // rundzie albo bez stacji to nie „ta sama praca w krótszym czasie”.
+      const complete = done.length === stations.size && reps.every((r) => r.length >= 2);
+      if (complete) secs = Math.max(floor, secs - ROUND_STEP);
     });
   const why =
     secs < base

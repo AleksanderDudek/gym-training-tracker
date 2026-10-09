@@ -14,6 +14,7 @@ import type { EffortKey, ExerciseId, Session, SetResult } from '../types';
 export function addSet(s: Session, id: ExerciseId, row: SetResult, of: number): void {
   const r = (s.res[id] ??= { rows: [], effort: 'solid' });
   r.rows.push(row);
+  s.last = id;
   if (r.rows.length >= of) s.ask = [...(s.ask ?? []).filter((x) => x !== id), id];
 }
 
@@ -25,6 +26,14 @@ export function undoSet(s: Session, id: ExerciseId): void {
   if (!r.rows.length) delete s.res[id];
   delete s.done[id];
   s.ask = (s.ask ?? []).filter((x) => x !== id);
+}
+
+/**
+ * Ćwiczenie wychodzi z kolejki ocen — zapisane albo wyczyszczone w widoku listy, zamienione,
+ * pominięte. Inaczej pytanie o zapas wróciłoby po pierwszej serii od nowa.
+ */
+export function forgetAsk(s: Session, ...ids: ExerciseId[]): void {
+  if (s.ask) s.ask = s.ask.filter((x) => !ids.includes(x));
 }
 
 /** Odpowiedź „ile zostało w zapasie” zamyka ćwiczenie. */

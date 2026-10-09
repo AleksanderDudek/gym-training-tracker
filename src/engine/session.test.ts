@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addSet, answerEffort, extendRest, settleOpen, skipRest, startRest, undoSet } from './session';
+import { addSet, answerEffort, extendRest, forgetAsk, settleOpen, skipRest, startRest, undoSet } from './session';
 import type { Session } from '../types';
 
 /**
@@ -24,6 +24,16 @@ describe('serie po jednej', () => {
     expect(s.done.goblet).toBe(true);
     expect(s.res.goblet!.effort).toBe('max');
     expect(s.ask).toEqual([]);
+  });
+
+  it('pamięta ćwiczenie ostatniej serii, a zapisane gdzie indziej wychodzi z kolejki ocen', () => {
+    const s = fresh();
+    addSet(s, 'goblet', row(10), 1);
+    addSet(s, 'row', row(10), 1);
+    expect(s.last).toBe('row');
+    expect(s.ask).toEqual(['goblet', 'row']);
+    forgetAsk(s, 'goblet');
+    expect(s.ask).toEqual(['row']);
   });
 
   it('cofnięcie zdejmuje ostatnią serię i otwiera ćwiczenie z powrotem', () => {
