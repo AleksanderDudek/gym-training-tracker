@@ -2,7 +2,7 @@
 
 Aplikacja do prowadzenia treningu siłowego z automatyczną progresją. Wybierasz trening, wpisujesz
 wyniki, a silnik sam decyduje, kiedy podnieść powtórzenia i kiedy wejść na cięższe obciążenie.
-Atlas obejmuje 110 ćwiczeń: kettlebell, sztanga, hantle, maszyny i kalistenika — 26 z nich zrobisz bez żadnego sprzętu.
+Atlas obejmuje 114 ćwiczeń: kettlebell, sztanga, hantle, maszyny i kalistenika — 30 z nich zrobisz bez żadnego sprzętu.
 
 React 18 + TypeScript + Vite. Bez backendu — dane leżą w przeglądarce, z eksportem i importem do pliku.
 
@@ -19,7 +19,7 @@ Pozostałe polecenia:
 npm run build      # produkcyjny build do dist/, z listą plików dla service workera
 npm run preview    # podgląd builda — tu działa też praca offline
 npm run typecheck  # tsc --noEmit
-npm test           # 561 testów silnika, doradcy, kalorii, biblioteki, odznak, ruchu, obsady, scen, struktury, profili, tras, zegarka i serwera (vitest)
+npm test           # 590 testów silnika, doradcy, kalorii, biblioteki, odznak, ruchu, obsady, scen, struktury, przerw, prowadzenia sesji, wagi, profili, tras, zegarka i serwera (vitest)
 ```
 
 Build jest w pełni statyczny (`base: './'`), więc `dist/` można wrzucić na dowolny hosting plików
@@ -263,7 +263,7 @@ i drugi, obok wyniku sesji, po każdym zamkniętym treningu.
 | Zakładka | Adres | Co robi |
 | --- | --- | --- |
 | Dziś | `#/sesja` | Co masz dziś do zrobienia według planu, pasek postaci, przekąska ruchowa i rada dnia; w trakcie — bieżąca sesja. |
-| Treningi | `#/treningi` | 36 gotowych treningów (całe ciało, push/pull/nogi, góra/dół, partie), 32 z profilem i własne, z filtrem sprzętu (bez sprzętu, kettlebell, siłownia) i rodzaju; druga sekcja to atlas 110 ćwiczeń (`#/cwiczenia`). |
+| Treningi | `#/treningi` | 38 gotowych treningów (całe ciało, push/pull/nogi, góra/dół, partie), 32 z profilem i własne, z filtrem sprzętu (bez sprzętu, kettlebell, siłownia) i rodzaju; druga sekcja to atlas 114 ćwiczeń (`#/cwiczenia`). |
 | Plan | `#/plan` | Uruchomiony plan: kalendarz terminów, punkty, stopień, dziennik. Bez planu — katalog: plany z celem, własne i klasyczny. |
 | Osiągnięcia | `#/osiagniecia` | Dorobek w liczbach, progi najbliższe zdobycia, 69 rodzin odznak i odznaki każdego zrobionego ćwiczenia. |
 | Profil | `#/profil` | Postać i doświadczenie, twoje liczby, waga i wzrost, obciążenie, przekąski, kroki i cardio, lista zrobionych ćwiczeń i historia treningów z kaloriami. |
@@ -419,7 +419,7 @@ analizę dnia dla wybranego ćwiczenia: ile łącznie, z ilu przekąsek i ile z 
 brakuje do kolejnego progu dnia.
 
 **Ćwiczenie wybiera się pisaniem, nie przewijaniem.** Pole działa jak wyszukiwarka: po wejściu
-pokazuje wszystkie 110 ćwiczeń według polskiego alfabetu (Ł po L, Ś po S), ustawione na tym
+pokazuje wszystkie 114 ćwiczeń według polskiego alfabetu (Ł po L, Ś po S), ustawione na tym
 wybranym, a każda litera zawęża listę. Szuka po początkach słów — „pomp” daje wszystkie pompki,
 „hantle” ćwiczenia z hantlami, „zawias” całą partię — a gdy tak nic nie pasuje, także w środku
 słowa. Ogonki są opcjonalne: „wioslowanie” znajduje „Wiosłowanie”, bo na telefonie tak się
@@ -628,7 +628,7 @@ Karta zegarka pojawia się, gdy build zna adres serwera i adres aplikacji w Conn
 
 ## Atlas i sprzęt
 
-Biblioteka ma **110 ćwiczeń** w siedmiu partiach ruchu: zawias biodrowy, przysiad, ciągnięcie,
+Biblioteka ma **114 ćwiczeń** w siedmiu partiach ruchu: zawias biodrowy, przysiad, ciągnięcie,
 pchanie, całe ciało, core i carry, nogi dodatkowo. Obok pierwotnych dziewiętnastu ćwiczeń
 kettlebellowych stoją teraz sztanga, hantle, maszyny i kalistenika. Atlas filtruje się po sprzęcie.
 
@@ -674,6 +674,63 @@ dostaje zdanie zamiast grafiki.
 **Czego to nie zastępuje.** Sylwetka pokazuje tor ruchu i tempo, nie ustawienie łopatek
 ani oddech. Filmy zostają na miejscu dla tych, którzy chcą zobaczyć żywego człowieka.
 
+## Prowadzenie sesji i przerwy
+
+**Na ekranie jest tylko to, co trzeba zrobić teraz.** Sesja domyślnie idzie seria po serii:
+nazwa ćwiczenia, „Seria 2 z 3” (w obwodzie „Runda 2 z 3 · stacja 3 z 6”), cel — „10 powt. ·
+16 kg” — i pole z celem już wpisanym, więc zwykle wystarczy jedno stuknięcie w „Zrobione”.
+Wtedy rusza przerwa: duży licznik, „+30 s”, „Pomiń przerwę” i zapowiedź następnej serii.
+Po ostatniej serii ćwiczenia, w trakcie przerwy, pada pytanie o zapas — na nim stoi
+progresja. Lista ćwiczeń zostaje pod ręką i czyta ten sam zapis, więc przełączanie niczego
+nie gubi, a trening skończony w połowie ćwiczenia zapisuje serie, które naprawdę zrobiono.
+
+**Przerwa liczy się dalej po zgaszeniu ekranu i odświeżeniu strony**, bo w sesji zapisany jest
+jej koniec jako chwila, a nie licznik. Ekran w trakcie sesji nie gaśnie (Screen Wake Lock),
+a koniec przerwy telefon sygnalizuje dwoma piknięciami i wibracją (iPhone ze stron nie wibruje).
+
+**Ile trwa przerwa.** Punkt wyjścia to rodzaj pracy, za ACSM: ciężkie wielostawowe 2 minuty,
+izolacje i ciężar ciała krócej, balistyka najkrócej; para na zmianę ma 75 s między
+partnerami. Trening może podać własną przerwę — „3 serie, 2 minuty przerwy” od trenera
+dostaje dokładnie dwie minuty.
+
+**Czy przerwy zmieniają się z treningu na trening?** W treningu siłowym — nigdy w dół.
+Postęp idzie z powtórzeń i ciężaru, a dłuższa przerwa pozwala zrobić więcej pracy
+w kolejnych seriach (Schoenfeld i in. 2016: 3 minuty dały więcej siły i masy niż minuta;
+przegląd Grgica i in. 2018: w ćwiczeniach wielostawowych ponad 2 minuty). Przerwa rośnie
+za to o 30 s, najwyżej o minutę, gdy w ostatnich sesjach ostatnia seria wyraźnie odstawała
+od pierwszej (o 20% i więcej) — i wraca do punktu wyjścia, gdy serie pójdą równo. Ekran
+przerwy mówi wtedy, dlaczego jest dłuższa. **W obwodzie odwrotnie:** celem jest kondycja,
+więc ta sama praca w krótszym czasie to postęp. Każdy obwód zrobiony równo skraca przerwę
+po rundzie o 15 s (do minuty), a rundy, które wyraźnie słabły, albo „Na maksa” wydłużają ją
+z powrotem. Wszystko wynika z historii — nic nie jest zapamiętywane osobno.
+
+**Obwód** to nowy rodzaj bloku obok serii pod rząd i pary: stacje po kolei, ok. 20 s na
+przejście, pełna przerwa po rundzie. Rund jest tyle, ile serii ma najdłuższa stacja, a stacja
+z mniejszą liczbą serii odpada z ostatnich rund — liczbę serii dalej prowadzi silnik progresji.
+Doradca pilnuje, żeby sąsiednie stacje nie brały tej samej partii, a czas i kalorie treningu
+liczą przejścia i przerwy po rundach. We własnym treningu: „Obwód — rundy” i przerwa po rundzie,
+a dla serii pod rząd — przerwa z rodzaju ćwiczenia albo 60–180 s.
+
+**Treningi od trenera.** Dwa plany trenera personalnego są w bibliotece: „3 serie, 2 minuty
+przerwy” (swing, wyskoki z przysiadu, wyciskanie, goblet, podciąganie, pompki, core) i „Obwód
+× 3” (wyskoki, pompki, unoszenie nóg, przysiad ze sztangą, unoszenie hantli bokiem, scyzoryki,
+a po obwodzie podciąganie). Kolejność poprawiona tylko tam, gdzie łamała zasady — wyskoki
+i swing na świeżo, stacje obwodu na zmianę partii — a brzuszki zostały poza obwodem, bo trzecia
+stacja na brzuch dawała 12 serii na jedną partię. Do nich doszły cztery ćwiczenia z ciężarem
+ciała: wyskoki z przysiadu, brzuszki, unoszenie nóg w leżeniu i scyzoryki. Ustalone przez
+trenera 10/10/10 to punkt wyjścia — dalej powtórzenia i ciężar prowadzi progresja.
+
+## Ważenie
+
+Ekran Dziś pyta o wagę raz dziennie, dopóki dzisiejszej nie ma w zapisie albo ktoś nie powie
+„Nie dziś”, i mówi, jak ważyć: rano, po toalecie, przed jedzeniem i piciem, na tej samej wadze.
+Po zapisie pokazuje dzisiejszą liczbę, **średnią z 7 dni** i zmianę średniej tydzień do tygodnia
+— bo waga z dnia na dzień skacze o kilogram czy dwa z wodą i solą, a o kierunku mówi dopiero
+średnia. Profil ma wykres ostatnich 30 ważeń. Liczby stoją bez oceny: bez „brawo” i bez
+„uwaga” — co z nich wynika, to rozmowa z trenerem albo lekarzem. Na życzenie przychodzi też
+przypomnienie o 7:00 (domyślnie wyłączone, żeby nikt nie dostał nagle trzeciego powiadomienia
+dziennie); pół godziny przed porannym treningiem, a w dniu, w którym waga już jest — wcale.
+
 ## Ćwiczenia na czas
 
 Ćwiczenie mierzone w sekundach mówi to wprost — na karcie, w celu (`3 × 30 s`) i przy polu wyniku.
@@ -696,8 +753,8 @@ src/
   types.ts                  wszystkie typy domenowe
   routing.ts                trasy w hashu adresu, pięć zakładek, sekcja atlasu i podstrony
   routing.test.ts           22 testy tras, zakładek, ekranów, treningów, planów, przekąsek i starych adresów
-  data/exercises.ts         biblioteka 110 ćwiczeń, drabiny sprzętu, lista „bez sprzętu”, cztery treningi, treningi profili
-  data/exjokes.ts           dopiski do 110 ćwiczeń i do gotowych treningów
+  data/exercises.ts         biblioteka 114 ćwiczeń, drabiny sprzętu, lista „bez sprzętu”, cztery treningi, treningi profili
+  data/exjokes.ts           dopiski do 114 ćwiczeń i do gotowych treningów
   data/moves.ts             osiemnaście wzorców ruchu jako klatki kluczowe
   data/anim.ts              przypisanie ćwiczeń do wzorców
   data/exercises.test.ts    14 testów spójności biblioteki i drabin
@@ -705,14 +762,20 @@ src/
   data/plans.ts             54 plany klasyczne, 16 planów z celem i 16 ogólnorozwojowych z profilem
   data/workouts.ts          biblioteka 32 treningów: podziały, całe ciało i partie na trzy zestawy sprzętu
   data/muscles.ts           16 grup mięśni, główne i pomocnicze każdego ćwiczenia, izolacje
-  data/scenes.ts            sceny ilustracji: 36 treningów, 16 planów z celem, 3 poziomy i własne
+  data/scenes.ts            sceny ilustracji: 38 treningów, 16 planów z celem, 3 poziomy i własne
   data/stations.ts          stanowisko każdego ćwiczenia: sprzęt, maszyna, zamienniki; dom i siłownia
   data/profiles.ts          sześć profili: priorytet, dodatki, przekąski, uzasadnienie ze źródłami
   data/profiles.test.ts     5 testów profili: priorytet na początku, dodatki, limity serii, sceny
   engine/
     math.ts                 wzór Epleya, tonaż, wskaźnik obciążenia w czasie
     reminders.ts            lista przypomnień na 21 dni: trening z planu o 7:30, ruch o 19:30
-    blocks.ts               bloki treningu: serie pod rząd albo para na zmianę
+    blocks.ts               bloki treningu: serie pod rząd, para na zmianę albo obwód
+    steps.ts                kolejka serii sesji: pod rząd, para na zmianę, obwód runda po rundzie
+    steps.test.ts           4 testy kolejności serii, rund obwodu i kursora po zapisie
+    rests.ts                przerwy: z rodzaju ćwiczenia, z treningu, dłuższe po słabnących seriach, obwód coraz gęstszy
+    rests.test.ts           10 testów przerw, słabnięcia serii i przerwy po rundzie obwodu
+    session.ts              zapis seria po serii, ocena zapasu, przerwa jako chwila końca, koniec w połowie
+    session.test.ts         5 testów zapisu serii, cofania, zamknięcia i przerwy
     structure.ts            zasady par, przerwy, przygotowanie stanowiska, rozgrzewka
     structure.test.ts       16 testów par w całej bibliotece, stanowisk, talerzy, rozgrzewki i zamian
     planedit.ts             zmiany planu od dziś: dni z datą, przedłużenie, równe przerwy
@@ -736,7 +799,8 @@ src/
     design.test.ts          24 testy mięśni, doradcy, biblioteki, bez sprzętu, planów z celem i tygodnia lżejszego
     energy.ts               kalorie: równania ACSM, tabela roweru i tańca z Compendium, profile MET ćwiczeń
     energy.test.ts          26 testów równań, płynności marsz–bieg, kroków, roweru, tańca i kalorii z serii
-    body.ts                 dziennik wagi, waga obowiązująca w danym dniu, wzrost
+    body.ts                 dziennik wagi, waga obowiązująca w danym dniu, średnia z 7 dni, wzrost
+    body.test.ts            3 testy średniej z tygodnia i zmiany tydzień do tygodnia
     cardio.ts               kroki, bieżnia, rower i taniec: zapis, zakresy, minuty ruchu WHO, statystyki
     burn.ts                 kalorie z zapisów: wpis, trening, ćwiczenie, przekąska, cały dzień
     cardio.test.ts          32 testy wpisów, tańca, wagi w czasie, kalorii i minut ruchu według WHO
@@ -772,6 +836,8 @@ src/
     Design.tsx              paski mięśni, uwagi doradcy, przełącznik sekcji i filtry
     PlanView.tsx            konfigurator klasyczny, kalendarz, punkty i dziennik
     SessionHome.tsx         ekran „co robię dzisiaj”
+    Guided.tsx              prowadzenie sesji: jedna seria na ekranie, odliczana przerwa, ocena zapasu
+    Weigh.tsx               karta ważenia na ekranie Dziś: waga z rana, średnia z 7 dni
     Profile.tsx             profil: liczby, lista zrobionych ćwiczeń, historia i podstrony
     Timer.tsx               stoper i odliczanie dla ćwiczeń na czas
     BadgeArt.tsx            medale odznak: tworzywa, piktogramy, pasma progów
@@ -802,6 +868,7 @@ src/
     Feedback.tsx            okno „Napisz do autora”: e-mail, wiadomość, zrzut ekranu
   api.ts                    adres serwera aplikacji z buildu (`VITE_API_URL`)
   push.ts                   przypomnienia w przeglądarce: zgoda, subskrypcja Web Push, wysyłka listy
+  coach.ts                  ekran, który nie gaśnie w trakcie sesji (Wake Lock), i sygnał końca przerwy
   trail.ts                  ślad wizyty: ekrany, stuknięcia, błędy, czas — tylko w pamięci
   trail.test.ts             4 testy kolejności, maskowania liczb, limitu i czasu aktywnego
   feedback.ts               wiadomość do autora: kontekst, zrzut ekranu, obraz z galerii, wysyłka
@@ -996,7 +1063,7 @@ co da się policzyć z listy ćwiczeń, i porównuje z badaniami oraz stanowiska
 gustu — trening z samych przysiadów jest dozwolony, tylko doradca powie, ile z tego to już
 głównie zmęczenie.
 
-**Mięśnie, nie wzorce.** Każde ze 110 ćwiczeń ma główne i pomocnicze mięśnie z szesnastu grup
+**Mięśnie, nie wzorce.** Każde ze 114 ćwiczeń ma główne i pomocnicze mięśnie z szesnastu grup
 (`data/muscles.ts`): klatka, plecy (najszersze i środek), trzy aktony barku, biceps, triceps,
 przedramiona, brzuch, prostowniki, pośladki, czworogłowe, tył uda, przywodziciele i łydki. Serie
 liczą się **ułamkowo**, jak w metaanalizie Pelland i in. (2025): główny mięsień dostaje całą serię,
@@ -1031,7 +1098,7 @@ wzorce: kolano i biodro. Przycisk „Ułóż kolejność według zasad” przest
 Gotowy trening da się skopiować i zmienić pod siebie. Liczba serii należy do ćwiczenia, nie do
 treningu — kreator mówi to wprost, bo zmiana działa wszędzie tam, gdzie ćwiczenie występuje.
 
-**Biblioteka**: 36 treningów, każdy przechodzi przez doradcę bez uwag — pilnuje tego test. Trzy
+**Biblioteka**: 38 treningów, każdy przechodzi przez doradcę bez uwag — pilnuje tego test. Trzy
 zestawy sprzętu — bez sprzętu, kettlebell z masą ciała i siłownia — a w każdym całe ciało, podziały
 i partie: pośladki, klatka, plecy, barki, ramiona, brzuch. Treningi A–D zostały, zmieniła się tylko kolejność: spacer z ciężarem przed podciąganiem
 albo pompkami zabierał chwyt ruchowi, któremu był bardziej potrzebny.
@@ -1166,7 +1233,7 @@ Pięć grup:
 - **Terminy** — zależne od uruchomionego planu: seria w terminie, brak pudła, czyste tygodnie,
   nadrobienia.
 
-**Odznaki ćwiczeń.** Każde ze 110 ćwiczeń ma cztery rodziny: rekord dnia, tygodnia i miesiąca
+**Odznaki ćwiczeń.** Każde ze 114 ćwiczeń ma cztery rodziny: rekord dnia, tygodnia i miesiąca
 kalendarzowego oraz sumę z całej historii — razem 440 rodzin i 2 310 progów. To jedyne odznaki,
 do których przekąska dokłada się na równi z treningiem: pompka przy biurku jest tą samą pompką.
 
@@ -1483,7 +1550,8 @@ i ochrona przed botami: `server/api/README.md`.
 ## Przypomnienia
 
 Rano o 7:30 — w dni, w które plan ma trening („Dziś trening: Trening A”). Wieczorem o 19:30 —
-codziennie, żeby wpisać kroki, bieżnię, rower albo taniec z całego dnia. Godziny według zegara
+codziennie, żeby wpisać kroki, bieżnię, rower albo taniec z całego dnia. Na życzenie o 7:00 —
+o porannym ważeniu (domyślnie wyłączone; patrz „Ważenie”). Godziny według zegara
 telefonu, na Androidzie i na iPhonie. Włącza się je w Ustawieniach, każde osobno.
 
 **Dlaczego potrzebny jest serwer.** Strona nie umie zaplanować powiadomienia na 7:30. API, które
