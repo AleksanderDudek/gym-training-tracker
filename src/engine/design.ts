@@ -133,7 +133,7 @@ const sum = (l: Loads, ms: MuscleId[]): number => ms.reduce((a, m) => a + (l[m] 
 /* ---------------- Kolejność ---------------- */
 
 /** Ruchy wybuchowe spoza trybu balistycznego — też na początek, póki układ nerwowy jest świeży. */
-const EXPLOSIVE = new Set<ExerciseId>(['burpee']);
+const EXPLOSIVE = new Set<ExerciseId>(['burpee', 'squat_jump']);
 
 /**
  * Miejsce w kolejności: 0 — wybuchowe, 1 — wielostawowe, 2 — izolacje, 3 — brzuch, łydki,

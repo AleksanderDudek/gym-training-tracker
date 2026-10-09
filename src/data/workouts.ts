@@ -312,4 +312,43 @@ export const LIBRARY: Workout[] = [
     'Dead bug, rosyjskie skręty, deska bokiem i spacer walizkowy. Dwadzieścia minut.',
     ['deadbug', 'russian', 'plank_side', 'carry'],
   ),
+
+  /* ---------------- Od trenera ---------------- */
+  // Dwa plany trenera personalnego: serie z przerwą z zegarkiem i obwód. Kolejność poprawiona
+  // tylko tam, gdzie łamała zasady doradcy — wyskoki i swing na świeżo, stacje obwodu na
+  // zmianę partii — a podciąganie z „dodatkowo” daje trenigowi ciągnięcie.
+  {
+    id: 'trainer-sets',
+    name: '3 serie, 2 minuty przerwy — od trenera',
+    kind: 'full',
+    gear: 'gym',
+    rest: 120,
+    desc: 'Każde ćwiczenie w kolejnych seriach z dwiema minutami przerwy, jak w planie trenera. Wyskoki i swing idą pierwsze, póki nogi są świeże, a podciąganie dochodzi do pchania.',
+    items: [
+      { ex: 'swing2' },
+      { ex: 'squat_jump' },
+      { ex: 'bench' },
+      { ex: 'goblet' },
+      { ex: 'chinup' },
+      { ex: 'pushup' },
+      { ex: 'core' },
+    ],
+  },
+  {
+    id: 'trainer-circuit',
+    name: 'Obwód × 3 — od trenera',
+    kind: 'full',
+    gear: 'gym',
+    roundRest: 120,
+    desc: 'Cała lista to jedna runda; rund jest tyle, ile serii — zwykle trzy. Stacje zmieniają partie, więc jedna odpoczywa, kiedy pracuje druga. Na koniec podciąganie seriami. Brzuszki z planu zostały poza obwodem: trzecia stacja na brzuch dawała 12 serii na jedną partię — dodasz je w kopii.',
+    items: [
+      { ex: 'squat_jump', circuit: true },
+      { ex: 'pushup', circuit: true },
+      { ex: 'legraise_floor', circuit: true },
+      { ex: 'squat_back', circuit: true },
+      { ex: 'lateral', circuit: true },
+      { ex: 'vup', circuit: true },
+      { ex: 'chinup' },
+    ],
+  },
 ];

@@ -82,7 +82,11 @@ describe('bloki: serie pod rząd i pary na zmianę', () => {
     expect(pairs).toBeGreaterThanOrEqual(30);
     const s = freshState();
     BUILTIN.forEach((w) => {
-      const r = reviewWorkout(s, w.items.map((i) => i.ex), w.kind, w.items.map((i) => !!i.pair));
+      const r = reviewWorkout(s, w.items.map((i) => i.ex), w.kind, w.items.map((i) => !!i.pair), {
+        circuit: w.items.map((i) => !!i.circuit),
+        rest: w.rest,
+        roundRest: w.roundRest,
+      });
       expect({ id: w.id, order: r.orderOk }).toEqual({ id: w.id, order: true });
     });
   });

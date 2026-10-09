@@ -43,6 +43,7 @@ export const EX_JOKES: Partial<Record<ExerciseId, string>> = {
   lunge_walk: 'Spacer dla ludzi, którzy nie lubią chodzić bezkarnie.',
   pistol: 'Przysiad na jednej nodze. Druga wystaje i nie pomaga.',
   squat_air: 'Bez ciężaru, bez wymówek, bez litości przy trzydziestym powtórzeniu.',
+  squat_jump: 'Przysiad, który postanowił zostać sprężyną. Sąsiedzi z dołu mają na ten temat własne zdanie.',
   sissy: 'Nazwa myli. Kolana wiedzą swoje.',
   legext: 'Siedzisz i prostujesz nogę. Czworogłowy nie uznaje tego za odpoczynek.',
 
@@ -115,6 +116,9 @@ export const EX_JOKES: Partial<Record<ExerciseId, string>> = {
   abwheel: 'Kółko za kilkanaście złotych i pokora za darmo.',
   legraise_hang: 'Wiszenie i unoszenie nóg. Chwyt poddaje się zwykle pierwszy.',
   crunch_cable: 'Brzuszki z obciążeniem, czyli brzuszki dla dorosłych.',
+  crunch: 'Klasyk sal gimnastycznych od lat osiemdziesiątych. Wciąż działa i wciąż nikt za nim nie tęskni.',
+  legraise_floor: 'Unoszenie nóg bez drążka: brzuch pracuje, chwyt ma wolne.',
+  vup: 'Ciało składa się jak scyzoryk, a potem przez chwilę nie chce się rozłożyć.',
   pallof: 'Zadanie polega na tym, żeby nic się nie wydarzyło. Trudniejsze, niż brzmi.',
   russian: 'Skręty tułowia. Rosyjskie tylko z nazwy, bolą uniwersalnie.',
   carry_oh: 'Spacer z ciężarem nad głową. Sufit obserwuje z uwagą.',
@@ -137,6 +141,8 @@ export const EX_JOKES: Partial<Record<ExerciseId, string>> = {
  * bo nikt nie wpisze żartu do kreatora, a pusty wiersz wygląda gorzej niż byle jaki.
  */
 export const WORKOUT_JOKES: Record<string, string> = {
+  'trainer-sets': 'Trzy serie, dwie minuty przerwy. Trener liczy na zegarku, aplikacja też — „jeszcze chwilka” nie przejdzie.',
+  'trainer-circuit': 'Siedem stacji, trzy rundy i zero stania w kolejce do jednej maszyny. Kondycja rośnie, kiedy przerwa się kurczy.',
   A: 'Klasyk otwarcia. Wchodzi zawsze, wychodzi z zadyszką.',
   B: 'Druga strona tej samej monety. Bolą inne miejsca.',
   C: 'Całe ciało naraz. Po nim prysznic ma status nagrody.',

@@ -142,6 +142,7 @@ export const STATIONS: Record<ExerciseId, Station> = {
   lunge_walk: s(['dumbbells', 'space']),
   pistol: s([]),
   squat_air: s([]),
+  squat_jump: s([]),
   lunge_bw: s([]),
   split_bw: s(['chair']),
   sissy: s(['wall']),
@@ -205,6 +206,9 @@ export const STATIONS: Record<ExerciseId, Station> = {
   hollow: s(['mat']),
   abwheel: s(['abwheel', 'mat']),
   legraise_hang: s(['bar']),
+  crunch: s(['mat']),
+  legraise_floor: s(['mat']),
+  vup: s(['mat']),
   crunch_cable: s(['cable'], undefined, ['deadbug', 'abwheel']),
   pallof: s(['cable'], undefined, ['plank_side']),
 
