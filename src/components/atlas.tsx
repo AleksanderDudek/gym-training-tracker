@@ -6,7 +6,7 @@ import { EX_JOKES } from '../data/exjokes';
 import { AnimatedMannequin } from './Mannequin';
 import { MODE_NAMES } from '../engine/hints';
 import { P, exercisesByGroup, levelLabel, planLabel } from '../engine/plan';
-import { exercisePath, go, snackAddPath } from '../routing';
+import { exercisePath, go, snackAddPath, workoutEditPath, workoutNewPath } from '../routing';
 import { Chip, EmptyState } from './ui';
 import { VideoEmbed } from './VideoEmbed';
 import { SupportLine } from './Support';
@@ -115,7 +115,8 @@ function ExerciseEnergy({ state, id }: { state: AppState; id: ExerciseId }) {
 }
 
 export function ExercisePage({ state, id }: { state: AppState; id: ExerciseId }) {
-  const m = EX[id];
+  // `hasOwn`, bo ręcznie wpisane `#/cwiczenia/constructor` trafiłoby w prototyp obiektu.
+  const m = Object.hasOwn(EX, id) ? EX[id] : undefined;
 
   if (!m) {
     return (
@@ -170,6 +171,8 @@ export function ExercisePage({ state, id }: { state: AppState; id: ExerciseId })
           </button>
         </div>
       </div>
+
+      <AddToWorkout state={state} id={id} />
 
       {stages && (
         <div className="grp">
@@ -244,5 +247,54 @@ export function ExercisePage({ state, id }: { state: AppState; id: ExerciseId })
         </p>
       </div>
     </>
+  );
+}
+
+/**
+ * „Dodaj do treningu” z atlasu: do jednego z własnych treningów albo do nowego. Otwiera kreator
+ * z ćwiczeniem dopisanym na końcu — nic nie zapisuje, dopóki ktoś nie stuknie „Zapisz trening”,
+ * więc da się jeszcze przesunąć ćwiczenie, zamienić je albo zrezygnować.
+ */
+function AddToWorkout({ state, id }: { state: AppState; id: ExerciseId }) {
+  const own = state.workouts;
+  const [target, setTarget] = useState<string>(own[0]?.id ?? '');
+  const already = own.find((w) => w.id === target)?.items.some((i) => i.ex === id) ?? false;
+  return (
+    <div className="grp">
+      <h2>Dodaj do treningu</h2>
+      {own.length ? (
+        <>
+          <label className="fld">
+            <span>twój trening</span>
+            <select value={target} onChange={(e) => setTarget(e.target.value)}>
+              {own.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          {already && <p className="tight">To ćwiczenie już jest w tym treningu.</p>}
+          <div className="btnrow" style={{ marginTop: 8 }}>
+            <button className="btn sm" disabled={already} onClick={() => go(workoutEditPath(target, id))}>
+              Dodaj i otwórz trening
+            </button>
+            <button className="btn ghost sm" onClick={() => go(workoutNewPath(undefined, id))}>
+              Nowy trening z tym ćwiczeniem
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="tight">
+            Własnych treningów jeszcze nie ma. Zacznij nowy od tego ćwiczenia — albo skopiuj gotowy trening
+            w zakładce Treningi i dopisz je tam.
+          </p>
+          <button className="btn sm" style={{ marginTop: 8 }} onClick={() => go(workoutNewPath(undefined, id))}>
+            Nowy trening z tym ćwiczeniem
+          </button>
+        </>
+      )}
+    </div>
   );
 }

@@ -53,11 +53,19 @@ export const ATLAS_PATH = '#/cwiczenia';
 /** Podgląd treningu: ćwiczenia z seriami, mięśnie, doradca i start. */
 export const workoutPath = (id: string): string => `#/treningi/${encodeURIComponent(id)}`;
 
-/** Kreator: pusty albo z kopią gotowego treningu. */
-export const workoutNewPath = (from?: string): string =>
-  from ? `#/treningi/nowy/${encodeURIComponent(from)}` : '#/treningi/nowy';
+/**
+ * Kreator: pusty albo z kopią gotowego treningu. `add` — ćwiczenie do dopisania na wejściu
+ * (z atlasu: „Dodaj do treningu”); bez kopii w miejscu treningu stoi „-”.
+ */
+export const workoutNewPath = (from?: string, add?: string): string =>
+  add
+    ? `#/treningi/nowy/${from ? encodeURIComponent(from) : '-'}/${encodeURIComponent(add)}`
+    : from
+      ? `#/treningi/nowy/${encodeURIComponent(from)}`
+      : '#/treningi/nowy';
 
-export const workoutEditPath = (id: string): string => `#/treningi/${encodeURIComponent(id)}/edytuj`;
+export const workoutEditPath = (id: string, add?: string): string =>
+  `#/treningi/${encodeURIComponent(id)}/edytuj${add ? `/${encodeURIComponent(add)}` : ''}`;
 
 /** Katalog planów, konfigurator klasyczny, podgląd planu i kreator. */
 export const PLANS_PATH = '#/plany';
@@ -223,8 +231,9 @@ export function parseHash(hash: string): Route {
   }
   if (head === 'treningi' && second) {
     const third = parts[2];
-    if (second === 'nowy') return { kind: 'workoutEdit', from: third };
-    return third === 'edytuj' ? { kind: 'workoutEdit', id: second } : { kind: 'workout', id: second };
+    const add = parts[3];
+    if (second === 'nowy') return { kind: 'workoutEdit', from: third === '-' ? undefined : third, add };
+    return third === 'edytuj' ? { kind: 'workoutEdit', id: second, add } : { kind: 'workout', id: second };
   }
   if (head === 'plany') {
     const third = parts[2];

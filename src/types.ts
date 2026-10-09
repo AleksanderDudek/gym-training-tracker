@@ -314,6 +314,8 @@ export interface Workout {
   desc?: string;
   /** Trening z profilu — ogólnorozwojowy z akcentem. */
   profile?: ProfileKey;
+  /** Własna wersja: gotowy trening, od którego się zaczęła. */
+  base?: string;
 }
 
 export interface Notice {
@@ -596,7 +598,7 @@ export type Route =
   /** Podgląd treningu: ćwiczenia, serie, mięśnie, doradca i start. */
   | { kind: 'workout'; id: string }
   /** Kreator treningu: nowy, kopia gotowego (`from`) albo edycja własnego (`id`). */
-  | { kind: 'workoutEdit'; id?: string | undefined; from?: string | undefined }
+  | { kind: 'workoutEdit'; id?: string | undefined; from?: string | undefined; add?: string | undefined }
   /** Katalog planów: z celem, klasyczny i własne. */
   | { kind: 'plans' }
   /** Konfigurator klasycznego planu z kettlebell. */

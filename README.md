@@ -19,7 +19,7 @@ Pozostałe polecenia:
 npm run build      # produkcyjny build do dist/, z listą plików dla service workera
 npm run preview    # podgląd builda — tu działa też praca offline
 npm run typecheck  # tsc --noEmit
-npm test           # 590 testów silnika, doradcy, kalorii, biblioteki, odznak, ruchu, obsady, scen, struktury, przerw, prowadzenia sesji, wagi, profili, tras, zegarka i serwera (vitest)
+npm test           # 599 testów silnika, doradcy, kalorii, biblioteki, odznak, ruchu, obsady, scen, struktury, przerw, prowadzenia sesji, wagi, profili, tras, zegarka i serwera (vitest)
 ```
 
 Build jest w pełni statyczny (`base: './'`), więc `dist/` można wrzucić na dowolny hosting plików
@@ -808,6 +808,8 @@ src/
     watch.test.ts           14 testów paczki, scalania, wyższej liczby kroków, przejazdów i importu
     find.ts                 wyszukiwanie ćwiczenia: polski alfabet, ogonki opcjonalne, podświetlenie
     find.test.ts            9 testów kolejności, dopasowania i podświetlenia
+    similar.ts              zamienniki ćwiczenia (wzorzec, mięśnie, sprzęt) i sprzęt treningu z jego ćwiczeń
+    similar.test.ts         7 testów zamienników, pasowania do sprzętu i sprzętu treningu
     exbadges.ts             odznaki ćwiczeń: cztery rodziny na ruch, progi z objętości sesji
     exbadges.test.ts        15 testów okresów, progów, zdobywania i cofania odznak ćwiczeń
     xp.ts                   punkty doświadczenia, poziomy i tytuły postaci
@@ -1062,6 +1064,17 @@ Treningi i plany da się układać samemu, a doradca na bieżąco mówi, czy to 
 co da się policzyć z listy ćwiczeń, i porównuje z badaniami oraz stanowiskami ACSM. Nie ocenia
 gustu — trening z samych przysiadów jest dozwolony, tylko doradca powie, ile z tego to już
 głównie zmęczenie.
+
+**Własna wersja gotowego treningu.** Karta każdego treningu ma „Zmień pod siebie”: kreator
+dostaje kopię („… — moja wersja”), a oryginał zostaje bez zmian, także w planach. Stuknięcie
+w nazwę ćwiczenia otwiera zamianę **w tym samym miejscu** — z podpowiedziami ćwiczeń, które
+robią podobną robotę (ten sam wzorzec ruchu albo te same mięśnie główne) i dadzą się zrobić
+sprzętem tego treningu, a niżej z całym atlasem. Zamiennik przejmuje parę i miejsce w obwodzie;
+× usuwa ćwiczenie, „dodaj ćwiczenie” dopisuje dowolne. Z atlasu prowadzi „Dodaj do treningu”:
+do jednego z własnych albo do nowego — kreator otwiera się z ćwiczeniem dopisanym na końcu,
+a zapisuje dopiero „Zapisz trening”. Zapisana wersja pamięta, od czego się zaczęła („Twoja
+wersja treningu …” w podglądzie), a sprzęt bierze z ćwiczeń: bez sprzętu, kettlebell albo
+siłownia — od niego zależą stanowiska i podpowiedzi zamienników.
 
 **Mięśnie, nie wzorce.** Każde ze 114 ćwiczeń ma główne i pomocnicze mięśnie z szesnastu grup
 (`data/muscles.ts`): klatka, plecy (najszersze i środek), trzy aktony barku, biceps, triceps,

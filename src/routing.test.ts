@@ -63,6 +63,10 @@ describe('trasy', () => {
     expect(parseHash(workoutNewPath())).toEqual({ kind: 'workoutEdit', from: undefined });
     expect(parseHash(workoutNewPath('A'))).toEqual({ kind: 'workoutEdit', from: 'A' });
     expect(parseHash(workoutEditPath('w123'))).toEqual({ kind: 'workoutEdit', id: 'w123' });
+    // Z atlasu: kreator otwiera się z ćwiczeniem do dopisania — w nowym treningu, kopii albo własnym.
+    expect(parseHash(workoutNewPath(undefined, 'goblet'))).toEqual({ kind: 'workoutEdit', from: undefined, add: 'goblet' });
+    expect(parseHash(workoutNewPath('A', 'goblet'))).toEqual({ kind: 'workoutEdit', from: 'A', add: 'goblet' });
+    expect(parseHash(workoutEditPath('w123', 'goblet'))).toEqual({ kind: 'workoutEdit', id: 'w123', add: 'goblet' });
     (
       [{ kind: 'workout', id: 'A' }, { kind: 'workoutEdit' }, { kind: 'exercise', id: 'swing2' }] as Route[]
     ).forEach((r) => {
