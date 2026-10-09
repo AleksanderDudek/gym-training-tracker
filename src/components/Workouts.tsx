@@ -12,7 +12,8 @@ import { kcalText } from './Cardio';
 import { Chips, DesignNotes, MuscleBars, SectionSwitch } from './Design';
 import { ExercisePicker } from './ExercisePicker';
 import { WorkoutArt } from './SceneArt';
-import { PairHead, PrepCard, blocksOf, cueFor, tagOf } from './Structure';
+import { CircuitHead, PairHead, PrepCard, blocksOf, cueFor, tagOf } from './Structure';
+import { ROUND_REST, restLabel, roundRestOf } from '../engine/rests';
 import { pairProblems } from '../engine/structure';
 import { HealthNote } from './Health';
 import { EmptyState, Segmented } from './ui';
@@ -292,8 +293,15 @@ export function WorkoutPreview({
       {blocksOf(w.items).map((b) => {
         const sets = (id: ExerciseId) => dose(state, id).sets;
         const lines = b.ids.map((x, i) => (
-          <ExerciseLine key={`${x}-${b.n}`} state={state} id={x} n={tagOf(b, i)} cue={cueFor(b, i, sets)} />
+          <ExerciseLine key={`${x}-${b.n}`} state={state} id={x} n={tagOf(b, i)} cue={cueFor(b, i, sets, w.rest)} />
         ));
+        if (b.kind === 'circuit')
+          return (
+            <div className="pairbox" key={`c${b.n}`}>
+              <CircuitHead b={b} sets={sets} roundRest={roundRestOf(state, w).secs} />
+              {lines}
+            </div>
+          );
         return b.kind === 'pair' ? (
           <div className="pairbox" key={`p${b.n}`}>
             <PairHead b={b} sets={sets} />
@@ -369,6 +377,13 @@ export function WorkoutBuilder({
   const [paired, setPaired] = useState<Set<ExerciseId>>(
     () => new Set(source?.items.filter((i) => i.pair).map((i) => i.ex) ?? []),
   );
+  // Stacje obwodu — tak samo przypięte do ćwiczenia. Przełącznik „Obwód” obejmuje wszystkie.
+  const [circ, setCirc] = useState<Set<ExerciseId>>(
+    () => new Set(source?.items.filter((i) => i.circuit).map((i) => i.ex) ?? []),
+  );
+  // Przerwa po serii: pusta — z rodzaju ćwiczenia, jak zalecają wytyczne; liczba — z treningu.
+  const [rest, setRest] = useState<number | ''>(source?.rest ?? '');
+  const [roundRest, setRoundRest] = useState<number>(source?.roundRest ?? ROUND_REST);
   // Klucz pola wyboru: po dodaniu ćwiczenia pole zaczyna od nowa, gotowe na kolejne.
   const [pickKey, setPickKey] = useState(0);
 
@@ -383,9 +398,15 @@ export function WorkoutBuilder({
       </div>
     );
 
-  const pairs = items.map((x, i) => i > 0 && paired.has(x));
-  const r = reviewWorkout(state, items, kind || undefined, pairs);
-  const blocks = blocksOf(items.map((x, i) => ({ ex: x, pair: pairs[i] })));
+  const inCircuit = items.map((x) => circ.has(x));
+  const allCircuit = items.length > 0 && inCircuit.every(Boolean);
+  const pairs = items.map((x, i) => i > 0 && paired.has(x) && !circ.has(x));
+  const r = reviewWorkout(state, items, kind || undefined, pairs, {
+    circuit: inCircuit,
+    rest: rest || undefined,
+    roundRest: circ.size ? roundRest : undefined,
+  });
+  const blocks = blocksOf(items.map((x, i) => ({ ex: x, pair: pairs[i], circuit: inCircuit[i] })));
   const togglePair = (x: ExerciseId) => {
     const next = new Set(paired);
     if (next.has(x)) next.delete(x);
@@ -400,6 +421,8 @@ export function WorkoutBuilder({
       return;
     }
     setItems([...items, x]);
+    // Do obwodu z całego treningu nowe ćwiczenie dochodzi jako kolejna stacja.
+    if (allCircuit) setCirc(new Set([...circ, x]));
   };
   const move = (i: number, d: -1 | 1) => {
     const j = i + d;
@@ -422,8 +445,14 @@ export function WorkoutBuilder({
       id: editing?.id ?? `w${Date.now()}`,
       name: name.trim(),
       // Tylko pary, które naprawdę powstały — trzecie „na zmianę” z rzędu nic nie znaczy.
-      items: blocks.flatMap((b) => b.ids.map((x, i) => (i ? { ex: x, pair: true } : { ex: x }))),
+      items: blocks.flatMap((b) =>
+        b.ids.map((x, i) =>
+          b.kind === 'circuit' ? { ex: x, circuit: true } : b.kind === 'pair' && i ? { ex: x, pair: true } : { ex: x },
+        ),
+      ),
       ...(kind ? { kind } : {}),
+      ...(rest ? { rest } : {}),
+      ...(blocks.some((b) => b.kind === 'circuit') ? { roundRest } : {}),
     };
     onSave(w);
     go(workoutPath(w.id), { replace: true });
@@ -460,6 +489,42 @@ export function WorkoutBuilder({
           </select>
         </label>
 
+        <label className="fld">
+          <span>przerwa między seriami</span>
+          <select value={String(rest)} onChange={(e) => setRest(e.target.value ? Number(e.target.value) : '')}>
+            <option value="">z rodzaju ćwiczenia — zalecane</option>
+            {[60, 90, 120, 150, 180].map((s) => (
+              <option key={s} value={s}>
+                {restLabel(s)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <span className="seg-label" aria-hidden="true">
+          jak robić
+        </span>
+        <Segmented
+          label="Jak robić ćwiczenia"
+          value={circ.size ? 'circuit' : 'sets'}
+          onChange={(v) => setCirc(v === 'circuit' ? new Set(items) : new Set())}
+          options={[
+            { key: 'sets', label: 'Serie pod rząd' },
+            { key: 'circuit', label: 'Obwód — rundy' },
+          ]}
+        />
+        {circ.size > 0 && (
+          <label className="fld">
+            <span>przerwa po rundzie</span>
+            <select value={roundRest} onChange={(e) => setRoundRest(Number(e.target.value))}>
+              {[60, 90, 120, 150, 180].map((s) => (
+                <option key={s} value={s}>
+                  {restLabel(s)}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+
         <div className="bl-list">
           {items.map((x, i) => (
             <div className="bl-item" key={x}>
@@ -480,8 +545,9 @@ export function WorkoutBuilder({
                 type="button"
                 className="bl-pair"
                 onClick={() => togglePair(x)}
-                // Do pary dochodzi się tylko z ćwiczeniem, które samo nie jest jeszcze w parze.
-                disabled={!i || pairs[i - 1]}
+                // Do pary dochodzi się tylko z ćwiczeniem, które samo nie jest jeszcze w parze;
+                // w obwodzie par nie ma — stacje i tak idą na zmianę.
+                disabled={!i || pairs[i - 1] || circ.has(x)}
                 aria-pressed={pairs[i] ?? false}
                 aria-label={`Na zmianę z poprzednim: ${ex(x).name}`}
                 title="Na zmianę z poprzednim"
@@ -513,7 +579,8 @@ export function WorkoutBuilder({
           <p className="hint">
             Liczba serii należy do ćwiczenia, nie do treningu — zmienia się wszędzie, gdzie to ćwiczenie
             występuje, i dalej prowadzi ją silnik progresji. ↔ łączy ćwiczenie z poprzednim w parę
-            robioną na zmianę.
+            robioną na zmianę. W obwodzie liczba rund to liczba serii najdłuższej stacji, a przerwa po
+            rundzie skraca się sama, gdy kolejne obwody idą równo.
           </p>
         )}
         {blocks

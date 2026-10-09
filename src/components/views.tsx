@@ -11,7 +11,8 @@ import {
 import { acwr } from '../engine/math';
 import { P, exercisesByGroup } from '../engine/plan';
 import { ExerciseCard } from './ExerciseCard';
-import { PairHead, PrepContent, blocksOf, cueFor, tagOf } from './Structure';
+import { CircuitHead, PairHead, PrepContent, blocksOf, cueFor, tagOf } from './Structure';
+import { roundRestOf } from '../engine/rests';
 import { plan } from '../engine/plan';
 import { altsFor } from '../engine/structure';
 import { HealthCard } from './Health';
@@ -102,7 +103,7 @@ export function SessionView({
               state={state}
               id={id}
               tag={tagOf(b, i)}
-              cue={cueFor(b, i, sets)}
+              cue={cueFor(b, i, sets, workout.rest)}
               swaps={swapsFor(id)}
               onSwap={onSwap}
               onSave={onSave}
@@ -111,6 +112,13 @@ export function SessionView({
               onToast={onToast}
             />
           ));
+          if (b.kind === 'circuit')
+            return (
+              <div className="pairbox" key={`c${b.n}`}>
+                <CircuitHead b={b} sets={sets} roundRest={roundRestOf(state, workout).secs} />
+                {cards}
+              </div>
+            );
           return b.kind === 'pair' ? (
             <div className="pairbox" key={`p${b.n}`}>
               <PairHead b={b} sets={sets} />
