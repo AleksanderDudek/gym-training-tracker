@@ -120,6 +120,15 @@ export interface Session {
    * Sam trening zostaje bez zmian; wynik i progresja idą do ćwiczenia naprawdę zrobionego.
    */
   swap?: Record<ExerciseId, ExerciseId>;
+  /**
+   * Trwająca przerwa w prowadzeniu: koniec jako chwila (ms), długość i powód, gdy odbiega od
+   * zwykłej. Zapisana w sesji, więc liczy się dalej po odświeżeniu i przy zgaszonym ekranie.
+   */
+  rest?: { until: number; secs: number; kind?: 'set' | 'pair' | 'move' | 'round' | 'next'; why?: string };
+  /** Ćwiczenia po ostatniej serii, które czekają na ocenę zapasu. */
+  ask?: ExerciseId[];
+  /** Ćwiczenie ostatnio zapisanej serii — to cofa „Cofnij serię”. */
+  last?: ExerciseId;
 }
 
 export interface LogItem {
@@ -131,6 +140,10 @@ export interface LogItem {
 export interface LogEntry {
   date: string;
   workout: string;
+  /** Identyfikator treningu. Wpisy sprzed jego zapisywania mają tylko nazwę. */
+  wid?: string;
+  /** Sesja z tygodnia lżejszego — mniej serii z założenia, więc nie mówi nic o kondycji. */
+  deload?: boolean;
   ready: ReadyKey;
   items: LogItem[];
 }
@@ -286,9 +299,14 @@ export interface Workout {
   name: string;
   /**
    * Ćwiczenia po kolei. `pair` — „na zmianę z poprzednim”: seria jednego, przerwa, seria
-   * drugiego, przerwa, aż oba skończą serie. Brak oznacza serie pod rząd.
+   * drugiego, przerwa, aż oba skończą serie. `circuit` — stacja obwodu: sąsiednie stacje idą
+   * runda po rundzie. Brak obu oznacza serie pod rząd.
    */
-  items: { ex: ExerciseId; pair?: boolean }[];
+  items: { ex: ExerciseId; pair?: boolean; circuit?: boolean }[];
+  /** Przerwa po serii w sekundach dla serii pod rząd. Brak — z rodzaju ćwiczenia. */
+  rest?: number;
+  /** Przerwa po rundzie obwodu w sekundach. Brak — dwie minuty. */
+  roundRest?: number;
   /** Brak u treningów zapisanych przed rodzajami — doradca stosuje wtedy tylko zasady ogólne. */
   kind?: WorkoutKind;
   gear?: WorkoutGear;
@@ -506,6 +524,10 @@ export interface AppState {
      * do urządzenia i w zapisie jej nie ma — import danych na innym telefonie przenosi tylko wybór.
      */
     reminders?: ReminderPrefs;
+    /** Widok sesji: prowadzenie seria po serii (domyślnie) albo lista ćwiczeń. */
+    view?: 'guided' | 'list';
+    /** Dzień, w którym karta ważenia usłyszała „Nie dziś”. */
+    weighSkip?: string;
   };
   prog: Record<ExerciseId, Progress>;
   workouts: Workout[];
@@ -536,6 +558,8 @@ export interface AppState {
 export interface ReminderPrefs {
   morning: boolean;
   evening: boolean;
+  /** Ważenie o 7:00. Brak u wyborów sprzed tej opcji — wtedy wyłączone. */
+  weigh?: boolean;
 }
 
 /** Pojedyncza zmiana poziomu po zamkniętym treningu. */

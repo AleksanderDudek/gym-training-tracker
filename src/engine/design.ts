@@ -5,6 +5,7 @@ import {
   MAJOR_MUSCLES,
   MUSCLES,
   MUSCLE_ACC,
+  MUSCLE_NAME,
   PULL_MUSCLES,
   PUSH_MUSCLES,
   ISOLATION,
@@ -12,6 +13,7 @@ import {
 } from '../data/muscles';
 import type { MuscleId } from '../data/muscles';
 import { setsEnergy } from './energy';
+import { CIRCUIT_MOVE, PAIR_REST, ROUND_REST } from './rests';
 import type { AppState, ExerciseId, PlanTemplate, Workout, WorkoutKind } from '../types';
 
 /**
@@ -131,7 +133,7 @@ const sum = (l: Loads, ms: MuscleId[]): number => ms.reduce((a, m) => a + (l[m] 
 /* ---------------- Kolejność ---------------- */
 
 /** Ruchy wybuchowe spoza trybu balistycznego — też na początek, póki układ nerwowy jest świeży. */
-const EXPLOSIVE = new Set<ExerciseId>(['burpee']);
+const EXPLOSIVE = new Set<ExerciseId>(['burpee', 'squat_jump']);
 
 /**
  * Miejsce w kolejności: 0 — wybuchowe, 1 — wielostawowe, 2 — izolacje, 3 — brzuch, łydki,
@@ -154,14 +156,38 @@ export function orderRank(id: ExerciseId): number {
  * całość z miejscem ważniejszego ćwiczenia: łydki na suwnicy zaraz po wypychaniu to jedno
  * stanowisko, a nie łydki przed izolacją.
  */
-export const suggestedOrder = (ids: ExerciseId[], pairs: readonly boolean[] = []): ExerciseId[] =>
-  blocksOf(ids.map((ex, i) => ({ ex, pair: pairs[i] })))
+export const suggestedOrder = (
+  ids: ExerciseId[],
+  pairs: readonly boolean[] = [],
+  circuit: readonly boolean[] = [],
+): ExerciseId[] =>
+  // Blok idzie w całości: para i obwód zachowują swoją kolejność w środku.
+  blocksOf(ids.map((ex, i) => ({ ex, pair: pairs[i], circuit: circuit[i] })))
     .map((b, i) => ({ b, i, r: Math.min(...b.ids.map(orderRank)) }))
     .sort((a, b) => a.r - b.r || a.i - b.i)
     .flatMap((x) => x.b.ids);
 
-/** Przerwa między ćwiczeniami pary w sekundach — środek zalecanych 60–90 s. */
-export const PAIR_REST = 75;
+// Przerwa między ćwiczeniami pary mieszka razem z resztą przerw.
+export { PAIR_REST };
+
+/**
+ * Co jest nie tak z kolejnością stacji obwodu: sąsiednie stacje na tę samą partię. Zdania do
+ * pokazania; pusta lista — stacje zmieniają partie, jak powinny.
+ */
+export function circuitProblems(ids: readonly ExerciseId[]): string[] {
+  const out: string[] = [];
+  ids.forEach((b, i) => {
+    const a = ids[i - 1];
+    if (!a) return;
+    const pa = EX_MUSCLES[a]?.p ?? [];
+    const shared = (EX_MUSCLES[b]?.p ?? []).filter((m) => pa.includes(m));
+    if (shared.length)
+      out.push(
+        `${EX[a]?.name ?? a} i ${EX[b]?.name ?? b} — obie stacje na ${shared.map((m) => MUSCLE_NAME[m].toLowerCase()).join(', ')}.`,
+      );
+  });
+  return out;
+}
 
 /* ---------------- Trening ---------------- */
 
@@ -233,8 +259,12 @@ export function reviewWorkout(
   kind?: WorkoutKind,
   /** `pair` każdego ćwiczenia z `ids` — „na zmianę z poprzednim”. */
   pairs: readonly boolean[] = [],
+  /** Obwód (`circuit` każdego ćwiczenia) i przerwy treningu, gdy ma własne. */
+  opts: { circuit?: readonly boolean[]; rest?: number | undefined; roundRest?: number | undefined } = {},
 ): WorkoutReview {
-  const flags = ids.map((id, i) => ({ id, pair: !!pairs[i] })).filter((x) => EX[x.id]);
+  const flags = ids
+    .map((id, i) => ({ id, pair: !!pairs[i], circuit: !!opts.circuit?.[i] }))
+    .filter((x) => EX[x.id]);
   const known = flags.map((x) => x.id);
   const knownPairs = flags.map((x) => x.pair);
   const loads = workoutLoads(state, known);
@@ -242,18 +272,30 @@ export function reviewWorkout(
   const sets = known.reduce((a, id) => a + dose(state, id).sets, 0);
   const energy = (id: ExerciseId) => {
     const d = dose(state, id);
-    return { sets: d.sets, ...setsEnergy(id, Array.from({ length: d.sets }, () => ({ reps: d.target })), 70) };
+    return { sets: d.sets, ...setsEnergy(id, Array.from({ length: d.sets }, () => ({ reps: d.target })), 70, true, opts.rest) };
   };
+  const blocks = blocksOf(flags.map((x) => ({ ex: x.id, pair: x.pair, circuit: x.circuit })));
   // Para: przerwa jednego ćwiczenia to czas pracy drugiego, więc liczy się praca obu
   // i krótka przerwa po każdej serii zamiast pełnej przerwy każdego z osobna.
-  const secs = blocksOf(known.map((ex, i) => ({ ex, pair: knownPairs[i] }))).reduce((a, b) => {
+  // Obwód: praca wszystkich stacji, przejścia między nimi i pełna przerwa dopiero po rundzie.
+  const secs = blocks.reduce((a, b) => {
     if (b.kind === 'straight') return a + energy(b.ids[0]!).secs;
-    return a + b.ids.reduce((t, id) => {
-      const e = energy(id);
-      return t + e.work + e.sets * PAIR_REST;
-    }, 0);
+    if (b.kind === 'pair')
+      return a + b.ids.reduce((t, id) => {
+        const e = energy(id);
+        return t + e.work + e.sets * PAIR_REST;
+      }, 0);
+    const parts = b.ids.map(energy);
+    const rounds = Math.max(...parts.map((e) => e.sets));
+    const stationSets = parts.reduce((t, e) => t + e.sets, 0);
+    return (
+      a +
+      parts.reduce((t, e) => t + e.work, 0) +
+      (stationSets - rounds) * CIRCUIT_MOVE +
+      (rounds - 1) * (opts.roundRest ?? ROUND_REST)
+    );
   }, 0);
-  const order = suggestedOrder(known, knownPairs);
+  const order = suggestedOrder(known, knownPairs, flags.map((x) => x.circuit));
   const orderOk = order.every((id, i) => id === known[i]);
   const notes: DesignNote[] = [];
   if (!known.length) return { loads: list, sets, secs, notes, order, orderOk, ok: true };
@@ -273,6 +315,19 @@ export function reviewWorkout(
       code: 'order',
       title: 'Kolejność do poprawki',
       text: `Siła rośnie najbardziej w tym ćwiczeniu, które idzie pierwsze, więc na początek to, na czym ci zależy — zwykle ruch wybuchowy albo wielostawowy. Izolacje potem, a brzuch, łydki i spacery na koniec, bo stabilizują każde ciężkie ćwiczenie. Na przyrost masy kolejność wpływa niewiele. Proponowana: ${names(order)}.`,
+    });
+
+  blocks
+    .filter((b) => b.kind === 'circuit')
+    .forEach((b) => {
+      const repeats = circuitProblems(b.ids);
+      if (repeats.length)
+        notes.push({
+          level: 'tip',
+          code: 'circuit-repeat',
+          title: 'Obwód dwa razy z rzędu na tę samą partię',
+          text: `${repeats.join(' ')} W obwodzie stacje mają zmieniać partie — wtedy jedna odpoczywa, kiedy pracuje druga, i krótkie przejścia wystarczą.`,
+        });
     });
 
   const minutes = Math.round(secs / 60);

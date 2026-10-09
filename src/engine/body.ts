@@ -1,4 +1,6 @@
 import type { AppState, BodyWeight } from '../types';
+import { round1 } from './math';
+import { addDays } from './schedule';
 
 /**
  * Waga ciała w czasie.
@@ -72,3 +74,40 @@ export const latestWeight = (state: AppState): BodyWeight | null => {
 /** Wzrost z profilu, jeśli ma sens. Inaczej długość kroku idzie z przeciętnej. */
 export const heightOf = (state: AppState): number | undefined =>
   validHeight(state.cfg.height) ? state.cfg.height : undefined;
+
+/**
+ * Średnia z ważeń z ostatnich `days` dni, do `day` włącznie. Waga z dnia na dzień skacze
+ * o kilogram czy dwa — woda, sól, jedzenie w żołądku — więc o kierunku mówi średnia
+ * z tygodnia, a nie pojedyncze ważenie. `null`, gdy w tym oknie nie ma ani jednego ważenia.
+ */
+export function avgWeight(state: AppState, day: string, days = 7): number | null {
+  const from = addDays(day, -(days - 1));
+  const list = bodyOf(state).filter((b) => b.day >= from && b.day <= day);
+  return list.length ? round1(list.reduce((s, b) => s + b.kg, 0) / list.length) : null;
+}
+
+export interface WeightTrend {
+  /** Ważenie z tego dnia albo `null`, gdy jeszcze go nie ma. */
+  today: number | null;
+  /** Średnia z 7 dni do tego dnia. */
+  avg: number | null;
+  /** Średnia z 7 dni tydzień wcześniej. */
+  prevAvg: number | null;
+  /** Różnica średnich — tydzień do tygodnia. */
+  delta: number | null;
+  /** Ile ważeń weszło do bieżącej średniej. */
+  n: number;
+}
+
+export function weightTrend(state: AppState, day: string): WeightTrend {
+  const avg = avgWeight(state, day);
+  const prevAvg = avgWeight(state, addDays(day, -7));
+  const from = addDays(day, -6);
+  return {
+    today: bodyOf(state).find((b) => b.day === day)?.kg ?? null,
+    avg,
+    prevAvg,
+    delta: avg !== null && prevAvg !== null ? round1(avg - prevAvg) : null,
+    n: bodyOf(state).filter((b) => b.day >= from && b.day <= day).length,
+  };
+}

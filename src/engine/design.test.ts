@@ -53,7 +53,11 @@ describe('doradca treningu', () => {
 
   it('każdy gotowy trening przechodzi bez ostrzeżeń i bez uwag', () => {
     BUILTIN.forEach((w) => {
-      const r = reviewWorkout(s, w.items.map((i) => i.ex), w.kind, w.items.map((i) => !!i.pair));
+      const r = reviewWorkout(s, w.items.map((i) => i.ex), w.kind, w.items.map((i) => !!i.pair), {
+        circuit: w.items.map((i) => !!i.circuit),
+        rest: w.rest,
+        roundRest: w.roundRest,
+      });
       expect({ id: w.id, notes: codes(r.notes) }).toEqual({ id: w.id, notes: ['ok'] });
       r.loads.forEach((l) => expect(l.sets, `${w.id} ${l.muscle}`).toBeLessThanOrEqual(RULES.sessionCap));
     });

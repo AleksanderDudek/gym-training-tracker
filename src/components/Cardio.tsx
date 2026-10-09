@@ -4,6 +4,7 @@ import {
   HEIGHT_RANGE,
   WEIGHT_RANGE,
   bodyOf,
+  weightTrend,
   heightOf,
   latestWeight,
   validHeight,
@@ -40,7 +41,7 @@ import {
 import { CARDIO_EMPTY, daySeed, pick, plural } from '../engine/quips';
 import { addDays, dayKey, weekdayOf } from '../engine/schedule';
 import { cardioAddPath, cardioPath, go, goBack } from '../routing';
-import { Segmented } from './ui';
+import { Segmented, Trendline } from './ui';
 import type { AppState, Cardio, CardioInput, CardioSport, DanceMix, DanceStyle, WatchHealth } from '../types';
 
 /**
@@ -907,6 +908,9 @@ export function BodyCard({
   const [kg, setKg] = useState('');
   const [cm, setCm] = useState(state.cfg.height ? String(state.cfg.height) : '');
   const recent = bodyOf(state).slice(-5).reverse();
+  // Wykres z ostatnich 30 ważeń i średnia z tygodnia — dzień do dnia waga skacze z wodą.
+  const weights = bodyOf(state).slice(-30).map((b) => b.kg);
+  const trend = weightTrend(state, dayKey(Date.now()));
 
   const saveKg = (e: FormEvent) => {
     e.preventDefault();
@@ -938,9 +942,12 @@ export function BodyCard({
       <h2>Waga i wzrost</h2>
       <p className="tight">
         {latest
-          ? `Ostatnie ważenie: ${decimal(latest.kg)} kg, ${dm(latest.day)}. Kalorie liczą się z wagi z dnia ruchu, więc nowe ważenie nie zmienia historii.`
-          : 'Z wagi liczą się kalorie kroków, bieżni, roweru, tańca i treningów. Wystarczy wpisać ją raz i aktualizować co jakiś czas.'}
+          ? `Ostatnie ważenie: ${decimal(latest.kg)} kg, ${dm(latest.day)}.${trend.avg !== null ? ` Średnia z 7 dni: ${decimal(trend.avg)} kg.` : ''} Kalorie liczą się z wagi z dnia ruchu, więc nowe ważenie nie zmienia historii.`
+          : 'Z wagi liczą się kalorie kroków, bieżni, roweru, tańca i treningów. Najlepiej ważyć się rano, codziennie albo kilka razy w tygodniu — ekran Dziś o to zapyta.'}
       </p>
+      {weights.length >= 3 && (
+        <Trendline values={weights} label={`Waga z ${weights.length} ostatnich ważeń, kg`} noun="ważeń" fmt={(v) => decimal(v)} />
+      )}
       <form className="body-row" onSubmit={saveKg} noValidate>
         <label className="fld">
           <span>waga dziś, kg</span>

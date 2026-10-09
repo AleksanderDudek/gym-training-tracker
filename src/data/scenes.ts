@@ -116,6 +116,8 @@ export const WORKOUT_SCENES: Record<string, Scene> = {
   'shoulders-kb': { set: 'kb', act: { who: 'gosia', move: 'carry', gear: 'kettlebell' }, fan: { who: 'gustaw', mood: 'amazed' }, bubble: ['Najdziwniejszy', 'spacer tygodnia'], by: 'fan', gags: ['window'], alt: 'Gosia spaceruje z kettlebell po mieszkaniu, Gustaw: „Najdziwniejszy spacer tygodnia”' },
   'arms-kb': { set: 'kb', act: { who: 'gustaw', move: 'curl', gear: 'kettlebell' }, fan: { who: 'gosia', mood: 'share' }, bubble: ['Rękawy', 'się kurczą!'], by: 'fan', gags: ['seams'], alt: 'Gustaw ugina ramię z kettlebell, Gosia: „Rękawy się kurczą!”' },
   'core-kb': { set: 'kb', act: { who: 'gosia', move: 'plank', gear: 'bodyweight' }, fan: { who: 'gustaw', mood: 'tired' }, bubble: ['Minuta', 'czy godzina?'], by: 'fan', gags: ['clock'], alt: 'Gosia w desce przy zegarze, Gustaw: „Minuta czy godzina?”' },
+  'trainer-sets': { set: 'gym', act: { who: 'gustaw', move: 'benchPress', gear: 'barbell' }, fan: { who: 'gosia', mood: 'content' }, bubble: ['Dwie minuty.', 'Nie dwie i pół.'], by: 'fan', gags: ['clock'], alt: 'Gustaw wyciska sztangę, Gosia pilnuje zegara: „Dwie minuty. Nie dwie i pół.”' },
+  'trainer-circuit': { set: 'gym', act: { who: 'gosia', move: 'squat', gear: 'bodyweight' }, fan: { who: 'gustaw', mood: 'tired' }, bubble: ['Trzecia runda?', 'Już?'], by: 'fan', gags: ['clipboard'], alt: 'Gosia robi wyskoki z przysiadu, zmęczony Gustaw z planem treningu: „Trzecia runda? Już?”' },
 };
 
 /** Własny trening użytkownika: obie postacie z listą. */

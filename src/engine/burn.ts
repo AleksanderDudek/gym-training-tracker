@@ -8,6 +8,8 @@ import type { ExerciseRow } from './history';
 import { P } from './plan';
 import { snacksOn } from './snacks';
 import { dayKey } from './schedule';
+import { blocksOf } from './blocks';
+import { CIRCUIT_MOVE, ROUND_REST, baseRest } from './rests';
 
 /**
  * Kalorie z tego, co zapisane: ruch wpisany ręcznie, treningi, pojedyncze ćwiczenia
@@ -78,12 +80,20 @@ export function snackBurn(state: AppState, s: Snack): number | null {
 export function plannedBurn(state: AppState, w: Workout): WorkoutBurn | null {
   const kg = latestWeight(state)?.kg;
   if (kg === undefined) return null;
+  // Przerwa po serii: z treningu, gdy ją podaje; w obwodzie przejście między stacjami i część
+  // przerwy po rundzie przypadająca na jedną stację. Para zostaje przy przerwie rodzaju pracy.
+  const rest = new Map<ExerciseId, number>();
+  blocksOf(w.items).forEach((b) => {
+    if (b.kind === 'straight') rest.set(b.ids[0]!, baseRest(w, b.ids[0]!));
+    if (b.kind === 'circuit')
+      b.ids.forEach((id) => rest.set(id, CIRCUIT_MOVE + Math.round((w.roundRest ?? ROUND_REST) / b.ids.length)));
+  });
   return sum(
     w.items
       .filter((i) => EX[i.ex] && state.prog[i.ex])
       .map((i) => {
         const p = P(state, i.ex);
-        const b = setsEnergy(i.ex, Array.from({ length: p.sets }, () => ({ reps: p.target })), kg);
+        const b = setsEnergy(i.ex, Array.from({ length: p.sets }, () => ({ reps: p.target })), kg, true, rest.get(i.ex));
         return { id: i.ex, secs: b.secs, active: b.active };
       }),
   );

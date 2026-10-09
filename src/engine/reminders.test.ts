@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { freshState } from './plan';
+import { setBodyWeight } from './body';
 import { EVENING_AT, HORIZON_DAYS, MORNING_AT, localDay, reminderItems, remindersOf } from './reminders';
 import { GOAL_PLANS } from '../data/plans';
 import { REMINDER_EVENING, REMINDER_MORNING } from './quips';
@@ -75,7 +76,7 @@ describe('wieczorne przypomnienia o ruchu', () => {
 
 describe('ustawienia i kontrakt z serwerem', () => {
   it('bez wyboru oba przypomnienia są włączone, a wyłączone nic nie wysyłają', () => {
-    expect(remindersOf(freshState())).toEqual({ morning: true, evening: true });
+    expect(remindersOf(freshState())).toEqual({ morning: true, evening: true, weigh: false });
     expect(reminderItems(withPlan(), { morning: false, evening: false }, MONDAY, 0)).toEqual([]);
   });
 
@@ -101,5 +102,26 @@ describe('ustawienia i kontrakt z serwerem', () => {
     // Data zbudowana z czasu lokalnego: 7 października, 1:30 — niezależnie od strefy testu.
     const d = new Date(2026, 9, 7, 1, 30);
     expect(localDay(d)).toBe('2026-10-07');
+  });
+});
+
+describe('poranne ważenie', () => {
+  it('o 7:00 codziennie, tylko gdy włączone, i bez dzisiejszego, kiedy waga już wpisana', () => {
+    const s = freshState();
+    expect(reminderItems(s, { morning: false, evening: false }, MONDAY, 0)).toEqual([]);
+    const items = reminderItems(s, { morning: false, evening: false, weigh: true }, MONDAY, 0);
+    expect(items).toHaveLength(21);
+    expect(items[0]).toMatchObject({ tag: 'waga', date: MONDAY, time: '07:00', url: '#/sesja' });
+    expect(items.every(validItem)).toBe(true);
+    setBodyWeight(s, 102.1, MONDAY);
+    const after = reminderItems(s, { morning: false, evening: false, weigh: true }, MONDAY, 0);
+    expect(after[0]!.date).not.toBe(MONDAY);
+    expect(after).toHaveLength(20);
+  });
+
+  it('wszystkie trzy razem mieszczą się w limicie serwera', () => {
+    const items = reminderItems(withPlan(), { morning: true, evening: true, weigh: true }, MONDAY, 0);
+    expect(items.length).toBeLessThanOrEqual(100);
+    expect(items.every(validItem)).toBe(true);
   });
 });

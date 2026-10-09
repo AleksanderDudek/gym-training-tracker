@@ -2,6 +2,7 @@ import { EX } from '../data/exercises';
 import { blocksOf, tagOf } from '../engine/blocks';
 import type { Block } from '../engine/blocks';
 import { plural } from '../engine/quips';
+import { CIRCUIT_MOVE, restLabel } from '../engine/rests';
 import { PAIR_REST_TEXT, platesPerSide, restOf, setupFor, warmupFor } from '../engine/structure';
 import type { AppState, ExerciseId, Workout } from '../types';
 
@@ -125,15 +126,41 @@ export function PrepCard({ state, workout }: { state: AppState; workout: Workout
   );
 }
 
-/** Jak robić blok — jednym zdaniem pod nazwą ćwiczenia. `sets` to liczba serii na dziś. */
-export function cueFor(b: Block, i: number, sets: (id: ExerciseId) => number): string {
+/**
+ * Jak robić blok — jednym zdaniem pod nazwą ćwiczenia. `sets` to liczba serii na dziś,
+ * `rest` — przerwa z treningu, gdy ją podaje (inaczej z rodzaju ćwiczenia).
+ */
+export function cueFor(b: Block, i: number, sets: (id: ExerciseId) => number, rest?: number): string {
   const id = b.ids[i]!;
   if (b.kind === 'straight') {
     const n = sets(id);
-    return `${n} ${plural(n, SET_FORMS)}${n > 1 ? ' pod rząd' : ''} · przerwa ${restOf(id)}`;
+    return `${n} ${plural(n, SET_FORMS)}${n > 1 ? ' pod rząd' : ''} · przerwa ${rest ? restLabel(rest) : restOf(id)}`;
+  }
+  if (b.kind === 'circuit') {
+    const n = sets(id);
+    return `stacja ${i + 1} z ${b.ids.length} · ${n} ${plural(n, ROUND_FORMS)}`;
   }
   const j = i === 0 ? 1 : 0;
   return `na zmianę z ${tagOf(b, j)} ${name(b.ids[j]!)} · przerwa ${PAIR_REST_TEXT}`;
+}
+
+const ROUND_FORMS: [string, string, string] = ['runda', 'rundy', 'rund'];
+
+/** Nagłówek obwodu: stacje po kolei, krótkie przejścia, pełna przerwa po rundzie. */
+export function CircuitHead({ b, sets, roundRest }: { b: Block; sets: (id: ExerciseId) => number; roundRest: number }) {
+  const rounds = Math.max(...b.ids.map(sets));
+  const last = tagOf(b, b.ids.length - 1);
+  return (
+    <div className="pair-head">
+      <b>
+        Obwód {b.n} — {rounds} {plural(rounds, ROUND_FORMS)}
+      </b>
+      <span>
+        Stacje {b.n}A–{last} po kolei, ok. {CIRCUIT_MOVE} s na przejście między nimi; po każdej rundzie{' '}
+        {restLabel(roundRest)} przerwy. Stacja z mniejszą liczbą serii odpada z ostatnich rund.
+      </span>
+    </div>
+  );
 }
 
 /** Nagłówek pary: co robić po kolei. */

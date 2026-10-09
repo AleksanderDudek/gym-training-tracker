@@ -29,6 +29,7 @@ export const ANIM: Partial<Record<ExerciseId, MoveName>> = {
   squat_box: 'squat',
   hacksquat: 'squat',
   squat_air: 'squat',
+  squat_jump: 'squat',
   sissy: 'squat',
   pistol: 'squat',
   lunge: 'lunge',
@@ -97,6 +98,7 @@ export const ANIM: Partial<Record<ExerciseId, MoveName>> = {
   hollow: 'crunch',
   deadbug: 'crunch',
   crunch_cable: 'crunch',
+  crunch: 'crunch',
   russian: 'crunch',
 
   /* Nogi — dodatkowe */
