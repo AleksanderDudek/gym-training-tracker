@@ -249,7 +249,19 @@ export function Sparkline({ hist }: { hist: HistoryPoint[] }) {
  * kropki na punktach i zdanie w `aria-label` — czytnik ekranu nie zobaczy linii, ale
  * usłyszy, skąd dokąd ona idzie.
  */
-export function Trendline({ values, label }: { values: number[]; label: string }) {
+export function Trendline({
+  values,
+  label,
+  noun = 'sesji',
+  fmt = String,
+}: {
+  values: number[];
+  label: string;
+  /** Czego jest tyle, ile punktów: „sesji”, „ważeń”. */
+  noun?: string;
+  /** Liczba słowami — np. z przecinkiem dziesiętnym. */
+  fmt?: (v: number) => string;
+}) {
   if (values.length < 2) return null;
 
   const w = 320;
@@ -270,7 +282,7 @@ export function Trendline({ values, label }: { values: number[]; label: string }
         className="trendline"
         viewBox={`0 0 ${w} ${h}`}
         role="img"
-        aria-label={`${label}: od ${values[0]} do ${values[values.length - 1]}, najniżej ${mn}, najwyżej ${mx}, ${values.length} sesji.`}
+        aria-label={`${label}: od ${fmt(values[0]!)} do ${fmt(values[values.length - 1]!)}, najniżej ${fmt(mn)}, najwyżej ${fmt(mx)}, ${values.length} ${noun}.`}
       >
         <polygon className="area" points={`${pts.join(' ')} ${w - pad},${h} ${pad},${h}`} />
         <polyline className="line" points={pts.join(' ')} />
@@ -281,7 +293,7 @@ export function Trendline({ values, label }: { values: number[]; label: string }
       <div className="trend-scale">
         <span>{label}</span>
         <span>
-          {mn} – {mx}
+          {fmt(mn)} – {fmt(mx)}
         </span>
       </div>
     </div>

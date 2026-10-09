@@ -238,6 +238,17 @@ export const REMINDER_EVENING: readonly string[] = [
   'Krótki wpis na koniec dnia: kroki z telefonu i to, co było poza treningiem.',
 ];
 
+/**
+ * Poranne przypomnienie o ważeniu. Pyta o liczbę i mówi, jak ważyć, żeby liczby dało się
+ * porównać — nigdy nie ocenia, ile wyjdzie, i nie wspomina o jedzeniu ani o sylwetce.
+ */
+export const REMINDER_WEIGH: readonly string[] = [
+  'Ważenie po przebudzeniu, przed śniadaniem — jedna liczba do aplikacji, średnia z tygodnia policzy się sama.',
+  'Waga rano, na tej samej wadze i o tej samej porze. Wpis zajmie kilka sekund.',
+  'Poranna liczba z wagi: z kolejnych dni powstaje średnia, która mówi więcej niż jeden ranek.',
+  'Stań na wadze, zanim dzień się rozkręci, i wpisz wynik na ekranie Dziś.',
+];
+
 /** Awans postaci. Żart o goryla i o stadzie, nigdy o tym, ile komuś brakowało. */
 export const LEVEL_UP: readonly string[] = [
   'Grzbiet jeszcze nie srebrny, ale ambicje już tak.',

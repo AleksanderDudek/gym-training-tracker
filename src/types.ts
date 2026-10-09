@@ -522,6 +522,8 @@ export interface AppState {
     reminders?: ReminderPrefs;
     /** Widok sesji: prowadzenie seria po serii (domyślnie) albo lista ćwiczeń. */
     view?: 'guided' | 'list';
+    /** Dzień, w którym karta ważenia usłyszała „Nie dziś”. */
+    weighSkip?: string;
   };
   prog: Record<ExerciseId, Progress>;
   workouts: Workout[];
@@ -552,6 +554,8 @@ export interface AppState {
 export interface ReminderPrefs {
   morning: boolean;
   evening: boolean;
+  /** Ważenie o 7:00. Brak u wyborów sprzed tej opcji — wtedy wyłączone. */
+  weigh?: boolean;
 }
 
 /** Pojedyncza zmiana poziomu po zamkniętym treningu. */

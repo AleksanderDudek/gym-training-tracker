@@ -135,6 +135,7 @@ function restoreExtras(next: AppState, saved: Partial<AppState>): void {
     else delete next.session.swap;
   }
   if (next.cfg.view !== undefined && next.cfg.view !== 'guided' && next.cfg.view !== 'list') delete next.cfg.view;
+  if (next.cfg.weighSkip !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(String(next.cfg.weighSkip))) delete next.cfg.weighSkip;
   const r = next.cfg.reminders;
   if (r !== undefined && (typeof r !== 'object' || typeof r.morning !== 'boolean' || typeof r.evening !== 'boolean'))
     delete next.cfg.reminders;
@@ -1398,6 +1399,12 @@ export default function App() {
             today={todayPlan}
             statsLine={subline.join(' · ')}
             onStart={startSession}
+            onWeigh={setWeight}
+            onWeighSkip={() => {
+              const next = clone(state);
+              next.cfg.weighSkip = dayKey(Date.now());
+              commit(next);
+            }}
           />
         ))}
 

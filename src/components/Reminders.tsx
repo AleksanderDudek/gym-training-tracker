@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { EVENING_AT, MORNING_AT, remindersOf } from '../engine/reminders';
+import { EVENING_AT, MORNING_AT, WEIGH_AT, remindersOf } from '../engine/reminders';
 import { currentPushState, disablePush, enablePush, pushConfigured } from '../push';
 import type { PushState } from '../push';
 import { Segmented } from './ui';
@@ -71,7 +71,8 @@ export function RemindersCard({
       <h2>Przypomnienia</h2>
       <p className="tight">
         Rano o {hhmm(MORNING_AT)} — w dni, w które plan ma trening. Wieczorem o {hhmm(EVENING_AT)} —
-        żeby wpisać kroki, bieżnię, rower albo taniec z całego dnia. Godziny według zegara telefonu.
+        żeby wpisać kroki, bieżnię, rower albo taniec z całego dnia. Na życzenie o {hhmm(WEIGH_AT)} —
+        o porannym ważeniu. Godziny według zegara telefonu.
       </p>
 
       {BLOCKED[status] && <p className="tight cardio-note">{BLOCKED[status]}</p>}
@@ -119,6 +120,15 @@ export function RemindersCard({
             options={ON_OFF}
             value={prefs.evening ? 'on' : 'off'}
             onChange={(v) => onPrefs({ ...prefs, evening: v === 'on' })}
+          />
+          <span className="seg-label" aria-hidden="true">
+            rano, {hhmm(WEIGH_AT)} — ważenie
+          </span>
+          <Segmented
+            label={`Przypomnienie o ważeniu o ${hhmm(WEIGH_AT)}`}
+            options={ON_OFF}
+            value={prefs.weigh ? 'on' : 'off'}
+            onChange={(v) => onPrefs({ ...prefs, weigh: v === 'on' })}
           />
           <button
             className="btn ghost sm"

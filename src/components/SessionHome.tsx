@@ -8,6 +8,7 @@ import { CardioCard, kcalText } from './Cardio';
 import { plannedBurn } from '../engine/burn';
 import { dayKey } from '../engine/schedule';
 import { BoostCard } from './Boost';
+import { WeighCard } from './Weigh';
 import type { AppState, Workout } from '../types';
 
 /** Co plan mówi na dziś. `due` to termin do zrobienia, `rest` to dzień bez terminu. */
@@ -43,12 +44,16 @@ export function SessionHome({
   today,
   statsLine,
   onStart,
+  onWeigh,
+  onWeighSkip,
 }: {
   state: AppState;
   today: TodayPlan;
   /** Ostatni trening, tempo i obciążenie jednym wierszem — to, co wisiało w starym nagłówku. */
   statsLine: string;
   onStart: (id: string) => void;
+  onWeigh: (kg: number) => void;
+  onWeighSkip: () => void;
 }) {
   const w = today.workout;
   const burn = w ? plannedBurn(state, w) : null;
@@ -149,6 +154,11 @@ export function SessionHome({
         </div>
       </div>
 
+      {/*
+        Ważenie pod treningiem, przed przekąską: kto przyszedł trenować, najpierw widzi trening,
+        a rano zaraz pod nim — prośbę o jedną liczbę z wagi.
+      */}
+      <WeighCard state={state} today={dayKey(Date.now())} onWeigh={onWeigh} onSkip={onWeighSkip} />
       {/* Przekąska pod treningiem, nie nad nim: kto przyszedł trenować, najpierw widzi trening. */}
       <SnackCard state={state} />
       <CardioCard state={state} />

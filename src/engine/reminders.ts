@@ -1,12 +1,14 @@
 import { BUILTIN } from '../data/exercises';
 import type { AppState, ReminderPrefs } from '../types';
-import { REMINDER_EVENING, REMINDER_MORNING, pick } from './quips';
+import { latestWeight } from './body';
+import { REMINDER_EVENING, REMINDER_MORNING, REMINDER_WEIGH, pick } from './quips';
 import { addDays, daysBetween } from './schedule';
 import { snapshot } from './snapshot';
 
 /**
  * Przypomnienia: o 7:30 w dni, w które plan ma trening, i o 19:30 codziennie — o krokach,
- * rowerze, bieżni i tańcu z całego dnia.
+ * rowerze, bieżni i tańcu z całego dnia. Na życzenie także o 7:00 — o porannym ważeniu,
+ * pół godziny przed treningiem, żeby nie przyszły razem.
  *
  * Telefon sam układa listę gotowych wiadomości na trzy tygodnie i wysyła ją serwerowi, który
  * tylko pilnuje zegara (`server/api`). Plan, historia i nazwy treningów nie wychodzą
@@ -14,19 +16,24 @@ import { snapshot } from './snapshot';
  * aplikacji; gdy ktoś przestanie ją otwierać, przypomnienia skończą się po trzech tygodniach.
  */
 
+export const WEIGH_AT = '07:00';
 export const MORNING_AT = '07:30';
 export const EVENING_AT = '19:30';
 
 /** Na ile dni naprzód idzie lista. */
 export const HORIZON_DAYS = 21;
 
-export const DEFAULT_REMINDERS: ReminderPrefs = { morning: true, evening: true };
+/**
+ * Ważenie domyślnie wyłączone: kto już ma przypomnienia, nie dostanie nagle trzeciego
+ * powiadomienia dziennie. Karta ważenia na ekranie Dziś pyta i bez niego.
+ */
+export const DEFAULT_REMINDERS: ReminderPrefs = { morning: true, evening: true, weigh: false };
 
 export const remindersOf = (state: AppState): ReminderPrefs => state.cfg.reminders ?? DEFAULT_REMINDERS;
 
 /** Kształt, który przyjmuje serwer (`server/api/schedule.ts`). */
 export interface ReminderItem {
-  tag: 'trening' | 'ruch';
+  tag: 'trening' | 'ruch' | 'waga';
   date: string;
   time: string;
   title: string;
@@ -74,6 +81,23 @@ export function reminderItems(state: AppState, prefs: ReminderPrefs, today: stri
           url: '#/sesja',
         }),
       );
+  }
+
+  if (prefs.weigh) {
+    // Dzisiejsze ważenie już w zapisie — dziś przypomnienie niepotrzebne.
+    const weighedToday = latestWeight(state)?.day === today;
+    for (let i = 0; i < HORIZON_DAYS; i++) {
+      const date = addDays(today, i);
+      if (!ahead(date, WEIGH_AT) || (i === 0 && weighedToday)) continue;
+      out.push({
+        tag: 'waga',
+        date,
+        time: WEIGH_AT,
+        title: 'Poranne ważenie',
+        body: pick(REMINDER_WEIGH, seed(date)),
+        url: '#/sesja',
+      });
+    }
   }
 
   if (prefs.evening) {
