@@ -43,6 +43,9 @@ export const TAGLINE = 'Twój trening sam wie, kiedy dołożyć.';
 /** Uczciwie: na razie — bez obietnicy, że zawsze. */
 export const FREE_NOTE = 'Na razie za darmo.';
 
+/** Co jeszcze jest w środku — jedna linijka pod wyjaśnieniem na plakacie. */
+export const PROMO_EXTRAS = 'Plany, przerwy z odliczaniem, odznaki i goryle. W telefonie, bez instalacji.';
+
 /** Jedno zdanie dla tych, którym hasło nie wystarczy. */
 export const PITCH = 'Wpisujesz serie, a aplikacja sama decyduje, kiedy dołożyć powtórzenie albo ciężar.';
 
@@ -663,6 +666,31 @@ export interface CardArt {
 }
 
 /**
+ * Papier blankietu: tło, kartka i podwójna ramka z zawijasami. Karta ma wyglądać jak
+ * świadectwo wydane przez urząd, który nie istnieje — powaga formy przy błahości treści jest
+ * tu całym żartem. Zawijasy tylko u góry: dolne narożniki zajmuje wstęga i spod niej
+ * wystawały ich końcówki.
+ */
+function paper(ctx: CanvasRenderingContext2D): void {
+  ctx.fillStyle = INK.board;
+  ctx.fillRect(0, 0, CARD, CARD);
+  ctx.fillStyle = INK.paper;
+  ctx.fillRect(56, 56, CARD - 112, CARD - 112);
+  ctx.strokeStyle = INK.rule;
+  ctx.lineWidth = 3;
+  ctx.strokeRect(56, 56, CARD - 112, CARD - 112);
+  ctx.lineWidth = 1;
+  ctx.strokeRect(74, 74, CARD - 148, CARD - 148);
+  flourish(ctx, 92, 92, 1, 1);
+  flourish(ctx, CARD - 92, 92, -1, 1);
+}
+
+const toPng = (c: HTMLCanvasElement): Promise<Blob> =>
+  new Promise((resolve, reject) => {
+    c.toBlob((b) => (b ? resolve(b) : reject(new Error('Nie udało się zapisać obrazka.'))), 'image/png');
+  });
+
+/**
  * Kwadratowa karta do wpisu. Kwadrat, bo mieści się bez przycięcia w każdym serwisie,
  * w którym prostokąt bywa kadrowany inaczej niż autor zakładał.
  */
@@ -677,18 +705,7 @@ export async function shareCard(s: ShareSubject, { medal, faces = [] }: CardArt 
   // Czekamy na kroje pisma: `fillText` przed ich załadowaniem rysuje zapasowym fontem.
   if (document.fonts?.ready) await document.fonts.ready;
 
-  ctx.fillStyle = INK.board;
-  ctx.fillRect(0, 0, CARD, CARD);
-  ctx.fillStyle = INK.paper;
-  ctx.fillRect(56, 56, CARD - 112, CARD - 112);
-
-  // Podwójna ramka i pieczęć: karta ma wyglądać jak świadectwo wydane przez urząd,
-  // który nie istnieje. Powaga formy przy błahości treści jest tu całym żartem.
-  ctx.strokeStyle = INK.rule;
-  ctx.lineWidth = 3;
-  ctx.strokeRect(56, 56, CARD - 112, CARD - 112);
-  ctx.lineWidth = 1;
-  ctx.strokeRect(74, 74, CARD - 148, CARD - 148);
+  paper(ctx);
 
   ctx.textAlign = 'center';
   // Linia bazowa u góry: przy domyślnej („alphabetic”) wysokość wiersza zależy od kroju
@@ -705,10 +722,6 @@ export async function shareCard(s: ShareSubject, { medal, faces = [] }: CardArt 
     sign: '400 25px "IBM Plex Sans", system-ui, sans-serif',
     serial: '400 23px "IBM Plex Sans", system-ui, sans-serif',
   };
-
-  // Zawijasy tylko u góry: dolne narożniki zajmuje wstęga i spod niej wystawały ich końcówki.
-  flourish(ctx, 92, 92, 1, 1);
-  flourish(ctx, CARD - 92, 92, -1, 1);
 
   // Obsada w narożnikach nagłówka, jak herbowe postacie po bokach godła. Nagłówek jest
   // wąski, więc medaliony nie zabierają treści ani piksela w pionie — a karta bez nich
@@ -848,9 +861,89 @@ export async function shareCard(s: ShareSubject, { medal, faces = [] }: CardArt 
   ctx.fillStyle = INK.faint;
   ctx.fillText(serial(s), CARD / 2, RIBBON.y + RIBBON.h + RIBBON.drop + 8);
 
-  return new Promise((resolve, reject) => {
-    c.toBlob((b) => (b ? resolve(b) : reject(new Error('Nie udało się zapisać obrazka.'))), 'image/png');
-  });
+  return toPng(c);
+}
+
+/* ---------------- Plakat polecający ---------------- */
+
+/** Obsada plakatu: Siwy pośrodku, podopieczni po bokach. Kopie żywych rysunków, jak portrety na karcie. */
+export interface PromoArt {
+  coach?: SVGSVGElement | null | undefined;
+  left?: SVGSVGElement | null | undefined;
+  right?: SVGSVGElement | null | undefined;
+}
+
+/** Proporcje popiersia goryla (viewBox 312 × 280). */
+const BUST = 280 / 312;
+
+/**
+ * Plakat do polecenia aplikacji: ogłoszenie naboru, które wydaje ten sam urząd, co certyfikaty.
+ * „Trener Siwy szuka podopiecznych”, Siwy wskazuje palcem jak na starym plakacie werbunkowym,
+ * podopieczni po bokach — jeden z telefonem, druga z bicepsem. Pod obsadą hasło, jedno zdanie
+ * o tym, co aplikacja robi, pieczęć „za darmo” i wstęga z adresem. Drobny druk zamiast numeru
+ * wydania, bo ogłoszenie ma regulamin.
+ */
+export async function promoCard({ coach, left, right }: PromoArt = {}): Promise<Blob> {
+  const c = document.createElement('canvas');
+  c.width = CARD;
+  c.height = CARD;
+  const ctx = c.getContext('2d');
+  if (!ctx) throw new Error('Przeglądarka nie udostępnia rysowania na płótnie.');
+  if (document.fonts?.ready) await document.fonts.ready;
+
+  paper(ctx);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+
+  ctx.fillStyle = INK.accent;
+  ctx.font = '600 30px "IBM Plex Sans", system-ui, sans-serif';
+  ctx.fillText('OGŁOSZENIE · NABÓR OTWARTY', CARD / 2, 104);
+  ctx.fillStyle = INK.dark;
+  ctx.font = '600 76px "Oswald", system-ui, sans-serif';
+  ctx.fillText('Trener Siwy', CARD / 2, 146);
+  ctx.fillText('szuka podopiecznych', CARD / 2, 228);
+
+  // Obsada: Siwy większy i wyżej, podopieczni niżej po bokach — stopy (tu: dół popiersia)
+  // na jednej linii, jak na zdjęciu grupowym.
+  const [imgCoach, imgLeft, imgRight] = await Promise.all(
+    [coach, left, right].map((svg) => (svg ? loadSvg(standaloneSvg(svg, 600)).catch(() => null) : Promise.resolve(null))),
+  );
+  const floor = 652;
+  const side = 256;
+  const mid = 340;
+  if (imgLeft) ctx.drawImage(imgLeft, 120, floor - side * BUST, side, side * BUST);
+  if (imgRight) ctx.drawImage(imgRight, CARD - 120 - side, floor - side * BUST, side, side * BUST);
+  if (imgCoach) ctx.drawImage(imgCoach, (CARD - mid) / 2, floor - mid * BUST, mid, mid * BUST);
+  ctx.strokeStyle = INK.rule;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(110, floor);
+  ctx.lineTo(CARD - 110, floor);
+  ctx.stroke();
+
+  // Pieczęć obok uniesionego palca Siwego — ta sama, co na certyfikatach, z innym wyrokiem.
+  // Na obsadzie zakrywała twarze; tu stoi w pustym polu, w które i tak patrzy się po palcu.
+  stamp(ctx, ['ZA DARMO', 'na razie'], CARD - 168, 388);
+
+  ctx.fillStyle = INK.dark;
+  fit(ctx, TAGLINE, (px) => `600 ${px}px "Oswald", system-ui, sans-serif`, 50, CARD - 200, 34);
+  ctx.fillText(TAGLINE, CARD / 2, floor + 22);
+
+  ctx.fillStyle = INK.soft;
+  ctx.font = '400 29px "IBM Plex Sans", system-ui, sans-serif';
+  const pitch = wrap(ctx, PITCH, CARD - 220);
+  pitch.forEach((l, i) => ctx.fillText(l, CARD / 2, floor + 86 + i * 38));
+  ctx.fillStyle = INK.faint;
+  ctx.font = '500 25px "IBM Plex Sans", system-ui, sans-serif';
+  ctx.fillText(PROMO_EXTRAS, CARD / 2, floor + 98 + pitch.length * 38);
+
+  ribbon(ctx, APP_HOST, RIBBON.y);
+
+  ctx.font = '400 23px "IBM Plex Sans", system-ui, sans-serif';
+  ctx.fillStyle = INK.faint;
+  ctx.fillText('Opłata wpisowa: 0 zł · bez konta i bez reklam · zakwasy wliczone', CARD / 2, RIBBON.y + RIBBON.h + RIBBON.drop + 8);
+
+  return toPng(c);
 }
 
 /* ---------------- Wysyłka ---------------- */
@@ -872,8 +965,20 @@ export const canShareFiles = (): boolean =>
  * Najpierw systemowy arkusz z obrazkiem, potem sam tekst, na końcu schowek. Anulowanie
  * arkusza przez użytkownika nie jest błędem i nie może kończyć się komunikatem o awarii.
  */
-export async function share(s: ShareSubject, file?: Blob | null): Promise<ShareResult> {
-  const text = shareText(s);
+export function share(s: ShareSubject, file?: Blob | null): Promise<ShareResult> {
+  return shareRaw({ title: s.title, text: shareText(s), file });
+}
+
+/** Wysyłka dowolnego wpisu z obrazkiem — certyfikatu albo plakatu polecającego. */
+export async function shareRaw({
+  title,
+  text,
+  file,
+}: {
+  title: string;
+  text: string;
+  file?: Blob | null | undefined;
+}): Promise<ShareResult> {
   const nav = typeof navigator !== 'undefined' ? navigator : undefined;
 
   if (nav?.share) {
@@ -886,7 +991,7 @@ export async function share(s: ShareSubject, file?: Blob | null): Promise<ShareR
       const payload =
         png && hasCanShare && nav.canShare({ files: [png] })
           ? { files: [png], text }
-          : { title: s.title, text, url: APP_URL };
+          : { title, text, url: APP_URL };
       const done = await withTimeout(nav.share(payload).then(() => true), 20_000, false);
       if (done) return 'shared';
     } catch (e) {

@@ -19,6 +19,7 @@ import { dayKey } from '../engine/schedule';
 import { plural } from '../engine/quips';
 import { rowBurn, workoutBurn } from '../engine/burn';
 import { BodyCard, CardioSummary, kcalText } from './Cardio';
+import { PromoCard } from './Promo';
 import type { AppState, ExerciseId } from '../types';
 
 /**
@@ -184,6 +185,7 @@ export function ProfileView({
       <LoadGauge state={state} />
       <SnackSummary state={state} />
       <CardioSummary state={state} />
+      <PromoCard />
 
       <div className="sect-label">Twoje ćwiczenia</div>
       {!done.length ? (

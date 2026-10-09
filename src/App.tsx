@@ -43,6 +43,7 @@ import { addSet, answerEffort, extendRest, forgetAsk, settleOpen, skipRest, star
 import type { RestPlan } from './engine/rests';
 import { sessionSteps } from './engine/steps';
 import { GuidedSession } from './components/Guided';
+import { PromoPage } from './components/Promo';
 import type { WatchPayload } from './engine/watch';
 import { removeBodyWeight, setBodyWeight, validBody, validHeight } from './engine/body';
 import { cardioBurn, workoutBurn } from './engine/burn';
@@ -1346,6 +1347,7 @@ export default function App() {
       )}
 
       {route.kind === 'cardio' && <CardioPage state={state} onDelete={deleteCardio} />}
+      {route.kind === 'promo' && <PromoPage onToast={setToastMsg} />}
       {route.kind === 'cardioAdd' && (
         // Klucz za adresem: skrót z innym rodzajem ruchu zaczyna czysty formularz.
         <CardioEntry

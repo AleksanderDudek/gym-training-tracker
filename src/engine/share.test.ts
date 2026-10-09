@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { APP_HOST, APP_URL, FREE_NOTE, PITCH, PROMO_TEXTS, SUPPORT_URL, TAGLINE, inlineVars, promoText, shareLinks, shareText } from './share';
+import { APP_HOST, APP_URL, FREE_NOTE, PITCH, PROMO_EXTRAS, PROMO_TEXTS, SUPPORT_URL, TAGLINE, inlineVars, promoText, shareLinks, shareText } from './share';
 import { CTA } from './quips';
 import { STEPS } from '../components/Intro';
 
@@ -139,7 +139,7 @@ describe('hasło i polecenie aplikacji', () => {
   // plakat i wpis wysyła Gustaw i Gosia, a czyta każdy.
   const SHAMING = /wstyd|leń|leni|słab|wymówk|żałos|porażk|gruby|tłust|dieta|schudn|musisz|koniecznie/i;
   const GENDERED = /(łeś|łaś|łem|łam)(?![a-ząćęłńóśźż])/i;
-  const all = [TAGLINE, FREE_NOTE, PITCH, ...PROMO_TEXTS, ...CTA];
+  const all = [TAGLINE, FREE_NOTE, PITCH, PROMO_EXTRAS, ...PROMO_TEXTS, ...CTA];
 
   it('hasło jest krótkie, mówi o korzyści i stoi samo w jednej linijce', () => {
     expect(TAGLINE.split(' ').length).toBeLessThanOrEqual(7);

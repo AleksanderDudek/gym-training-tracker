@@ -18,6 +18,7 @@ import { altsFor } from '../engine/structure';
 import { HealthCard } from './Health';
 import { RemindersCard } from './Reminders';
 import { GarminCard } from './Garmin';
+import { PromoCard } from './Promo';
 import type { PullResult } from '../garmin';
 import { SupportLine } from './Support';
 import type { AppState, EffortKey, ExerciseId, ReadyKey, ReminderPrefs, SetResult, Workout } from '../types';
@@ -222,6 +223,8 @@ export function SettingsView({
 
   return (
     <>
+      {/* Polecenie na samej górze: ustawienia odwiedza ten, kto już aplikację zna i lubi. */}
+      <PromoCard />
       <RemindersCard state={state} onPrefs={onReminders} onToast={onToast} />
       <GarminCard state={state} onSync={onWatchSync} onToast={onToast} />
 

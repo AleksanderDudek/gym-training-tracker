@@ -51,7 +51,7 @@ export function certificateCast(s: ShareSubject): [Cast, Cast] {
  * mina albo nie ma jej wcale. Render idzie synchronicznie do odłączonego węzła i dopiero
  * po kliknięciu, jak cała karta.
  */
-function svgOf(el: ReactElement): SVGSVGElement | null {
+export function svgOf(el: ReactElement): SVGSVGElement | null {
   const host = document.createElement('div');
   const root = createRoot(host);
   try {
