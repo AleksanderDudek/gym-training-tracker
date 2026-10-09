@@ -115,7 +115,8 @@ function ExerciseEnergy({ state, id }: { state: AppState; id: ExerciseId }) {
 }
 
 export function ExercisePage({ state, id }: { state: AppState; id: ExerciseId }) {
-  const m = EX[id];
+  // `hasOwn`, bo ręcznie wpisane `#/cwiczenia/constructor` trafiłoby w prototyp obiektu.
+  const m = Object.hasOwn(EX, id) ? EX[id] : undefined;
 
   if (!m) {
     return (

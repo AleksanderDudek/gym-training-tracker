@@ -390,7 +390,9 @@ export function WorkoutBuilder({
   const [name, setName] = useState(editing ? editing.name : source ? `${source.name} — moja wersja` : '');
   const [kind, setKind] = useState<WorkoutKind | ''>(source?.kind ?? '');
   const sourceItems = source ? source.items.map((i) => i.ex) : [];
-  const extra = addOnOpen && EX[addOnOpen] && !sourceItems.includes(addOnOpen) ? addOnOpen : null;
+  // `hasOwn`, bo adres wpisany ręcznie (`…/edytuj/constructor`) trafiłby w prototyp obiektu
+  // i wywrócił kreator zamiast go otworzyć.
+  const extra = addOnOpen && Object.hasOwn(EX, addOnOpen) && !sourceItems.includes(addOnOpen) ? addOnOpen : null;
   const [items, setItems] = useState<ExerciseId[]>(extra ? [...sourceItems, extra] : sourceItems);
   // Ćwiczenie, dla którego otwarty jest panel „Zamień”.
   const [swapFor, setSwapFor] = useState<ExerciseId | null>(null);
@@ -464,6 +466,10 @@ export function WorkoutBuilder({
     setPaired(carry(paired));
     setCirc(carry(circ));
     onToast(`${ex(old).name} → ${ex(neu).name}.`);
+    // Wiersz powstaje od nowa pod nowym ćwiczeniem — fokus wraca na jego nazwę, a nie na początek strony.
+    requestAnimationFrame(() =>
+      document.querySelector<HTMLButtonElement>(`.bl-name[aria-label="Zamień: ${CSS.escape(ex(neu).name)}"]`)?.focus(),
+    );
   };
 
   const move = (i: number, d: -1 | 1) => {
@@ -523,10 +529,9 @@ export function WorkoutBuilder({
             </p>
           ) : null;
         })()}
-        {extra && (
+        {extra && items.includes(extra) && (
           <p className="tight">
-            Dopisane na końcu: <b>{ex(extra).name}</b>. Przesuń je strzałkami albo „Ułóż kolejność według zasad”,
-            a potem zapisz.
+            Dopisane na końcu: <b>{ex(extra).name}</b>. Przesuń je strzałkami w odpowiednie miejsce, a potem zapisz.
           </p>
         )}
       </div>

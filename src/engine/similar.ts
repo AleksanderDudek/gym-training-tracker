@@ -24,8 +24,9 @@ export function fitsGear(id: ExerciseId, gear: WorkoutGear | undefined): boolean
 
 /**
  * Sprzęt treningu z jego ćwiczeń: bez sprzętu, gdy żadne go nie wymaga; kettlebell, gdy
- * wystarczy kettlebell i ciężar ciała; inaczej siłownia. Z tego biorą się stanowiska
- * i filtr w bibliotece, więc własna wersja treningu nie musi o nim pamiętać.
+ * wystarczy kettlebell i ciężar ciała; inaczej siłownia. Z tego biorą się stanowiska, rozgrzewka
+ * i podpowiedzi zamienników, więc własna wersja treningu nie musi o nim pamiętać. W bibliotece
+ * własne treningi i tak stoją przy każdym filtrze sprzętu — są twoje.
  */
 export function workoutGear(ids: readonly ExerciseId[]): WorkoutGear {
   const known = ids.filter((id) => EX[id]);
