@@ -147,7 +147,7 @@ function restoreExtras(next: AppState, saved: Partial<AppState>): void {
   // dać ujemne przejścia albo wywrócić historię i odznaki czasu.
   if (next.session?.clock !== undefined && !validClock(next.session.clock)) delete next.session.clock;
   next.log.forEach((e) => {
-    if (e.time !== undefined && !validLogTime(e.time)) delete e.time;
+    if (e?.time !== undefined && !validLogTime(e.time)) delete e.time;
   });
   if (next.cfg.weighSkip !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(String(next.cfg.weighSkip))) delete next.cfg.weighSkip;
   const r = next.cfg.reminders;
@@ -841,7 +841,7 @@ export default function App() {
         )}
         {sofar && (
           <p style={{ marginTop: 12 }}>
-            Czas: <b>{durationText(sofar.secs)}</b> od „Zaczynam”.
+            Czas treningu: <b>{durationText(sofar.secs)}</b>.
           </p>
         )}
         {session.deload ? (
