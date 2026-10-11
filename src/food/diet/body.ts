@@ -38,6 +38,23 @@ export function mergeBody(
 }
 
 /**
+ * Wejście prognozy z krokami z treningów w KAŻDYM dniu, który je ma. `mergeBody` celowo nie tworzy
+ * wierszy tylko dla kroków, więc dzień bez wpisu diety i bez ważenia — a z krokami z zegarka — nie
+ * trafiłby do `forecastInputs` i prognoza przyjęłaby plan kroków. Tu kroki z treningów nadpisują
+ * to, co dało `forecastInputs`; dni, w których treningi nic nie mają, zostają bez zmian. Wejście
+ * zostaje nietknięte, sama `forecastInputs` też — dalej czyta tylko dni diety.
+ */
+export function withGymSteps<T extends { date: string; steps?: number | null }>(
+  inputs: readonly T[],
+  stepsOn: (day: string) => number | null,
+): T[] {
+  return inputs.map((input) => {
+    const steps = stepsOn(input.date);
+    return steps === null ? input : { ...input, steps };
+  });
+}
+
+/**
  * Ważenia z dawnego dziennika diety do przeniesienia — jeden raz, przy pierwszym wejściu
  * w Jedzenie. Tylko z dni, których dziennik wagi nie ma (ważenie w treningach jest nowsze
  * albo tak samo dobre), i tylko w zakresie, który dziennik wagi przyjmuje — inaczej zapis

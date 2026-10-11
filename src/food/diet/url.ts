@@ -1,36 +1,32 @@
 import { isCalendarDate } from './validate';
 
-export const DIET_VIEWS = ['dzis', 'plan', 'postep', 'profil'] as const;
-export type DietView = (typeof DIET_VIEWS)[number];
-
-export const VIEW_LABELS: Record<DietView, string> = {
-  dzis: 'Dziś',
-  plan: 'Plan',
-  postep: 'Postęp',
-  profil: 'Profil',
-};
-
-/** The diet tab's state in its query string: which view, which day (none: today). */
-export interface DietState {
-  view: DietView;
+/**
+ * Stan dziennika i jego podstron w zapytaniu wewnątrz hasha (`#/jedzenie?dzien=2026-10-12`).
+ * W Produktach PL zapytanie niosło też widok (`widok=plan`); tu plan posiłków, postęp i profil
+ * diety mają własne adresy (`#/jedzenie/plan`…), więc w zapytaniu zostaje tylko dzień — i jednorazowe
+ * `dodaj=1`, którym karta jedzenia z ekranu Dziś otwiera „Dodaj zjedzone”.
+ */
+export interface DiaryState {
+  /** Oglądany dzień; `null` to dziś. */
   date: string | null;
+  /** Otwórz „Dodaj zjedzone” po wejściu — strona zdejmuje to z adresu zaraz po otwarciu. */
+  add: boolean;
 }
 
-export const DEFAULT_DIET_STATE: DietState = { view: 'dzis', date: null };
+export const DEFAULT_DIARY_STATE: DiaryState = { date: null, add: false };
 
-export function dietToParams(state: DietState): URLSearchParams {
+export function diaryToParams(state: DiaryState): URLSearchParams {
   const params = new URLSearchParams();
-  if (state.view !== 'dzis') params.set('widok', state.view);
   if (state.date) params.set('dzien', state.date);
+  if (state.add) params.set('dodaj', '1');
   return params;
 }
 
-export function dietFromParams(params: URLSearchParams): DietState {
-  const view = params.get('widok');
+export function diaryFromParams(params: URLSearchParams): DiaryState {
   const date = params.get('dzien');
   return {
-    view: view && (DIET_VIEWS as readonly string[]).includes(view) ? (view as DietView) : 'dzis',
-    // A real date only: 2026-13-45 matches the pattern and would break every date computed from it.
+    // Tylko prawdziwa data: 2026-13-45 pasuje do wzorca i zepsułaby każdą datę z niej liczoną.
     date: isCalendarDate(date) ? date : null,
+    add: params.get('dodaj') === '1',
   };
 }
