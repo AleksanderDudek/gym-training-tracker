@@ -1158,6 +1158,37 @@
   .guide-effort .seg{margin-bottom:0}
   @media (prefers-reduced-motion:reduce){.guide-bar i{transition:none}}
 
+  /*
+   * Zegar sesji. Licznik w pasku: cyfry tej samej szerokości, żeby pasek nie drgał co sekundę,
+   * i tło `--surface-2`, bo to odczyt, a nie przycisk — nie ma ramki kontrolki.
+   */
+  .clock-pill{flex:none;min-height:32px;padding:3px 12px;display:inline-flex;align-items:center;
+    border-radius:999px;background:var(--surface-2);color:var(--ink);font-family:var(--display);
+    font-size:17px;font-weight:500;line-height:1;font-variant-numeric:tabular-nums;white-space:nowrap}
+  /* Pasek części: zrobiona — pełna, bieżąca — wyższa i pomarańczowa, następna — sam obrys, pominięta — kreska. */
+  .part-strip{margin-top:12px}
+  .part-segs{display:flex;gap:4px;align-items:center;list-style:none;margin:0;padding:0}
+  .part-seg{flex:1;height:8px;border-radius:2px;border:1px solid var(--edge);background:transparent}
+  .part-seg.done{background:var(--steel);border-color:var(--steel)}
+  .part-seg.now{height:12px;background:var(--c-orange);border-color:var(--c-orange-ink)}
+  .part-seg.skip{height:2px;border:0;background:var(--edge)}
+  .part-line{margin:6px 0 0;font-size:13px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+  /* Karta przejścia: duża liczba to czas od końca poprzedniej części, przerwa stoi pod nią mniejsza. */
+  .guide-trans .guide-clock{margin-bottom:2px}
+  .guide-trans p.trans-cap{text-align:center;margin:0 0 12px;max-width:none}
+  .trans-rest{border-top:1px solid var(--line);padding-top:10px;margin-bottom:10px}
+  .trans-rest .guide-where b{font-family:var(--display);font-size:17px;font-weight:500;color:var(--ink);
+    font-variant-numeric:tabular-nums}
+  .trans-rest .guide-bar{margin:8px 0 10px}
+  .trans-next{list-style:none;margin:12px 0 0;padding:0;font-size:14.5px;line-height:1.45}
+  .trans-next li{margin:4px 0}
+  /* Start sesji: plan części i przełącznik licznika. */
+  .parts-plan h2{margin-bottom:6px}
+  .parts-list{margin:0;padding-left:22px;font-size:14px;line-height:1.5}
+  .parts-list li{margin:2px 0}
+  .check-row{display:flex;align-items:center;gap:10px;min-height:44px;margin:4px 0 8px;font-size:14px;cursor:pointer}
+  .check-row input{width:22px;height:22px;margin:0;flex:none;accent-color:var(--steel)}
+
   /* Kreator: nazwa ćwiczenia otwiera zamianę w miejscu. */
   .bl-item button.bl-name{background:none;border:0;padding:6px 0;text-align:left;color:var(--ink);font-size:14.5px;
     font-weight:600;overflow-wrap:anywhere;text-decoration:underline dotted;text-underline-offset:3px}

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Icon } from './icons';
 import { SETTINGS_PATH, goBack } from '../routing';
 import { SupportStrip } from './Support';
+import { ClockPill } from './SessionClock';
 
 /**
  * Pasek aplikacji — przyklejony do góry, jak w każdej aplikacji mobilnej.
@@ -51,6 +52,7 @@ export function TopBar({
   onSnooze,
   settings,
   onFeedback,
+  clock,
 }: {
   title: string;
   subtitle?: string | null | undefined;
@@ -63,6 +65,8 @@ export function TopBar({
   settings: boolean;
   /** Okno „Napisz do autora” — na każdym ekranie, bo liczy się, z którego ktoś pisze. Brak — bez serwera. */
   onFeedback?: (() => void) | undefined;
+  /** Start zegara trwającej sesji (ms) — w pasku stoi wtedy licznik czasu treningu. */
+  clock?: number | null | undefined;
 }) {
   const scrolled = useScrolled();
 
@@ -80,6 +84,7 @@ export function TopBar({
           <h1 className="appbar-title">{title}</h1>
           {subtitle && <div className="appbar-sub">{subtitle}</div>}
         </div>
+        {clock != null && <ClockPill begin={clock} />}
         {onFeedback && (
           <button className="appbar-btn" onClick={onFeedback} aria-label="Napisz do autora — uwaga albo błąd">
             <Icon name="feedback" size={22} />

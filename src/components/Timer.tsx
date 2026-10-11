@@ -4,12 +4,15 @@ import type { TraineeMood } from './Gorilla';
 
 /**
  * Sekundy w formacie zegara. Powyżej minuty człowiek czyta „1:30” szybciej niż „90 s”,
- * poniżej — odwrotnie, więc krótkie czasy zostają gołą liczbą.
+ * poniżej — odwrotnie, więc krótkie czasy zostają gołą liczbą. Od godziny — „1:02:05”,
+ * bo zegar treningu w pasku przechodzi przez godzinę, a „62:05” trzeba przeliczać w głowie.
  */
 export function formatClock(secs: number): string {
   const s = Math.max(0, Math.round(secs));
   if (s < 60) return `${s} s`;
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  const two = (n: number) => String(n).padStart(2, '0');
+  if (s < 3600) return `${Math.floor(s / 60)}:${two(s % 60)}`;
+  return `${Math.floor(s / 3600)}:${two(Math.floor(s / 60) % 60)}:${two(s % 60)}`;
 }
 
 export type TimerMode = 'count' | 'stopwatch';

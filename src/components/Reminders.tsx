@@ -11,7 +11,7 @@ import type { AppState, ReminderPrefs } from '../types';
  * wyciszeniem, a ludzie odmawiają, zanim wiedzą, o co chodzi.
  */
 
-const ON_OFF: { key: 'on' | 'off'; label: string }[] = [
+export const ON_OFF: { key: 'on' | 'off'; label: string }[] = [
   { key: 'on', label: 'Wł.' },
   { key: 'off', label: 'Wył.' },
 ];

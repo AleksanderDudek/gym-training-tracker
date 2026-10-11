@@ -15,6 +15,12 @@ describe('zegar stopera', () => {
     expect(formatClock(3599)).toBe('59:59');
   });
 
+  it('od godziny dopisuje godziny przed minutami', () => {
+    expect(formatClock(3600)).toBe('1:00:00');
+    expect(formatClock(3725)).toBe('1:02:05');
+    expect(formatClock(4 * 3600 + 59)).toBe('4:00:59');
+  });
+
   it('zaokrągla ułamki i nie schodzi poniżej zera', () => {
     expect(formatClock(29.6)).toBe('30 s');
     expect(formatClock(-5)).toBe('0 s');

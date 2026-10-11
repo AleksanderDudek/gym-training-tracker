@@ -148,6 +148,32 @@ describe('koniec części', () => {
     settlePart(s, steps, 3, 7000);
     expect(s.clock!.parts[3]).toEqual({ end: 7000 });
   });
+
+  it('część pominięta w całości przed startem nie zostawia śladu', () => {
+    const s = fresh({ skip: { row: true, pushup: true } });
+    startClock(s, 1000, 1);
+    settlePart(s, steps, 2, 4000);
+    expect(s.clock!.parts[2]).toBeUndefined();
+  });
+
+  it('zapisana w liście i potem pominięta — koniec znika razem z wynikiem', () => {
+    const s = fresh({ res: { swing: rows(1) }, done: { swing: true } });
+    startClock(s, 1000, null);
+    settlePart(s, steps, 3, 7000);
+    delete s.res.swing;
+    delete s.done.swing;
+    s.skip.swing = true;
+    settlePart(s, steps, 3, 8000);
+    expect(s.clock!.parts[3]).toBeUndefined();
+  });
+
+  it('zaczęta, a potem pominięta — czas przy stanowisku był prawdziwy, więc koniec zostaje', () => {
+    const s = fresh();
+    startClock(s, 1000, 1);
+    s.skip.goblet = true;
+    settlePart(s, steps, 1, 2500);
+    expect(s.clock!.parts[1]).toEqual({ start: 1000, end: 2500 });
+  });
 });
 
 describe('część czekająca na start', () => {

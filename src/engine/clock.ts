@@ -62,15 +62,19 @@ export const blockDone = (steps: readonly Step[], s: Session, block: number): bo
  * Po każdej zmianie w bloku: koniec części, gdy blok się domknął, albo zdjęcie końca, gdy
  * cofnięcie serii otworzyło go z powrotem. Koniec raz zapisany się nie przesuwa — ocena zapasu
  * po ostatniej serii to już nie praca.
+ *
+ * Część bez startu i bez żadnego wyniku — pominięta w całości, zanim się zaczęła — końca nie
+ * dostaje: nic się w niej nie wydarzyło, więc w historii byłaby pustą pozycją.
  */
 export function settlePart(s: Session, steps: readonly Step[], block: number, now: number): void {
   if (!s.clock) return;
   const p = s.clock.parts[block] ?? {};
-  if (blockDone(steps, s, block)) s.clock.parts[block] = { ...p, end: p.end ?? now };
+  const ids = steps.filter((st) => st.block === block).map((st) => st.ex);
+  const happened = p.start !== undefined || ids.some((id) => !s.skip[id] && (s.done[id] || loggedSets(s, id) > 0));
+  if (happened && blockDone(steps, s, block)) s.clock.parts[block] = { ...p, end: p.end ?? now };
   else if (p.end !== undefined) {
-    const open = { ...p };
-    delete open.end;
-    s.clock.parts[block] = open;
+    if (p.start === undefined) delete s.clock.parts[block];
+    else s.clock.parts[block] = { start: p.start };
   }
 }
 
@@ -130,7 +134,7 @@ export function summary(t: LogTime): { secs: number; work: number; gaps: number;
 }
 
 /** Czy czas treningu liczy się do statystyk i odznak: od 3 minut do 4 godzin. */
-export const timed = (t: LogTime | undefined): t is LogTime => !!t && t.secs >= TIMED_MIN && t.secs <= TIMED_MAX;
+export const timed = (t: LogTime | null | undefined): t is LogTime => !!t && t.secs >= TIMED_MIN && t.secs <= TIMED_MAX;
 
 /** „45 s”, „12 min”, „1 h 05 min” — czas treningu słowami, do minuty. */
 export function durationText(secs: number): string {
