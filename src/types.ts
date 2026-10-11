@@ -129,6 +129,38 @@ export interface Session {
   ask?: ExerciseId[];
   /** Ćwiczenie ostatnio zapisanej serii — to cofa „Cofnij serię”. */
   last?: ExerciseId;
+  /**
+   * Zegar sesji. Brak — sesja sprzed zegara albo prowadzenie, w którym nikt jeszcze nie stuknął
+   * „Zaczynam”; taka sesja zamyka się bez czasu.
+   */
+  clock?: SessionClock;
+}
+
+/**
+ * Zegar sesji: start treningu i części (bloki) z początkiem i końcem jako chwile w ms.
+ * Chwile, a nie odliczane sekundy — jak koniec przerwy, liczą się dalej po odświeżeniu
+ * i przy zgaszonym ekranie.
+ */
+export interface SessionClock {
+  begin: number;
+  /** Klucz to numer bloku (`Block.n`). Część bez `start` — zrobiona w widoku listy. */
+  parts: Record<number, { start?: number; end?: number }>;
+}
+
+/** Część zapisanego treningu, w sekundach od jego startu. */
+export interface LogTimePart {
+  block: number;
+  ex: ExerciseId[];
+  /** Początek części. Brak — część bez zaznaczonego startu (widok listy). */
+  at?: number;
+  end: number;
+}
+
+/** Czas zapisanego treningu. Krótszy niż 3 minuty albo dłuższy niż 4 godziny zostaje, ale nie liczy się do statystyk. */
+export interface LogTime {
+  /** Cały trening w sekundach: od „Zaczynam” do zamknięcia. */
+  secs: number;
+  parts: LogTimePart[];
 }
 
 export interface LogItem {
@@ -146,6 +178,8 @@ export interface LogEntry {
   deload?: boolean;
   ready: ReadyKey;
   items: LogItem[];
+  /** Czas treningu z zegara sesji. Brak — trening sprzed zegara albo zamknięty bez „Zaczynam”. */
+  time?: LogTime;
 }
 
 /**
@@ -468,6 +502,8 @@ export type AchGroup =
   | 'przekaski'
   /** Kroki, bieżnia, rower i taniec: suma, dni z celem, tygodnie według WHO, ciąg dni w ruchu. */
   | 'cardio'
+  /** Czas na treningu z zegara sesji: suma, tygodnie z dwiema godzinami, płynne przejścia, rekord. */
+  | 'czas'
   /** Odznaki pojedynczego ćwiczenia: dzień, tydzień, miesiąc i suma — z treningów i przekąsek. */
   | 'cwiczenia'
   /** Terminy planu: seria, realizacja, domknięte tygodnie. */
@@ -530,6 +566,11 @@ export interface AppState {
     view?: 'guided' | 'list';
     /** Dzień, w którym karta ważenia usłyszała „Nie dziś”. */
     weighSkip?: string;
+    /**
+     * Licznik czasu treningu w pasku. Brak — pokazany. Wyłączenie tylko go chowa: zegar sesji
+     * liczy dalej, bo odznaki czasu nie mogą zależeć od tego, co widać na ekranie.
+     */
+    clock?: boolean;
   };
   prog: Record<ExerciseId, Progress>;
   workouts: Workout[];
@@ -581,8 +622,17 @@ export interface PlannedSet {
 
 export type View = 'train' | 'prog' | 'work' | 'set';
 
-/** Zakładka w dolnej nawigacji. */
-export type TabKey = View | 'atlas' | 'plan' | 'ach';
+/**
+ * Zakładka w dolnej nawigacji. `plan` i `atlas` to dziś sekcje zakładki Trening — klucze
+ * zostają, bo trasa `{ kind: 'tab', tab: 'plan' }` dalej wyświetla plan pod starym adresem.
+ */
+export type TabKey = View | 'atlas' | 'plan' | 'ach' | 'food';
+
+/** Sekcje zakładki Jedzenie — przełącznik u góry ekranu, każda pod własnym adresem. */
+export type FoodSection = 'diary' | 'recipes' | 'products' | 'nearby';
+
+/** Podstrony dziennika jedzenia: ze strzałką wstecz do dziennika, bez drugiego rzędu zakładek. */
+export type DietPage = 'plan' | 'progress' | 'profile';
 
 /** Trasa aplikacji. Podstrona ćwiczenia ma własny adres, więc da się ją wysłać komuś linkiem. */
 export type Route =
@@ -612,7 +662,11 @@ export type Route =
   /** Zapis kroków, bieżni, roweru albo zajęć tańca. Bez rodzaju — kroki, bo to najczęstszy wpis. */
   | { kind: 'cardioAdd'; sport?: CardioSport | undefined }
   /** Plakat polecający aplikację. */
-  | { kind: 'promo' };
+  | { kind: 'promo' }
+  /** Sekcja zakładki Jedzenie. Stan strony (filtry, otwarty produkt) siedzi w zapytaniu hasha, poza trasą. */
+  | { kind: 'food'; section: FoodSection }
+  /** Plan posiłków, postęp albo profil diety — podstrony dziennika. */
+  | { kind: 'diet'; page: DietPage };
 
 /** Materiał wideo pokazujący technikę ćwiczenia. */
 export interface VideoRef {

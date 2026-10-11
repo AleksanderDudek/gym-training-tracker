@@ -1,14 +1,19 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import {
   PLANS_PATH,
   PLAN_CLASSIC_PATH,
   PLAN_NEW_PATH,
   PROMO_PATH,
+  SECTIONS,
   SETTINGS_PATH,
   TABS,
   activeTab,
+  forgetSections,
   planEditPath,
   planPath,
+  rememberSection,
+  sectionHref,
+  tabHref,
   workoutEditPath,
   workoutNewPath,
   workoutPath,
@@ -24,6 +29,152 @@ import {
 } from './routing';
 import type { Route } from './types';
 import type { TabKey } from './types';
+
+describe('zakładki i sekcje', () => {
+  beforeEach(() => forgetSections());
+
+  it('dolny pasek: Dziś · Trening · Jedzenie · Osiągnięcia · Profil', () => {
+    expect(TABS.map((t) => [t.key, t.label])).toEqual([
+      ['train', 'Dziś'],
+      ['work', 'Trening'],
+      ['food', 'Jedzenie'],
+      ['ach', 'Osiągnięcia'],
+      ['prog', 'Profil'],
+    ]);
+  });
+
+  it('sekcje Jedzenia i podstrony dziennika mają własne adresy', () => {
+    expect(parseHash('#/jedzenie')).toEqual({ kind: 'food', section: 'diary' });
+    expect(parseHash('#/przepisy')).toEqual({ kind: 'food', section: 'recipes' });
+    expect(parseHash('#/produkty')).toEqual({ kind: 'food', section: 'products' });
+    expect(parseHash('#/w-poblizu')).toEqual({ kind: 'food', section: 'nearby' });
+    expect(parseHash('#/jedzenie/plan')).toEqual({ kind: 'diet', page: 'plan' });
+    expect(parseHash('#/jedzenie/postep')).toEqual({ kind: 'diet', page: 'progress' });
+    expect(parseHash('#/jedzenie/profil')).toEqual({ kind: 'diet', page: 'profile' });
+    // Nieznana podstrona dziennika prowadzi do dziennika, a nie na ekran Dziś.
+    expect(parseHash('#/jedzenie/cos')).toEqual({ kind: 'food', section: 'diary' });
+  });
+
+  it('zapytanie w hashu to stan strony, nie część trasy — także na starych adresach', () => {
+    expect(parseHash('#/produkty?q=skyr')).toEqual({ kind: 'food', section: 'products' });
+    expect(parseHash('#/produkty?q=skyr&p=5901234')).toEqual({ kind: 'food', section: 'products' });
+    expect(parseHash('#/jedzenie?dodaj=1')).toEqual({ kind: 'food', section: 'diary' });
+    expect(parseHash('#/jedzenie/postep?od=2026-01-01')).toEqual({ kind: 'diet', page: 'progress' });
+    expect(parseHash('#/treningi?x=1')).toEqual({ kind: 'tab', tab: 'work' });
+    expect(parseHash('#/cwiczenia/swing2?x=1')).toEqual({ kind: 'exercise', id: 'swing2' });
+    expect(parseHash('#/plan?x')).toEqual({ kind: 'tab', tab: 'plan' });
+  });
+
+  it('Plan, Treningi i Ćwiczenia z podstronami podświetlają Trening', () => {
+    const work = [
+      '#/plan',
+      PLANS_PATH,
+      PLAN_CLASSIC_PATH,
+      PLAN_NEW_PATH,
+      planPath('cel-ppl-60'),
+      planEditPath('p1'),
+      '#/treningi',
+      workoutPath('A'),
+      workoutNewPath(),
+      workoutEditPath('w1'),
+      '#/cwiczenia',
+      exercisePath('swing2'),
+    ];
+    work.forEach((h) => expect(activeTab(parseHash(h)), h).toBe('work' as TabKey));
+  });
+
+  it('sekcje i podstrony jedzenia podświetlają Jedzenie', () => {
+    ['#/jedzenie', '#/przepisy', '#/produkty?q=a', '#/w-poblizu', '#/jedzenie/plan', '#/jedzenie/postep', '#/jedzenie/profil'].forEach(
+      (h) => expect(activeTab(parseHash(h)), h).toBe('food' as TabKey),
+    );
+  });
+
+  it('korzenie sekcji nie mają strzałki wstecz, podstrony dziennika wracają do dziennika', () => {
+    const roots: [string, string][] = [
+      ['#/plan', 'Plan'],
+      ['#/treningi', 'Treningi'],
+      ['#/cwiczenia', 'Ćwiczenia'],
+      ['#/jedzenie', 'Jedzenie'],
+      ['#/przepisy', 'Przepisy'],
+      ['#/produkty', 'Produkty'],
+      ['#/w-poblizu', 'W pobliżu'],
+    ];
+    roots.forEach(([h, title]) => expect(screenOf(parseHash(h)), h).toEqual({ title, parent: null }));
+    expect(screenOf(parseHash('#/jedzenie/plan'))).toEqual({ title: 'Plan posiłków', parent: '#/jedzenie' });
+    expect(screenOf(parseHash('#/jedzenie/postep'))).toEqual({ title: 'Postęp', parent: '#/jedzenie' });
+    expect(screenOf(parseHash('#/jedzenie/profil'))).toEqual({ title: 'Profil diety', parent: '#/jedzenie' });
+  });
+
+  it('przełącznik sekcji: Plan · Treningi · Ćwiczenia i Dziennik · Przepisy · Produkty · W pobliżu', () => {
+    expect(SECTIONS.work.map((s) => [s.path, s.label])).toEqual([
+      ['#/plan', 'Plan'],
+      ['#/treningi', 'Treningi'],
+      ['#/cwiczenia', 'Ćwiczenia'],
+    ]);
+    expect(SECTIONS.food.map((s) => [s.path, s.label])).toEqual([
+      ['#/jedzenie', 'Dziennik'],
+      ['#/przepisy', 'Przepisy'],
+      ['#/produkty', 'Produkty'],
+      ['#/w-poblizu', 'W pobliżu'],
+    ]);
+    // Każda sekcja należy do swojej zakładki.
+    SECTIONS.work.forEach((s) => expect(activeTab(parseHash(s.path))).toBe('work' as TabKey));
+    SECTIONS.food.forEach((s) => expect(activeTab(parseHash(s.path))).toBe('food' as TabKey));
+  });
+
+  it('pierwsze wejście w Trening: Plan, gdy plan trwa, inaczej Treningi; w Jedzenie — Dziennik', () => {
+    expect(tabHref('work', { hasPlan: true })).toBe('#/plan');
+    expect(tabHref('work', { hasPlan: false })).toBe('#/treningi');
+    expect(tabHref('food', { hasPlan: false })).toBe('#/jedzenie');
+    expect(tabHref('train', { hasPlan: true })).toBe('#/sesja');
+    expect(tabHref('ach', { hasPlan: true })).toBe('#/osiagniecia');
+    expect(tabHref('prog', { hasPlan: true })).toBe('#/profil');
+  });
+
+  it('zakładka wraca do ostatniej sekcji — razem z jej stanem w zapytaniu', () => {
+    rememberSection('#/cwiczenia');
+    expect(tabHref('work', { hasPlan: true })).toBe('#/cwiczenia');
+    rememberSection('#/produkty?q=skyr&ns=a');
+    expect(tabHref('food', { hasPlan: false })).toBe('#/produkty?q=skyr&ns=a');
+    // Podstrona nie jest sekcją: zakładka wraca do sekcji, z której się w nią weszło.
+    rememberSection(exercisePath('swing2'));
+    rememberSection('#/jedzenie/postep');
+    expect(tabHref('work', { hasPlan: true })).toBe('#/cwiczenia');
+    expect(tabHref('food', { hasPlan: false })).toBe('#/produkty?q=skyr&ns=a');
+    // Zakładki bez sekcji mają stały adres, cokolwiek się zapamiętało.
+    rememberSection('#/sesja');
+    expect(tabHref('train', { hasPlan: false })).toBe('#/sesja');
+    rememberSection('#/plan');
+    expect(tabHref('work', { hasPlan: false })).toBe('#/plan');
+    forgetSections();
+    expect(tabHref('work', { hasPlan: false })).toBe('#/treningi');
+  });
+
+  it('każda sekcja pamięta swój adres z zapytaniem — przełącznik sekcji do niego wraca', () => {
+    expect(sectionHref('#/produkty')).toBe('#/produkty');
+    rememberSection('#/produkty?q=skyr');
+    rememberSection('#/przepisy?czas=15');
+    rememberSection('#/jedzenie');
+    // Zakładka idzie do ostatniej sekcji, a każda pozycja przełącznika — do ostatniego adresu swojej sekcji.
+    expect(tabHref('food', { hasPlan: false })).toBe('#/jedzenie');
+    expect(sectionHref('#/produkty')).toBe('#/produkty?q=skyr');
+    expect(sectionHref('#/przepisy')).toBe('#/przepisy?czas=15');
+    expect(sectionHref('#/w-poblizu')).toBe('#/w-poblizu');
+    // Wyczyszczone wyszukiwanie też się pamięta.
+    rememberSection('#/produkty');
+    expect(sectionHref('#/produkty')).toBe('#/produkty');
+    expect(tabHref('food', { hasPlan: false })).toBe('#/produkty');
+  });
+
+  it('przewinięcie pamięta się na korzeniach wszystkich sekcji, z zapytaniem i bez', () => {
+    ['#/plan', '#/treningi', '#/cwiczenia', '#/jedzenie', '#/przepisy', '#/produkty', '#/w-poblizu'].forEach((h) => {
+      expect(isTabRoot(h), h).toBe(true);
+      expect(isTabRoot(`${h}?q=a`), `${h}?q=a`).toBe(true);
+    });
+    expect(isTabRoot('#/jedzenie/plan')).toBe(false);
+    expect(isTabRoot(PLANS_PATH)).toBe(false);
+  });
+});
 
 describe('trasy', () => {
   it('każda zakładka ma własną, unikalną ścieżkę', () => {
@@ -76,16 +227,19 @@ describe('trasy', () => {
     });
   });
 
-  it('katalog, podgląd, kreator planów i konfigurator klasyczny należą do Planu', () => {
+  it('katalog, podgląd, kreator planów i konfigurator klasyczny to podstrony sekcji Plan w Treningu', () => {
     expect(parseHash(PLANS_PATH)).toEqual({ kind: 'plans' });
     expect(parseHash(PLAN_CLASSIC_PATH)).toEqual({ kind: 'planClassic' });
     expect(parseHash(PLAN_NEW_PATH)).toEqual({ kind: 'planEdit' });
     expect(parseHash(planPath('cel-ppl-60'))).toEqual({ kind: 'planDetail', id: 'cel-ppl-60' });
     expect(parseHash(planEditPath('p1'))).toEqual({ kind: 'planEdit', id: 'p1' });
+    // Stary adres zakładki Plan prowadzi tam, gdzie prowadził — teraz do sekcji Treningu.
+    expect(parseHash('#/plan')).toEqual({ kind: 'tab', tab: 'plan' });
+    expect(screenOf({ kind: 'tab', tab: 'plan' })).toEqual({ title: 'Plan', parent: null });
     (
       [{ kind: 'plans' }, { kind: 'planClassic' }, { kind: 'planDetail', id: 'x' }, { kind: 'planEdit' }] as Route[]
     ).forEach((r) => {
-      expect(activeTab(r), r.kind).toBe('plan' as TabKey);
+      expect(activeTab(r), r.kind).toBe('work' as TabKey);
       expect(screenOf(r).parent, r.kind).toBeTruthy();
     });
   });
@@ -137,6 +291,10 @@ describe('trasy', () => {
     expect(parseHash('')).toEqual({ kind: 'tab', tab: 'train' });
     expect(parseHash('#/')).toEqual({ kind: 'tab', tab: 'train' });
     expect(parseHash('#/cos-czego-nie-ma')).toEqual({ kind: 'tab', tab: 'train' });
+    // Nazwy z prototypu obiektu to też nieznane adresy, a nie „zakładka” w postaci funkcji.
+    expect(parseHash('#/constructor')).toEqual({ kind: 'tab', tab: 'train' });
+    expect(parseHash('#/toString')).toEqual({ kind: 'tab', tab: 'train' });
+    expect(parseHash('#/jedzenie/constructor')).toEqual({ kind: 'food', section: 'diary' });
   });
 
   it('atlas ma spis i podstrony ćwiczeń', () => {

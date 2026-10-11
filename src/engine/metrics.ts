@@ -7,6 +7,7 @@ import { cardioStats } from './cardio';
 import type { CardioStats } from './cardio';
 import { exerciseVolumes } from './volume';
 import type { ExVolume } from './volume';
+import { SMOOTH_GAP, timed, transitions } from './clock';
 
 /**
  * Warstwa liczb. Wszystko, co da się policzyć z historii treningów, liczy się tutaj raz,
@@ -304,6 +305,53 @@ export function stageSum(state: AppState): number {
   );
 }
 
+/** Czas na treningu — tylko z treningów z zegarem, od 3 minut do 4 godzin. */
+export interface TimeStats {
+  /** Wszystkie minuty treningu. */
+  minutes: number;
+  /** Ile treningów z policzonym czasem. */
+  timed: number;
+  /** Najdłuższy pojedynczy trening w minutach. */
+  longest: number;
+  /** Treningi bez przestojów: co najmniej trzy zaczęte części i każde przejście do 4 minut. */
+  smooth: number;
+  /** Tygodnie od poniedziałku do niedzieli z co najmniej dwiema godzinami treningu. */
+  weeks120: number;
+}
+
+/**
+ * Czas z dziennika. Trening krótszy niż 3 minuty albo dłuższy niż 4 godziny zostaje w historii,
+ * ale tu go nie ma — to zwykle stuknięcie „Zaczynam” bez treningu albo zapomniane zamknięcie.
+ * Nic tu nie mierzy szybkości: krótszy trening nie jest lepszy, bo przerwa w treningu siłowym
+ * nie jest dźwignią postępu (`rests.ts`). Płynność liczy tylko przejścia między ćwiczeniami —
+ * czas, którego nikt nie zalecał.
+ */
+export function timeMetrics(log: LogEntry[]): TimeStats {
+  let secs = 0;
+  let longest = 0;
+  let smooth = 0;
+  let n = 0;
+  const weeks = new Map<string, number>();
+  log.forEach((e) => {
+    const t = e.time;
+    if (!timed(t)) return;
+    n++;
+    secs += t.secs;
+    longest = Math.max(longest, t.secs);
+    const week = mondayOf(dayKey(e.date));
+    weeks.set(week, (weeks.get(week) ?? 0) + t.secs);
+    const started = t.parts.filter((p) => p.at !== undefined).length;
+    if (started >= 3 && transitions(t).every((g) => g.secs <= SMOOTH_GAP)) smooth++;
+  });
+  return {
+    minutes: Math.round(secs / 60),
+    timed: n,
+    longest: Math.round(longest / 60),
+    smooth,
+    weeks120: [...weeks.values()].filter((w) => w >= 120 * 60).length,
+  };
+}
+
 export interface Metrics {
   workouts: number;
   sets: number;
@@ -371,6 +419,8 @@ export interface Metrics {
   cardio: CardioStats;
   /** Objętość każdego ćwiczenia z treningów i przekąsek razem — pod odznaki ćwiczeń. */
   perEx: Record<ExerciseId, ExVolume>;
+  /** Czas na treningu z zegara sesji. */
+  time: TimeStats;
 }
 
 export function metrics(state: AppState): Metrics {
@@ -448,5 +498,6 @@ export function metrics(state: AppState): Metrics {
     snacks: snackStats(snacksOf(state)),
     cardio: cardioStats(state),
     perEx: exerciseVolumes(state.log, snacksOf(state)),
+    time: timeMetrics(state.log),
   };
 }

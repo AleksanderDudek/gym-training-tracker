@@ -11,6 +11,7 @@ export type IconName =
   | 'levels'
   | 'awards'
   | 'workouts'
+  | 'food'
   | 'atlas'
   | 'settings'
   | 'coffee'
@@ -50,6 +51,15 @@ const PATHS: Record<IconName, ReactNode> = {
     <>
       <path d="M9 7h11M9 12h11M9 17h11" />
       <path d="M4.5 7h.01M4.5 12h.01M4.5 17h.01" />
+    </>
+  ),
+  // Jabłko z listkiem — jedzenie. Owoc, a nie talerz ze sztućcami: w 23 px talerz zlewa się
+  // w kółko z kreskami, a jabłko czyta się od razu i nie mówi „restauracja”.
+  food: (
+    <>
+      <path d="M12 8.1c-1.5-1.3-3.6-1.6-5.2-.7-2.5 1.4-3.1 4.6-2.2 7.5.9 2.9 2.9 5.6 5.1 5.6.9 0 1.5-.5 2.3-.5s1.4.5 2.3.5c2.2 0 4.2-2.7 5.1-5.6.9-2.9.3-6.1-2.2-7.5-1.6-.9-3.7-.6-5.2.7Z" />
+      <path d="M12 8.1c0-1.9.5-3.3 1.6-4.4" />
+      <path d="M13.9 5.9c.4-1.8 1.9-2.8 3.9-2.7-.3 1.8-1.9 2.9-3.9 2.7Z" />
     </>
   ),
   // Siatka kafelków — atlas jako katalog.

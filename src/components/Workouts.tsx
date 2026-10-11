@@ -4,6 +4,7 @@ import { OWN_WORKOUT_JOKES, WORKOUT_JOKES } from '../data/exjokes';
 import { EX_MUSCLES, MUSCLE_NAME } from '../data/muscles';
 import { GOAL_PLANS, PROFILE_PLANS } from '../data/plans';
 import { plannedBurn } from '../engine/burn';
+import { averageTime, durationText } from '../engine/clock';
 import { KIND_LABEL, RULES, dose, reviewWorkout } from '../engine/design';
 import { planLabel } from '../engine/plan';
 import { similarTo, workoutGear } from '../engine/similar';
@@ -269,6 +270,16 @@ export function WorkoutPreview({
       <div className="wrap">
         <h2 className="ex-h">{w.name}</h2>
         <p className="wmeta">{metaLine(state, w, r.secs)}</p>
+        {(() => {
+          // Szacunek mówi, ile trening powinien trwać; zegar — ile trwał u ciebie naprawdę.
+          const avg = averageTime(state.log, w);
+          return avg ? (
+            <p className="wmeta">
+              Twój średni czas: {durationText(avg.secs)}{' '}
+              {avg.n === 1 ? '(z ostatniego treningu)' : `(z ${avg.n} ostatnich)`}
+            </p>
+          ) : null;
+        })()}
         {w.desc && <p className="lead">{w.desc}</p>}
         {own &&
           w.base &&

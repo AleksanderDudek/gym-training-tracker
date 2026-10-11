@@ -16,11 +16,12 @@ import { roundRestOf } from '../engine/rests';
 import { plan } from '../engine/plan';
 import { altsFor } from '../engine/structure';
 import { HealthCard } from './Health';
-import { RemindersCard } from './Reminders';
+import { ON_OFF, RemindersCard } from './Reminders';
 import { GarminCard } from './Garmin';
 import { PromoCard } from './Promo';
 import type { PullResult } from '../garmin';
 import { SupportLine } from './Support';
+import { Segmented } from './ui';
 import type { AppState, EffortKey, ExerciseId, ReadyKey, ReminderPrefs, SetResult, Workout } from '../types';
 
 /* ---------------- Sesja ---------------- */
@@ -204,9 +205,12 @@ export function SettingsView({
   onWatchSync,
   onToast,
   onFeedback,
+  onClockPref,
 }: {
   state: AppState;
   onFeedback?: (() => void) | undefined;
+  /** Licznik czasu treningu w pasku: pokazany albo schowany. */
+  onClockPref: (on: boolean) => void;
   onReminders: (p: ReminderPrefs) => void;
   onWatchSync: () => Promise<PullResult>;
   onToast: (m: string) => void;
@@ -227,6 +231,20 @@ export function SettingsView({
       <PromoCard />
       <RemindersCard state={state} onPrefs={onReminders} onToast={onToast} />
       <GarminCard state={state} onSync={onWatchSync} onToast={onToast} />
+
+      <div className="grp">
+        <h2>Czas treningu w pasku</h2>
+        <p className="tight">
+          W trakcie sesji pasek na górze pokazuje, ile trwa trening — od „Zaczynam” do zamknięcia.
+        </p>
+        <Segmented
+          label="Czas treningu w pasku"
+          options={ON_OFF}
+          value={state.cfg.clock === false ? 'off' : 'on'}
+          onChange={(v) => onClockPref(v === 'on')}
+        />
+        <p className="hint">Liczy się zawsze — przełącznik tylko pokazuje albo chowa licznik.</p>
+      </div>
 
       {onFeedback && (
         <div className="grp">

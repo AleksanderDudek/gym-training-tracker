@@ -72,14 +72,23 @@ export const store = {
 };
 
 /** Zapisy idą jednym łańcuchem, żeby równoległe wywołania nie wyścigały się o klucz. */
-let chain: Promise<void> = Promise.resolve();
+let chain: Promise<unknown> = Promise.resolve();
 
-export function queueSave(state: AppState, onFail: (broken: boolean) => void): Promise<void> {
-  chain = chain
+/**
+ * Zapis w kolejce. Obietnica mówi, czy ten zapis trafił na dysk — kto po nim usuwa coś z innego
+ * miejsca (ważenia z dziennika diety), robi to dopiero, gdy wie, że dane już leżą w zapisie.
+ */
+export function queueSave(state: AppState, onFail: (broken: boolean) => void): Promise<boolean> {
+  const saved = chain
     .then(async () => {
       const ok = await store.set(state);
       onFail(!ok);
+      return ok;
     })
-    .catch(() => onFail(true));
-  return chain;
+    .catch(() => {
+      onFail(true);
+      return false;
+    });
+  chain = saved;
+  return saved;
 }

@@ -146,8 +146,6 @@
    */
   @media (min-width:672px){
     .page{border-left:1px solid var(--line);border-right:1px solid var(--line);min-height:100vh}
-    body nav{justify-content:center}
-    body nav a{flex:0 1 128px}
   }
   @media (prefers-reduced-motion:no-preference){
     .page{animation:pagein .2s ease-out}
@@ -260,6 +258,14 @@
     display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:baseline}
   .h-date{font-family:var(--display);font-size:17px}
   .h-detail{font-size:13px;color:var(--ink-soft)}
+  .h-time{font-family:var(--display);font-size:15px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+  .h-out{font-family:var(--body);font-size:12.5px}
+  /* Przebieg treningu z zegarem: zwinięty, bo historia to lista, a nie raport. */
+  .h-parts{font-size:13px;color:var(--ink-soft)}
+  .h-parts summary{cursor:pointer;color:var(--steel);font-weight:600;padding:11px 0;line-height:22px}
+  .h-parts ol{margin:0 0 4px;padding-left:20px;line-height:1.45}
+  .h-parts li{margin:2px 0}
+  .h-gap{font-variant-numeric:tabular-nums}
 
   .grp{background:var(--surface);border-bottom:1px solid var(--line);padding:14px}
   /* Nagłówki sekcji są h2 (po h1 w pasku aplikacji), ale wyglądają jak dotąd: skromnie, krojem treści. */
@@ -284,38 +290,48 @@
   /*
    * Dolny pasek: pięć pozycji po 64 px wysokości i co najmniej 64 px szerokości na ekranie
    * 320 px. Aktywna zakładka ma „pigułkę” za ikoną, kolor i pogrubienie — trzy sygnały naraz,
-   * tak jak wskaźnik aktywnej pozycji w Material 3.
+   * tak jak wskaźnik aktywnej pozycji w Material 3. Reguły celują w klasę, nie w znacznik:
+   * `nav` to też przełącznik sekcji u góry ekranu.
    */
-  nav{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--surface);
+  .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--surface);
     border-top:1px solid var(--line);display:flex;
     padding-bottom:env(safe-area-inset-bottom);
     box-shadow:0 -1px 0 rgba(30,35,32,.04),0 -6px 18px rgba(30,35,32,.06)}
-  nav a{flex:1;min-width:0;min-height:64px;display:flex;flex-direction:column;
+  .tabbar a{flex:1;min-width:0;min-height:64px;display:flex;flex-direction:column;
     align-items:center;justify-content:center;gap:4px;
     padding:8px 2px 9px;background:none;border:0;font:inherit;font-size:12px;line-height:1.15;
     text-align:center;white-space:nowrap;text-decoration:none;color:var(--ink-soft);
     cursor:pointer;position:relative;
     -webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
-  nav a .ico{flex:none;opacity:.82}
+  .tabbar a .ico{flex:none;opacity:.82}
   .navpill{display:grid;place-items:center;width:56px;height:30px;border-radius:15px;
     transition:background-color .15s ease-out}
-  nav a[aria-current=page]{color:var(--c-orange-ink);font-weight:600}
-  nav a[aria-current=page] .ico{opacity:1}
-  nav a[aria-current=page] .navpill{background:var(--c-orange-bg)}
-  nav a:active .navpill{background:var(--surface-2)}
-  nav a[aria-current=page]:active .navpill{background:var(--c-orange-bg)}
+  .tabbar a[aria-current=page]{color:var(--c-orange-ink);font-weight:600}
+  .tabbar a[aria-current=page] .ico{opacity:1}
+  .tabbar a[aria-current=page] .navpill{background:var(--c-orange-bg)}
+  .tabbar a:active .navpill{background:var(--surface-2)}
+  .tabbar a[aria-current=page]:active .navpill{background:var(--c-orange-bg)}
   .navlabel{max-width:100%;overflow:hidden;text-overflow:ellipsis}
   /*
    * Klawiatura na telefonie podnosi przyklejony pasek nad siebie i przykrywa nim pole, w którym
    * się pisze. Na czas pisania pasek znika — wraca, gdy fokus opuści pole.
    */
   @media (pointer:coarse){
-    body:has(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):focus) nav,
-    body:has(textarea:focus) nav{display:none}
+    body:has(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):focus) .tabbar,
+    body:has(textarea:focus) .tabbar{display:none}
   }
-  nav a:focus-visible{outline:2px solid var(--steel);outline-offset:-3px}
+  .tabbar a:focus-visible{outline:2px solid var(--steel);outline-offset:-3px}
   /* Najwęższe telefony: etykiety schodzą o pół punktu, cel dotykowy zostaje bez zmian. */
-  @media (max-width:339px){nav a{font-size:11px;letter-spacing:-.01em}}
+  @media (max-width:339px){.tabbar a{font-size:11px;letter-spacing:-.01em}}
+  /*
+   * Szeroki ekran: zakładki zostają w kolumnie telefonu. Ta reguła stoi po bazowej `.tabbar a`,
+   * bo ma tę samą wagę selektora — wcześniej przegrałaby z `flex:1` i zakładki rozjechałyby się
+   * po krawędziach.
+   */
+  @media (min-width:672px){
+    .tabbar{justify-content:center}
+    .tabbar a{flex:0 1 128px}
+  }
 
   #modal{position:fixed;inset:0;background:rgba(30,35,32,.55);display:grid;place-items:center;padding:18px;z-index:50}
   #modal.hidden{display:none}
@@ -358,6 +374,20 @@
   .mtext li{margin-bottom:6px;padding-left:16px;text-indent:-16px;font-size:14.5px}
   .toast{position:fixed;left:14px;right:14px;bottom:calc(76px + env(safe-area-inset-bottom));max-width:612px;margin:0 auto;background:var(--steel);
     color:#fff;padding:12px 14px;border-radius:var(--r);font-size:14px;z-index:40}
+  /*
+   * Nowa wersja aplikacji: nad dolnym paskiem, w tej samej kolumnie co treść. Nad paskiem (30),
+   * pod komunikatem (40), który i tak znika po chwili, i pod oknami (50). W trakcie treningu go nie
+   * ma — przeładowanie w środku serii zgubiłoby miejsce (`UpdateBar`). Przyciski odwrócone: stalowy
+   * przycisk na stalowym pasku byłby niewidoczny.
+   */
+  .updatebar{position:fixed;left:14px;right:14px;bottom:calc(80px + env(safe-area-inset-bottom));max-width:612px;
+    margin:0 auto;background:var(--steel);color:#fff;padding:8px 8px 8px 14px;border-radius:var(--r);
+    display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:14px;z-index:38;
+    box-shadow:0 6px 18px rgba(30,35,32,.18)}
+  .updatebar-text{flex:1 1 auto;min-width:0}
+  .updatebar .btn{background:#fff;border-color:#fff;color:var(--steel)}
+  .updatebar .btn.ghost{background:transparent;border-color:transparent;color:#fff}
+  .updatebar button:focus-visible{outline:2px solid #fff;outline-offset:2px}
 
   .hidden{display:none}
   .empty{background:var(--surface);padding:26px 16px;text-align:center;color:var(--ink-soft);font-size:14px}
@@ -927,12 +957,21 @@
 
   /* ---------------- Treningi, plany i doradca ---------------- */
 
-  /* Przełącznik sekcji zakładki Treningi — odnośniki w stroju przełącznika segmentowego. */
+  /* Przełącznik sekcji zakładki (Trening, Jedzenie) — odnośniki w stroju przełącznika segmentowego. */
   .sect-switch{margin:14px 0 12px}
   .seg a{display:flex;align-items:center;justify-content:center;font-size:13.5px;padding:11px 6px;
     min-height:48px;background:var(--surface-2);border:1px solid var(--edge);border-radius:var(--r);
-    color:var(--ink-soft);text-decoration:none;-webkit-tap-highlight-color:transparent}
+    color:var(--ink-soft);text-decoration:none;text-align:center;line-height:1.2;
+    -webkit-tap-highlight-color:transparent}
   .seg a[aria-current=page]{background:var(--steel);border-color:var(--steel);color:#fff;font-weight:600}
+  .seg a:focus-visible{outline:2px solid var(--steel);outline-offset:2px}
+  /*
+   * Cztery sekcje na ekranie 320 px to po 68 px na pozycję: „W pobliżu” pogrubione przy 13,5 px
+   * już się nie mieści. Krój schodzi o punkt, a boczne marginesy do minimum — wysokość, a więc
+   * cel dotykowy, zostaje bez zmian.
+   */
+  .sect-switch[data-n="4"]{gap:4px}
+  .sect-switch[data-n="4"] a{font-size:12.5px;padding:11px 2px;letter-spacing:-.01em}
 
   /* Filtry, które się zawijają — przełącznik segmentowy mieści najwyżej trzy pozycje. */
   .chips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 2px}
@@ -1143,6 +1182,39 @@
   .guide-foot{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
   .guide-effort .seg{margin-bottom:0}
   @media (prefers-reduced-motion:reduce){.guide-bar i{transition:none}}
+
+  /*
+   * Zegar sesji. Licznik w pasku: cyfry tej samej szerokości, żeby pasek nie drgał co sekundę,
+   * i tło `--surface-2`, bo to odczyt, a nie przycisk — nie ma ramki kontrolki.
+   */
+  .clock-pill{flex:none;min-height:32px;padding:3px 12px;display:inline-flex;align-items:center;
+    border-radius:999px;background:var(--surface-2);color:var(--ink);font-family:var(--display);
+    font-size:17px;font-weight:500;line-height:1;font-variant-numeric:tabular-nums;white-space:nowrap}
+  /* Pasek części: zrobiona — pełna, bieżąca — wyższa i pomarańczowa, następna — sam obrys, pominięta — kreska. */
+  .part-strip{margin-top:12px}
+  .part-segs{display:flex;gap:4px;align-items:center;list-style:none;margin:0;padding:0}
+  .part-seg{flex:1;height:8px;border-radius:2px;border:1px solid var(--edge);background:transparent}
+  .part-seg.done{background:var(--steel);border-color:var(--steel)}
+  .part-seg.now{height:12px;background:var(--c-orange);border-color:var(--c-orange-ink)}
+  .part-seg.skip{height:2px;border:0;background:var(--edge)}
+  .part-line{margin:6px 0 0;font-size:13px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+  /* Karta przejścia: duża liczba to czas od końca poprzedniej części, przerwa stoi pod nią mniejsza. */
+  .guide-trans .guide-clock{margin-bottom:2px}
+  /* „Start: Pompki w podporze przodem + Unoszenie ramion…” zawija się, zamiast wyjść poza ekran. */
+  .guide-trans .guide-go{line-height:1.3;overflow-wrap:anywhere}
+  .guide-trans p.trans-cap{text-align:center;margin:0 0 12px;max-width:none}
+  .trans-rest{border-top:1px solid var(--line);padding-top:10px;margin-bottom:10px}
+  .trans-rest .guide-where b{font-family:var(--display);font-size:17px;font-weight:500;color:var(--ink);
+    font-variant-numeric:tabular-nums}
+  .trans-rest .guide-bar{margin:8px 0 10px}
+  .trans-next{list-style:none;margin:12px 0 0;padding:0;font-size:14.5px;line-height:1.45}
+  .trans-next li{margin:4px 0}
+  /* Start sesji: plan części i przełącznik licznika. */
+  .parts-plan h2{margin-bottom:6px}
+  .parts-list{margin:0;padding-left:22px;font-size:14px;line-height:1.5}
+  .parts-list li{margin:2px 0}
+  .check-row{display:flex;align-items:center;gap:10px;min-height:44px;margin:4px 0 8px;font-size:14px;cursor:pointer}
+  .check-row input{width:22px;height:22px;margin:0;flex:none;accent-color:var(--steel)}
 
   /* Kreator: nazwa ćwiczenia otwiera zamianę w miejscu. */
   .bl-item button.bl-name{background:none;border:0;padding:6px 0;text-align:left;color:var(--ink);font-size:14.5px;

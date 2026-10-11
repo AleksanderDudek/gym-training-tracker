@@ -1,0 +1,155 @@
+/*
+ * Przepisy: rzędy filtrów, karta przepisu (makro na porcję, zasada, sklep, składniki, kroki),
+ * arkusz zamiany składnika i gotowe produkty. Karty produktów, arkusz i stopkę ma
+ * `../common/common.css`. Kartę przepisu i gotowe produkty pokazuje też „W pobliżu”, więc ten
+ * plik wczytują same komponenty, nie tylko strona. Kolory wyłącznie z tokenów aplikacji.
+ */
+
+/* ---------------- Filtry ---------------- */
+
+.fd-rec-filters{display:grid;gap:12px}
+.fd-rec-chiprow{min-width:0}
+.fd-rec-chiprow .seg-label{margin:0 0 4px}
+.fd-rec-chiprow .chips{margin:0}
+.fd-rec-chip-in{display:inline-flex;align-items:center;gap:5px}
+.fd-rec-chip-n{font-weight:400}
+/*
+ * Na telefonie rząd żetonów przewija się w bok, od krawędzi do krawędzi bloku: urwany żeton przy
+ * brzegu ekranu mówi, że dalej jest więcej. Szerzej rząd zawija się jak `.chips` w Treningach.
+ */
+@media (max-width:519px){
+  .fd-rec-chiprow .fd-rec-chips{flex-wrap:nowrap;overflow-x:auto;margin:0 -14px;padding:0 14px 2px;scroll-padding:0 14px;
+    scrollbar-width:none;overscroll-behavior-x:contain}
+  .fd-rec-chiprow .fd-rec-chips::-webkit-scrollbar{display:none}
+  .fd-rec-chiprow .fd-rec-chips button{flex:none;white-space:nowrap}
+}
+
+/* ---------------- Grupa czasu ---------------- */
+
+.fd-rec-tier{display:inline-flex;align-items:center;gap:4px;padding:2px 9px 2px 7px;border-radius:999px;
+  font-size:12.5px;font-weight:600;line-height:1.5;background:var(--surface-2);border:1px solid var(--line);
+  color:var(--ink-soft);white-space:nowrap}
+/* Szybkie wyróżnia złoto z wypełnioną błyskawicą — ciemnozłoty napis trzyma ponad 5:1 na swoim tle. */
+.fd-rec-tier.fd-rec-szybkie{background:var(--c-gold-bg);border-color:var(--c-gold);color:var(--c-gold-ink)}
+.fd-rec-tier-icon{flex:none}
+.fd-rec-tier-icon.fd-rec-szybkie{fill:var(--c-gold);color:var(--c-gold-ink)}
+
+/* ---------------- Lista przepisów ---------------- */
+
+.fd-rec-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:2px 12px;
+  margin:20px auto 8px}
+.fd-rec-head h2{margin:0}
+.fd-rec-count{margin:0;font-size:13px;color:var(--ink-soft)}
+.fd-rec-list{display:grid;gap:10px;margin:0;padding:0;list-style:none}
+
+/* Karta jak blok `.grp` aplikacji, tyle że oddzielona od sąsiadek pasem tła — przepis jest długi. */
+.fd-rec-card{background:var(--surface);border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+  padding:14px 14px 0}
+.fd-rec-meta{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;font-size:13px;color:var(--ink-soft)}
+.fd-rec-kind{font-weight:600}
+.fd-rec-fact{display:inline-flex;align-items:center;gap:4px;font-family:var(--display);font-size:14px;
+  color:var(--c-blue-ink)}
+.fd-rec-name{margin:8px 0 4px;font-family:var(--display);font-weight:600;font-size:22px;line-height:1.12;
+  overflow-wrap:anywhere}
+.fd-rec-desc{margin:0 0 12px;font-size:14px;line-height:1.45;color:var(--ink-soft);max-width:62ch}
+
+/* ---------------- Makro na porcję i zasada ---------------- */
+
+.fd-rec-macro{display:grid;gap:6px;margin:0 0 12px;padding:10px 12px;background:var(--surface-2);border-radius:var(--r)}
+.fd-rec-macro p{margin:0}
+.fd-rec-macro-main{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 12px}
+.fd-rec-protein{font-family:var(--display);font-weight:600;font-size:30px;line-height:1.05;color:var(--ink)}
+.fd-rec-protein span{font-family:var(--body);font-size:14px;font-weight:600;color:var(--ink-soft)}
+.fd-rec-macro-rest{font-family:var(--display);font-size:15px;color:var(--ink-soft)}
+.fd-rec-macro .fd-rec-per{margin-top:-4px;font-size:12.5px;font-weight:600;color:var(--ink-soft)}
+/* Udział w kaloriach: trzy odcinki z cienką przerwą, żeby sąsiednie kolory nie zlewały się w jeden. */
+.fd-rec-energy{display:flex;height:8px;border-radius:4px;overflow:hidden;background:var(--line)}
+.fd-rec-energy span{display:block;height:100%}
+.fd-rec-energy span + span{box-shadow:inset 2px 0 0 var(--surface-2)}
+.fd-rec-energy .fd-rec-e-protein,.fd-rec-energy-legend .fd-rec-e-protein::before{background:var(--c-blue-ink)}
+.fd-rec-energy .fd-rec-e-carbs,.fd-rec-energy-legend .fd-rec-e-carbs::before{background:var(--c-gold)}
+.fd-rec-energy .fd-rec-e-fat,.fd-rec-energy-legend .fd-rec-e-fat::before{background:var(--c-orange)}
+.fd-rec-energy-legend{display:flex;flex-wrap:wrap;gap:0 12px;margin:0;padding:0;list-style:none;font-size:12px;
+  color:var(--ink-soft)}
+.fd-rec-energy-legend li::before{content:'';display:inline-block;width:8px;height:8px;margin-right:5px;border-radius:50%}
+.fd-rec-rule{display:flex;align-items:flex-start;gap:6px;font-size:13px;line-height:1.4}
+.fd-rec-rule svg{flex:none;margin-top:1px}
+.fd-rec-rule.fd-rec-ok{color:var(--ok)}
+/* Złamana zasada: ostrzeżenie w stroju `.dnote.warn` — kreska, kolor, ikona i zdanie. */
+.fd-rec-macro .fd-rec-rule.fd-rec-bad{margin-top:2px;padding:8px 10px;background:var(--surface);border-left:3px solid var(--warn);
+  border-radius:var(--r);color:var(--warn);font-weight:600}
+.fd-rec-rule.fd-rec-bad svg{margin-top:-1px}
+
+/* ---------------- Sklep ---------------- */
+
+.fd-rec-shop{margin:0 0 12px}
+.fd-rec-shop-line{display:flex;align-items:flex-start;gap:8px;margin:0;font-size:15px;font-weight:600;line-height:1.35}
+.fd-rec-shop-line svg{flex:none;margin-top:-1px;color:var(--ink-soft)}
+.fd-rec-shop-chips{margin-top:8px}
+
+/* ---------------- Składniki ---------------- */
+
+.fd-rec-sub{margin:0 0 2px;font-family:var(--display);font-weight:500;font-size:13px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--ink-soft)}
+.fd-rec-ings-note{margin:0 0 4px;font-size:12.5px;color:var(--ink-soft)}
+.fd-rec-ing-list{margin:0;padding:0;list-style:none}
+.fd-rec-ing{padding:9px 0 4px;border-top:1px solid var(--surface-2)}
+.fd-rec-ing:first-child{border-top:0}
+.fd-rec-ing-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.fd-rec-ing-name{font-weight:600;font-size:15px;line-height:1.3}
+.fd-rec-ing-amt{flex:0 1 auto;max-width:55%;font-family:var(--display);font-size:14px;color:var(--ink-soft);text-align:right}
+.fd-rec-ing-prod{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:0 6px}
+.fd-rec-ing-pick{margin:0;font-size:13px;line-height:1.35;color:var(--ink-soft);overflow-wrap:anywhere}
+.fd-rec-ing-pname{color:var(--ink)}
+.fd-rec-ing-actions{display:flex;align-items:center;margin-right:-10px}
+.fd-rec-ing-swap{display:inline-flex;align-items:center;gap:5px;min-height:44px;padding:0 8px;border:0;border-radius:var(--r);
+  background:none;font:inherit;font-size:13.5px;font-weight:600;color:var(--steel);text-decoration:underline;
+  text-underline-offset:3px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.fd-rec-ing-info{width:44px;height:44px;display:grid;place-items:center;padding:0;border:0;border-radius:50%;
+  background:none;color:var(--steel);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.fd-rec-ing-swap:active,.fd-rec-ing-info:active{background:var(--surface-2)}
+.fd-rec-ing-note{display:block;padding:0 0 4px;font-size:12px;color:var(--ink-soft)}
+.fd-rec-ing-prod + .fd-rec-ing-note{margin-top:-6px}
+
+/* ---------------- Kroki ---------------- */
+
+.fd-rec-steps{margin:6px -14px 0;padding:0 14px;border-top:1px solid var(--surface-2)}
+.fd-rec-steps summary{display:flex;align-items:center;gap:4px;min-height:48px;cursor:pointer;list-style:none;
+  font-weight:600;color:var(--steel);-webkit-tap-highlight-color:transparent}
+.fd-rec-steps summary::-webkit-details-marker{display:none}
+.fd-rec-steps summary:focus-visible{outline:2px solid var(--steel);outline-offset:-2px}
+.fd-rec-steps[open] .fd-rec-steps-caret{transform:rotate(90deg)}
+.fd-rec-steps ol{margin:0 0 14px;padding-left:22px;font-size:14px;line-height:1.5}
+.fd-rec-steps li{margin:0 0 4px}
+@media (prefers-reduced-motion:no-preference){.fd-rec-steps-caret{transition:transform .15s ease-out}}
+
+/* ---------------- Arkusz zamiany ---------------- */
+
+.fd-rec-swap{min-width:0;margin:0;padding:0;border:0}
+.fd-rec-swap-legend{padding:0;margin:0 0 10px;font-size:13px;line-height:1.45;color:var(--ink-soft)}
+.fd-rec-swap-list{display:grid;gap:6px;margin:0;padding:0;list-style:none}
+.fd-rec-swap-opt{display:grid;grid-template-columns:22px minmax(0,1fr);gap:10px;align-items:start;min-height:48px;
+  padding:10px 12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);cursor:pointer;
+  -webkit-tap-highlight-color:transparent}
+.fd-rec-swap-opt:has(input:checked){background:var(--surface-2);border-color:var(--steel);box-shadow:inset 0 0 0 1px var(--steel)}
+.fd-rec-swap-opt input{width:20px;height:20px;margin:1px 0 0;accent-color:var(--steel)}
+.fd-rec-swap-text{display:grid;gap:1px;min-width:0}
+.fd-rec-swap-name{font-weight:600;font-size:15px;line-height:1.3;overflow-wrap:anywhere}
+.fd-rec-swap-meta{font-size:12.5px;color:var(--ink-soft);overflow-wrap:anywhere}
+.fd-rec-swap-num{font-family:var(--display);font-size:14px}
+.fd-rec-swap-warn{display:inline-flex;align-items:center;gap:4px;justify-self:start;margin-top:4px;padding:1px 8px 1px 6px;
+  border:1px solid var(--warn);border-radius:999px;font-size:12px;font-weight:600;color:var(--warn)}
+.fd-rec-swap-status{display:flex;align-items:flex-start;gap:6px;margin:0 0 10px;font-size:13.5px;line-height:1.4}
+.fd-rec-swap-status svg{flex:none;margin-top:1px}
+.fd-rec-swap-status.fd-rec-ok{color:var(--ok)}
+.fd-rec-swap-status.fd-rec-bad{color:var(--warn);font-weight:600}
+
+/* ---------------- Gotowe produkty ---------------- */
+
+.fd-rec-ready{margin-top:28px}
+.fd-rec-ready h2{margin:0 0 4px}
+.fd-rec-ready-groups{display:grid;gap:22px;margin-top:12px}
+.fd-rec-ready-title{margin:0 0 8px;font-family:var(--body);font-size:15px;font-weight:600}
+.fd-rec-ready-title span{font-weight:400;color:var(--ink-soft)}
+.fd-rec-ready-title:focus{outline:none}
+.fd-rec-ready-more{margin-top:10px}

@@ -24,6 +24,7 @@ import { PlanCatalog, Weekdays } from './Plans';
 import { BoostCard } from './Boost';
 import { PlanArt } from './SceneArt';
 import { HealthNote } from './Health';
+import { SectionSwitch } from './Design';
 import { PLANS_PATH, go } from '../routing';
 import type {
   AppState,
@@ -570,10 +571,6 @@ function ActivePlanView({
 
 /* ---------------- Wejście ---------------- */
 
-/**
- * Zakładka Plan: uruchomiony plan z kalendarzem albo — gdy żadnego nie ma — katalog planów.
- * Zmiana planu prowadzi do katalogu pod własnym adresem, więc „wstecz” wraca do kalendarza.
- */
 /** Zmiany planu w trakcie — od dziś, bez przepisywania tego, co minęło. */
 export interface PlanEdits {
   onWeekdays: (days: number[]) => void;
@@ -583,6 +580,12 @@ export interface PlanEdits {
   onStart: (workoutId: string) => void;
 }
 
+/**
+ * Sekcja Plan zakładki Trening: uruchomiony plan z kalendarzem albo — gdy żadnego nie ma —
+ * katalog planów. Przełącznik sekcji stoi nad jednym i drugim. Zmiana planu prowadzi do
+ * katalogu pod własnym adresem (`#/plany`, podstrona bez przełącznika), więc „wstecz” wraca
+ * do kalendarza.
+ */
 export function PlanView({
   state,
   onStop,
@@ -597,17 +600,25 @@ export function PlanView({
   edits: PlanEdits;
 }) {
   const snap = snapshot(state);
-  if (!snap) return <PlanCatalog state={state} />;
   return (
-    <ActivePlanView
-      state={state}
-      snap={snap}
-      onChange={() => go(PLANS_PATH)}
-      onStop={onStop}
-      onTick={onTick}
-      onFrequency={onFrequency}
-      edits={edits}
-    />
+    <>
+      <div className="wrap">
+        <SectionSwitch on="plan" />
+      </div>
+      {snap ? (
+        <ActivePlanView
+          state={state}
+          snap={snap}
+          onChange={() => go(PLANS_PATH)}
+          onStop={onStop}
+          onTick={onTick}
+          onFrequency={onFrequency}
+          edits={edits}
+        />
+      ) : (
+        <PlanCatalog state={state} />
+      )}
+    </>
   );
 }
 

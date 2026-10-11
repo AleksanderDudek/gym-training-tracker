@@ -1,0 +1,110 @@
+/*
+ * W pobliżu: promień i stan wyszukiwania, mapa (Leaflet) z legendą i akcjami, uwaga o prywatności,
+ * sieci w pobliżu. Karty przepisów i gotowe produkty mają `../recipes/recipes.css`. Leaflet przynosi
+ * własny arkusz (`leaflet/dist/leaflet.css`); tu tylko przebieramy jego kontrolki w strój aplikacji.
+ * Kolory wyłącznie z tokenów — przezroczystości przez `color-mix`, nie przez wpisany kolor.
+ */
+
+/* ---------------- Promień i stan ---------------- */
+
+.fd-near-controls{display:grid;gap:10px}
+.fd-near-controls p{margin:0;max-width:none}
+.fd-near-radius-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:0 0 4px}
+.fd-near-controls .fd-near-radius-head{margin-bottom:4px;font-size:13px;color:var(--ink-soft)}
+.fd-near-radius-value{font-family:var(--display);font-size:20px;line-height:1;color:var(--ink)}
+.fd-near-radius .stepper button[aria-disabled=true]{opacity:.4;cursor:default}
+
+/*
+ * Suwak w kolorach aplikacji: stalowy tor do wybranego stopnia, kciuk 24 px na środku pola dotyku
+ * 44 px (przezroczysta ramka to część kciuka, którą da się chwycić, choć jej nie widać).
+ */
+.fd-near-radius input[type=range]{-webkit-appearance:none;appearance:none;height:48px;min-height:48px;margin:0;padding:0;
+  background:transparent;cursor:pointer}
+.fd-near-radius input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:3px;
+  background:linear-gradient(to right,var(--steel) var(--fill,0%),var(--line) var(--fill,0%))}
+.fd-near-radius input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;box-sizing:content-box;
+  width:24px;height:24px;margin-top:-19px;border:10px solid transparent;border-radius:50%;background:var(--steel);
+  background-clip:padding-box}
+.fd-near-radius input[type=range]::-moz-range-track{height:6px;border-radius:3px;background:var(--line)}
+.fd-near-radius input[type=range]::-moz-range-progress{height:6px;border-radius:3px;background:var(--steel)}
+.fd-near-radius input[type=range]::-moz-range-thumb{box-sizing:content-box;width:24px;height:24px;border:10px solid transparent;
+  border-radius:50%;background:var(--steel);background-clip:padding-box}
+
+.fd-near-controls .fd-near-place-note{font-size:13.5px;font-weight:600;color:var(--warn)}
+.fd-near-status{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
+.fd-near-controls .fd-near-status p{font-size:14px;line-height:1.45;color:var(--ink)}
+.fd-near-status .btn{gap:6px}
+
+/* ---------------- Mapa ---------------- */
+
+/*
+ * `isolation`: warstwy i kontrolki Leafleta (z-index do 1000) zostają w pudełku, zamiast wejść na
+ * pasek aplikacji. Wysokość: mapa zostawia nad sobą i pod sobą miejsce, w które można stuknąć
+ * i przewinąć stronę — także na ekranie 320 × 640.
+ */
+.fd-near-map{position:relative;isolation:isolate;margin-top:12px;border:1px solid var(--line);border-radius:var(--r);
+  overflow:hidden;background:var(--surface-2)}
+/* Obwódka fokusu na ramce: na samej mapie przykryłyby ją kafelki. */
+.fd-near-map:has(.leaflet-container:focus-visible){outline:2px solid var(--steel);outline-offset:2px}
+.fd-near-map .leaflet-container{height:clamp(260px,45vh,440px);width:100%;background:var(--surface-2);font-family:var(--body);
+  font-size:13px}
+.fd-near-map .leaflet-container:focus,.fd-near-map .leaflet-container:focus-visible{outline:none}
+.fd-near-map-frame{position:relative}
+
+.fd-near-map-busy{position:absolute;z-index:1100;top:8px;left:50%;transform:translateX(-50%);display:inline-flex;
+  align-items:center;gap:6px;margin:0;padding:6px 12px;border-radius:999px;background:var(--surface);
+  box-shadow:0 2px 8px color-mix(in srgb,var(--ink) 20%,transparent);font-size:13px;font-weight:600;
+  white-space:nowrap;pointer-events:none}
+/*
+ * Próba przesunięcia mapy jednym palcem: przyciemnienie z podpowiedzią, jak w mapach na stronach.
+ * 72 % tuszu pod jasnym napisem trzyma ponad 4,5:1 także nad najjaśniejszymi kafelkami.
+ */
+.fd-near-map-hint{position:absolute;inset:0;z-index:1050;display:grid;place-items:center;margin:0;padding:16px;
+  background:color-mix(in srgb,var(--ink) 72%,transparent);color:var(--surface);font-weight:600;font-size:16px;
+  text-align:center;opacity:0;visibility:hidden;pointer-events:none}
+.fd-near-map-hint.fd-near-on{opacity:1;visibility:visible}
+@media (prefers-reduced-motion:no-preference){.fd-near-map-hint{transition:opacity .2s ease-out,visibility .2s}}
+
+/* Kontrolki Leafleta w stroju aplikacji: przyciski 44 px, ramka `--edge`, krój i kolory z tokenów. */
+.fd-near-map .leaflet-control-zoom.leaflet-bar{border:1px solid var(--edge);border-radius:var(--r);box-shadow:none;
+  background-clip:border-box}
+.fd-near-map .leaflet-control-zoom.leaflet-bar a{width:44px;height:44px;line-height:42px;font:500 22px/42px var(--display);
+  color:var(--steel);background:var(--surface);border-bottom-color:var(--line)}
+.fd-near-map .leaflet-control-zoom.leaflet-bar a:active{background:var(--surface-2)}
+.fd-near-map .leaflet-control-zoom.leaflet-bar a.leaflet-disabled{color:var(--edge);background:var(--surface-2)}
+.fd-near-map .leaflet-control-zoom.leaflet-bar a:focus-visible{outline:2px solid var(--steel);outline-offset:-3px}
+.fd-near-map .leaflet-control-attribution{font-size:11px;background:color-mix(in srgb,var(--surface) 88%,transparent);
+  color:var(--ink-soft)}
+.fd-near-map .leaflet-control-attribution a{color:var(--steel)}
+.fd-near-map .leaflet-popup-content-wrapper{border-radius:var(--r);background:var(--surface);color:var(--ink);
+  box-shadow:0 4px 16px color-mix(in srgb,var(--ink) 25%,transparent)}
+.fd-near-map .leaflet-popup-tip{background:var(--surface)}
+.fd-near-map .leaflet-popup-content{margin:12px 40px 12px 14px;font-size:13.5px;line-height:1.4}
+.fd-near-map .leaflet-container a.leaflet-popup-close-button{width:44px;height:44px;font:400 24px/44px var(--body);
+  color:var(--steel)}
+
+.fd-near-pop p{margin:0}
+.fd-near-pop .fd-near-pop-name{font-weight:600;font-size:14.5px}
+.fd-near-pop .fd-near-pop-soft{color:var(--ink-soft)}
+.fd-near-pop .fd-near-pop-count{margin-top:6px}
+.fd-near-pop .fd-near-pop-btn{margin-top:8px}
+
+/* Legenda: kolor znacznika zawsze z nazwą obok. */
+.fd-near-map-legend{display:flex;flex-wrap:wrap;gap:2px 14px;margin:8px 0 0;padding:0;list-style:none;font-size:12.5px;
+  color:var(--ink-soft)}
+.fd-near-map-legend li::before{content:'';display:inline-block;width:10px;height:10px;margin-right:6px;vertical-align:-1px;
+  border-radius:50%;border:2px solid var(--surface);box-shadow:0 0 0 1px var(--line)}
+.fd-near-map-legend .fd-near-key-you::before{background:var(--c-blue-ink)}
+.fd-near-map-legend .fd-near-key-recipes::before{background:var(--c-orange)}
+.fd-near-map-legend .fd-near-key-ready::before{background:var(--steel)}
+
+.fd-near-map-actions{margin-top:12px}
+.fd-near-map-actions .btn{gap:8px}
+.fd-near-map-help{margin:10px 0 0}
+.fd-near-privacy{margin:8px 0 0;font-size:12px;line-height:1.5;color:var(--ink-soft);max-width:62ch}
+
+/* ---------------- Sieci i przepisy ---------------- */
+
+.fd-near-chains{margin-top:20px}
+.fd-near-recipes h2:focus{outline:none}
+.fd-near-empty{margin:0}

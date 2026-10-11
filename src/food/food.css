@@ -1,0 +1,10 @@
+/*
+ * Style tylko dla zakładki Jedzenie — wczytują się razem z jej paczką, więc ekrany treningu
+ * za nie nie płacą. Budowane z tokenów i klocków aplikacji (`styles.css`: `--surface`, `--ink`,
+ * `--c-*-ink`, `.wrap`, `.grp`, `.btn`, `.seg`, `.chips`, `.hint`, `.empty`), bez własnej palety.
+ * Klasy obszarów mają przedrostek `fd-`; każdy obszar (produkty, przepisy, w pobliżu, dieta)
+ * trzyma swoje reguły we własnym pliku obok strony, wspólne klocki — w `components/common/common.css`,
+ * a tu zostaje to, co wspólne całej zakładce poza nimi. Dziś nic: jedyne takie reguły (odnośniki
+ * do podstron dziennika) nie miały już żadnego użycia i odpadły.
+ */
+

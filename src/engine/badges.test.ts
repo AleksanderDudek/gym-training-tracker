@@ -9,6 +9,7 @@ import {
   GROUPS,
   achCtx,
   achievementProgress,
+  formatTier,
   migrateBadges,
   revokeUnmet,
   syncBadges,
@@ -375,5 +376,43 @@ describe('odznaki kroków i cardio', () => {
     expect(got).toContain('cardio-sesje');
     expect(got).toContain('cardio-dystans');
     expect(got).not.toContain('kroki');
+  });
+});
+
+describe('odznaki czasu na treningu', () => {
+  const day = '2026-10-05';
+  const timedLog = (min: number): LogEntry => ({
+    ...entry(day),
+    time: { secs: min * 60, parts: [{ block: 1, ex: ['swing2'], at: 0, end: min * 60 }] },
+  });
+
+  it('cztery rodziny w grupie czasu, z progami ze specyfikacji', () => {
+    expect(GROUPS).toContain('czas');
+    expect(GROUPS.indexOf('czas')).toBe(GROUPS.indexOf('cardio') + 1);
+    const tiers = Object.fromEntries(ACHIEVEMENTS.filter((a) => a.group === 'czas').map((a) => [a.id, a.tiers]));
+    expect(tiers).toEqual({
+      'czas-suma': [60, 300, 600, 1_500, 3_000, 6_000, 15_000, 30_000],
+      'czas-tydzien': [1, 4, 12, 26, 52, 104],
+      'czas-plynnie': [1, 5, 15, 30, 60, 100],
+      'czas-rekord': [30, 45, 60, 90, 120],
+    });
+  });
+
+  it('godzina treningu z zegarem daje pierwszy próg sumy; trening bez zegara nic', () => {
+    const s = freshState();
+    s.log = [entry(day)];
+    expect(syncBadges(s, achCtx(s, null, null, day)).map((h) => h.ach.id)).not.toContain('czas-suma');
+    s.log = [timedLog(25), timedLog(35)];
+    const got = syncBadges(s, achCtx(s, null, null, day)).map((h) => `${h.ach.id}:${h.tier}`);
+    expect(got).toContain('czas-suma:1');
+    expect(got).toContain('czas-rekord:1');
+  });
+
+  it('suma w godzinach, rekord w minutach', () => {
+    const sum = ACHIEVEMENTS.find((a) => a.id === 'czas-suma')!;
+    const rec = ACHIEVEMENTS.find((a) => a.id === 'czas-rekord')!;
+    expect(formatTier(sum, 300)).toBe('5 h');
+    expect(formatTier(sum, 90)).toBe('1,5 h');
+    expect(formatTier(rec, 45)).toBe('45 min');
   });
 });

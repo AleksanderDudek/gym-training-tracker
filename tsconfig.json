@@ -16,7 +16,12 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "noEmit": true,
-    "types": ["vite/client"]
+    "types": ["vite/client", "vite-plugin-pwa/client", "vite-plugin-pwa/react"]
   },
-  "include": ["src", "server", "vite.config.ts"]
+  // Kod, który biegnie w przeglądarce (i serwer na Workers) — bez typów node'a, żeby `process`,
+  // `Buffer` czy node'owy `setTimeout` nie przechodziły tu typowania. Testy: `tsconfig.test.json`;
+  // konfiguracja Vite, jej wtyczki i skrypty danych: `tsconfig.node.json`; service worker ma własny
+  // zestaw typów (WebWorker zamiast DOM): `tsconfig.sw.json`.
+  "include": ["src", "server"],
+  "exclude": ["src/sw.ts", "src/test", "**/*.test.ts", "**/*.test.tsx"]
 }
