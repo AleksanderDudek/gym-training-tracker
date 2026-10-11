@@ -1,0 +1,10 @@
+{
+  // Testy aplikacji: te same ustawienia co kod, plus typy node'a (Vitest biegnie w node, a część
+  // testów sięga po `node:*`).
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["vite/client", "vite-plugin-pwa/client", "vite-plugin-pwa/react", "node"]
+  },
+  "include": ["src/**/*.test.ts", "src/**/*.test.tsx", "src/test", "src/vite-env.d.ts", "server/**/*.test.ts"],
+  "exclude": []
+}

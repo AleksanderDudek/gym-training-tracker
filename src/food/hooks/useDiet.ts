@@ -1,0 +1,128 @@
+import { useLiveQuery } from 'dexie-react-hooks';
+import { useEffect, useMemo, useState } from 'react';
+import { db, type DayRow, type Entry, type ProfileRow } from '../diet/db';
+import type { CustomFood } from '../diet/foods';
+import type { Plan } from '../diet/plan';
+import { ACTIVE_PLAN, now } from '../diet/store';
+import { readCache } from '../nearby/cache';
+import { formatDistance } from '../nearby/geo';
+import { DEFAULT_RADIUS } from '../nearby/radius';
+import { placeShops, summarizeChains, type ChainSummary } from '../nearby/summary';
+
+export interface Clock {
+  /** Today, YYYY-MM-DD, local. */
+  date: string;
+  hour: number;
+  ms: number;
+}
+
+function readClock(): Clock {
+  const d = new Date();
+  return { date: now().date, hour: d.getHours(), ms: d.getTime() };
+}
+
+/**
+ * The time, read once and then once a minute: a page left open past
+ * midnight moves on to the new day, and rendering stays pure.
+ */
+export function useClock(): Clock {
+  const [clock, setClock] = useState(readClock);
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      const next = readClock();
+      setClock((c) => (c.date === next.date && c.hour === next.hour ? c : next));
+    }, 60_000);
+    return () => window.clearInterval(id);
+  }, []);
+  return clock;
+}
+
+/** `undefined` while loading, `null` when there is none. */
+export function useProfile(): ProfileRow | null | undefined {
+  return useLiveQuery(async () => (await db.profile.get('me')) ?? null, []);
+}
+
+export function usePlan(): Plan | null | undefined {
+  return useLiveQuery(async () => (await db.plans.get(ACTIVE_PLAN)) ?? null, []);
+}
+
+export function useEntries(date: string): Entry[] | undefined {
+  return useLiveQuery(() => db.entries.where('date').equals(date).sortBy('time'), [date]);
+}
+
+export function useDay(date: string): DayRow | undefined {
+  return useLiveQuery(async () => (await db.days.get(date)) ?? { date }, [date]);
+}
+
+export function useCustomFoods(): (CustomFood & { id: number })[] | undefined {
+  return useLiveQuery(() => db.foods.toArray() as Promise<(CustomFood & { id: number })[]>, []);
+}
+
+export interface History {
+  /** Eaten kcal per date (only dates with entries). */
+  eaten: Map<string, number>;
+  days: Map<string, DayRow>;
+  entries: Entry[];
+}
+
+/** Everything logged from `from` on: the forecast, the week and the progress view read this. */
+export function useHistory(from: string | null): History | undefined {
+  const raw = useLiveQuery(async () => {
+    if (!from) return { entries: [] as Entry[], days: [] as DayRow[] };
+    return {
+      entries: await db.entries.where('date').aboveOrEqual(from).toArray(),
+      days: await db.days.where('date').aboveOrEqual(from).toArray(),
+    };
+  }, [from]);
+  return useMemo(() => {
+    if (!raw) return undefined;
+    const eaten = new Map<string, number>();
+    for (const e of raw.entries) eaten.set(e.date, (eaten.get(e.date) ?? 0) + e.kcal);
+    return { eaten, days: new Map(raw.days.map((d) => [d.date, d])), entries: raw.entries };
+  }, [raw]);
+}
+
+export interface NearbyChains {
+  /** Nearest first. */
+  chains: ChainSummary[];
+  /** Where they came from, for the line under the suggestions. */
+  source: 'nearby' | 'preferred' | 'none';
+}
+
+function savedJson<T>(key: string): T | null {
+  try {
+    const raw = window.localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The shops around the user as the "W pobliżu" page last found them - read
+ * from the device, never a new request (this page works offline and must not
+ * send the position anywhere by itself). Falls back to the preferred store.
+ */
+export function useNearbyChains(knownChains: Set<string>, preferredStore: string | null, nowMs: number): NearbyChains {
+  return useMemo(() => {
+    const position = savedJson<{ lat: number; lon: number }>('produkty-pl:position');
+    const radius = Number(savedJson<number>('produkty-pl:radius')) || DEFAULT_RADIUS;
+    let storage: Storage | null = null;
+    try {
+      storage = window.localStorage;
+    } catch {
+      storage = null;
+    }
+    const shops = position ? readCache(storage, position, radius, nowMs) : null;
+    if (position && shops) {
+      const chains = summarizeChains(placeShops(shops, position, radius, knownChains).known);
+      if (chains.length) return { chains, source: 'nearby' };
+    }
+    return { chains: [], source: preferredStore ? 'preferred' : 'none' };
+  }, [knownChains, preferredStore, nowMs]);
+}
+
+export const distanceOf = (chains: ChainSummary[]) => (chain: string) => {
+  const c = chains.find((x) => x.chain === chain);
+  return c ? formatDistance(c.nearest.distance) : null;
+};
