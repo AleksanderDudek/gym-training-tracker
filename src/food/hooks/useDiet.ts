@@ -1,5 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useMemo, useState } from 'react';
+import { useBridge } from '../bridge';
+import { mergeBody } from '../diet/body';
 import { db, type DayRow, type Entry, type ProfileRow } from '../diet/db';
 import type { CustomFood } from '../diet/foods';
 import type { Plan } from '../diet/plan';
@@ -80,6 +82,37 @@ export function useHistory(from: string | null): History | undefined {
     for (const e of raw.entries) eaten.set(e.date, (eaten.get(e.date) ?? 0) + e.kcal);
     return { eaten, days: new Map(raw.days.map((d) => [d.date, d])), entries: raw.entries };
   }, [raw]);
+}
+
+/**
+ * Dzień diety z wagą i krokami z treningów nałożonymi na jego własne pola (`mergeBody`). Ekrany
+ * diety pokazują i liczą z tego wariantu — `useDay` zostaje surowym wierszem z IndexedDB, np. do
+ * zapisu wyborów planu. Waga i kroki zapisują się przez most (`useBridge`), nie do `DayRow`.
+ */
+export function useMergedDay(date: string): DayRow | undefined {
+  const day = useDay(date);
+  const bridge = useBridge();
+  return useMemo(() => {
+    if (!day) return undefined;
+    const weighed = bridge.weights.filter((w) => w.day === date);
+    return mergeBody([day], weighed, bridge.stepsOn)[0] ?? day;
+  }, [day, date, bridge]);
+}
+
+/**
+ * Historia od `from` z wagą i krokami z treningów: ważenia z dziennika wagi (od `from`) nadpisują
+ * i uzupełniają wagi diety, kroki z treningów — kroki diety. Prognoza, tydzień i postęp czytają
+ * ten wariant, więc `weightOn`, `lastWeighing` i `forecastInputs` widzą jedno ciało.
+ */
+export function useMergedHistory(from: string | null): History | undefined {
+  const history = useHistory(from);
+  const bridge = useBridge();
+  return useMemo(() => {
+    if (!history || !from) return history;
+    const weights = bridge.weights.filter((w) => w.day >= from);
+    const days = mergeBody([...history.days.values()], weights, bridge.stepsOn);
+    return { ...history, days: new Map(days.map((d) => [d.date, d])) };
+  }, [history, from, bridge]);
 }
 
 export interface NearbyChains {

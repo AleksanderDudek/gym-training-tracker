@@ -70,12 +70,17 @@ export const RECIPES_PATH = '#/przepisy';
 export const PRODUCTS_PATH = '#/produkty';
 export const NEARBY_PATH = '#/w-poblizu';
 
-const FOOD_BY_PATH: Record<string, FoodSection> = {
-  jedzenie: 'diary',
-  przepisy: 'recipes',
-  produkty: 'products',
-  'w-poblizu': 'nearby',
+/** Korzeń każdej sekcji jedzenia. */
+export const FOOD_SECTION_PATH: Record<FoodSection, string> = {
+  diary: FOOD_PATH,
+  recipes: RECIPES_PATH,
+  products: PRODUCTS_PATH,
+  nearby: NEARBY_PATH,
 };
+
+const FOOD_BY_PATH = Object.fromEntries(
+  Object.entries(FOOD_SECTION_PATH).map(([k, v]) => [v.slice(2), k as FoodSection]),
+) as Record<string, FoodSection>;
 
 const DIET_SLUG: Record<DietPage, string> = { plan: 'plan', progress: 'postep', profile: 'profil' };
 

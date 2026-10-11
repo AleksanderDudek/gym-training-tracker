@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ALL, BUILTIN, EX, ex } from './data/exercises';
 import { acwr, daysSince, epley, round1, weeklyRate } from './engine/math';
 import { P, freshState } from './engine/plan';
@@ -37,7 +37,7 @@ import { XP, cardioXp, levelFor, xpSummary } from './engine/xp';
 import type { LevelState } from './engine/xp';
 import { SnackEntry, SnacksPage, snackLabel } from './components/Snacks';
 import { CardioEntry, CardioPage, cardioLabel, kcalText } from './components/Cardio';
-import { addCardio, minutesByDay, removeCardio, validCardio } from './engine/cardio';
+import { addCardio, minutesByDay, removeCardio, stepsOn, typedStepsOn, validCardio } from './engine/cardio';
 import { mergeWatch, restoreWatch, watchStepsOn } from './engine/watch';
 import { addSet, answerEffort, extendRest, forgetAsk, settleOpen, skipRest, startRest, undoSet } from './engine/session';
 import type { RestPlan } from './engine/rests';
@@ -59,8 +59,8 @@ import { formatClock } from './components/Timer';
 import { GuidedSession } from './components/Guided';
 import { PromoPage } from './components/Promo';
 import type { WatchPayload } from './engine/watch';
-import { removeBodyWeight, setBodyWeight, validBody, validHeight } from './engine/body';
-import { cardioBurn, workoutBurn } from './engine/burn';
+import { HEIGHT_RANGE, WEIGHT_RANGE, bodyOf, removeBodyWeight, setBodyWeight, validBody, validHeight, validWeight } from './engine/body';
+import { cardioBurn, dayBurn, workoutBurn } from './engine/burn';
 import { LevelUp, avatarOf } from './components/Character';
 import type { Avatar } from './components/Character';
 import type {
@@ -88,6 +88,20 @@ import { attachTrail, trail } from './trail';
 import { FeedbackDialog } from './components/Feedback';
 import { UpdateBar } from './components/UpdateBar';
 import { withExtension, withWeekdays } from './engine/planedit';
+import { BridgeContext } from './food/bridge';
+import type { GymBridge } from './food/bridge';
+import { LoadBoundary } from './components/LoadBoundary';
+
+/**
+ * Zakładka Jedzenie w osobnej paczce (razem z Dexie, Leafletem i kodem bazy produktów): ekrany
+ * treningu jej nie pobierają, a pierwsze wejście w Jedzenie pobiera ją raz.
+ */
+const FoodRoot = lazy(() => import('./food/FoodRoot'));
+
+/** Zapisy, które ekrany jedzenia robią w danych treningowych. Podmieniane co render — zawsze ze świeżym stanem. */
+type BridgeWrites = Pick<GymBridge, 'setWeight' | 'setHeight' | 'setSteps'>;
+
+const DAY = /^\d{4}-\d{2}-\d{2}$/;
 
 const clone = (s: AppState): AppState => JSON.parse(JSON.stringify(s)) as AppState;
 
@@ -128,6 +142,8 @@ function restoreExtras(next: AppState, saved: Partial<AppState>): void {
     : [];
   if (typeof saved.supportSnooze === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(saved.supportSnooze))
     next.supportSnooze = saved.supportSnooze;
+  if (typeof saved.foodMigrated === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(saved.foodMigrated))
+    next.foodMigrated = saved.foodMigrated;
   if (next.cfg.avatar !== undefined && next.cfg.avatar !== 'gustaw' && next.cfg.avatar !== 'gosia')
     delete next.cfg.avatar;
   // Zmiany dni w trakcie planu i przedłużenie: tylko poprawne daty, dni 1–7 i rozsądna liczba tygodni.
@@ -241,6 +257,12 @@ export default function App() {
   const medalBox = useRef<HTMLDivElement>(null);
   const { req, say, ask } = useModal();
   const booted = useRef(false);
+  /**
+   * Ostatni zatwierdzony stan, także ten sprzed renderu. Ekrany jedzenia potrafią zapisać dwie
+   * rzeczy w jednym stuknięciu (waga i kroki dnia): druga musi zacząć od wyniku pierwszej,
+   * a nie od stanu z ostatniego renderu, inaczej pierwsza by przepadła.
+   */
+  const live = useRef<AppState | null>(null);
 
   /* ---------- wczytanie ---------- */
   useEffect(() => {
@@ -283,6 +305,7 @@ export default function App() {
       // samym upływem czasu, a aplikacja bywa zamknięta przez tydzień. Data zdobycia ma
       // zostać ta, którą widać na ekranie, więc świeże odznaki od razu idą na dysk.
       const fresh = syncBadges(next, badgeCtx(next));
+      live.current = next;
       setState(next);
       if (fresh.length) void queueSave(next, setSaveBroken);
     })();
@@ -305,9 +328,75 @@ export default function App() {
   }, [topColor]);
 
   const commit = useCallback((next: AppState) => {
+    live.current = next;
     setState(next);
     void queueSave(next, setSaveBroken);
   }, []);
+
+  /*
+   * Most do zakładki Jedzenie (`food/bridge.ts`): odczyty z bieżącego stanu, przeliczane razem
+   * z nim, i zapisy przez `bridgeWrites` — podmieniane co render na funkcje, które zaczynają od
+   * `live.current`, więc żadna nie trzyma starego stanu.
+   */
+  const bridgeWrites = useRef<BridgeWrites | null>(null);
+  const bridge = useMemo<GymBridge | null>(() => {
+    if (!state) return null;
+    return {
+      weights: bodyOf(state),
+      setWeight: (kg, day) => bridgeWrites.current?.setWeight(kg, day),
+      heightCm: state.cfg.height ?? null,
+      setHeight: (cm) => bridgeWrites.current?.setHeight(cm),
+      // Ta sama reguła co wszędzie w aplikacji: z wpisu ręcznego i zegarka zostaje wyższa liczba.
+      stepsOn: (day) => stepsOn(state, day) || null,
+      setSteps: (day, steps) => bridgeWrites.current?.setSteps(day, steps),
+      moveOn: (day) => {
+        const burn = dayBurn(state, day);
+        return {
+          // Ten sam dzień co w kaloriach dnia (`dayBurn`) i w kalendarzu planu.
+          trained: state.log.some((e) => dayKey(e.date) === day),
+          workoutKcal: burn ? burn.workouts : null,
+          cardioKcal: burn ? burn.cardio : null,
+        };
+      },
+      toast: setToastMsg,
+    };
+  }, [state]);
+
+  /*
+   * Jednorazowe przeniesienie ważeń z dawnego dziennika diety (Produkty PL, ta sama domena, więc
+   * ta sama baza IndexedDB) do dziennika wagi — przy pierwszym wejściu w Jedzenie. Raz na wizytę
+   * (`migrating`, także pod podwójnym efektem StrictMode). Bez IndexedDB — po cichu i bez
+   * znacznika: kolejne uruchomienie spróbuje jeszcze raz, a ta wizyta nie wpadnie w pętlę.
+   */
+  const onFood = route.kind === 'food' || route.kind === 'diet';
+  const migrate = onFood && !!state && !state.foodMigrated;
+  const migrating = useRef(false);
+  useEffect(() => {
+    if (!migrate || migrating.current) return;
+    migrating.current = true;
+    void (async () => {
+      let days: import('./food/diet/db').DayRow[];
+      let toMigrate: typeof import('./food/diet/body').weightsToMigrate;
+      try {
+        const [{ db }, body] = await Promise.all([import('./food/diet/db'), import('./food/diet/body')]);
+        days = await db.days.toArray();
+        toMigrate = body.weightsToMigrate;
+      } catch {
+        return;
+      }
+      const base = live.current;
+      if (!base || base.foodMigrated) return;
+      const found = toMigrate(days, bodyOf(base));
+      const next = clone(base);
+      found.forEach((w) => setBodyWeight(next, w.kg, w.day));
+      next.foodMigrated = dayKey(Date.now());
+      commit(next);
+      if (found.length)
+        setToastMsg(
+          `Dziennik wagi przejął ${found.length === 1 ? 'ważenie' : `ważenia (${found.length})`} z dawnego dziennika diety.`,
+        );
+    })();
+  }, [migrate, commit]);
 
   // Lista przypomnień na serwerze idzie za stanem: po zmianie planu albo zapisanym treningu
   // i po powrocie do aplikacji następnego dnia. Bez serwera w buildzie, bez zgody albo bez
@@ -633,9 +722,9 @@ export default function App() {
    * Zapis ruchu. Waga wpisana w formularzu to dzisiejsze ważenie — idzie do dziennika wagi,
    * a nie do wpisu, bo przyda się też treningom i kolejnym spacerom.
    */
-  const logCardio = (input: CardioInput, day: string, kg: number | null) => {
-    const before = levelNow(state);
-    const next = clone(state);
+  const logCardio = (input: CardioInput, day: string, kg: number | null, from: AppState = state) => {
+    const before = levelNow(from);
+    const next = clone(from);
     if (kg !== null) setBodyWeight(next, kg, dayKey(Date.now()));
     const { entry, replaced } = addCardio(next, input, day);
     // Nowa liczba kroków na ten sam dzień bywa poprawką literówki w dół — wtedy cofa progi,
@@ -645,7 +734,7 @@ export default function App() {
     commit(next);
     const b = cardioBurn(next, entry);
     const dayXp = (s: AppState): number => cardioXp(minutesByDay(s)[day] ?? 0);
-    const gained = dayXp(next) - dayXp(state);
+    const gained = dayXp(next) - dayXp(from);
     setToastMsg(
       `Zapisane: ${cardioLabel(entry)}${b ? ` · ${kcalText(b.active)}` : ''}` +
         (gained > 0 ? ` · +${gained} XP` : dayXp(next) >= XP.cardioCap ? ' · bez XP, limit dnia' : '') +
@@ -704,15 +793,25 @@ export default function App() {
     );
   };
 
-  const setWeight = (kg: number) => {
+  /** Ważenie — dzisiejsze z karty ważenia i profilu, z dowolnego dnia z dziennika jedzenia. */
+  const setWeight = (kg: number, day: string = dayKey(Date.now()), from: AppState = state) => {
     // Pierwsze ważenie obowiązuje też wstecz — ruch sprzed niego nie ma innej wagi.
-    const first = !state.body?.length;
-    const next = clone(state);
-    const b = setBodyWeight(next, kg, dayKey(Date.now()));
+    const first = !from.body?.length;
+    const next = clone(from);
+    const b = setBodyWeight(next, kg, day);
     commit(next);
+    const when =
+      day === dayKey(Date.now())
+        ? null
+        : new Date(`${day}T12:00:00`).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long' });
     setToastMsg(
-      `Waga zapisana: ${b.kg.toLocaleString('pl-PL')} kg. ` +
-        (first ? 'Kalorie policzone — także dla wcześniejszych wpisów.' : 'Kalorie od dziś liczą się z niej.'),
+      (when ? `Waga z ${when} zapisana: ` : 'Waga zapisana: ') +
+        `${b.kg.toLocaleString('pl-PL')} kg. ` +
+        (first
+          ? 'Kalorie policzone — także dla wcześniejszych wpisów.'
+          : when
+            ? 'Kalorie od tego dnia liczą się z niej.'
+            : 'Kalorie od dziś liczą się z niej.'),
     );
   };
 
@@ -723,12 +822,36 @@ export default function App() {
     setToastMsg('Ważenie usunięte.');
   };
 
-  const setHeight = (cm: number | null) => {
-    const next = clone(state);
+  const setHeight = (cm: number | null, from: AppState = state) => {
+    const next = clone(from);
     if (cm === null) delete next.cfg.height;
     else next.cfg.height = cm;
     commit(next);
     setToastMsg(cm === null ? 'Wzrost usunięty — krok liczony dla 170 cm.' : `Wzrost zapisany: ${cm} cm.`);
+  };
+
+  // Zapisy z ekranów jedzenia: te same funkcje co w treningach, ale od najświeższego stanu
+  // i z tymi samymi granicami — liczba spoza zakresu kończy się komunikatem, a nie wyjątkiem.
+  bridgeWrites.current = {
+    setWeight: (kg, day) => {
+      if (!DAY.test(day)) return;
+      if (!validWeight(kg)) setToastMsg(`Waga poza zakresem ${WEIGHT_RANGE.min}–${WEIGHT_RANGE.max} kg.`);
+      else setWeight(kg, day, live.current ?? state);
+    },
+    setHeight: (cm) => {
+      if (!validHeight(cm)) setToastMsg(`Wzrost poza zakresem ${HEIGHT_RANGE.min}–${HEIGHT_RANGE.max} cm.`);
+      else setHeight(Math.round(cm), live.current ?? state);
+    },
+    setSteps: (day, steps) => {
+      const from = live.current ?? state;
+      // Ta sama liczba co już wpisana to nie nowy wpis — bez zastępowania i bez komunikatu.
+      if (!DAY.test(day) || typedStepsOn(from, day) === steps) return;
+      try {
+        logCardio({ kind: 'steps', steps }, day, null, from);
+      } catch (e) {
+        setToastMsg(e instanceof Error ? e.message : 'Nie udało się zapisać kroków.');
+      }
+    },
   };
 
   const cancelSession = async () => {
@@ -1379,6 +1502,19 @@ export default function App() {
           ? `diet:${route.page}`
           : `${route.kind}:${'id' in route ? (route.id ?? '') : ''}`;
 
+  // Ostrzeżenie o zapisie stoi na każdym ekranie z danymi, także w Jedzeniu: waga i kroki z diety
+  // idą do tego samego zapisu. Pozostałe paski (skok obciążenia, „Trenowałeś dzisiaj”) mówią
+  // o treningu i zostają na zakładkach treningowych.
+  const saveBrokenBanner = (
+    <Banner
+      notice={{
+        level: 'warn',
+        title: 'Zapis nie działa',
+        text: 'Przeglądarka odmówiła zapisu danych. Wyniki trzymają się w pamięci, ale znikną po odświeżeniu. Wyeksportuj plik z Ustawień, zanim zamkniesz kartę.',
+      }}
+    />
+  );
+
   const snoozeSupport = () => {
     const next = clone(state);
     next.supportSnooze = snoozeUntil(today);
@@ -1409,18 +1545,12 @@ export default function App() {
         />
       )}
 
+      {/* Most do danych treningowych dla całej strony, nie tylko dla Jedzenia: karta jedzenia stoi też na ekranie Dziś. */}
+      <BridgeContext.Provider value={bridge}>
       <main className="page" key={pageKey}>
       {view !== null && (
       <div className="wrap">
-        {saveBroken && (
-          <Banner
-            notice={{
-              level: 'warn',
-              title: 'Zapis nie działa',
-              text: 'Przeglądarka odmówiła zapisu danych. Wyniki trzymają się w pamięci, ale znikną po odświeżeniu. Wyeksportuj plik z Ustawień, zanim zamkniesz kartę.',
-            }}
-          />
-        )}
+        {saveBroken && saveBrokenBanner}
         {state.notice && <Banner notice={state.notice} />}
         {ratio !== null && ratio > 1.5 && (
           <Banner
@@ -1547,7 +1677,7 @@ export default function App() {
             today={todayPlan}
             statsLine={subline.join(' · ')}
             onStart={startSession}
-            onWeigh={setWeight}
+            onWeigh={(kg) => setWeight(kg)}
             onWeighSkip={() => {
               const next = clone(state);
               next.cfg.weighSkip = dayKey(Date.now());
@@ -1560,8 +1690,8 @@ export default function App() {
         <ProfileView
           state={state}
           onAvatar={setAvatar}
-          onWeight={setWeight}
-          onHeight={setHeight}
+          onWeight={(kg) => setWeight(kg)}
+          onHeight={(cm) => setHeight(cm)}
           onDeleteWeight={deleteWeight}
           onToast={setToastMsg}
         />
@@ -1592,6 +1722,17 @@ export default function App() {
         />
       )}
 
+      {(route.kind === 'food' || route.kind === 'diet') && (
+        <>
+          {saveBroken && <div className="wrap">{saveBrokenBanner}</div>}
+          <LoadBoundary what="zakładki Jedzenie">
+            <Suspense fallback={<div className="empty">{pick(LOADING, daySeed())}</div>}>
+              <FoodRoot route={route} />
+            </Suspense>
+          </LoadBoundary>
+        </>
+      )}
+
       {view === 'set' && (
         <SettingsView
           state={state}
@@ -1611,6 +1752,7 @@ export default function App() {
       )}
 
       </main>
+      </BridgeContext.Provider>
 
       <nav className="tabbar" aria-label="Główna nawigacja">
         {TABS.map((t) => {
