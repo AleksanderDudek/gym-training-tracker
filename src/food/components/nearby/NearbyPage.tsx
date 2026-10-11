@@ -207,9 +207,9 @@ function Nearby({ dataset, products }: { dataset: Dataset; products: IndexedProd
             />
           </div>
           <ul className="fd-near-map-legend" aria-label="Legenda mapy">
-            <li className="you">Ty</li>
-            <li className="recipes">sklep z kompletem na przepis</li>
-            <li className="ready">tylko gotowe produkty</li>
+            <li className="fd-near-key-you">Ty</li>
+            <li className="fd-near-key-recipes">sklep z kompletem na przepis</li>
+            <li className="fd-near-key-ready">tylko gotowe produkty</li>
           </ul>
 
           <div className="btnrow fd-near-map-actions">

@@ -66,7 +66,7 @@ export function SwapSheet({ open, recipe, candidates, store, overrides, item, di
       footer={
         item && (
           <>
-            <p className={`fd-rec-swap-status ${passes ? 'ok' : 'bad'}`} role="status">
+            <p className={`fd-rec-swap-status ${passes ? 'fd-rec-ok' : 'fd-rec-bad'}`} role="status">
               {passes ? (
                 <Check size={16} strokeWidth={2} aria-hidden />
               ) : (

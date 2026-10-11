@@ -10,7 +10,12 @@ import NearbyPage from './NearbyPage';
 // Leaflet potrzebuje prawdziwego silnika układu; mapę zastępuje atrapa, która wypisuje, co
 // dostała, i umie „kliknąć” miejsce albo wybrać sieć z dymka — jak w teście Produktów PL.
 vi.mock('./StoreMap', () => ({
-  StoreMap: (props: { shops: PlacedShop[]; onPick: (p: LatLon) => void; onSelectChain: (c: string | null) => void }) => (
+  StoreMap: (props: {
+    shops: PlacedShop[];
+    onPick: (p: LatLon) => void;
+    onSelectChain: (c: string | null) => void;
+    onViewChange?: (c: LatLon) => void;
+  }) => (
     <div data-testid="map">
       <span>{props.shops.map((s) => s.chain).join(',')}</span>
       <button type="button" onClick={() => props.onPick({ lat: 52.2297, lon: 21.0122 })}>
@@ -21,6 +26,9 @@ vi.mock('./StoreMap', () => ({
       </button>
       <button type="button" onClick={() => props.onSelectChain('lidl')}>
         dymek Lidla
+      </button>
+      <button type="button" onClick={() => props.onViewChange?.({ lat: 52.2297, lon: 21.0122 })}>
+        przesuń mapę
       </button>
     </div>
   ),
@@ -150,6 +158,19 @@ describe('W pobliżu', () => {
     expect(screen.getByText('Najpierw ustal, gdzie jesteś.')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'kliknij mapę' }));
     expect(await screen.findByText(/2 sklepy z danymi/)).toBeInTheDocument();
+  });
+
+  test('„Ustaw środek mapy jako moją lokalizację” bierze środek oglądanego fragmentu', async () => {
+    grantLocation(false);
+    const user = userEvent.setup();
+    render(<NearbyPage />);
+    expect(await screen.findByText(/Brak zgody na lokalizację/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'przesuń mapę' }));
+    await user.click(screen.getByRole('button', { name: 'Ustaw środek mapy jako moją lokalizację' }));
+    expect(await screen.findByText(/2 sklepy z danymi/)).toBeInTheDocument();
+    // Miejsce zostaje tylko na tym urządzeniu (zaokrąglone do ok. 10 m), nigdy w adresie.
+    expect(JSON.parse(window.localStorage.getItem('produkty-pl:position') ?? 'null')).toEqual(HERE);
+    expect(window.location.href).not.toMatch(/52\.2|21\.0/);
   });
 
   test('przeciążony serwer map mówi o tym i daje spróbować ponownie', async () => {

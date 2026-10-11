@@ -34,7 +34,7 @@ const POLAND: L.LatLngExpression = [52.07, 19.48];
  * płótna (`clearRect` na `undefined`). Zdarza się, gdy mapa znika w klatce, w której powstała:
  * szybkie przejście do innej sekcji, a w trybie deweloperskim zawsze (StrictMode montuje dwa razy).
  */
-const SafeCanvas = L.Canvas.extend({
+export const SafeCanvas = L.Canvas.extend({
   _redraw(this: { _ctx?: CanvasRenderingContext2D }) {
     if (this._ctx) (L.Canvas.prototype as unknown as { _redraw: () => void })._redraw.call(this);
   },
@@ -42,6 +42,58 @@ const SafeCanvas = L.Canvas.extend({
 
 /** Jak długo wisi podpowiedź „dwoma palcami” po próbie przesunięcia mapy jednym. */
 const HINT_MS = 1600;
+/** Ile pikseli musi przejechać jeden palec, zanim to jest „przesuwanie”, a nie drgnięcie przy stuknięciu. */
+const HINT_MOVE_PX = 10;
+
+/**
+ * Pilnuje próby przesunięcia mapy JEDNYM palcem i woła `onHint(true)`, a po chwili `onHint(false)`.
+ * Gest dwoma palcami ustawia flagę `multi` aż do podniesienia wszystkich palców: palec, który
+ * zostaje na ekranie po szczypnięciu, albo drugi, który dopiero ląduje, nie zapala podpowiedzi.
+ * Zapala ją dopiero ruch o co najmniej 10 px. Zwraca funkcję, która odpina nasłuch.
+ */
+export function watchOneFingerPan(el: HTMLElement, onHint: (on: boolean) => void, hideAfterMs = HINT_MS): () => void {
+  let multi = false;
+  let start: { x: number; y: number } | null = null;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const hide = () => {
+    clearTimeout(timer);
+    onHint(false);
+  };
+  const onStart = (e: TouchEvent) => {
+    if (e.touches.length >= 2) {
+      multi = true;
+      start = null;
+      hide();
+      return;
+    }
+    const t = e.touches[0];
+    start = !multi && t ? { x: t.clientX, y: t.clientY } : null;
+  };
+  const onMove = (e: TouchEvent) => {
+    const t = e.touches[0];
+    if (multi || e.touches.length !== 1 || !start || !t) return;
+    if (Math.hypot(t.clientX - start.x, t.clientY - start.y) < HINT_MOVE_PX) return;
+    clearTimeout(timer);
+    onHint(true);
+    timer = setTimeout(() => onHint(false), hideAfterMs);
+  };
+  const onEnd = (e: TouchEvent) => {
+    if (e.touches.length > 0) return;
+    multi = false;
+    start = null;
+  };
+  el.addEventListener('touchstart', onStart, { passive: true });
+  el.addEventListener('touchmove', onMove, { passive: true });
+  el.addEventListener('touchend', onEnd, { passive: true });
+  el.addEventListener('touchcancel', onEnd, { passive: true });
+  return () => {
+    clearTimeout(timer);
+    el.removeEventListener('touchstart', onStart);
+    el.removeEventListener('touchmove', onMove);
+    el.removeEventListener('touchend', onEnd);
+    el.removeEventListener('touchcancel', onEnd);
+  };
+}
 
 interface Palette {
   recipes: string;
@@ -68,7 +120,12 @@ function palette(el: HTMLElement): Palette {
   };
 }
 
-function popupFor(shop: PlacedShop, props: Props, close: () => void): HTMLElement {
+/** Treść dymka sklepu: same węzły tekstowe i przycisk „Pokaż te przepisy”, gdy sieć ma przepisy. */
+export function popupFor(
+  shop: PlacedShop,
+  props: Pick<Props, 'storeName' | 'recipeCount' | 'onSelectChain'>,
+  close: () => void,
+): HTMLElement {
   // Same węzły tekstowe: nazwy sklepów pochodzą z OpenStreetMap, a tam może je wpisać każdy.
   const root = document.createElement('div');
   root.className = 'fd-near-pop';
@@ -108,8 +165,10 @@ function popupFor(shop: PlacedShop, props: Props, close: () => void): HTMLElemen
  *
  * Mapa nie więzi przewijania strony: na ekranie dotykowym jeden palec przewija stronę, a mapę
  * przesuwają i przybliżają dwa (próba jednym pokazuje podpowiedź); kółko myszy przybliża dopiero
- * mapę, w którą się kliknęło. Z klawiatury mapa jest jednym przystankiem Tab: strzałki ją przesuwają,
- * + i − przybliżają.
+ * mapę, w którą się kliknęło. Z klawiatury: sama mapa to jeden przystanek Tab (strzałki ją
+ * przesuwają, + i − przybliżają), a po niej idą jeszcze przyciski przybliżania i odnośniki przypisu.
+ * Z ograniczonym ruchem (`prefers-reduced-motion`) mapa nie animuje przybliżeń, przesunięć ani
+ * pojawiania się kafelków.
  */
 export function StoreMap(props: Props) {
   const { center, radius, shops, selectedChain, describedBy } = props;
@@ -118,6 +177,7 @@ export function StoreMap(props: Props) {
   const layers = useRef<{ you: L.LayerGroup; shops: L.LayerGroup } | null>(null);
   const you = useRef<L.CircleMarker | null>(null);
   const colors = useRef<Palette | null>(null);
+  const reduceMotion = useRef(false);
   const latest = useRef(props);
   const [twoFingers, setTwoFingers] = useState(false);
   useEffect(() => {
@@ -127,7 +187,13 @@ export function StoreMap(props: Props) {
   useEffect(() => {
     const el = box.current;
     if (!el) return;
-    const touch = window.matchMedia?.('(pointer: coarse)').matches ?? false;
+    const media = (query: string) => window.matchMedia?.(query).matches ?? false;
+    // Tryb dotykowy tylko tam, gdzie dotyk jest JEDYNYM wskaźnikiem. Laptop z ekranem dotykowym
+    // i gładzikiem (hover: hover) dostaje mapę jak na komputerze — tam jeden palec na ekranie
+    // przesuwa mapę zamiast strony; przeglądarka nie mówi, którym wskaźnikiem ktoś akurat sięga.
+    const touch = media('(hover: none) and (pointer: coarse)');
+    const reduce = media('(prefers-reduced-motion: reduce)');
+    reduceMotion.current = reduce;
     colors.current = palette(el);
     const m = L.map(el, {
       preferCanvas: true,
@@ -139,7 +205,16 @@ export function StoreMap(props: Props) {
       dragging: !touch,
       // Kółko myszy tylko po kliknięciu w mapę — inaczej przewijana strona utknęłaby na niej.
       scrollWheelZoom: false,
+      zoomAnimation: !reduce,
+      fadeAnimation: !reduce,
+      markerZoomAnimation: !reduce,
+      inertia: !reduce,
     });
+    if (reduce) {
+      // Przesunięcia (strzałki, dopasowanie dymka) Leaflet animuje zawsze, chyba że wywołanie powie inaczej.
+      const panBy = m.panBy.bind(m);
+      m.panBy = (offset, options) => panBy(offset, { ...options, animate: false });
+    }
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       // Tryb CORS, żeby service worker zapamiętał kafelki jako pełne odpowiedzi.
@@ -176,19 +251,8 @@ export function StoreMap(props: Props) {
     m.setView(POLAND, 6);
     reportCenter();
 
-    // Podpowiedź przy próbie przesunięcia mapy jednym palcem; drugi palec ją chowa.
-    let hintTimer: ReturnType<typeof setTimeout> | undefined;
-    const onTouchMove = (e: TouchEvent) => {
-      if (!touch) return;
-      clearTimeout(hintTimer);
-      if (e.touches.length !== 1) {
-        setTwoFingers(false);
-        return;
-      }
-      setTwoFingers(true);
-      hintTimer = setTimeout(() => setTwoFingers(false), HINT_MS);
-    };
-    el.addEventListener('touchmove', onTouchMove, { passive: true });
+    // Podpowiedź przy próbie przesunięcia mapy jednym palcem — tylko tam, gdzie jeden palec jej nie przesuwa.
+    const unwatch = touch ? watchOneFingerPan(el, setTwoFingers) : () => {};
 
     // Pudełko zmienia rozmiar razem z kolumną strony; Leaflet sam słucha tylko okna.
     const resize = typeof ResizeObserver === 'function' ? new ResizeObserver(() => m.invalidateSize()) : null;
@@ -196,8 +260,7 @@ export function StoreMap(props: Props) {
 
     map.current = m;
     return () => {
-      clearTimeout(hintTimer);
-      el.removeEventListener('touchmove', onTouchMove);
+      unwatch();
       resize?.disconnect();
       m.remove();
       map.current = null;
@@ -218,7 +281,7 @@ export function StoreMap(props: Props) {
     you.current = L.circleMarker(at, { radius: 8, color: c.edge, weight: 3, fillColor: c.you, fillOpacity: 1 })
       .bindTooltip('Tu jesteś')
       .addTo(group);
-    m.fitBounds(circle.getBounds(), { padding: [12, 12] });
+    m.fitBounds(circle.getBounds(), { padding: [12, 12], animate: !reduceMotion.current });
   }, [center, radius]);
 
   useEffect(() => {
@@ -259,7 +322,7 @@ export function StoreMap(props: Props) {
         aria-label="Mapa sklepów w pobliżu"
         aria-describedby={describedBy}
       />
-      <p className={`fd-near-map-hint${twoFingers ? ' on' : ''}`} aria-hidden="true">
+      <p className={`fd-near-map-hint${twoFingers ? ' fd-near-on' : ''}`} aria-hidden="true">
         Mapę przesuwasz dwoma palcami
       </p>
     </div>

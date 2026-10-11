@@ -59,25 +59,25 @@ export function MacroSummary({ serving, servings, passes }: Props) {
         aria-label={`Skąd pochodzą kalorie: ${parts.map((p) => `${p.label} ${pct(p.share)}`).join(', ')}`}
       >
         {parts.map((p) => (
-          <span key={p.key} className={p.key} style={{ width: `${p.share * 100}%` }} />
+          <span key={p.key} className={`fd-rec-e-${p.key}`} style={{ width: `${p.share * 100}%` }} />
         ))}
       </div>
       <ul className="fd-rec-energy-legend" aria-hidden="true">
         {parts.map((p) => (
-          <li key={p.key} className={p.key}>
+          <li key={p.key} className={`fd-rec-e-${p.key}`}>
             {p.label} {pct(p.share)}
           </li>
         ))}
       </ul>
       {passes ? (
-        <p className="fd-rec-rule ok">
+        <p className="fd-rec-rule fd-rec-ok">
           <Check size={16} strokeWidth={2} aria-hidden />
           <span>
             Białko {g1(serving.protein)} &gt; węglowodany {g1(serving.carbs)} i &gt; tłuszcz {g1(serving.fat)}
           </span>
         </p>
       ) : (
-        <p className="fd-rec-rule bad" role="alert">
+        <p className="fd-rec-rule fd-rec-bad" role="alert">
           <TriangleAlert size={20} strokeWidth={2} aria-hidden />
           <span>{RULE_BROKEN}</span>
         </p>

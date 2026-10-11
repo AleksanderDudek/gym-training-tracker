@@ -30,9 +30,9 @@
   font-size:12.5px;font-weight:600;line-height:1.5;background:var(--surface-2);border:1px solid var(--line);
   color:var(--ink-soft);white-space:nowrap}
 /* Szybkie wyróżnia złoto z wypełnioną błyskawicą — ciemnozłoty napis trzyma ponad 5:1 na swoim tle. */
-.fd-rec-tier.szybkie{background:var(--c-gold-bg);border-color:var(--c-gold);color:var(--c-gold-ink)}
+.fd-rec-tier.fd-rec-szybkie{background:var(--c-gold-bg);border-color:var(--c-gold);color:var(--c-gold-ink)}
 .fd-rec-tier-icon{flex:none}
-.fd-rec-tier-icon.szybkie{fill:var(--c-gold);color:var(--c-gold-ink)}
+.fd-rec-tier-icon.fd-rec-szybkie{fill:var(--c-gold);color:var(--c-gold-ink)}
 
 /* ---------------- Lista przepisów ---------------- */
 
@@ -66,19 +66,19 @@
 .fd-rec-energy{display:flex;height:8px;border-radius:4px;overflow:hidden;background:var(--line)}
 .fd-rec-energy span{display:block;height:100%}
 .fd-rec-energy span + span{box-shadow:inset 2px 0 0 var(--surface-2)}
-.fd-rec-energy .protein,.fd-rec-energy-legend .protein::before{background:var(--c-blue-ink)}
-.fd-rec-energy .carbs,.fd-rec-energy-legend .carbs::before{background:var(--c-gold)}
-.fd-rec-energy .fat,.fd-rec-energy-legend .fat::before{background:var(--c-orange)}
+.fd-rec-energy .fd-rec-e-protein,.fd-rec-energy-legend .fd-rec-e-protein::before{background:var(--c-blue-ink)}
+.fd-rec-energy .fd-rec-e-carbs,.fd-rec-energy-legend .fd-rec-e-carbs::before{background:var(--c-gold)}
+.fd-rec-energy .fd-rec-e-fat,.fd-rec-energy-legend .fd-rec-e-fat::before{background:var(--c-orange)}
 .fd-rec-energy-legend{display:flex;flex-wrap:wrap;gap:0 12px;margin:0;padding:0;list-style:none;font-size:12px;
   color:var(--ink-soft)}
 .fd-rec-energy-legend li::before{content:'';display:inline-block;width:8px;height:8px;margin-right:5px;border-radius:50%}
 .fd-rec-rule{display:flex;align-items:flex-start;gap:6px;font-size:13px;line-height:1.4}
 .fd-rec-rule svg{flex:none;margin-top:1px}
-.fd-rec-rule.ok{color:var(--ok)}
+.fd-rec-rule.fd-rec-ok{color:var(--ok)}
 /* Złamana zasada: ostrzeżenie w stroju `.dnote.warn` — kreska, kolor, ikona i zdanie. */
-.fd-rec-macro .fd-rec-rule.bad{margin-top:2px;padding:8px 10px;background:var(--surface);border-left:3px solid var(--warn);
+.fd-rec-macro .fd-rec-rule.fd-rec-bad{margin-top:2px;padding:8px 10px;background:var(--surface);border-left:3px solid var(--warn);
   border-radius:var(--r);color:var(--warn);font-weight:600}
-.fd-rec-rule.bad svg{margin-top:-1px}
+.fd-rec-rule.fd-rec-bad svg{margin-top:-1px}
 
 /* ---------------- Sklep ---------------- */
 
@@ -141,8 +141,8 @@
   border:1px solid var(--warn);border-radius:999px;font-size:12px;font-weight:600;color:var(--warn)}
 .fd-rec-swap-status{display:flex;align-items:flex-start;gap:6px;margin:0 0 10px;font-size:13.5px;line-height:1.4}
 .fd-rec-swap-status svg{flex:none;margin-top:1px}
-.fd-rec-swap-status.ok{color:var(--ok)}
-.fd-rec-swap-status.bad{color:var(--warn);font-weight:600}
+.fd-rec-swap-status.fd-rec-ok{color:var(--ok)}
+.fd-rec-swap-status.fd-rec-bad{color:var(--warn);font-weight:600}
 
 /* ---------------- Gotowe produkty ---------------- */
 

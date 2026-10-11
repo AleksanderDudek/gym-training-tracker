@@ -55,11 +55,14 @@
   align-items:center;gap:6px;margin:0;padding:6px 12px;border-radius:999px;background:var(--surface);
   box-shadow:0 2px 8px color-mix(in srgb,var(--ink) 20%,transparent);font-size:13px;font-weight:600;
   white-space:nowrap;pointer-events:none}
-/* Próba przesunięcia mapy jednym palcem: przyciemnienie z podpowiedzią, jak w mapach na stronach. */
+/*
+ * Próba przesunięcia mapy jednym palcem: przyciemnienie z podpowiedzią, jak w mapach na stronach.
+ * 72 % tuszu pod jasnym napisem trzyma ponad 4,5:1 także nad najjaśniejszymi kafelkami.
+ */
 .fd-near-map-hint{position:absolute;inset:0;z-index:1050;display:grid;place-items:center;margin:0;padding:16px;
-  background:color-mix(in srgb,var(--ink) 55%,transparent);color:var(--surface);font-weight:600;font-size:16px;
+  background:color-mix(in srgb,var(--ink) 72%,transparent);color:var(--surface);font-weight:600;font-size:16px;
   text-align:center;opacity:0;visibility:hidden;pointer-events:none}
-.fd-near-map-hint.on{opacity:1;visibility:visible}
+.fd-near-map-hint.fd-near-on{opacity:1;visibility:visible}
 @media (prefers-reduced-motion:no-preference){.fd-near-map-hint{transition:opacity .2s ease-out,visibility .2s}}
 
 /* Kontrolki Leafleta w stroju aplikacji: przyciski 44 px, ramka `--edge`, krój i kolory z tokenów. */
@@ -91,9 +94,9 @@
   color:var(--ink-soft)}
 .fd-near-map-legend li::before{content:'';display:inline-block;width:10px;height:10px;margin-right:6px;vertical-align:-1px;
   border-radius:50%;border:2px solid var(--surface);box-shadow:0 0 0 1px var(--line)}
-.fd-near-map-legend .you::before{background:var(--c-blue-ink)}
-.fd-near-map-legend .recipes::before{background:var(--c-orange)}
-.fd-near-map-legend .ready::before{background:var(--steel)}
+.fd-near-map-legend .fd-near-key-you::before{background:var(--c-blue-ink)}
+.fd-near-map-legend .fd-near-key-recipes::before{background:var(--c-orange)}
+.fd-near-map-legend .fd-near-key-ready::before{background:var(--steel)}
 
 .fd-near-map-actions{margin-top:12px}
 .fd-near-map-actions .btn{gap:8px}
