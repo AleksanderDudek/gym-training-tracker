@@ -1,3 +1,4 @@
+import { Component, lazy, Suspense, type ReactNode } from 'react';
 import { ex } from '../data/exercises';
 import { go } from '../routing';
 import { LATE, REST, daySeed, pick } from '../engine/quips';
@@ -9,7 +10,36 @@ import { plannedBurn } from '../engine/burn';
 import { dayKey } from '../engine/schedule';
 import { BoostCard } from './Boost';
 import { WeighCard } from './Weigh';
+import { hasDiet } from '../food/dietFlag';
+import { trail } from '../trail';
 import type { AppState, Workout } from '../types';
+
+/**
+ * Karta jedzenia z osobnej paczki (Dexie, dziennik). Wczytywana tylko u kogoś, kto prowadzi dietę
+ * (`gt:diet`) — reszta nie pobiera z jedzenia ani bajta.
+ */
+const TodayFoodCard = lazy(() => import('../food/TodayFoodCard'));
+
+/**
+ * Karta jedzenia jest dodatkiem do ekranu Dziś: gdy jej paczka nie przyjdzie (brak sieci przed
+ * pierwszym wczytaniem) albo IndexedDB odmówi, karta znika po cichu, a reszta ekranu zostaje.
+ */
+class QuietBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  override state = { failed: false };
+
+  static getDerivedStateFromError(): { failed: boolean } {
+    return { failed: true };
+  }
+
+  override componentDidCatch(error: unknown): void {
+    // Po cichu dla ekranu, ale nie dla śladu do uwag — tak jak `LoadBoundary`.
+    trail.error(error instanceof Error ? error.message : String(error));
+  }
+
+  override render(): ReactNode {
+    return this.state.failed ? null : this.props.children;
+  }
+}
 
 /** Co plan mówi na dziś. `due` to termin do zrobienia, `rest` to dzień bez terminu. */
 export interface TodayPlan {
@@ -159,6 +189,17 @@ export function SessionHome({
         a rano zaraz pod nim — prośbę o jedną liczbę z wagi.
       */}
       <WeighCard state={state} today={dayKey(Date.now())} onWeigh={onWeigh} onSkip={onWeighSkip} />
+      {/*
+        Jedzenie pod ważeniem, nad przekąską i krokami: rano jedna liczba z wagi, potem dziennik,
+        do którego wraca się kilka razy dziennie — a przekąska i cardio to dodatki do dnia.
+      */}
+      {hasDiet() && (
+        <QuietBoundary>
+          <Suspense fallback={null}>
+            <TodayFoodCard />
+          </Suspense>
+        </QuietBoundary>
+      )}
       {/* Przekąska pod treningiem, nie nad nim: kto przyszedł trenować, najpierw widzi trening. */}
       <SnackCard state={state} />
       <CardioCard state={state} />
