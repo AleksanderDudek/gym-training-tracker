@@ -20,7 +20,7 @@ const ADD_HREF = hashWith(FOOD_PATH, diaryToParams({ date: null, add: true }));
 /**
  * Karta jedzenia na ekranie Dziś: kalorie i białko wobec celu dnia, jedno zdanie, ile zostało,
  * i „Dodaj zjedzone”. Ekran Dziś wczytuje ją leniwie i tylko wtedy, gdy ktoś prowadzi dietę
- * (`gt:diet`), więc kto tylko trenuje, nie pobiera Dexie. Wygląda jak sąsiednie karty (ważenie,
+ * (`gt:diet`), więc kto tylko trenuje, nie wczytuje Dexie. Wygląda jak sąsiednie karty (ważenie,
  * przekąska, kroki): etykieta, liczba dnia w nagłówku, zdanie pod spodem. Stuknięcie w kartę
  * prowadzi do dziennika, przycisk — od razu do dodawania.
  *

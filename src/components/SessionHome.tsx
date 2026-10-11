@@ -17,7 +17,8 @@ import type { AppState, Workout } from '../types';
 
 /**
  * Karta jedzenia z osobnej paczki (Dexie, dziennik). Wczytywana tylko u kogoś, kto prowadzi dietę
- * (`gt:diet`) — reszta nie pobiera z jedzenia ani bajta.
+ * (`gt:diet`) — u reszty kod jedzenia nie wczytuje się ani nie uruchamia (leży najwyżej w zapasie
+ * service workera na pracę offline).
  */
 const TodayFoodCard = lazy(() => import('../food/TodayFoodCard'));
 

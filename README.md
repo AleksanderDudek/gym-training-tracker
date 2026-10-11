@@ -27,7 +27,7 @@ npm run build      # typecheck + produkcyjny build do dist/ z service workerem (
 npm run preview    # podgląd builda — tu działa też praca offline
 npm run typecheck  # tsc: aplikacja, testy, konfiguracja Vite i skrypty, service worker
 npm run lint       # oxlint
-npm test           # 1199 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, serwer… (vitest)
+npm test           # 1244 testy: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, serwer… (vitest)
 ```
 
 Baza produktów i przepisy:
@@ -343,7 +343,8 @@ jeden trening i przycisk startu. Gdy terminu nie ma — mówi, kiedy wypada nast
 trwa — pokazuje ją. Pełna lista treningów mieszka w zakładce Trening, bo ekran z dwudziestoma
 siedmioma równorzędnymi przyciskami nie podpowiada niczego. Kto prowadzi dietę, ma tu też jedną
 kartę jedzenia: ile kalorii i białka z celu dnia, ile zostało i „Dodaj zjedzone”. Kto nie prowadzi,
-nie widzi jej wcale — i nie pobiera ani bajta jej kodu.
+nie widzi jej wcale, a ekran Dziś nie wczytuje ani nie uruchamia jej kodu. (Pobrany jest i tak:
+service worker trzyma całą aplikację w zapasie na pracę offline — ale leży tylko w pamięci podręcznej.)
 
 Stare adresy dalej działają — `#/trening` i `#/poziomy`, a także dawne linki do formularza
 przekąski — zapisane linki i zakładki przeglądarki nie przestają prowadzić tam, gdzie prowadziły.
@@ -677,9 +678,10 @@ Dziennik sam nie łączy się z siecią — sklepy w podpowiedziach bierze z ost
 **Dane produktów są w repozytorium**: `data/food/products.json.gz` (3,3 MB zamiast 24 MB JSON-a).
 Build wydaje go jako `data/products.<hasz>.json.gz`, a przeglądarka rozpakowuje go sama
 (`DecompressionStream`, a w starszych przeglądarkach fflate). Plik pobiera się dopiero przy wejściu
-w produkty, przepisy, sklepy albo wyszukiwanie w dzienniku — ekrany treningu nie dotykają ani jego,
-ani kodu mapy i bazy diety. Hasz w nazwie zmienia się tylko z nowymi danymi, więc service worker
-trzyma jedną kopię, dopóki nie przyjdzie nowa.
+w produkty, przepisy, sklepy albo wyszukiwanie w dzienniku — nie ma go w zapisanej powłoce aplikacji.
+Ekrany treningu nie wczytują ani jego, ani kodu mapy i bazy diety; ten kod service worker trzyma
+w zapasie na pracę offline, ale uruchamia go dopiero Jedzenie. Hasz w nazwie zmienia się tylko
+z nowymi danymi, więc service worker trzyma jedną kopię bazy, dopóki nie przyjdzie nowa.
 
 Nowa baza: `npm run food:data` (taksonomie, ceny w PLN i złożenie pliku) z wyciągu produktów
 z `countries_tags` = `en:poland` pełnego zrzutu Open Food Facts w `data/food/raw/off_poland.csv`
@@ -915,8 +917,9 @@ dostaje rzadsze `setInterval`, więc licznik oparty na tyknięciach zostawałby 
 ```
 src/
   types.ts                  wszystkie typy domenowe
-  routing.ts                trasy w hashu adresu, pięć zakładek, sekcja atlasu i podstrony
-  routing.test.ts           22 testy tras, zakładek, ekranów, treningów, planów, przekąsek i starych adresów
+  routing.ts                trasy w hashu adresu: pięć zakładek, sekcje Treningu i Jedzenia z pamięcią ostatniej, podstrony, stan strony w zapytaniu, stare adresy
+  routing.test.ts           34 testy tras, zakładek, sekcji i ich pamięci, podstron, zapytania w hashu, przekąsek i starych adresów
+  routing.dom.test.ts       5 testów routera w przeglądarce: `hashchange`, pamięć sekcji i jej kopia w `sessionStorage`
   data/exercises.ts         biblioteka 114 ćwiczeń, drabiny sprzętu, lista „bez sprzętu”, cztery treningi, treningi profili
   data/exjokes.ts           dopiski do 114 ćwiczeń i do gotowych treningów
   data/moves.ts             osiemnaście wzorców ruchu jako klatki kluczowe
@@ -936,16 +939,18 @@ src/
     blocks.ts               bloki treningu: serie pod rząd, para na zmianę albo obwód
     steps.ts                kolejka serii sesji: pod rząd, para na zmianę, obwód runda po rundzie
     steps.test.ts           4 testy kolejności serii, rund obwodu i kursora po zapisie
+    clock.ts                zegar sesji: start, części, przejścia, oś czasu i czas do dziennika; skrajne czasy poza statystyką
+    clock.test.ts           39 testów startu, końca części, cofania, pomijania, osi czasu, przejść i skrajnych czasów
     rests.ts                przerwy: z rodzaju ćwiczenia, z treningu, dłuższe po słabnących seriach, obwód coraz gęstszy
-    rests.test.ts           10 testów przerw, słabnięcia serii i przerwy po rundzie obwodu
+    rests.test.ts           11 testów przerw, słabnięcia serii, przerwy po rundzie obwodu i skracania przerw z historii
     session.ts              zapis seria po serii, ocena zapasu, przerwa jako chwila końca, koniec w połowie
-    session.test.ts         5 testów zapisu serii, cofania, zamknięcia i przerwy
+    session.test.ts         6 testów zapisu serii, cofania, zamknięcia i przerwy
     structure.ts            zasady par, przerwy, przygotowanie stanowiska, rozgrzewka
-    structure.test.ts       16 testów par w całej bibliotece, stanowisk, talerzy, rozgrzewki i zamian
+    structure.test.ts       20 testów par i obwodów w całej bibliotece, stanowisk, talerzy, rozgrzewki i zamian
     planedit.ts             zmiany planu od dziś: dni z datą, przedłużenie, równe przerwy
     boost.ts                podpowiedzi postępu w dzień wolny: przekąska i trening dodatkowy
     planedit.test.ts        9 testów zmian bez przepisywania historii, rytmu i podpowiedzi
-    reminders.test.ts       11 testów list, godzin, dnia lokalnego i kontraktu z serwerem
+    reminders.test.ts       13 testów list, godzin, dnia lokalnego, ważenia i kontraktu z serwerem
     plan.ts                 stan początkowy, recepta na dziś, mieszane obciążenie
     progression.ts          silnik: ocena sesji, awanse, przejścia, regres, przerwy
     hints.ts                teksty podpowiedzi i wyjaśnień
@@ -955,7 +960,7 @@ src/
     history.ts              dziennik przewrócony na ćwiczenia: sesje, rekordy, kierunek zmiany
     pose.ts                 szkielet manekina: kąty, klatki, dosunięcie do podłoża
     share.ts                treść wpisu, karta 1080×1080, wysyłka i ścieżka zapasowa
-    share.test.ts           15 testów treści wpisu, adresów, blankietu i wprowadzenia
+    share.test.ts           20 testów treści wpisu, adresów, blankietu, wprowadzenia i poleceń
     snacks.ts               przekąski ruchowe: zapis, skróty, podpowiedź, dzień po ćwiczeniu, liczby
     snacks.test.ts          17 testów zapisu, skrótów, granicy z treningiem i liczb przekąsek
     volume.ts               objętość ćwiczenia w dniu, tygodniu i miesiącu kalendarzowym
@@ -979,7 +984,7 @@ src/
     xp.ts                   punkty doświadczenia, poziomy i tytuły postaci
     xp.test.ts              14 testów źródeł doświadczenia, sufitów przekąsek i cardio, poziomów
     quips.ts                humor: porównania liczb, odmiana, zestawy tekstów
-    quips.test.ts           21 testów puent, odmiany, dopisków i granic porównań
+    quips.test.ts           23 testy puent, odmiany, dopisków i granic porównań
     pose.test.ts            24 testy szkieletu, cyklu, katalogu ruchów i mimiki
     badges.ts               katalog odznak z progami, postęp, migracja starych kluczy
     journal.ts              dziennik zdarzeń wyprowadzany z kalendarza
@@ -988,10 +993,11 @@ src/
     progression.test.ts     40 testów silnika progresji
     schedule.test.ts        30 testów kalendarza, przypisania i rotacji
     score.test.ts           15 testów punktacji i dziennika
-    badges.test.ts          34 testy odznak, dorobku, kroków, cardio i tańca oraz podpowiedzi
+    badges.test.ts          37 testów odznak, dorobku, kroków, cardio i tańca, czasu na treningu oraz podpowiedzi
     history.test.ts         14 testów historii ćwiczenia i kierunku zmiany
-    metrics.test.ts         40 testów warstwy liczb
-  storage/storage.ts        zapis z kolejkowaniem, dwa środowiska
+    metrics.test.ts         43 testy warstwy liczb, także czasu na treningu
+  storage/storage.ts        zapis z kolejkowaniem, dwa środowiska; mówi, czy dany zapis trafił na dysk
+  storage/storage.test.ts   2 testy wyniku zapisu i kolejki po odmowie przeglądarki
   components/
     ui.tsx                  modal, toast, baner, pusty stan, kafelek, przełącznik, dwa wykresy
     ExerciseCard.tsx        karta ćwiczenia z formularzem serii
@@ -1001,11 +1007,14 @@ src/
     Plans.tsx               katalog planów, podgląd planu ze startem, kreator planu na 4–48 tygodni
     Design.tsx              paski mięśni, uwagi doradcy, przełącznik sekcji i filtry
     PlanView.tsx            konfigurator klasyczny, kalendarz, punkty i dziennik
-    SessionHome.tsx         ekran „co robię dzisiaj”
-    Guided.tsx              prowadzenie sesji: jedna seria na ekranie, odliczana przerwa, ocena zapasu
+    SessionHome.tsx         ekran „co robię dzisiaj”, z kartą jedzenia u tych, którzy prowadzą dietę
+    Guided.tsx              prowadzenie sesji: jedna seria na ekranie, odliczana przerwa, ocena zapasu, karta przejścia „Start: …”
+    SessionClock.tsx        zegar sesji: licznik w pasku aplikacji i pasek części nad serią
+    Sections.tsx            przełącznik sekcji zakładki: Plan · Treningi · Ćwiczenia i Dziennik · Przepisy · Produkty · W pobliżu
     Weigh.tsx               karta ważenia na ekranie Dziś: waga z rana, średnia z 7 dni
     Profile.tsx             profil: liczby, lista zrobionych ćwiczeń, historia i podstrony
     Timer.tsx               stoper i odliczanie dla ćwiczeń na czas
+    Timer.test.ts           4 testy zapisu czasu: sekundy, minuty, godziny, zaokrąglenie
     BadgeArt.tsx            medale odznak: tworzywa, piktogramy, pasma progów
     Celebrate.tsx           moment zdobycia — medal, promienie, konfetti
     icons.tsx               ikony nawigacji
@@ -1022,9 +1031,9 @@ src/
     ExercisePicker.tsx      pole wyboru ćwiczenia z podpowiedziami (wzorzec combobox)
     Support.tsx             złoty pasek wsparcia pod paskiem aplikacji i baner Siwego z espresso
     Support.test.ts         4 testy chowania paska, długości i głosu jego tekstów
-    TopBar.tsx              przyklejony pasek aplikacji: tytuł, wstecz, ustawienia, pasek wsparcia
+    TopBar.tsx              przyklejony pasek aplikacji: tytuł, wstecz, ustawienia, zegar sesji, pasek wsparcia
     Gorilla.tsx             obsada: Gustaw, Gosia i Trener Siwy, siedemnaście min
-    cast.test.ts            17 testów obsady, pasm, blankietu, miny postaci i rady dnia
+    cast.test.ts            18 testów obsady, pasm, blankietu, miny postaci i rady dnia
     Achievements.tsx        zakładka osiągnięć: dorobek w liczbach i odznaki z progami
     VideoEmbed.tsx          odtwarzacz YouTube ładowany dopiero po kliknięciu
     Reminders.tsx           karta przypomnień w ustawieniach: zgoda, rano i wieczorem
@@ -1033,6 +1042,33 @@ src/
     Garmin.tsx              karta zegarka w ustawieniach: klucz, kroki połączenia, stan, odłączenie
     Boost.tsx               „Na postęp w dzień wolny” na zakładce Plan i ekranie Dziś
     Feedback.tsx            okno „Napisz do autora”: e-mail, wiadomość, zrzut ekranu
+    LoadBoundary.tsx        granica błędu zakładki Jedzenie: niewczytana paczka albo błąd zamyka tylko ten ekran
+    RootBoundary.tsx        granica błędu całej aplikacji: „Coś poszło nie tak” i „Odśwież”, które wpuszcza poprawioną wersję
+    RootBoundary.test.tsx   3 testy ekranu awarii: bez błędu, po błędzie i „Odśwież” bez ruszania danych
+    UpdateBar.tsx           pasek „Nowa wersja aplikacji” z „Odśwież” i „Później” — nigdy w trakcie treningu
+  food/                     zakładka Jedzenie (dawne Produkty PL): osobna paczka, wczytywana dopiero w Jedzeniu
+    FoodRoot.tsx            wejście do paczki: przełącznik sekcji, strony sekcji i podstrony diety, każda leniwie
+    TodayFoodCard.tsx       karta jedzenia na ekranie Dziś: kalorie i białko wobec celu dnia, „Dodaj zjedzone”
+    FoodCardPlaceholder.tsx miejsce na tę kartę, zanim przyjdzie jej paczka — w głównej paczce, bez importów
+    dietFlag.ts             znacznik „prowadzi dietę” (`gt:diet`): ekran Dziś czyta go, zanim wczyta cokolwiek z jedzenia
+    bridge.ts               most do danych treningu: waga, wzrost, kroki i ruch dnia z jednego źródła
+    backup.ts               jedzenie w kopii i w resecie: kopia dziennika, odtworzenie, czyszczenie, zapominanie przeniesionych ważeń
+    data.ts                 baza produktów: adres z buildu, pobranie, gzip albo czysty JSON, indeks do wyszukiwania
+    hash.ts                 stan stron w zapytaniu wewnątrz hasha (`#/produkty?q=skyr&ns=a`)
+    food.css                miejsce na style wspólne całej zakładce; obszary mają arkusze obok swoich stron
+    *.test.ts(x)            31 testów karty Dziś, kopii i resetu, arkuszy bez zderzeń klas, bazy produktów i hasha
+    lib/                    produkty: filtry, fasety, sortowanie, wyszukiwanie bez względu na ogonki, stan w adresie, formaty — 49 testów
+    recipes/                przepisy białkowe: katalog, składniki z jednego sklepu, zamiany, progi, makro, gotowe produkty — 167 testów
+    nearby/                 w pobliżu: odległości, zapytanie do Overpass z zapasowym serwerem, kopia na dobę, promień — 33 testy
+    diet/                   dieta: baza Dexie (`produkty-pl-dieta`), model energii, sposoby odżywiania, dzień, plan z Excela, podpowiedzi — 105 testów
+    hooks/                  baza produktów, dieta na żywo i scalona z treningiem, stan w adresie, lokalizacja, sklepy w pobliżu — 22 testy
+    components/common/      karta i szczegóły produktu, zdjęcie, oceny, cena, arkusz od dołu, ekrany stanu
+    components/products/    przeglądarka produktów: pasek narzędzi, filtry w arkuszu, fasety, aktywne filtry, tabela, strony
+    components/recipes/     przepisy: lista z filtrami, karta ze sklepem, zamiana składnika, gotowe produkty
+    components/nearby/      „W pobliżu”: mapa Leaflet, promień, sklepy i przepisy z nich
+    components/diet/        dziennik, plan posiłków, postęp, profil diety, pierwsze kroki, wybór jedzenia, import z Excela
+    components/**/*.test.tsx 93 testy stron pod jsdom — przez role i etykiety, nie znaczniki
+    test/                   dane do testów: produkty, most do treningu, arkusz Excela
   api.ts                    adres serwera aplikacji z buildu (`VITE_API_URL`)
   push.ts                   przypomnienia w przeglądarce: zgoda, subskrypcja Web Push, wysyłka listy
   coach.ts                  ekran, który nie gaśnie w trakcie sesji (Wake Lock), i sygnał końca przerwy
@@ -1044,8 +1080,16 @@ src/
   watchseal.test.ts         5 testów: wektor wspólny z zegarkiem, podróbki, czytanie klucza
   garmin.ts                 zegarek w przeglądarce: klucz w pamięci strony, odbiór paczki, odłączenie
   garmin.test.ts            3 testy odpowiedzi serwera i godziny ostatnich danych
+  pwa.ts                    service worker od strony aplikacji: rejestracja, „nowa wersja czeka”, wpuszczenie poprawki z ekranu awarii
+  pwa.test.ts               12 testów rejestracji, pytań o nową wersję i obu „Odśwież” — bez service workera
+  sw.ts                     service worker (Workbox, injectManifest): powłoka offline, baza produktów, zdjęcia, kafelki mapy, Web Push
+  csp.test.ts               5 testów polityki bezpieczeństwa: każdy obcy adres z kodu przepuszczony, serwer aplikacji, miejsce znacznika
+  styles.css                arkusz stylów
+  styles.contrast.test.ts   8 testów kontrastu tokenów, liczonych wprost z arkusza
+  vite-env.d.ts             typy modułu `virtual:food-data`
+  test/setup.ts             przygotowanie testów: IndexedDB w pamięci, jest-dom i sprzątanie pod jsdom
   App.tsx                   spina stan i widoki
-  main.tsx                  punkt wejścia i rejestracja service workera
+  main.tsx                  punkt wejścia: kroje pisma, rejestracja service workera (`pwa.ts`), granica błędu wokół aplikacji
 server/api/                 serwer aplikacji: przypomnienia, uwagi i skrzynki zegarka (Cloudflare Worker, cron, D1)
   webpush.ts                szyfrowanie RFC 8291 i podpis VAPID na samym WebCrypto
   schedule.ts               co komu wysłać: czas lokalny, okno 90 minut, raz dziennie
@@ -1056,19 +1100,38 @@ server/api/                 serwer aplikacji: przypomnienia, uwagi i skrzynki ze
   *.test.ts                 37 testów: wektor RFC, VAPID, harmonogram, API, cron, uwagi, podgląd i skrzynki
   README.md                 wdrożenie krok po kroku
 garmin/                     aplikacja na zegarek (Connect IQ, Monkey C) — opis i build w garmin/README.md
-scripts/
-  precache.mjs              po buildzie: wersja i lista plików do sw.js
-public/
-  manifest.webmanifest      manifest aplikacji do zainstalowania
-  sw.js                     service worker: praca offline i powiadomienia
-  icons/                    ikony: zwykłe, maskowalna, iOS i wektorowa
-  styles.css                arkusz stylów
-  styles.contrast.test.ts   8 testów kontrastu tokenów, liczonych wprost z arkusza
+vite/                       wtyczki Vite
+  csp.ts                    polityka bezpieczeństwa treści (`<meta>` w zbudowanej stronie) z jednej listy obcych adresów
+  foodData.ts               baza produktów jako `data/products.<hasz>.json.gz` i moduł `virtual:food-data`; w trybie deweloperskim podaje ją serwer Vite
+  foodData.test.ts          4 testy daty, wersji z hasza, braku pliku i modułu w Vitest
+data/food/products.json.gz  baza produktów (3,3 MB) z `npm run food:data`; surowe pliki (`data/food/raw/`) poza gitem
+scripts/food/               przygotowanie bazy produktów (`npm run food:*`, przez tsx)
+  fetch-taxonomies.ts       polskie nazwy kategorii, etykiet, alergenów i dodatków z taksonomii Open Food Facts
+  fetch-prices.ts           wszystkie ceny w PLN z Open Prices
+  extract-priced.ts         produkty z ceną w PLN z pełnego zrzutu — połowy brakuje w wyciągu „en:poland”
+  prepare-data.ts           złożenie `data/food/products.json.gz` z wyciągu, cen i taksonomii
+  check-recipes.ts          pokrycie przepisów na dołączonej bazie: kandydaci, sklepy, domyślny wariant
+  http.ts                   przedstawienie się API Open Food Facts i przerwy między zapytaniami
+  lib/                      przekształcenie wiersza, ceny, sieci sklepów, taksonomie, pisownia, TSV — 51 testów
+public/icons/               ikony: zwykłe, maskowalna, iOS i wektorowa
+index.html                  szkielet strony: kolor paska, ikony i tryb pełnoekranowy na iOS; build dopisuje CSP i manifest
+vite.config.ts              wtyczki: React, CSP, baza produktów, PWA (service worker i manifest); ustawienia Vitesta
+tsconfig.json               typy kodu przeglądarki i serwera — bez typów node'a
+tsconfig.test.json          testy: te same ustawienia plus typy node'a
+tsconfig.node.json          node: konfiguracja Vite, `vite/` i `scripts/`
+tsconfig.sw.json            service worker: typy WebWorker zamiast DOM
+.oxlintrc.json              lint (`npm run lint`, oxlint)
 ```
 
 Silnik jest w całości oddzielony od interfejsu. `engine/` nie importuje niczego z Reacta, funkcje
 przyjmują stan i zwracają zmiany, więc dają się testować bez DOM-u. Funkcje mutujące (`applyResult`,
 `applyLayoff`) działają na przekazanym obiekcie — `App.tsx` woła je zawsze na kopii stanu.
+
+Jedzenie ma ten sam podział: `food/lib`, `recipes`, `nearby` i `diet` to czysta logika bez Reacta
+(testowana w node), a komponenty tylko wyświetlają — ich testy renderują strony pod jsdom. Do głównej
+paczki trafia z jedzenia tylko to, czego potrzebuje ekran Dziś i App, zanim ktoś wejdzie w Jedzenie:
+znacznik diety, most, zaślepka karty i stan w hashu (`dietFlag.ts`, `bridge.ts`,
+`FoodCardPlaceholder.tsx`, `hash.ts`) — reszta przychodzi leniwie.
 
 ## Atlas ćwiczeń i wideo
 
@@ -1682,10 +1745,19 @@ GYM TRACKER instaluje się na ekranie głównym telefonu i działa bez sieci od 
   jest zapisana przy instalacji, a każda nawigacja dostaje zapisaną stronę. Baza produktów: kopia
   na zawsze, jedna (nowa wersja ma nowy hasz w nazwie). Zdjęcia produktów: 400 ostatnich na 30 dni.
   Kafelki mapy: tylko oglądane, 500 na 7 dni. Overpass i serwer przypomnień idą prosto do sieci.
+- **Rejestracja w `main.tsx`, poza Reactem** (`registerSW` z `virtual:pwa-register`, stan w `src/pwa.ts`):
+  ustawiona przed pierwszym renderem, a nie w komponencie, który montuje się dopiero po wczytaniu
+  danych; sama rejestracja rusza po wczytaniu strony, żeby nie konkurować z pierwszym ekranem.
+  Dzięki temu o nową wersję pyta nawet taka, która wywraca się na starcie.
 - **Nowa wersja czeka na „Odśwież”.** Gdy wdrożenie przyniesie nową wersję, na dole pojawia się
   pasek „Nowa wersja aplikacji” z „Odśwież” i „Później” — **nigdy w trakcie treningu**: przeładowanie
   w środku serii gubiłoby miejsce, a pasek pod kciukiem łatwo trącić. Do tego czasu działa stara
   wersja ze swoimi plikami. O nowe wersje aplikacja pyta przy starcie, po powrocie i co godzinę.
+- **Ekran awarii zamiast białej strony.** Błąd w renderze poza zakładką Jedzenie (ta ma własną granicę)
+  łapie `RootBoundary`: goły ekran „Coś poszło nie tak” bez stanu aplikacji. Od razu pyta o nowszą
+  wersję, a jego „Odśwież” wpuszcza czekającą (albo kończącą instalację) i dopiero wtedy przeładowuje
+  stronę — bez tego zapisana strona wczytywałaby wciąż tę samą zepsutą wersję, dopóki aplikacji nie
+  zamknie się do końca. Zapisanych danych nie rusza: trening i dziennik jedzenia czekają w przeglądarce.
 - **Manifest** generuje wtyczka (jedno źródło w `vite.config.ts`): nazwa, tryb `standalone`,
   orientacja pionowa, kolory, start na ekranie Dziś, adresy względne (działa pod dowolną ścieżką)
   i skróty z ikony: „Przekąska ruchowa”, „Jedzenie dziś”, „Przepisy”, „Sklepy w pobliżu”,

@@ -94,7 +94,8 @@ import { LoadBoundary } from './components/LoadBoundary';
 
 /**
  * Zakładka Jedzenie w osobnej paczce (razem z Dexie, Leafletem i kodem bazy produktów): ekrany
- * treningu jej nie pobierają, a pierwsze wejście w Jedzenie pobiera ją raz.
+ * treningu jej nie wczytują, a pierwsze wejście w Jedzenie wczytuje ją raz — z zapasu service
+ * workera albo z sieci.
  */
 const FoodRoot = lazy(() => import('./food/FoodRoot'));
 

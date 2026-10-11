@@ -124,7 +124,9 @@ NOVA and Eco-Score keep their official colours (they are standards, not decorati
 **Code layout**: `src/food/{lib,recipes,nearby,diet,hooks,components}` — the pure modules move
 as they are (with their tests, reformatted to the repo style: semicolons, no `.ts` import
 suffixes); components are rewritten. The whole food area is lazy-loaded (`React.lazy`) — gym
-screens never download Leaflet, Dexie or the dataset code.
+screens never load or run Leaflet, Dexie or the dataset code. (The service worker precaches every
+chunk for offline use, so the bytes are on the device after install; nothing on a gym screen
+imports them.)
 
 **Dataset**: `data/food/products.json.gz` (3.3 MB) is committed — CI builds from git, and the
 gzip is a tenth of the JSON. A Vite plugin (`vite/foodData.ts`) emits it as
@@ -132,7 +134,8 @@ gzip is a tenth of the JSON. A Vite plugin (`vite/foodData.ts`) emits it as
 dev serves the same file from middleware. The browser fetches the gzip and inflates it with
 `DecompressionStream` (fflate fallback); a gzip magic-byte check also accepts a server that
 already decoded it. The content-hashed name replaces Produkty PL's `manifest.json` + `?v=`
-(cache-first forever, one copy kept). The dataset is fetched only when a food screen needs it.
+(cache-first forever, one copy kept). The dataset is fetched only when a food screen needs it —
+unlike the code chunks it is left out of the precache (`globIgnores: ['data/**']`).
 The data pipeline (`scripts/food/*`, `npm run food:data`) moves too; raw inputs stay out of git.
 
 **One body, one source of truth** — the gym tracker's records:
@@ -144,12 +147,18 @@ The data pipeline (`scripts/food/*`, `npm run food:data`) moves too; raw inputs 
 | Height | `cfg.height`; the diet profile edits it in place |
 | Training that day | From the workout log (read-only); "Ruch dziś" line shows workout + cardio kcal from `burn.ts` as information — not added to the calorie goal (the activity multiplier already assumes training; adding it would count twice) |
 
-- One-time migration: weigh-ins found in the old diet DB on days without a gym tracker weigh-in
-  are copied into `state.body` the first time the food area opens.
+- Weigh-ins found in the diet DB (old Produkty PL data, a restored diet backup or an imported
+  Excel plan) are moved into `state.body` on every entry into the food area: days without a gym
+  tracker weigh-in take the diet's value, days with one keep the gym value. Once the gym state is
+  saved, every weigh-in is removed from the diet DB — weight has one source, and a weigh-in deleted
+  in the profile does not come back from the diet's copy. A failed save leaves them for next time.
 - The diet DB keeps its name `produkty-pl-dieta` (same origin: existing Produkty PL data appears
   automatically) and `produkty-pl:*` `localStorage` keys for position/radius/shop cache.
-- Backup is one file: Settings → Eksport writes `AppState` plus `diet` (the diet backup);
-  import restores both; "Usuń wszystkie dane" clears both. The diet's own backup buttons stay
+- Backup is one file: Settings → Eksport writes `AppState` plus `diet` (the diet backup) whenever
+  the diet DB holds anything — decided by its content, not by the `gt:diet` flag; an unreadable DB
+  still exports the training data, with a toast saying the food diary is missing. Import restores
+  both; "Usuń wszystkie dane" clears both, plus the saved shop position and the `osm-tiles` and
+  `off-images` caches (tiles reveal which areas were viewed). The diet's own backup buttons stay
   under Profil diety → Twoje dane.
 
 ### 4. Toolchain and PWA
@@ -158,7 +167,7 @@ The data pipeline (`scripts/food/*`, `npm run food:data`) moves too; raw inputs 
 | --- | --- | --- |
 | Versions | React 19, Vite 8, `@vitejs/plugin-react` 6, Vitest 5, TypeScript 6, `vite-plugin-pwa` 2, Workbox 7, npm (lockfile kept) | Same stack Produkty PL already runs on; current majors |
 | Service worker | `strategies: 'injectManifest'`, `src/sw.ts` (TypeScript, Workbox modules): precache of the shell (JS, CSS, HTML, icons, fonts, manifest) with `cleanupOutdatedCaches`; navigation → precached `index.html`; dataset gzip cache-first (1 entry); Open Food Facts images cache-first (400 / 30 days); OSM tiles cache-first (500 / 7 days, only tiles viewed); Overpass and the app server network-only; Web Push + notification click ported unchanged | Precache gives offline from the first visit without the post-build patch script; one TypeScript file for every rule |
-| Updates | `registerType: 'prompt'`: the new version waits; a bar "Nowa wersja aplikacji — Odśwież" appears, **never during a running session** (it waits for the session to close). Update check on start, on return to the app and hourly | A reload in the middle of a set or in a shop loses the place; old chunks stay valid until the user agrees |
+| Updates | `registerType: 'prompt'`: the new version waits; a bar "Nowa wersja aplikacji — Odśwież" appears, **never during a running session** (it waits for the session to close). Update check on start, on return to the app and hourly. Registered in `main.tsx` outside React (`src/pwa.ts`), before the first render; a root error boundary (`RootBoundary`) shows "Coś poszło nie tak" and asks for a newer version, and its "Odśwież" sends `SKIP_WAITING` to a waiting (or installing) version before reloading | A reload in the middle of a set or in a shop loses the place; old chunks stay valid until the user agrees. Navigation is served from the precache, so a release that crashes on start would otherwise survive every redeploy until the app is fully closed |
 | Manifest | Generated by the plugin (one source): existing icons, `start_url ./#/sesja`, shortcuts Przekąska, Jedzenie dziś, Przepisy, Sklepy w pobliżu | `public/manifest.webmanifest` and `scripts/precache.mjs` removed |
 | Fonts | Self-hosted with `@fontsource` (Oswald 500/600, IBM Plex Sans 400/500/600, latin + latin-ext), precached | Offline from the first visit, no third-party request (GDPR), share images get the real fonts |
 | CSP | Build-time `<meta>` CSP: `default-src 'self'`; images from OFF, OSM tiles, YouTube thumbnails; connect to Overpass, OFF images, OSM tiles and `VITE_API_URL`'s origin; frames from YouTube (nocookie); `style-src 'self' 'unsafe-inline'` (Leaflet and share images) | Same hardening Produkty PL had, extended to the gym tracker's origins; a test checks every `https://` origin used in `src` is allowed |
@@ -166,6 +175,9 @@ The data pipeline (`scripts/food/*`, `npm run food:data`) moves too; raw inputs 
 
 ## Error handling
 
+- Render crash anywhere outside the food tab → root error boundary: a bare static screen (no app
+  state), an update check, and "Odśwież" that activates a waiting fixed version. Storage is never
+  cleared. The food tab keeps its own boundary (`LoadBoundary`) so the rest of the app stays.
 - Dataset missing at build → `virtual:food-data` has `url: null`; food screens show
   "Dane produktów nie są dołączone do tej wersji". Fetch/inflate/parse failure → retry button.
 - Overpass failures keep Produkty PL's behaviour (fallback server, cached day, honest status).

@@ -7,7 +7,7 @@ import './food.css';
 
 /**
  * Zakładka Jedzenie — wejście do całej paczki jedzenia. App wczytuje ten plik leniwie, więc
- * ekrany treningu nie pobierają Dexie, Leafleta ani kodu bazy produktów. Każda strona ma tu
+ * ekrany treningu nie wczytują Dexie, Leafleta ani kodu bazy produktów. Każda strona ma tu
  * jeszcze własną paczkę: mapa i jej biblioteka przychodzą dopiero z „W pobliżu”, a baza diety
  * z dziennika i jego podstron.
  *
