@@ -49,7 +49,19 @@ describe('Karta jedzenia na ekranie Dziś', () => {
   test('bez profilu diety karty nie ma', async () => {
     const { container } = render(<TodayFoodCard />);
     await waitFor(async () => expect(await db.profile.count()).toBe(0));
-    expect(container).toBeEmptyDOMElement();
+    await waitFor(() => expect(container).toBeEmptyDOMElement());
+  });
+
+  test('póki IndexedDB odpowiada, miejsce karty trzyma zaślepka tej samej wysokości', async () => {
+    await saveProfile(completeProfile({ startDate: '2026-10-01' }));
+    const { container } = render(<TodayFoodCard />);
+    const slot = container.firstElementChild as HTMLElement;
+    expect(slot).toHaveAttribute('aria-hidden', 'true');
+    expect(slot).toHaveClass('grp', 'snackcard');
+    expect(slot).toBeEmptyDOMElement();
+    const card = (await screen.findByRole('link', { name: 'Dodaj zjedzone' })).closest('.grp') as HTMLElement;
+    expect(card).not.toHaveAttribute('aria-hidden');
+    expect(card.style.minHeight).toBe(slot.style.minHeight);
   });
 });
 
@@ -75,7 +87,12 @@ describe('Ekran Dziś', () => {
   test('ze znacznikiem karta staje pod ważeniem, przed przekąską', async () => {
     await saveProfile(completeProfile({ startDate: '2026-10-01' }));
     window.localStorage.setItem('gt:diet', '1');
-    render(home());
+    const { container } = render(home());
+    // Paczka karty jeszcze idzie: jej miejsce już stoi zajęte, ukryte przed czytnikiem ekranu.
+    const slot = container.querySelector('.grp.snackcard[aria-hidden="true"]');
+    expect(slot).toBeInTheDocument();
+    const snackTag = screen.getByText('Przekąska ruchowa');
+    expect(slot!.compareDocumentPosition(snackTag) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     const add = await screen.findByRole('link', { name: 'Dodaj zjedzone' });
     const card = add.closest('.grp')!;
     const weigh = screen.getByRole('heading', { name: 'Waga z dziś' }).closest('.grp')!;

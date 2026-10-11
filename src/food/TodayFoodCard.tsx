@@ -5,6 +5,7 @@ import { macroStatus, totals } from './diet/day';
 import { dayGoal, mondayOf } from './diet/model';
 import { DIET_PROFILES } from './diet/profiles';
 import { diaryToParams } from './diet/url';
+import { FOOD_CARD_HEIGHT, FoodCardPlaceholder } from './FoodCardPlaceholder';
 import { hashWith } from './hash';
 import { useClock, useEntries, useHistory, useProfile } from './hooks/useDiet';
 import { formatNumber } from './lib/format';
@@ -34,7 +35,9 @@ export default function TodayFoodCard() {
   const eaten = useMemo(() => totals(entries ?? []), [entries]);
 
   // Bez profilu (np. dane diety wyczyszczone na innej karcie) karty nie ma — nie ma celu, do którego liczyć.
-  if (!profile || !entries || !history) return null;
+  if (profile === null) return null;
+  // IndexedDB jeszcze odpowiada: miejsce karty stoi zajęte, żeby ekran pod nią nie skakał.
+  if (!profile || !entries || !history) return <FoodCardPlaceholder />;
 
   const goal = dayGoal(profile, history.eaten, today, today);
   const targets = DIET_PROFILES[profile.dietProfile].targets(goal.kcal, profile.targetWeightKg);
@@ -47,7 +50,7 @@ export default function TodayFoodCard() {
       : `${kcal(-leftKcal)} ponad cel${leftProtein > 0 ? `, a białka brakuje jeszcze ${grams(leftProtein)}` : ''}.`;
 
   return (
-    <div className="grp snackcard fd-diet-foodcard">
+    <div className="grp snackcard fd-diet-foodcard" style={{ minHeight: FOOD_CARD_HEIGHT }}>
       <a className="fd-diet-foodcard-link" href={FOOD_PATH}>
         <div className="today-tag light">Jedzenie</div>
         <h2 className="today-name">

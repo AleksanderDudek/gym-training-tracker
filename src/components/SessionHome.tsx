@@ -11,6 +11,7 @@ import { dayKey } from '../engine/schedule';
 import { BoostCard } from './Boost';
 import { WeighCard } from './Weigh';
 import { hasDiet } from '../food/dietFlag';
+import { FoodCardPlaceholder } from '../food/FoodCardPlaceholder';
 import { trail } from '../trail';
 import type { AppState, Workout } from '../types';
 
@@ -195,7 +196,8 @@ export function SessionHome({
       */}
       {hasDiet() && (
         <QuietBoundary>
-          <Suspense fallback={null}>
+          {/* Zaślepka o wysokości karty, póki paczka jedzenia idzie: przekąska i cardio nie skaczą w dół. */}
+          <Suspense fallback={<FoodCardPlaceholder />}>
             <TodayFoodCard />
           </Suspense>
         </QuietBoundary>
