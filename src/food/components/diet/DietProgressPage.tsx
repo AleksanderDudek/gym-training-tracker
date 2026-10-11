@@ -49,21 +49,28 @@ function ProgressView({
   history: History;
 }) {
   const bridge = useBridge();
+  // Wzrost z treningów ma pierwszeństwo przed zapisanym w profilu diety (to ta sama osoba, a profil
+  // treningowy jest źródłem prawdy) — podstawowa przemiana, a z nią cała prognoza, liczy się z niego.
+  const body = useMemo(
+    () => ({ ...profile, heightCm: bridge.heightCm ?? profile.heightCm }),
+    [profile, bridge.heightCm],
+  );
+  const { stepsOn } = bridge;
   const model = useMemo(() => {
     // Kroki z treningów także w dniach bez wiersza diety — inaczej prognoza przyjęłaby tam plan kroków.
-    const inputs = withGymSteps(forecastInputs(profile, plan, history, today, HORIZON), bridge.stepsOn);
-    const series = forecast(profile, inputs);
+    const inputs = withGymSteps(forecastInputs(body, plan, history, today, HORIZON), stepsOn);
+    const series = forecast(body, inputs);
     const weighing = lastWeighing(history.days.values());
-    const projection = projectFromWeighing(profile, inputs, weighing);
+    const projection = projectFromWeighing(body, inputs, weighing);
     const projected = [...projection].map(([date, w]) => ({ date, plan: w, real: w }));
     return {
       series,
       weighing,
       projection,
-      planReach: dayReaching(profile.targetWeightKg, series, 'plan'),
-      projectedReach: dayReaching(profile.targetWeightKg, projected, 'real'),
+      planReach: dayReaching(body.targetWeightKg, series, 'plan'),
+      projectedReach: dayReaching(body.targetWeightKg, projected, 'real'),
     };
-  }, [profile, plan, history, today, bridge]);
+  }, [body, plan, history, today, stepsOn]);
 
   const measured = [...history.days.values()]
     .flatMap((d) => (d.weightKg == null ? [] : [{ date: d.date, kg: d.weightKg }]))
@@ -88,7 +95,7 @@ function ProgressView({
   const fortnight = Array.from({ length: 14 }, (_, i) => addDays(today, i - 13)).map((date) => ({
     date,
     eaten: history.eaten.get(date) ?? null,
-    goal: dayGoal(profile, history.eaten, date, today).kcal,
+    goal: dayGoal(body, history.eaten, date, today).kcal,
   }));
   const maxKcal = Math.max(...fortnight.map((d) => Math.max(d.eaten ?? 0, d.goal))) * 1.1;
 
@@ -109,8 +116,8 @@ function ProgressView({
         unknownMacros: week.length - complete.length,
       }
     : null;
-  const dietProfile = DIET_PROFILES[profile.dietProfile];
-  const targets = dietProfile.targets(profile.dailyKcal, profile.targetWeightKg);
+  const dietProfile = DIET_PROFILES[body.dietProfile];
+  const targets = dietProfile.targets(body.dailyKcal, body.targetWeightKg);
   const weekStatus = average ? macroStatus(targets, average, true) : null;
   const firstDay = fortnight[0]!;
 

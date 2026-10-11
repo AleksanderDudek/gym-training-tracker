@@ -37,7 +37,7 @@ export default function DietProfilePage() {
   const [blank] = useState(() => {
     const start = lastWeight ?? 80;
     return completeProfile({
-      heightCm: bridge.heightCm ?? 175,
+      heightCm: Math.round(bridge.heightCm ?? 175),
       startWeightKg: start,
       targetWeightKg: Math.round((start - 5) * 10) / 10,
     });
@@ -114,7 +114,10 @@ interface FormProps {
 function ProfileForm({ profile, isNew, currentWeight, stores }: FormProps) {
   const bridge = useBridge();
   // Wzrost z treningów ma pierwszeństwo przed zapisanym w profilu diety — to ta sama osoba.
-  const withGymHeight = (p: Profile): Profile => ({ ...p, heightCm: bridge.heightCm ?? p.heightCm });
+  // W całych centymetrach, jak w treningach: profil z arkusza czy z Produktów PL mógł mieć 180,5,
+  // a treningi zapisują `Math.round` — szkic z ułamkiem po zapisie różniłby się od tego, co wraca,
+  // i formularz zaczynałby od nowa (a wzrost dryfował o pół centymetra).
+  const withGymHeight = (p: Profile): Profile => ({ ...p, heightCm: Math.round(bridge.heightCm ?? p.heightCm) });
   const [draft, setDraft] = useState<Profile>(() => withGymHeight(profile));
   const [saved, setSaved] = useState(false);
   // Profil zmieniony gdzie indziej (wczytany arkusz, przywrócona kopia) podmienia formularz;
@@ -206,6 +209,7 @@ function ProfileForm({ profile, isNew, currentWeight, stores }: FormProps) {
               label="Wzrost"
               value={draft.heightCm}
               onChange={(heightCm) => set({ heightCm })}
+              integer
               min={120}
               max={230}
               suffix="cm"

@@ -88,6 +88,32 @@ describe('Profil diety', () => {
     expect(bridge.setHeight).toHaveBeenCalledWith(180);
   });
 
+  test('wzrost w całych centymetrach: ułamek z profilu diety nie cofa szkicu po zapisie', async () => {
+    // Profil z arkusza albo z Produktów PL, a treningi bez wzrostu.
+    await saveProfile(completeProfile({ heightCm: 180.5, startDate: '2026-10-01' }));
+    const user = userEvent.setup();
+    const bridge = testBridge();
+    // Jak w App: treningi trzymają wzrost w całych centymetrach.
+    bridge.setHeight = vi.fn((cm: number) => {
+      bridge.heightCm = Math.round(cm);
+    });
+    renderWithBridge(<DietProfilePage />, bridge);
+    const height = await screen.findByLabelText('Wzrost');
+    expect(height).toHaveValue('181');
+    expect(height).toHaveAttribute('inputmode', 'numeric');
+    const age = screen.getByLabelText('Wiek');
+    await user.clear(age);
+    await user.type(age, '36');
+    await user.click(screen.getByRole('button', { name: 'Zapisz profil' }));
+
+    await waitFor(async () => expect(await db.profile.get('me')).toMatchObject({ heightCm: 181, age: 36 }));
+    expect(bridge.setHeight).toHaveBeenCalledWith(181);
+    // Wiersz wraca z IndexedDB z tym samym wzrostem, więc formularz zostaje przy „Zapisano”.
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(screen.getByText('Zapisano')).toBeInTheDocument();
+    expect(screen.getByLabelText('Wzrost')).toHaveValue('181');
+  });
+
   test('wyczyszczenie danych diety zdejmuje znacznik karty z ekranu Dziś', async () => {
     await saveProfile(completeProfile({ startDate: '2026-10-01' }));
     const user = userEvent.setup();
