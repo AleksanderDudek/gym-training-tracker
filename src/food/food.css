@@ -3,13 +3,8 @@
  * za nie nie płacą. Budowane z tokenów i klocków aplikacji (`styles.css`: `--surface`, `--ink`,
  * `--c-*-ink`, `.wrap`, `.grp`, `.btn`, `.seg`, `.chips`, `.hint`, `.empty`), bez własnej palety.
  * Klasy obszarów mają przedrostek `fd-`; każdy obszar (produkty, przepisy, w pobliżu, dieta)
- * trzyma swoje reguły we własnym pliku obok strony, a tu zostaje to, co wspólne.
+ * trzyma swoje reguły we własnym pliku obok strony, wspólne klocki — w `components/common/common.css`,
+ * a tu zostaje to, co wspólne całej zakładce poza nimi. Dziś nic: jedyne takie reguły (odnośniki
+ * do podstron dziennika) nie miały już żadnego użycia i odpadły.
  */
 
-/* Odnośniki do podstron dziennika: plan posiłków, postęp, profil diety. */
-.fd-links{display:grid;gap:6px;margin:12px 0 0;padding:0;list-style:none}
-.fd-links a{display:flex;align-items:center;min-height:48px;padding:10px 14px;background:var(--surface);
-  border:1px solid var(--line);border-radius:var(--r);color:var(--ink);text-decoration:none;font-weight:500}
-.fd-links a::after{content:"›";margin-left:auto;color:var(--ink-soft);font-size:20px;line-height:1}
-.fd-links a:active{background:var(--surface-2)}
-.fd-links a:focus-visible{outline:2px solid var(--steel);outline-offset:2px}
