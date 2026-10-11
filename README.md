@@ -3,8 +3,13 @@
 Aplikacja do prowadzenia treningu siłowego z automatyczną progresją. Wybierasz trening, wpisujesz
 wyniki, a silnik sam decyduje, kiedy podnieść powtórzenia i kiedy wejść na cięższe obciążenie.
 Atlas obejmuje 114 ćwiczeń: kettlebell, sztanga, hantle, maszyny i kalistenika — 30 z nich zrobisz bez żadnego sprzętu.
+Trening idzie część po części z zegarem w pasku, a zakładka Jedzenie dokłada dziennik jedzenia
+z dietą, która nagina się do tego, co naprawdę zjedzone, białkowe przepisy, 29 tysięcy produktów
+sprzedawanych w Polsce i sklepy w pobliżu.
 
-React 18 + TypeScript + Vite. Bez backendu — dane leżą w przeglądarce, z eksportem i importem do pliku.
+React 19 + TypeScript 6 + Vite 8, aplikacja do zainstalowania z własnym service workerem
+(vite-plugin-pwa). Bez backendu — dane leżą w przeglądarce (trening w `localStorage`, dziennik
+jedzenia w IndexedDB), z eksportem i importem do jednego pliku.
 
 ## Uruchomienie
 
@@ -16,10 +21,18 @@ npm run dev        # serwer deweloperski na http://localhost:5173
 Pozostałe polecenia:
 
 ```bash
-npm run build      # produkcyjny build do dist/, z listą plików dla service workera
+npm run build      # typecheck + produkcyjny build do dist/ z service workerem (injectManifest)
 npm run preview    # podgląd builda — tu działa też praca offline
-npm run typecheck  # tsc --noEmit
-npm test           # 605 testów silnika, doradcy, kalorii, biblioteki, odznak, ruchu, obsady, scen, struktury, przerw, prowadzenia sesji, wagi, profili, tras, zegarka i serwera (vitest)
+npm run typecheck  # tsc: aplikacja, testy, konfiguracja Vite i skrypty, service worker
+npm run lint       # oxlint
+npm test           # 1199 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, serwer… (vitest)
+```
+
+Baza produktów i przepisy:
+
+```bash
+npm run food:check-recipes  # pokrycie przepisów na dołączonej bazie produktów
+npm run food:data           # nowa baza z Open Food Facts i Open Prices (szczegóły w „Jedzenie”)
 ```
 
 Build jest w pełni statyczny (`base: './'`), więc `dist/` można wrzucić na dowolny hosting plików
@@ -277,45 +290,58 @@ i drugi, obok wyniku sesji, po każdym zamkniętym treningu.
 
 | Zakładka | Adres | Co robi |
 | --- | --- | --- |
-| Dziś | `#/sesja` | Co masz dziś do zrobienia według planu, pasek postaci, przekąska ruchowa i rada dnia; w trakcie — bieżąca sesja. |
-| Treningi | `#/treningi` | 38 gotowych treningów (całe ciało, push/pull/nogi, góra/dół, partie), 32 z profilem i własne, z filtrem sprzętu (bez sprzętu, kettlebell, siłownia) i rodzaju; druga sekcja to atlas 114 ćwiczeń (`#/cwiczenia`). |
-| Plan | `#/plan` | Uruchomiony plan: kalendarz terminów, punkty, stopień, dziennik. Bez planu — katalog: plany z celem, własne i klasyczny. |
-| Osiągnięcia | `#/osiagniecia` | Dorobek w liczbach, progi najbliższe zdobycia, 69 rodzin odznak i odznaki każdego zrobionego ćwiczenia. |
+| Dziś | `#/sesja` | Co masz dziś do zrobienia według planu, ważenie, karta jedzenia (kalorie i białko dnia — gdy prowadzisz dietę), pasek postaci, przekąska ruchowa i rada dnia; w trakcie — bieżąca sesja. |
+| Trening | `#/plan`, `#/treningi`, `#/cwiczenia` | Trzy sekcje. **Plan**: uruchomiony plan — kalendarz terminów, punkty, stopień, dziennik; bez planu — katalog: plany z celem, własne i klasyczny. **Treningi**: 38 gotowych treningów (całe ciało, push/pull/nogi, góra/dół, partie), 32 z profilem i własne, z filtrem sprzętu i rodzaju. **Ćwiczenia**: atlas 114 ćwiczeń. |
+| Jedzenie | `#/jedzenie`, `#/przepisy`, `#/produkty`, `#/w-poblizu` | Cztery sekcje. **Dziennik**: bilans dnia, plan posiłków albo propozycja dnia, „Co teraz?”, „Dodaj zjedzone”. **Przepisy**: białkowe, z produktów jednego sklepu. **Produkty**: 29 tys. produktów z filtrami. **W pobliżu**: sklepy na mapie i przepisy z nich. |
+| Osiągnięcia | `#/osiagniecia` | Dorobek w liczbach, progi najbliższe zdobycia, 73 rodziny odznak — także czasu na treningu — i odznaki każdego zrobionego ćwiczenia. |
 | Profil | `#/profil` | Postać i doświadczenie, twoje liczby, waga i wzrost, obciążenie, przekąski, kroki i cardio, lista zrobionych ćwiczeń i historia treningów z kaloriami. |
 
 Podstrony mają własne adresy i strzałkę wstecz w pasku aplikacji:
 
 | Podstrona | Adres | Należy do |
 | --- | --- | --- |
-| Podgląd treningu — serie, mięśnie, doradca, start | `#/treningi/<id>` | Treningi |
-| Kreator treningu: nowy, kopia gotowego, edycja własnego | `#/treningi/nowy`, `#/treningi/nowy/<id>`, `#/treningi/<id>/edytuj` | Treningi |
-| Katalog planów | `#/plany` | Plan |
-| Podgląd planu z doradcą i startem | `#/plany/<id>` | Plan |
-| Kreator planu: nowy, edycja własnego | `#/plany/nowy`, `#/plany/<id>/edytuj` | Plan |
-| Plan klasyczny z kettlebell — konfigurator | `#/plany/klasyczny` | Plan |
+| Podgląd treningu — serie, mięśnie, doradca, start | `#/treningi/<id>` | Trening |
+| Kreator treningu: nowy, kopia gotowego, edycja własnego | `#/treningi/nowy`, `#/treningi/nowy/<id>`, `#/treningi/<id>/edytuj` | Trening |
+| Katalog planów | `#/plany` | Trening |
+| Podgląd planu z doradcą i startem | `#/plany/<id>` | Trening |
+| Kreator planu: nowy, edycja własnego | `#/plany/nowy`, `#/plany/<id>/edytuj` | Trening |
+| Plan klasyczny z kettlebell — konfigurator | `#/plany/klasyczny` | Trening |
 | Przekąski — dziś, tydzień, historia | `#/przekaski` | Dziś |
 | Zapis przekąski | `#/przekaski/dodaj`, `#/przekaski/<id>` | Dziś |
 | Kroki i cardio — dziś, tydzień, historia, jak liczymy kalorie | `#/cardio` | Dziś |
 | Zapis kroków, bieżni, roweru albo zajęć tańca | `#/cardio/kroki`, `#/cardio/bieznia`, `#/cardio/rower`, `#/cardio/taniec` | Dziś |
-| Ćwiczenie — technika i wideo | `#/cwiczenia/<id>` | Treningi |
+| Ćwiczenie — technika i wideo | `#/cwiczenia/<id>` | Trening |
+| Plan posiłków — tydzień, dni wzorcowe, warianty | `#/jedzenie/plan` | Jedzenie |
+| Postęp — waga z prognozą, kalorie z 14 dni, makro z tygodnia | `#/jedzenie/postep` | Jedzenie |
+| Profil diety — energia, sposób odżywiania, plan z Excela, dane | `#/jedzenie/profil` | Jedzenie |
+| Produkt — zdjęcia, wartości, skład, ceny | `#/produkty?p=<kod>` (arkusz nad listą) | Jedzenie |
 | Historia ćwiczenia | `#/profil/<id>` | Profil |
 | Ustawienia | `#/ustawienia` | przycisk w pasku aplikacji |
 
-**Treningi mają zakładkę, a atlas jest jej drugą sekcją.** Odkąd treningi to biblioteka z podglądem
-i kreatorem, a nie cztery zestawy do wyboru, zasłużyły na miejsce w dolnym pasku. Szósta zakładka
-zeszłaby jednak poniżej celu dotykowego i poza wytyczne Material 3 i Apple HIG (najwyżej pięć),
-więc atlas wszedł do Treningów: trening to zestaw ćwiczeń, a obie listy odpowiadają na pytanie
-„co mogę zrobić”. Przełącznik „Treningi · Ćwiczenia” stoi na górze obu sekcji, każda ma własny adres,
-a podstrona ćwiczenia podświetla Treningi. Ustawienia siedzą w pasku aplikacji, bo otwiera się je
-raz na miesiąc.
+**Trening ma trzy sekcje, Jedzenie — cztery.** Pięć zakładek to górna granica obu wytycznych —
+szósta zeszłaby poniżej celu dotykowego. Gdy doszło jedzenie, plan wszedł do zakładki Trening jako
+pierwsza sekcja: plan, biblioteka treningów i atlas odpowiadają na jedno pytanie — „co trenuję” —
+a trening na dziś i tak stoi na ekranie Dziś. Zwolnione miejsce dostało Jedzenie. Przełącznik sekcji
+stoi na górze każdej z nich, każda ma własny adres, a podstrony (podgląd treningu, kreator, katalog
+planów, ćwiczenie) podświetlają swoją zakładkę.
+
+**Zakładka pamięta ostatnią sekcję** — razem z wyszukiwaniem i filtrami, które stoją w adresie —
+jak stos zakładki w iOS: z produktów przefiltrowanych po „skyr” do przepisów i z powrotem wraca się
+do tej samej listy. Za pierwszym razem Trening otwiera plan, gdy jakiś trwa, a bez planu — treningi.
+
+**Dieta ma cztery widoki, ale sekcją jest tylko Dziennik.** Plan posiłków, postęp i profil diety to
+podstrony ze strzałką wstecz — inaczej pod przełącznikiem sekcji stałby drugi rząd zakładek.
+Ustawienia siedzą w pasku aplikacji, bo otwiera się je raz na miesiąc.
 
 Osiągnięcia mają własną zakładkę, bo liczą się z całej historii, a nie z kalendarza planu —
 i mają być widoczne również wtedy, gdy żaden plan nie jest uruchomiony.
 
 **Ekran Dziś odpowiada na jedno pytanie: co robię dzisiaj.** Gdy plan ma termin — pokazuje ten
 jeden trening i przycisk startu. Gdy terminu nie ma — mówi, kiedy wypada następny. Gdy sesja już
-trwa — pokazuje ją. Pełna lista treningów mieszka w zakładce Treningi, bo ekran z dwudziestoma
-siedmioma równorzędnymi przyciskami nie podpowiada niczego.
+trwa — pokazuje ją. Pełna lista treningów mieszka w zakładce Trening, bo ekran z dwudziestoma
+siedmioma równorzędnymi przyciskami nie podpowiada niczego. Kto prowadzi dietę, ma tu też jedną
+kartę jedzenia: ile kalorii i białka z celu dnia, ile zostało i „Dodaj zjedzone”. Kto nie prowadzi,
+nie widzi jej wcale — i nie pobiera ani bajta jej kodu.
 
 Stare adresy dalej działają — `#/trening` i `#/poziomy`, a także dawne linki do formularza
 przekąski — zapisane linki i zakładki przeglądarki nie przestają prowadzić tam, gdzie prowadziły.
@@ -591,6 +617,82 @@ Pusty dzień ma żart, jak przekąski — z bieżni, roweru, parkietu i telefonu
 Obok stoją kalorie i masa ciała, a to najłatwiejsze miejsce, żeby komuś dokuczyć; test pilnuje
 słów.
 
+## Jedzenie
+
+Zakładka z czterema sekcjami — dawny projekt Produkty PL, przepisany na wygląd i zasady tej
+aplikacji. Dane produktów: [Open Food Facts](https://world.openfoodfacts.org), ceny:
+[Open Prices](https://prices.openfoodfacts.org), sklepy i mapa: OpenStreetMap.
+
+**Dziennik** (`#/jedzenie`) — plan żywienia, który się nagina:
+
+- **Profil diety** (podstrona): płeć, wiek, wzrost, waga startowa i docelowa, aktywność i kroki.
+  Na bieżąco liczy podstawowe spalanie (wzór Mifflina-St Jeora), spalanie dzienne, deficyt, tempo
+  i datę dojścia do celu; ostrzega, gdy cel kalorii jest poniżej podstawowego spalania albo tempo
+  przekracza 1% masy ciała na tydzień. Sposób odżywiania: redukcja wysokobiałkowa, zbilansowany,
+  low carb, keto albo sportowy — każdy wyznacza cele makro i ocenia jedzenie („pasuje”, „może być”,
+  „nie pasuje”, zawsze z powodem).
+- **Plan z Excela**: „Wczytaj plan z Excela” czyta arkusz w przeglądarce — dni wzorcowe, warianty,
+  potrawy z kaloriami i makro, parametry. Plik nigdzie nie trafia.
+- **Dziś**: bilans dnia z paskami kalorii, białka, węglowodanów i tłuszczu. Pozycje planu można
+  odhaczyć, pominąć albo zamienić na coś o podobnej kaloryczności (±12%); bez planu „Propozycja
+  dnia” układa posiłki z tego, co w pobliżu i w domu. „Dodaj zjedzone” szuka w produktach,
+  przepisach, planie i własnym jedzeniu; gramaturę da się zmienić, a obiad na mieście wpisać samymi
+  kaloriami. Cel dnia koryguje się według tygodnia — nadwyżka rozkłada się na kolejne dni (najwyżej
+  10% celu dziennie), niedojedzone kalorie wracają. „Co teraz?” podpowiada resztę dnia z gwiazdką
+  przy najlepszych i powodem.
+- **Postęp** (podstrona): wykres wagi z planem, prognozą od ostatniego ważenia i celem, kalorie
+  z 14 dni i średnie makro z tygodnia.
+
+**Jedno ciało, jedno źródło.** Waga z dziennika jedzenia to ta sama waga co w profilu i na karcie
+ważenia — zapis z diety trafia do dziennika wagi. Kroki dieta bierze z wpisów i zegarka Garmin,
+a wpis kroków z diety staje się zwykłym wpisem kroków (z doświadczeniem i odznakami jak każdy inny).
+Wzrost jest jeden. Dzień z treningiem i „Ruch dziś” (kalorie treningu i cardio) dieta czyta
+z dziennika treningów — **jako informację, nie dodatek do celu**: współczynnik aktywności w profilu
+już zakłada treningi, a doliczanie spalonych kalorii liczyłoby je dwa razy. Prognoza wagi liczy
+kroki z każdego dnia, także z dni bez wpisu w diecie.
+
+**Przepisy** (`#/przepisy`): zawsze więcej białka niż węglowodanów i więcej białka niż tłuszczu —
+na porcję, z prawdziwych produktów. Trzy grupy czasu (szybkie do 7 minut, chwilę dłużej do 20,
+dłużej w domu), rodzaje i sklep. Każda karta pokazuje sklep, w którym kupisz **wszystkie**
+składniki naraz, z przełączaniem na inny; każdy składnik da się zamienić na inny produkt z tego
+samego sklepu, a zamiana łamiąca zasadę jest oznaczona. Niżej gotowe produkty spełniające zasadę
+na 100 g.
+
+**Produkty** (`#/produkty`): ok. 29 tysięcy produktów sprzedawanych w Polsce — zdjęcia, wartości
+odżywcze, skład, alergeny, dodatki, Nutri-Score, NOVA, Eco-Score i ceny. Karty albo tabela,
+sortowanie po każdej wartości, filtry z licznikami w arkuszu („Pokaż N produktów”), wyszukiwanie
+po nazwie, marce i kodzie kreskowym bez względu na polskie znaki. Cały stan ekranu stoi w adresie
+(`#/produkty?q=skyr&ns=a`), więc link albo odświeżenie odtwarza widok, a Wstecz zamyka otwarty
+produkt.
+
+**W pobliżu** (`#/w-poblizu`): lokalizacja (albo kliknięcie na mapie), sklepy spożywcze
+z OpenStreetMap w promieniu od 500 m do 10 km i przepisy, które zrobisz w jednym pobliskim sklepie
+(„Wszystko kupisz w: Żabka · 250 m”). Pozycja zaokrąglona do ok. 100 m idzie do serwera Overpass
+(overpass-api.de, zapasowo overpass.private.coffee), kafelki mapy z tile.openstreetmap.org. Pozycji
+nie ma w adresie, a ostatnie miejsce zostaje tylko na tym urządzeniu; odpowiedzi są pamiętane dobę.
+Dziennik sam nie łączy się z siecią — sklepy w podpowiedziach bierze z ostatniego wyszukiwania.
+
+**Dane produktów są w repozytorium**: `data/food/products.json.gz` (3,3 MB zamiast 24 MB JSON-a).
+Build wydaje go jako `data/products.<hasz>.json.gz`, a przeglądarka rozpakowuje go sama
+(`DecompressionStream`, a w starszych przeglądarkach fflate). Plik pobiera się dopiero przy wejściu
+w produkty, przepisy, sklepy albo wyszukiwanie w dzienniku — ekrany treningu nie dotykają ani jego,
+ani kodu mapy i bazy diety. Hasz w nazwie zmienia się tylko z nowymi danymi, więc service worker
+trzyma jedną kopię, dopóki nie przyjdzie nowa.
+
+Nowa baza: `npm run food:data` (taksonomie, ceny w PLN i złożenie pliku) z wyciągu produktów
+z `countries_tags` = `en:poland` pełnego zrzutu Open Food Facts w `data/food/raw/off_poland.csv`
+(surowe pliki nie trafiają do gita):
+
+```bash
+LC_ALL=C awk -F'\t' 'NR==1 || $41 ~ /(^|,)en:poland(,|$)/' en.openfoodfacts.org.products.csv > data/food/raw/off_poland.csv
+npm run food:data
+npm run food:check-recipes   # pokrycie przepisów na nowych danych
+```
+
+Licencje: baza Open Food Facts — ODbL, zdjęcia — CC BY-SA, mapa — © autorzy OpenStreetMap.
+Dane tworzą użytkownicy, więc bywają niepełne; wartości spoza fizycznego zakresu (np. 3000 kcal
+w 100 g) są odrzucane.
+
 ## Zegarek Garmin
 
 Kroki, przejazdy rowerem, tętno, stres i Body Battery przychodzą z zegarka same, bez
@@ -734,6 +836,51 @@ i swing na świeżo, stacje obwodu na zmianę partii — a brzuszki zostały poz
 stacja na brzuch dawała 12 serii na jedną partię. Do nich doszły cztery ćwiczenia z ciężarem
 ciała: wyskoki z przysiadu, brzuszki, unoszenie nóg w leżeniu i scyzoryki. Ustalone przez
 trenera 10/10/10 to punkt wyjścia — dalej powtórzenia i ciężar prowadzi progresja.
+
+## Czas treningu
+
+**Zegar w pasku.** Od „Zaczynam” do „Zamknij trening” w pasku aplikacji stoi licznik całego
+treningu. Liczy się z chwili startu, a nie z tyknięć, więc odświeżenie strony ani zgaszony ekran
+go nie cofają; w karcie w tle nie odświeża się wcale. Pokazywanie da się wyłączyć w Ustawieniach
+(„Czas treningu w pasku”) albo na ekranie startu sesji — mierzenie trwa i tak, bo stoją na nim
+statystyki i odznaki. Pauzy nie ma: trening z rozmową przy ławce też trwa tyle, ile trwa.
+
+**Trening część po części.** Część to blok treningu: ćwiczenie robione seriami pod rząd, para
+albo obwód — w parze i obwodzie ćwiczenia przeplatają się z założenia, więc liczenie ich osobno
+byłoby zmyślaniem. Ekran startu pokazuje plan sesji („1. Przysiad · 3 × 8”, „2. Para: A + B”,
+„3. Obwód: 5 stacji × 3 rundy”). Pierwsza część rusza z „Zaczynam”, a każda kolejna ze stuknięcia
+**„Start: …”** na karcie przejścia. Część kończy się ostatnią zapisaną serią albo pominięciem tego,
+co w niej zostało.
+
+**Karta przejścia** stoi między częściami. Liczy w górę czas od końca poprzedniego ćwiczenia — to
+jest liczba, o którą chodziło: ile mija, zanim zacznie się następne — a obok odlicza zalecaną
+przerwę z paskiem, „+30 s” i tym samym sygnałem na koniec. Niżej pytanie o zapas po skończonym
+ćwiczeniu, zapowiedź następnej części z celami i ciężarem, „Pomiń” oraz duży przycisk startu.
+W trakcie części pasek nad serią mówi „Część 2 z 6 · na tym ćwiczeniu 04:12”, a podtytuł w pasku
+aplikacji — „Część 2 z 6 · seria 5 z 18”.
+
+**Po treningu** podsumowanie mówi: „Czas: 52 min · ćwiczenia 41 min · przejścia 6 min” i które
+przejście było najdłuższe. Historia w profilu ma przy każdym treningu czas i rozwijany przebieg —
+każda część i przejście przed nią. Podgląd treningu obok szacunku pokazuje „Twój średni czas”
+z ostatnich sesji tego treningu, a karta do udostępnienia — minuty na treningu.
+
+Widok listy też mierzy: zegar startuje z pierwszym zapisanym ćwiczeniem (od początku sesji),
+ale części nie mają tam zaznaczonego startu, więc przejść się nie liczy. Treningi krótsze niż
+3 minuty i dłuższe niż 4 godziny zostają w historii z czasem, ale poza statystykami i odznakami —
+to zwykle zapomniane „Zamknij trening”.
+
+**Cztery rodziny odznak w grupie „Czas na treningu”:**
+
+| Rodzina | Co liczy | Progi |
+| --- | --- | --- |
+| Godziny na treningu | czas wszystkich treningów z zegarem | od 1 do 500 h |
+| Dwie godziny w tygodniu | tygodnie pn–nd z co najmniej 120 minutami treningu | od 1 do 104 |
+| Bez przestojów | treningi z co najmniej trzema częściami, w których każde przejście trwało do 4 minut | od 1 do 100 |
+| Najdłuższy trening | najdłuższy pojedynczy trening | od 30 do 120 min |
+
+**Żadna odznaka nie nagradza krótkiego treningu.** W treningu siłowym przerwa nie jest dźwignią
+(patrz „Prowadzenie sesji i przerwy”), a odznaka za tempo pchałaby do jej skracania. Nagradzane
+są tylko płynne przejścia — czas, którego nikt nie zaplanował.
 
 ## Ważenie
 
@@ -1232,7 +1379,7 @@ nie dług do odrobienia — wychodzenie z minusa zniechęca skuteczniej niż cok
 **Osiem stopni**, od „Gościa z ulicy” po „Pomnik za życia” — to stopień w planie, nie poziom postaci. Pierwszy awans wypada po niecałym tygodniu regularnych
 treningów, żeby pierwsza nagroda nie była odległa o miesiąc.
 
-**Odznaki mają progi, nie jeden koniec.** 69 rodzin ogólnych i 405 progów, a do tego po cztery
+**Odznaki mają progi, nie jeden koniec.** 73 rodziny ogólne i 430 progów, a do tego po cztery
 rodziny na każde ćwiczenie biblioteki (o nich niżej). Rodzina „Powtórzenia" ma dziesięć
 progów od 500 do miliona, „Utrzymany rytm" siedem od czterech tygodni do dwóch lat. Zdobyty próg
 nie kończy tematu, tylko odsłania następny — a pasek postępu mówi, ile brakuje. Zamiast ściany
@@ -1242,7 +1389,7 @@ Drabiny są mniej więcej geometryczne (kolejny próg to zwykle dwa razy tyle, c
 dalej, niż da się dojść w rok regularnych treningów. Ostatni próg ma być odległy, a nie osiągalny
 w sezon — inaczej po roku aplikacja przestaje mieć cokolwiek do zaproponowania.
 
-Pięć grup:
+Grupy:
 
 - **Dorobek** — sumy z całej historii: treningi (do 2 000), powtórzenia (do miliona), serie,
   wykonane ćwiczenia, tonaż (do 10 000 t), czas pod obciążeniem, liczba poznanych ruchów.
@@ -1257,6 +1404,8 @@ Pięć grup:
 - **Utrzymanie** — to, że nic się nie osypało: tygodnie z rzędu po dwa treningi, dni z rzędu
   z treningiem, dni bez zejścia z ciężaru, ćwiczenia stojące w granicach 5% własnego szczytu,
   etapy w ćwiczeniach z masą ciała, powrót do poziomu po przerwie.
+- **Czas na treningu** — godziny z zegarem sesji, tygodnie z dwiema godzinami treningu,
+  treningi bez przestojów między ćwiczeniami i najdłuższy trening (więcej w „Czas treningu”).
 - **Przekąski ruchowe** — ile w sumie, najwięcej jednego dnia, dni z rzędu, pełne tygodnie
   z przekąską codziennie i liczba różnych ćwiczeń zrobionych jako przekąska.
 - **Terminy** — zależne od uruchomionego planu: seria w terminie, brak pudła, czyste tygodnie,
@@ -1522,35 +1671,35 @@ Czego z systemu **nie** ma w aplikacji i dlaczego:
 
 ## Aplikacja do zainstalowania (PWA)
 
-GYM TRACKER instaluje się na ekranie głównym telefonu i działa bez sieci — dane i tak nigdy
-nie opuszczają przeglądarki, więc offline brakowało dotąd tylko samej aplikacji.
+GYM TRACKER instaluje się na ekranie głównym telefonu i działa bez sieci od pierwszej wizyty.
 
-- **Manifest** (`public/manifest.webmanifest`): nazwa, tryb `standalone` bez paska przeglądarki,
-  orientacja pionowa, kolory tła i paska, start na ekranie Dziś, skróty z ikony („Przekąska
-  ruchowa”, „Osiągnięcia”).
-- **Ikony** w `public/icons/`: znak aplikacji — pomarańczowa hantla z ikony ekranu Dziś na stali
-  kamizelki trenera. Zwykła 192 i 512 px, **maskowalna** 512 px ze znakiem w strefie bezpiecznej
-  (Android przycina ją do koła, kwadratu albo kropli), pełny kwadrat 180 px dla iOS, który sam
-  zaokrągla rogi, i wektorowa do karty przeglądarki.
-- **Service worker** (`public/sw.js`) z trzema strategiami. Strona: najpierw sieć, potem kopia —
-  nowe wdrożenie wchodzi od razu, gdy jest zasięg, a bez zasięgu otwiera się ostatnia wersja;
-  kopią zostaje tylko odpowiedź HTML. Skrypty, style i ikony: najpierw kopia. Kroje pisma
-  z Google Fonts: kopia od razu, odświeżenie w tle. Filmy z YouTube'a idą prosto do sieci —
-  offline i tak by nie ruszyły.
-- **Offline od pierwszej wizyty.** `npm run build` kończy się skryptem `scripts/precache.mjs`,
-  który wpisuje do `dist/sw.js` wersję buildu i listę plików. Instalacja od razu zapisuje skrypt
-  i style tej wersji — bez tego zapisywały się dopiero przy drugiej wizycie, a pierwsze
-  uruchomienie bez zasięgu kończyło się pustą stroną. Każde wdrożenie ma nową wersję, więc
-  aktywacja kasuje stare kopie, także ikon i manifestu, które nie mają hasza w nazwie.
-- **Rejestracja tylko w wersji zbudowanej** — w trybie deweloperskim service worker trzymałby
-  stare pliki. W osadzonym artefakcie, gdzie rejestracja bywa zablokowana, aplikacja działa jak
-  dotąd, online.
-- **iOS**: `apple-touch-icon`, tryb pełnoekranowy, tytuł pod ikoną i pasek statusu. Przyklejony
-  pasek na górze i dolna nawigacja mają marginesy na wycięcie ekranu (`safe-area-inset`), więc
-  nic nie wchodzi pod zegar, aparat ani pasek gestów.
-
-Sprawdzone w Chrome na wersji produkcyjnej: service worker przejmuje stronę, manifest i ikony się
-ładują, a po odcięciu sieci zaraz po pierwszej wizycie aplikacja otwiera się w całości.
+- **vite-plugin-pwa ze strategią `injectManifest`.** Service worker jest własny, w TypeScripcie
+  (`src/sw.ts`, moduły Workboxa), a build dopisuje do niego tylko listę plików powłoki z haszami.
+  Zastąpił ręczny `public/sw.js` i skrypt, który po buildzie wpisywał do niego listę plików.
+- **Co gdzie leży.** Powłoka — skrypty, style, strona, ikony i kroje pisma w alfabecie łacińskim —
+  jest zapisana przy instalacji, a każda nawigacja dostaje zapisaną stronę. Baza produktów: kopia
+  na zawsze, jedna (nowa wersja ma nowy hasz w nazwie). Zdjęcia produktów: 400 ostatnich na 30 dni.
+  Kafelki mapy: tylko oglądane, 500 na 7 dni. Overpass i serwer przypomnień idą prosto do sieci.
+- **Nowa wersja czeka na „Odśwież”.** Gdy wdrożenie przyniesie nową wersję, na dole pojawia się
+  pasek „Nowa wersja aplikacji” z „Odśwież” i „Później” — **nigdy w trakcie treningu**: przeładowanie
+  w środku serii gubiłoby miejsce, a pasek pod kciukiem łatwo trącić. Do tego czasu działa stara
+  wersja ze swoimi plikami. O nowe wersje aplikacja pyta przy starcie, po powrocie i co godzinę.
+- **Manifest** generuje wtyczka (jedno źródło w `vite.config.ts`): nazwa, tryb `standalone`,
+  orientacja pionowa, kolory, start na ekranie Dziś, adresy względne (działa pod dowolną ścieżką)
+  i skróty z ikony: „Przekąska ruchowa”, „Jedzenie dziś”, „Przepisy”, „Sklepy w pobliżu”,
+  „Osiągnięcia”.
+- **Kroje pisma z aplikacji** (`@fontsource`: Oswald i IBM Plex Sans), nie z Google Fonts — działają
+  offline od pierwszej wizyty, nikt nie trafia na cudzy serwer, a obrazki do udostępnienia dostają
+  prawdziwe litery.
+- **Polityka bezpieczeństwa treści** (`vite/csp.ts`) w zbudowanej stronie: skrypty tylko własne,
+  obrazy z Open Food Facts, kafelków OSM i miniatur YouTube'a, połączenia z Overpass i serwerem
+  aplikacji (`VITE_API_URL`), ramki z YouTube'a. Test przegląda kod i pilnuje, żeby każdy adres
+  `https://`, z którym aplikacja rozmawia, był w polityce.
+- **Ikony** w `public/icons/`: zwykła 192 i 512 px, maskowalna 512 px, 180 px dla iOS i wektorowa.
+  **iOS**: `apple-touch-icon`, tryb pełnoekranowy, tytuł pod ikoną; pasek u góry i dolna nawigacja
+  mają marginesy na wycięcie ekranu (`safe-area-inset`).
+- **Tryb deweloperski bez service workera** — trzymałby stare pliki i każda zmiana wymagałaby
+  twardego odświeżenia. Pracę offline sprawdza się na `npm run build && npm run preview`.
 
 ## Uwagi do autora
 
@@ -1642,6 +1791,20 @@ wyprowadza z nich `cardioOf`. Przy wczytaniu i imporcie przechodzą te same zakr
 z zegarka. Klucza do zegarka w zapisie nie ma: leży osobno w pamięci strony (`gt-garmin-key`),
 więc eksport nie otwiera danych o zdrowiu.
 
+Trwająca sesja trzyma zegar (`session.clock`): start i części jako chwile, nie liczniki — tak jak
+koniec przerwy, więc odświeżenie strony i zgaszony ekran niczego nie gubią. Zamknięty trening
+zapisuje w dzienniku `time`: sekundy całości i części (początek i koniec od startu). Przy wczytaniu
+i imporcie zepsuty zegar albo czas odpada, a trening zostaje.
+
+**Jedzenie leży osobno, w IndexedDB** (baza `produkty-pl-dieta`, Dexie): profil diety, dni, wpisy,
+plan z Excela i własne potrawy — jest ich za dużo i są po dniach, więc nie pasują do jednego zapisu
+`localStorage`. Waga ma jedno źródło: ważenia z diety, z kopii diety albo z planu z Excela przy
+wejściu w Jedzenie przechodzą do dziennika wagi i znikają z diety; kroki dieta czyta z wpisów
+i zegarka. Eksport z Ustawień zapisuje jeden plik — trening, a gdy jest dieta, także jej kopię pod
+`diet`; import odtwarza oba, a „Usuń wszystkie dane” czyści oba, razem z zapamiętanym miejscem
+sklepów. Baza ma tę samą nazwę co w Produktach PL — na tej samej domenie dawny dziennik pojawia się
+w aplikacji sam.
+
 ## Zastrzeżenie
 
 Aplikacja nie zastępuje fizjoterapeuty, dietetyka ani konsultacji lekarskiej. Zanim zaczniesz,
@@ -1649,7 +1812,10 @@ porozmawiaj z lekarzem, jeśli masz chorobę serca, nadciśnienie, cukrzycę alb
 przewlekłą, jesteś w ciąży lub po porodzie, wracasz po urazie albo operacji, czujesz ból w klatce
 piersiowej przy wysiłku albo zdarzają ci się zawroty i omdlenia (za PAR-Q+ i ACSM). Przerwij
 trening przy bólu w klatce, duszności większej niż zwykła zadyszka, zawrotach, kołataniu serca
-albo ostrym bólu stawu czy kręgosłupa. Kalorie są szacunkiem, nie zaleceniem żywieniowym.
+albo ostrym bólu stawu czy kręgosłupa. Kalorie są szacunkiem, nie zaleceniem żywieniowym. Dziennik
+jedzenia liczy i podpowiada, ale nie zastępuje dietetyka: przy chorobach przewlekłych, w ciąży,
+przy zaburzeniach odżywiania i przy szybkim chudnięciu ustal cele z lekarzem. Dane o produktach
+pochodzą od użytkowników Open Food Facts i bywają niepełne albo błędne.
 
 W aplikacji krótka wersja stoi we wprowadzeniu (na każdym ekranie, bo da się je pominąć
 z pierwszego), przed startem planu, pod podglądem treningu i przy kaloriach, a pełna — w Ustawieniach
