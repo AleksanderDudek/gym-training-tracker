@@ -1,0 +1,22 @@
+{
+  // Kod, który biegnie w node: konfiguracja Vite, jej wtyczki (`vite/`) i skrypty przygotowania
+  // danych (`scripts/`, uruchamiane przez `tsx`).
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["ES2023"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "types": ["node"]
+  },
+  "include": ["vite.config.ts", "vite", "scripts", "src/vite-env.d.ts"]
+}

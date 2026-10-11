@@ -3,6 +3,7 @@ import { loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import { cspPlugin } from './vite/csp';
+import { foodData } from './vite/foodData';
 
 /** Skrót na ekranie głównym: ta sama ikona dla wszystkich, jak dotąd. */
 const shortcut = (name: string, url: string, shortName?: string) => ({
@@ -18,6 +19,8 @@ export default defineConfig(({ mode }) => ({
     // Adres serwera aplikacji z tego samego źródła, z którego Vite wpisuje go do kodu (`.env*` i
     // zmienne środowiska) — polityka przepuszcza dokładnie ten serwer, z którym aplikacja rozmawia.
     cspPlugin(loadEnv(mode, '.', 'VITE_').VITE_API_URL),
+    // Baza produktów (`data/food/products.json.gz`) jako plik z wersją w nazwie i `virtual:food-data`.
+    foodData(),
     VitePWA({
       // Własny service worker (`src/sw.ts`); build dopisuje do niego tylko listę plików powłoki.
       strategies: 'injectManifest',
@@ -73,5 +76,7 @@ export default defineConfig(({ mode }) => ({
   build: { outDir: 'dist' },
   // Bez tego Vitest podstawia pusty tekst pod każdy import arkusza — także pod
   // `styles.css?raw`, na którym stoi test kontrastu tokenów.
-  test: { css: true },
+  // `setupFiles`: dopasowania jest-dom, IndexedDB w pamięci (dziennik jedzenia na Dexie) i sprzątanie
+  // po Testing Library w testach z `@vitest-environment jsdom`.
+  test: { css: true, setupFiles: ['src/test/setup.ts'] },
 }));
