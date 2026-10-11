@@ -167,7 +167,15 @@ function ProfileForm({ profile, isNew, currentWeight, stores }: FormProps) {
             Z tych danych liczę Twoje spalanie i dzienny cel. Wszystko zostaje na tym urządzeniu. Masz arkusz z planem?
             Wczytaj go – parametry z panelu i plan posiłków przyjdą razem.
           </p>
-          <ImportWorkbook label="Wczytaj z Excela" />
+          <ImportWorkbook
+            label="Wczytaj z Excela"
+            // Arkusz tworzy profil, więc ten formularz zaraz zniknie razem z wynikiem importu —
+            // jak w Produktach PL od razu do dziennika, a co wczytano, mówi wiadomość na dole.
+            onImported={(summary) => {
+              bridge.toast(summary);
+              go(FOOD_PATH, { replace: true });
+            }}
+          />
         </div>
       )}
 

@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { db } from '../../diet/db';
 import { clearAll, completeProfile, saveProfile } from '../../diet/store';
 import { renderWithBridge, testBridge } from '../../test/bridge';
+import { minimalWorkbook } from '../../test/workbook';
 import DietProfilePage from './DietProfilePage';
 
 vi.mock('../../data', async () => {
@@ -55,6 +56,23 @@ describe('Profil diety', () => {
     expect(window.localStorage.getItem('gt:diet')).toBe('1');
     // Wzrost się nie zmienił — treningi nie dostają zbędnego zapisu.
     expect(bridge.setHeight).not.toHaveBeenCalled();
+  });
+
+  test('pierwszy import arkusza tworzy profil, prowadzi do dziennika i mówi, co wczytał', async () => {
+    const user = userEvent.setup();
+    const bridge = testBridge();
+    renderWithBridge(<DietProfilePage />, bridge);
+    const file = new File([minimalWorkbook() as BlobPart], 'plan.xlsx', {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
+    await user.upload(await screen.findByLabelText('Wczytaj z Excela'), file);
+
+    await waitFor(() => expect(window.location.hash).toBe('#/jedzenie'));
+    expect(bridge.toast).toHaveBeenCalledWith(
+      expect.stringMatching(/^Wczytano „.*”: 2 dni, 1 dni wzorcowych, 1 wariantów.* Profil diety ustawiony z arkusza\.$/),
+    );
+    expect(await db.profile.get('me')).toMatchObject({ startWeightKg: 95, dailyKcal: 1800 });
+    expect(await db.plans.count()).toBe(1);
   });
 
   test('literówka w liczbie zatrzymuje zapis i mówi, czego się spodziewa', async () => {

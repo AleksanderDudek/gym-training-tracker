@@ -4,6 +4,7 @@ import { WEIGHT_RANGE, validWeight } from '../../../engine/body';
 import { NEARBY_PATH, dietPath } from '../../../routing';
 import { useBridge } from '../../bridge';
 import { MISSING_DATA_MESSAGE } from '../../data';
+import { hashWith } from '../../hash';
 import { macroStatus, totals } from '../../diet/day';
 import { db, type DayRow, type Entry } from '../../diet/db';
 import { planFood, type Food } from '../../diet/foods';
@@ -173,7 +174,7 @@ function TodayView({ profile, plan, date, today, hour, nowMs, history, pickerOpe
         </div>
       </MacroBars>
 
-      <DietLinks />
+      <DietLinks date={date} today={today} />
 
       {planned && plan ? (
         <PlanDayCard plan={plan} planned={planned} date={date} entries={entries} onSwap={setSwapping} />
@@ -263,11 +264,16 @@ function DayNav({ date, today, onDate }: { date: string; today: string; onDate: 
   );
 }
 
-/** Wejścia do podstron dziennika: trzy kafelki pod bilansem, każdy prowadzi w głąb (strzałka wstecz wraca). */
-function DietLinks() {
+/**
+ * Wejścia do podstron dziennika: trzy kafelki pod bilansem, każdy prowadzi w głąb (strzałka wstecz
+ * wraca). Plan posiłków dostaje oglądany dzień (`?dzien=`, ten sam zapis co w dzienniku), więc
+ * otwiera się na jego tygodniu — jak w Produktach PL, gdzie zmiana widoku zostawiała dzień.
+ */
+function DietLinks({ date, today }: { date: string; today: string }) {
+  const plan = hashWith(dietPath('plan'), diaryToParams({ date: date === today ? null : date, add: false }));
   return (
     <nav className="wrap fd-diet-subnav" aria-label="Dieta">
-      <a href={dietPath('plan')}>
+      <a href={plan}>
         <CalendarDays {...ICON} />
         <span>Plan posiłków</span>
       </a>

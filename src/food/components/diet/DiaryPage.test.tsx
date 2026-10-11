@@ -149,9 +149,13 @@ describe('Dziennik', () => {
     await user.click(await screen.findByRole('button', { name: 'Poprzedni dzień' }));
     expect(await screen.findByRole('heading', { name: 'Wczoraj' })).toBeInTheDocument();
     expect(window.location.hash).toBe('#/jedzenie?dzien=2026-10-13');
+    // Plan posiłków otwiera się na tygodniu oglądanego dnia.
+    const plan = screen.getByRole('link', { name: 'Plan posiłków' });
+    expect(plan).toHaveAttribute('href', '#/jedzenie/plan?dzien=2026-10-13');
     await user.click(screen.getByRole('button', { name: 'Wróć do dziś' }));
     expect(await screen.findByRole('heading', { name: 'Dziś' })).toBeInTheDocument();
     expect(window.location.hash).toBe('#/jedzenie');
+    expect(screen.getByRole('link', { name: 'Plan posiłków' })).toHaveAttribute('href', '#/jedzenie/plan');
   });
 });
 
