@@ -64,13 +64,28 @@ describe('loadDataset', () => {
     expect(products[0]?.searchText).toBe('zolty ser gouda mlekovita 1');
   });
 
-  it('pobiera raz na życie strony', async () => {
+  it('pobiera raz na życie strony, a wczytaną bazę oddaje też od ręki', async () => {
     const fetchMock = vi.fn(async () => new Response(gz(TEXT)));
     vi.stubGlobal('fetch', fetchMock);
-    const { loadDataset } = await load();
+    const { loadDataset, loadedDataset } = await load();
+    expect(loadedDataset()).toBeNull();
     const first = await loadDataset();
     expect(await loadDataset()).toBe(first);
+    expect(loadedDataset()).toBe(first);
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('bez sieci i z uszkodzonym plikiem też mówi po polsku, co się stało', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
+    const { loadDataset } = await load();
+    await expect(loadDataset()).rejects.toThrow(
+      'Nie udało się pobrać danych produktów. Sprawdź połączenie z internetem.',
+    );
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(gz('{"products": ['))),
+    );
+    await expect(loadDataset()).rejects.toThrow('Dane produktów są uszkodzone.');
   });
 
   it('błąd serwera to polski komunikat z kodem, a nieudana próba nie zostaje w pamięci', async () => {

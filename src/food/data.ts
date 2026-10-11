@@ -29,13 +29,29 @@ export async function inflate(bytes: Uint8Array): Promise<string> {
 async function fetchDataset(): Promise<LoadedDataset> {
   const { url } = foodData;
   if (!url) throw new Error(MISSING_DATA_MESSAGE);
-  const response = await fetch(import.meta.env.BASE_URL + url);
+  // Zerwane połączenie wychodzi z `fetch` albo dopiero w trakcie czytania treści.
+  const offline = () => {
+    throw new Error('Nie udało się pobrać danych produktów. Sprawdź połączenie z internetem.');
+  };
+  const response = await fetch(import.meta.env.BASE_URL + url).catch(offline);
   if (!response.ok) throw new Error(`Nie udało się pobrać danych produktów (HTTP ${response.status}).`);
-  const dataset = JSON.parse(await inflate(new Uint8Array(await response.arrayBuffer()))) as Dataset;
+  const bytes = new Uint8Array(await response.arrayBuffer().catch(offline));
+  let dataset: Dataset;
+  try {
+    dataset = JSON.parse(await inflate(bytes)) as Dataset;
+  } catch {
+    throw new Error('Dane produktów są uszkodzone.');
+  }
   return { dataset, products: indexProducts(dataset.products, dataset.dictionaries.brands) };
 }
 
 let pending: Promise<LoadedDataset> | null = null;
+let loaded: LoadedDataset | null = null;
+
+/** Baza, jeśli już się wczytała — ekran otwierany drugi raz nie mignie „Wczytywaniem”. */
+export function loadedDataset(): LoadedDataset | null {
+  return loaded;
+}
 
 /**
  * Baza produktów, pobrana raz na życie strony: każdy ekran jedzenia dostaje tę samą obietnicę.
@@ -44,9 +60,14 @@ let pending: Promise<LoadedDataset> | null = null;
 export function loadDataset(): Promise<LoadedDataset> {
   if (!pending) {
     pending = fetchDataset();
-    pending.catch(() => {
-      pending = null;
-    });
+    pending.then(
+      (result) => {
+        loaded = result;
+      },
+      () => {
+        pending = null;
+      },
+    );
   }
   return pending;
 }
