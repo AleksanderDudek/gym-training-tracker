@@ -26,7 +26,8 @@ export default defineConfig(({ mode }) => ({
       strategies: 'injectManifest',
       srcDir: 'src',
       filename: 'sw.ts',
-      // Nowa wersja czeka na „Odśwież” (`UpdateBar`), a rejestruje ją ten sam komponent.
+      // Nowa wersja czeka na „Odśwież” (`UpdateBar`); rejestruje ją `main.tsx` przez `src/pwa.ts`,
+      // poza Reactem, żeby i wywracająca się wersja mogła zostać zastąpiona (`RootBoundary`).
       registerType: 'prompt',
       injectRegister: false,
       manifest: {

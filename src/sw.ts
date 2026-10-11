@@ -18,7 +18,8 @@ declare const self: ServiceWorkerGlobalScope;
  *   instalacji, z listy, którą wpisuje build (`self.__WB_MANIFEST`, vite-plugin-pwa). Offline
  *   działa więc już po pierwszej wizycie, a kopie poprzedniej wersji znikają po aktywacji nowej.
  * - Strona (nawigacja) — zawsze `index.html` z tej listy. Nowa wersja nie wchodzi sama: czeka, aż
- *   ktoś stuknie „Odśwież” na pasku (`UpdateBar`), a do tego czasu stare pliki zostają ważne.
+ *   ktoś stuknie „Odśwież” na pasku (`UpdateBar`) albo na ekranie awarii (`RootBoundary`), a do tego
+ *   czasu stare pliki zostają ważne.
  * - Baza produktów — najpierw kopia. Nazwa pliku ma hasz, więc nowa baza to nowy adres; trzymamy
  *   tylko ostatnią, bo każda waży kilka megabajtów.
  * - Zdjęcia produktów i kafelki mapy — najpierw kopia, z limitem liczby i wieku. Kafelki tylko
@@ -81,7 +82,10 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-/** „Odśwież” na pasku nowej wersji: nowa wersja przejmuje stronę, a ta się przeładowuje. */
+/**
+ * „Odśwież” na pasku nowej wersji albo na ekranie awarii: nowa wersja przejmuje stronę, a ta się
+ * przeładowuje.
+ */
 self.addEventListener('message', (event) => {
   if (event.data?.type === 'SKIP_WAITING') void self.skipWaiting();
 });

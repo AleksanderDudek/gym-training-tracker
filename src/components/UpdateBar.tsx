@@ -1,19 +1,9 @@
-import { useState } from 'react';
-import { useRegisterSW } from 'virtual:pwa-register/react';
-
-/** Co ile pytać o nową wersję, gdy aplikacja wisi otwarta godzinami (telefon na stojaku przy ławce). */
-const HOUR = 60 * 60 * 1000;
+import { useState, useSyncExternalStore } from 'react';
+import { applyUpdate, needRefresh, subscribe } from '../pwa';
 
 /**
- * Pytanie o nową wersję ustawia się raz na życie strony. Rejestracja żyje dłużej niż komponent,
- * więc ponowne zamontowanie paska dokładałoby kolejny interwał i kolejnego słuchacza.
- */
-let watching = false;
-
-/**
- * Pasek „Nowa wersja aplikacji”. Rejestruje też service worker (`src/sw.ts`) — tylko w wersji
- * zbudowanej; w trybie deweloperskim hook jest pusty. O nową wersję pyta przy starcie, po powrocie
- * do aplikacji i co godzinę.
+ * Pasek „Nowa wersja aplikacji”. Service worker rejestruje `main.tsx` (`src/pwa.ts`), zanim cokolwiek
+ * się wyrenderuje; pasek tylko czyta, czy nowa wersja czeka — w trybie deweloperskim nigdy.
  *
  * Nowa wersja nie wchodzi sama: czeka na „Odśwież”, a do tego czasu działa stara, ze swoimi
  * plikami. `hold` chowa pasek na czas treningu — przeładowanie w środku serii zgubiłoby miejsce,
@@ -22,31 +12,13 @@ let watching = false;
 export function UpdateBar({ hold }: { hold: boolean }) {
   // „Później” chowa pasek do następnego uruchomienia aplikacji.
   const [later, setLater] = useState(false);
-  const {
-    needRefresh: [needRefresh],
-    updateServiceWorker,
-  } = useRegisterSW({
-    // Rejestracja po wczytaniu strony, jak dotąd: zapisywanie powłoki nie konkuruje z pierwszym ekranem.
-    immediate: false,
-    onRegisteredSW(_url, r) {
-      if (!r || watching) return;
-      watching = true;
-      // Bez sieci pytanie i tak się nie uda — nowa wersja poczeka do następnego razu.
-      const check = () => {
-        if (navigator.onLine) r.update().catch(() => undefined);
-      };
-      window.setInterval(check, HOUR);
-      document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') check();
-      });
-    },
-  });
+  const waiting = useSyncExternalStore(subscribe, needRefresh, () => false);
 
-  if (!needRefresh || hold || later) return null;
+  if (!waiting || hold || later) return null;
   return (
     <div className="updatebar" role="status">
       <span className="updatebar-text">Nowa wersja aplikacji.</span>
-      <button className="btn sm" onClick={() => void updateServiceWorker(true)}>
+      <button className="btn sm" onClick={() => void applyUpdate()}>
         Odśwież
       </button>
       <button className="btn sm ghost" onClick={() => setLater(true)}>
