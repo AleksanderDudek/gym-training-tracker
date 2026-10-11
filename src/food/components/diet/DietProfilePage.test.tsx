@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { db } from '../../diet/db';
 import { clearAll, completeProfile, saveProfile } from '../../diet/store';
+import type { Profile } from '../../diet/types';
 import { renderWithBridge, testBridge } from '../../test/bridge';
 import { minimalWorkbook } from '../../test/workbook';
 import DietProfilePage from './DietProfilePage';
@@ -130,6 +131,47 @@ describe('Profil diety', () => {
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(screen.getByText('Zapisano')).toBeInTheDocument();
     expect(screen.getByLabelText('Wzrost')).toHaveValue('181');
+  });
+
+  describe('przywrócona kopia: znacznik karty na ekranie Dziś idzie za profilem z kopii', () => {
+    const backup = (profile: Profile | null) => ({
+      app: 'produkty-pl',
+      version: 1,
+      exportedAt: '2026-10-14T10:00:00.000Z',
+      profile,
+      days: [],
+      entries: [],
+      plans: [],
+      foods: [],
+    });
+
+    async function restoreFrom(data: object) {
+      const user = userEvent.setup();
+      const file = new File([JSON.stringify(data)], 'dieta-kopia.json', { type: 'application/json' });
+      await user.upload(await screen.findByLabelText('Przywróć z kopii'), file);
+      await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Przywróć' }));
+    }
+
+    test('kopia bez profilu zdejmuje znacznik', async () => {
+      await saveProfile(completeProfile({ startDate: '2026-10-01' }));
+      renderWithBridge(<DietProfilePage />);
+      await waitFor(() => expect(window.localStorage.getItem('gt:diet')).toBe('1'));
+      await restoreFrom(backup(null));
+      await waitFor(() => expect(window.localStorage.getItem('gt:diet')).toBeNull());
+      expect(await db.profile.count()).toBe(0);
+    });
+
+    test('kopia z profilem stawia znacznik', async () => {
+      await saveProfile(completeProfile({ startDate: '2026-10-01' }));
+      renderWithBridge(<DietProfilePage />);
+      await screen.findByLabelText('Przywróć z kopii');
+      // Znacznik zgubiony (np. wyczyszczony na innej karcie) — kopia z profilem stawia go z powrotem.
+      window.localStorage.removeItem('gt:diet');
+      await restoreFrom(backup(completeProfile({ startDate: '2026-09-01', dailyKcal: 2200 })));
+      expect(await screen.findByText('Kopia przywrócona.')).toBeInTheDocument();
+      expect(window.localStorage.getItem('gt:diet')).toBe('1');
+      expect(await db.profile.get('me')).toMatchObject({ startDate: '2026-09-01', dailyKcal: 2200 });
+    });
   });
 
   test('wyczyszczenie danych diety zdejmuje znacznik karty z ekranu Dziś', async () => {

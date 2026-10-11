@@ -4,7 +4,8 @@ import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { BridgeContext, type GymBridge } from '../bridge';
 import { db } from '../diet/db';
-import { useMergedDay, useMergedHistory } from './useDiet';
+import { logQuick } from '../diet/store';
+import { useHistory, useMergedDay, useMergedHistory } from './useDiet';
 
 const bridge = (over: Partial<GymBridge> = {}): GymBridge => ({
   weights: [],
@@ -25,6 +26,36 @@ const under =
 afterEach(async () => {
   vi.restoreAllMocks();
   await db.days.clear();
+  await db.entries.clear();
+});
+
+describe('historia zapisów', () => {
+  it('pusty wynik sprzed profilu (bez zakresu) nie udaje historii, gdy zakres się pojawi', async () => {
+    await logQuick('2026-10-12', 'Obiad', 700);
+    const { result, rerender } = renderHook(({ from }: { from: string | null }) => useHistory(from), {
+      initialProps: { from: null as string | null },
+    });
+    await waitFor(() => expect(result.current).toBeDefined());
+    expect(result.current!.entries).toEqual([]);
+
+    // Profil się wczytał: `useLiveQuery` oddaje jeszcze pusty wynik z `from = null`. To „wczytuję”,
+    // a nie tydzień bez zapisów — inaczej cel dnia mignąłby bez korekty tygodnia.
+    rerender({ from: '2026-10-12' });
+    expect(result.current).toBeUndefined();
+    await waitFor(() => expect(result.current?.eaten.get('2026-10-12')).toBe(700));
+  });
+
+  it('inny zakres może chwilę postać na poprzednim wyniku, zamiast mrugać „wczytuję”', async () => {
+    await logQuick('2026-10-12', 'Obiad', 700);
+    await logQuick('2026-10-19', 'Kolacja', 500);
+    const { result, rerender } = renderHook(({ from }: { from: string | null }) => useHistory(from), {
+      initialProps: { from: '2026-10-12' },
+    });
+    await waitFor(() => expect(result.current?.eaten.size).toBe(2));
+    rerender({ from: '2026-10-19' });
+    expect(result.current).toBeDefined();
+    await waitFor(() => expect([...result.current!.eaten.keys()]).toEqual(['2026-10-19']));
+  });
 });
 
 describe('dni diety czytane razem z danymi treningowymi', () => {

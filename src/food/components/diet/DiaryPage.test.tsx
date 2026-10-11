@@ -98,6 +98,25 @@ describe('Dziennik', () => {
     expect(bridge.toast).toHaveBeenCalledWith('Zapisane: Obiad u rodziców · 650 kcal.');
   });
 
+  test('„Dodaj zjedzone”: fokus w wyszukiwaniu, × zamyka i oddaje fokus, ponowne otwarcie zaczyna od nowa', async () => {
+    await saveProfile(completeProfile({ startDate: '2026-10-01' }));
+    const user = userEvent.setup();
+    renderWithBridge(<DiaryPage />);
+    const add = await screen.findByRole('button', { name: 'Dodaj zjedzone' });
+    await user.click(add);
+    const dialog = screen.getByRole('dialog', { name: 'Dodaj zjedzone' }) as HTMLDialogElement;
+    const search = within(dialog).getByRole('searchbox', { name: 'Szukaj jedzenia' });
+    expect(search).toHaveFocus();
+    await user.type(search, 'skyr');
+    await user.click(within(dialog).getByRole('button', { name: 'Zamknij' }));
+    expect(dialog.open).toBe(false);
+    expect(add).toHaveFocus();
+
+    await user.click(add);
+    expect(within(dialog).getByRole('searchbox', { name: 'Szukaj jedzenia' })).toHaveValue('');
+    expect(within(dialog).getByRole('searchbox', { name: 'Szukaj jedzenia' })).toHaveFocus();
+  });
+
   test('produkt z bazy: wyszukany, z gramaturą zmienioną przed zapisem', async () => {
     await saveProfile(completeProfile({ startDate: '2026-10-01', adaptWeekly: false }));
     const user = userEvent.setup();
