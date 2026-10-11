@@ -358,6 +358,20 @@
   .mtext li{margin-bottom:6px;padding-left:16px;text-indent:-16px;font-size:14.5px}
   .toast{position:fixed;left:14px;right:14px;bottom:calc(76px + env(safe-area-inset-bottom));max-width:612px;margin:0 auto;background:var(--steel);
     color:#fff;padding:12px 14px;border-radius:var(--r);font-size:14px;z-index:40}
+  /*
+   * Nowa wersja aplikacji: nad dolnym paskiem, w tej samej kolumnie co treść. Nad paskiem (30),
+   * pod komunikatem (40), który i tak znika po chwili, i pod oknami (50). W trakcie treningu go nie
+   * ma — przeładowanie w środku serii zgubiłoby miejsce (`UpdateBar`). Przyciski odwrócone: stalowy
+   * przycisk na stalowym pasku byłby niewidoczny.
+   */
+  .updatebar{position:fixed;left:14px;right:14px;bottom:calc(80px + env(safe-area-inset-bottom));max-width:612px;
+    margin:0 auto;background:var(--steel);color:#fff;padding:8px 8px 8px 14px;border-radius:var(--r);
+    display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:14px;z-index:38;
+    box-shadow:0 6px 18px rgba(30,35,32,.18)}
+  .updatebar-text{flex:1 1 auto;min-width:0}
+  .updatebar .btn{background:#fff;border-color:#fff;color:var(--steel)}
+  .updatebar .btn.ghost{background:transparent;border-color:transparent;color:#fff}
+  .updatebar button:focus-visible{outline:2px solid #fff;outline-offset:2px}
 
   .hidden{display:none}
   .empty{background:var(--surface);padding:26px 16px;text-align:center;color:var(--ink-soft);font-size:14px}

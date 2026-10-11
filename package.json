@@ -6,9 +6,9 @@
   "description": "GYM TRACKER — trening siłowy z automatyczną progresją, planem i osiągnięciami",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build && node scripts/precache.mjs",
+    "build": "npm run typecheck && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.sw.json",
     "test": "vitest run",
     "lint": "oxlint"
   },
@@ -26,6 +26,14 @@
     "oxlint": "^1.87.0",
     "typescript": "~6.0.3",
     "vite": "^8.3.4",
-    "vitest": "^5.0.3"
+    "vite-plugin-pwa": "^2.0.0",
+    "vitest": "^5.0.3",
+    "workbox-cacheable-response": "^7.4.1",
+    "workbox-core": "^7.4.1",
+    "workbox-expiration": "^7.4.1",
+    "workbox-precaching": "^7.4.1",
+    "workbox-routing": "^7.4.1",
+    "workbox-strategies": "^7.4.1",
+    "workbox-window": "^7.4.1"
   }
 }

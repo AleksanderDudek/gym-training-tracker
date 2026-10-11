@@ -71,6 +71,7 @@ import { forgetWatch, garminConfigured, garminKey, pullWatch } from './garmin';
 import type { PullResult } from './garmin';
 import { attachTrail, trail } from './trail';
 import { FeedbackDialog } from './components/Feedback';
+import { UpdateBar } from './components/UpdateBar';
 import { withExtension, withWeekdays } from './engine/planedit';
 
 const clone = (s: AppState): AppState => JSON.parse(JSON.stringify(s)) as AppState;
@@ -1497,6 +1498,8 @@ export default function App() {
       {showIntro && <Intro onDone={closeIntro} />}
 
       <BadgeDefs />
+      {/* Nowa wersja czeka na koniec treningu: przeładowanie w środku serii zgubiłoby miejsce. */}
+      <UpdateBar hold={!!state.session} />
       <Modal req={req} />
       <Toast msg={toastMsg} onDone={() => setToastMsg(null)} />
     </>
