@@ -27,7 +27,9 @@ interface Props {
 /**
  * Arkusz od dołu ekranu na natywnym `<dialog>` otwieranym przez `showModal()`: przeglądarka daje
  * pułapkę fokusu, Escape i bezczynne tło, a po zamknięciu oddaje fokus temu, co arkusz otworzyło.
- * Wspólny dla filtrów, karty produktu i ekranów przepisów — jeden wygląd i jedno zachowanie.
+ * Wspólny dla filtrów, karty produktu, ekranów przepisów i arkuszy dziennika jedzenia — jeden
+ * wygląd i jedno zachowanie. Treść zostaje zamontowana także w zamkniętym arkuszu; kto chce
+ * zaczynać od pustych pól przy każdym otwarciu, podaje ją jako `{open && <Treść />}`.
  *
  * Każde zamknięcie przez użytkownika idzie przez `dialog.close()`, więc `onClose` przychodzi
  * dokładnie raz, ze zdarzenia `close`. Karta produktu cofa w nim historię — drugie wywołanie
@@ -81,8 +83,11 @@ export function Sheet({
       opener.current = document.activeElement;
       dialog.showModal();
       // Fokus na tytule, nie na pierwszym przycisku: czytnik ekranu zaczyna od nazwy arkusza, a Tab
-      // idzie dalej po kolei. Bez tego przeglądarka stawia fokus (z obwódką) na ×.
-      titleRef.current?.focus({ preventScroll: true });
+      // idzie dalej po kolei. Bez tego przeglądarka stawia fokus (z obwódką) na ×. Arkusz, który
+      // służy do pisania (wyszukiwanie w „Dodaj zjedzone”), wskazuje pole przez `data-autofocus` —
+      // Reactowe `autoFocus` działa przy montażu, kiedy dialog jest jeszcze zamknięty.
+      const first = dialog.querySelector<HTMLElement>('[data-autofocus]') ?? titleRef.current;
+      first?.focus({ preventScroll: true });
     } else if (!open && dialog.open) shut(dialog);
   }, [open]);
 

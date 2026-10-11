@@ -146,33 +146,14 @@
 .fd-onboard{border-left:3px solid var(--c-blue-ink)}
 .fd-onboard .actions{margin:14px 0 10px}
 
-/* ---------------- Arkusz od dołu ---------------- */
+/* ---------------- Arkusze: „Dodaj zjedzone” i „Zamień” ---------------- */
 
 /*
- * Natywny <dialog> jako arkusz: przy dolnej krawędzi, na szerokość kolumny aplikacji (640 px),
- * z nagłówkiem, który zostaje na miejscu, i treścią, która się przewija. Tło przyciemnione jak
- * pod oknami aplikacji. Na czas otwarcia strona pod spodem się nie przewija.
+ * Arkusz jest wspólny (`../common/Sheet`, wygląd w `common.css`); tu tylko treść dziennika w nim.
+ * Reguły kart (`.grp p`) w arkusz nie sięgają, więc zdanie objaśnienia dostaje krój tutaj.
  */
-.fd-dsheet{margin:auto auto 0;padding:0;border:0;width:100%;max-width:640px;max-height:92vh;max-height:92dvh;
-  background:var(--surface);color:var(--ink);border-radius:var(--r) var(--r) 0 0;
-  box-shadow:0 -8px 28px rgba(30,35,32,.18);overflow:hidden}
-.fd-dsheet[open]{display:flex;flex-direction:column}
-.fd-dsheet::backdrop{background:rgba(30,35,32,.55)}
-html:has(.fd-dsheet[open]){overflow:hidden}
-.fd-dsheet-head{flex:none;display:flex;align-items:flex-start;gap:8px;padding:10px 6px 10px 16px;
-  border-bottom:1px solid var(--line)}
-.fd-dsheet-titles{flex:1;min-width:0;padding-top:9px}
-.fd-dsheet-titles h2{margin:0;font-size:20px;line-height:1.2;overflow-wrap:anywhere}
-.fd-dsheet-titles p{margin:3px 0 0;font-size:12.5px;color:var(--ink-soft)}
-.fd-dsheet-body{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;
-  padding:14px 16px calc(18px + env(safe-area-inset-bottom))}
-.fd-dsheet-body p.tight{margin:0 0 6px;font-size:13px;color:var(--ink-soft)}
-.fd-dsheet-body .seg{margin-bottom:12px}
-@media (prefers-reduced-motion:no-preference){
-  .fd-dsheet[open]{animation:fd-sheet-in .22s ease-out}
-  @keyframes fd-sheet-in{from{transform:translateY(24px);opacity:.6}to{transform:none;opacity:1}}
-}
-@media (min-width:672px){.fd-dsheet{margin-bottom:auto;border-radius:var(--r)}}
+.fd-diet-sheet .fd-sheet-body p.tight{margin:0 0 6px;font-size:13px;color:var(--ink-soft)}
+.fd-diet-sheet .fd-sheet-body .seg{margin-bottom:12px}
 
 /* „Dodaj zjedzone”: wyszukiwanie, wynik do wybrania, gramatura; albo same kalorie. */
 .fd-picker input[type=search]{width:100%;padding:11px 10px;font:inherit;font-size:17px;border:1px solid var(--edge);

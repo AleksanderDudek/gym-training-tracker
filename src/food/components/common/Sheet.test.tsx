@@ -35,6 +35,32 @@ test('otwarty arkusz jest modalnym oknem z nazwą z tytułu, a fokus stoi na tyt
   expect(screen.getByText('Stopka')).toBeInTheDocument();
 });
 
+test('pole z data-autofocus dostaje fokus zamiast tytułu — arkusz do pisania zaczyna od pola', () => {
+  render(
+    <Sheet open onClose={vi.fn()} title="Szukaj">
+      <input type="search" aria-label="Szukaj jedzenia" data-autofocus />
+    </Sheet>,
+  );
+  expect(screen.getByRole('searchbox', { name: 'Szukaj jedzenia' })).toHaveFocus();
+  expect(screen.getByRole('heading', { level: 2, name: 'Szukaj' })).not.toHaveFocus();
+});
+
+test('treść podana jako {open && …} zaczyna od nowa przy każdym otwarciu', async () => {
+  const user = userEvent.setup();
+  const Search = ({ open }: { open: boolean }) => (
+    <Sheet open={open} onClose={vi.fn()} title="Szukaj">
+      {open && <input type="search" aria-label="Szukaj jedzenia" data-autofocus />}
+    </Sheet>
+  );
+  const { rerender } = render(<Search open />);
+  await user.type(screen.getByRole('searchbox', { name: 'Szukaj jedzenia' }), 'skyr');
+  rerender(<Search open={false} />);
+  rerender(<Search open />);
+  const field = screen.getByRole('searchbox', { name: 'Szukaj jedzenia' });
+  expect(field).toHaveValue('');
+  expect(field).toHaveFocus();
+});
+
 test('× zamyka arkusz i woła onClose dokładnie raz', async () => {
   const user = userEvent.setup();
   const { dialog, onClose, opener } = openFromButton();

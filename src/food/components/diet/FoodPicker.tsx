@@ -7,7 +7,7 @@ import { formatNumber } from '../../lib/format';
 import { matchesQuery } from '../../lib/search';
 import { normalizeForSearch, tokenize } from '../../lib/text';
 import type { Dictionaries, IndexedProduct } from '../../lib/types';
-import { Sheet } from './Sheet';
+import { Sheet } from '../common/Sheet';
 import { MacroLine } from './SuggestionList';
 
 interface Props {
@@ -33,12 +33,13 @@ function numberOrNull(text: string): number | null {
 /**
  * „Dodaj zjedzone”: szuka we wszystkim, co da się zjeść — pozycjach planu, własnym jedzeniu,
  * przepisach i każdym produkcie z bazy — albo zapisuje same kalorie, jak „extra kcal” z arkusza
- * na obiad na mieście. Arkusz od dołu; zamknięcie czyści pola (treść żyje tylko w otwartym).
+ * na obiad na mieście. Wspólny arkusz od dołu; treść żyje tylko w otwartym, więc zamknięcie
+ * czyści pola, a fokus po otwarciu stoi w wyszukiwaniu (`data-autofocus`).
  */
 export function FoodPicker({ open, onClose, ...rest }: Props) {
   return (
-    <Sheet open={open} title="Dodaj zjedzone" onClose={onClose}>
-      <PickerBody {...rest} onDone={onClose} />
+    <Sheet open={open} title="Dodaj zjedzone" onClose={onClose} className="fd-diet-sheet">
+      {open && <PickerBody {...rest} onDone={onClose} />}
     </Sheet>
   );
 }
