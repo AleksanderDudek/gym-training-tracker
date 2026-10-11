@@ -260,6 +260,13 @@
     display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:baseline}
   .h-date{font-family:var(--display);font-size:17px}
   .h-detail{font-size:13px;color:var(--ink-soft)}
+  .h-time{font-family:var(--display);font-size:15px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+  /* Przebieg treningu z zegarem: zwinięty, bo historia to lista, a nie raport. */
+  .h-parts{font-size:13px;color:var(--ink-soft)}
+  .h-parts summary{cursor:pointer;color:var(--steel);font-weight:600;padding:11px 0;line-height:22px}
+  .h-parts ol{margin:0 0 4px;padding-left:20px;line-height:1.45}
+  .h-parts li{margin:2px 0}
+  .h-gap{font-variant-numeric:tabular-nums}
 
   .grp{background:var(--surface);border-bottom:1px solid var(--line);padding:14px}
   /* Nagłówki sekcji są h2 (po h1 w pasku aplikacji), ale wyglądają jak dotąd: skromnie, krojem treści. */

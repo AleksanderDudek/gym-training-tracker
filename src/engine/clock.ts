@@ -1,7 +1,7 @@
 import type { Block } from './blocks';
 import { loggedSets } from './steps';
 import type { Step } from './steps';
-import type { ExerciseId, LogTime, LogTimePart, Session } from '../types';
+import type { ExerciseId, LogEntry, LogTime, LogTimePart, Session, Workout } from '../types';
 
 /**
  * Zegar sesji: ile naprawdę trwa trening i ile mija między ćwiczeniami.
@@ -135,6 +135,20 @@ export function summary(t: LogTime): { secs: number; work: number; gaps: number;
 
 /** Czy czas treningu liczy się do statystyk i odznak: od 3 minut do 4 godzin. */
 export const timed = (t: LogTime | null | undefined): t is LogTime => !!t && t.secs >= TIMED_MIN && t.secs <= TIMED_MAX;
+
+/**
+ * Średni czas tego treningu z ostatnich (najwyżej `last`) zapisów z policzonym czasem — obok
+ * szacunku w podglądzie, bo do planowania dnia liczy się, ile trwa naprawdę. Wpisy sprzed
+ * identyfikatora treningu pasują po nazwie, jak w przerwach po rundzie.
+ */
+export function averageTime(log: readonly LogEntry[], w: Pick<Workout, 'id' | 'name'>, last = 5): { secs: number; n: number } | null {
+  const mine = log
+    .filter((e) => (e.wid ? e.wid === w.id : e.workout === w.name) && timed(e.time))
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .slice(-last);
+  if (!mine.length) return null;
+  return { secs: Math.round(mine.reduce((n, e) => n + e.time!.secs, 0) / mine.length), n: mine.length };
+}
 
 /** „45 s”, „12 min”, „1 h 05 min” — czas treningu słowami, do minuty. */
 export function durationText(secs: number): string {

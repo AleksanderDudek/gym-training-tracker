@@ -18,9 +18,11 @@ import { snackStats, snacksOf, snacksOn } from '../engine/snacks';
 import { dayKey } from '../engine/schedule';
 import { plural } from '../engine/quips';
 import { rowBurn, workoutBurn } from '../engine/burn';
+import { durationText, timed, transitions } from '../engine/clock';
+import { formatClock } from './Timer';
 import { BodyCard, CardioSummary, kcalText } from './Cardio';
 import { PromoCard } from './Promo';
-import type { AppState, ExerciseId } from '../types';
+import type { AppState, ExerciseId, LogTime } from '../types';
 
 /**
  * Profil: historia bez konta.
@@ -233,12 +235,14 @@ export function ProfileView({
                 <div>
                   <div>
                     <b>{e.workout}</b>
+                    {timed(e.time) && <span className="h-time"> · {durationText(e.time.secs)}</span>}
                   </div>
                   <div className="h-detail">
                     {e.items
                       .map((i) => `${EX[i.id]?.name ?? i.id} ${i.sets.map((s) => s.reps).join('/')}`)
                       .join(' · ')}
                   </div>
+                  {timed(e.time) && e.time.parts.length > 0 && <TimeLine time={e.time} />}
                 </div>
                 <div className="streak">
                   {num(sessionTonnage(e))} kg·p
@@ -290,6 +294,33 @@ function ExerciseRowLink({ state, sum }: { state: AppState; sum: ExerciseSummary
         <Sparkline hist={p.hist} />
       </div>
     </button>
+  );
+}
+
+/**
+ * Przebieg treningu z zegarem: części po kolei, ile trwała każda i ile trwało przejście przed
+ * nią. Część z widoku listy nie ma startu — stoi z chwilą zapisu, bez czasu i bez przejścia.
+ */
+function TimeLine({ time }: { time: LogTime }) {
+  const gaps = new Map(transitions(time).map((g) => [g.block, g.secs]));
+  return (
+    <details className="h-parts">
+      <summary>
+        Przebieg: {time.parts.length} {plural(time.parts.length, ['część', 'części', 'części'])}
+      </summary>
+      <ol>
+        {time.parts.map((p) => {
+          const gap = gaps.get(p.block);
+          return (
+            <li key={p.block}>
+              {p.ex.map((id) => EX[id]?.name ?? id).join(' + ')} —{' '}
+              {p.at !== undefined ? durationText(p.end - p.at) : `zapisane po ${durationText(p.end)}`}
+              {gap !== undefined && <span className="h-gap"> · przejście przed: {formatClock(gap)}</span>}
+            </li>
+          );
+        })}
+      </ol>
+    </details>
   );
 }
 

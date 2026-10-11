@@ -502,6 +502,8 @@ export type AchGroup =
   | 'przekaski'
   /** Kroki, bieżnia, rower i taniec: suma, dni z celem, tygodnie według WHO, ciąg dni w ruchu. */
   | 'cardio'
+  /** Czas na treningu z zegara sesji: suma, tygodnie z dwiema godzinami, płynne przejścia, rekord. */
+  | 'czas'
   /** Odznaki pojedynczego ćwiczenia: dzień, tydzień, miesiąc i suma — z treningów i przekąsek. */
   | 'cwiczenia'
   /** Terminy planu: seria, realizacja, domknięte tygodnie. */

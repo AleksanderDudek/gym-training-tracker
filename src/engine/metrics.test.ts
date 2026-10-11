@@ -13,10 +13,11 @@ import {
   repsByGroup,
   stageSum,
   steadyWeeks,
+  timeMetrics,
   wentHeavier,
   windowMax,
 } from './metrics';
-import type { AppState, LogEntry, LogItem } from '../types';
+import type { AppState, LogEntry, LogItem, LogTime } from '../types';
 
 const item = (id: string, reps: number[], w: number | null = 16): LogItem => ({
   id,
@@ -400,5 +401,58 @@ describe('zestaw metryk', () => {
     const early = new Date('2026-08-31T06:30:00.000Z').getHours() < 8;
     const s = stateWith([entry('2026-08-31', [item('swing2', [10])], 6)]);
     expect(metrics(s).early).toBe(early);
+  });
+});
+
+describe('czas na treningu', () => {
+  /** Trening z zegarem: `min` minut, części zaczęte co `gaps` sekund przerwy po kwadransie pracy. */
+  const timedEntry = (date: string, min: number, gaps: number[] = []): LogEntry => {
+    const parts: LogTime['parts'] = [];
+    let at = 0;
+    [0, ...gaps].forEach((g, i) => {
+      at += g;
+      parts.push({ block: i + 1, ex: ['goblet'], at, end: at + 600 });
+      at += 600;
+    });
+    return { ...entry(date, [item('goblet', [10])]), time: { secs: min * 60, parts } };
+  };
+
+  it('liczy tylko treningi od 3 minut do 4 godzin', () => {
+    const log = [
+      // 2026-09-07 to poniedziałek.
+      timedEntry('2026-09-07', 30, [60, 120]),
+      timedEntry('2026-09-09', 50, [60, 300]),
+      timedEntry('2026-09-10', 2, [10, 10]),
+      timedEntry('2026-09-11', 300, [10, 10]),
+      entry('2026-09-12', [item('goblet', [10])]),
+    ];
+    expect(metrics(stateWith(log)).time).toEqual({ minutes: 80, timed: 2, longest: 50, smooth: 1, weeks120: 0 });
+  });
+
+  it('płynny trening: co najmniej trzy zaczęte części i każde przejście do 4 minut', () => {
+    const listPart = (e: LogEntry): LogEntry => ({
+      ...e,
+      time: { ...e.time!, parts: [{ block: 9, ex: ['row'], end: 100 }, ...e.time!.parts] },
+    });
+    const log = [
+      timedEntry('2026-09-07', 40, [240, 0]),
+      timedEntry('2026-09-08', 40, [241, 0]),
+      // Dwie części to za mało — nie ma czego porównać.
+      timedEntry('2026-09-09', 40, [30]),
+      // Część z listy nie ma startu, więc nie dokłada się do trzech.
+      listPart(timedEntry('2026-09-10', 40, [30])),
+    ];
+    expect(timeMetrics(log).smooth).toBe(1);
+  });
+
+  it('tydzień z dwiema godzinami — od poniedziałku do niedzieli', () => {
+    const log = [
+      // Niedziela i poniedziałek to dwa różne tygodnie.
+      timedEntry('2026-09-13', 70),
+      timedEntry('2026-09-14', 60),
+      timedEntry('2026-09-16', 60),
+      timedEntry('2026-09-21', 119),
+    ];
+    expect(timeMetrics(log).weeks120).toBe(1);
   });
 });

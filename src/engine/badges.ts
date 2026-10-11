@@ -54,6 +54,9 @@ export const bandFor = (tier: number, total: number): Band => {
 const kg = (n: number): string => (n >= 1000 ? `${Math.round(n / 100) / 10} t` : `${n} kg`);
 const mins = (n: number): string => (n >= 120 ? `${Math.round(n / 60)} min` : `${n} s`);
 const yes = (b: boolean): number => (b ? 1 : 0);
+/** Minuty w godzinach: „1 h”, „1,5 h”, „250 h”; poniżej godziny — w minutach. */
+const hours = (n: number): string =>
+  n < 60 ? `${n} min` : `${(Math.round(n / 6) / 10).toLocaleString('pl-PL', { maximumFractionDigits: 1 })} h`;
 
 /**
  * Rodzina objętości dla jednej partii ruchu. Nazwa partii przychodzi z biblioteki ćwiczeń,
@@ -752,6 +755,65 @@ const DEFS: AchDef[] = [
     value: (c) => c.metrics.cardio.run,
   },
 
+  /*
+   * ---------------- Czas na treningu ----------------
+   *
+   * Z zegara sesji, tylko z treningów od 3 minut do 4 godzin. Żadna rodzina nie nagradza
+   * krótkiego treningu: w treningu siłowym przerwa nie jest dźwignią postępu (`rests.ts`),
+   * a odznaka za szybkość pchałaby do ucinania przerw. Jedyna „szybkość”, za którą coś jest,
+   * to płynne przejścia między ćwiczeniami — czas, którego nikt nie zalecał.
+   */
+  {
+    id: 'czas-suma',
+    group: 'czas',
+    mark: '',
+    art: 'hourglass',
+    name: 'Godziny na treningu',
+    desc: 'Czas wszystkich treningów z zegarem, od „Zaczynam” do zamknięcia. Trening krótszy niż 3 minuty albo dłuższy niż 4 godziny się nie liczy.',
+    quip: 'Godziny, których nie zjadł serial. Serial nie protestował.',
+    unit: 'minut',
+    tiers: [60, 300, 600, 1_500, 3_000, 6_000, 15_000, 30_000],
+    value: (c) => c.metrics.time.minutes,
+    fmt: hours,
+  },
+  {
+    id: 'czas-tydzien',
+    group: 'czas',
+    mark: '',
+    art: 'calendarCheck',
+    name: 'Dwie godziny w tygodniu',
+    desc: 'Tygodnie od poniedziałku do niedzieli z co najmniej 120 minutami treningu z zegarem — z jednego albo kilku treningów.',
+    quip: 'Dwie godziny z poniedziałku do niedzieli. Krócej niż jeden długi film.',
+    unit: 'tygodni',
+    tiers: [1, 4, 12, 26, 52, 104],
+    value: (c) => c.metrics.time.weeks120,
+  },
+  {
+    id: 'czas-plynnie',
+    group: 'czas',
+    mark: '',
+    art: 'wave',
+    name: 'Bez przestojów',
+    desc: 'Treningi z zegarem i co najmniej trzema częściami, w których każde przejście — od końca jednego ćwiczenia do „Start” następnego — trwało do 4 minut. Przerwy między seriami się nie liczą.',
+    quip: 'Przerwa jest w planie. Przewijanie telefonu między ćwiczeniami — już nie.',
+    unit: 'treningów',
+    tiers: [1, 5, 15, 30, 60, 100],
+    value: (c) => c.metrics.time.smooth,
+  },
+  {
+    id: 'czas-rekord',
+    group: 'czas',
+    mark: '',
+    art: 'stopwatch',
+    name: 'Najdłuższy trening',
+    desc: 'Najdłuższy pojedynczy trening z zegarem, w minutach. Ponad 4 godziny to zwykle zapomniane zamknięcie, więc się nie liczy.',
+    quip: 'Długo nie znaczy lepiej. Znaczy, że tym razem nikt cię nie poganiał.',
+    unit: 'minut',
+    tiers: [30, 45, 60, 90, 120],
+    value: (c) => c.metrics.time.longest,
+    fmt: (n) => `${n} min`,
+  },
+
   /* ---------------- Terminy: kalendarz planu ---------------- */
   {
     id: 'seria',
@@ -853,6 +915,7 @@ export const GROUP_LABEL: Record<Achievement['group'], string> = {
   utrzymanie: 'Utrzymanie',
   przekaski: 'Przekąski ruchowe',
   cardio: 'Kroki i cardio',
+  czas: 'Czas na treningu',
   terminy: 'Terminy',
   cwiczenia: 'Ćwiczenia',
 };
@@ -866,6 +929,8 @@ export const GROUP_NOTE: Record<Achievement['group'], string> = {
   przekaski: 'Krótkie serie poza treningiem. Liczy się, jak często — nie ile naraz.',
   cardio:
     'Kroki, bieżnia, rower i taniec wpisane ręcznie. Liczą się kroki, kilometry, zajęcia i minuty ruchu według zaleceń WHO — nie kalorie, bo te rosną razem z wagą.',
+  czas:
+    'Liczone z treningów z zegarem, od „Zaczynam” do zamknięcia. Krótszy niż 3 minuty i dłuższy niż 4 godziny się nie liczy — to zwykle zapomniane zamknięcie. Żadna odznaka nie nagradza krótkiego treningu, bo przerwa nie jest dźwignią postępu; nagradzane są tylko płynne przejścia między ćwiczeniami.',
   terminy: 'Zależne od uruchomionego planu i jego kalendarza.',
   cwiczenia:
     'Każde ćwiczenie ma rekord dnia, tygodnia i miesiąca kalendarzowego oraz sumę — z treningów i przekąsek razem. Widać tylko ruchy, które już robisz.',
@@ -879,6 +944,7 @@ export const GROUPS: Achievement['group'][] = [
   'utrzymanie',
   'przekaski',
   'cardio',
+  'czas',
   'terminy',
 ];
 

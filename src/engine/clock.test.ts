@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Block } from './blocks';
 import {
+  averageTime,
   durationText,
   settlePart,
   startClock,
@@ -12,7 +13,7 @@ import {
   waitingPart,
 } from './clock';
 import type { Step } from './steps';
-import type { LogTime, Session } from '../types';
+import type { LogEntry, LogTime, Session } from '../types';
 
 /**
  * Zegar sesji: start treningu, części z początkiem i końcem, przejścia między nimi i czas
@@ -292,5 +293,36 @@ describe('przejścia i podsumowanie', () => {
     expect(durationText(12 * 60 + 10)).toBe('12 min');
     expect(durationText(65 * 60)).toBe('1 h 05 min');
     expect(durationText(2 * 3600)).toBe('2 h 00 min');
+  });
+});
+
+describe('średni czas treningu', () => {
+  const log = (date: string, wid: string | undefined, min: number | null, workout = 'A'): LogEntry => ({
+    date: `${date}T18:00:00.000Z`,
+    workout,
+    ...(wid ? { wid } : {}),
+    ready: 'ok',
+    items: [],
+    ...(min !== null ? { time: { secs: min * 60, parts: [] } } : {}),
+  });
+
+  it('z ostatnich pięciu treningów z czasem, tylko tego treningu', () => {
+    const entries = [
+      log('2026-09-01', 'a', 90),
+      log('2026-09-02', 'a', 40),
+      log('2026-09-03', 'a', 40),
+      log('2026-09-04', 'b', 10),
+      log('2026-09-05', 'a', null),
+      log('2026-09-06', 'a', 2),
+      log('2026-09-07', 'a', 50),
+      log('2026-09-08', 'a', 50),
+      log('2026-09-09', 'a', 50),
+    ];
+    expect(averageTime(entries, { id: 'a', name: 'A' })).toEqual({ secs: 46 * 60, n: 5 });
+  });
+
+  it('wpis bez identyfikatora treningu pasuje po nazwie; bez czasu — brak średniej', () => {
+    expect(averageTime([log('2026-09-01', undefined, 30)], { id: 'a', name: 'A' })).toEqual({ secs: 1800, n: 1 });
+    expect(averageTime([log('2026-09-01', 'a', null)], { id: 'a', name: 'A' })).toBeNull();
   });
 });
