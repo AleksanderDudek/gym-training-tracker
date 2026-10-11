@@ -2,8 +2,10 @@ import { configDefaults, defineConfig } from 'vitest/config';
 import { loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
-import { cspPlugin } from './vite/csp';
-import { foodData } from './vite/foodData';
+// Z rozszerzeniem: tak czyta je też natywny loader konfiguracji (`configLoader: 'native'`), który
+// ma zostać domyślnym w kolejnej wersji Vite — bez niego build ostrzega przy każdym starcie.
+import { cspPlugin } from './vite/csp.ts';
+import { foodData } from './vite/foodData.ts';
 
 /** Skrót na ekranie głównym: ta sama ikona dla wszystkich, jak dotąd. */
 const shortcut = (name: string, url: string, shortName?: string) => ({

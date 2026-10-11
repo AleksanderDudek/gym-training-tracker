@@ -13,6 +13,8 @@ jedzenia w IndexedDB), z eksportem i importem do jednego pliku.
 
 ## Uruchomienie
 
+Wymaga Node 22.12 albo nowszego (Vite 8; `engines` w `package.json`).
+
 ```bash
 npm install
 npm run dev        # serwer deweloperski na http://localhost:5173
@@ -1758,8 +1760,8 @@ Bez nich karty przypomnień nie ma, a aplikacja działa jak dotąd.
 Aplikacja stoi na GitHub Pages: <https://aleksanderdudek.github.io/gym-training-tracker/>
 
 Wdrożenie prowadzi `.github/workflows/deploy.yml` — każdy push na `main` uruchamia
-`typecheck`, testy i build, a dopiero potem publikuje `dist/`. Nieprzechodzące testy
-zatrzymują wdrożenie.
+`typecheck`, lint, testy i build, a dopiero potem publikuje `dist/`. Błąd typów, błąd lintu
+(ostrzeżenia nie) albo nieprzechodzący test zatrzymują wdrożenie.
 
 ## Zapis danych
 

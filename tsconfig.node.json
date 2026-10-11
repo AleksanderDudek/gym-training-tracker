@@ -16,6 +16,9 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "noEmit": true,
+    // `vite.config.ts` importuje wtyczki z `.ts` na końcu — patrz komentarz przy tych importach.
+    // Wolno, bo nic stąd nie jest emitowane (`noEmit`).
+    "allowImportingTsExtensions": true,
     "types": ["node"]
   },
   "include": ["vite.config.ts", "vite", "scripts", "src/vite-env.d.ts"]

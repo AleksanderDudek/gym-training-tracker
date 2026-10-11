@@ -29,8 +29,9 @@ jobs:
 
       - run: npm ci
 
-      # Wdrożenie idzie dopiero po typach i testach silnika progresji.
+      # Wdrożenie idzie dopiero po typach, lincie (błędy zatrzymują, ostrzeżenia nie) i testach.
       - run: npm run typecheck
+      - run: npm run lint
       - run: npm test
       # Serwer aplikacji (server/api — przypomnienia i uwagi): adres i klucz publiczny VAPID ze
       # zmiennych repozytorium (Settings → Secrets and variables → Actions → Variables).
