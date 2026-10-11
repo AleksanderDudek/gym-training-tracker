@@ -169,7 +169,7 @@ function ProfileForm({ profile, isNew, currentWeight, stores }: FormProps) {
       )}
 
       <form
-        className="fd-profile"
+        className="fd-diet-profile"
         noValidate
         onSubmit={(e) => {
           e.preventDefault();
@@ -183,9 +183,9 @@ function ProfileForm({ profile, isNew, currentWeight, stores }: FormProps) {
           void submit();
         }}
       >
-        <section className="grp" aria-labelledby="fd-you-title">
-          <h2 id="fd-you-title">{isNew ? 'Zacznij od profilu' : 'Ty'}</h2>
-          <div className="fd-grid2">
+        <section className="grp" aria-labelledby="fd-diet-you-title">
+          <h2 id="fd-diet-you-title">{isNew ? 'Zacznij od profilu' : 'Ty'}</h2>
+          <div className="fd-diet-grid2">
             <label className="fld">
               <span>Płeć</span>
               <select value={draft.sex} onChange={(e) => set({ sex: e.target.value as Profile['sex'] })}>
@@ -235,10 +235,10 @@ function ProfileForm({ profile, isNew, currentWeight, stores }: FormProps) {
               />
             </label>
           </div>
-          <p className="tight fd-soft">
+          <p className="tight fd-diet-soft">
             Wzrost to ten sam, co w profilu treningowym — zapis zmienia go w obu miejscach.
           </p>
-          <label className="fld fd-field">
+          <label className="fld fd-diet-field">
             <span>Aktywność (bez liczenia kroków)</span>
             <select
               value={draft.activityMultiplier}
@@ -254,7 +254,7 @@ function ProfileForm({ profile, isNew, currentWeight, stores }: FormProps) {
               ))}
             </select>
           </label>
-          <div className="fd-field">
+          <div className="fd-diet-field">
             <NumberField
               label="Kroki dziennie (plan)"
               value={draft.targetSteps}
@@ -264,9 +264,9 @@ function ProfileForm({ profile, isNew, currentWeight, stores }: FormProps) {
               max={50000}
             />
           </div>
-          <details className="why fd-advanced">
+          <details className="why fd-diet-advanced">
             <summary>Zaawansowane (wartości z arkusza)</summary>
-            <div className="fd-grid2">
+            <div className="fd-diet-grid2">
               <NumberField
                 label="Kroki już w aktywności"
                 value={draft.baseSteps}
@@ -304,9 +304,9 @@ function ProfileForm({ profile, isNew, currentWeight, stores }: FormProps) {
           </details>
         </section>
 
-        <section className="grp" aria-labelledby="fd-goal-title">
-          <h2 id="fd-goal-title">Cel kalorii</h2>
-          <dl className="tiles fd-energy">
+        <section className="grp" aria-labelledby="fd-diet-goal-title">
+          <h2 id="fd-diet-goal-title">Cel kalorii</h2>
+          <dl className="tiles fd-diet-energy">
             <div className="tile">
               <dt>Podstawowe spalanie (BMR)</dt>
               <dd>{formatNumber(base, 0)} kcal</dd>
@@ -322,13 +322,13 @@ function ProfileForm({ profile, isNew, currentWeight, stores }: FormProps) {
             <div className="tile">
               <dt>Tempo</dt>
               <dd>{formatNumber(pace, 2)} kg/tydz.</dd>
-              <dd className="fd-soft">{reach ? `cel ok. ${formatDate(reach)}` : 'cel poza zasięgiem'}</dd>
+              <dd className="fd-diet-soft">{reach ? `cel ok. ${formatDate(reach)}` : 'cel poza zasięgiem'}</dd>
             </div>
           </dl>
           <p className="tight">
             Liczone dla wagi {formatNumber(weight, 1)} kg{isNew ? '' : ' (ostatnie ważenie)'}.
           </p>
-          <div className="fd-kcal-goal">
+          <div className="fd-diet-kcal-goal">
             <NumberField
               label="Dziennie"
               value={draft.dailyKcal}
@@ -355,16 +355,16 @@ function ProfileForm({ profile, isNew, currentWeight, stores }: FormProps) {
             })}
           </div>
           {warnings.length > 0 && (
-            <div className="dnote warn fd-warnings">
+            <div className="dnote warn fd-diet-warnings">
               <b>Uwaga</b>
-              <ul className="fd-bullets">
+              <ul className="fd-diet-bullets">
                 {warnings.map((w) => (
                   <li key={w}>{w}</li>
                 ))}
               </ul>
             </div>
           )}
-          <label className="check-row fd-check">
+          <label className="check-row fd-diet-check">
             <input
               type="checkbox"
               checked={draft.adaptWeekly}
@@ -377,14 +377,14 @@ function ProfileForm({ profile, isNew, currentWeight, stores }: FormProps) {
           </label>
         </section>
 
-        <fieldset className="grp fd-dprofiles">
+        <fieldset className="grp fd-diet-styles">
           <legend>Sposób odżywiania</legend>
           {DIET_PROFILE_IDS.map((id) => {
             const p = DIET_PROFILES[id];
             const t = p.targets(draft.dailyKcal, draft.targetWeightKg);
             return (
-              <label key={id} className="fd-dprof">
-                <span className="fd-dprof-head">
+              <label key={id} className="fd-diet-style">
+                <span className="fd-diet-style-head">
                   <input
                     type="radio"
                     name="diet-profile"
@@ -394,13 +394,13 @@ function ProfileForm({ profile, isNew, currentWeight, stores }: FormProps) {
                   {p.label}
                 </span>
                 <span>{p.description}</span>
-                <span className="fd-meta">
-                  <b className="fd-yes">Tak:</b> {p.allows}
+                <span className="fd-diet-meta">
+                  <b className="fd-diet-yes">Tak:</b> {p.allows}
                 </span>
-                <span className="fd-meta">
-                  <b className="fd-no">Unikaj:</b> {p.avoids}
+                <span className="fd-diet-meta">
+                  <b className="fd-diet-no">Unikaj:</b> {p.avoids}
                 </span>
-                <span className="fd-meta fd-nums">
+                <span className="fd-diet-meta fd-diet-nums">
                   Dziennie: B {t.protein.target} g · W {t.carbs.max !== null ? `do ${t.carbs.max}` : t.carbs.target} g ·
                   T {t.fat.target} g
                 </span>
@@ -409,9 +409,9 @@ function ProfileForm({ profile, isNew, currentWeight, stores }: FormProps) {
           })}
         </fieldset>
 
-        <section className="grp" aria-labelledby="fd-store-title">
-          <h2 id="fd-store-title">Sklep</h2>
-          <label className="fld fd-field">
+        <section className="grp" aria-labelledby="fd-diet-store-title">
+          <h2 id="fd-diet-store-title">Sklep</h2>
+          <label className="fld fd-diet-field">
             <span>Gdy nie znam sklepów w pobliżu, planuj pod:</span>
             <select
               value={draft.preferredStore ?? ''}
@@ -434,11 +434,11 @@ function ProfileForm({ profile, isNew, currentWeight, stores }: FormProps) {
           </p>
         </section>
 
-        <div className="fd-savebar">
+        <div className="fd-diet-savebar">
           <button type="submit" className="btn">
             {isNew ? 'Zapisz i zacznij' : 'Zapisz profil'}
           </button>
-          <span role="status" className="fd-saved">
+          <span role="status" className="fd-diet-saved">
             {saved && (
               <>
                 <Check size={20} strokeWidth={2} aria-hidden /> Zapisano

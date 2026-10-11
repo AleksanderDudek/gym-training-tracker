@@ -41,9 +41,9 @@ export function NumberField({ label, value, onChange, suffix, min, max, integer 
   const described = [suffix ? `${id}-unit` : null, invalid ? `${id}-error` : null].filter(Boolean).join(' ');
 
   return (
-    <div className="fd-num">
+    <div className="fd-diet-num">
       <label htmlFor={id}>{label}</label>
-      <div className="fd-num-box">
+      <div className="fd-diet-num-box">
         <input
           id={id}
           type="text"
@@ -63,13 +63,13 @@ export function NumberField({ label, value, onChange, suffix, min, max, integer 
           }}
         />
         {suffix && (
-          <span className="fd-unit" id={`${id}-unit`}>
+          <span className="fd-diet-unit" id={`${id}-unit`}>
             {suffix}
           </span>
         )}
       </div>
       {invalid && (
-        <p className="fd-err" id={`${id}-error`}>
+        <p className="fd-diet-err" id={`${id}-error`}>
           {hint}
         </p>
       )}

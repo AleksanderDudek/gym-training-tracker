@@ -21,7 +21,7 @@ export function Bar({
   const share = target > 0 ? Math.min(1, Math.max(0, value / target)) : 0;
   return (
     <div
-      className={`fd-bar ${status}`}
+      className={`fd-diet-bar ${status}`}
       role="meter"
       aria-label={label}
       aria-valuemin={0}
@@ -57,12 +57,12 @@ export function MacroBars({ targets, eaten, status, adjustment, plannedKcal, chi
     { key: 'fat' as const, label: 'Tłuszcz', value: eaten.fat, target: targets.fat.target },
   ];
   return (
-    <section className="grp fd-balance" aria-label="Bilans dnia">
-      <div className="fd-balance-top">
-        <p className="fd-kcal">
+    <section className="grp fd-diet-balance" aria-label="Bilans dnia">
+      <div className="fd-diet-balance-top">
+        <p className="fd-diet-kcal">
           {formatNumber(eaten.kcal, 0)} <small>/ {formatNumber(targets.kcal, 0)} kcal</small>
         </p>
-        <p className={`fd-note ${status.kcal.status}`}>{status.kcal.note}</p>
+        <p className={`fd-diet-note ${status.kcal.status}`}>{status.kcal.note}</p>
       </div>
       <Bar value={eaten.kcal} target={targets.kcal} status={status.kcal.status} label="Kalorie" />
       {adjustment && adjustment.delta !== 0 && (
@@ -72,17 +72,17 @@ export function MacroBars({ targets, eaten, status, adjustment, plannedKcal, chi
         </p>
       )}
       {plannedKcal !== null && <p className="tight">Plan na dziś: {formatNumber(plannedKcal, 0)} kcal.</p>}
-      <div className="fd-macros">
+      <div className="fd-diet-macros">
         {rows.map((row) => (
-          <div key={row.key} className="fd-macro">
-            <div className="fd-macro-head">
+          <div key={row.key} className="fd-diet-macro">
+            <div className="fd-diet-macro-head">
               <span>{row.label}</span>
-              <span className="fd-nums">
+              <span className="fd-diet-nums">
                 {formatNumber(row.value, 0)} / {formatNumber(row.target, 0)} g
               </span>
             </div>
             <Bar value={row.value} target={row.target} status={status[row.key].status} label={row.label} />
-            <span className={`fd-note ${status[row.key].status}`}>{status[row.key].note}</span>
+            <span className={`fd-diet-note ${status[row.key].status}`}>{status[row.key].note}</span>
           </div>
         ))}
       </div>

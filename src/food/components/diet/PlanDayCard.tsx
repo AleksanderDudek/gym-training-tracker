@@ -32,11 +32,11 @@ export function PlanDayCard({ plan, planned, date, entries, onSwap }: Props) {
   const leftKcal = left.reduce((sum, i) => sum + i.kcal, 0);
 
   return (
-    <section className="grp" aria-labelledby="fd-plan-day-title">
-      <h2 id="fd-plan-day-title">
-        Plan na ten dzień <span className="fd-h-meta">· dzień {planned.template}</span>
+    <section className="grp" aria-labelledby="fd-diet-plan-day-title">
+      <h2 id="fd-diet-plan-day-title">
+        Plan na ten dzień <span className="fd-diet-h-meta">· dzień {planned.template}</span>
       </h2>
-      <label className="fld fd-variant">
+      <label className="fld fd-diet-variant">
         <span>Wariant</span>
         <select
           value={planned.variant}
@@ -51,14 +51,14 @@ export function PlanDayCard({ plan, planned, date, entries, onSwap }: Props) {
         </select>
       </label>
 
-      <ul className="fd-list">
+      <ul className="fd-diet-list">
         {planned.items.map((item) => {
           const entry = eatenEntry(entries, item);
           return (
-            <li key={item.index} className={`fd-meal${item.skipped ? ' skipped' : ''}`}>
-              <p className="fd-name">
+            <li key={item.index} className={`fd-diet-meal${item.skipped ? ' skipped' : ''}`}>
+              <p className="fd-diet-name">
                 {entry && (
-                  <span className="fd-tick">
+                  <span className="fd-diet-tick">
                     <Check {...ICON} />
                     <span className="sr-only">zjedzone: </span>
                   </span>
@@ -66,11 +66,11 @@ export function PlanDayCard({ plan, planned, date, entries, onSwap }: Props) {
                 {item.skipped && <span className="sr-only">pominięte: </span>}
                 {item.text}
               </p>
-              <p className="fd-meta">
+              <p className="fd-diet-meta">
                 <MacroLine food={planFood(item)} />
                 {item.replaced && <> · zamiast: {item.replaced.text}</>}
               </p>
-              <div className="fd-acts">
+              <div className="fd-diet-acts">
                 {entry ? (
                   <button
                     type="button"

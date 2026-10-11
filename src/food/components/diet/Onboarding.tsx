@@ -14,14 +14,14 @@ export function Loading() {
 export function Onboarding({ what = 'Dziennik jedzenia' }: { what?: string }) {
   return (
     <>
-      <div className="grp fd-onboard">
+      <div className="grp fd-diet-onboard">
         <div className="today-tag light">Zacznij od profilu diety</div>
         <h2 className="today-name">{what}</h2>
         <p className="tight">
           Zapisujesz, co zjadłeś, a dziennik liczy bilans dnia: kalorie, białko, węglowodany i tłuszcz wobec Twojego
           celu — i mówi, czego brakuje, a czego jest za dużo.
         </p>
-        <ul className="fd-bullets">
+        <ul className="fd-diet-bullets">
           <li>Plan z Excela odhaczasz, zamieniasz na coś o podobnej kaloryczności albo pomijasz.</li>
           <li>Bez planu dostajesz propozycję dnia z tego, co jest w sklepach w pobliżu i w domu.</li>
           <li>Cel dnia dopasowuje się do tygodnia, a postęp pokazuje prognozę wagi.</li>

@@ -94,7 +94,7 @@ function PlanView({ profile, plan, date, today, history, onDate }: Props) {
           {formatDate(plan.startDate)} – {formatDate(end)} · {plan.days.length} dni ·{' '}
           {Object.keys(plan.templates).length} dni wzorcowych · po końcu plan się powtarza
         </p>
-        <div className="fd-acts">
+        <div className="fd-diet-acts">
           <ImportWorkbook label="Wczytaj ponownie" />
           <button type="button" className="btn ghost sm" onClick={() => void remove()}>
             <Trash2 {...ICON} /> Usuń plan
@@ -102,12 +102,12 @@ function PlanView({ profile, plan, date, today, history, onDate }: Props) {
         </div>
       </div>
 
-      <section className="grp" aria-labelledby="fd-week-title">
-        <div className="fd-weekhead">
-          <h2 id="fd-week-title">Tydzień od {formatDate(monday)}</h2>
+      <section className="grp" aria-labelledby="fd-diet-week-title">
+        <div className="fd-diet-weekhead">
+          <h2 id="fd-diet-week-title">Tydzień od {formatDate(monday)}</h2>
           <button
             type="button"
-            className="fd-icon-btn"
+            className="fd-diet-icon-btn"
             onClick={() => onDate(addDays(date, -7))}
             aria-label="Poprzedni tydzień"
           >
@@ -115,15 +115,15 @@ function PlanView({ profile, plan, date, today, history, onDate }: Props) {
           </button>
           <button
             type="button"
-            className="fd-icon-btn"
+            className="fd-diet-icon-btn"
             onClick={() => onDate(addDays(date, 7))}
             aria-label="Następny tydzień"
           >
             <ChevronRight {...ICON} />
           </button>
         </div>
-        <div className="fd-scroll">
-          <table className="fd-week">
+        <div className="fd-diet-scroll">
+          <table className="fd-diet-week">
             <thead>
               <tr>
                 <th scope="col">Dzień</th>
@@ -172,9 +172,9 @@ function PlanView({ profile, plan, date, today, history, onDate }: Props) {
       </section>
 
       {plan.notes.length > 0 && (
-        <section className="grp" aria-labelledby="fd-notes-title">
-          <h2 id="fd-notes-title">Uwagi z planu</h2>
-          <ul className="fd-bullets">
+        <section className="grp" aria-labelledby="fd-diet-notes-title">
+          <h2 id="fd-diet-notes-title">Uwagi z planu</h2>
+          <ul className="fd-diet-bullets">
             {plan.notes.map((n) => (
               <li key={n}>{n}</li>
             ))}
@@ -182,10 +182,10 @@ function PlanView({ profile, plan, date, today, history, onDate }: Props) {
         </section>
       )}
 
-      <section className="grp" aria-labelledby="fd-templates-title">
-        <h2 id="fd-templates-title">Dni wzorcowe i warianty</h2>
+      <section className="grp" aria-labelledby="fd-diet-templates-title">
+        <h2 id="fd-diet-templates-title">Dni wzorcowe i warianty</h2>
         {Object.entries(plan.templates).map(([key, variants]) => (
-          <details key={key} className="gsel fd-template">
+          <details key={key} className="gsel fd-diet-template">
             <summary>
               {key} · {variants.length} {variants.length === 1 ? 'wariant' : 'wariantów'}
               <i>
@@ -193,17 +193,17 @@ function PlanView({ profile, plan, date, today, history, onDate }: Props) {
                 {formatNumber(Math.max(...variants.map((v) => v.totals.kcal)), 0)} kcal
               </i>
             </summary>
-            <ol className="fd-variants">
+            <ol className="fd-diet-variants">
               {variants.map((v) => (
                 <li key={v.index}>
-                  <p className="fd-name">
+                  <p className="fd-diet-name">
                     Wariant {v.index}{' '}
-                    <span className="fd-meta fd-nums">
+                    <span className="fd-diet-meta fd-diet-nums">
                       · {formatNumber(v.totals.kcal, 0)} kcal · B {formatNumber(v.totals.protein ?? 0, 0)} · W{' '}
                       {formatNumber(v.totals.carbs ?? 0, 0)} · T {formatNumber(v.totals.fat ?? 0, 0)}
                     </span>
                   </p>
-                  <p className="fd-meta">{v.items.map((i) => i.text).join(' · ')}</p>
+                  <p className="fd-diet-meta">{v.items.map((i) => i.text).join(' · ')}</p>
                 </li>
               ))}
             </ol>

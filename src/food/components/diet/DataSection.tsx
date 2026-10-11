@@ -73,14 +73,14 @@ export function DataSection() {
   };
 
   return (
-    <section className="grp fd-data" aria-labelledby="fd-data-title">
-      <h2 id="fd-data-title">Twoje dane</h2>
+    <section className="grp fd-diet-data" aria-labelledby="fd-diet-data-title">
+      <h2 id="fd-diet-data-title">Twoje dane</h2>
       <p>
         Profil, zapisy i plan są tylko w tej przeglądarce na tym urządzeniu – nic nie jest wysyłane. Wyczyszczenie
         danych przeglądarki je usunie, więc zrób kopię.
       </p>
 
-      <div className="fd-acts">
+      <div className="fd-diet-acts">
         <button type="button" className="btn ghost sm" onClick={() => void download()}>
           <Download {...ICON} /> Pobierz kopię
         </button>
@@ -101,7 +101,7 @@ export function DataSection() {
         <ImportWorkbook label="Wczytaj plan z Excela" />
       </div>
       {message && (
-        <p role="status" className={`tight${message.ok ? ' fd-ok' : ' fd-warn'}`}>
+        <p role="status" className={`tight${message.ok ? ' fd-diet-ok' : ' fd-diet-warn'}`}>
           {message.text}
         </p>
       )}
@@ -110,15 +110,15 @@ export function DataSection() {
       {!custom?.length ? (
         <p className="tight">Nic jeszcze. Przy „Dodaj zjedzone → Tylko kalorie” zaznacz „Zapisz jako moje jedzenie”.</p>
       ) : (
-        <ul className="fd-list">
+        <ul className="fd-diet-list">
           {custom.map((f) => (
-            <li key={f.id} className="fd-custom">
+            <li key={f.id} className="fd-diet-custom">
               <span>
-                {f.name} <span className="fd-meta fd-nums">· {formatNumber(f.kcal, 0)} kcal</span>
+                {f.name} <span className="fd-diet-meta fd-diet-nums">· {formatNumber(f.kcal, 0)} kcal</span>
               </span>
               <button
                 type="button"
-                className="fd-icon-btn"
+                className="fd-diet-icon-btn"
                 onClick={() => void db.foods.delete(f.id)}
                 aria-label={`Usuń: ${f.name}`}
               >
@@ -129,7 +129,7 @@ export function DataSection() {
         </ul>
       )}
 
-      <button type="button" className="btn ghost sm fd-danger" onClick={() => void wipe()}>
+      <button type="button" className="btn ghost sm fd-diet-danger" onClick={() => void wipe()}>
         <Trash2 {...ICON} /> Usuń wszystkie dane diety
       </button>
       <Modal req={req} />

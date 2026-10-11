@@ -54,7 +54,7 @@ export function WeightChart({ start, today, points, measured, target }: Props) {
   const lastMeasured = visibleMeasured[visibleMeasured.length - 1];
 
   return (
-    <figure className="fd-chart">
+    <figure className="fd-diet-chart">
       <svg
         viewBox={`0 0 ${W} ${H}`}
         role="img"
@@ -91,7 +91,7 @@ export function WeightChart({ start, today, points, measured, target }: Props) {
           {shortDay(end)}
         </text>
       </svg>
-      <figcaption className="fd-legend">
+      <figcaption className="fd-diet-legend">
         <span>
           <i className="real" aria-hidden /> pomiary
         </span>

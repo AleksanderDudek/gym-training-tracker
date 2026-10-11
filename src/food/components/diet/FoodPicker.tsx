@@ -128,7 +128,7 @@ function PickerBody({ date, pool, products, dict, productsLoading, onDone, onLog
       />
 
       {tab === 'search' ? (
-        <div className="fd-picker">
+        <div className="fd-diet-picker">
           <input
             type="search"
             data-autofocus
@@ -143,14 +143,14 @@ function PickerBody({ date, pool, products, dict, productsLoading, onDone, onLog
             autoComplete="off"
           />
           {productsLoading && (
-            <p className="fd-hint">Wczytuję bazę produktów — na razie szukam w planie, przepisach i Twoim jedzeniu.</p>
+            <p className="fd-diet-hint">Wczytuję bazę produktów — na razie szukam w planie, przepisach i Twoim jedzeniu.</p>
           )}
           {chosen ? (
-            <div className="fd-chosen">
-              <p className="fd-name">{chosen.name}</p>
-              <p className="fd-meta">{chosen.detail}</p>
+            <div className="fd-diet-chosen">
+              <p className="fd-diet-name">{chosen.name}</p>
+              <p className="fd-diet-meta">{chosen.detail}</p>
               {chosen.per100 && (
-                <label className="fld fd-grams">
+                <label className="fld fd-diet-grams">
                   <span>Ile gramów</span>
                   <input
                     type="text"
@@ -162,10 +162,10 @@ function PickerBody({ date, pool, products, dict, productsLoading, onDone, onLog
                   />
                 </label>
               )}
-              <p className="fd-meta">
+              <p className="fd-diet-meta">
                 <MacroLine food={chosen} /> · {chosen.amountLabel}
               </p>
-              <div className="fd-acts">
+              <div className="fd-diet-acts">
                 <button type="button" className="btn" onClick={add} disabled={busy}>
                   Dodaj
                 </button>
@@ -179,32 +179,32 @@ function PickerBody({ date, pool, products, dict, productsLoading, onDone, onLog
               <p className="sr-only" aria-live="polite">
                 {results.length ? `Wyników: ${results.length}` : 'Brak wyników'}
               </p>
-              <ul className="fd-results">
+              <ul className="fd-diet-results">
                 {results.map((food) => (
                   <li key={food.key}>
                     <button
                       type="button"
-                      className="fd-result"
+                      className="fd-diet-result"
                       onClick={() => {
                         setSelected(food);
                         setGrams(food.grams ? String(food.grams) : '');
                       }}
                     >
-                      <span className="fd-name">{food.name}</span>
-                      <span className="fd-meta">
+                      <span className="fd-diet-name">{food.name}</span>
+                      <span className="fd-diet-meta">
                         <MacroLine food={food} /> · {food.amountLabel} · {food.detail}
                       </span>
                     </button>
                   </li>
                 ))}
-                {results.length === 0 && <li className="fd-empty">Nic nie pasuje – dodaj samo „Tylko kalorie”.</li>}
+                {results.length === 0 && <li className="fd-diet-empty">Nic nie pasuje – dodaj samo „Tylko kalorie”.</li>}
               </ul>
             </>
           )}
         </div>
       ) : (
         <form
-          className="fd-quick"
+          className="fd-diet-quick"
           noValidate
           onSubmit={(e) => {
             e.preventDefault();
@@ -232,8 +232,8 @@ function PickerBody({ date, pool, products, dict, productsLoading, onDone, onLog
               onChange={(e) => setQuick({ ...quick, kcal: e.target.value })}
             />
           </label>
-          <p className="fd-hint">Makroskładniki – jeśli znasz:</p>
-          <div className="fd-grid3">
+          <p className="fd-diet-hint">Makroskładniki – jeśli znasz:</p>
+          <div className="fd-diet-grid3">
             {(['protein', 'carbs', 'fat'] as const).map((k) => (
               <label key={k} className="fld">
                 <span>{{ protein: 'Białko (g)', carbs: 'Węglowodany (g)', fat: 'Tłuszcz (g)' }[k]}</span>

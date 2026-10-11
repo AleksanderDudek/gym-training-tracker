@@ -190,8 +190,8 @@ function TodayView({ profile, plan, date, today, hour, nowMs, history, pickerOpe
 
       <EatenCard entries={entries} kcal={eaten.kcal} />
 
-      <section className="grp" aria-labelledby="fd-next-title">
-        <h2 id="fd-next-title">Co teraz?</h2>
+      <section className="grp" aria-labelledby="fd-diet-next-title">
+        <h2 id="fd-diet-next-title">Co teraz?</h2>
         <p className="tight">
           {ctx.remaining.kcal > 50
             ? `Zostało ${formatNumber(ctx.remaining.kcal, 0)} kcal i ${formatNumber(Math.max(0, ctx.remaining.protein), 0)} g białka na ${ctx.mealsLeft} ${ctx.mealsLeft === 1 ? 'posiłek' : 'posiłki'}. Najlepsze oznaczone gwiazdką.`
@@ -233,29 +233,29 @@ function TodayView({ profile, plan, date, today, hour, nowMs, history, pickerOpe
 function DayNav({ date, today, onDate }: { date: string; today: string; onDate: (date: string) => void }) {
   const near = Math.abs(Date.parse(date) - Date.parse(today)) <= 86_400_000;
   return (
-    <div className="wrap fd-daynav">
+    <div className="wrap fd-diet-daynav">
       <button
         type="button"
-        className="fd-icon-btn"
+        className="fd-diet-icon-btn"
         onClick={() => onDate(addDays(date, -1))}
         aria-label="Poprzedni dzień"
       >
         <ChevronLeft {...ICON} />
       </button>
-      <div className="fd-daynav-title" aria-live="polite">
+      <div className="fd-diet-daynav-title" aria-live="polite">
         <h2>{dayLabel(date, today)}</h2>
         {near && <p>{longDay(date)}</p>}
       </div>
       <button
         type="button"
-        className="fd-icon-btn"
+        className="fd-diet-icon-btn"
         onClick={() => onDate(addDays(date, 1))}
         aria-label="Następny dzień"
       >
         <ChevronRight {...ICON} />
       </button>
       {date !== today && (
-        <button type="button" className="btn ghost sm fd-today" onClick={() => onDate(today)}>
+        <button type="button" className="btn ghost sm fd-diet-today" onClick={() => onDate(today)}>
           Wróć do dziś
         </button>
       )}
@@ -266,7 +266,7 @@ function DayNav({ date, today, onDate }: { date: string; today: string; onDate: 
 /** Wejścia do podstron dziennika: trzy kafelki pod bilansem, każdy prowadzi w głąb (strzałka wstecz wraca). */
 function DietLinks() {
   return (
-    <nav className="wrap fd-subnav" aria-label="Dieta">
+    <nav className="wrap fd-diet-subnav" aria-label="Dieta">
       <a href={dietPath('plan')}>
         <CalendarDays {...ICON} />
         <span>Plan posiłków</span>
@@ -285,22 +285,22 @@ function DietLinks() {
 
 function EatenCard({ entries, kcal }: { entries: Entry[]; kcal: number }) {
   return (
-    <section className="grp" aria-labelledby="fd-eaten-title">
-      <h2 id="fd-eaten-title">
-        Zjedzone <span className="fd-h-meta">· {formatNumber(kcal, 0)} kcal</span>
+    <section className="grp" aria-labelledby="fd-diet-eaten-title">
+      <h2 id="fd-diet-eaten-title">
+        Zjedzone <span className="fd-diet-h-meta">· {formatNumber(kcal, 0)} kcal</span>
       </h2>
       {entries.length === 0 ? (
         <p className="tight">
           Nic jeszcze nie zapisane. Odhacz pozycję planu albo dodaj, co zjadłeś – liczy się to, co naprawdę zjedzone.
         </p>
       ) : (
-        <ul className="fd-list">
+        <ul className="fd-diet-list">
           {entries.map((e) => (
-            <li key={e.id} className="fd-eaten">
-              <span className="fd-time">{e.time}</span>
-              <div className="fd-row-main">
-                <p className="fd-name">{e.name}</p>
-                <p className="fd-meta fd-nums">
+            <li key={e.id} className="fd-diet-eaten">
+              <span className="fd-diet-time">{e.time}</span>
+              <div className="fd-diet-row-main">
+                <p className="fd-diet-name">{e.name}</p>
+                <p className="fd-diet-meta fd-diet-nums">
                   {formatNumber(e.kcal, 0)} kcal
                   {e.protein !== null
                     ? ` · B ${formatNumber(e.protein, 0)} · W ${formatNumber(e.carbs ?? 0, 0)} · T ${formatNumber(e.fat ?? 0, 0)}`
@@ -310,7 +310,7 @@ function EatenCard({ entries, kcal }: { entries: Entry[]; kcal: number }) {
               </div>
               <button
                 type="button"
-                className="fd-icon-btn"
+                className="fd-diet-icon-btn"
                 onClick={() => e.id && void db.entries.delete(e.id)}
                 aria-label={`Usuń: ${e.name}`}
               >
@@ -336,7 +336,7 @@ function NearbyLine({
 }) {
   const name = (chain: string) => dict.stores[chain] ?? chain;
   return (
-    <p className="fd-line">
+    <p className="fd-diet-line">
       <MapPin {...ICON} />
       <span>
         {nearby.source === 'nearby' ? (
@@ -366,12 +366,12 @@ function DatasetLine({ food }: { food: FoodPool }) {
     return <p className="tight">Wczytuję bazę produktów — przepisy i produkty zaraz dojdą.</p>;
   if (data.status === 'ready') return null;
   return (
-    <p className="tight fd-warn">
+    <p className="tight fd-diet-warn">
       {data.message === MISSING_DATA_MESSAGE
         ? 'Bez bazy produktów proponuję tylko z planu i Twojego jedzenia.'
         : `${data.message} Proponuję na razie z planu i Twojego jedzenia.`}{' '}
       {data.message !== MISSING_DATA_MESSAGE && (
-        <button type="button" className="fd-link" onClick={data.retry}>
+        <button type="button" className="fd-diet-link" onClick={data.retry}>
           Spróbuj ponownie
         </button>
       )}
@@ -422,12 +422,12 @@ function BodyCard({ date, today, body }: { date: string; today: string; body: Da
   ].filter(Boolean);
 
   return (
-    <section className="grp" aria-labelledby="fd-body-title">
-      <h2 id="fd-body-title">Waga, kroki i ruch</h2>
+    <section className="grp" aria-labelledby="fd-diet-body-title">
+      <h2 id="fd-diet-body-title">Waga, kroki i ruch</h2>
       {future ? (
         <p className="tight">Wagę i kroki wpiszesz tego dnia.</p>
       ) : (
-        <form className="fd-body" onSubmit={save} noValidate>
+        <form className="fd-diet-body" onSubmit={save} noValidate>
           <label className="fld">
             <span>Waga, kg</span>
             <input
@@ -438,7 +438,7 @@ function BodyCard({ date, today, body }: { date: string; today: string; body: Da
               value={weight}
               onChange={(e) => setWeight(e.target.value)}
               aria-invalid={weightBad || undefined}
-              aria-describedby="fd-body-hint"
+              aria-describedby="fd-diet-body-hint"
             />
           </label>
           <label className="fld">
@@ -458,7 +458,7 @@ function BodyCard({ date, today, body }: { date: string; today: string; body: Da
         </form>
       )}
       {!future && (
-        <p className={`tight${weightBad ? ' fd-warn' : ''}`} id="fd-body-hint">
+        <p className={`tight${weightBad ? ' fd-diet-warn' : ''}`} id="fd-diet-body-hint">
           {weightBad
             ? `Waga od ${WEIGHT_RANGE.min} do ${WEIGHT_RANGE.max} kg.`
             : 'Waga trafia do dziennika wagi, a kroki do kroków w treningach — wpisane tu czy tam, to te same liczby.'}
@@ -474,7 +474,7 @@ function BodyCard({ date, today, body }: { date: string; today: string; body: Da
             ? `${parts.join(' · ')}.`
             : 'bez treningu i cardio.'}
       </p>
-      <p className="tight fd-soft">
+      <p className="tight fd-diet-soft">
         To tylko informacja — nie dodaję tego do celu kalorii: współczynnik aktywności w profilu diety już zakłada
         treningi.
       </p>

@@ -117,7 +117,7 @@ function ProgressView({
   return (
     <>
       <div className="wrap">
-        <div className="tiles fd-stats">
+        <div className="tiles fd-diet-stats">
           <div className="tile">
             <b>{kg(profile.startWeightKg)}</b>
             <span>Start · {formatDate(profile.startDate)}</span>
@@ -137,8 +137,8 @@ function ProgressView({
         </div>
       </div>
 
-      <section className="grp" aria-labelledby="fd-chart-title">
-        <h2 id="fd-chart-title">Waga</h2>
+      <section className="grp" aria-labelledby="fd-diet-chart-title">
+        <h2 id="fd-diet-chart-title">Waga</h2>
         <WeightChart
           start={profile.startDate}
           today={today}
@@ -146,7 +146,7 @@ function ProgressView({
           measured={measured}
           target={profile.targetWeightKg}
         />
-        <ul className="fd-bullets">
+        <ul className="fd-diet-bullets">
           <li>
             Według planu cel{' '}
             {model.planReach ? (
@@ -176,9 +176,9 @@ function ProgressView({
         )}
       </section>
 
-      <section className="grp" aria-labelledby="fd-kcal-title">
-        <h2 id="fd-kcal-title">Kalorie – ostatnie 14 dni</h2>
-        <ol className="fd-fortnight" aria-label="Zjedzone kalorie dzień po dniu">
+      <section className="grp" aria-labelledby="fd-diet-kcal-title">
+        <h2 id="fd-diet-kcal-title">Kalorie – ostatnie 14 dni</h2>
+        <ol className="fd-diet-fortnight" aria-label="Zjedzone kalorie dzień po dniu">
           {fortnight.map((d) => {
             const over = d.eaten !== null && d.eaten > d.goal * 1.05;
             const text = `${shortDay(d.date)}: ${d.eaten === null ? 'brak zapisów' : `${formatNumber(d.eaten, 0)} kcal`}, cel ${formatNumber(d.goal, 0)}${over ? ' – ponad cel' : ''}`;
@@ -199,15 +199,15 @@ function ProgressView({
             );
           })}
         </ol>
-        <div className="fd-axis">
+        <div className="fd-diet-axis">
           <span>{shortDay(firstDay.date)}</span>
           <span>{shortDay(today)}</span>
         </div>
-        <p className="tight fd-soft">Kreska przerywana: cel dnia · pomarańczowy słupek: ponad cel.</p>
+        <p className="tight fd-diet-soft">Kreska przerywana: cel dnia · pomarańczowy słupek: ponad cel.</p>
       </section>
 
-      <section className="grp" aria-labelledby="fd-macro-title">
-        <h2 id="fd-macro-title">Makroskładniki – średnia z ostatniego tygodnia</h2>
+      <section className="grp" aria-labelledby="fd-diet-macro-title">
+        <h2 id="fd-diet-macro-title">Makroskładniki – średnia z ostatniego tygodnia</h2>
         {average && weekStatus ? (
           <>
             <p className="tight">
@@ -215,7 +215,7 @@ function ProgressView({
               {complete.length} {complete.length === 1 ? 'dnia' : 'dni'} z pełnymi danymi – wobec celów profilu „
               {dietProfile.label}”.
             </p>
-            <dl className="fd-avg">
+            <dl className="fd-diet-avg">
               {(
                 [
                   ['kcal', 'Kalorie', `${average.kcal} / ${targets.kcal}`],
@@ -227,13 +227,13 @@ function ProgressView({
                 key !== 'kcal' && complete.length === 0 ? (
                   <div key={key}>
                     <dt>{label}</dt>
-                    <dd className="fd-soft">brak danych – wpisy mają tylko kalorie</dd>
+                    <dd className="fd-diet-soft">brak danych – wpisy mają tylko kalorie</dd>
                   </div>
                 ) : (
                   <div key={key}>
                     <dt>{label}</dt>
-                    <dd className="fd-avg-val">{value}</dd>
-                    <dd className={`fd-note ${weekStatus[key].status}`}>
+                    <dd className="fd-diet-avg-val">{value}</dd>
+                    <dd className={`fd-diet-note ${weekStatus[key].status}`}>
                       {STATUS_WORD[weekStatus[key].status]}
                       {key !== 'kcal' && weekStatus[key].status !== 'ok' && ` – ${weekStatus[key].note}`}
                     </dd>

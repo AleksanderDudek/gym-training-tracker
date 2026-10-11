@@ -46,7 +46,7 @@ export function ImportWorkbook({
   };
 
   return (
-    <div className="fd-import">
+    <div className="fd-diet-import">
       {/* Pole przed etykietą: fokus z klawiatury rysuje obwódkę na przycisku (`input:focus-visible + label`). */}
       <input
         id={id}
@@ -60,14 +60,14 @@ export function ImportWorkbook({
           if (file) void read(file);
         }}
       />
-      <label htmlFor={id} className={`btn sm${primary ? '' : ' ghost'}${busy ? ' fd-busy' : ''}`}>
+      <label htmlFor={id} className={`btn sm${primary ? '' : ' ghost'}${busy ? ' fd-diet-busy' : ''}`}>
         <Upload size={20} strokeWidth={2} aria-hidden /> {busy ? 'Czytam…' : label}
       </label>
       {result && (
         <div role="status" className={`dnote ${result.kind === 'ok' ? 'good' : 'warn'}`}>
           <p className="tight">{result.text}</p>
           {result.kind === 'ok' && result.warnings.length > 0 && (
-            <ul className="fd-bullets">
+            <ul className="fd-diet-bullets">
               {result.warnings.map((w) => (
                 <li key={w}>{w}</li>
               ))}

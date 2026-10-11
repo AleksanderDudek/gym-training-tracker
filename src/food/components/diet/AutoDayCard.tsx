@@ -24,8 +24,8 @@ export function AutoDayCard({ meals, entries, hasPlan, loading, onLog, onReroll 
   const kcal = meals.reduce((sum, m) => sum + m.suggestion.food.nutrients.kcal, 0);
   const protein = meals.reduce((sum, m) => sum + (m.suggestion.food.nutrients.protein ?? 0), 0);
   return (
-    <section className="grp" aria-labelledby="fd-auto-title">
-      <h2 id="fd-auto-title">Propozycja dnia</h2>
+    <section className="grp" aria-labelledby="fd-diet-auto-title">
+      <h2 id="fd-diet-auto-title">Propozycja dnia</h2>
       <p className="tight">
         {hasPlan ? 'Plan nie obejmuje tego dnia – ' : 'Bez planu – '}
         zestaw z tego, co masz w pobliżu i w domu: {formatNumber(kcal, 0)} kcal, {formatNumber(protein, 0)} g białka.
@@ -37,23 +37,23 @@ export function AutoDayCard({ meals, entries, hasPlan, loading, onLog, onReroll 
             : 'Za mało danych, żeby ułożyć dzień – dodaj swoje jedzenie albo otwórz „W pobliżu”.'}
         </p>
       ) : (
-        <ul className="fd-list">
+        <ul className="fd-diet-list">
           {meals.map(({ slot, suggestion: s }) => {
             const eaten = entries.some((e) => e.key === s.food.key);
             return (
-              <li key={slot} className="fd-row">
-                <div className="fd-row-main">
-                  <p className="fd-group">{slot}</p>
-                  <p className="fd-name">
+              <li key={slot} className="fd-diet-row">
+                <div className="fd-diet-row-main">
+                  <p className="fd-diet-group">{slot}</p>
+                  <p className="fd-diet-name">
                     {s.food.name} <FitBadge fit={s.fit} />
                   </p>
-                  <p className="fd-meta">
+                  <p className="fd-diet-meta">
                     <MacroLine food={s.food} /> · {s.food.amountLabel}
                     {s.where && <> · {s.where}</>}
                   </p>
                 </div>
                 {eaten ? (
-                  <span className="fd-done">
+                  <span className="fd-diet-done">
                     <Check size={20} strokeWidth={2} aria-hidden /> zjedzone
                   </span>
                 ) : (
@@ -61,7 +61,7 @@ export function AutoDayCard({ meals, entries, hasPlan, loading, onLog, onReroll 
                   // „Dodaj zjedzone” — jedyną główną akcję ekranu.
                   <button
                     type="button"
-                    className="btn ghost sm fd-act"
+                    className="btn ghost sm fd-diet-act"
                     onClick={() => onLog(s.food)}
                     aria-label={`Zjadłem: ${s.food.name}`}
                   >
@@ -73,7 +73,7 @@ export function AutoDayCard({ meals, entries, hasPlan, loading, onLog, onReroll 
           })}
         </ul>
       )}
-      <button type="button" className="btn ghost sm fd-reroll" onClick={onReroll}>
+      <button type="button" className="btn ghost sm fd-diet-reroll" onClick={onReroll}>
         <Shuffle size={20} strokeWidth={2} aria-hidden /> Inny zestaw
       </button>
     </section>

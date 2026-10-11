@@ -47,8 +47,8 @@ export default function TodayFoodCard() {
       : `${kcal(-leftKcal)} ponad cel${leftProtein > 0 ? `, a białka brakuje jeszcze ${grams(leftProtein)}` : ''}.`;
 
   return (
-    <div className="grp snackcard fd-foodcard">
-      <a className="fd-foodcard-link" href={FOOD_PATH}>
+    <div className="grp snackcard fd-diet-foodcard">
+      <a className="fd-diet-foodcard-link" href={FOOD_PATH}>
         <div className="today-tag light">Jedzenie</div>
         <h2 className="today-name">
           {eaten.kcal > 0
@@ -56,9 +56,9 @@ export default function TodayFoodCard() {
             : `Cel na dziś: ${kcal(targets.kcal)}`}
         </h2>
         <Bar value={eaten.kcal} target={targets.kcal} status={status.kcal.status} label="Kalorie" />
-        <div className="fd-macro-head">
+        <div className="fd-diet-macro-head">
           <span>Białko</span>
-          <span className="fd-nums">
+          <span className="fd-diet-nums">
             {formatNumber(eaten.protein, 0)} / {grams(targets.protein.target)}
           </span>
         </div>
