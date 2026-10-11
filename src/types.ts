@@ -129,6 +129,38 @@ export interface Session {
   ask?: ExerciseId[];
   /** Ćwiczenie ostatnio zapisanej serii — to cofa „Cofnij serię”. */
   last?: ExerciseId;
+  /**
+   * Zegar sesji. Brak — sesja sprzed zegara albo prowadzenie, w którym nikt jeszcze nie stuknął
+   * „Zaczynam”; taka sesja zamyka się bez czasu.
+   */
+  clock?: SessionClock;
+}
+
+/**
+ * Zegar sesji: start treningu i części (bloki) z początkiem i końcem jako chwile w ms.
+ * Chwile, a nie odliczane sekundy — jak koniec przerwy, liczą się dalej po odświeżeniu
+ * i przy zgaszonym ekranie.
+ */
+export interface SessionClock {
+  begin: number;
+  /** Klucz to numer bloku (`Block.n`). Część bez `start` — zrobiona w widoku listy. */
+  parts: Record<number, { start?: number; end?: number }>;
+}
+
+/** Część zapisanego treningu, w sekundach od jego startu. */
+export interface LogTimePart {
+  block: number;
+  ex: ExerciseId[];
+  /** Początek części. Brak — część bez zaznaczonego startu (widok listy). */
+  at?: number;
+  end: number;
+}
+
+/** Czas zapisanego treningu. Krótszy niż 3 minuty albo dłuższy niż 4 godziny zostaje, ale nie liczy się do statystyk. */
+export interface LogTime {
+  /** Cały trening w sekundach: od „Zaczynam” do zamknięcia. */
+  secs: number;
+  parts: LogTimePart[];
 }
 
 export interface LogItem {
@@ -146,6 +178,8 @@ export interface LogEntry {
   deload?: boolean;
   ready: ReadyKey;
   items: LogItem[];
+  /** Czas treningu z zegara sesji. Brak — trening sprzed zegara albo zamknięty bez „Zaczynam”. */
+  time?: LogTime;
 }
 
 /**
@@ -530,6 +564,11 @@ export interface AppState {
     view?: 'guided' | 'list';
     /** Dzień, w którym karta ważenia usłyszała „Nie dziś”. */
     weighSkip?: string;
+    /**
+     * Licznik czasu treningu w pasku. Brak — pokazany. Wyłączenie tylko go chowa: zegar sesji
+     * liczy dalej, bo odznaki czasu nie mogą zależeć od tego, co widać na ekranie.
+     */
+    clock?: boolean;
   };
   prog: Record<ExerciseId, Progress>;
   workouts: Workout[];
