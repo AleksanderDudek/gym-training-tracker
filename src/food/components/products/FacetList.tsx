@@ -54,7 +54,7 @@ export function FacetList({ label, counts, selected, names, onChange, limit = 8 
       <ul className="fd-checks">
         {visible.map((e) => (
           <li key={e.key}>
-            <label className={`fd-check${e.count === 0 && !e.selected ? ' zero' : ''}`}>
+            <label className={`fd-check${e.count === 0 && !e.selected ? ' fd-prod-zero' : ''}`}>
               <input
                 type="checkbox"
                 checked={e.selected}

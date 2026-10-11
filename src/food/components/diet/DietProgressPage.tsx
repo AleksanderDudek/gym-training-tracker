@@ -191,15 +191,15 @@ function ProgressView({
             const text = `${shortDay(d.date)}: ${d.eaten === null ? 'brak zapisów' : `${formatNumber(d.eaten, 0)} kcal`}, cel ${formatNumber(d.goal, 0)}${over ? ' – ponad cel' : ''}`;
             return (
               <li key={d.date} title={text}>
-                <i className="goal" style={{ bottom: `${(d.goal / maxKcal) * 100}%` }} aria-hidden />
+                <i className="fd-diet-goal" style={{ bottom: `${(d.goal / maxKcal) * 100}%` }} aria-hidden />
                 {d.eaten !== null ? (
                   <i
-                    className={`bar${over ? ' over' : ''}`}
+                    className={`fd-diet-fbar${over ? ' over' : ''}`}
                     style={{ height: `${(d.eaten / maxKcal) * 100}%` }}
                     aria-hidden
                   />
                 ) : (
-                  <i className="bar none" aria-hidden />
+                  <i className="fd-diet-fbar fd-diet-none" aria-hidden />
                 )}
                 <span className="sr-only">{text}</span>
               </li>
@@ -240,7 +240,7 @@ function ProgressView({
                   <div key={key}>
                     <dt>{label}</dt>
                     <dd className="fd-diet-avg-val">{value}</dd>
-                    <dd className={`fd-diet-note ${weekStatus[key].status}`}>
+                    <dd className={`fd-diet-note fd-diet-${weekStatus[key].status}`}>
                       {STATUS_WORD[weekStatus[key].status]}
                       {key !== 'kcal' && weekStatus[key].status !== 'ok' && ` – ${weekStatus[key].note}`}
                     </dd>

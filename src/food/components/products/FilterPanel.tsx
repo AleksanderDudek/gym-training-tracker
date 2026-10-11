@@ -65,7 +65,7 @@ function Grade({
       aria-pressed={active}
       title={title}
       aria-label={`${title} (${formatNumber(count, 0)})`}
-      className={`fd-grade${count === 0 && !active ? ' zero' : ''}`}
+      className={`fd-grade${count === 0 && !active ? ' fd-prod-zero' : ''}`}
       style={{ backgroundColor: colors.bg, color: colors.fg }}
     >
       <b>

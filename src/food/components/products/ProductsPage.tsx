@@ -117,7 +117,7 @@ function Browser({ dataset, products }: { dataset: Dataset; products: IndexedPro
         <ActiveFilters filters={state.filters} dict={dict} onChange={setFilters} />
       </div>
 
-      <div className={`wrap fd-results${stale ? ' stale' : ''}`} aria-busy={stale || undefined}>
+      <div className={`wrap fd-results${stale ? ' fd-prod-stale' : ''}`} aria-busy={stale || undefined}>
         {sorted.length === 0 ? (
           <EmptyState
             title="Brak produktów dla tych filtrów."

@@ -64,19 +64,19 @@ export function WeightChart({ start, today, points, measured, target }: Props) {
       >
         {ticks.map((kg) => (
           <g key={kg}>
-            <line className="grid" x1={PAD.left} x2={W - PAD.right} y1={y(kg)} y2={y(kg)} />
+            <line className="fd-diet-grid" x1={PAD.left} x2={W - PAD.right} y1={y(kg)} y2={y(kg)} />
             <text className="tick" x={PAD.left - 5} y={y(kg) + 4} textAnchor="end">
               {kg}
             </text>
           </g>
         ))}
-        <line className="goal" x1={PAD.left} x2={W - PAD.right} y1={y(target)} y2={y(target)} />
+        <line className="fd-diet-goal" x1={PAD.left} x2={W - PAD.right} y1={y(target)} y2={y(target)} />
         {today >= start && today <= end && (
           <line className="now" x1={x(today)} x2={x(today)} y1={PAD.top} y2={H - PAD.bottom} />
         )}
-        <path className="plan" d={path(points.map((p) => ({ date: p.date, kg: p.plan })))} />
-        {projection.length > 1 && <path className="proj" d={path(projection)} />}
-        {visibleMeasured.length > 1 && <path className="real" d={path(visibleMeasured)} />}
+        <path className="fd-diet-plan" d={path(points.map((p) => ({ date: p.date, kg: p.plan })))} />
+        {projection.length > 1 && <path className="fd-diet-proj" d={path(projection)} />}
+        {visibleMeasured.length > 1 && <path className="fd-diet-real" d={path(visibleMeasured)} />}
         {visibleMeasured.map((m) => (
           <circle key={m.date} className="dot" cx={x(m.date)} cy={y(m.kg)} r={2.6}>
             <title>
@@ -93,16 +93,16 @@ export function WeightChart({ start, today, points, measured, target }: Props) {
       </svg>
       <figcaption className="fd-diet-legend">
         <span>
-          <i className="real" aria-hidden /> pomiary
+          <i className="fd-diet-real" aria-hidden /> pomiary
         </span>
         <span>
-          <i className="plan" aria-hidden /> plan
+          <i className="fd-diet-plan" aria-hidden /> plan
         </span>
         <span>
-          <i className="proj" aria-hidden /> prognoza od ostatniego ważenia
+          <i className="fd-diet-proj" aria-hidden /> prognoza od ostatniego ważenia
         </span>
         <span>
-          <i className="goal" aria-hidden /> cel {formatNumber(target, 1)} kg
+          <i className="fd-diet-goal" aria-hidden /> cel {formatNumber(target, 1)} kg
         </span>
       </figcaption>
     </figure>

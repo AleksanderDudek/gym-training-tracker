@@ -21,7 +21,7 @@ export function Bar({
   const share = target > 0 ? Math.min(1, Math.max(0, value / target)) : 0;
   return (
     <div
-      className={`fd-diet-bar ${status}`}
+      className={`fd-diet-bar fd-diet-${status}`}
       role="meter"
       aria-label={label}
       aria-valuemin={0}
@@ -62,7 +62,7 @@ export function MacroBars({ targets, eaten, status, adjustment, plannedKcal, chi
         <p className="fd-diet-kcal">
           {formatNumber(eaten.kcal, 0)} <small>/ {formatNumber(targets.kcal, 0)} kcal</small>
         </p>
-        <p className={`fd-diet-note ${status.kcal.status}`}>{status.kcal.note}</p>
+        <p className={`fd-diet-note fd-diet-${status.kcal.status}`}>{status.kcal.note}</p>
       </div>
       <Bar value={eaten.kcal} target={targets.kcal} status={status.kcal.status} label="Kalorie" />
       {adjustment && adjustment.delta !== 0 && (
@@ -82,7 +82,7 @@ export function MacroBars({ targets, eaten, status, adjustment, plannedKcal, chi
               </span>
             </div>
             <Bar value={row.value} target={row.target} status={status[row.key].status} label={row.label} />
-            <span className={`fd-diet-note ${status[row.key].status}`}>{status[row.key].note}</span>
+            <span className={`fd-diet-note fd-diet-${status[row.key].status}`}>{status[row.key].note}</span>
           </div>
         ))}
       </div>

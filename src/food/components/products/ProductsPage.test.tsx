@@ -178,7 +178,7 @@ describe('Produkty', () => {
     await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Skyr naturalny' })).not.toBeInTheDocument());
     // Nowy, równy obiekt filtrów przefiltrowałby całą bazę jeszcze raz, a do tego czasu przygasił listę.
     expect(vi.mocked(browse).mock.calls.length).toBe(runs);
-    expect(document.querySelector('.fd-results')).not.toHaveClass('stale');
+    expect(document.querySelector('.fd-results')).not.toHaveClass('fd-prod-stale');
   });
 
   test('stan z adresu wraca po wczytaniu strony', async () => {

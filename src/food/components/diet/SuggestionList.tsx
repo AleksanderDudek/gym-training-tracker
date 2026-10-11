@@ -12,7 +12,7 @@ const FIT_LABEL: Record<FitLevel, string> = { great: 'pasuje', ok: 'może być',
  */
 export function FitBadge({ fit }: { fit: Fit }) {
   return (
-    <span className={`fd-diet-fit ${fit.level}`} title={fit.reason}>
+    <span className={`fd-diet-fit fd-diet-${fit.level}`} title={fit.reason}>
       {FIT_LABEL[fit.level]}
     </span>
   );

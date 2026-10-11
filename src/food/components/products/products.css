@@ -70,7 +70,7 @@
 
 /* Lista, która jeszcze dogania filtry, gaśnie — widać, że wynik zaraz się zmieni. */
 @media (prefers-reduced-motion:no-preference){.fd-results{transition:opacity .15s ease-out}}
-.fd-results.stale{opacity:.55}
+.fd-results.fd-prod-stale{opacity:.55}
 
 .fd-table-wrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
   overscroll-behavior-x:contain}
@@ -132,7 +132,7 @@
 .fd-check input{flex:none;width:22px;height:22px;margin:0;accent-color:var(--steel)}
 .fd-check-name{flex:1;min-width:0;overflow-wrap:anywhere;line-height:1.3}
 .fd-check-n{flex:none;font-family:var(--display);font-size:14px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
-.fd-check.zero .fd-check-name{color:var(--ink-soft)}
+.fd-check.fd-prod-zero .fd-check-name{color:var(--ink-soft)}
 
 .fd-facet-search{display:block;width:100%;min-height:44px;margin:0 0 4px;padding:9px 10px;font:inherit;font-size:17px;
   border:1px solid var(--edge);border-radius:var(--r);background:#fff;color:var(--ink);-webkit-appearance:none;appearance:none}
@@ -149,7 +149,7 @@
 .fd-grade b{display:inline-flex;align-items:center;gap:2px;font-size:16px;font-weight:700;line-height:1.1}
 .fd-grade span{font-size:11.5px;line-height:1.1;font-variant-numeric:tabular-nums}
 .fd-grade[aria-pressed=true]{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--ink)}
-.fd-grade.zero{opacity:.4}
+.fd-grade.fd-prod-zero{opacity:.4}
 .fd-grade:focus-visible{outline:2px solid var(--steel);outline-offset:5px}
 
 .fd-range{min-width:0;margin:0 0 10px;padding:0;border:0}

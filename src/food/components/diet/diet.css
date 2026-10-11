@@ -61,15 +61,15 @@
   font-variant-numeric:tabular-nums}
 .fd-diet-kcal small{font-size:16px;font-weight:500;color:var(--ink-soft)}
 .grp .fd-diet-note,.fd-diet-note{margin:0;font-size:13px;font-weight:600}
-.fd-diet-note.ok{color:var(--ok)}
-.fd-diet-note.brak{color:var(--warn)}
-.fd-diet-note.nadmiar{color:var(--c-orange-ink)}
+.fd-diet-note.fd-diet-ok{color:var(--ok)}
+.fd-diet-note.fd-diet-brak{color:var(--warn)}
+.fd-diet-note.fd-diet-nadmiar{color:var(--c-orange-ink)}
 
 /* Pasek jak paski rangi i doświadczenia: płaski, bez zaokrągleń, tło `--surface-2`. */
 .fd-diet-bar{height:9px;background:var(--surface-2);margin:7px 0 6px;overflow:hidden}
 .fd-diet-bar i{display:block;height:100%;background:var(--c-green)}
-.fd-diet-bar.brak i{background:var(--c-gold)}
-.fd-diet-bar.nadmiar i{background:var(--c-orange)}
+.fd-diet-bar.fd-diet-brak i{background:var(--c-gold)}
+.fd-diet-bar.fd-diet-nadmiar i{background:var(--c-orange)}
 @media (prefers-reduced-motion:no-preference){.fd-diet-bar i{transition:width .3s ease-out}}
 
 /* Na telefonie makro jedno pod drugim (dwa plus jedno rozbijało rząd), od 480 px — trzy obok siebie. */
@@ -113,8 +113,8 @@
 /* Ocena dopasowania: słowo w ramce; kolor tylko dopowiada. */
 .fd-diet-fit{display:inline-block;vertical-align:1px;margin-left:2px;padding:0 6px;border:1px solid var(--line);
   border-radius:999px;font-size:11.5px;font-weight:500;line-height:18px;color:var(--ink-soft);white-space:nowrap}
-.fd-diet-fit.great{border-color:var(--ok);color:var(--ok)}
-.fd-diet-fit.avoid{border-color:var(--c-orange-ink);color:var(--c-orange-ink)}
+.fd-diet-fit.fd-diet-great{border-color:var(--ok);color:var(--ok)}
+.fd-diet-fit.fd-diet-avoid{border-color:var(--c-orange-ink);color:var(--c-orange-ink)}
 .fd-diet-best{display:inline-flex;align-items:center;gap:3px;vertical-align:1px;padding:0 7px 0 5px;border-radius:999px;
   background:var(--c-gold-bg);color:var(--c-gold-ink);font-size:11.5px;font-weight:600;line-height:20px;white-space:nowrap}
 .fd-diet-best svg{fill:currentColor}
@@ -212,32 +212,32 @@
 .fd-diet-stats .tile b{font-size:18px}
 .fd-diet-chart{margin:8px 0 10px}
 .fd-diet-chart svg{display:block;width:100%;height:auto;background:var(--surface-2);border-radius:var(--r)}
-.fd-diet-chart .grid{stroke:var(--line);stroke-width:1}
+.fd-diet-chart .fd-diet-grid{stroke:var(--line);stroke-width:1}
 .fd-diet-chart .tick{fill:var(--ink-soft);font-family:var(--body);font-size:11px}
-.fd-diet-chart .goal{stroke:var(--c-gold-ink);stroke-width:1.2;stroke-dasharray:2 3}
+.fd-diet-chart .fd-diet-goal{stroke:var(--c-gold-ink);stroke-width:1.2;stroke-dasharray:2 3}
 .fd-diet-chart .now{stroke:var(--edge);stroke-width:1;stroke-dasharray:3 3}
 .fd-diet-chart path{fill:none}
-.fd-diet-chart path.plan{stroke:var(--steel);stroke-width:1.2;stroke-dasharray:5 3}
-.fd-diet-chart path.proj{stroke:var(--c-blue-ink);stroke-width:1.6;stroke-dasharray:3 2}
-.fd-diet-chart path.real{stroke:var(--c-green-ink);stroke-width:1.8;stroke-linejoin:round}
+.fd-diet-chart path.fd-diet-plan{stroke:var(--steel);stroke-width:1.2;stroke-dasharray:5 3}
+.fd-diet-chart path.fd-diet-proj{stroke:var(--c-blue-ink);stroke-width:1.6;stroke-dasharray:3 2}
+.fd-diet-chart path.fd-diet-real{stroke:var(--c-green-ink);stroke-width:1.8;stroke-linejoin:round}
 .fd-diet-chart .dot{fill:var(--c-green-ink)}
 .fd-diet-legend{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:6px;font-size:12px;color:var(--ink-soft)}
 .fd-diet-legend span{display:inline-flex;align-items:center;gap:6px}
 .fd-diet-legend i{display:inline-block;width:18px;height:0;border-top:2px solid}
-.fd-diet-legend i.real{border-top-color:var(--c-green-ink)}
-.fd-diet-legend i.plan{border-top:2px dashed var(--steel)}
-.fd-diet-legend i.proj{border-top:2px dashed var(--c-blue-ink)}
-.fd-diet-legend i.goal{border-top:2px dotted var(--c-gold-ink)}
+.fd-diet-legend i.fd-diet-real{border-top-color:var(--c-green-ink)}
+.fd-diet-legend i.fd-diet-plan{border-top:2px dashed var(--steel)}
+.fd-diet-legend i.fd-diet-proj{border-top:2px dashed var(--c-blue-ink)}
+.fd-diet-legend i.fd-diet-goal{border-top:2px dotted var(--c-gold-ink)}
 
 /* Dwa tygodnie kalorii: słupek dnia i kreska celu tego dnia. */
 .fd-diet-fortnight{display:flex;align-items:flex-end;gap:3px;height:150px;margin:10px 0 4px;padding:0;list-style:none;
   background:linear-gradient(var(--line),var(--line)) bottom / 100% 1px no-repeat}
 .fd-diet-fortnight li{position:relative;flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end}
 .fd-diet-fortnight i{display:block}
-.fd-diet-fortnight i.goal{position:absolute;left:0;right:0;height:0;border-top:1.5px dashed var(--steel)}
-.fd-diet-fortnight i.bar{background:var(--c-green);border-radius:2px 2px 0 0}
-.fd-diet-fortnight i.bar.over{background:var(--c-orange)}
-.fd-diet-fortnight i.bar.none{height:3px;background:var(--line)}
+.fd-diet-fortnight i.fd-diet-goal{position:absolute;left:0;right:0;height:0;border-top:1.5px dashed var(--steel)}
+.fd-diet-fortnight i.fd-diet-fbar{background:var(--c-green);border-radius:2px 2px 0 0}
+.fd-diet-fortnight i.fd-diet-fbar.over{background:var(--c-orange)}
+.fd-diet-fortnight i.fd-diet-fbar.fd-diet-none{height:3px;background:var(--line)}
 .fd-diet-axis{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-soft)}
 
 .fd-diet-avg{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:8px 0 4px}
