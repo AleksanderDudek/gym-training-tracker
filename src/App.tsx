@@ -326,10 +326,11 @@ export default function App() {
     if (topColor) document.querySelector('meta[name="theme-color"]')?.setAttribute('content', topColor);
   }, [topColor]);
 
-  const commit = useCallback((next: AppState) => {
+  /** Zatwierdza stan; obietnica mówi, czy trafił na dysk (prawie wszyscy jej nie potrzebują). */
+  const commit = useCallback((next: AppState): Promise<boolean> => {
     live.current = next;
     setState(next);
-    void queueSave(next, setSaveBroken);
+    return queueSave(next, setSaveBroken);
   }, []);
 
   /*
@@ -364,9 +365,11 @@ export default function App() {
   /*
    * Ważenia z dziennika diety (dawne Produkty PL na tej samej domenie, kopia diety albo plan
    * z Excela) przechodzą do dziennika wagi przy każdym wejściu w Jedzenie — i znikają z diety,
-   * więc waga ma jedno źródło, a ważenie usunięte w profilu nie wraca. Bez IndexedDB — po cichu:
-   * kolejne wejście spróbuje jeszcze raz. `moving` pilnuje, żeby dwa przebiegi (StrictMode,
-   * szybkie przejścia) nie szły naraz.
+   * więc waga ma jedno źródło, a ważenie usunięte w profilu nie wraca. Z diety znikają dopiero
+   * wtedy, gdy dziennik wagi z nimi naprawdę się zapisał: przy zepsutym zapisie ważenia żyłyby
+   * tylko w pamięci i przepadłyby z obu miejsc po odświeżeniu. Bez IndexedDB albo bez zapisu —
+   * po cichu (zepsuty zapis ma swój pasek): kolejne wejście spróbuje jeszcze raz. `moving`
+   * pilnuje, żeby dwa przebiegi (StrictMode, szybkie przejścia) nie szły naraz.
    */
   const onFood = route.kind === 'food' || route.kind === 'diet';
   const moving = useRef(false);
@@ -385,15 +388,21 @@ export default function App() {
         const base = live.current;
         if (!days.length || !base) return;
         const found = weightsToMigrate(days, bodyOf(base));
+        let saved: boolean;
         if (found.length) {
           const next = clone(base);
           found.forEach((w) => setBodyWeight(next, w.kg, w.day));
-          commit(next);
+          const writing = commit(next);
           setToastMsg(
             `Dziennik wagi przejął ${found.length === 1 ? 'ważenie' : `ważenia (${found.length})`} z dziennika diety.`,
           );
+          saved = await writing;
+        } else {
+          // Te dni dziennik wagi już ma — ale może tylko w pamięci, z poprzedniego przejęcia przy
+          // zepsutym zapisie. Jeden zapis bieżącego stanu to rozstrzyga.
+          saved = await queueSave(base, setSaveBroken);
         }
-        await forgetDietWeights();
+        if (saved) await forgetDietWeights();
       } catch {
         // Bez IndexedDB nie ma czego przenosić.
       } finally {
