@@ -1,13 +1,14 @@
 // Wspólne przygotowanie testów. Większość testów siłowni biegnie w środowisku node; te, które
 // renderują albo dotykają `window` (część jedzenia), mają w pierwszej linijce
 // `// @vitest-environment jsdom`.
-import '@testing-library/jest-dom/vitest';
-// IndexedDB w pamięci: dziennik jedzenia stoi na Dexie.
+// IndexedDB w pamięci: dziennik jedzenia stoi na Dexie (jego testy biegną też w node).
 import 'fake-indexeddb/auto';
 import { afterEach } from 'vitest';
 
 if (typeof window !== 'undefined') {
-  // Testing Library tylko tam, gdzie jest DOM — testy w node nie płacą za wczytanie React DOM.
+  // Dopasowania jest-dom i Testing Library tylko tam, gdzie jest DOM: testy w node nie płacą
+  // za ich wczytanie (jest-dom sam w sobie to około sekundy na pełny przebieg).
+  await import('@testing-library/jest-dom/vitest');
   const { cleanup, configure } = await import('@testing-library/react');
 
   // Ekrany jedzenia ładują się na żądanie (React.lazy): pierwszy render czeka na dynamiczny import,
