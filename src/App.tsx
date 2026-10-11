@@ -86,7 +86,6 @@ import { forgetWatch, garminConfigured, garminKey, pullWatch } from './garmin';
 import type { PullResult } from './garmin';
 import { attachTrail, trail } from './trail';
 import { FeedbackDialog } from './components/Feedback';
-import { hasDiet } from './food/dietFlag';
 import { UpdateBar } from './components/UpdateBar';
 import { withExtension, withWeekdays } from './engine/planedit';
 import { BridgeContext } from './food/bridge';
@@ -1408,18 +1407,27 @@ export default function App() {
   };
 
   /*
-   * Jedna kopia zapasowa: trening, a gdy ktoś prowadzi dietę — także dziennik jedzenia pod `diet`.
-   * Dieta siedzi w IndexedDB, więc jej moduł ładuje się dopiero tutaj; bez diety plik wygląda jak dawniej.
+   * Jedna kopia zapasowa: trening, a gdy dziennik jedzenia ma cokolwiek — także on, pod `diet`.
+   * O tym rozstrzyga zawartość bazy, nie znacznik diety: dziennik bez profilu (wpisy, plan z Excela)
+   * też musi trafić do pliku. Dieta siedzi w IndexedDB, więc jej moduł ładuje się dopiero tutaj;
+   * z pustym dziennikiem plik wygląda jak dawniej. Gdy bazy nie da się odczytać, trening i tak
+   * idzie do pliku — a komunikat mówi, czego w nim brakuje.
    */
   const exportData = async () => {
     let diet: unknown = null;
-    if (hasDiet()) diet = await import('./food/backup').then((m) => m.dietBackup()).catch(() => null);
+    let dietLost = false;
+    try {
+      diet = await import('./food/backup').then((m) => m.dietBackup());
+    } catch {
+      dietLost = true;
+    }
     const blob = new Blob([JSON.stringify(diet ? { ...state, diet } : state, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = `gym-tracker-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(a.href);
+    if (dietLost) setToastMsg('Plik zapisany bez dziennika jedzenia — nie udało się go odczytać.');
   };
 
   const importData = (f: File) => {
@@ -1466,11 +1474,14 @@ export default function App() {
 
   const resetAll = async () => {
     const watch = !!garminKey();
+    // Pytanie wymienia dziennik jedzenia, gdy baza naprawdę coś ma — znacznik diety nie widzi
+    // dziennika bez profilu. Gdy bazy nie da się odczytać, nie ma czego wymieniać.
+    const food = await import('./food/backup').then((m) => m.hasFoodData()).catch(() => false);
     const ok = await ask(
       'Usunąć wszystkie dane?',
       <p>
         Historia, poziomy ćwiczeń i własne treningi znikną bezpowrotnie
-        {hasDiet() ? ' — razem z dziennikiem jedzenia i profilem diety' : ''}.
+        {food ? ' — razem z dziennikiem jedzenia i profilem diety' : ''}.
         {watch && ' Zegarek Garmin zostanie odłączony — inaczej przysłałby ostatni tydzień z powrotem.'}
       </p>,
       'Usuń wszystko',

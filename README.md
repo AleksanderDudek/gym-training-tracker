@@ -1800,10 +1800,12 @@ i imporcie zepsuty zegar albo czas odpada, a trening zostaje.
 plan z Excela i własne potrawy — jest ich za dużo i są po dniach, więc nie pasują do jednego zapisu
 `localStorage`. Waga ma jedno źródło: ważenia z diety, z kopii diety albo z planu z Excela przy
 wejściu w Jedzenie przechodzą do dziennika wagi i znikają z diety; kroki dieta czyta z wpisów
-i zegarka. Eksport z Ustawień zapisuje jeden plik — trening, a gdy jest dieta, także jej kopię pod
-`diet`; import odtwarza oba, a „Usuń wszystkie dane” czyści oba, razem z zapamiętanym miejscem
-sklepów. Baza ma tę samą nazwę co w Produktach PL — na tej samej domenie dawny dziennik pojawia się
-w aplikacji sam.
+i zegarka. Eksport z Ustawień zapisuje jeden plik — trening, a gdy dziennik jedzenia ma cokolwiek
+(rozstrzyga zawartość bazy, nie to, czy jest profil diety), także jego kopię pod `diet`; gdy bazy nie
+da się odczytać, plik i tak powstaje, a komunikat mówi, że jest bez dziennika. Import odtwarza oba,
+a „Usuń wszystkie dane” czyści oba, razem z zapamiętanym miejscem sklepów i kopiami kafelków mapy
+i zdjęć produktów (kafelki zdradzają, jakie okolice ktoś oglądał). Baza ma tę samą nazwę co
+w Produktach PL — na tej samej domenie dawny dziennik pojawia się w aplikacji sam.
 
 ## Zastrzeżenie
 
