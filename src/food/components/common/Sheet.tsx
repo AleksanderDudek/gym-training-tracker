@@ -1,5 +1,5 @@
 import { X } from 'lucide-react';
-import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, type ReactNode } from 'react';
 import './common.css';
 
 interface Props {
@@ -12,7 +12,10 @@ interface Props {
   subtitle?: ReactNode;
   /** Przyciski w nagłówku obok ×, np. „Wyczyść”. */
   actions?: ReactNode;
-  /** Pasek pod treścią, który się nie przewija — główna akcja arkusza. */
+  /**
+   * Pasek pod treścią, który się nie przewija — główna akcja arkusza. Przycisk, który ma zamknąć
+   * arkusz tak jak ×, woła `closest('dialog')?.close()` — wtedy `onClose` przychodzi raz, ze zdarzenia.
+   */
   footer?: ReactNode;
   /** Na całą wysokość ekranu (karta produktu); bez tego arkusz ma wysokość treści. */
   full?: boolean;
@@ -28,7 +31,8 @@ interface Props {
  *
  * Każde zamknięcie przez użytkownika idzie przez `dialog.close()`, więc `onClose` przychodzi
  * dokładnie raz, ze zdarzenia `close`. Karta produktu cofa w nim historię — drugie wywołanie
- * cofnęłoby o jeden wpis za daleko.
+ * cofnęłoby o jeden wpis za daleko. Zamknięcie z zewnątrz (`open={false}`, odmontowanie otwartego
+ * arkusza) `onClose` nie woła, a fokus i tak wraca tam, skąd arkusz otwarto.
  */
 export function Sheet({
   open,
@@ -45,20 +49,52 @@ export function Sheet({
   const ref = useRef<HTMLDialogElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const titleId = useId();
-  // Zamknięcie, o które poprosił rodzic (`open` → false), nie jest zamknięciem przez użytkownika.
-  const wanted = useRef(open);
+  // Ile zamknięć jest w drodze bez udziału użytkownika (rodzic dał `open={false}`, arkusz znika ze
+  // strony). Ich zdarzenia `close` nie wołają `onClose`. Licznik, nie flaga: w przeglądarce zdarzenie
+  // przychodzi dopiero w kolejnym zadaniu, a StrictMode potrafi w tym czasie zamknąć i otworzyć arkusz.
+  const quiet = useRef(0);
+  // To, co miało fokus przed otwarciem — tam wraca po zamknięciu.
+  const opener = useRef<Element | null>(null);
+
+  /**
+   * Fokus z powrotem na tym, co arkusz otworzyło. Przeglądarka robi to sama przy `close()`; tu
+   * tylko wtedy, gdy fokus został w arkuszu albo spadł na `body` (starsze przeglądarki, jsdom).
+   */
+  const returnFocus = () => {
+    const back = opener.current;
+    const now = document.activeElement;
+    const lost = !now || now === document.body || !!ref.current?.contains(now);
+    if (lost && back instanceof HTMLElement && back.isConnected) back.focus({ preventScroll: true });
+  };
+
+  /** Zamknięcie, którego nie zlecił użytkownik: bez `onClose`. */
+  const shut = (dialog: HTMLDialogElement) => {
+    quiet.current += 1;
+    dialog.close();
+    returnFocus();
+  };
 
   useEffect(() => {
-    wanted.current = open;
     const dialog = ref.current;
     if (!dialog) return;
     if (open && !dialog.open) {
+      opener.current = document.activeElement;
       dialog.showModal();
       // Fokus na tytule, nie na pierwszym przycisku: czytnik ekranu zaczyna od nazwy arkusza, a Tab
       // idzie dalej po kolei. Bez tego przeglądarka stawia fokus (z obwódką) na ×.
       titleRef.current?.focus({ preventScroll: true });
-    } else if (!open && dialog.open) dialog.close();
+    } else if (!open && dialog.open) shut(dialog);
   }, [open]);
+
+  // Arkusz znika ze strony otwarty (karta produktu zamknięta przyciskiem Wstecz): zamknięcie jeszcze
+  // przed usunięciem węzła, żeby przeglądarka oddała fokus i zdjęła blokadę tła. W fazie układu, bo
+  // efekt zwykły biegnie już po odpięciu `<dialog>` od dokumentu.
+  useLayoutEffect(() => {
+    const dialog = ref.current;
+    return () => {
+      if (dialog?.open) shut(dialog);
+    };
+  }, []);
 
   const close = () => ref.current?.close();
   const classes = ['fd-sheet', full && 'full', className].filter(Boolean).join(' ');
@@ -69,7 +105,12 @@ export function Sheet({
       className={classes}
       aria-labelledby={titleId}
       onClose={() => {
-        if (wanted.current) onClose();
+        if (quiet.current > 0) {
+          quiet.current -= 1;
+          return;
+        }
+        returnFocus();
+        onClose();
       }}
       // Stuknięcie poza arkusz trafia w sam `<dialog>` (jego tło), a nie w nic w środku.
       onClick={(e) => {

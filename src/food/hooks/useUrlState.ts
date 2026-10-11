@@ -7,6 +7,29 @@ export type Update<S> = (patch: Patch<S>, options?: { push?: boolean }) => void;
 /** Marks a history entry this app pushed for an open detail. */
 const DETAIL_ENTRY = 'produkty-pl:detail';
 
+const isRecord = (x: unknown): x is Record<string, unknown> => typeof x === 'object' && x !== null && !Array.isArray(x);
+
+/**
+ * Stan przeczytany z adresu po Wstecz, z częściami dotychczasowego stanu wszędzie tam, gdzie adres
+ * mówi o nich to samo. `read` buduje zawsze nowe obiekty, więc zamknięcie karty produktu
+ * przyciskiem Wstecz podmieniało filtry i sortowanie na równe, ale inne — a za nimi szło od nowa
+ * filtrowanie i sortowanie 29 tysięcy produktów i przygaszona lista. Równość sprawdza własny zapis
+ * strony (`write`): część jest „ta sama”, gdy podstawiona do nowego stanu daje ten sam adres.
+ */
+function keepUnchanged<S>(current: S, next: S, write: (state: S) => URLSearchParams): S {
+  const query = write(next).toString();
+  if (write(current).toString() === query) return current;
+  if (!isRecord(current) || !isRecord(next)) return next;
+  let kept: Record<string, unknown> | null = null;
+  for (const key of Object.keys(next)) {
+    if (Object.is(current[key], next[key])) continue;
+    if (write({ ...next, [key]: current[key] }).toString() !== query) continue;
+    kept ??= { ...next };
+    kept[key] = current[key];
+  }
+  return (kept ?? next) as S;
+}
+
 /**
  * A page's state, kept in the query INSIDE the hash (`#/produkty?q=skyr`): the
  * gym tracker routes by hash, and its router ignores the query, so a change
@@ -35,7 +58,8 @@ export function useUrlState<S>(
   useEffect(() => {
     const onPopState = () => {
       if (hashPath(window.location.hash) !== owner) return;
-      setState(codec.current.read(hashQuery(window.location.hash)));
+      const next = codec.current.read(hashQuery(window.location.hash));
+      setState((current) => keepUnchanged(current, next, codec.current.write));
     };
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);

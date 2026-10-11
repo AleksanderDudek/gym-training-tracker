@@ -15,10 +15,11 @@ interface Props {
 /**
  * Filtry w arkuszu od dołu — w kolumnie telefonu nie ma miejsca na boczny panel. Każda zmiana działa
  * od razu (lista za arkuszem już się zawęża), a przycisk w stopce mówi, ile produktów zostanie,
- * i tylko zamyka arkusz. Treść montuje się dopiero po otwarciu: zamknięty arkusz nie przelicza
- * kilkunastu list przy każdej literze wpisanej w wyszukiwarkę.
+ * i tylko zamyka arkusz. Panel zostaje zamontowany między otwarciami, jak szuflada Produktów PL:
+ * rozwinięte sekcje, szukanie w liście marek i „Pokaż więcej” czekają na następne otwarcie.
  */
 export function FilterSheet({ open, resultCount, activeCount, onClear, onClose, children }: Props) {
+  const count = productsLabel(resultCount);
   return (
     <Sheet
       open={open}
@@ -34,12 +35,21 @@ export function FilterSheet({ open, resultCount, activeCount, onClear, onClose, 
         )
       }
       footer={
-        <button type="button" className="btn wide" onClick={onClose}>
-          Pokaż {productsLabel(resultCount)}
-        </button>
+        <>
+          {/* Arkusz jest modalny, więc wiersz „Znaleziono …” na stronie za nim milczy. Liczbę po
+              każdej zmianie filtra czytnik ekranu słyszy stąd. */}
+          <p className="sr-only" role="status">
+            Wynik: {count}
+          </p>
+          {/* Zamyka przez `dialog.close()`, jak ×: jedno `onClose`, a pole zakresu wpisane przed chwilą
+              zdążyło już oddać fokus i zapisać wartość. */}
+          <button type="button" className="btn wide" onClick={(e) => e.currentTarget.closest('dialog')?.close()}>
+            Pokaż {count}
+          </button>
+        </>
       }
     >
-      {open && children}
+      {children}
     </Sheet>
   );
 }

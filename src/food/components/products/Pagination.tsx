@@ -25,32 +25,34 @@ export function pageNumbers(page: number, pageCount: number, near = 2): (number 
   return out;
 }
 
+const NARROW = '(min-width: 400px)';
+const WIDE = '(min-width: 560px)';
+
+/** Nasłuch zmian szerokości — w zasięgu modułu, żeby React nie zapisywał się od nowa przy każdym renderze. */
+function subscribeWidth(onChange: () => void): () => void {
+  if (typeof window.matchMedia !== 'function') return () => {};
+  const queries = [window.matchMedia(NARROW), window.matchMedia(WIDE)];
+  for (const q of queries) q.addEventListener('change', onChange);
+  return () => {
+    for (const q of queries) q.removeEventListener('change', onChange);
+  };
+}
+
 /**
  * Ile sąsiednich stron mieści się w rzędzie przy 44 px na przycisk: na telefonie 320–399 px
  * tylko bieżąca (z pierwszą i ostatnią), do 559 px po jednej z każdej strony, szerzej — jak
  * w Produktach PL, po dwie. Bez `matchMedia` (testy) — pełny rząd.
  */
-function useNeighbours(): number {
-  return useSyncExternalStore(
-    (onChange) => {
-      if (typeof window.matchMedia !== 'function') return () => {};
-      const queries = [window.matchMedia('(min-width: 400px)'), window.matchMedia('(min-width: 560px)')];
-      for (const q of queries) q.addEventListener('change', onChange);
-      return () => {
-        for (const q of queries) q.removeEventListener('change', onChange);
-      };
-    },
-    () => {
-      if (typeof window.matchMedia !== 'function') return 2;
-      if (window.matchMedia('(min-width: 560px)').matches) return 2;
-      return window.matchMedia('(min-width: 400px)').matches ? 1 : 0;
-    },
-    () => 2,
-  );
+function neighboursNow(): number {
+  if (typeof window.matchMedia !== 'function') return 2;
+  if (window.matchMedia(WIDE).matches) return 2;
+  return window.matchMedia(NARROW).matches ? 1 : 0;
 }
 
+const neighboursOnServer = () => 2;
+
 export function Pagination({ page, pageCount, onPage }: Props) {
-  const near = useNeighbours();
+  const near = useSyncExternalStore(subscribeWidth, neighboursNow, neighboursOnServer);
   if (pageCount <= 1) return null;
 
   return (

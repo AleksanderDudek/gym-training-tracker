@@ -3,6 +3,7 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { loadDataset, loadedDataset, MISSING_DATA_MESSAGE, type LoadedDataset } from '../../data';
+import { browse } from '../../lib/browse';
 import { indexProducts } from '../../lib/search';
 import { DATASET, INDEXED, makeProduct } from '../../test/fixtures';
 import { pageNumbers } from './Pagination';
@@ -15,6 +16,12 @@ vi.mock('../../data', async (importOriginal) => ({
   loadDataset: vi.fn(),
   loadedDataset: vi.fn(),
 }));
+
+// Prawdziwe filtrowanie, tylko policzalne: zamknięcie karty produktu nie może go uruchomić od nowa.
+vi.mock('../../lib/browse', async (importOriginal) => {
+  const real = await importOriginal<typeof import('../../lib/browse')>();
+  return { ...real, browse: vi.fn(real.browse) };
+});
 
 const LOADED: LoadedDataset = { dataset: DATASET, products: INDEXED };
 
@@ -93,6 +100,8 @@ describe('Produkty', () => {
 
     await user.click(section(sheet, 'Dieta').getByRole('checkbox', { name: /Wegańskie/ }));
     expect(await within(sheet).findByRole('button', { name: 'Pokaż 3 produkty' })).toBeInTheDocument();
+    // Arkusz jest modalny: wynik ogłasza jego własny region, nie wiersz „Znaleziono” za nim.
+    expect(within(sheet).getByRole('status')).toHaveTextContent('Wynik: 3 produkty');
     await user.click(within(sheet).getByRole('checkbox', { name: /Ze zdjęciem/ }));
     expect(await within(sheet).findByRole('button', { name: 'Pokaż 2 produkty' })).toBeInTheDocument();
     expect(window.location.hash).toBe('#/produkty?only=vegan%2ChasImage');
@@ -116,6 +125,60 @@ describe('Produkty', () => {
     expect(window.location.hash).toBe('#/produkty?protein=10.5-');
     // Między liczbą a jednostką twarda spacja — `g` nie zawinie się sama do następnej linii.
     expect(screen.getByRole('button', { name: /^Usuń filtr: Białko: od 10,5\sg$/ })).toBeInTheDocument();
+  });
+
+  test('zakres z adresu stoi w polu z przecinkiem dziesiętnym', async () => {
+    window.history.replaceState(null, '', '#/produkty?protein=10.5-');
+    const user = userEvent.setup();
+    render(<ProductsPage />);
+    await user.click(await screen.findByRole('button', { name: /^Filtry/ }));
+    const sheet = screen.getByRole('dialog', { name: 'Filtry' });
+    expect(within(sheet).getByRole('textbox', { name: 'Białko od' })).toHaveValue('10,5');
+    expect(found()).toHaveTextContent('Znaleziono 3 produkty');
+  });
+
+  test('„Pokaż” tuż po wpisaniu zakresu zamyka arkusz z zapisaną wartością', async () => {
+    const user = userEvent.setup();
+    render(<ProductsPage />);
+    await user.click(await screen.findByRole('button', { name: 'Filtry' }));
+    const sheet = screen.getByRole('dialog', { name: 'Filtry' });
+    await user.type(within(sheet).getByRole('textbox', { name: 'Kalorie do' }), '100');
+    // Bez przerwy: stuknięcie trafia w okno 250 ms, zanim szkic zapisze się sam.
+    await user.click(within(sheet).getByRole('button', { name: /^Pokaż/ }));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Filtry' })).not.toBeInTheDocument());
+    expect(window.location.hash).toBe('#/produkty?kcal=-100');
+    await waitFor(() => expect(found()).toHaveTextContent('Znaleziono 2 produkty'));
+  });
+
+  test('panel filtrów zostaje między otwarciami: rozwinięta sekcja dalej jest rozwinięta', async () => {
+    const user = userEvent.setup();
+    render(<ProductsPage />);
+    await user.click(await screen.findByRole('button', { name: 'Filtry' }));
+    const sheet = screen.getByRole('dialog', { name: 'Filtry' });
+    const eco = within(sheet).getByText('Eco-Score', { selector: 'summary' });
+    expect(eco.closest('details')).not.toHaveAttribute('open');
+    await user.click(eco);
+    expect(eco.closest('details')).toHaveAttribute('open');
+    await user.click(within(sheet).getByRole('button', { name: 'Zamknij filtry' }));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Filtry' })).not.toBeInTheDocument());
+
+    await user.click(screen.getByRole('button', { name: 'Filtry' }));
+    const again = screen.getByRole('dialog', { name: 'Filtry' });
+    expect(within(again).getByText('Eco-Score', { selector: 'summary' }).closest('details')).toHaveAttribute('open');
+  });
+
+  test('zamknięcie karty produktu nie przelicza listy: filtry zostają tym samym stanem', async () => {
+    window.history.replaceState(null, '', '#/produkty?ns=a');
+    const user = userEvent.setup();
+    render(<ProductsPage />);
+    await user.click(await screen.findByRole('button', { name: 'Skyr naturalny' }));
+    await screen.findByRole('dialog', { name: 'Skyr naturalny' });
+    const runs = vi.mocked(browse).mock.calls.length;
+    window.history.back();
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Skyr naturalny' })).not.toBeInTheDocument());
+    // Nowy, równy obiekt filtrów przefiltrowałby całą bazę jeszcze raz, a do tego czasu przygasił listę.
+    expect(vi.mocked(browse).mock.calls.length).toBe(runs);
+    expect(document.querySelector('.fd-results')).not.toHaveClass('stale');
   });
 
   test('stan z adresu wraca po wczytaniu strony', async () => {
@@ -148,14 +211,11 @@ describe('Produkty', () => {
   test('karta otwiera produkt, a zamknięcie wraca do listy', async () => {
     const user = userEvent.setup();
     render(<ProductsPage />);
-    const length = window.history.length;
     await user.click(await screen.findByRole('button', { name: /Skyr naturalny/ }));
     const dialog = await screen.findByRole('dialog', { name: 'Skyr naturalny' });
     expect(within(dialog).getByText('Piątnica · 150 g')).toBeInTheDocument();
     expect(within(dialog).getByText('Bez dodatku cukru')).toBeInTheDocument();
     expect(window.location.hash).toBe('#/produkty?p=2');
-    // Otwarcie dodało wpis historii — to on pozwala Wstecz zamknąć kartę.
-    expect(window.history.length).toBe(length + 1);
 
     await user.click(within(dialog).getByRole('button', { name: 'Zamknij' }));
     await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Skyr naturalny' })).not.toBeInTheDocument());

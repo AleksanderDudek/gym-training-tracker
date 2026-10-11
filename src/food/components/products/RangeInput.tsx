@@ -21,6 +21,9 @@ function parse(text: string): number | null {
 
 const sameNumber = (draft: string, committed: string) => parse(draft) === parse(committed);
 
+/** Liczba z adresu (`10.5`) w polu po polsku: `10,5`. Bez grupowania tysięcy — `parse` go nie czyta. */
+const toDraft = (n: number | null) => (n === null ? '' : String(n).replace('.', ','));
+
 /**
  * Zakres „od – do” dla jednej wartości (kalorie, białko, cena…). Pola tekstowe z klawiaturą
  * dziesiętną zamiast `type="number"`: przecinek jest polskim separatorem, a pole liczbowe
@@ -34,12 +37,12 @@ export function RangeInput({ label, unit, range, onChange }: Props) {
     onChange(nextMin === null && nextMax === null ? undefined : { min: nextMin, max: nextMax });
 
   const [minDraft, setMinDraft, flushMin] = useDebouncedDraft(
-    min === null ? '' : String(min),
+    toDraft(min),
     (d) => commit(parse(d), max),
     sameNumber,
   );
   const [maxDraft, setMaxDraft, flushMax] = useDebouncedDraft(
-    max === null ? '' : String(max),
+    toDraft(max),
     (d) => commit(min, parse(d)),
     sameNumber,
   );

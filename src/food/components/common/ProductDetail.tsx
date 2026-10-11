@@ -1,5 +1,5 @@
 import { ExternalLink } from 'lucide-react';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { brandLine, names } from '../../lib/display';
 import { formatDate, formatGrams, formatKcal } from '../../lib/format';
 import { NUTRIENT_LABELS, PALM_OIL_LABELS, TRI_LABELS } from '../../lib/labels';
@@ -45,22 +45,12 @@ function Tags({ items }: { items: string[] }) {
 /**
  * Karta produktu: arkusz na całą wysokość ekranu ze wszystkim, co baza o produkcie wie — zdjęcia,
  * oceny, cena, tabela wartości odżywczych, skład, alergeny, dodatki, etykiety i sklepy.
- * Montuje się otwarta; strona pokazuje ją, dopóki adres ma `p=`.
+ * Montuje się otwarta; strona pokazuje ją, dopóki adres ma `p=`. Zamknięta przyciskiem Wstecz
+ * (odmontowana) oddaje fokus karcie, z której ją otwarto — pilnuje tego `Sheet`.
  */
 export function ProductDetail({ product: p, dict, onClose }: Props) {
   const kinds = (Object.keys(IMAGE_LABELS) as ImageKind[]).filter((k) => p.images[k]);
   const [shown, setShown] = useState<ImageKind>(kinds[0] ?? 'front');
-  // Zapamiętany raz, w pierwszym renderze — zanim `showModal()` przeniesie fokus do arkusza.
-  const [opener] = useState(() => document.activeElement);
-
-  // Zamknięcie × albo Escape oddaje fokus przeglądarka. Zamknięcie przyciskiem Wstecz odmontowuje
-  // arkusz bez `close()`, więc nikt tego nie robi — trzeba tu, inaczej klawiatura zaczyna od góry strony.
-  useEffect(
-    () => () => {
-      if (opener instanceof HTMLElement && opener.isConnected) opener.focus();
-    },
-    [opener],
-  );
 
   const brand = brandLine(p, dict);
   const category = p.mainCategory ? (dict.categories[p.mainCategory] ?? p.mainCategory) : null;

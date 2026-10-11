@@ -69,7 +69,7 @@ function Grade({
       style={{ backgroundColor: colors.bg, color: colors.fg }}
     >
       <b>
-        {active && <Check size={14} strokeWidth={3} aria-hidden />}
+        {active && <Check size={16} strokeWidth={2} aria-hidden />}
         {label}
       </b>
       <span>{formatNumber(count, 0)}</span>
