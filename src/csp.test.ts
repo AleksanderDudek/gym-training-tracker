@@ -23,7 +23,18 @@ const SOURCES = import.meta.glob<string>(['./**/*.{ts,tsx}', '!./**/*.test.*', '
  * przechodzi tam sama (w nowej karcie albo w aplikacji serwisu), a nawigacji CSP strony nie
  * ogranicza. Nowy adres trafia tu tylko wtedy, gdy aplikacja niczego z niego nie pobiera.
  */
-const NAVIGATION = new Set(['wa.me', 'twitter.com', 'www.facebook.com', 'buycoffee.to', 'aleksanderdudek.github.io']);
+const NAVIGATION = new Set([
+  'wa.me',
+  'twitter.com',
+  'www.facebook.com',
+  'buycoffee.to',
+  'aleksanderdudek.github.io',
+  // Jedzenie: źródła danych w stopce i strona produktu w Open Food Facts.
+  'world.openfoodfacts.org',
+  'pl.openfoodfacts.org',
+  'prices.openfoodfacts.org',
+  'www.openstreetmap.org',
+]);
 
 /** Dyrektywa → jej wartości, z gotowego tekstu polityki. */
 const directives = (policy: string): Map<string, string[]> =>

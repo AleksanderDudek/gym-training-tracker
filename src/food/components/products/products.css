@@ -1,0 +1,163 @@
+/*
+ * Produkty: wyszukiwarka, sortowanie, filtry w arkuszu, wiersz wyników, siatka kart albo tabela
+ * i strony. Karty, zdjęcia, plakietki, arkusz i kartę produktu ma `../common/common.css`.
+ */
+
+/* ---------------- Wyszukiwarka i narzędzia ---------------- */
+
+.fd-toolbar{display:grid;gap:8px}
+.fd-search{position:relative}
+.fd-search > svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--ink-soft);pointer-events:none}
+/* Pole jak pola aplikacji (`input[type=text]` w `styles.css`), 17 px, żeby iPhone nie przybliżał strony. */
+.fd-search input{display:block;width:100%;min-height:48px;padding:11px 46px 11px 42px;font:inherit;font-size:17px;
+  border:1px solid var(--edge);border-radius:var(--r);background:#fff;color:var(--ink);
+  -webkit-appearance:none;appearance:none}
+.fd-search input::placeholder{color:var(--ink-soft);opacity:1}
+/* Puste pole nie ma jeszcze krzyżyka czyszczenia, więc podpowiedź może sięgnąć do prawej krawędzi. */
+.fd-search input:placeholder-shown{padding-right:10px}
+.fd-search input::-webkit-search-cancel-button{-webkit-appearance:none;appearance:none}
+.fd-search-clear{position:absolute;right:2px;top:50%;transform:translateY(-50%);width:44px;height:44px;
+  display:grid;place-items:center;padding:0;border:0;background:none;border-radius:50%;color:var(--ink-soft);
+  cursor:pointer;-webkit-tap-highlight-color:transparent}
+.fd-search-clear:active{background:var(--surface-2)}
+
+/*
+ * Sortowanie i filtry w jednym rzędzie. Lista sortowania bierze resztę szerokości — na telefonie
+ * 320 px zostaje jej ok. 170 px, tyle, ile trzeba na „Najpopularniejsze”.
+ */
+.fd-tools{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:stretch}
+.fd-tools .fd-sort{min-height:48px;min-width:0;text-overflow:ellipsis}
+.fd-filters-btn{gap:7px;min-height:48px;padding:10px 14px}
+.fd-filters-btn.on{background:var(--surface)}
+/* Najwęższe telefony: punkt mniej w polach (16 px to wciąż próg, poniżej którego iPhone przybliża). */
+@media (max-width:359px){
+  .fd-filters-btn{gap:5px;padding:10px 10px}
+  .fd-search input,.fd-tools .fd-sort{font-size:16px}
+}
+.fd-badge{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 6px;border-radius:11px;
+  background:var(--steel);color:#fff;font-family:var(--display);font-size:13px;font-weight:500;line-height:1}
+
+/* ---------------- Wiersz wyników, widok i aktywne filtry ---------------- */
+
+.fd-found-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:12px 0 8px}
+.fd-found{margin:0;min-width:0;font-size:13.5px;color:var(--ink-soft);line-height:1.35}
+.fd-found strong{color:var(--ink);font-weight:600;white-space:nowrap}
+/* „· strona 3 z 610” w całości: zawija się do drugiej linijki razem, a nie w pół liczby. */
+.fd-found-page{white-space:nowrap}
+/* Na telefonie przełącznik widoku to same ikony (nazwy zostają dla czytnika ekranu), szerzej — z podpisem. */
+.fd-found-row .seg{flex:none;grid-auto-columns:minmax(48px,auto);gap:4px;margin:0}
+.fd-found-row .seg button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;
+  padding:6px 10px}
+.fd-view-label{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);
+  white-space:nowrap;border:0}
+@media (min-width:520px){
+  .fd-view-label{position:static;width:auto;height:auto;margin:0;overflow:visible;clip:auto}
+}
+
+/* Włączony filtr wygląda jak wybrana pozycja `.chips` — stalowy, z krzyżykiem do zdjęcia. */
+.fd-active{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 12px;padding:0;list-style:none}
+.fd-chip{display:inline-flex;align-items:center;gap:6px;min-height:44px;max-width:100%;padding:8px 10px 8px 13px;
+  font:inherit;font-size:13.5px;font-weight:600;line-height:1.25;text-align:left;color:#fff;background:var(--steel);
+  border:1px solid var(--steel);border-radius:22px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.fd-chip span{min-width:0;overflow-wrap:anywhere}
+.fd-chip svg{flex:none}
+.fd-chip:active{background:var(--ink)}
+.fd-chip:focus-visible{outline:2px solid var(--steel);outline-offset:2px}
+.fd-clear{min-height:44px;padding:8px 6px;font:inherit;font-size:13.5px;font-weight:600;color:var(--steel);
+  background:none;border:0;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+
+/* ---------------- Lista ---------------- */
+
+/* Lista, która jeszcze dogania filtry, gaśnie — widać, że wynik zaraz się zmieni. */
+@media (prefers-reduced-motion:no-preference){.fd-results{transition:opacity .15s ease-out}}
+.fd-results.stale{opacity:.55}
+
+.fd-table-wrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
+  overscroll-behavior-x:contain}
+.fd-table-wrap:focus-visible{outline:2px solid var(--steel);outline-offset:2px}
+.fd-table{width:100%;min-width:760px;border-collapse:separate;border-spacing:0;font-size:14px}
+.fd-table th,.fd-table td{padding:6px 8px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
+.fd-table tbody tr:last-child td{border-bottom:0}
+.fd-table thead th{background:var(--surface-2);font-size:12.5px;font-weight:600;color:var(--ink-soft);padding:0 4px}
+/* Nazwa przyklejona z lewej: przy przewijaniu w bok wiadomo, czyj to wiersz. */
+.fd-table .fd-col-name{position:sticky;left:0;z-index:1;width:168px;min-width:168px;max-width:168px;text-align:left;
+  white-space:normal;background:var(--surface);box-shadow:1px 0 0 var(--line)}
+@media (min-width:480px){.fd-table .fd-col-name{width:220px;min-width:220px;max-width:220px}}
+.fd-table thead .fd-col-name{z-index:2;background:var(--surface-2)}
+.fd-sorth{display:inline-flex;align-items:center;gap:4px;min-height:44px;padding:0 6px;font:inherit;color:inherit;
+  background:none;border:0;cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent}
+.fd-sorth.on{color:var(--ink)}
+.fd-table tbody tr{cursor:pointer}
+.fd-table tbody tr:active td{background:var(--surface-2)}
+.fd-row-name{display:grid;grid-template-columns:44px minmax(0,1fr);gap:8px;align-items:center}
+.fd-row-name .fd-img{width:44px;height:44px;border-radius:2px}
+.fd-row-open{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;padding:0;border:0;
+  background:none;font:inherit;font-weight:600;line-height:1.3;text-align:left;color:var(--ink);cursor:pointer}
+.fd-row-meta{display:block;font-size:12px;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fd-num{font-variant-numeric:tabular-nums;color:var(--ink-soft)}
+.fd-num.strong{color:var(--ink);font-weight:600}
+
+/* ---------------- Strony ---------------- */
+
+.fd-pages{display:flex;align-items:center;justify-content:center;gap:4px;margin:16px 0 4px}
+.fd-pages button{min-width:44px;height:44px;padding:0 8px;font:inherit;font-family:var(--display);font-size:16px;
+  background:var(--surface);border:1px solid var(--edge);border-radius:var(--r);color:var(--ink);cursor:pointer;
+  -webkit-tap-highlight-color:transparent}
+.fd-pages button:active{background:var(--surface-2)}
+.fd-pages button[aria-current=page]{background:var(--steel);border-color:var(--steel);color:#fff;font-weight:600}
+.fd-pages button:disabled{opacity:.4;cursor:default}
+.fd-page-step{display:grid;place-items:center;color:var(--steel)}
+.fd-page-gap{min-width:14px;text-align:center;color:var(--ink-soft)}
+
+/* ---------------- Arkusz filtrów ---------------- */
+
+.fd-sheet-clear{flex:none;min-height:44px;padding:8px 10px;font:inherit;font-size:14px;font-weight:600;color:var(--steel);
+  background:none;border:0;text-decoration:underline;text-underline-offset:3px;cursor:pointer;margin-top:0}
+.fd-filter-sheet .fd-sheet-body{padding-top:0;padding-bottom:6px}
+
+.fd-fsec{border-bottom:1px solid var(--line)}
+.fd-fsec:last-child{border-bottom:0}
+.fd-fsec summary{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:52px;padding:12px 0;
+  font-size:15px;font-weight:600;cursor:pointer;list-style:none;-webkit-tap-highlight-color:transparent}
+.fd-fsec summary::-webkit-details-marker{display:none}
+.fd-fsec summary svg{flex:none;color:var(--ink-soft)}
+.fd-fsec[open] summary svg{transform:rotate(180deg)}
+.fd-fsec summary:focus-visible{outline:2px solid var(--steel);outline-offset:2px}
+.fd-fsec-body{padding:0 0 14px}
+.fd-note{margin:6px 0 0;font-size:12.5px;color:var(--ink-soft);max-width:62ch}
+.fd-fsec-body > .fd-note:first-child{margin:0 0 6px}
+
+.fd-checks{margin:0;padding:0;list-style:none}
+.fd-check{display:flex;align-items:center;gap:10px;min-height:44px;padding:4px 0;font-size:15px;cursor:pointer}
+.fd-check input{flex:none;width:22px;height:22px;margin:0;accent-color:var(--steel)}
+.fd-check-name{flex:1;min-width:0;overflow-wrap:anywhere;line-height:1.3}
+.fd-check-n{flex:none;font-family:var(--display);font-size:14px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.fd-check.zero .fd-check-name{color:var(--ink-soft)}
+
+.fd-facet-search{display:block;width:100%;min-height:44px;margin:0 0 4px;padding:9px 10px;font:inherit;font-size:17px;
+  border:1px solid var(--edge);border-radius:var(--r);background:#fff;color:var(--ink);-webkit-appearance:none;appearance:none}
+.fd-facet-search::placeholder{color:var(--ink-soft);opacity:1}
+.fd-facet-search::-webkit-search-cancel-button{-webkit-appearance:none;appearance:none}
+.fd-more{min-height:44px;padding:8px 0;font:inherit;font-size:14px;font-weight:600;color:var(--steel);background:none;
+  border:0;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+
+/* Oceny w barwach norm (Nutri-Score, NOVA, Eco-Score). Wybraną znaczy gruba obwódka w kolorze tuszu i ✓. */
+.fd-grades{display:flex;flex-wrap:wrap;gap:8px}
+.fd-grade{display:grid;justify-items:center;align-content:center;gap:1px;min-width:48px;min-height:48px;padding:4px 8px;
+  font:inherit;border:0;border-radius:var(--r);cursor:pointer;box-shadow:0 0 0 0 var(--ink);
+  -webkit-tap-highlight-color:transparent}
+.fd-grade b{display:inline-flex;align-items:center;gap:2px;font-size:16px;font-weight:700;line-height:1.1}
+.fd-grade span{font-size:11.5px;line-height:1.1;font-variant-numeric:tabular-nums}
+.fd-grade[aria-pressed=true]{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--ink)}
+.fd-grade.zero{opacity:.4}
+.fd-grade:focus-visible{outline:2px solid var(--steel);outline-offset:5px}
+
+.fd-range{min-width:0;margin:0 0 10px;padding:0;border:0}
+.fd-range legend{padding:0;margin:0 0 4px;font-size:13px;font-weight:600;color:var(--ink)}
+.fd-range legend span{font-weight:400;color:var(--ink-soft)}
+.fd-range-row{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) 44px;gap:6px;align-items:center}
+.fd-range-row > span{color:var(--ink-soft)}
+.fd-range-row input{min-width:0;min-height:44px;padding:9px 10px}
+.fd-range-x{width:44px;height:44px;display:grid;place-items:center;padding:0;border:0;background:none;border-radius:50%;
+  color:var(--ink-soft);cursor:pointer}
+.fd-range-x:active{background:var(--surface-2)}

@@ -1,0 +1,149 @@
+/*
+ * Wspólne klocki produktów: zdjęcie, cena, plakietki ocen, karta i siatka kart, arkusz od dołu,
+ * karta produktu, stan bazy i stopka ze źródłami. Używają ich Produkty, Przepisy i W pobliżu,
+ * więc reguły stoją tu, a nie w arkuszu jednej strony. Kolory wyłącznie z tokenów aplikacji —
+ * poza plakietkami Nutri-Score, NOVA i Eco-Score, które mają barwy norm (w `ScoreBadge`).
+ */
+
+/* ---------------- Zdjęcie produktu ---------------- */
+
+/* Zdjęcia z Open Food Facts mają białe tło, więc ramka też jest biała — jak pole formularza. */
+.fd-img{position:relative;flex:none;overflow:hidden;background:#fff}
+.fd-img img{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:contain}
+.fd-img.padded img{padding:8px}
+.fd-img.broken{background:var(--surface-2)}
+.fd-img-none{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:4px;color:var(--ink-soft);font-size:12px;text-align:center}
+
+/* ---------------- Cena ---------------- */
+
+.fd-price{display:inline-flex;align-items:baseline;flex-wrap:wrap;gap:0 4px;white-space:nowrap}
+.fd-price b{font-family:var(--display);font-weight:500;font-size:16px;color:var(--ink)}
+/* Promocja: ciepły akcent jak „zwróć uwagę”, a nie czerwień błędu; niesie ją też przekreślona cena. */
+.fd-price.promo b{color:var(--c-orange-ink)}
+.fd-price small,.fd-price s{font-size:12px;color:var(--ink-soft)}
+
+/* ---------------- Plakietki ocen ---------------- */
+
+.fd-scores{display:flex;flex-wrap:wrap;gap:4px}
+.fd-score{display:inline-flex;align-items:baseline;gap:3px;padding:4px 6px;border-radius:var(--r);
+  font-size:12px;font-weight:600;line-height:1;white-space:nowrap}
+.fd-score > span{font-weight:400;font-size:.88em}
+.fd-score.md{padding:7px 9px;font-size:14px}
+
+/* ---------------- Karta i siatka kart ---------------- */
+
+/* Dwie kolumny na telefonie 320 px, trzy od ok. 480 px — kolumna aplikacji nie ma więcej niż 640. */
+.fd-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0;padding:0;list-style:none}
+.fd-grid > li{min-width:0}
+@media (min-width:480px){.fd-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
+.fd-card{position:relative;display:flex;flex-direction:column;height:100%;background:var(--surface);
+  border:1px solid var(--line);border-radius:var(--r);overflow:hidden;-webkit-tap-highlight-color:transparent}
+.fd-card > .fd-img{width:100%;aspect-ratio:1/1;border-bottom:1px solid var(--line)}
+.fd-card:active{background:var(--surface-2)}
+@media (hover:hover){.fd-card:hover{border-color:var(--edge)}}
+/* Fokus na nazwie obrysowuje całą kartę — klikalna jest cała. */
+.fd-card:has(.fd-card-open:focus-visible){outline:2px solid var(--steel);outline-offset:2px}
+.fd-card-body{display:flex;flex-direction:column;gap:3px;flex:1;padding:8px 10px 10px;min-width:0}
+.fd-card-name{margin:0;font-family:var(--body);font-size:14.5px;font-weight:600;line-height:1.3;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.fd-card-open{padding:0;border:0;background:none;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.fd-card-open:focus-visible{outline:none}
+/* Pole kliknięcia nazwy rozciągnięte na całą kartę (karta ma `position:relative`). */
+.fd-card-open::after{content:'';position:absolute;inset:0}
+.fd-card-meta{margin:0;font-size:12.5px;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fd-card-kcal{margin:2px 0 0;font-family:var(--display);font-size:18px;line-height:1.15}
+.fd-card-kcal small{font-family:var(--body);font-size:11.5px;color:var(--ink-soft)}
+.fd-macros{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px 6px;margin:0;font-size:12.5px;line-height:1.3}
+.fd-macros dt{font-size:11px;color:var(--ink-soft)}
+.fd-macros dd{margin:0;white-space:nowrap}
+/* Białko na pierwszym miejscu i pogrubione: w aplikacji do treningu siłowego to pierwsza liczba, której się szuka. */
+.fd-macros .protein dd{font-weight:600}
+.fd-card-foot{margin-top:auto;padding-top:6px;display:flex;flex-wrap:wrap;align-items:flex-end;
+  justify-content:space-between;gap:4px 6px}
+
+/* ---------------- Arkusz od dołu ---------------- */
+
+/*
+ * Natywny `<dialog>` w stroju okna „Napisz do autora”: od dołu ekranu, w kolumnie 640 px, z tym
+ * samym przyciemnieniem tła co okna aplikacji. Nagłówek i stopka stoją, przewija się środek.
+ */
+.fd-sheet{position:fixed;inset:auto 0 0;margin:0 auto;width:100%;max-width:640px;
+  max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);padding:0;border:0;
+  border-radius:var(--r) var(--r) 0 0;background:var(--surface);color:var(--ink);
+  box-shadow:0 -8px 30px rgba(30,35,32,.22);overflow:hidden}
+.fd-sheet[open]{display:flex;flex-direction:column}
+.fd-sheet.full{top:max(8px,env(safe-area-inset-top));height:auto;max-height:none}
+.fd-sheet::backdrop{background:rgba(30,35,32,.55)}
+/* Strona pod arkuszem się nie przewija — inaczej przeciągnięcie palcem za krawędź listy jechałoby nią. */
+html:has(.fd-sheet[open]){overflow:hidden}
+.fd-sheet-head{flex:none;display:flex;align-items:flex-start;gap:4px;padding:6px 6px 8px 16px;
+  border-bottom:1px solid var(--line)}
+.fd-sheet-titles{flex:1;min-width:0;padding-top:9px}
+.fd-sheet-head h2{margin:0;font-family:var(--display);font-weight:600;font-size:21px;line-height:1.2;overflow-wrap:anywhere}
+.fd-sheet-head h2:focus{outline:none}
+.fd-sheet-sub{margin:2px 0 0;font-size:13px;color:var(--ink-soft)}
+.fd-sheet-x{flex:none;width:44px;height:44px;display:grid;place-items:center;padding:0;border:0;
+  background:none;border-radius:50%;color:var(--steel);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.fd-sheet-x:active{background:var(--surface-2)}
+.fd-sheet-body{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:14px 16px 18px}
+.fd-sheet-body.last{padding-bottom:calc(18px + env(safe-area-inset-bottom))}
+.fd-sheet-foot{flex:none;padding:10px 16px calc(10px + env(safe-area-inset-bottom));
+  border-top:1px solid var(--line);background:var(--surface)}
+@media (prefers-reduced-motion:no-preference){
+  .fd-sheet[open]{animation:fd-sheet-in .22s ease-out}
+  .fd-sheet[open]::backdrop{animation:fd-fade .22s ease-out}
+  @keyframes fd-sheet-in{from{transform:translateY(32px);opacity:0}to{transform:none;opacity:1}}
+  @keyframes fd-fade{from{opacity:0}to{opacity:1}}
+}
+
+/* ---------------- Karta produktu ---------------- */
+
+.fd-detail-media{display:grid;gap:10px;margin-bottom:18px}
+.fd-detail-photo{width:100%;aspect-ratio:4/3;max-height:min(300px,36vh);border:1px solid var(--line);border-radius:var(--r)}
+.fd-thumbs{display:flex;flex-wrap:wrap;gap:8px}
+.fd-thumbs button{display:grid;justify-items:center;gap:3px;min-width:76px;padding:5px 6px 6px;
+  background:var(--surface);border:1px solid var(--edge);border-radius:var(--r);font:inherit;
+  font-size:11.5px;line-height:1.2;color:var(--ink-soft);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.fd-thumbs button[aria-pressed=true]{border-color:var(--steel);box-shadow:inset 0 0 0 1px var(--steel);
+  color:var(--ink);font-weight:600}
+.fd-thumbs .fd-img{width:52px;height:52px}
+.fd-pricebox{background:var(--surface-2);border-left:3px solid var(--ok);border-radius:var(--r);padding:10px 12px}
+.fd-pricebox .fd-price b{font-size:24px}
+.fd-pricebox .fd-price s,.fd-pricebox .fd-price small{font-size:14px}
+.fd-pricebox p{margin:3px 0 0;font-size:12.5px;color:var(--ink-soft)}
+
+.fd-block{margin:0 0 18px}
+.fd-block h3{margin:0 0 6px;font-family:var(--display);font-weight:500;font-size:13px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--ink-soft)}
+.fd-block p{margin:0 0 4px;font-size:14.5px;line-height:1.5;max-width:62ch}
+.fd-block p.soft{color:var(--ink-soft)}
+.fd-block p.small{font-size:12.5px;margin-top:6px}
+.fd-nutri{width:100%;border-collapse:collapse;font-size:14.5px}
+.fd-nutri th{padding:7px 8px 7px 0;font-weight:400;text-align:left}
+.fd-nutri td{padding:7px 0;text-align:right;font-family:var(--display);font-size:15.5px;white-space:nowrap}
+.fd-nutri tr + tr{border-top:1px solid var(--surface-2)}
+.fd-nutri tr.nested th{padding-left:16px;font-size:13.5px;color:var(--ink-soft)}
+.fd-tags{display:flex;flex-wrap:wrap;gap:6px;margin:0;padding:0;list-style:none}
+.fd-tags li{padding:3px 9px;font-size:12.5px;line-height:1.4;background:var(--surface-2);
+  border:1px solid var(--line);border-radius:999px}
+.fd-code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.02em}
+.fd-extlink{display:inline-flex;align-items:center;gap:6px;min-height:44px;font-size:14px;font-weight:600;
+  color:var(--steel);text-decoration:underline;text-underline-offset:3px;-webkit-tap-highlight-color:transparent}
+.fd-extlink:focus-visible{outline:2px solid var(--steel);outline-offset:2px}
+
+/* ---------------- Stan bazy ---------------- */
+
+.fd-status{display:flex;align-items:center;justify-content:center;gap:8px}
+@media (prefers-reduced-motion:no-preference){
+  .fd-spin{animation:fd-spin 1s linear infinite}
+  @keyframes fd-spin{to{transform:rotate(360deg)}}
+}
+
+/* ---------------- Źródła danych ---------------- */
+
+/* Stopka aplikacji (`footer` w `styles.css`) daje krój i wyśrodkowanie; tu tylko kolumna i odnośniki. */
+.fd-foot{max-width:640px;margin:0 auto;line-height:1.55}
+.fd-foot p{margin:0 0 6px}
+.fd-foot a{color:var(--steel);text-decoration:underline;text-underline-offset:2px}
