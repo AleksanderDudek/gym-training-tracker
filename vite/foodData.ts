@@ -87,6 +87,8 @@ export function foodData(): Plugin {
       });
     },
     generateBundle() {
+      // Build bez bazy jest poprawny, ale wdrożenie bez niej to raczej pomyłka — niech będzie widać.
+      if (!data) this.warn(`Brak ${FOOD_DATA_FILE}: aplikacja zbuduje się bez danych produktów.`);
       if (data) this.emitFile({ type: 'asset', fileName: data.fileName, source: data.bytes });
     },
   };

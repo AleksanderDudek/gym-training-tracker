@@ -15,11 +15,10 @@ export const MISSING_DATA_MESSAGE = 'Dane produktów nie są dołączone do tej 
  * ale serwer, który poda go z `Content-Encoding: gzip`, oddaje już rozpakowany JSON — dlatego
  * decyduje znacznik gzipa na początku (`1f 8b`), a nie nazwa pliku czy nagłówki.
  */
-export async function inflate(bytes: Uint8Array): Promise<string> {
+export async function inflate(bytes: Uint8Array<ArrayBuffer>): Promise<string> {
   if (bytes[0] !== 0x1f || bytes[1] !== 0x8b) return new TextDecoder().decode(bytes);
   if (typeof DecompressionStream === 'function') {
-    // Kopia do zwykłego ArrayBuffera: `Blob` nie przyjmuje widoku na współdzieloną pamięć.
-    const stream = new Blob([bytes.slice()]).stream().pipeThrough(new DecompressionStream('gzip'));
+    const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
     return new Response(stream).text();
   }
   // Starsze przeglądarki bez DecompressionStream (Safari < 16.4).
