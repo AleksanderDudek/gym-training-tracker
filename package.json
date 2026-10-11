@@ -10,7 +10,13 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json && tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.sw.json",
     "test": "vitest run",
-    "lint": "oxlint"
+    "lint": "oxlint",
+    "food:taxonomies": "tsx scripts/food/fetch-taxonomies.ts",
+    "food:prices": "tsx scripts/food/fetch-prices.ts",
+    "food:prepare": "tsx scripts/food/prepare-data.ts",
+    "food:data": "npm run food:taxonomies && npm run food:prices && npm run food:prepare",
+    "food:extract-priced": "tsx scripts/food/extract-priced.ts",
+    "food:check-recipes": "tsx scripts/food/check-recipes.ts"
   },
   "dependencies": {
     "@fontsource/ibm-plex-sans": "^5.3.0",
