@@ -2,11 +2,12 @@ import { MUSCLE_NAME } from '../data/muscles';
 import type { MuscleId } from '../data/muscles';
 import { RULES } from '../engine/design';
 import type { DesignNote } from '../engine/design';
-import { ATLAS_PATH } from '../routing';
+import { ATLAS_PATH, SECTIONS } from '../routing';
+import { Sections } from './Sections';
 
 /**
  * Wspólne klocki podglądu treningu i planu: paski mięśni, uwagi doradcy, przełącznik
- * sekcji zakładki Treningi i rząd filtrów.
+ * sekcji zakładki Trening i rząd filtrów.
  */
 
 const fmt = (n: number): string => n.toLocaleString('pl-PL', { maximumFractionDigits: 1 });
@@ -76,22 +77,11 @@ export function DesignNotes({ notes }: { notes: DesignNote[] }) {
   );
 }
 
-/**
- * Dwie sekcje zakładki Treningi. Odnośniki, a nie przyciski: każda sekcja ma własny adres,
- * więc „wstecz” i zakładki przeglądarki działają jak wszędzie indziej.
- */
-export function SectionSwitch({ on }: { on: 'workouts' | 'atlas' }) {
-  return (
-    // `div`, nie `nav`: arkusz stylizuje każdy `nav` jak dolny pasek przyklejony do krawędzi.
-    <div className="seg sect-switch" role="navigation" aria-label="Sekcje zakładki Treningi">
-      <a href="#/treningi" aria-current={on === 'workouts' ? 'page' : undefined}>
-        Treningi
-      </a>
-      <a href={ATLAS_PATH} aria-current={on === 'atlas' ? 'page' : undefined}>
-        Ćwiczenia
-      </a>
-    </div>
-  );
+const SECTION_PATH = { plan: '#/plan', workouts: '#/treningi', atlas: ATLAS_PATH } as const;
+
+/** Trzy sekcje zakładki Trening: Plan, Treningi i Ćwiczenia — u góry każdej z nich. */
+export function SectionSwitch({ on }: { on: keyof typeof SECTION_PATH }) {
+  return <Sections aria-label="Sekcje zakładki Trening" items={SECTIONS.work} current={SECTION_PATH[on]} />;
 }
 
 /** Rząd filtrów, który zawija się do kolejnej linii — przełącznik segmentowy mieści najwyżej trzy. */

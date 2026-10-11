@@ -20,7 +20,7 @@ import { achCtx, migrateBadges, revokeUnmet, syncBadges } from './engine/badges'
 import { pointsToday, rankFor } from './engine/score';
 import { seedFromPlan } from './engine/plan';
 import { loadFactorFor, planOf, planById, planId } from './data/plans';
-import { PLANS_PATH, TABS, activeTab, currentPath, go, goBack, screenOf, useRoute } from './routing';
+import { PLANS_PATH, TABS, activeTab, currentPath, go, goBack, isTabRoot, screenOf, tabHref, useRoute } from './routing';
 import { Icon } from './components/icons';
 import { BadgeDefs } from './components/BadgeArt';
 import { Celebrate } from './components/Celebrate';
@@ -1368,9 +1368,16 @@ export default function App() {
     : view === 'train'
       ? new Date().toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long' })
       : null;
-  // Klucz strony: nowy ekran wjeżdża od nowa, ten sam ekran z nowymi danymi — nie.
+  // Klucz strony: nowy ekran wjeżdża od nowa, ten sam ekran z nowymi danymi — nie. Sekcje
+  // jedzenia to osobne ekrany, a zmiana samego zapytania (filtry, otwarty produkt) — ten sam.
   const pageKey =
-    route.kind === 'tab' ? `tab:${route.tab}` : `${route.kind}:${'id' in route ? (route.id ?? '') : ''}`;
+    route.kind === 'tab'
+      ? `tab:${route.tab}`
+      : route.kind === 'food'
+        ? `food:${route.section}`
+        : route.kind === 'diet'
+          ? `diet:${route.page}`
+          : `${route.kind}:${'id' in route ? (route.id ?? '') : ''}`;
 
   const snoozeSupport = () => {
     const next = clone(state);
@@ -1605,17 +1612,20 @@ export default function App() {
 
       </main>
 
-      <nav aria-label="Główna nawigacja">
+      <nav className="tabbar" aria-label="Główna nawigacja">
         {TABS.map((t) => {
           const on = activeTab(route) === t.key;
           return (
             <a
               key={t.key}
-              href={t.path}
+              // Trening i Jedzenie wracają do ostatniej sekcji — adres liczy się przy każdym renderze.
+              href={tabHref(t.key, { hasPlan: !!state.plan })}
               aria-current={on ? 'page' : 'false'}
               onClick={(e) => {
                 // Stuknięcie w zakładkę, na której się jest, przewija na górę — jak w iOS i Androidzie.
-                if (!on || currentPath() !== t.path) return;
+                // Na korzeniu dowolnej sekcji tej zakładki, bo sekcja to jej ekran główny; z podstrony
+                // odnośnik prowadzi do ostatniej sekcji.
+                if (!on || !isTabRoot(currentPath())) return;
                 e.preventDefault();
                 const calm = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
                 window.scrollTo({ top: 0, behavior: calm ? 'auto' : 'smooth' });

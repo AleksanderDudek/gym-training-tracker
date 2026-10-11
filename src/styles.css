@@ -146,8 +146,8 @@
    */
   @media (min-width:672px){
     .page{border-left:1px solid var(--line);border-right:1px solid var(--line);min-height:100vh}
-    body nav{justify-content:center}
-    body nav a{flex:0 1 128px}
+    .tabbar{justify-content:center}
+    .tabbar a{flex:0 1 128px}
   }
   @media (prefers-reduced-motion:no-preference){
     .page{animation:pagein .2s ease-out}
@@ -292,38 +292,39 @@
   /*
    * Dolny pasek: pięć pozycji po 64 px wysokości i co najmniej 64 px szerokości na ekranie
    * 320 px. Aktywna zakładka ma „pigułkę” za ikoną, kolor i pogrubienie — trzy sygnały naraz,
-   * tak jak wskaźnik aktywnej pozycji w Material 3.
+   * tak jak wskaźnik aktywnej pozycji w Material 3. Reguły celują w klasę, nie w znacznik:
+   * `nav` to też przełącznik sekcji u góry ekranu.
    */
-  nav{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--surface);
+  .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--surface);
     border-top:1px solid var(--line);display:flex;
     padding-bottom:env(safe-area-inset-bottom);
     box-shadow:0 -1px 0 rgba(30,35,32,.04),0 -6px 18px rgba(30,35,32,.06)}
-  nav a{flex:1;min-width:0;min-height:64px;display:flex;flex-direction:column;
+  .tabbar a{flex:1;min-width:0;min-height:64px;display:flex;flex-direction:column;
     align-items:center;justify-content:center;gap:4px;
     padding:8px 2px 9px;background:none;border:0;font:inherit;font-size:12px;line-height:1.15;
     text-align:center;white-space:nowrap;text-decoration:none;color:var(--ink-soft);
     cursor:pointer;position:relative;
     -webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
-  nav a .ico{flex:none;opacity:.82}
+  .tabbar a .ico{flex:none;opacity:.82}
   .navpill{display:grid;place-items:center;width:56px;height:30px;border-radius:15px;
     transition:background-color .15s ease-out}
-  nav a[aria-current=page]{color:var(--c-orange-ink);font-weight:600}
-  nav a[aria-current=page] .ico{opacity:1}
-  nav a[aria-current=page] .navpill{background:var(--c-orange-bg)}
-  nav a:active .navpill{background:var(--surface-2)}
-  nav a[aria-current=page]:active .navpill{background:var(--c-orange-bg)}
+  .tabbar a[aria-current=page]{color:var(--c-orange-ink);font-weight:600}
+  .tabbar a[aria-current=page] .ico{opacity:1}
+  .tabbar a[aria-current=page] .navpill{background:var(--c-orange-bg)}
+  .tabbar a:active .navpill{background:var(--surface-2)}
+  .tabbar a[aria-current=page]:active .navpill{background:var(--c-orange-bg)}
   .navlabel{max-width:100%;overflow:hidden;text-overflow:ellipsis}
   /*
    * Klawiatura na telefonie podnosi przyklejony pasek nad siebie i przykrywa nim pole, w którym
    * się pisze. Na czas pisania pasek znika — wraca, gdy fokus opuści pole.
    */
   @media (pointer:coarse){
-    body:has(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):focus) nav,
-    body:has(textarea:focus) nav{display:none}
+    body:has(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):focus) .tabbar,
+    body:has(textarea:focus) .tabbar{display:none}
   }
-  nav a:focus-visible{outline:2px solid var(--steel);outline-offset:-3px}
+  .tabbar a:focus-visible{outline:2px solid var(--steel);outline-offset:-3px}
   /* Najwęższe telefony: etykiety schodzą o pół punktu, cel dotykowy zostaje bez zmian. */
-  @media (max-width:339px){nav a{font-size:11px;letter-spacing:-.01em}}
+  @media (max-width:339px){.tabbar a{font-size:11px;letter-spacing:-.01em}}
 
   #modal{position:fixed;inset:0;background:rgba(30,35,32,.55);display:grid;place-items:center;padding:18px;z-index:50}
   #modal.hidden{display:none}
@@ -949,12 +950,21 @@
 
   /* ---------------- Treningi, plany i doradca ---------------- */
 
-  /* Przełącznik sekcji zakładki Treningi — odnośniki w stroju przełącznika segmentowego. */
+  /* Przełącznik sekcji zakładki (Trening, Jedzenie) — odnośniki w stroju przełącznika segmentowego. */
   .sect-switch{margin:14px 0 12px}
   .seg a{display:flex;align-items:center;justify-content:center;font-size:13.5px;padding:11px 6px;
     min-height:48px;background:var(--surface-2);border:1px solid var(--edge);border-radius:var(--r);
-    color:var(--ink-soft);text-decoration:none;-webkit-tap-highlight-color:transparent}
+    color:var(--ink-soft);text-decoration:none;text-align:center;line-height:1.2;
+    -webkit-tap-highlight-color:transparent}
   .seg a[aria-current=page]{background:var(--steel);border-color:var(--steel);color:#fff;font-weight:600}
+  .seg a:focus-visible{outline:2px solid var(--steel);outline-offset:2px}
+  /*
+   * Cztery sekcje na ekranie 320 px to po 68 px na pozycję: „W pobliżu” pogrubione przy 13,5 px
+   * już się nie mieści. Krój schodzi o punkt, a boczne marginesy do minimum — wysokość, a więc
+   * cel dotykowy, zostaje bez zmian.
+   */
+  .sect-switch[data-n="4"]{gap:4px}
+  .sect-switch[data-n="4"] a{font-size:12.5px;padding:11px 2px;letter-spacing:-.01em}
 
   /* Filtry, które się zawijają — przełącznik segmentowy mieści najwyżej trzy pozycje. */
   .chips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 2px}

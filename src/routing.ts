@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { IconName } from './components/icons';
-import type { CardioSport, ExerciseId, Route, TabKey } from './types';
+import { hashPath } from './food/hash';
+import type { CardioSport, DietPage, ExerciseId, FoodSection, Route, TabKey } from './types';
 
 /**
  * Trasy trzymają się w części hash adresu, bo GitHub Pages serwuje wyłącznie pliki
@@ -15,15 +16,20 @@ import type { CardioSport, ExerciseId, Route, TabKey } from './types';
  * 320 px 64 px szerokości, a etykieta mieści się w jednym słowie.
  *
  * Kolejność idzie od codziennego do okazjonalnego, a profil stoi na końcu, jak w większości
- * aplikacji. Treningi mają zakładkę, odkąd są czymś więcej niż listą czterech zestawów:
- * biblioteka podziałów i partii, podgląd i kreator z doradcą. Atlas ćwiczeń wszedł do tej
- * samej zakładki jako druga sekcja — trening to zestaw ćwiczeń, a obie listy odpowiadają na
- * pytanie „co mogę zrobić”. Ustawienia siedzą w pasku aplikacji, bo otwiera się je raz na miesiąc.
+ * aplikacji. Trening ma trzy sekcje z przełącznikiem u góry: Plan, Treningi i Ćwiczenia —
+ * wszystkie trzy odpowiadają na pytanie „co trenuję”, a dzisiejszy termin i tak stoi na
+ * ekranie Dziś. Połączenie Planu z Treningami zwolniło miejsce na Jedzenie bez szóstej
+ * zakładki, która zeszłaby poniżej celu dotykowego. Jedzenie ma cztery sekcje: Dziennik,
+ * Przepisy, Produkty i W pobliżu. Ustawienia siedzą w pasku aplikacji, bo otwiera się je raz
+ * na miesiąc.
+ *
+ * `path` to stały korzeń zakładki. Trening i Jedzenie wracają do ostatniej sekcji, więc ich
+ * odnośnik w pasku liczy `tabHref` przy każdym renderze.
  */
 export const TABS: { key: TabKey; label: string; path: string; icon: IconName }[] = [
   { key: 'train', label: 'Dziś', path: '#/sesja', icon: 'session' },
-  { key: 'work', label: 'Treningi', path: '#/treningi', icon: 'workouts' },
-  { key: 'plan', label: 'Plan', path: '#/plan', icon: 'plan' },
+  { key: 'work', label: 'Trening', path: '#/treningi', icon: 'workouts' },
+  { key: 'food', label: 'Jedzenie', path: '#/jedzenie', icon: 'food' },
   { key: 'ach', label: 'Osiągnięcia', path: '#/osiagniecia', icon: 'awards' },
   { key: 'prog', label: 'Profil', path: '#/profil', icon: 'profile' },
 ];
@@ -38,6 +44,7 @@ const TAB_BY_PATH: Record<string, TabKey> = {
   sesja: 'train',
   // Stary adres zakładki. Zostaje, żeby zapisane linki i zakładki przeglądarki dalej działały.
   trening: 'train',
+  // Stary adres zakładki Plan — dziś sekcja Treningu pod tym samym adresem.
   plan: 'plan',
   profil: 'prog',
   // Stary adres zakładki poziomów. Zapisane linki prowadzą teraz do profilu, w którym
@@ -50,8 +57,67 @@ const TAB_BY_PATH: Record<string, TabKey> = {
 
 export const exercisePath = (id: ExerciseId): string => `#/cwiczenia/${encodeURIComponent(id)}`;
 
-/** Atlas ćwiczeń — druga sekcja zakładki Treningi. */
+/** Atlas ćwiczeń — trzecia sekcja zakładki Trening. */
 export const ATLAS_PATH = '#/cwiczenia';
+
+/**
+ * Zakładka Jedzenie: dziennik (z podstronami planu posiłków, postępu i profilu diety), przepisy,
+ * produkty i sklepy w pobliżu. Stan strony — wyszukiwanie, filtry, otwarty produkt — siedzi
+ * w zapytaniu wewnątrz hasha (`#/produkty?q=skyr`), więc trasa go nie widzi.
+ */
+export const FOOD_PATH = '#/jedzenie';
+export const RECIPES_PATH = '#/przepisy';
+export const PRODUCTS_PATH = '#/produkty';
+export const NEARBY_PATH = '#/w-poblizu';
+
+const FOOD_BY_PATH: Record<string, FoodSection> = {
+  jedzenie: 'diary',
+  przepisy: 'recipes',
+  produkty: 'products',
+  'w-poblizu': 'nearby',
+};
+
+const DIET_SLUG: Record<DietPage, string> = { plan: 'plan', progress: 'postep', profile: 'profil' };
+
+const DIET_BY_SLUG = Object.fromEntries(Object.entries(DIET_SLUG).map(([k, v]) => [v, k as DietPage])) as Record<
+  string,
+  DietPage
+>;
+
+export const dietPath = (page: DietPage): string => `${FOOD_PATH}/${DIET_SLUG[page]}`;
+
+const FOOD_TITLE: Record<FoodSection, string> = {
+  diary: 'Jedzenie',
+  recipes: 'Przepisy',
+  products: 'Produkty',
+  nearby: 'W pobliżu',
+};
+
+const DIET_TITLE: Record<DietPage, string> = { plan: 'Plan posiłków', progress: 'Postęp', profile: 'Profil diety' };
+
+/** Pozycja przełącznika sekcji: adres korzenia sekcji i jej nazwa. */
+export interface SectionLink {
+  path: string;
+  label: string;
+}
+
+/**
+ * Sekcje zakładek, w kolejności przełącznika u góry ekranu. Korzeń sekcji zachowuje się jak
+ * korzeń zakładki: bez strzałki wstecz, z pamięcią przewinięcia, a zakładka do niego wraca.
+ */
+export const SECTIONS: Record<'work' | 'food', readonly SectionLink[]> = {
+  work: [
+    { path: '#/plan', label: 'Plan' },
+    { path: '#/treningi', label: 'Treningi' },
+    { path: ATLAS_PATH, label: 'Ćwiczenia' },
+  ],
+  food: [
+    { path: FOOD_PATH, label: 'Dziennik' },
+    { path: RECIPES_PATH, label: 'Przepisy' },
+    { path: PRODUCTS_PATH, label: 'Produkty' },
+    { path: NEARBY_PATH, label: 'W pobliżu' },
+  ],
+};
 
 /** Podgląd treningu: ćwiczenia z seriami, mięśnie, doradca i start. */
 export const workoutPath = (id: string): string => `#/treningi/${encodeURIComponent(id)}`;
@@ -136,6 +202,7 @@ const TAB_SCREEN: Record<TabKey, Screen> = {
   ach: { title: 'Osiągnięcia', parent: null },
   prog: { title: 'Profil', parent: null },
   work: { title: 'Treningi', parent: null },
+  food: { title: 'Jedzenie', parent: null },
   set: { title: 'Ustawienia', parent: '#/profil' },
 };
 
@@ -148,7 +215,7 @@ export function screenOf(route: Route): Screen {
     case 'tab':
       return TAB_SCREEN[route.tab];
     case 'atlas':
-      // Druga sekcja zakładki Treningi — przełącznik u góry ekranu, więc bez strzałki wstecz.
+      // Sekcja zakładki Trening — przełącznik u góry ekranu, więc bez strzałki wstecz.
       return { title: 'Ćwiczenia', parent: null };
     case 'workout':
       return { title: 'Trening', parent: '#/treningi' };
@@ -176,18 +243,116 @@ export function screenOf(route: Route): Screen {
       return { title: SPORT_TITLE[route.sport ?? 'steps'], parent: '#/sesja' };
     case 'promo':
       return { title: 'Poleć znajomym', parent: SETTINGS_PATH };
+    case 'food':
+      return { title: FOOD_TITLE[route.section], parent: null };
+    case 'diet':
+      return { title: DIET_TITLE[route.page], parent: FOOD_PATH };
   }
 }
 
 const HOME = '#/sesja';
-const norm = (hash: string): string => (hash && hash !== '#/' && hash !== '#' ? hash : HOME);
 
-/** Bieżący adres, z pustym sprowadzonym do ekranu Dziś. */
+/**
+ * Ścieżka trasy: hash bez zapytania, z pustym sprowadzonym do ekranu Dziś. Zapytanie to stan
+ * strony (filtry, otwarty produkt), więc o tym, czy to „ten sam ekran”, decyduje sama ścieżka.
+ */
+const norm = (hash: string): string => {
+  const path = hashPath(hash);
+  return path && path !== '#/' && path !== '#' ? path : HOME;
+};
+
+/** Bieżący adres bez zapytania, z pustym sprowadzonym do ekranu Dziś. */
 export const currentPath = (): string => norm(window.location.hash);
 
+const ROOTS = new Set([...TABS.map((t) => t.path), ...SECTIONS.work.map((s) => s.path), ...SECTIONS.food.map((s) => s.path)]);
+
 /** Czy adres to korzeń zakładki albo jej sekcji — tam przewinięcie się pamięta. */
-export const isTabRoot = (hash: string): boolean =>
-  TABS.some((t) => t.path === norm(hash)) || norm(hash) === ATLAS_PATH;
+export const isTabRoot = (hash: string): boolean => ROOTS.has(norm(hash));
+
+/** Zakładka, której sekcją jest ten adres; `null` dla podstron i zakładek bez sekcji. */
+const sectionTab = (hash: string): 'work' | 'food' | null => {
+  const path = norm(hash);
+  if (SECTIONS.work.some((s) => s.path === path)) return 'work';
+  if (SECTIONS.food.some((s) => s.path === path)) return 'food';
+  return null;
+};
+
+/*
+ * Pamięć sekcji — jak osobny stos na zakładkę w iOS. Każda sekcja pamięta swój ostatni adres
+ * razem z zapytaniem (produkty wracają z wyszukiwaniem i filtrami, jak w Produktach PL), a każda
+ * zakładka — swoją ostatnią sekcję: Trening otwiera się tam, gdzie ktoś go zostawił. Kopia
+ * w `sessionStorage` przetrwa przeładowanie strony, ale nie zamknięcie karty: nowa wizyta zaczyna
+ * od sekcji domyślnych. Bez dostępu do pamięci przeglądarki (tryb prywatny, testy w node) pamięć
+ * zostaje tylko w tej wizycie.
+ */
+const SECTIONS_KEY = 'gt:sections';
+
+interface SectionMemory {
+  /** Ostatnia sekcja zakładki — ścieżka jej korzenia. */
+  tabs: Partial<Record<'work' | 'food', string>>;
+  /** Ostatni pełny adres sekcji (z zapytaniem) pod ścieżką jej korzenia. */
+  hashes: Record<string, string>;
+}
+
+function readSections(): SectionMemory {
+  const memo: SectionMemory = { tabs: {}, hashes: {} };
+  try {
+    const raw = JSON.parse(window.sessionStorage.getItem(SECTIONS_KEY) ?? 'null') as Partial<SectionMemory> | null;
+    // Tylko korzenie sekcji, każdy pod własną ścieżką i w swojej zakładce — ręcznie zmieniony
+    // zapis nie przeniesie nikogo gdzie indziej.
+    for (const [path, hash] of Object.entries(raw?.hashes ?? {})) {
+      if (typeof hash === 'string' && hash.startsWith('#/') && sectionTab(path) && norm(hash) === path) memo.hashes[path] = hash;
+    }
+    for (const [tab, path] of Object.entries(raw?.tabs ?? {})) {
+      if (typeof path === 'string' && sectionTab(path) === tab && norm(path) === path) memo.tabs[tab as 'work' | 'food'] = path;
+    }
+  } catch {
+    // Zepsuty zapis albo brak dostępu — zaczynamy od sekcji domyślnych.
+  }
+  return memo;
+}
+
+const memory = readSections();
+
+function saveSections(): void {
+  try {
+    window.sessionStorage.setItem(SECTIONS_KEY, JSON.stringify(memory));
+  } catch {
+    // Pamięć przeglądarki niedostępna — zostaje pamięć tej wizyty.
+  }
+}
+
+/** Zapamiętuje adres, jeśli to korzeń sekcji; podstrony i zakładki bez sekcji nic nie zmieniają. */
+export function rememberSection(hash: string): void {
+  const tab = sectionTab(hash);
+  if (!tab) return;
+  const path = norm(hash);
+  if (memory.hashes[path] === hash && memory.tabs[tab] === path) return;
+  memory.hashes[path] = hash;
+  memory.tabs[tab] = path;
+  saveSections();
+}
+
+/** Zapomina sekcje — kolejne wejście w zakładkę idzie do sekcji domyślnej, bez zapamiętanych filtrów. */
+export function forgetSections(): void {
+  memory.tabs = {};
+  memory.hashes = {};
+  saveSections();
+}
+
+/** Adres sekcji z jej ostatnim stanem w zapytaniu — dokąd prowadzi pozycja przełącznika sekcji. */
+export const sectionHref = (path: string): string => memory.hashes[path] ?? path;
+
+/**
+ * Dokąd prowadzi zakładka w dolnym pasku. Trening i Jedzenie — do ostatniej sekcji (z jej
+ * zapytaniem), a za pierwszym razem do domyślnej: Plan, gdy plan trwa (stamtąd widać kolejny
+ * termin), inaczej Treningi; Jedzenie — Dziennik. Pozostałe zakładki mają stały adres.
+ */
+export function tabHref(key: TabKey, opts: { hasPlan: boolean }): string {
+  if (key === 'work') return sectionHref(memory.tabs.work ?? (opts.hasPlan ? '#/plan' : '#/treningi'));
+  if (key === 'food') return sectionHref(memory.tabs.food ?? FOOD_PATH);
+  return TABS.find((t) => t.key === key)?.path ?? HOME;
+}
 
 /*
  * Pamięć przewinięcia. Każda zakładka wraca tam, gdzie ktoś ją zostawił, a powrót strzałką
@@ -225,9 +390,12 @@ export function parseHash(hash: string): Route {
       return x;
     }
   };
-  const parts = hash.replace(/^#\/?/, '').split('/').filter(Boolean).map(decode);
+  const parts = hashPath(hash).replace(/^#\/?/, '').split('/').filter(Boolean).map(decode);
   const [head, second] = parts;
   if (!head) return { kind: 'tab', tab: 'train' };
+  // Nieznana podstrona dziennika prowadzi do samego dziennika — adres zostaje w swojej zakładce.
+  if (head === 'jedzenie' && second && Object.hasOwn(DIET_BY_SLUG, second)) return { kind: 'diet', page: DIET_BY_SLUG[second]! };
+  if (Object.hasOwn(FOOD_BY_PATH, head)) return { kind: 'food', section: FOOD_BY_PATH[head]! };
   if (head === 'cwiczenia') return second ? { kind: 'exercise', id: second } : { kind: 'atlas' };
   if (head === 'profil' && second) return { kind: 'exstats', id: second };
   if (head === 'przekaski') {
@@ -254,7 +422,8 @@ export function parseHash(hash: string): Route {
     // wpisane `#/cardio/constructor` trafiłoby inaczej w prototyp obiektu zamiast w zapas.
     return { kind: 'cardioAdd', sport: Object.hasOwn(SPORT_BY_SLUG, second) ? SPORT_BY_SLUG[second] : 'steps' };
   }
-  const tab = TAB_BY_PATH[head];
+  // `hasOwn`, bo ręcznie wpisane `#/constructor` trafiłoby w prototyp obiektu zamiast w zapas.
+  const tab = Object.hasOwn(TAB_BY_PATH, head) ? TAB_BY_PATH[head] : undefined;
   return tab ? { kind: 'tab', tab } : { kind: 'tab', tab: 'train' };
 }
 
@@ -265,6 +434,8 @@ export function parseHash(hash: string): Route {
  */
 export const go = (path: string, opts?: { top?: boolean; replace?: boolean }): void => {
   if (opts?.top) scrollMemo.delete(norm(path));
+  // Cały adres, a nie sama ścieżka: `go('#/jedzenie?dodaj=1')` z dziennika to zmiana stanu strony
+  // (router ją przepuści, strona przeczyta ją z `popstate`), a nie powtórzenie bieżącego adresu.
   if (window.location.hash === path) return;
   // Zapis z kreatora zastępuje kreator w historii: „wstecz” z podglądu nie ma wracać do
   // formularza, który właśnie się zamknął.
@@ -275,7 +446,8 @@ export const go = (path: string, opts?: { top?: boolean; replace?: boolean }): v
       window.history.back();
       return;
     }
-    trail.pop();
+    // Ta sama ścieżka z innym zapytaniem nie trafi na stos tras, więc nie ma czego zdejmować.
+    if (norm(path) !== currentPath()) trail.pop();
     window.location.replace(path);
     return;
   }
@@ -287,10 +459,21 @@ export function useRoute(): Route {
 
   useEffect(() => {
     if (!trail.length) trail.push(norm(window.location.hash));
+    rememberSection(window.location.hash);
     const onChange = (e: HashChangeEvent) => {
       movedInApp = true;
-      const from = norm(new URL(e.oldURL).hash);
+      const old = new URL(e.oldURL).hash;
+      const from = norm(old);
       const to = norm(window.location.hash);
+      // Stary adres z zapytaniem, jakie miał w chwili wyjścia: strony jedzenia zmieniają je bez
+      // `hashchange` (`replaceState`), a `oldURL` niesie już tę podmienioną wersję — dopiero tu
+      // widać, z jakimi filtrami ktoś wyszedł.
+      rememberSection(old);
+      rememberSection(window.location.hash);
+      // Ta sama strona, inny stan w zapytaniu — np. „wstecz” zamyka kartę produktu. To nie jest
+      // przejście: bez wpisu na stos tras, bez przewijania i bez nowej trasy (zapytania trasa nie
+      // czyta). Nowy stan strona czyta sama, z `popstate`.
+      if (from === to) return;
       scrollMemo.set(from, window.scrollY);
       const back = trail.length > 1 && trail[trail.length - 2] === to;
       if (back) trail.pop();
@@ -308,15 +491,15 @@ export function useRoute(): Route {
 }
 
 /**
- * Który przycisk nawigacji ma być podświetlony. Atlas, podstrona ćwiczenia, podgląd i kreator
- * treningu należą do Treningów; historia ćwiczenia do profilu — ten sam ruch, dwa różne
- * pytania. Katalog i kreator planów należą do Planu. Przekąski i kroki należą do ekranu Dziś:
- * to ta sama odpowiedź na pytanie „co robię dzisiaj”.
+ * Który przycisk nawigacji ma być podświetlony. Plan z katalogiem i kreatorem planów, atlas,
+ * podstrona ćwiczenia, podgląd i kreator treningu należą do Treningu; historia ćwiczenia do
+ * profilu — ten sam ruch, dwa różne pytania. Przekąski i kroki należą do ekranu Dziś: to ta
+ * sama odpowiedź na pytanie „co robię dzisiaj”. Sekcje i podstrony diety — do Jedzenia.
  */
 export function activeTab(route: Route): TabKey {
   switch (route.kind) {
     case 'tab':
-      return route.tab === 'atlas' ? 'work' : route.tab;
+      return route.tab === 'atlas' || route.tab === 'plan' ? 'work' : route.tab;
     case 'exstats':
     case 'promo':
       return 'prog';
@@ -329,11 +512,13 @@ export function activeTab(route: Route): TabKey {
     case 'planClassic':
     case 'planDetail':
     case 'planEdit':
-      return 'plan';
     case 'atlas':
     case 'exercise':
     case 'workout':
     case 'workoutEdit':
       return 'work';
+    case 'food':
+    case 'diet':
+      return 'food';
   }
 }

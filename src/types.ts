@@ -622,8 +622,17 @@ export interface PlannedSet {
 
 export type View = 'train' | 'prog' | 'work' | 'set';
 
-/** Zakładka w dolnej nawigacji. */
-export type TabKey = View | 'atlas' | 'plan' | 'ach';
+/**
+ * Zakładka w dolnej nawigacji. `plan` i `atlas` to dziś sekcje zakładki Trening — klucze
+ * zostają, bo trasa `{ kind: 'tab', tab: 'plan' }` dalej wyświetla plan pod starym adresem.
+ */
+export type TabKey = View | 'atlas' | 'plan' | 'ach' | 'food';
+
+/** Sekcje zakładki Jedzenie — przełącznik u góry ekranu, każda pod własnym adresem. */
+export type FoodSection = 'diary' | 'recipes' | 'products' | 'nearby';
+
+/** Podstrony dziennika jedzenia: ze strzałką wstecz do dziennika, bez drugiego rzędu zakładek. */
+export type DietPage = 'plan' | 'progress' | 'profile';
 
 /** Trasa aplikacji. Podstrona ćwiczenia ma własny adres, więc da się ją wysłać komuś linkiem. */
 export type Route =
@@ -653,7 +662,11 @@ export type Route =
   /** Zapis kroków, bieżni, roweru albo zajęć tańca. Bez rodzaju — kroki, bo to najczęstszy wpis. */
   | { kind: 'cardioAdd'; sport?: CardioSport | undefined }
   /** Plakat polecający aplikację. */
-  | { kind: 'promo' };
+  | { kind: 'promo' }
+  /** Sekcja zakładki Jedzenie. Stan strony (filtry, otwarty produkt) siedzi w zapytaniu hasha, poza trasą. */
+  | { kind: 'food'; section: FoodSection }
+  /** Plan posiłków, postęp albo profil diety — podstrony dziennika. */
+  | { kind: 'diet'; page: DietPage };
 
 /** Materiał wideo pokazujący technikę ćwiczenia. */
 export interface VideoRef {
