@@ -146,8 +146,6 @@
    */
   @media (min-width:672px){
     .page{border-left:1px solid var(--line);border-right:1px solid var(--line);min-height:100vh}
-    .tabbar{justify-content:center}
-    .tabbar a{flex:0 1 128px}
   }
   @media (prefers-reduced-motion:no-preference){
     .page{animation:pagein .2s ease-out}
@@ -325,6 +323,15 @@
   .tabbar a:focus-visible{outline:2px solid var(--steel);outline-offset:-3px}
   /* Najwęższe telefony: etykiety schodzą o pół punktu, cel dotykowy zostaje bez zmian. */
   @media (max-width:339px){.tabbar a{font-size:11px;letter-spacing:-.01em}}
+  /*
+   * Szeroki ekran: zakładki zostają w kolumnie telefonu. Ta reguła stoi po bazowej `.tabbar a`,
+   * bo ma tę samą wagę selektora — wcześniej przegrałaby z `flex:1` i zakładki rozjechałyby się
+   * po krawędziach.
+   */
+  @media (min-width:672px){
+    .tabbar{justify-content:center}
+    .tabbar a{flex:0 1 128px}
+  }
 
   #modal{position:fixed;inset:0;background:rgba(30,35,32,.55);display:grid;place-items:center;padding:18px;z-index:50}
   #modal.hidden{display:none}

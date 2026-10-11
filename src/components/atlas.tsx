@@ -288,7 +288,7 @@ function AddToWorkout({ state, id }: { state: AppState; id: ExerciseId }) {
         <>
           <p className="tight">
             Własnych treningów jeszcze nie ma. Zacznij nowy od tego ćwiczenia — albo skopiuj gotowy trening
-            w zakładce Treningi i dopisz je tam.
+            w sekcji Treningi i dopisz je tam.
           </p>
           <button className="btn sm" style={{ marginTop: 8 }} onClick={() => go(workoutNewPath(undefined, id))}>
             Nowy trening z tym ćwiczeniem
