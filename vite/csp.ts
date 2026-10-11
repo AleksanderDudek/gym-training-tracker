@@ -44,7 +44,7 @@ export function csp(apiUrl?: string): string {
     "default-src 'self'",
     "script-src 'self'",
     "style-src 'self' 'unsafe-inline'",
-    "font-src 'self'",
+    "font-src 'self' data:",
     `img-src 'self' data: blob: ${ORIGINS.img.join(' ')}`,
     `connect-src 'self' ${[...ORIGINS.connect, ...(api ? [api] : [])].join(' ')}`,
     `frame-src ${ORIGINS.frame.join(' ')}`,

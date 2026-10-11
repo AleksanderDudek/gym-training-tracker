@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitest/config';
+import { configDefaults, defineConfig } from 'vitest/config';
 import { loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
@@ -78,5 +78,7 @@ export default defineConfig(({ mode }) => ({
   // `styles.css?raw`, na którym stoi test kontrastu tokenów.
   // `setupFiles`: dopasowania jest-dom, IndexedDB w pamięci (dziennik jedzenia na Dexie) i sprzątanie
   // po Testing Library w testach z `@vitest-environment jsdom`.
-  test: { css: true, setupFiles: ['src/test/setup.ts'] },
+  // `.claude/**`: robocze kopie repozytorium (git worktree) leżą w katalogu projektu — ich testy
+  // to cudza gałąź, nie ta.
+  test: { css: true, setupFiles: ['src/test/setup.ts'], exclude: [...configDefaults.exclude, '.claude/**'] },
 }));
