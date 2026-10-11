@@ -1,7 +1,7 @@
 import type { Block } from './blocks';
 import { loggedSets } from './steps';
 import type { Step } from './steps';
-import type { ExerciseId, LogEntry, LogTime, LogTimePart, Session, Workout } from '../types';
+import type { ExerciseId, LogEntry, LogTime, LogTimePart, Session, SessionClock, Workout } from '../types';
 
 /**
  * Zegar sesji: ile naprawdę trwa trening i ile mija między ćwiczeniami.
@@ -79,6 +79,27 @@ export function settlePart(s: Session, steps: readonly Step[], block: number, no
 }
 
 /**
+ * Rozliczenie części po zmianie w podanych ćwiczeniach — raz na blok, nawet gdy zmiana dotyczy
+ * obu ćwiczeń pary. Ćwiczenia spoza dzisiejszej kolejki nie mają części, więc nic nie zmieniają.
+ */
+export function settleExercises(s: Session, steps: readonly Step[], ids: readonly ExerciseId[], now: number): void {
+  const blocks = new Set(ids.map((id) => steps.find((st) => st.ex === id)?.block));
+  blocks.forEach((b) => {
+    if (b !== undefined) settlePart(s, steps, b, now);
+  });
+}
+
+/**
+ * Zegar z widoku listy: lista nie ma „Zaczynam”, więc trening liczy się od startu sesji —
+ * dopiero przy pierwszym zapisanym wyniku, bo samo pominięcie albo wyczyszczenie to nie trening.
+ * Start z zepsutą datą albo z przyszłości (przestawiony zegar telefonu) — od teraz.
+ */
+export function startListClock(s: Session, now: number): void {
+  const t = Date.parse(s.started);
+  startClock(s, Number.isFinite(t) && t <= now ? t : now, null);
+}
+
+/**
  * Część, która czeka na „Start”: blok kursora bez zaznaczonego początku. Sesja bez zegara
  * (sprzed niego albo przed „Zaczynam”) nie czeka na nic — idzie dawnym trybem.
  */
@@ -87,6 +108,22 @@ export function waitingPart(s: Session, steps: readonly Step[], cursor: number):
   const block = steps[cursor]?.block;
   if (block === undefined) return null;
   return s.clock.parts[block]?.start === undefined ? block : null;
+}
+
+/**
+ * Koniec, od którego liczy się przejście do chwili `at`: najpóźniejszy koniec nie późniejszy niż
+ * ona. Każdy koniec, także części z widoku listy (bez startu), zamyka poprzednie przejście —
+ * inaczej czas pracy w liście wpadłby do przejścia. `null` — przed tą chwilą nic się nie skończyło.
+ */
+export function lastEnd(ends: readonly number[], at: number): number | null {
+  return ends.reduce<number | null>((m, e) => (e <= at && (m === null || e > m) ? e : m), null);
+}
+
+/** Chwila, od której liczy się trwające przejście na karcie przejścia — ta sama reguła co w dzienniku. */
+export function waitingSince(s: Session, now: number): number | null {
+  if (!s.clock) return null;
+  const ends = Object.values(s.clock.parts).flatMap((p) => (p.end !== undefined ? [p.end] : []));
+  return lastEnd(ends, now);
 }
 
 /**
@@ -104,24 +141,33 @@ export function timeOf(s: Session, blocks: readonly Block[], now: number): LogTi
     if (!p || (p.start === undefined && p.end === undefined)) return;
     const end = p.end ?? now;
     if (p.start !== undefined && end < p.start) return;
-    parts.push({ block: b.n, ex: [...b.ids], ...(p.start !== undefined ? { at: sec(p.start) } : {}), end: sec(end) });
+    // Nazwa części to ćwiczenia naprawdę zrobione: pominięte z pary wypada. Cała pominięta po starcie
+    // zostaje z pełną nazwą — czas przy stanowisku był, a pusta nazwa nic by nie mówiła.
+    const done = b.ids.filter((id) => !s.skip[id]);
+    const ex = done.length ? done : [...b.ids];
+    parts.push({ block: b.n, ex, ...(p.start !== undefined ? { at: sec(p.start) } : {}), end: sec(end) });
   });
   parts.sort((a, b) => (a.at ?? a.end) - (b.at ?? b.end) || a.end - b.end);
   return { secs: sec(now), parts };
 }
 
 /**
- * Przejścia między kolejnymi częściami z zaznaczonym startem. Część z widoku listy nie ma
- * startu, więc przejścia przed nią nie ma — lepiej żadna liczba niż zmyślona. Ujemnych też nie
- * ma: część zaczęta przed końcem poprzedniej to cofnięcie serii, nie przejście.
+ * Przejście przed każdą częścią z zaznaczonym startem: od najpóźniejszego końca innej części
+ * nie późniejszego niż ten start (`lastEnd`). Część z widoku listy nie ma startu, więc przejścia
+ * przed nią nie ma — lepiej żadna liczba niż zmyślona — ale jej koniec zamyka przejście przed
+ * następną. Ujemnych nie ma: część zaczęta przed końcem poprzedniej (cofnięta seria) nie ma
+ * przed sobą żadnego końca i przejścia nie dostaje.
  */
 export function transitions(t: LogTime): Gap[] {
-  const started = t.parts.filter((p) => p.at !== undefined);
   const out: Gap[] = [];
-  for (let i = 1; i < started.length; i++) {
-    const gap = started[i]!.at! - started[i - 1]!.end;
-    if (gap >= 0) out.push({ block: started[i]!.block, ex: started[i]!.ex, secs: gap });
-  }
+  t.parts.forEach((p) => {
+    if (p.at === undefined) return;
+    const from = lastEnd(
+      t.parts.filter((q) => q !== p).map((q) => q.end),
+      p.at,
+    );
+    if (from !== null) out.push({ block: p.block, ex: p.ex, secs: p.at - from });
+  });
   return out;
 }
 
@@ -148,6 +194,46 @@ export function averageTime(log: readonly LogEntry[], w: Pick<Workout, 'id' | 'n
     .slice(-last);
   if (!mine.length) return null;
   return { secs: Math.round(mine.reduce((n, e) => n + e.time!.secs, 0) / mine.length), n: mine.length };
+}
+
+const moment = (n: unknown): n is number => typeof n === 'number' && Number.isFinite(n) && n >= 0;
+
+/**
+ * Zegar z zapisu: start i części z chwilami — liczbami albo bez nich. Część z końcem przed
+ * startem przechodzi (to bywa przestawiony zegar telefonu), a `timeOf` ją pomija; tekst,
+ * `NaN` albo ujemna chwila to już zepsuty zapis i cały zegar odpada.
+ */
+export function validClock(c: unknown): c is SessionClock {
+  if (!c || typeof c !== 'object') return false;
+  const { begin, parts } = c as { begin?: unknown; parts?: unknown };
+  if (!moment(begin) || !parts || typeof parts !== 'object' || Array.isArray(parts)) return false;
+  return Object.values(parts).every((p: unknown) => {
+    if (!p || typeof p !== 'object') return false;
+    const { start, end } = p as { start?: unknown; end?: unknown };
+    return (start === undefined || moment(start)) && (end === undefined || moment(end));
+  });
+}
+
+/**
+ * Czas treningu z dziennika: sekundy i części z numerem bloku, ćwiczeniami i sekundami. Dziennik
+ * pisze tylko `timeOf`, który nie zostawia ujemnych ani odwróconych części — taki wpis jest
+ * zepsuty i traci czas (sam trening zostaje w historii).
+ */
+export function validLogTime(t: unknown): t is LogTime {
+  if (!t || typeof t !== 'object') return false;
+  const { secs, parts } = t as { secs?: unknown; parts?: unknown };
+  if (!moment(secs) || !Array.isArray(parts)) return false;
+  return parts.every((p: unknown) => {
+    if (!p || typeof p !== 'object') return false;
+    const { block, ex, at, end } = p as { block?: unknown; ex?: unknown; at?: unknown; end?: unknown };
+    return (
+      moment(block) &&
+      moment(end) &&
+      (at === undefined || (moment(at) && at <= end)) &&
+      Array.isArray(ex) &&
+      ex.every((x) => typeof x === 'string')
+    );
+  });
 }
 
 /** „45 s”, „12 min”, „1 h 05 min” — czas treningu słowami, do minuty. */

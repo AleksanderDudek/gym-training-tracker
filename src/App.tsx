@@ -43,7 +43,18 @@ import { addSet, answerEffort, extendRest, forgetAsk, settleOpen, skipRest, star
 import type { RestPlan } from './engine/rests';
 import { cursorOf, sessionSteps } from './engine/steps';
 import { blocksOf } from './engine/blocks';
-import { durationText, settlePart, startClock, startPart, summary, timeOf, timed } from './engine/clock';
+import {
+  durationText,
+  settleExercises,
+  startClock,
+  startListClock,
+  startPart,
+  summary,
+  timeOf,
+  timed,
+  validClock,
+  validLogTime,
+} from './engine/clock';
 import { formatClock } from './components/Timer';
 import { GuidedSession } from './components/Guided';
 import { PromoPage } from './components/Promo';
@@ -57,7 +68,6 @@ import type {
   AppState,
   AchievementHit,
   CardioInput,
-  Session,
   Change,
   EffortKey,
   ExerciseId,
@@ -153,46 +163,6 @@ function restoreExtras(next: AppState, saved: Partial<AppState>): void {
   const r = next.cfg.reminders;
   if (r !== undefined && (typeof r !== 'object' || typeof r.morning !== 'boolean' || typeof r.evening !== 'boolean'))
     delete next.cfg.reminders;
-}
-
-const finite = (n: unknown): n is number => typeof n === 'number' && Number.isFinite(n);
-
-/** Zegar sesji z zapisu: start i części z chwilami — liczbami albo bez nich. */
-function validClock(c: unknown): c is NonNullable<Session['clock']> {
-  if (!c || typeof c !== 'object') return false;
-  const { begin, parts } = c as { begin?: unknown; parts?: unknown };
-  return (
-    finite(begin) &&
-    !!parts &&
-    typeof parts === 'object' &&
-    !Array.isArray(parts) &&
-    Object.values(parts).every(
-      (p: unknown) =>
-        !!p &&
-        typeof p === 'object' &&
-        [(p as { start?: unknown }).start, (p as { end?: unknown }).end].every((t) => t === undefined || finite(t)),
-    )
-  );
-}
-
-/** Czas treningu z dziennika: sekundy i lista części z numerem bloku, ćwiczeniami i sekundami. */
-function validLogTime(t: unknown): t is LogTime {
-  if (!t || typeof t !== 'object') return false;
-  const { secs, parts } = t as { secs?: unknown; parts?: unknown };
-  return (
-    finite(secs) &&
-    Array.isArray(parts) &&
-    parts.every(
-      (p: unknown) =>
-        !!p &&
-        typeof p === 'object' &&
-        finite((p as { block?: unknown }).block) &&
-        finite((p as { end?: unknown }).end) &&
-        ((p as { at?: unknown }).at === undefined || finite((p as { at?: unknown }).at)) &&
-        Array.isArray((p as { ex?: unknown }).ex) &&
-        ((p as { ex: unknown[] }).ex).every((x) => typeof x === 'string'),
-    )
-  );
 }
 
 const isDay = (n: unknown): boolean => Number.isInteger(n) && (n as number) >= 1 && (n as number) <= 7;
@@ -476,21 +446,7 @@ export default function App() {
    * wyczyszczenie, zamiana). `w` — trening na dziś po tej zmianie.
    */
   const settleClock = (next: AppState, w: Workout, ids: ExerciseId[], now: number) => {
-    const s = next.session!;
-    if (!s.clock) return;
-    const steps = sessionSteps(next, w);
-    new Set(ids.map((id) => steps.find((st) => st.ex === id)?.block)).forEach((b) => {
-      if (b !== undefined) settlePart(s, steps, b, now);
-    });
-  };
-
-  /**
-   * Widok listy nie ma „Zaczynam” ani „Start: …”, więc zegar rusza od startu sesji przy pierwszym
-   * zapisie, a części dostają tylko koniec — bez przejść, bo ich początku nikt nie zaznaczył.
-   */
-  const listClock = (s: Session, now: number) => {
-    const t = Date.parse(s.started);
-    startClock(s, Number.isFinite(t) && t <= now ? t : now, null);
+    if (next.session!.clock) settleExercises(next.session!, sessionSteps(next, w), ids, now);
   };
 
   const saveExercise = (id: ExerciseId, rows: SetResult[], effort: EffortKey) => {
@@ -500,7 +456,9 @@ export default function App() {
     next.session!.done[id] = true;
     delete next.session!.skip[id];
     forgetAsk(next.session!, id);
-    listClock(next.session!, now);
+    // Widok listy nie ma „Zaczynam” ani „Start: …”: zegar rusza od startu sesji przy pierwszym
+    // wyniku, a części dostają tylko koniec — bez przejść, bo ich początku nikt nie zaznaczył.
+    startListClock(next.session!, now);
     settleClock(next, current!, [id], now);
     commit(next);
   };
@@ -511,7 +469,6 @@ export default function App() {
     delete next.session!.res[id];
     delete next.session!.done[id];
     forgetAsk(next.session!, id);
-    listClock(next.session!, now);
     settleClock(next, current!, [id], now);
     commit(next);
   };
@@ -527,7 +484,7 @@ export default function App() {
       delete s.done[id];
       s.ask = (s.ask ?? []).filter((x) => x !== id);
     }
-    if ((state.cfg.view ?? 'guided') === 'list') listClock(s, now);
+    // Pominięcie to nie trening — zegara nie startuje (inaczej powrót do prowadzenia ominąłby „Zaczynam”).
     settleClock(next, current!, [id], now);
     commit(next);
   };

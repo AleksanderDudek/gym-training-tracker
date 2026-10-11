@@ -3,7 +3,7 @@ import { EFFORT, READY, ex, ladderFor } from '../data/exercises';
 import { EX_JOKES } from '../data/exjokes';
 import { blocksOf } from '../engine/blocks';
 import type { Block } from '../engine/blocks';
-import { waitingPart } from '../engine/clock';
+import { waitingPart, waitingSince } from '../engine/clock';
 import { plan, planLabel } from '../engine/plan';
 import { plural } from '../engine/quips';
 import { restBetween, restLabel } from '../engine/rests';
@@ -473,17 +473,19 @@ function TransitionPanel({
   onStart: () => void;
   onSkip: (ids: ExerciseId[]) => void;
 }) {
-  const ends = Object.values(session.clock?.parts ?? {})
-    .map((p) => p.end)
-    .filter((e): e is number => e !== undefined);
-  const since = ends.length ? Math.max(...ends) : null;
+  // Od tego samego końca, od którego dziennik policzy to przejście — także końca części z listy.
+  const since = waitingSince(session, Date.now());
   const tick = useSecondTick(since ?? 0);
   const gap = since !== null ? secsSince(since, tick) : 0;
   // Co z tej części jeszcze czeka — pierwsza niezrobiona seria każdego ćwiczenia.
   const open = block.ids
     .map((id) => steps.find((st) => st.block === block.n && st.ex === id && !session.skip[id] && !session.done[id] && loggedSets(session, id) < st.set))
     .filter((st): st is Step => !!st);
-  const label = block.kind === 'pair' ? 'para' : block.kind === 'circuit' ? 'obwód' : ex(block.ids[0]!).name;
+  // Na przycisku to, co naprawdę teraz zaczynasz: ćwiczenie, oba z pary, a w obwodzie — liczba stacji.
+  const label =
+    block.kind === 'circuit' && open.length > 1
+      ? `obwód (${open.length} ${plural(open.length, STATION_FORMS)})`
+      : open.map((st) => ex(st.ex).name).join(' + ');
   const left = rest ? Math.max(0, (rest.until - now) / 1000) : 0;
   return (
     <div className="grp guide-trans">

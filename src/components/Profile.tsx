@@ -235,14 +235,21 @@ export function ProfileView({
                 <div>
                   <div>
                     <b>{e.workout}</b>
-                    {timed(e.time) && <span className="h-time"> · {durationText(e.time.secs)}</span>}
+                    {/* Czas stoi zawsze, gdy był zegar; spoza 3 min – 4 h tylko nie wchodzi do statystyk i odznak. */}
+                    {e.time && (
+                      <span className="h-time">
+                        {' '}
+                        · {durationText(e.time.secs)}
+                        {!timed(e.time) && <span className="h-out"> (poza statystykami)</span>}
+                      </span>
+                    )}
                   </div>
                   <div className="h-detail">
                     {e.items
                       .map((i) => `${EX[i.id]?.name ?? i.id} ${i.sets.map((s) => s.reps).join('/')}`)
                       .join(' · ')}
                   </div>
-                  {timed(e.time) && e.time.parts.length > 0 && <TimeLine time={e.time} />}
+                  {e.time && e.time.parts.length > 0 && <TimeLine time={e.time} />}
                 </div>
                 <div className="streak">
                   {num(sessionTonnage(e))} kg·p

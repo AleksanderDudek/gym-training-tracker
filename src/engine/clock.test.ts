@@ -3,14 +3,20 @@ import type { Block } from './blocks';
 import {
   averageTime,
   durationText,
+  lastEnd,
+  settleExercises,
   settlePart,
+  startListClock,
   startClock,
   startPart,
   summary,
   timed,
   timeOf,
   transitions,
+  validClock,
+  validLogTime,
   waitingPart,
+  waitingSince,
 } from './clock';
 import type { Step } from './steps';
 import type { LogEntry, LogTime, Session } from '../types';
@@ -239,6 +245,15 @@ describe('czas zapisany w dzienniku', () => {
   it('bez zegara — brak czasu', () => {
     expect(timeOf(fresh(), blocks, base)).toBeNull();
   });
+
+  it('część nazywa ćwiczenia naprawdę zrobione — pominięte z pary wypada; pominięta cała zostaje z nazwą', () => {
+    const s = fresh({ skip: { row: true, goblet: true } });
+    startClock(s, base, 2);
+    s.clock!.parts[2]!.end = base + 300_000;
+    s.clock!.parts[1] = { start: base + 400_000, end: base + 450_000 };
+    const t = timeOf(s, blocks, base + 600_000)!;
+    expect(t.parts.map((p) => p.ex)).toEqual([['pushup'], ['goblet']]);
+  });
 });
 
 describe('przejścia i podsumowanie', () => {
@@ -257,6 +272,20 @@ describe('przejścia i podsumowanie', () => {
       { block: 2, ex: ['row', 'pushup'], secs: 100 },
       { block: 4, ex: ['plank'], secs: 220 },
     ]);
+  });
+
+  it('część z listy w środku zamyka przejście — liczy się od jej końca, nie od części sprzed niej', () => {
+    // Prowadzenie → lista → prowadzenie: część 2 zapisana w liście w 10. minucie, część 3 ruszyła w 11.
+    const mixed: LogTime = {
+      secs: 1200,
+      parts: [
+        { block: 1, ex: ['goblet'], at: 0, end: 60 },
+        { block: 2, ex: ['row'], end: 600 },
+        { block: 3, ex: ['swing'], at: 660, end: 900 },
+      ],
+    };
+    expect(transitions(mixed)).toEqual([{ block: 3, ex: ['swing'], secs: 60 }]);
+    expect(summary(mixed).gaps).toBe(60);
   });
 
   it('ujemnego przejścia nie ma', () => {
@@ -324,5 +353,100 @@ describe('średni czas treningu', () => {
   it('wpis bez identyfikatora treningu pasuje po nazwie; bez czasu — brak średniej', () => {
     expect(averageTime([log('2026-09-01', undefined, 30)], { id: 'a', name: 'A' })).toEqual({ secs: 1800, n: 1 });
     expect(averageTime([log('2026-09-01', 'a', null)], { id: 'a', name: 'A' })).toBeNull();
+  });
+});
+
+describe('koniec, od którego liczy się przejście', () => {
+  it('najpóźniejszy koniec nie późniejszy niż chwila startu', () => {
+    expect(lastEnd([60, 600, 900], 660)).toBe(600);
+    expect(lastEnd([700], 660)).toBeNull();
+    expect(lastEnd([], 10)).toBeNull();
+  });
+
+  it('karta przejścia liczy od tego samego końca co dziennik', () => {
+    const s = fresh();
+    expect(waitingSince(s, 5000)).toBeNull();
+    startClock(s, 1000, null);
+    expect(waitingSince(s, 5000)).toBeNull();
+    s.clock!.parts[1] = { start: 1000, end: 2000 };
+    s.clock!.parts[2] = { end: 4000 };
+    s.clock!.parts[3] = { start: 4500 };
+    expect(waitingSince(s, 5000)).toBe(4000);
+  });
+});
+
+describe('zegar z widoku listy i rozliczanie ćwiczeń', () => {
+  it('lista startuje zegar od startu sesji; zepsuty albo przyszły start — od teraz', () => {
+    const s = fresh({ started: '2026-10-11T08:00:00Z' });
+    const t = Date.parse('2026-10-11T08:00:00Z');
+    startListClock(s, t + 60_000);
+    expect(s.clock).toEqual({ begin: t, parts: {} });
+    const bad = fresh({ started: 'wczoraj' });
+    startListClock(bad, 5000);
+    expect(bad.clock!.begin).toBe(5000);
+    const future = fresh({ started: '2026-10-11T09:00:00Z' });
+    startListClock(future, t);
+    expect(future.clock!.begin).toBe(t);
+  });
+
+  it('rozlicza części podanych ćwiczeń, raz na blok; nieznane ćwiczenie pomija', () => {
+    const s = fresh({ res: { row: rows(2), pushup: rows(2), goblet: rows(2) } });
+    startClock(s, 1000, 1);
+    s.clock!.parts[2] = { start: 2000 };
+    settleExercises(s, steps, ['row', 'pushup', 'nieznane'], 3000);
+    expect(s.clock!.parts[2]).toEqual({ start: 2000, end: 3000 });
+    // Blok 1 nie był na liście — zostaje otwarty, choć ma komplet.
+    expect(s.clock!.parts[1]).toEqual({ start: 1000 });
+  });
+});
+
+describe('zegar i czas z zapisu', () => {
+  it('zegar: start i chwile części jako liczby', () => {
+    expect(validClock({ begin: 1000, parts: {} })).toBe(true);
+    expect(validClock({ begin: 1000, parts: { 1: { start: 1000, end: 2000 }, 2: { end: 3000 }, 3: {} } })).toBe(true);
+  });
+
+  it('zegar: zepsuty start albo części odpadają', () => {
+    expect(validClock(null)).toBe(false);
+    expect(validClock('x')).toBe(false);
+    expect(validClock({ begin: '1000', parts: {} })).toBe(false);
+    expect(validClock({ begin: Number.NaN, parts: {} })).toBe(false);
+    expect(validClock({ begin: -5, parts: {} })).toBe(false);
+    expect(validClock({ begin: 1000 })).toBe(false);
+    expect(validClock({ begin: 1000, parts: [] })).toBe(false);
+    expect(validClock({ begin: 1000, parts: { 1: null } })).toBe(false);
+    expect(validClock({ begin: 1000, parts: { 1: { start: 'x' } } })).toBe(false);
+    expect(validClock({ begin: 1000, parts: { 1: { end: Number.NaN } } })).toBe(false);
+    expect(validClock({ begin: 1000, parts: { 1: { start: -1 } } })).toBe(false);
+  });
+
+  it('zegar: koniec przed startem to jeszcze nie zepsuty zapis — taką część pomija dopiero czas', () => {
+    const c = { begin: 1000, parts: { 1: { start: 5000, end: 3000 } } };
+    expect(validClock(c)).toBe(true);
+    expect(timeOf(fresh({ clock: c }), blocks, 9000)!.parts).toEqual([]);
+  });
+
+  it('czas z dziennika: sekundy i części z numerem bloku, ćwiczeniami i chwilami', () => {
+    expect(validLogTime({ secs: 900, parts: [] })).toBe(true);
+    expect(validLogTime({ secs: 900, parts: [{ block: 1, ex: ['goblet'], at: 0, end: 600 }, { block: 2, ex: ['row'], end: 800 }] })).toBe(
+      true,
+    );
+  });
+
+  it('czas z dziennika: zepsute sekundy albo części odpadają', () => {
+    const part = { block: 1, ex: ['goblet'], at: 0, end: 600 };
+    expect(validLogTime(undefined)).toBe(false);
+    expect(validLogTime({ secs: '900', parts: [] })).toBe(false);
+    expect(validLogTime({ secs: -1, parts: [] })).toBe(false);
+    expect(validLogTime({ secs: 900 })).toBe(false);
+    expect(validLogTime({ secs: 900, parts: {} })).toBe(false);
+    expect(validLogTime({ secs: 900, parts: [null] })).toBe(false);
+    expect(validLogTime({ secs: 900, parts: [{ ...part, block: 'x' }] })).toBe(false);
+    expect(validLogTime({ secs: 900, parts: [{ ...part, ex: 'goblet' }] })).toBe(false);
+    expect(validLogTime({ secs: 900, parts: [{ ...part, ex: [1] }] })).toBe(false);
+    expect(validLogTime({ secs: 900, parts: [{ ...part, end: Number.NaN }] })).toBe(false);
+    expect(validLogTime({ secs: 900, parts: [{ ...part, at: -10 }] })).toBe(false);
+    // Odwrócona część: dziennik pisze tylko `timeOf`, który takich nie zostawia — to zepsuty zapis.
+    expect(validLogTime({ secs: 900, parts: [{ ...part, at: 700, end: 600 }] })).toBe(false);
   });
 });
