@@ -20,7 +20,7 @@ import { achCtx, migrateBadges, revokeUnmet, syncBadges } from './engine/badges'
 import { pointsToday, rankFor } from './engine/score';
 import { seedFromPlan } from './engine/plan';
 import { loadFactorFor, planOf, planById, planId } from './data/plans';
-import { PLANS_PATH, TABS, activeTab, currentPath, go, goBack, isTabRoot, screenOf, tabHref, useRoute } from './routing';
+import { PLANS_PATH, TABS, activeTab, currentPath, forgetSections, go, goBack, isTabRoot, screenOf, tabHref, useRoute } from './routing';
 import { Icon } from './components/icons';
 import { BadgeDefs } from './components/BadgeArt';
 import { Celebrate } from './components/Celebrate';
@@ -86,6 +86,7 @@ import { forgetWatch, garminConfigured, garminKey, pullWatch } from './garmin';
 import type { PullResult } from './garmin';
 import { attachTrail, trail } from './trail';
 import { FeedbackDialog } from './components/Feedback';
+import { hasDiet } from './food/dietFlag';
 import { UpdateBar } from './components/UpdateBar';
 import { withExtension, withWeekdays } from './engine/planedit';
 import { BridgeContext } from './food/bridge';
@@ -142,8 +143,6 @@ function restoreExtras(next: AppState, saved: Partial<AppState>): void {
     : [];
   if (typeof saved.supportSnooze === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(saved.supportSnooze))
     next.supportSnooze = saved.supportSnooze;
-  if (typeof saved.foodMigrated === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(saved.foodMigrated))
-    next.foodMigrated = saved.foodMigrated;
   if (next.cfg.avatar !== undefined && next.cfg.avatar !== 'gustaw' && next.cfg.avatar !== 'gosia')
     delete next.cfg.avatar;
   // Zmiany dni w trakcie planu i przedłużenie: tylko poprawne daty, dni 1–7 i rozsądna liczba tygodni.
@@ -363,40 +362,45 @@ export default function App() {
   }, [state]);
 
   /*
-   * Jednorazowe przeniesienie ważeń z dawnego dziennika diety (Produkty PL, ta sama domena, więc
-   * ta sama baza IndexedDB) do dziennika wagi — przy pierwszym wejściu w Jedzenie. Raz na wizytę
-   * (`migrating`, także pod podwójnym efektem StrictMode). Bez IndexedDB — po cichu i bez
-   * znacznika: kolejne uruchomienie spróbuje jeszcze raz, a ta wizyta nie wpadnie w pętlę.
+   * Ważenia z dziennika diety (dawne Produkty PL na tej samej domenie, kopia diety albo plan
+   * z Excela) przechodzą do dziennika wagi przy każdym wejściu w Jedzenie — i znikają z diety,
+   * więc waga ma jedno źródło, a ważenie usunięte w profilu nie wraca. Bez IndexedDB — po cichu:
+   * kolejne wejście spróbuje jeszcze raz. `moving` pilnuje, żeby dwa przebiegi (StrictMode,
+   * szybkie przejścia) nie szły naraz.
    */
   const onFood = route.kind === 'food' || route.kind === 'diet';
-  const migrate = onFood && !!state && !state.foodMigrated;
-  const migrating = useRef(false);
+  const moving = useRef(false);
+  const loaded = !!state;
   useEffect(() => {
-    if (!migrate || migrating.current) return;
-    migrating.current = true;
+    if (!onFood || !loaded || moving.current) return;
+    moving.current = true;
     void (async () => {
-      let days: import('./food/diet/db').DayRow[];
-      let toMigrate: typeof import('./food/diet/body').weightsToMigrate;
       try {
-        const [{ db }, body] = await Promise.all([import('./food/diet/db'), import('./food/diet/body')]);
-        days = await db.days.toArray();
-        toMigrate = body.weightsToMigrate;
+        const [{ db }, { weightsToMigrate }, { forgetDietWeights }] = await Promise.all([
+          import('./food/diet/db'),
+          import('./food/diet/body'),
+          import('./food/backup'),
+        ]);
+        const days = await db.days.filter((d) => d.weightKg != null).toArray();
+        const base = live.current;
+        if (!days.length || !base) return;
+        const found = weightsToMigrate(days, bodyOf(base));
+        if (found.length) {
+          const next = clone(base);
+          found.forEach((w) => setBodyWeight(next, w.kg, w.day));
+          commit(next);
+          setToastMsg(
+            `Dziennik wagi przejął ${found.length === 1 ? 'ważenie' : `ważenia (${found.length})`} z dziennika diety.`,
+          );
+        }
+        await forgetDietWeights();
       } catch {
-        return;
+        // Bez IndexedDB nie ma czego przenosić.
+      } finally {
+        moving.current = false;
       }
-      const base = live.current;
-      if (!base || base.foodMigrated) return;
-      const found = toMigrate(days, bodyOf(base));
-      const next = clone(base);
-      found.forEach((w) => setBodyWeight(next, w.kg, w.day));
-      next.foodMigrated = dayKey(Date.now());
-      commit(next);
-      if (found.length)
-        setToastMsg(
-          `Dziennik wagi przejął ${found.length === 1 ? 'ważenie' : `ważenia (${found.length})`} z dawnego dziennika diety.`,
-        );
     })();
-  }, [migrate, commit]);
+  }, [onFood, loaded, commit]);
 
   // Lista przypomnień na serwerze idzie za stanem: po zmianie planu albo zapisanym treningu
   // i po powrocie do aplikacji następnego dnia. Bez serwera w buildzie, bez zgody albo bez
@@ -1394,8 +1398,14 @@ export default function App() {
     go(PLANS_PATH, { replace: true });
   };
 
-  const exportData = () => {
-    const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  /*
+   * Jedna kopia zapasowa: trening, a gdy ktoś prowadzi dietę — także dziennik jedzenia pod `diet`.
+   * Dieta siedzi w IndexedDB, więc jej moduł ładuje się dopiero tutaj; bez diety plik wygląda jak dawniej.
+   */
+  const exportData = async () => {
+    let diet: unknown = null;
+    if (hasDiet()) diet = await import('./food/backup').then((m) => m.dietBackup()).catch(() => null);
+    const blob = new Blob([JSON.stringify(diet ? { ...state, diet } : state, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = `gym-tracker-${new Date().toISOString().slice(0, 10)}.json`;
@@ -1426,7 +1436,18 @@ export default function App() {
         };
         restoreExtras(next, parsed);
         commit(next);
-        setToastMsg('Dane wczytane.');
+        forgetSections();
+        const diet = (parsed as AppState & { diet?: unknown }).diet;
+        if (!diet) {
+          setToastMsg('Dane wczytane.');
+          return;
+        }
+        void import('./food/backup')
+          .then((m) => m.restoreDiet(diet))
+          .then(
+            () => setToastMsg('Dane wczytane — razem z dziennikiem jedzenia.'),
+            () => setToastMsg('Trening wczytany. Dziennika jedzenia z tego pliku nie udało się odtworzyć.'),
+          );
       } catch {
         void say('Nie udało się wczytać', <p>Wybierz plik JSON wyeksportowany z tej aplikacji.</p>);
       }
@@ -1439,7 +1460,8 @@ export default function App() {
     const ok = await ask(
       'Usunąć wszystkie dane?',
       <p>
-        Historia, poziomy ćwiczeń i własne treningi znikną bezpowrotnie.
+        Historia, poziomy ćwiczeń i własne treningi znikną bezpowrotnie
+        {hasDiet() ? ' — razem z dziennikiem jedzenia i profilem diety' : ''}.
         {watch && ' Zegarek Garmin zostanie odłączony — inaczej przysłałby ostatni tydzień z powrotem.'}
       </p>,
       'Usuń wszystko',
@@ -1448,6 +1470,9 @@ export default function App() {
     if (!ok) return;
     await store.clear();
     if (watch) await forgetWatch();
+    // Jedzenie też: inaczej stare ważenia z diety wróciłyby do dziennika wagi przy następnym wejściu.
+    await import('./food/backup').then((m) => m.clearFood()).catch(() => undefined);
+    forgetSections();
     commit(freshState());
   };
 

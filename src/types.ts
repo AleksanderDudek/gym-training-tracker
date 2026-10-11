@@ -595,11 +595,6 @@ export interface AppState {
   introSeen?: string;
   /** Do którego dnia (`yyyy-mm-dd`, bez niego) schowany jest pasek wsparcia na górze. */
   supportSnooze?: string;
-  /**
-   * Dzień, w którym ważenia z dawnego dziennika diety (Produkty PL, IndexedDB) trafiły do dziennika
-   * wagi. Brak — przeniesienie czeka na pierwsze wejście w zakładkę Jedzenie.
-   */
-  foodMigrated?: string;
 }
 
 /** Przypomnienia: rano w dni treningu z planu, wieczorem o krokach i ruchu z dnia. */
