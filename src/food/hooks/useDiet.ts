@@ -70,18 +70,22 @@ export interface History {
 /** Everything logged from `from` on: the forecast, the week and the progress view read this. */
 export function useHistory(from: string | null): History | undefined {
   const raw = useLiveQuery(async () => {
-    if (!from) return { entries: [] as Entry[], days: [] as DayRow[] };
+    if (!from) return { from, entries: [] as Entry[], days: [] as DayRow[] };
     return {
+      from,
       entries: await db.entries.where('date').aboveOrEqual(from).toArray(),
       days: await db.days.where('date').aboveOrEqual(from).toArray(),
     };
   }, [from]);
   return useMemo(() => {
-    if (!raw) return undefined;
+    // Przy nowych zależnościach `useLiveQuery` oddaje jeszcze poprzedni wynik. Pusty wynik sprzed
+    // profilu (`from` = null) nie jest historią — strona pokazałaby przez chwilę cel bez korekty
+    // tygodnia i tydzień bez zapisów. Inny zakres (następny tydzień) może za to chwilę postać.
+    if (!raw || (from && raw.from === null)) return undefined;
     const eaten = new Map<string, number>();
     for (const e of raw.entries) eaten.set(e.date, (eaten.get(e.date) ?? 0) + e.kcal);
     return { eaten, days: new Map(raw.days.map((d) => [d.date, d])), entries: raw.entries };
-  }, [raw]);
+  }, [raw, from]);
 }
 
 /**

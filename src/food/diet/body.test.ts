@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { mergeBody, weightsToMigrate } from './body';
+import { mergeBody, weightsToMigrate, withGymSteps } from './body';
 import type { DayRow } from './db';
+import { forecast } from './energy';
+import { forecastInputs } from './model';
+import { completeProfile } from './store';
 
 const noSteps = (): number | null => null;
 
@@ -102,5 +105,42 @@ describe('jednorazowe przeniesienie ważeń z diety do dziennika wagi', () => {
       { day: '2026-09-10', kg: 80 },
     ]);
     expect(weightsToMigrate(diet, [{ day: '2026-09-01', kg: 82 }, { day: '2026-09-10', kg: 79 }])).toEqual([]);
+  });
+});
+
+describe('prognoza z krokami z treningów', () => {
+  const profile = completeProfile({ startDate: '2026-10-01', targetSteps: 10_000, baseSteps: 4000 });
+  const history = { eaten: new Map([['2026-10-01', 2000]]), days: new Map<string, DayRow>() };
+
+  it('dzień bez wiersza diety, ale z krokami z zegarka, niesie te kroki do prognozy', () => {
+    const inputs = forecastInputs(profile, null, history, '2026-10-04', 4);
+    expect(inputs.map((i) => i.steps)).toEqual([null, null, null, null]);
+    const steps = (day: string) => (day === '2026-10-02' ? 16_000 : null);
+    expect(withGymSteps(inputs, steps).map((i) => i.steps)).toEqual([null, 16_000, null, null]);
+  });
+
+  it('kroki z treningów wygrywają z krokami diety, a dni bez nich zostają jak były', () => {
+    const days = new Map<string, DayRow>([
+      ['2026-10-01', { date: '2026-10-01', steps: 3000 }],
+      ['2026-10-02', { date: '2026-10-02', steps: 5000 }],
+    ]);
+    const inputs = forecastInputs(profile, null, { ...history, days }, '2026-10-04', 3);
+    const steps = (day: string) => (day === '2026-10-01' ? 12_000 : null);
+    const merged = withGymSteps(inputs, steps);
+    expect(merged.map((i) => i.steps)).toEqual([12_000, 5000, null]);
+    // Wejście nietknięte — to nowa lista.
+    expect(inputs[0]!.steps).toBe(3000);
+  });
+
+  it('więcej kroków to szybszy spadek w prognozie z tego, co było naprawdę', () => {
+    const inputs = forecastInputs(profile, null, history, '2026-10-04', 4);
+    const lazy = forecast(profile, inputs);
+    const walked = forecast(
+      profile,
+      withGymSteps(inputs, (day) => (day === '2026-10-02' ? 20_000 : null)),
+    );
+    expect(walked.at(-1)!.real).toBeLessThan(lazy.at(-1)!.real);
+    // Plan liczy z planowanych kroków — kroki z treningów go nie ruszają.
+    expect(walked.at(-1)!.plan).toBe(lazy.at(-1)!.plan);
   });
 });

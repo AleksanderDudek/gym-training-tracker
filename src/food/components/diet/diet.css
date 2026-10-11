@@ -1,0 +1,315 @@
+/*
+ * Dziennik jedzenia i jego podstrony (plan posiłków, postęp, profil diety) oraz karta jedzenia
+ * na ekranie Dziś. Wszystko z tokenów i klocków aplikacji: karty `.grp`, przyciski `.btn`,
+ * pola `.fld`, kafelki `.tiles`, uwagi `.dnote`. Tu tylko to, czego w treningach nie ma: paski
+ * bilansu, wiersze jedzenia, arkusz od dołu, wykresy. Kolor stanu (brak, w normie, nadmiar)
+ * zawsze idzie razem ze słowem — nigdy sam.
+ */
+
+/* ---------------- Drobne wspólne ---------------- */
+
+.fd-nums{font-variant-numeric:tabular-nums}
+.fd-h-meta{font-weight:400;color:var(--ink-soft)}
+.grp p.fd-soft,.fd-soft{color:var(--ink-soft)}
+.grp p.fd-warn,p.fd-warn{color:var(--warn)}
+.grp p.fd-ok,p.fd-ok{color:var(--ok)}
+.fd-bullets{margin:4px 0 10px;padding-left:18px;font-size:13px;color:var(--ink-soft);line-height:1.45;max-width:62ch}
+.fd-bullets li{margin:3px 0}
+.fd-bullets strong{color:var(--ink)}
+.fd-data h3{margin:16px 0 4px}
+
+/* Przycisk z samą ikoną: 44 px celu, jak przyciski w pasku aplikacji. */
+.fd-icon-btn{flex:none;width:44px;height:44px;display:grid;place-items:center;border:0;padding:0;
+  background:none;color:var(--steel);border-radius:50%;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.fd-icon-btn:active{background:var(--surface-2)}
+.fd-icon-btn:focus-visible{outline:2px solid var(--steel);outline-offset:-2px}
+
+/* Przycisk z ikoną: ikona i słowo w jednym rzędzie, z odstępem jak w treningach. */
+.fd-acts .btn,.fd-act,.fd-reroll,.fd-import .btn,.fd-danger,.fd-balance .btn{gap:6px}
+.fd-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+
+/* Odnośnik w zdaniu i przycisk, który wygląda jak odnośnik. */
+.fd-line a,.fd-link{color:var(--steel);font-weight:600;text-decoration:underline;text-underline-offset:2px}
+.fd-link{background:none;border:0;padding:10px 0;font:inherit;cursor:pointer;min-height:44px}
+
+/* Wybór pliku: pole ukryte wzrokowo, a fokus z klawiatury widać na przycisku obok. */
+.fd-import{display:grid;gap:8px;justify-items:start}
+.fd-import .dnote{justify-self:stretch;margin:0}
+.sr-only:focus-visible + label.btn{outline:2px solid var(--steel);outline-offset:2px}
+.fd-import label.btn,.fd-acts label.btn{cursor:pointer}
+.fd-busy{opacity:.6;pointer-events:none}
+
+/* ---------------- Nawigacja dnia ---------------- */
+
+.fd-daynav{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;gap:4px;margin:0 0 10px}
+.fd-daynav-title{text-align:center;min-width:0}
+.fd-daynav-title h2{margin:0;font-size:22px;line-height:1.15}
+.fd-daynav-title h2::first-letter{text-transform:uppercase}
+.fd-daynav-title p{margin:1px 0 0;font-size:12.5px;color:var(--ink-soft)}
+.fd-daynav .fd-today{grid-column:1 / -1;justify-self:center;margin-top:4px}
+
+/* ---------------- Bilans dnia ---------------- */
+
+.fd-balance-top{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:2px 12px}
+.grp p.fd-kcal{margin:0;font-family:var(--display);font-weight:600;font-size:34px;line-height:1.05;color:var(--ink);
+  font-variant-numeric:tabular-nums}
+.fd-kcal small{font-size:16px;font-weight:500;color:var(--ink-soft)}
+.grp .fd-note,.fd-note{margin:0;font-size:13px;font-weight:600}
+.fd-note.ok{color:var(--ok)}
+.fd-note.brak{color:var(--warn)}
+.fd-note.nadmiar{color:var(--c-orange-ink)}
+
+/* Pasek jak paski rangi i doświadczenia: płaski, bez zaokrągleń, tło `--surface-2`. */
+.fd-bar{height:9px;background:var(--surface-2);margin:7px 0 6px;overflow:hidden}
+.fd-bar i{display:block;height:100%;background:var(--c-green)}
+.fd-bar.brak i{background:var(--c-gold)}
+.fd-bar.nadmiar i{background:var(--c-orange)}
+@media (prefers-reduced-motion:no-preference){.fd-bar i{transition:width .3s ease-out}}
+
+/* Na telefonie makro jedno pod drugim (dwa plus jedno rozbijało rząd), od 480 px — trzy obok siebie. */
+.fd-macros{display:grid;grid-template-columns:1fr;gap:6px 16px;margin-top:10px}
+@media (min-width:480px){.fd-macros{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.fd-macro{min-width:0}
+.fd-macro .fd-bar{height:7px;margin:5px 0 4px}
+.fd-macro-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:14px}
+.fd-macro-head span:first-child{font-weight:600}
+.fd-macro-head span:last-child{font-family:var(--display);color:var(--ink-soft)}
+.fd-macro .fd-note{display:block;font-weight:500;font-size:12.5px}
+.fd-balance .actions{margin:14px 0 2px}
+.fd-macros + p.tight{margin-top:8px}
+
+/* Wejścia do podstron: trzy kafelki w rzędzie, jak kafelki liczb w profilu, ale klikalne. */
+.fd-subnav{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px auto}
+.fd-subnav a{display:grid;justify-items:center;align-content:center;gap:4px;min-height:64px;padding:8px 4px;
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--r);color:var(--ink);
+  text-decoration:none;font-size:13px;font-weight:600;line-height:1.2;text-align:center;
+  -webkit-tap-highlight-color:transparent}
+.fd-subnav a svg{color:var(--steel)}
+.fd-subnav a:active{background:var(--surface-2)}
+.fd-subnav a:focus-visible{outline:2px solid var(--steel);outline-offset:2px}
+
+/* ---------------- Wiersze jedzenia: plan, propozycje, zjedzone ---------------- */
+
+.fd-list{list-style:none;margin:6px 0 4px;padding:0}
+.fd-list > li{border-top:1px solid var(--surface-2);padding:10px 0}
+.fd-list > li:first-child{border-top:0}
+.fd-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:start}
+.fd-row-main{min-width:0}
+/* Ta sama typografia w karcie (`.grp p`) i w arkuszu, gdzie reguły kart nie sięgają. */
+.grp p.fd-name,.fd-name{margin:0;font-size:15px;font-weight:600;color:var(--ink);overflow-wrap:anywhere}
+.grp p.fd-meta,.fd-meta{margin:2px 0 0;font-size:12.5px;color:var(--ink-soft);font-weight:400}
+.grp p.fd-why,.fd-why{margin:3px 0 0;font-size:12.5px;color:var(--ink-soft)}
+.grp p.fd-group,.fd-group{margin:0 0 4px;font-family:var(--display);font-size:11px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink-soft)}
+.fd-act{white-space:nowrap}
+.fd-reroll{margin-top:8px}
+
+/* Ocena dopasowania: słowo w ramce; kolor tylko dopowiada. */
+.fd-fit{display:inline-block;vertical-align:1px;margin-left:2px;padding:0 6px;border:1px solid var(--line);
+  border-radius:999px;font-size:11.5px;font-weight:500;line-height:18px;color:var(--ink-soft);white-space:nowrap}
+.fd-fit.great{border-color:var(--ok);color:var(--ok)}
+.fd-fit.avoid{border-color:var(--c-orange-ink);color:var(--c-orange-ink)}
+.fd-best{display:inline-flex;align-items:center;gap:3px;vertical-align:1px;padding:0 7px 0 5px;border-radius:999px;
+  background:var(--c-gold-bg);color:var(--c-gold-ink);font-size:11.5px;font-weight:600;line-height:20px;white-space:nowrap}
+.fd-best svg{fill:currentColor}
+.fd-done{display:inline-flex;align-items:center;gap:4px;min-height:44px;font-size:13px;font-weight:600;color:var(--ok)}
+
+/* Pozycja planu: nazwa i liczby na całą szerokość, przyciski pod nimi. */
+/* Trzy przyciski pozycji w jednym rzędzie równych kolumn; na najwęższych ekranach same słowa. */
+.fd-meal .fd-acts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:8px}
+.fd-meal .fd-acts .btn{padding:10px 6px;white-space:nowrap}
+@media (max-width:359px){.fd-meal .fd-acts .btn svg{display:none}}
+.fd-meal.skipped .fd-name,.fd-meal.skipped .fd-meta{color:var(--ink-soft);text-decoration:line-through}
+.fd-tick{display:inline-flex;vertical-align:-4px;margin-right:4px;color:var(--ok)}
+.fd-variant{margin:6px 0 4px;max-width:340px}
+
+/* Zjedzone: godzina, co i ile, kosz. */
+.fd-list > li.fd-eaten{display:grid;grid-template-columns:44px 1fr 44px;gap:8px;align-items:center;padding:6px 0}
+.fd-time{font-family:var(--display);font-size:13px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.fd-eaten .fd-icon-btn,.fd-custom .fd-icon-btn{color:var(--ink-soft)}
+.fd-list > li.fd-custom{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:2px 0;font-size:14px}
+
+.grp p.fd-line,.fd-line{display:flex;gap:6px;align-items:flex-start;margin:0 0 8px;font-size:13px;color:var(--ink-soft)}
+.fd-line svg{flex:none;margin-top:1px}
+
+/* ---------------- Waga, kroki i ruch ---------------- */
+
+.fd-body{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;margin:8px 0}
+.fd-body .btn{min-height:48px}
+/* Przycisk bez czego zapisać wygląda na nieczynny — w treningach `.btn` nie ma stanu wyłączonego. */
+.fd-body .btn:disabled,.fd-quick .btn:disabled,.fd-chosen .btn:disabled{opacity:.45;cursor:default;transform:none}
+.fd-num input[aria-invalid=true],.fd-body input[aria-invalid=true]{border-color:var(--warn);box-shadow:inset 0 0 0 1px var(--warn)}
+@media (max-width:359px){.fd-body{grid-template-columns:1fr 1fr}.fd-body .btn{grid-column:1 / -1}}
+
+/* ---------------- Pierwsze wejście ---------------- */
+
+.fd-onboard{border-left:3px solid var(--c-blue-ink)}
+.fd-onboard .actions{margin:14px 0 10px}
+
+/* ---------------- Arkusz od dołu ---------------- */
+
+/*
+ * Natywny <dialog> jako arkusz: przy dolnej krawędzi, na szerokość kolumny aplikacji (640 px),
+ * z nagłówkiem, który zostaje na miejscu, i treścią, która się przewija. Tło przyciemnione jak
+ * pod oknami aplikacji. Na czas otwarcia strona pod spodem się nie przewija.
+ */
+.fd-dsheet{margin:auto auto 0;padding:0;border:0;width:100%;max-width:640px;max-height:92vh;max-height:92dvh;
+  background:var(--surface);color:var(--ink);border-radius:var(--r) var(--r) 0 0;
+  box-shadow:0 -8px 28px rgba(30,35,32,.18);overflow:hidden}
+.fd-dsheet[open]{display:flex;flex-direction:column}
+.fd-dsheet::backdrop{background:rgba(30,35,32,.55)}
+html:has(.fd-dsheet[open]){overflow:hidden}
+.fd-dsheet-head{flex:none;display:flex;align-items:flex-start;gap:8px;padding:10px 6px 10px 16px;
+  border-bottom:1px solid var(--line)}
+.fd-dsheet-titles{flex:1;min-width:0;padding-top:9px}
+.fd-dsheet-titles h2{margin:0;font-size:20px;line-height:1.2;overflow-wrap:anywhere}
+.fd-dsheet-titles p{margin:3px 0 0;font-size:12.5px;color:var(--ink-soft)}
+.fd-dsheet-body{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;
+  padding:14px 16px calc(18px + env(safe-area-inset-bottom))}
+.fd-dsheet-body p.tight{margin:0 0 6px;font-size:13px;color:var(--ink-soft)}
+.fd-dsheet-body .seg{margin-bottom:12px}
+@media (prefers-reduced-motion:no-preference){
+  .fd-dsheet[open]{animation:fd-sheet-in .22s ease-out}
+  @keyframes fd-sheet-in{from{transform:translateY(24px);opacity:.6}to{transform:none;opacity:1}}
+}
+@media (min-width:672px){.fd-dsheet{margin-bottom:auto;border-radius:var(--r)}}
+
+/* „Dodaj zjedzone”: wyszukiwanie, wynik do wybrania, gramatura; albo same kalorie. */
+.fd-picker input[type=search]{width:100%;padding:11px 10px;font:inherit;font-size:17px;border:1px solid var(--edge);
+  border-radius:var(--r);background:#fff;color:var(--ink)}
+.fd-hint,p.fd-hint{margin:8px 0 0;font-size:12.5px;color:var(--ink-soft)}
+.fd-results{list-style:none;margin:8px 0 0;padding:0}
+.fd-results li{border-top:1px solid var(--surface-2)}
+.fd-results li:first-child{border-top:0}
+.fd-result{display:grid;gap:2px;width:100%;min-height:52px;padding:9px 4px;background:none;border:0;
+  font:inherit;text-align:left;color:var(--ink);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.fd-result:active{background:var(--surface-2)}
+.fd-result:focus-visible{outline:2px solid var(--steel);outline-offset:-2px}
+.fd-empty{padding:14px 4px;font-size:13.5px;color:var(--ink-soft)}
+.fd-chosen{margin-top:12px;padding:12px;background:var(--surface-2);border-left:3px solid var(--steel);border-radius:var(--r)}
+.fd-chosen .fd-meta{margin-top:4px}
+.fd-grams{margin:10px 0 4px;max-width:160px}
+.fd-quick{display:grid;gap:10px}
+.fd-quick .fd-hint{margin:2px 0 -4px}
+.fd-grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.fd-quick .check-row{margin:0}
+
+/* ---------------- Plan posiłków ---------------- */
+
+.fd-weekhead{display:flex;align-items:center;gap:2px}
+.fd-weekhead h2{flex:1;margin:0}
+.fd-scroll{overflow-x:auto;margin:6px -14px 8px;padding:0 14px}
+.fd-week{width:100%;border-collapse:collapse;font-size:13.5px;min-width:340px}
+.fd-week th,.fd-week td{padding:0 6px 0 0;text-align:left;border-top:1px solid var(--surface-2);height:44px}
+.fd-week thead th{font-size:11px;font-weight:500;color:var(--ink-soft);border-top:0;height:28px}
+.fd-week .n{text-align:right;font-family:var(--display);font-variant-numeric:tabular-nums}
+.fd-week td:last-child,.fd-week th:last-child{padding-right:0}
+.fd-week tbody th{font-weight:400}
+.fd-week tbody th a{display:inline-flex;align-items:center;min-height:44px;color:var(--steel);font-weight:600;
+  text-decoration:underline;text-underline-offset:2px}
+.fd-week .soft{color:var(--ink-soft)}
+.fd-week .over{color:var(--c-orange-ink);font-weight:600}
+.fd-week tr.today{background:var(--surface-2)}
+.fd-week tr.today th{box-shadow:inset 3px 0 0 var(--steel)}
+.fd-week tr.today th a{padding-left:8px}
+.fd-template summary{gap:10px}
+/* Numer stoi już w „Wariant 1” — bez drugiego numeru listy obok. */
+.fd-variants{margin:0 0 12px;padding:0;list-style:none}
+.fd-variants li{margin:0 0 8px}
+.fd-variants .fd-meta{display:inline}
+.fd-variants p.fd-meta{display:block}
+
+/* ---------------- Postęp ---------------- */
+
+.fd-stats{margin:0 0 14px}
+.fd-stats .tile b{font-size:18px}
+.fd-chart{margin:8px 0 10px}
+.fd-chart svg{display:block;width:100%;height:auto;background:var(--surface-2);border-radius:var(--r)}
+.fd-chart .grid{stroke:var(--line);stroke-width:1}
+.fd-chart .tick{fill:var(--ink-soft);font-family:var(--body);font-size:11px}
+.fd-chart .goal{stroke:var(--c-gold-ink);stroke-width:1.2;stroke-dasharray:2 3}
+.fd-chart .now{stroke:var(--edge);stroke-width:1;stroke-dasharray:3 3}
+.fd-chart path{fill:none}
+.fd-chart path.plan{stroke:var(--steel);stroke-width:1.2;stroke-dasharray:5 3}
+.fd-chart path.proj{stroke:var(--c-blue-ink);stroke-width:1.6;stroke-dasharray:3 2}
+.fd-chart path.real{stroke:var(--c-green-ink);stroke-width:1.8;stroke-linejoin:round}
+.fd-chart .dot{fill:var(--c-green-ink)}
+.fd-legend{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:6px;font-size:12px;color:var(--ink-soft)}
+.fd-legend span{display:inline-flex;align-items:center;gap:6px}
+.fd-legend i{display:inline-block;width:18px;height:0;border-top:2px solid}
+.fd-legend i.real{border-top-color:var(--c-green-ink)}
+.fd-legend i.plan{border-top:2px dashed var(--steel)}
+.fd-legend i.proj{border-top:2px dashed var(--c-blue-ink)}
+.fd-legend i.goal{border-top:2px dotted var(--c-gold-ink)}
+
+/* Dwa tygodnie kalorii: słupek dnia i kreska celu tego dnia. */
+.fd-fortnight{display:flex;align-items:flex-end;gap:3px;height:150px;margin:10px 0 4px;padding:0;list-style:none;
+  background:linear-gradient(var(--line),var(--line)) bottom / 100% 1px no-repeat}
+.fd-fortnight li{position:relative;flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end}
+.fd-fortnight i{display:block}
+.fd-fortnight i.goal{position:absolute;left:0;right:0;height:0;border-top:1.5px dashed var(--steel)}
+.fd-fortnight i.bar{background:var(--c-green);border-radius:2px 2px 0 0}
+.fd-fortnight i.bar.over{background:var(--c-orange)}
+.fd-fortnight i.bar.none{height:3px;background:var(--line)}
+.fd-axis{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-soft)}
+
+.fd-avg{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:8px 0 4px}
+.fd-avg > div{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r);padding:8px 10px;min-width:0}
+.fd-avg dt{font-size:12px;color:var(--ink-soft)}
+.fd-avg dd{margin:0}
+.fd-avg .fd-avg-val{font-family:var(--display);font-size:18px;font-variant-numeric:tabular-nums}
+.fd-avg .fd-note{font-weight:500;font-size:12.5px}
+
+/* ---------------- Profil diety ---------------- */
+
+.fd-grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px;margin:8px 0 10px}
+.fd-field{display:block;margin:10px 0 0}
+.fd-num label{display:block;font-size:11px;color:var(--ink-soft);margin-bottom:2px}
+.fd-num-box{position:relative}
+.fd-num-box input{padding-right:58px}
+.fd-unit{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:12.5px;color:var(--ink-soft);
+  pointer-events:none;max-width:52px;text-align:right;line-height:1.1}
+.grp p.fd-err,.fd-err{margin:3px 0 0;font-size:12px;color:var(--warn);font-weight:600}
+.fd-advanced{margin:6px 0 0}
+.fd-advanced .fd-grid2{margin-top:0}
+
+.fd-energy{margin:8px 0 8px}
+.fd-energy .tile{text-align:left;padding:8px 10px}
+.fd-energy dt{font-size:11px;color:var(--ink-soft);line-height:1.25}
+.fd-energy dd{margin:3px 0 0;font-family:var(--display);font-size:17px;line-height:1.15}
+.fd-energy dd.fd-soft{font-family:var(--body);font-size:11.5px}
+@media (max-width:400px){.fd-energy{grid-template-columns:repeat(2,1fr)}}
+.fd-kcal-goal{max-width:200px;margin:6px 0 8px}
+.fd-warnings{margin:12px 0 4px}
+.fd-warnings .fd-bullets{margin-bottom:0;color:var(--ink)}
+.fd-check{align-items:flex-start;margin-top:12px;font-size:13.5px;line-height:1.45}
+.fd-check input{margin-top:1px}
+
+fieldset.fd-dprofiles{margin:0;border:0;border-bottom:1px solid var(--line);min-width:0;display:grid;gap:8px}
+fieldset.fd-dprofiles legend{float:left;width:100%;padding:0;margin:0 0 2px;font-size:15px;font-weight:600}
+.fd-dprof{display:grid;gap:3px;padding:12px;background:var(--surface);border:1px solid var(--edge);
+  border-radius:var(--r);font-size:13.5px;color:var(--ink);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.fd-dprof:has(input:checked){border-color:var(--steel);box-shadow:inset 3px 0 0 var(--steel);background:var(--surface-2)}
+.fd-dprof:has(input:focus-visible){outline:2px solid var(--steel);outline-offset:2px}
+.fd-dprof-head{display:flex;align-items:center;gap:10px;font-weight:600;font-size:15px;min-height:28px}
+.fd-dprof-head input{width:20px;height:20px;margin:0;flex:none;accent-color:var(--steel)}
+.fd-yes{color:var(--ok);font-weight:600}
+.fd-no{color:var(--c-orange-ink);font-weight:600}
+
+/* Zapis zawsze pod ręką: przyklejony nad dolnym paskiem (a gdy klawiatura chowa pasek — do dołu). */
+.fd-savebar{position:sticky;bottom:calc(64px + env(safe-area-inset-bottom));z-index:20;display:flex;align-items:center;
+  gap:12px;padding:10px 14px;background:var(--surface);border-top:1px solid var(--line);
+  box-shadow:0 -6px 16px rgba(30,35,32,.06)}
+@media (pointer:coarse){body:has(input:not([type=checkbox]):not([type=radio]):focus) .fd-savebar{bottom:0}}
+.fd-saved{display:inline-flex;align-items:center;gap:4px;font-size:14px;font-weight:600;color:var(--ok)}
+.fd-danger{margin-top:14px;color:var(--c-orange-ink);border-color:var(--c-orange-ink)}
+
+/* ---------------- Karta jedzenia na ekranie Dziś ---------------- */
+
+.fd-foodcard-link{display:block;margin:-4px -14px 0;padding:4px 14px 2px;color:inherit;text-decoration:none;
+  -webkit-tap-highlight-color:transparent}
+.fd-foodcard-link:active{background:var(--surface-2)}
+.fd-foodcard-link:focus-visible{outline:2px solid var(--steel);outline-offset:-2px}
+.fd-foodcard .fd-macro-head{margin-top:6px}
+.fd-foodcard .fd-macro-head + .fd-bar{height:7px;margin-top:5px}
+.fd-foodcard .btn{margin-top:8px}
