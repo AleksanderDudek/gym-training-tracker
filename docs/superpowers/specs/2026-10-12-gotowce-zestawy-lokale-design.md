@@ -51,7 +51,7 @@ practices. Pick recommended. I am away from machine. Plan it out and then finish
 | The rule | Gotowce have their own, stated rule: **at least 15 g of protein per set** (on typical values in the test, on the chosen products on the card). Protein recipes keep THE RULE unchanged | „Banan + baton” is a carb snack with a protein bar — the protein-over-carbs rule would exclude the user's own example. 15 g is a meaningful protein snack (a bar alone gives ~15–20 g) and still keeps the tab's protein character. Mixing rules silently would break the page's promise, so each card says which rule it meets |
 | Pack-sized items | `RecipeItem.pack: true` — the amount is **the chosen product's pack** („1 baton” = the bar's real weight, „1 butelka” = the drink's real volume); catalog grams are the typical pack, used until a product is known | Bars are 35–65 g and drinks 250–500 ml; „60 g of a 45 g bar” is a number nobody eats |
 | Where | Same list as recipes (quick tier, they take 1 minute), new chip **Rodzaj: Gotowiec**. The page lead names both rules | Filters, store chips, nearby and the pool work unchanged |
-| Catalog | 10 sets, e.g. Banan + baton białkowy (the user's example), Napój proteinowy + banan, Skyr naturalny + borówki, Serek wiejski + bułka grahamka, Jogurt proteinowy + jabłko, Kurczak w plastrach + wafle ryżowe, Twarożek + pomidorki, Łosoś wędzony + pieczywo chrupkie, Tuńczyk + wafle ryżowe, Baton białkowy + napój proteinowy | Things Polish shops (incl. Żabka) actually sell, eaten without dishes |
+| Catalog | 11 sets (kefir z bułką added during implementation), e.g. Banan + baton białkowy (the user's example), Napój proteinowy + banan, Skyr naturalny + borówki, Serek wiejski + bułka grahamka, Jogurt proteinowy + jabłko, Kurczak w plastrach + wafle ryżowe, Twarożek + pomidorki, Łosoś wędzony + pieczywo chrupkie, Tuńczyk + wafle ryżowe, Baton białkowy + napój proteinowy | Things Polish shops (incl. Żabka) actually sell, eaten without dishes |
 | New ingredients | `banana`, `apple` (staples, typical values from USDA FoodData Central, no product match — fruit entries in OFF are inconsistent), `grahamRoll` (staple, typical from the dataset median), `riceCakes`, `crispbread`, `proteinBar`, `proteinDrink` (store ingredients with matchers; bar and drink reuse the „ready products” claims) | Same pattern as existing ingredients |
 
 ### 2. „Moje zestawy” — the user's own sets
@@ -117,3 +117,15 @@ practices. Pick recommended. I am away from machine. Plan it out and then finish
 - Editing a saved set in place; sets inside the meal plan; scaling a restaurant portion.
 - Allergens of restaurant items (chains publish them, but the request is about macros and
   calories).
+
+## Implementation notes (decided while building)
+
+| Topic | Decision | Why |
+| --- | --- | --- |
+| Chains found | 18 chains, 1189 positions: McDonald's, KFC, Burger King, MAX, Popeyes, Subway, Pasibus, Starbucks, Costa, Green Caffè Nero, Pizza Hut (table of 05/2019, said on screen through the source title), T-Pizza, Da Grasso, Salad Story, ORLEN Stop Cafe, Circle K, bp, Żabka Café | Every chain with official full macros reachable on 2026-10-12. Without: Domino's, Sphinx, Shell, Bobby Burger (no macros published); Tim Hortons, Dunkin', Krispy Kreme (not in Poland); North Fish (bankrupt) |
+| Source errors | `source.inconsistent` lists positions the chain's own table gets wrong (energy vs macros, sugars > carbs); `MenuItem.inconsistent` also flags any energy mismatch. Flagged positions stay, are marked in the list and the sheet, and never reach „Najwięcej białka” | Which number is wrong is unknowable; hiding them loses real menu items, showing them silently misleads |
+| Kind `sklep` | Żabka Café is a shop, not a fuel station | Honest grouping on the chain list |
+| Chain page title | „Menu” in the app bar, the chain name large in the content | Routing does not load data; same rule as the exercise page |
+| Search ranking | Restaurant and product hits are ranked together by name closeness (the name itself, starts with, word starts, contains), punctuation-insensitive; restaurant positions are ranked across all chains before the cap of 12 | „banan” must find the banana before „Ciasto bananowe”, „latte” must reach Starbucks |
+| Set grams | A part with per-100 g values and an empty or zero gram field blocks „Dodaj” | It would otherwise silently become a whole pack |
+| Drinks | Portion labels of drinks keep the chain's size words; the sheet labels grams of drinks „g (ml)” | Chains weigh drinks in grams or measure them in ml, and the data does not say which |

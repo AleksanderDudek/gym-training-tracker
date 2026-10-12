@@ -97,12 +97,24 @@ describe('searchFoods', () => {
   });
 
   test('closest names first: the name itself, then names starting with it, then any word, then anywhere', () => {
-    const t = ['banan'];
+    const t = 'banan';
     expect(
       ['Banan', 'Banany', 'Ciasto bananowe', 'Mus z bananem', 'Bezbananowy baton'].map((name) => relevance(name, t)),
     ).toEqual([0, 1, 2, 2, 3]);
-    expect(relevance('Caffè Latte (Starbucks)', ['caffe', 'latte'])).toBe(0);
-    expect(relevance("Big Mac (McDonald's)", ['mac'])).toBe(2);
+    expect(relevance('Caffè Latte (Starbucks)', 'caffe latte')).toBe(0);
+    expect(relevance("Big Mac (McDonald's)", 'mac')).toBe(2);
+    expect(relevance('Coca-Cola', 'coca cola')).toBe(0);
+  });
+
+  test('the twelve restaurant positions are the closest of all chains, not the first chains in the alphabet', () => {
+    const late = normalizeChain({
+      ...chains[0]!,
+      id: 'zz',
+      name: 'Zz Kawa',
+      items: [{ ...lattes[0]!, name: 'Latte' }],
+    });
+    const hits = searchFoods({ query: 'latte', pool: [], chains: [...chains, late], products: [], dict });
+    expect(hits[0]!.key).toBe('restaurant:zz:latte');
   });
 
   test('restaurants never crowd out products, and a set is not built of sets', () => {

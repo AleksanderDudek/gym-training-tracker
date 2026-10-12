@@ -109,7 +109,11 @@ describe('„Dodaj zjedzone”', () => {
     expect(search).toHaveValue('');
     const grams = dialog.getByRole('textbox', { name: 'Ile gramów: Banan' });
     await user.clear(grams);
+    // Puste gramy to nie „całe opakowanie”: zestaw czeka na liczbę.
+    expect(grams).toHaveAttribute('aria-invalid', 'true');
+    expect(dialog.getByRole('button', { name: 'Dodaj' })).toBeDisabled();
     await user.type(grams, '120');
+    expect(grams).not.toHaveAttribute('aria-invalid');
     await user.type(search, 'baton');
     await user.click(await dialog.findByRole('button', { name: /^Baton proteinowy/ }));
 

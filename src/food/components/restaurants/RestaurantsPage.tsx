@@ -56,8 +56,11 @@ export default function RestaurantsPage() {
 function Restaurants({ chains }: { chains: Chain[] }) {
   const [state, update, closeEntry] = useUrlState(restaurantsFromParams, restaurantsToParams);
   const diet = dietOf(useProfile());
+  // Lista dogania pole chwilę później; dopóki nie dogoni, pokazuje poprzedni stan, a nie „Nic nie pasuje”.
   const query = useDeferredValue(state.q);
-  const hits = useMemo(() => searchMenus(chains, query, MAX_HITS), [chains, query]);
+  // O jedną więcej niż pokazujemy: tylko tak wiadomo, czy za limitem coś jeszcze jest.
+  const found = useMemo(() => searchMenus(chains, query, MAX_HITS + 1), [chains, query]);
+  const hits = found.slice(0, MAX_HITS);
 
   const [openChainId, openItemId] = state.item?.split('/') ?? [];
   const openChain = chains.find((c) => c.id === openChainId) ?? null;
@@ -94,13 +97,13 @@ function Restaurants({ chains }: { chains: Chain[] }) {
         </div>
       </div>
 
-      {state.q.trim() ? (
+      {query.trim() ? (
         <section className="grp" aria-labelledby="fd-rest-hits-title">
           <h2 id="fd-rest-hits-title">Wyniki</h2>
           <p className="tight" aria-live="polite">
             {hits.length === 0
               ? 'Nic nie pasuje. Spróbuj krócej: „wrap”, „latte”, „frytki”.'
-              : hits.length >= MAX_HITS
+              : found.length > MAX_HITS
                 ? `Pierwsze ${formatNumber(MAX_HITS, 0)} pozycji — dopisz słowo, żeby zawęzić.`
                 : `${formatNumber(hits.length, 0)} ${plural(hits.length, 'pozycja', 'pozycje', 'pozycji')}`}
           </p>
@@ -134,7 +137,7 @@ function Restaurants({ chains }: { chains: Chain[] }) {
         })
       )}
 
-      {!state.q.trim() && (
+      {!query.trim() && (
         <p className="wrap fd-rest-foot">
           {formatNumber(chains.length, 0)} {plural(chains.length, 'sieć', 'sieci', 'sieci')} ·{' '}
           {formatNumber(total, 0)} {plural(total, 'pozycja', 'pozycje', 'pozycji')} menu. Sieci, które nie publikują

@@ -244,6 +244,9 @@ function SetBuilder({ date, pool, products, dict, productsLoading, onDone, onLog
     [query, pool, chains, products, dict],
   );
   const chosenParts = parts.map((p) => partOf(atGrams(p.food, p.grams)));
+  // Puste albo zerowe gramy nie mogą po cichu zostać całym opakowaniem — wtedy zestaw czeka na poprawkę.
+  const badGrams = (p: Part) => p.food.per100 !== null && !numberOrNull(p.grams);
+  const anyBad = parts.some(badGrams);
   const finalName = name.trim() || autoSetName(chosenParts);
   const total = setTotals(chosenParts);
 
@@ -254,7 +257,7 @@ function SetBuilder({ date, pool, products, dict, productsLoading, onDone, onLog
   };
 
   const add = () => {
-    if (!chosenParts.length) return;
+    if (!chosenParts.length || anyBad) return;
     const set: FoodSet = { name: finalName, parts: chosenParts };
     void once(
       () =>
@@ -309,6 +312,7 @@ function SetBuilder({ date, pool, products, dict, productsLoading, onDone, onLog
                         setParts((list) => list.map((x) => (x.row === p.row ? { ...x, grams: e.target.value } : x)))
                       }
                       aria-label={`Ile gramów: ${p.food.name}`}
+                      aria-invalid={badGrams(p) || undefined}
                     />
                   </label>
                 )}
@@ -325,6 +329,7 @@ function SetBuilder({ date, pool, products, dict, productsLoading, onDone, onLog
           })}
         </ul>
       )}
+      {anyBad && <p className="fd-diet-hint fd-diet-warn">Wpisz gramy przy każdej rzeczy — więcej niż 0.</p>}
       {parts.length > 0 && (
         <p className="fd-diet-total" aria-live="polite">
           Razem: <MacroLine food={setFood({ name: finalName, parts: chosenParts })} />
@@ -350,7 +355,7 @@ function SetBuilder({ date, pool, products, dict, productsLoading, onDone, onLog
         <input type="checkbox" checked={save} onChange={(e) => setSave(e.target.checked)} />
         Zapisz jako mój zestaw (pojawi się w wyszukiwaniu i propozycjach)
       </label>
-      <button type="button" className="btn wide" onClick={add} disabled={busy || parts.length === 0}>
+      <button type="button" className="btn wide" onClick={add} disabled={busy || parts.length === 0 || anyBad}>
         Dodaj
       </button>
     </div>

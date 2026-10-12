@@ -4,8 +4,9 @@ Aplikacja do prowadzenia treningu siłowego z automatyczną progresją. Wybieras
 wyniki, a silnik sam decyduje, kiedy podnieść powtórzenia i kiedy wejść na cięższe obciążenie.
 Atlas obejmuje 114 ćwiczeń: kettlebell, sztanga, hantle, maszyny i kalistenika — 30 z nich zrobisz bez żadnego sprzętu.
 Trening idzie część po części z zegarem w pasku, a zakładka Jedzenie dokłada dziennik jedzenia
-z dietą, która nagina się do tego, co naprawdę zjedzone, białkowe przepisy, 29 tysięcy produktów
-sprzedawanych w Polsce i sklepy w pobliżu.
+z dietą, która nagina się do tego, co naprawdę zjedzone, białkowe przepisy i gotowce bez naczyń,
+własne zestawy, 29 tysięcy produktów sprzedawanych w Polsce, menu 18 sieci gastronomicznych
+i sklepy w pobliżu.
 
 React 19 + TypeScript 6 + Vite 8, aplikacja do zainstalowania z własnym service workerem
 (vite-plugin-pwa). Bez backendu — dane leżą w przeglądarce (trening w `localStorage`, dziennik
@@ -27,7 +28,7 @@ npm run build      # typecheck + produkcyjny build do dist/ z service workerem (
 npm run preview    # podgląd builda — tu działa też praca offline
 npm run typecheck  # tsc: aplikacja, testy, konfiguracja Vite i skrypty, service worker
 npm run lint       # oxlint
-npm test           # 1244 testy: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, serwer… (vitest)
+npm test           # 1419 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, serwer… (vitest)
 ```
 
 Baza produktów i przepisy:
@@ -638,9 +639,14 @@ aplikacji. Dane produktów: [Open Food Facts](https://world.openfoodfacts.org), 
   potrawy z kaloriami i makro, parametry. Plik nigdzie nie trafia.
 - **Dziś**: bilans dnia z paskami kalorii, białka, węglowodanów i tłuszczu. Pozycje planu można
   odhaczyć, pominąć albo zamienić na coś o podobnej kaloryczności (±12%); bez planu „Propozycja
-  dnia” układa posiłki z tego, co w pobliżu i w domu. „Dodaj zjedzone” szuka w produktach,
-  przepisach, planie i własnym jedzeniu; gramaturę da się zmienić, a obiad na mieście wpisać samymi
-  kaloriami. Cel dnia koryguje się według tygodnia — nadwyżka rozkłada się na kolejne dni (najwyżej
+  dnia” układa posiłki z tego, co w pobliżu i w domu. „Dodaj zjedzone” szuka we własnych
+  zestawach i jedzeniu, planie, przepisach, menu lokali („big mac”, „latte grande”) i produktach —
+  najbliższe nazwy pierwsze; gramaturę da się zmienić, a obiad poza sieciami wpisać samymi
+  kaloriami. **Zestaw** składa kilka rzeczy jedzonych razem („Banan + batonik”): każda z gramaturą,
+  suma na bieżąco, w dzienniku jeden wpis. Zaznaczone „Zapisz jako mój zestaw” zostawia go na
+  później — wraca pierwszy w wyszukiwaniu i w propozycjach („Twój zestaw”), a usuwa się go
+  w Profilu diety → Twoje dane. Zestaw trzyma kopie części, jak wpisy dziennika, więc nowa baza
+  produktów nie zmienia tego samego śniadania. Cel dnia koryguje się według tygodnia — nadwyżka rozkłada się na kolejne dni (najwyżej
   10% celu dziennie), niedojedzone kalorie wracają. „Co teraz?” podpowiada resztę dnia z gwiazdką
   przy najlepszych i powodem.
 - **Postęp** (podstrona): wykres wagi z planem, prognozą od ostatniego ważenia i celem, kalorie
@@ -655,7 +661,12 @@ już zakłada treningi, a doliczanie spalonych kalorii liczyłoby je dwa razy. P
 kroki z każdego dnia, także z dni bez wpisu w diecie.
 
 **Przepisy** (`#/przepisy`): zawsze więcej białka niż węglowodanów i więcej białka niż tłuszczu —
-na porcję, z prawdziwych produktów. Trzy grupy czasu (szybkie do 7 minut, chwilę dłużej do 20,
+na porcję, z prawdziwych produktów. Na początku listy **gotowce** (rodzaj „Gotowiec”): 11 zestawów
+kupowanych w jednym sklepie i jedzonych z opakowania, bez gotowania i bez naczyń — banan i baton
+białkowy, serek wiejski z bułką grahamką, kefir z bułką, łosoś na pieczywie chrupkim… Gotowiec ma
+własną zasadę, **co najmniej 15 g białka w zestawie**, bo banan z batonem to przekąska
+węglowodanowa z białkiem, a nie przepis białkowy; baton i napój proteinowy liczą się całym
+opakowaniem wybranego produktu. Trzy grupy czasu (szybkie do 7 minut, chwilę dłużej do 20,
 dłużej w domu), rodzaje i sklep. Każda karta pokazuje sklep, w którym kupisz **wszystkie**
 składniki naraz, z przełączaniem na inny; każdy składnik da się zamienić na inny produkt z tego
 samego sklepu, a zamiana łamiąca zasadę jest oznaczona. Niżej gotowe produkty spełniające zasadę
@@ -667,6 +678,36 @@ sortowanie po każdej wartości, filtry z licznikami w arkuszu („Pokaż N prod
 po nazwie, marce i kodzie kreskowym bez względu na polskie znaki. Cały stan ekranu stoi w adresie
 (`#/produkty?q=skyr&ns=a`), więc link albo odświeżenie odtwarza widok, a Wstecz zamyka otwarty
 produkt.
+
+**Lokale** (`#/lokale`, kafelek na górze Produktów): menu 18 sieci gastronomicznych działających
+w Polsce — 1189 pozycji z kaloriami, białkiem, węglowodanami (z cukrami), tłuszczem (z nasyconymi)
+i solą **na porcję, tak jak podaje sieć**, a przy znanej masie porcji także na 100 g. Wyszukiwanie
+idzie przez wszystkie menu naraz; menu sieci (`#/lokale/kfc`) ma źródło z datą sprawdzenia,
+„Najwięcej białka” (co najmniej 15 g w porcji, najwięcej na kalorię), kategorie, kolejność, ocenę
+pod profil diety i „Dodaj do dziennika”. Podstrona Produktów, a nie piąta sekcja: pięć pozycji
+przełącznika nie mieści się na ekranie 320 px.
+
+| Rodzaj | Sieci (źródło: własna tabela sieci) |
+| --- | --- |
+| Fast food | McDonald's (10.2026), KFC (09.2026), Burger King (09.2026), MAX Premium Burgers, Popeyes (10.2026), Subway (05.2024, tabela dla Europy Środkowo-Wschodniej), Pasibus (09.2026) |
+| Kawiarnie | Starbucks, Costa Coffee (10.2026), Green Caffè Nero (09.2026) |
+| Pizzerie | Pizza Hut (**tabela z 05.2019** — jedyna, jaką sieć podlinkowuje), T-Pizza, dawniej Telepizza (12.2025), Da Grasso (08.2026) |
+| Bary | Salad Story (09.2026) |
+| Stacje i sklepy | ORLEN Stop Cafe, Circle K, bp / Wild Bean Cafe (10.2026), Żabka Café (04.2025) |
+
+Liczby są przepisane z tabel PDF, stron i API samych sieci — bez agregatorów typu fatsecret.
+`src/food/restaurants/catalog.test.ts` sprawdza każdą pozycję jak bazę produktów: energia z makro
+(4/4/9 kcal na gram) w granicach ±15 % (±25 kcal dla małych pozycji), cukry nie ponad węglowodany,
+nasycone nie ponad tłuszcz. Pozycje, które tak podaje **sama sieć** (23, sprawdzone ze źródłem),
+stoją w `source.inconsistent` — zostają, ale lista i karta mówią „liczby sieci się nie zgadzają”,
+a do „Najwięcej białka” nie trafiają. Pełnych makroskładników nie publikuje Domino's, Sphinx, Shell
+i Bobby Burger; Tim Hortons, Dunkin' i Krispy Kreme nie działają w Polsce, a North Fish ogłosił
+upadłość — tych sieci nie ma. Menu przychodzi własną paczką (`restaurants/catalog`, ok. 49 kB
+gzip), dopiero z Lokalami albo z „Dodaj zjedzone”.
+
+Aktualizacja: plik sieci w `src/food/restaurants/data/<sieć>.json` (schemat w `types.ts`: porcja,
+masa porcji, wartości na porcję, źródło z datą `checked`, rynek); test powie, które liczby się nie
+zgadzają.
 
 **W pobliżu** (`#/w-poblizu`): lokalizacja (albo kliknięcie na mapie), sklepy spożywcze
 z OpenStreetMap w promieniu od 500 m do 10 km i przepisy, które zrobisz w jednym pobliskim sklepie
@@ -1047,7 +1088,7 @@ src/
     RootBoundary.test.tsx   3 testy ekranu awarii: bez błędu, po błędzie i „Odśwież” bez ruszania danych
     UpdateBar.tsx           pasek „Nowa wersja aplikacji” z „Odśwież” i „Później” — nigdy w trakcie treningu
   food/                     zakładka Jedzenie (dawne Produkty PL): osobna paczka, wczytywana dopiero w Jedzeniu
-    FoodRoot.tsx            wejście do paczki: przełącznik sekcji, strony sekcji i podstrony diety, każda leniwie
+    FoodRoot.tsx            wejście do paczki: przełącznik sekcji, strony sekcji, podstrony diety i lokale, każda leniwie
     TodayFoodCard.tsx       karta jedzenia na ekranie Dziś: kalorie i białko wobec celu dnia, „Dodaj zjedzone”
     FoodCardPlaceholder.tsx miejsce na tę kartę, zanim przyjdzie jej paczka — w głównej paczce, bez importów
     dietFlag.ts             znacznik „prowadzi dietę” (`gt:diet`): ekran Dziś czyta go, zanim wczyta cokolwiek z jedzenia
@@ -1056,18 +1097,20 @@ src/
     data.ts                 baza produktów: adres z buildu, pobranie, gzip albo czysty JSON, indeks do wyszukiwania
     hash.ts                 stan stron w zapytaniu wewnątrz hasha (`#/produkty?q=skyr&ns=a`)
     food.css                miejsce na style wspólne całej zakładce; obszary mają arkusze obok swoich stron
-    *.test.ts(x)            31 testów karty Dziś, kopii i resetu, arkuszy bez zderzeń klas, bazy produktów i hasha
-    lib/                    produkty: filtry, fasety, sortowanie, wyszukiwanie bez względu na ogonki, stan w adresie, formaty — 49 testów
-    recipes/                przepisy białkowe: katalog, składniki z jednego sklepu, zamiany, progi, makro, gotowe produkty — 167 testów
+    *.test.ts(x)            32 testy karty Dziś, kopii i resetu, arkuszy bez zderzeń klas, bazy produktów i hasha
+    lib/                    produkty: filtry, fasety, sortowanie, wyszukiwanie bez względu na ogonki, stan w adresie, formaty, opakowania — 51 testów
+    recipes/                przepisy białkowe i gotowce: katalog, składniki z jednego sklepu, zamiany, progi, makro, gotowe produkty — 211 testów
     nearby/                 w pobliżu: odległości, zapytanie do Overpass z zapasowym serwerem, kopia na dobę, promień — 33 testy
-    diet/                   dieta: baza Dexie (`produkty-pl-dieta`), model energii, sposoby odżywiania, dzień, plan z Excela, podpowiedzi — 105 testów
-    hooks/                  baza produktów, dieta na żywo i scalona z treningiem, stan w adresie, lokalizacja, sklepy w pobliżu — 22 testy
+    diet/                   dieta: baza Dexie (`produkty-pl-dieta`, wersja 2 z zestawami), model energii, sposoby odżywiania, dzień, plan z Excela, zestawy, wyszukiwanie, podpowiedzi — 120 testów
+    restaurants/            lokale: dane sieci (`data/*.json`), kontrola liczb, wyszukiwanie, kolejność, „Najwięcej białka”, stan w adresie — 101 testów
+    hooks/                  baza produktów, menu lokali, dieta na żywo i scalona z treningiem, stan w adresie, lokalizacja, sklepy w pobliżu — 22 testy
     components/common/      karta i szczegóły produktu, zdjęcie, oceny, cena, arkusz od dołu, ekrany stanu
     components/products/    przeglądarka produktów: pasek narzędzi, filtry w arkuszu, fasety, aktywne filtry, tabela, strony
     components/recipes/     przepisy: lista z filtrami, karta ze sklepem, zamiana składnika, gotowe produkty
     components/nearby/      „W pobliżu”: mapa Leaflet, promień, sklepy i przepisy z nich
-    components/diet/        dziennik, plan posiłków, postęp, profil diety, pierwsze kroki, wybór jedzenia, import z Excela
-    components/**/*.test.tsx 93 testy stron pod jsdom — przez role i etykiety, nie znaczniki
+    components/diet/        dziennik, plan posiłków, postęp, profil diety, pierwsze kroki, wybór jedzenia i zestawy, import z Excela
+    components/restaurants/ Lokale: lista sieci z wyszukiwaniem, menu sieci, karta pozycji z dodaniem do dziennika
+    components/**/*.test.tsx 104 testy stron pod jsdom — przez role i etykiety, nie znaczniki
     test/                   dane do testów: produkty, most do treningu, arkusz Excela
   api.ts                    adres serwera aplikacji z buildu (`VITE_API_URL`)
   push.ts                   przypomnienia w przeglądarce: zgoda, subskrypcja Web Push, wysyłka listy
@@ -1127,7 +1170,7 @@ Silnik jest w całości oddzielony od interfejsu. `engine/` nie importuje niczeg
 przyjmują stan i zwracają zmiany, więc dają się testować bez DOM-u. Funkcje mutujące (`applyResult`,
 `applyLayoff`) działają na przekazanym obiekcie — `App.tsx` woła je zawsze na kopii stanu.
 
-Jedzenie ma ten sam podział: `food/lib`, `recipes`, `nearby` i `diet` to czysta logika bez Reacta
+Jedzenie ma ten sam podział: `food/lib`, `recipes`, `nearby`, `diet` i `restaurants` to czysta logika bez Reacta
 (testowana w node), a komponenty tylko wyświetlają — ich testy renderują strony pod jsdom. Do głównej
 paczki trafia z jedzenia tylko to, czego potrzebuje ekran Dziś i App, zanim ktoś wejdzie w Jedzenie:
 znacznik diety, most, zaślepka karty i stan w hashu (`dietFlag.ts`, `bridge.ts`,
@@ -1871,7 +1914,8 @@ zapisuje w dzienniku `time`: sekundy całości i części (początek i koniec od
 i imporcie zepsuty zegar albo czas odpada, a trening zostaje.
 
 **Jedzenie leży osobno, w IndexedDB** (baza `produkty-pl-dieta`, Dexie): profil diety, dni, wpisy,
-plan z Excela i własne potrawy — jest ich za dużo i są po dniach, więc nie pasują do jednego zapisu
+plan z Excela, własne potrawy i zestawy (od wersji 2 bazy; starsza baza i starsza kopia bez zestawów
+wczytują się bez zmian) — jest ich za dużo i są po dniach, więc nie pasują do jednego zapisu
 `localStorage`. Waga ma jedno źródło: ważenia z diety, z kopii diety albo z planu z Excela przy
 wejściu w Jedzenie przechodzą do dziennika wagi i znikają z diety; kroki dieta czyta z wpisów
 i zegarka. Eksport z Ustawień zapisuje jeden plik — trening, a gdy dziennik jedzenia ma cokolwiek
