@@ -30,7 +30,8 @@ export function restaurantFood(chain: Chain, item: MenuItem): Food {
   return {
     key: `restaurant:${chain.id}:${item.id}`,
     name: `${item.name} (${chain.name})`,
-    detail: `${chain.name} · ${portionLabel(item)}`,
+    // The portion is the amount label; the detail only says where.
+    detail: chain.name,
     source: 'restaurant',
     amountLabel: portionLabel(item),
     nutrients: { kcal: Math.round(item.kcal), protein: r(item.protein), carbs: r(item.carbs), fat: r(item.fat) },

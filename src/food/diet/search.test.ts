@@ -3,7 +3,7 @@ import { indexProducts } from '../lib/search';
 import { normalizeChain } from '../restaurants/normalize';
 import { DATASET, makeProduct } from '../test/fixtures';
 import { customFood, planFood, recipeFood, setFood, type Food } from './foods';
-import { MAX_MENU_RESULTS, searchFoods } from './search';
+import { MAX_MENU_RESULTS, relevance, searchFoods } from './search';
 
 const dict = DATASET.dictionaries;
 const recipe = recipeFood(
@@ -91,9 +91,18 @@ describe('searchFoods', () => {
       'custom:1',
       'plan:Banan z planu',
       'recipe:banan-baton',
-      'restaurant:kawiarnia:bananowe-smoothie',
       'product:b1',
+      'restaurant:kawiarnia:bananowe-smoothie',
     ]);
+  });
+
+  test('closest names first: the name itself, then names starting with it, then any word, then anywhere', () => {
+    const t = ['banan'];
+    expect(
+      ['Banan', 'Banany', 'Ciasto bananowe', 'Mus z bananem', 'Bezbananowy baton'].map((name) => relevance(name, t)),
+    ).toEqual([0, 1, 2, 2, 3]);
+    expect(relevance('Caffè Latte (Starbucks)', ['caffe', 'latte'])).toBe(0);
+    expect(relevance("Big Mac (McDonald's)", ['mac'])).toBe(2);
   });
 
   test('restaurants never crowd out products, and a set is not built of sets', () => {

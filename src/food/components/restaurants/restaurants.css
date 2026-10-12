@@ -64,5 +64,5 @@
 .fd-rest-table{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
 .fd-rest-table th,.fd-rest-table td{padding:7px 4px;border-bottom:1px solid var(--surface-2);text-align:right}
 .fd-rest-table th[scope=row],.fd-rest-table thead th:first-child{text-align:left;font-weight:500}
-.fd-rest-table thead th{font-size:12px;font-weight:600;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em}
+.fd-rest-table thead th{font-size:12.5px;font-weight:600;color:var(--ink-soft)}
 .fd-rest-table tr.fd-rest-sub th{padding-left:16px;font-weight:400;color:var(--ink-soft)}

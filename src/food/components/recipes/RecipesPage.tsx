@@ -83,6 +83,7 @@ function Recipes({ dataset, products }: { dataset: Dataset; products: IndexedPro
   // Otwarcie dodaje wpis historii — Wstecz zamyka kartę produktu, zamiast wychodzić z Przepisów.
   const open = useCallback((code: string) => update({ product: code }, { push: true }), [update]);
   const filtered = state.kind !== null || state.tier !== null || store !== null;
+  const onlyGotowce = state.kind === 'gotowiec';
 
   return (
     <>
@@ -143,11 +144,15 @@ function Recipes({ dataset, products }: { dataset: Dataset; products: IndexedPro
 
       <section className="fd-rec-section" aria-labelledby="fd-rec-title">
         <div className="wrap fd-rec-head">
-          <h2 id="fd-rec-title">Przepisy białkowe</h2>
+          <h2 id="fd-rec-title">{onlyGotowce ? 'Gotowce bez naczyń' : 'Przepisy białkowe'}</h2>
           <p className="fd-rec-count" aria-live="polite">
             {recipes.length > 0
-              ? `${formatNumber(recipes.length, 0)} ${plural(recipes.length, 'przepis', 'przepisy', 'przepisów')}${
-                  state.tier ? '' : ', najpierw szybkie'
+              ? `${formatNumber(recipes.length, 0)} ${
+                  onlyGotowce
+                    ? plural(recipes.length, 'gotowiec', 'gotowce', 'gotowców')
+                    : plural(recipes.length, 'przepis', 'przepisy', 'przepisów')
+                }${
+                  state.tier || onlyGotowce ? '' : ', najpierw szybkie'
                 }`
               : 'Brak przepisów'}
           </p>

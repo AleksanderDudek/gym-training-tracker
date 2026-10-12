@@ -162,8 +162,8 @@
 .fd-diet-sheet .fd-sheet-body .seg{margin-bottom:12px}
 
 /* „Dodaj zjedzone”: wyszukiwanie, wynik do wybrania, gramatura; albo same kalorie. */
-.fd-diet-picker input[type=search]{width:100%;padding:11px 10px;font:inherit;font-size:17px;border:1px solid var(--edge);
-  border-radius:var(--r);background:#fff;color:var(--ink)}
+.fd-diet-picker input[type=search],.fd-diet-set input[type=search]{width:100%;padding:11px 10px;font:inherit;
+  font-size:17px;border:1px solid var(--edge);border-radius:var(--r);background:#fff;color:var(--ink)}
 .fd-diet-hint,p.fd-diet-hint{margin:8px 0 0;font-size:12.5px;color:var(--ink-soft)}
 .fd-diet-results{list-style:none;margin:8px 0 0;padding:0}
 .fd-diet-results li{border-top:1px solid var(--surface-2)}
