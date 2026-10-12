@@ -42,6 +42,21 @@ export interface ProductImages {
   nutrition: string | null;
 }
 
+/**
+ * A product's page in an online shop (`src/food/online/data`): where to buy it
+ * with delivery, at the shop's regular price when it was checked.
+ */
+export interface OnlineOffer {
+  /** The shop's store key, also listed in `stores`. */
+  shop: string;
+  /** The product page, https. */
+  url: string;
+  /** PLN. */
+  price: number | null;
+  /** YYYY-MM-DD */
+  checked: string;
+}
+
 export interface Product {
   code: string;
   name: string;
@@ -72,6 +87,10 @@ export interface Product {
   /** unique_scans_n: how many people scanned it. */
   popularity: number | null;
   price: Price | null;
+  /** Online shops that sell it, with links (merged in at load time; absent in the OFF file). */
+  online?: OnlineOffer[];
+  /** Known only from an online shop's page, not from Open Food Facts. */
+  shopOnly?: true;
 }
 
 export const DICTIONARY_NAMES = ['categories', 'labels', 'allergens', 'additives', 'brands', 'stores'] as const;

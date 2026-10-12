@@ -10,9 +10,10 @@ export const TOGGLE_LABELS: Record<ToggleKey, string> = {
   vegan: 'Wegańskie',
   vegetarian: 'Wegetariańskie',
   noPalmOil: 'Bez oleju palmowego',
+  online: 'W sklepach internetowych',
 };
 
-export const PRESENCE_TOGGLES: ToggleKey[] = ['hasImage', 'hasPrice', 'hasNutrition'];
+export const PRESENCE_TOGGLES: ToggleKey[] = ['hasImage', 'hasPrice', 'hasNutrition', 'online'];
 export const DIET_TOGGLES: ToggleKey[] = ['vegan', 'vegetarian', 'noPalmOil'];
 
 export const NUTRIENT_LABELS: Record<Nutrient, string> = {

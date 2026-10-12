@@ -1,7 +1,7 @@
 import { ExternalLink } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { brandLine, names } from '../../lib/display';
-import { formatDate, formatGrams, formatKcal } from '../../lib/format';
+import { formatDate, formatGrams, formatKcal, formatPrice } from '../../lib/format';
 import { NUTRIENT_LABELS, PALM_OIL_LABELS, TRI_LABELS } from '../../lib/labels';
 import { NUTRIENTS, type Dictionaries, type Product } from '../../lib/types';
 import { PriceTag } from './PriceTag';
@@ -96,6 +96,26 @@ export function ProductDetail({ product: p, dict, onClose }: Props) {
         )}
       </div>
 
+      {p.online && p.online.length > 0 && (
+        <Block title="Kup w sklepie internetowym">
+          <ul className="fd-offers">
+            {p.online.map((o) => (
+              <li key={o.url}>
+                <a href={o.url} target="_blank" rel="noopener noreferrer">
+                  {dict.stores[o.shop] ?? o.shop}
+                  <ExternalLink size={14} strokeWidth={2} aria-hidden />
+                  <span className="sr-only"> (otwiera się w nowej karcie)</span>
+                </a>
+                <span className="soft">
+                  {o.price !== null && <> · {formatPrice(o.price)}</>} · sprawdzone {formatDate(o.checked)}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <p className="soft small">Ceny i dostępność ze strony sklepu w dniu sprawdzenia — w sklepie mogą być inne.</p>
+        </Block>
+      )}
+
       {(p.genericName || category) && (
         <Block title="Opis">
           {p.genericName && <p>{p.genericName}</p>}
@@ -154,19 +174,24 @@ export function ProductDetail({ product: p, dict, onClose }: Props) {
         </Block>
       )}
 
-      <Block title="Kod kreskowy">
-        <p className="fd-code">{p.code}</p>
-      </Block>
+      {/* Produkt tylko ze sklepu internetowego, bez EAN, ma kod z nazwy strony — to nie kod kreskowy. */}
+      {/^\d+$/.test(p.code) && (
+        <Block title="Kod kreskowy">
+          <p className="fd-code">{p.code}</p>
+        </Block>
+      )}
 
-      <a
-        className="fd-extlink"
-        href={`https://pl.openfoodfacts.org/produkt/${encodeURIComponent(p.code)}`}
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        Zobacz w Open Food Facts <ExternalLink size={16} strokeWidth={2} aria-hidden />
-        <span className="sr-only"> (otwiera się w nowej karcie)</span>
-      </a>
+      {!p.shopOnly && (
+        <a
+          className="fd-extlink"
+          href={`https://pl.openfoodfacts.org/produkt/${encodeURIComponent(p.code)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Zobacz w Open Food Facts <ExternalLink size={16} strokeWidth={2} aria-hidden />
+          <span className="sr-only"> (otwiera się w nowej karcie)</span>
+        </a>
+      )}
     </Sheet>
   );
 }

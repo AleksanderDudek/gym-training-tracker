@@ -53,6 +53,9 @@
 /* Pole kliknięcia nazwy rozciągnięte na całą kartę (karta ma `position:relative`). */
 .fd-card-open::after{content:'';position:absolute;inset:0}
 .fd-card-meta{margin:0;font-size:12.5px;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Sklep internetowy — na karcie słowami, nie samym kolorem; link do sklepu jest w szczegółach produktu. */
+.fd-card-online{margin:2px 0 0;font-size:12.5px;font-weight:600;color:var(--c-blue-ink);white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis}
 .fd-card-kcal{margin:2px 0 0;font-family:var(--display);font-size:18px;line-height:1.15}
 .fd-card-kcal small{font-family:var(--body);font-size:11.5px;color:var(--ink-soft)}
 .fd-macros{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px 6px;margin:0;font-size:12.5px;line-height:1.3}
@@ -120,6 +123,11 @@ html:has(.fd-sheet[open]){overflow:hidden}
 .fd-block p{margin:0 0 4px;font-size:14.5px;line-height:1.5;max-width:62ch}
 .fd-block p.soft{color:var(--ink-soft)}
 .fd-block p.small{font-size:12.5px;margin-top:6px}
+.fd-offers{list-style:none;margin:0 0 4px;padding:0;font-size:14.5px}
+.fd-offers li{display:flex;flex-wrap:wrap;align-items:center;gap:0 4px;min-height:44px}
+.fd-offers a{display:inline-flex;align-items:center;gap:4px;min-height:44px;color:var(--steel);font-weight:600;
+  text-decoration:underline}
+.fd-offers .soft{color:var(--ink-soft);font-size:13px}
 .fd-nutri{width:100%;border-collapse:collapse;font-size:14.5px}
 .fd-nutri th{padding:7px 8px 7px 0;font-weight:400;text-align:left}
 .fd-nutri td{padding:7px 0;text-align:right;font-family:var(--display);font-size:15.5px;white-space:nowrap}

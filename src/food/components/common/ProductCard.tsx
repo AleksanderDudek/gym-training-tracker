@@ -1,6 +1,6 @@
 import { brandLine } from '../../lib/display';
 import { formatGrams, formatNumber, UNKNOWN } from '../../lib/format';
-import type { Dictionaries, IndexedProduct } from '../../lib/types';
+import type { Dictionaries, IndexedProduct, Product } from '../../lib/types';
 import { PriceTag } from './PriceTag';
 import { ProductImage } from './ProductImage';
 import { ScoreBadge } from './ScoreBadge';
@@ -12,6 +12,11 @@ interface Props {
   onOpen: (code: string) => void;
   /** Miejsce karty w konspekcie strony: h3 na liście produktów, h4 pod przepisem. */
   headingLevel?: 3 | 4;
+}
+
+/** Sklepy internetowe produktu po nazwie, bez powtórzeń: „GuiltFree, Diet-Food”. */
+export function shopNames(p: Product, dict: Dictionaries): string {
+  return [...new Set((p.online ?? []).map((o) => dict.stores[o.shop] ?? o.shop))].join(', ');
 }
 
 /**
@@ -34,6 +39,9 @@ export function ProductCard({ product: p, dict, onOpen, headingLevel = 3 }: Prop
           </button>
         </Heading>
         {(brand || p.quantity) && <p className="fd-card-meta">{[brand, p.quantity].filter(Boolean).join(' · ')}</p>}
+        {p.online?.length ? (
+          <p className="fd-card-online">Sklep internetowy: {shopNames(p, dict)}</p>
+        ) : null}
         <p className="fd-card-kcal">
           {n.kcal === null ? UNKNOWN : formatNumber(n.kcal, 0)} <small>kcal / 100 g</small>
         </p>
