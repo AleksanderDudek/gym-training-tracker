@@ -5,7 +5,7 @@ import appCss from '../styles.css?raw';
 /**
  * Klasy jedzenia nie mogą się zderzać między obszarami.
  *
- * Każdy obszar (produkty, przepisy, sklepy, dieta) ma własny arkusz, ładowany z leniwą paczką —
+ * Każdy obszar (produkty, przepisy, sklepy, dieta, lokale) ma własny arkusz, ładowany z leniwą paczką —
  * a raz wczytany arkusz zostaje na stronie do końca wizyty. Ta sama klasa zdefiniowana w dwóch
  * obszarach działała więc różnie w zależności od tego, który ekran otwarto pierwszy: siatka
  * produktów traciła marginesy po wizycie w dzienniku. Wspólne klasy mieszkają w `common.css`
@@ -38,8 +38,8 @@ const areas = Object.entries(AREAS)
   .map(([path, css]) => ({ path, own: [...classesOf(css)].filter((c) => !shared.has(c) && !c.startsWith('leaflet-')) }));
 
 describe('arkusze jedzenia', () => {
-  it('są cztery obszary z własnymi klasami', () => {
-    expect(areas.map((a) => a.path.split('/')[2]).sort()).toEqual(['diet', 'nearby', 'products', 'recipes']);
+  it('jest pięć obszarów z własnymi klasami', () => {
+    expect(areas.map((a) => a.path.split('/')[2]).sort()).toEqual(['diet', 'nearby', 'products', 'recipes', 'restaurants']);
     areas.forEach((a) => expect(a.own.length, a.path).toBeGreaterThan(0));
   });
 

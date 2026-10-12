@@ -1,8 +1,8 @@
 import { lazy, Suspense, type ComponentType, type LazyExoticComponent } from 'react';
 import { Sections } from '../components/Sections';
 import { LOADING, daySeed, pick } from '../engine/quips';
-import { FOOD_SECTION_PATH, SECTIONS } from '../routing';
-import type { DietPage, FoodSection, Route } from '../types';
+import { FOOD_SECTION_PATH, SECTIONS, type FoodRoute } from '../routing';
+import type { DietPage, FoodSection } from '../types';
 import './food.css';
 
 /**
@@ -15,8 +15,6 @@ import './food.css';
  * `useDiet` (warianty `useMerged*`), bazę produktów z `useDataset`, a stan strony z adresu
  * (`useUrlState`, zapytanie w hashu).
  */
-
-export type FoodRoute = Extract<Route, { kind: 'food' } | { kind: 'diet' }>;
 
 /** Strona jedzenia: domyślny eksport bez propsów, w osobnej paczce. */
 type LazyPage = LazyExoticComponent<ComponentType>;
@@ -34,11 +32,30 @@ const DIET_PAGE: Record<DietPage, LazyPage> = {
   profile: lazy(() => import('./components/diet/DietProfilePage')),
 };
 
+/** Lokale: lista sieci i menu jednej z nich — jedyna strona jedzenia z propsem (sieć z adresu). */
+const RestaurantsPage = lazy(() => import('./components/restaurants/RestaurantsPage'));
+const ChainPage = lazy(() => import('./components/restaurants/ChainPage'));
+
+function page(route: FoodRoute) {
+  switch (route.kind) {
+    case 'food': {
+      const Page = SECTION_PAGE[route.section];
+      return <Page key={FOOD_SECTION_PATH[route.section]} />;
+    }
+    case 'diet': {
+      const Page = DIET_PAGE[route.page];
+      return <Page key={`diet:${route.page}`} />;
+    }
+    case 'restaurants':
+      return route.chain ? (
+        <ChainPage key={`lokale:${route.chain}`} chainId={route.chain} />
+      ) : (
+        <RestaurantsPage key="lokale" />
+      );
+  }
+}
+
 export default function FoodRoot({ route }: { route: FoodRoute }) {
-  const Page = route.kind === 'food' ? SECTION_PAGE[route.section] : DIET_PAGE[route.page];
-  // Klucz za ścieżką: `useUrlState` przypina stronę do ścieżki z chwili montażu, więc nowa
-  // ścieżka to zawsze nowy egzemplarz strony, nigdy ten sam przeniesiony pod inny adres.
-  const path = route.kind === 'food' ? FOOD_SECTION_PATH[route.section] : `diet:${route.page}`;
   return (
     <>
       {route.kind === 'food' && (
@@ -47,7 +64,9 @@ export default function FoodRoot({ route }: { route: FoodRoute }) {
         </div>
       )}
       <Suspense fallback={<div className="empty">{pick(LOADING, daySeed())}</div>}>
-        <Page key={path} />
+        {/* Klucz za ścieżką: `useUrlState` przypina stronę do ścieżki z chwili montażu, więc nowa
+            ścieżka to zawsze nowy egzemplarz strony, nigdy ten sam przeniesiony pod inny adres. */}
+        {page(route)}
       </Suspense>
     </>
   );

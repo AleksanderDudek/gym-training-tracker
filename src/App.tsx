@@ -20,7 +20,20 @@ import { achCtx, migrateBadges, revokeUnmet, syncBadges } from './engine/badges'
 import { pointsToday, rankFor } from './engine/score';
 import { seedFromPlan } from './engine/plan';
 import { loadFactorFor, planOf, planById, planId } from './data/plans';
-import { PLANS_PATH, TABS, activeTab, currentPath, forgetSections, go, goBack, isTabRoot, screenOf, tabHref, useRoute } from './routing';
+import {
+  PLANS_PATH,
+  TABS,
+  activeTab,
+  currentPath,
+  forgetSections,
+  go,
+  goBack,
+  isFoodRoute,
+  isTabRoot,
+  screenOf,
+  tabHref,
+  useRoute,
+} from './routing';
 import { Icon } from './components/icons';
 import { BadgeDefs } from './components/BadgeArt';
 import { Celebrate } from './components/Celebrate';
@@ -371,7 +384,7 @@ export default function App() {
    * po cichu (zepsuty zapis ma swój pasek): kolejne wejście spróbuje jeszcze raz. `moving`
    * pilnuje, żeby dwa przebiegi (StrictMode, szybkie przejścia) nie szły naraz.
    */
-  const onFood = route.kind === 'food' || route.kind === 'diet';
+  const onFood = isFoodRoute(route);
   const moving = useRef(false);
   const loaded = !!state;
   useEffect(() => {
@@ -1546,7 +1559,9 @@ export default function App() {
         ? `food:${route.section}`
         : route.kind === 'diet'
           ? `diet:${route.page}`
-          : `${route.kind}:${'id' in route ? (route.id ?? '') : ''}`;
+          : route.kind === 'restaurants'
+            ? `restaurants:${route.chain ?? ''}`
+            : `${route.kind}:${'id' in route ? (route.id ?? '') : ''}`;
 
   // Ostrzeżenie o zapisie stoi na każdym ekranie z danymi, także w Jedzeniu: waga i kroki z diety
   // idą do tego samego zapisu. Pozostałe paski (skok obciążenia, „Trenowałeś dzisiaj”) mówią
@@ -1768,7 +1783,7 @@ export default function App() {
         />
       )}
 
-      {(route.kind === 'food' || route.kind === 'diet') && (
+      {isFoodRoute(route) && (
         <>
           {saveBroken && <div className="wrap">{saveBrokenBanner}</div>}
           <LoadBoundary what="zakładki Jedzenie">

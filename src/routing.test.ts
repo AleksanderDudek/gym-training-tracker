@@ -11,6 +11,7 @@ import {
   forgetSections,
   planEditPath,
   planPath,
+  restaurantPath,
   rememberSection,
   sectionHref,
   tabHref,
@@ -20,6 +21,7 @@ import {
   cardioAddPath,
   cardioPath,
   exercisePath,
+  isFoodRoute,
   isTabRoot,
   parseHash,
   screenOf,
@@ -53,6 +55,21 @@ describe('zakładki i sekcje', () => {
     expect(parseHash('#/jedzenie/profil')).toEqual({ kind: 'diet', page: 'profile' });
     // Nieznana podstrona dziennika prowadzi do dziennika, a nie na ekran Dziś.
     expect(parseHash('#/jedzenie/cos')).toEqual({ kind: 'food', section: 'diary' });
+  });
+
+  it('Lokale to podstrona Produktów, a menu sieci — podstrona Lokali', () => {
+    expect(parseHash('#/lokale')).toEqual({ kind: 'restaurants', chain: null });
+    expect(parseHash('#/lokale?q=big+mac')).toEqual({ kind: 'restaurants', chain: null });
+    expect(parseHash('#/lokale/kfc?kat=kurczak')).toEqual({ kind: 'restaurants', chain: 'kfc' });
+    expect(parseHash(restaurantPath('burger-king'))).toEqual({ kind: 'restaurants', chain: 'burger-king' });
+    expect(screenOf(parseHash('#/lokale'))).toEqual({ title: 'Lokale', parent: '#/produkty' });
+    expect(screenOf(parseHash('#/lokale/kfc'))).toEqual({ title: 'Menu', parent: '#/lokale' });
+    expect(activeTab(parseHash('#/lokale/kfc'))).toBe('food' as TabKey);
+    expect(isFoodRoute(parseHash('#/lokale'))).toBe(true);
+    expect(isFoodRoute(parseHash('#/jedzenie/plan'))).toBe(true);
+    expect(isFoodRoute(parseHash('#/treningi'))).toBe(false);
+    // Podstrona, nie korzeń sekcji: ze strzałką wstecz i bez pamięci przełącznika.
+    expect(isTabRoot('#/lokale')).toBe(false);
   });
 
   it('zapytanie w hashu to stan strony, nie część trasy — także na starych adresach', () => {

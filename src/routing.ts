@@ -70,6 +70,18 @@ export const RECIPES_PATH = '#/przepisy';
 export const PRODUCTS_PATH = '#/produkty';
 export const NEARBY_PATH = '#/w-poblizu';
 
+/**
+ * Lokale — menu sieci gastronomicznych z wartościami odżywczymi. Podstrona Produktów (ze strzałką
+ * wstecz), a nie piąta sekcja: pięć pozycji przełącznika nie mieści się na ekranie 320 px.
+ */
+export const RESTAURANTS_PATH = '#/lokale';
+export const restaurantPath = (chain: string): string => `${RESTAURANTS_PATH}/${encodeURIComponent(chain)}`;
+
+/** Trasy zakładki Jedzenie: sekcje, podstrony dziennika i lokale. */
+export type FoodRoute = Extract<Route, { kind: 'food' } | { kind: 'diet' } | { kind: 'restaurants' }>;
+export const isFoodRoute = (route: Route): route is FoodRoute =>
+  route.kind === 'food' || route.kind === 'diet' || route.kind === 'restaurants';
+
 /** Korzeń każdej sekcji jedzenia. */
 export const FOOD_SECTION_PATH: Record<FoodSection, string> = {
   diary: FOOD_PATH,
@@ -252,6 +264,9 @@ export function screenOf(route: Route): Screen {
       return { title: FOOD_TITLE[route.section], parent: null };
     case 'diet':
       return { title: DIET_TITLE[route.page], parent: FOOD_PATH };
+    case 'restaurants':
+      // Nazwa sieci stoi dużą czcionką w treści — w pasku, jak przy ćwiczeniu, rodzaj strony.
+      return route.chain ? { title: 'Menu', parent: RESTAURANTS_PATH } : { title: 'Lokale', parent: PRODUCTS_PATH };
   }
 }
 
@@ -401,6 +416,7 @@ export function parseHash(hash: string): Route {
   // Nieznana podstrona dziennika prowadzi do samego dziennika — adres zostaje w swojej zakładce.
   if (head === 'jedzenie' && second && Object.hasOwn(DIET_BY_SLUG, second)) return { kind: 'diet', page: DIET_BY_SLUG[second]! };
   if (Object.hasOwn(FOOD_BY_PATH, head)) return { kind: 'food', section: FOOD_BY_PATH[head]! };
+  if (head === 'lokale') return { kind: 'restaurants', chain: second ?? null };
   if (head === 'cwiczenia') return second ? { kind: 'exercise', id: second } : { kind: 'atlas' };
   if (head === 'profil' && second) return { kind: 'exstats', id: second };
   if (head === 'przekaski') {
@@ -524,6 +540,7 @@ export function activeTab(route: Route): TabKey {
       return 'work';
     case 'food':
     case 'diet':
+    case 'restaurants':
       return 'food';
   }
 }
