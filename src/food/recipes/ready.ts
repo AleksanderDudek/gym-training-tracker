@@ -13,6 +13,14 @@ const DRINK_WORD = /\b(pitn\w*|drink|napoj\w*|shake|koktajl\w*|milk|mleko)\b/;
 
 const has = (p: Product, ...tags: string[]) => tags.some((t) => p.categories.includes(t));
 
+/** A bar that calls itself protein (by category or by name). `name` is folded (`normalizeForSearch`). */
+export const isProteinBar = (p: Product, name: string): boolean =>
+  has(p, 'en:protein-bars', 'en:protein-energy-bars') || (/\b(baton\w*|bar)\b/.test(name) && PROTEIN_WORD.test(name));
+
+/** A drink that calls itself protein: a shake, a drinking yoghurt or skyr, a protein milk. */
+export const isProteinDrink = (p: Product, name: string): boolean =>
+  has(p, 'en:protein-shakes') || (PROTEIN_WORD.test(name) && DRINK_WORD.test(name));
+
 // The first group to CLAIM a product decides it, so the order matters: a
 // protein shake is a drink before it is a dairy product. A claimed product
 // that is not PLAUSIBLE for its group is dropped rather than passed on: a
@@ -26,9 +34,7 @@ const GROUPS: {
   {
     id: 'batony',
     label: 'Batony białkowe',
-    claims: (p, name) =>
-      has(p, 'en:protein-bars', 'en:protein-energy-bars') ||
-      (/\b(baton\w*|bar)\b/.test(name) && PROTEIN_WORD.test(name)),
+    claims: isProteinBar,
     plausible: (m) => m.protein <= 55 && m.kcal >= 200 && m.kcal <= 550,
   },
   {
@@ -44,7 +50,7 @@ const GROUPS: {
   {
     id: 'napoje',
     label: "Napoje i shake'i białkowe",
-    claims: (p, name) => has(p, 'en:protein-shakes') || (PROTEIN_WORD.test(name) && DRINK_WORD.test(name)),
+    claims: isProteinDrink,
     plausible: (m) => m.kcal <= 150,
   },
   {

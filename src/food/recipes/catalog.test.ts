@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { makeProduct } from '../test/fixtures';
 import type { Nutrition } from '../lib/types';
-import { RECIPES, servingsOf } from './catalog';
+import { GOTOWIEC_MIN_PROTEIN, NO_DISHES, RECIPES, passesRule, servingsOf } from './catalog';
 import { INGREDIENTS, type IngredientId } from './ingredients';
 import { divideMacros, isProteinForward, scale, sumMacros } from './macros';
 
@@ -30,13 +30,49 @@ describe('catalog', () => {
   );
 
   test.each(RECIPES.map((r) => [r.id, r] as const))(
-    '%s passes the rule per serving on typical values, before any product is chosen',
+    '%s passes its rule per serving on typical values, before any product is chosen',
     (_, recipe) => {
       const total = sumMacros(recipe.items.map((i) => scale(INGREDIENTS[i.ingredient].typical, i.grams)));
       const serving = divideMacros(total, servingsOf(recipe));
-      expect(isProteinForward(serving), JSON.stringify(serving)).toBe(true);
+      expect(passesRule(recipe, serving), JSON.stringify(serving)).toBe(true);
     },
   );
+
+  test('a recipe that is not a gotowiec still meets THE RULE, a gotowiec the protein floor', () => {
+    const banana = { kcal: 330, protein: 16, carbs: 50, fat: 8 };
+    expect(passesRule({ kind: 'gotowiec' }, banana)).toBe(true);
+    expect(passesRule({ kind: 'miska' }, banana)).toBe(false);
+    expect(passesRule({ kind: 'gotowiec' }, { ...banana, protein: GOTOWIEC_MIN_PROTEIN - 0.1 })).toBe(false);
+    expect(passesRule({ kind: 'shake' }, { kcal: 200, protein: 30, carbs: 10, fat: 3 })).toBe(
+      isProteinForward({ protein: 30, carbs: 10, fat: 3 }),
+    );
+  });
+
+  test('gotowce: no dishes, a minute or two, two or three things, at least one bought or eaten as it is', () => {
+    const gotowce = RECIPES.filter((r) => r.kind === 'gotowiec');
+    expect(gotowce.length).toBeGreaterThanOrEqual(10);
+    for (const r of gotowce) {
+      expect(r.tool, r.id).toBe(NO_DISHES);
+      expect(r.minutes, r.id).toBeLessThanOrEqual(2);
+      expect(r.items.length, r.id).toBeGreaterThanOrEqual(2);
+      expect(r.items.length, r.id).toBeLessThanOrEqual(3);
+      expect(servingsOf(r), r.id).toBe(1);
+      // Nothing that has to be cooked or measured out of a bag at home.
+      for (const i of r.items) expect(INGREDIENTS[i.ingredient].role, `${r.id}: ${i.ingredient}`).not.toBe('pantry');
+    }
+    // The set the request names.
+    expect(
+      gotowce.some(
+        (r) => r.items.some((i) => i.ingredient === 'banana') && r.items.some((i) => i.ingredient === 'proteinBar'),
+      ),
+    ).toBe(true);
+  });
+
+  test('only gotowce are "Bez naczyń", and pack amounts are only for things sold one per pack', () => {
+    for (const r of RECIPES.filter((x) => x.kind !== 'gotowiec')) expect(r.tool, r.id).not.toBe(NO_DISHES);
+    const packed = RECIPES.flatMap((r) => r.items.filter((i) => i.pack).map((i) => i.ingredient));
+    expect(new Set(packed)).toEqual(new Set(['proteinBar', 'proteinDrink']));
+  });
 
   test('a recipe for several servings is home cooking, not a quick snack split in two', () => {
     for (const recipe of RECIPES.filter((r) => servingsOf(r) > 1))
@@ -212,6 +248,58 @@ describe('ingredient matchers', () => {
     expect(matches('oil', 'Olej rzepakowy', oil)).toBe(true);
     expect(matches('oil', 'Olej słonecznikowy', oil, ['en:olive-oils'])).toBe(false);
     expect(matches('oil', 'Placek z oliwą', { kcal: 367, protein: 8.4, carbs: 61, fat: 9.6 })).toBe(false);
+  });
+
+  test('protein bar: a third protein in; a candy bar with a protein word and a powder out', () => {
+    const bar = { kcal: 380, protein: 33, carbs: 29, fat: 16 };
+    expect(matches('proteinBar', 'Baton proteinowy o smaku malinowym', bar)).toBe(true);
+    expect(matches('proteinBar', 'Crunchy bar', bar, ['en:protein-bars'])).toBe(true);
+    expect(matches('proteinBar', 'Go On Protein baton', { kcal: 424, protein: 20, carbs: 44, fat: 18 })).toBe(false);
+    expect(matches('proteinBar', 'Protein bar powder', bar, ['en:protein-bars'])).toBe(false);
+  });
+
+  test('protein drink: a ready-to-drink shake or drinking skyr in; a powder and a sweet milkshake out', () => {
+    expect(
+      matches('proteinDrink', 'Napój proteinowy o smaku waniliowym', { kcal: 59, protein: 10, carbs: 4.6, fat: 0.1 }),
+    ).toBe(true);
+    expect(matches('proteinDrink', 'Skyr pitny wysokobiałkowy', { kcal: 64, protein: 7.6, carbs: 4.3, fat: 1.8 })).toBe(
+      true,
+    );
+    expect(matches('proteinDrink', 'Protein shake vanilla', { kcal: 393, protein: 13, carbs: 82, fat: 1.1 })).toBe(
+      false,
+    );
+    expect(
+      matches('proteinDrink', 'Shake proteinowy czekoladowy', { kcal: 95, protein: 6, carbs: 14, fat: 2, sugars: 13 }),
+    ).toBe(false);
+  });
+
+  test('rice cakes and crispbread: plain in, chocolate-coated and a typo (8 g carbs) out', () => {
+    expect(
+      matches('riceCakes', 'Wafle ryżowe naturalne', { kcal: 386, protein: 10, carbs: 77, fat: 3.4, sugars: 0.5 }),
+    ).toBe(true);
+    expect(
+      matches('riceCakes', 'Wafle ryżowe w czekoladzie', { kcal: 492, protein: 7, carbs: 60, fat: 23, sugars: 30 }),
+    ).toBe(false);
+    expect(matches('crispbread', 'Pieczywo chrupkie żytnie', { kcal: 353, protein: 8.7, carbs: 72, fat: 0.9 })).toBe(
+      true,
+    );
+    expect(
+      matches('crispbread', 'Maca razowa', { kcal: 375, protein: 9.4, carbs: 7.8, fat: 1.4 }, ['en:crispbreads']),
+    ).toBe(false);
+  });
+
+  test('roll: a plain roll in; breadcrumbs, a burger bun and a sweet bun out', () => {
+    const roll = { kcal: 270, protein: 9, carbs: 54, fat: 1.5, sugars: 2 };
+    expect(matches('roll', 'Bułka grahamka', roll)).toBe(true);
+    expect(matches('roll', 'Kajzerka pszenna', roll)).toBe(true);
+    expect(matches('roll', 'Bułka tarta', { ...roll, kcal: 355 })).toBe(false);
+    expect(matches('roll', 'Bułka burger', roll)).toBe(false);
+    expect(matches('roll', 'Bułka słodka z kruszonką', roll)).toBe(false);
+  });
+
+  test('fruit has no matcher: crowd-sourced bananas disagree with each other', () => {
+    expect(INGREDIENTS.banana.match).toBeUndefined();
+    expect(INGREDIENTS.apple.match).toBeUndefined();
   });
 
   test('raw chicken and lean beef have no matcher: the data cannot tell them from cold cuts', () => {

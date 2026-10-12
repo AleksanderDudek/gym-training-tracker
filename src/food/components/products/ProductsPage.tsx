@@ -1,6 +1,7 @@
-import { LayoutGrid, Table2 } from 'lucide-react';
+import { ChevronRight, LayoutGrid, Table2, UtensilsCrossed } from 'lucide-react';
 import { useDeferredValue, useMemo, useRef, useState } from 'react';
 import { EmptyState, Segmented } from '../../../components/ui';
+import { RESTAURANTS_PATH } from '../../../routing';
 import { useDataset } from '../../hooks/useDataset';
 import { useViewState } from '../../hooks/useViewState';
 import { browse } from '../../lib/browse';
@@ -30,6 +31,23 @@ const VIEWS: { key: View; label: string; Icon: typeof LayoutGrid }[] = [
   { key: 'cards', label: 'Karty', Icon: LayoutGrid },
   { key: 'table', label: 'Tabela', Icon: Table2 },
 ];
+
+/**
+ * Wejście do Lokali: jedzenie z sieci gastronomicznych to też „produkty”, tylko z innej półki —
+ * dlatego podstrona Produktów, a nie piąta sekcja (pięć pozycji nie mieści się na ekranie 320 px).
+ */
+export function EatOutLink() {
+  return (
+    <a className="fd-prod-eatout" href={RESTAURANTS_PATH}>
+      <UtensilsCrossed size={20} strokeWidth={2} aria-hidden />
+      <span className="fd-prod-eatout-text">
+        <b>Lokale i sieci gastronomiczne</b>
+        <span>McDonald's, KFC, Starbucks, Pizza Hut i inne — kalorie i makro z ich własnych tabel</span>
+      </span>
+      <ChevronRight size={20} strokeWidth={2} aria-hidden />
+    </a>
+  );
+}
 
 /**
  * Produkty — przeglądarka bazy Open Food Facts: wyszukiwanie, sortowanie, filtry w arkuszu, karty
@@ -80,6 +98,7 @@ function Browser({ dataset, products }: { dataset: Dataset; products: IndexedPro
     <>
       <div className="wrap fd-products">
         <h2 className="sr-only">Produkty</h2>
+        <EatOutLink />
         <Toolbar
           query={state.filters.q}
           onQuery={(q) => update((s) => ({ filters: { ...s.filters, q } }))}

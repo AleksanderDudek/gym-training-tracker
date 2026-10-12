@@ -1,4 +1,4 @@
-import type { CustomFood } from './foods';
+import type { CustomFood, FoodSet, SetPart } from './foods';
 import type { DayRow, Entry } from './db';
 import type { Plan, PlanItem, PlanVariant } from './plan';
 import { DIET_PROFILE_IDS } from './profiles';
@@ -76,7 +76,9 @@ export function cleanEntry(raw: unknown): Entry | null {
     name: raw.name,
     amountLabel: typeof raw.amountLabel === 'string' ? raw.amountLabel : '',
     ...n,
-    source: (['product', 'recipe', 'plan', 'custom', 'quick'] as const).find((s) => s === raw.source) ?? 'quick',
+    source:
+      (['product', 'recipe', 'plan', 'custom', 'set', 'restaurant', 'quick'] as const).find((s) => s === raw.source) ??
+      'quick',
     ...(typeof raw.key === 'string' && { key: raw.key }),
     ...(finite(raw.planIndex) && { planIndex: raw.planIndex }),
   };
@@ -165,6 +167,26 @@ export function cleanCustomFood(raw: unknown): (CustomFood & { id?: number }) | 
     amountLabel: typeof raw.amountLabel === 'string' ? raw.amountLabel : '1 porcja',
     ...n,
   };
+}
+
+function cleanPart(raw: unknown): SetPart | null {
+  if (!isObject(raw) || typeof raw.name !== 'string' || !raw.name.trim()) return null;
+  const n = cleanNutrients(raw);
+  if (!n) return null;
+  return {
+    name: raw.name,
+    amountLabel: typeof raw.amountLabel === 'string' ? raw.amountLabel : '',
+    ...n,
+    ...(typeof raw.key === 'string' && { key: raw.key }),
+  };
+}
+
+/** A set is kept whole or not at all: a set missing a part would log a different meal. */
+export function cleanSet(raw: unknown): FoodSet | null {
+  if (!isObject(raw) || typeof raw.name !== 'string' || !raw.name.trim() || !Array.isArray(raw.parts)) return null;
+  const parts = raw.parts.map(cleanPart);
+  if (!parts.length || !parts.every(Boolean)) return null;
+  return { ...(finite(raw.id) && { id: raw.id }), name: raw.name, parts: parts as SetPart[] };
 }
 
 /** Keeps the rows that can be read; reports how many could not. */

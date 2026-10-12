@@ -4,19 +4,21 @@ import { Modal, useModal } from '../../../components/ui';
 import { markDiet } from '../../dietFlag';
 import { db } from '../../diet/db';
 import { clearAll, exportAll, now, restoreAll } from '../../diet/store';
-import { useCustomFoods } from '../../hooks/useDiet';
+import { setFood } from '../../diet/foods';
+import { useCustomFoods, useSets } from '../../hooks/useDiet';
 import { formatNumber } from '../../lib/format';
 import { ImportWorkbook } from './ImportWorkbook';
 
 const ICON = { size: 20, strokeWidth: 2, 'aria-hidden': true } as const;
 
 /**
- * Kopia, przywracanie, własne jedzenie i wyczyszczenie wszystkiego — dane diety są tylko tutaj.
+ * Kopia, przywracanie, własne jedzenie i zestawy oraz wyczyszczenie wszystkiego — dane diety są tylko tutaj.
  * Waga, wzrost i kroki należą do treningów, więc ich kopia idzie z kopią treningów (Ustawienia).
  */
 export function DataSection() {
   const restoreId = useId();
   const custom = useCustomFoods();
+  const sets = useSets();
   const { req, ask } = useModal();
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
 
@@ -62,8 +64,8 @@ export function DataSection() {
     const ok = await ask(
       'Usunąć wszystkie dane diety?',
       <p>
-        Profil diety, zapisy jedzenia, plan i moje jedzenie znikną z tego urządzenia. Tego nie da się cofnąć. Waga i
-        kroki zostają w treningach.
+        Profil diety, zapisy jedzenia, plan, moje jedzenie i zestawy znikną z tego urządzenia. Tego nie da się cofnąć.
+        Waga i kroki zostają w treningach.
       </p>,
       'Usuń wszystko',
     );
@@ -126,6 +128,38 @@ export function DataSection() {
               </button>
             </li>
           ))}
+        </ul>
+      )}
+
+      <h3>Moje zestawy</h3>
+      {!sets?.length ? (
+        <p className="tight">
+          Nic jeszcze. W „Dodaj zjedzone → Zestaw” złóż kilka rzeczy jedzonych razem (np. banan i baton) i zostaw
+          zaznaczone „Zapisz jako mój zestaw”.
+        </p>
+      ) : (
+        <ul className="fd-diet-list">
+          {sets.map((s) => {
+            const food = setFood(s);
+            return (
+              <li key={s.id} className="fd-diet-custom">
+                <span>
+                  {s.name}{' '}
+                  <span className="fd-diet-meta fd-diet-nums">
+                    · {formatNumber(food.nutrients.kcal, 0)} kcal · {food.amountLabel}
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  className="fd-diet-icon-btn"
+                  onClick={() => void db.sets.delete(s.id)}
+                  aria-label={`Usuń zestaw: ${s.name}`}
+                >
+                  <Trash2 {...ICON} />
+                </button>
+              </li>
+            );
+          })}
         </ul>
       )}
 

@@ -1,0 +1,68 @@
+/*
+ * Lokale — menu sieci gastronomicznych: lista sieci z wyszukiwaniem, menu jednej sieci i karta
+ * pozycji (`RestaurantsPage`, `ChainPage`, `MenuItemSheet`). Klasy z przedrostkiem `fd-rest-`;
+ * ocena pod profil diety to `FitBadge` z dziennika (`../diet/diet.css`), żetony kategorii —
+ * `ChipRow` z przepisów.
+ */
+
+.fd-rest-top{margin-top:4px}
+.fd-rest-search{display:flex;align-items:center;gap:6px;min-height:48px;margin:10px 0 12px;padding:0 4px 0 12px;
+  background:var(--surface);border:1px solid var(--edge);border-radius:var(--r);color:var(--ink-soft)}
+.fd-rest-search:focus-within{outline:2px solid var(--steel);outline-offset:1px}
+.fd-rest-search input{flex:1;min-width:0;min-height:46px;padding:0;border:0;background:none;font:inherit;font-size:16px;
+  color:var(--ink);outline:none}
+.fd-rest-clear{display:grid;place-items:center;flex:none;width:44px;height:44px;padding:0;border:0;background:none;
+  color:var(--ink-soft);cursor:pointer}
+.fd-rest-clear:focus-visible{outline:2px solid var(--steel);outline-offset:-2px}
+
+/* Lista sieci: wiersz to odnośnik do menu, ze strzałką w głąb. */
+.fd-rest-chains{list-style:none;margin:4px 0 0;padding:0}
+.fd-rest-chains li{border-top:1px solid var(--surface-2)}
+.fd-rest-chains li:first-child{border-top:0}
+.fd-rest-chains a{display:flex;align-items:center;gap:8px;min-height:56px;padding:6px 2px;color:var(--ink);
+  text-decoration:none;-webkit-tap-highlight-color:transparent}
+.fd-rest-chains a:active{background:var(--surface-2)}
+.fd-rest-chains a:focus-visible{outline:2px solid var(--steel);outline-offset:-2px}
+.fd-rest-chains a svg{flex:none;color:var(--ink-soft)}
+.fd-rest-chain-main{display:grid;gap:2px;flex:1;min-width:0}
+.fd-rest-chain-name{font-size:15.5px;font-weight:600}
+.fd-rest-foot{margin:12px auto 20px;font-size:12.5px;line-height:1.45;color:var(--ink-soft)}
+
+/* Pozycje menu: przycisk na całą szerokość, liczby w cyfrach tabelarycznych. */
+.fd-rest-list{list-style:none;margin:6px 0 0;padding:0}
+.fd-rest-list li{border-top:1px solid var(--surface-2)}
+.fd-rest-list li:first-child{border-top:0}
+.fd-rest-item{display:grid;gap:2px;width:100%;min-height:52px;padding:9px 2px;background:none;border:0;font:inherit;
+  text-align:left;color:var(--ink);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.fd-rest-item:active{background:var(--surface-2)}
+.fd-rest-item:focus-visible{outline:2px solid var(--steel);outline-offset:-2px}
+.fd-rest-name{font-size:15px;font-weight:600;overflow-wrap:anywhere}
+.fd-rest-meta,.grp p.fd-rest-meta{margin:0;font-size:12.5px;font-weight:400;color:var(--ink-soft)}
+.fd-rest-nums{font-variant-numeric:tabular-nums}
+.fd-rest-odd{color:var(--warn)}
+.fd-rest-h-meta{font-weight:400;color:var(--ink-soft)}
+
+/* Nagłówek menu sieci: nazwa dużą czcionką, źródło i data pod nią. */
+.fd-rest-head{margin-top:12px;margin-bottom:12px}
+.fd-rest-title{margin:0 0 2px;font-family:var(--display);font-size:26px;font-weight:600;line-height:1.1;color:var(--ink)}
+.fd-rest-src{margin:6px 0 0;font-size:12.5px;line-height:1.45;color:var(--ink-soft);overflow-wrap:anywhere}
+.fd-rest-src a{color:var(--steel);text-decoration:underline}
+.fd-rest-src a svg{display:inline;vertical-align:-2px;margin-left:2px}
+.fd-rest-warn{margin:6px 0 0;font-size:13px;color:var(--warn)}
+.fd-rest-note{margin-top:8px;font-size:12.5px;color:var(--ink-soft)}
+.fd-rest-note summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-weight:600;color:var(--ink)}
+.fd-rest-note p{margin:0 0 4px;line-height:1.45;max-width:70ch}
+.fd-rest-filters{display:grid;gap:10px}
+.fd-rest-sort{max-width:260px}
+.fd-rest-sort select{min-height:48px;font-size:16px}
+
+/* Karta pozycji: białko i kalorie na pierwszym planie, pod nimi pełna tabela. */
+.fd-rest-detail{display:grid;gap:10px}
+.fd-rest-big{margin:0;font-size:15px;color:var(--ink-soft)}
+.fd-rest-big-n{font-family:var(--display);font-size:24px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+.fd-rest-fit{margin:0;font-size:13px;color:var(--ink-soft)}
+.fd-rest-table{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+.fd-rest-table th,.fd-rest-table td{padding:7px 4px;border-bottom:1px solid var(--surface-2);text-align:right}
+.fd-rest-table th[scope=row],.fd-rest-table thead th:first-child{text-align:left;font-weight:500}
+.fd-rest-table thead th{font-size:12.5px;font-weight:600;color:var(--ink-soft)}
+.fd-rest-table tr.fd-rest-sub th{padding-left:16px;font-weight:400;color:var(--ink-soft)}

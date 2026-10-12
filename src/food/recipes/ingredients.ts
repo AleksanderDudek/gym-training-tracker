@@ -1,6 +1,7 @@
 import { normalizeForSearch } from '../lib/text';
 import type { Product } from '../lib/types';
 import type { Macros } from './macros';
+import { isProteinBar, isProteinDrink } from './ready';
 
 /**
  * - `store`:  bought for the recipe; must be found in the chosen store's data.
@@ -414,6 +415,66 @@ const DEFINITIONS = {
     match: (p) =>
       /\b(parmezan\w*|parmigiano|grana padano)\b/.test(nameOf(p)) &&
       within(p, { protein: [28, 38], fat: [24, 33], carbs: [0, 2] }),
+  },
+  // Ready to eat, for the no-dishes sets (gotowce). Fruit has no product match:
+  // Open Food Facts lists a handful of bananas with three different energies,
+  // so USDA FoodData Central (SR Legacy 09040, 09003) is the honest number. The
+  // typical values of the bought ones are medians of their matches in the
+  // dataset of 2026-10 (15 rolls, 27 rice cakes, 25 crispbreads, 37 bars, 46 drinks).
+  banana: { id: 'banana', label: 'Banan', role: 'staple', typical: { kcal: 89, protein: 1.1, carbs: 22.8, fat: 0.3 } },
+  apple: { id: 'apple', label: 'Jabłko', role: 'staple', typical: { kcal: 52, protein: 0.3, carbs: 13.8, fat: 0.2 } },
+  roll: {
+    id: 'roll',
+    label: 'Bułka grahamka lub kajzerka',
+    role: 'staple',
+    typical: { kcal: 260, protein: 9.1, carbs: 51, fat: 1.4 },
+    // A plain roll, not a sweet bun, a burger bun or breadcrumbs ("bułka tarta").
+    match: (p) =>
+      /^(bulk[ai]|kajzerk\w*)\b|grahamk/.test(nameOf(p)) &&
+      !/\b(tart\w*|burger\w*|hot ?dog\w*|maslan\w*|slodk\w*|drozdzow\w*|maslem)\b/.test(nameOf(p)) &&
+      within(p, { kcal: [230, 310], protein: [7, 13], fat: [0, 5], sugars: [0, 6] }),
+  },
+  riceCakes: {
+    id: 'riceCakes',
+    label: 'Wafle ryżowe naturalne',
+    role: 'store',
+    typical: { kcal: 385, protein: 8.1, carbs: 78, fat: 3.3 },
+    // The fat bound keeps out the chocolate-coated ones, the sugar bound the sweet flavours.
+    match: (p) =>
+      (/\bwafl\w* ryzow\w*|\bryzow\w* wafl\w*|\brice cakes?\b/.test(nameOf(p)) ||
+        inCategory(p, 'en:puffed-rice-cakes')) &&
+      within(p, { kcal: [340, 420], protein: [5, 12], fat: [0, 6], sugars: [0, 5] }),
+  },
+  crispbread: {
+    id: 'crispbread',
+    label: 'Pieczywo chrupkie',
+    role: 'store',
+    typical: { kcal: 362, protein: 8.6, carbs: 73, fat: 1.5 },
+    match: (p) =>
+      (/\bpieczyw\w* chrupk\w*|\bchrupk\w* pieczyw\w*|knackebrot|crispbread/.test(nameOf(p)) ||
+        inCategory(p, 'en:crispbreads')) &&
+      within(p, { kcal: [300, 420], protein: [6, 15], carbs: [50, 85], fat: [0, 7] }),
+  },
+  proteinBar: {
+    id: 'proteinBar',
+    label: 'Baton białkowy',
+    role: 'store',
+    typical: { kcal: 382, protein: 33, carbs: 29, fat: 16 },
+    // A third of the bar protein is what makes it a protein bar; below that it is
+    // a candy bar with a word on the wrapper.
+    match: (p) =>
+      isProteinBar(p, nameOf(p)) &&
+      !/\b(powder|proszk\w*|odzywk\w*)\b/.test(nameOf(p)) &&
+      within(p, { protein: [30, 55], kcal: [250, 450] }),
+  },
+  proteinDrink: {
+    id: 'proteinDrink',
+    label: 'Napój proteinowy lub skyr pitny',
+    role: 'store',
+    typical: { kcal: 61, protein: 10, carbs: 4.8, fat: 0.5 },
+    // Ready to drink: a powder (300+ kcal) or a sweet milkshake stays out.
+    match: (p) =>
+      isProteinDrink(p, nameOf(p)) && within(p, { kcal: [30, 120], protein: [6, 15], sugars: [0, 8], fat: [0, 3] }),
   },
   cocoa: {
     id: 'cocoa',

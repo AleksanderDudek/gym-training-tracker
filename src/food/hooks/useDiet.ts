@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useBridge } from '../bridge';
 import { mergeBody } from '../diet/body';
 import { db, type DayRow, type Entry, type ProfileRow } from '../diet/db';
-import type { CustomFood } from '../diet/foods';
+import type { CustomFood, FoodSet } from '../diet/foods';
 import type { Plan } from '../diet/plan';
 import { ACTIVE_PLAN, now } from '../diet/store';
 import { readCache } from '../nearby/cache';
@@ -58,6 +58,10 @@ export function useDay(date: string): DayRow | undefined {
 
 export function useCustomFoods(): (CustomFood & { id: number })[] | undefined {
   return useLiveQuery(() => db.foods.toArray() as Promise<(CustomFood & { id: number })[]>, []);
+}
+
+export function useSets(): (FoodSet & { id: number })[] | undefined {
+  return useLiveQuery(() => db.sets.toArray() as Promise<(FoodSet & { id: number })[]>, []);
 }
 
 export interface History {

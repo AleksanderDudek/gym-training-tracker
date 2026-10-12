@@ -3,7 +3,7 @@ import type { Food } from './foods';
 import type { DayChoices, Plan, PlanItem } from './plan';
 import { importPlan, type ImportedPlan } from './plan-import';
 import { MODEL_DEFAULTS, type Profile } from './types';
-import { cleanCustomFood, cleanDay, cleanEntry, cleanPlan, cleanProfile, cleanRows } from './validate';
+import { cleanCustomFood, cleanDay, cleanEntry, cleanPlan, cleanProfile, cleanRows, cleanSet } from './validate';
 import { readWorkbook } from './xlsx';
 
 /** The one active plan lives under this id. */
@@ -193,6 +193,8 @@ export interface Backup {
   entries: Entry[];
   plans: Plan[];
   foods: unknown[];
+  /** Own sets; absent in backups made before they existed. */
+  sets?: unknown[];
 }
 
 export async function exportAll(database: DietDb = db): Promise<Backup> {
@@ -206,6 +208,7 @@ export async function exportAll(database: DietDb = db): Promise<Backup> {
     entries: await database.entries.toArray(),
     plans: await database.plans.toArray(),
     foods: await database.foods.toArray(),
+    sets: await database.sets.toArray(),
   };
 }
 
@@ -221,9 +224,10 @@ export async function restoreAll(backup: unknown, database: DietDb = db): Promis
   const entries = cleanRows(b.entries, cleanEntry);
   const plans = cleanRows(b.plans, cleanPlan);
   const foods = cleanRows(b.foods, cleanCustomFood);
+  const sets = cleanRows(b.sets, cleanSet);
   await database.transaction(
     'rw',
-    [database.profile, database.days, database.entries, database.plans, database.foods],
+    [database.profile, database.days, database.entries, database.plans, database.foods, database.sets],
     async () => {
       await Promise.all([
         database.profile.clear(),
@@ -231,21 +235,23 @@ export async function restoreAll(backup: unknown, database: DietDb = db): Promis
         database.entries.clear(),
         database.plans.clear(),
         database.foods.clear(),
+        database.sets.clear(),
       ]);
       if (b.profile) await database.profile.put({ ...cleanProfile(b.profile, completeProfile({})), id: 'me' });
       await database.days.bulkPut(days.rows);
       await database.entries.bulkPut(entries.rows);
       await database.plans.bulkPut(plans.rows);
       await database.foods.bulkPut(foods.rows);
+      await database.sets.bulkPut(sets.rows);
     },
   );
-  return { dropped: days.dropped + entries.dropped + plans.dropped + foods.dropped };
+  return { dropped: days.dropped + entries.dropped + plans.dropped + foods.dropped + sets.dropped };
 }
 
 export async function clearAll(database: DietDb = db): Promise<void> {
   await database.transaction(
     'rw',
-    [database.profile, database.days, database.entries, database.plans, database.foods],
+    [database.profile, database.days, database.entries, database.plans, database.foods, database.sets],
     async () => {
       await Promise.all([
         database.profile.clear(),
@@ -253,6 +259,7 @@ export async function clearAll(database: DietDb = db): Promise<void> {
         database.entries.clear(),
         database.plans.clear(),
         database.foods.clear(),
+        database.sets.clear(),
       ]);
     },
   );

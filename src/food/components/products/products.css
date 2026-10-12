@@ -161,3 +161,13 @@
 .fd-range-x{width:44px;height:44px;display:grid;place-items:center;padding:0;border:0;background:none;border-radius:50%;
   color:var(--ink-soft);cursor:pointer}
 .fd-range-x:active{background:var(--surface-2)}
+
+/* Wejście do Lokali nad wyszukiwarką — kafelek w głąb, jak wejścia do podstron dziennika. */
+.fd-prod-eatout{display:flex;align-items:center;gap:10px;min-height:60px;margin:12px 0;padding:8px 10px 8px 12px;
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--r);color:var(--ink);text-decoration:none;
+  -webkit-tap-highlight-color:transparent}
+.fd-prod-eatout:active{background:var(--surface-2)}
+.fd-prod-eatout:focus-visible{outline:2px solid var(--steel);outline-offset:2px}
+.fd-prod-eatout > svg{flex:none;color:var(--steel)}
+.fd-prod-eatout-text{display:grid;gap:2px;flex:1;min-width:0;font-size:12.5px;color:var(--ink-soft);line-height:1.35}
+.fd-prod-eatout-text b{font-size:15px;color:var(--ink)}

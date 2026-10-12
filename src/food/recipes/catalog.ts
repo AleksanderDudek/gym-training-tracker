@@ -1,11 +1,12 @@
-// Every recipe passes the rule on TYPICAL values (catalog.test.ts), so it does
+// Every recipe passes its rule on TYPICAL values (catalog.test.ts), so it does
 // not depend on a lucky product to be high-protein; each store's actual
 // products are then checked again. Grams are for the WHOLE recipe: a pot of
 // chili is cooked for three, and the card divides it into servings.
 
 import type { IngredientId } from './ingredients';
+import { isProteinForward, type Macros } from './macros';
 
-export type RecipeKind = 'shake' | 'miska' | 'slone' | 'obiad' | 'mix';
+export type RecipeKind = 'gotowiec' | 'shake' | 'miska' | 'slone' | 'obiad' | 'mix';
 
 export interface RecipeItem {
   ingredient: IngredientId;
@@ -13,6 +14,12 @@ export interface RecipeItem {
   grams: number;
   /** A household measure, so nobody needs a scale for a shake. */
   measure?: string;
+  /**
+   * The amount is one pack of the chosen product ("1 baton" is the bar's own
+   * weight: bars are 35-65 g, drinks 250-500 ml); `grams` is the typical pack,
+   * used until a product with a readable size is known.
+   */
+  pack?: true;
 }
 
 export interface Recipe {
@@ -33,6 +40,8 @@ export function servingsOf(recipe: Recipe): number {
 }
 
 export const KIND_LABELS: Record<RecipeKind, string> = {
+  // Bought and eaten as it is: no cooking, no dishes.
+  gotowiec: 'Gotowiec',
   mix: 'Szybki mix',
   shake: 'Shake',
   // Skyr bowls, puddings, pancakes and a baked cheesecake: what they share is
@@ -42,7 +51,175 @@ export const KIND_LABELS: Record<RecipeKind, string> = {
   obiad: 'Obiad',
 };
 
+/** The tool of a gotowiec: at most a spoon or a fork, straight from the pack. */
+export const NO_DISHES = 'Bez naczyń';
+
+/**
+ * Gotowce have their own rule. A no-dishes set is often a carbohydrate snack
+ * with a protein part - the banana and the bar - and THE RULE (more protein
+ * than carbs) would leave out exactly the sets people eat on the way. What
+ * keeps them in a protein tab is a floor: a proper protein snack's worth.
+ */
+export const GOTOWIEC_MIN_PROTEIN = 15;
+
+/** The rule a recipe is held to, per serving: THE RULE, or the gotowiec's protein floor. */
+export function passesRule(recipe: Pick<Recipe, 'kind'>, serving: Macros): boolean {
+  return recipe.kind === 'gotowiec' ? serving.protein >= GOTOWIEC_MIN_PROTEIN : isProteinForward(serving);
+}
+
+/**
+ * Bought in one shop and eaten as they are: no cooking and no dishes, at most a
+ * spoon or a fork from the pack. First in the catalog - at one minute they are
+ * the quickest thing here.
+ */
+const GOTOWCE: Recipe[] = [
+  {
+    id: 'banan-baton',
+    name: 'Banan i baton białkowy',
+    kind: 'gotowiec',
+    minutes: 1,
+    tool: NO_DISHES,
+    description: 'Szybkie węglowodany z banana i białko z batonu – przed treningiem albo w drodze.',
+    items: [
+      { ingredient: 'banana', grams: 120, measure: '1 banan' },
+      { ingredient: 'proteinBar', grams: 45, measure: '1 baton', pack: true },
+    ],
+    steps: ['Obierz banana, otwórz baton – i tyle.'],
+  },
+  {
+    id: 'napoj-banan',
+    name: 'Napój proteinowy i banan',
+    kind: 'gotowiec',
+    minutes: 1,
+    tool: NO_DISHES,
+    description: 'Butelka białka i owoc do ręki – śniadanie w biegu albo coś zaraz po treningu.',
+    items: [
+      { ingredient: 'proteinDrink', grams: 250, measure: '1 butelka', pack: true },
+      { ingredient: 'banana', grams: 120, measure: '1 banan' },
+    ],
+    steps: ['Wstrząśnij butelkę i pij, banana zjedz obok.'],
+  },
+  {
+    id: 'skyr-borowki-kubek',
+    name: 'Skyr z borówkami prosto z kubka',
+    kind: 'gotowiec',
+    minutes: 1,
+    tool: NO_DISHES,
+    description: 'Kubek białka i garść owoców, jedzone łyżeczką z opakowania.',
+    items: [
+      { ingredient: 'skyr', grams: 150, measure: '1 mały kubek' },
+      { ingredient: 'blueberries', grams: 75, measure: 'garść świeżych' },
+    ],
+    steps: ['Wsyp borówki do kubka skyru i jedz łyżeczką.'],
+  },
+  {
+    id: 'serek-bulka',
+    name: 'Serek wiejski z bułką grahamką',
+    kind: 'gotowiec',
+    minutes: 1,
+    tool: NO_DISHES,
+    description: 'Klasyk z osiedlowego sklepu: ponad 25 g białka i coś do pogryzienia.',
+    items: [
+      { ingredient: 'cottage', grams: 200, measure: '1 opakowanie' },
+      { ingredient: 'roll', grams: 60, measure: '1 bułka' },
+    ],
+    steps: ['Otwórz serek i jedz łyżeczką, zagryzając bułką.'],
+  },
+  {
+    id: 'serek-pomidorki',
+    name: 'Serek wiejski z pomidorkami koktajlowymi',
+    kind: 'gotowiec',
+    minutes: 1,
+    tool: NO_DISHES,
+    description: 'Na słono i bez noża: pomidorki koktajlowe je się w całości.',
+    items: [
+      { ingredient: 'cottage', grams: 200, measure: '1 opakowanie' },
+      { ingredient: 'tomato', grams: 150, measure: 'garść pomidorków koktajlowych' },
+    ],
+    steps: ['Opłucz pomidorki i jedz na zmianę z serkiem.'],
+  },
+  {
+    id: 'jogurt-jablko',
+    name: 'Jogurt proteinowy i jabłko',
+    kind: 'gotowiec',
+    minutes: 1,
+    tool: NO_DISHES,
+    description: 'Słodka przekąska do torby: kubek z łyżeczką i owoc.',
+    items: [
+      { ingredient: 'proteinYogurt', grams: 200, measure: '1 kubek' },
+      { ingredient: 'apple', grams: 150, measure: '1 jabłko' },
+    ],
+    steps: ['Jogurt jedz łyżeczką z kubka, jabłko obok.'],
+  },
+  {
+    id: 'kurczak-wafle',
+    name: 'Kurczak w plastrach na waflach ryżowych',
+    kind: 'gotowiec',
+    minutes: 1,
+    tool: NO_DISHES,
+    description: 'Chuda wędlina z piersi na chrupiących waflach – kanapki bez talerza i bez noża.',
+    items: [
+      { ingredient: 'chicken', grams: 100, measure: '1 opakowanie plastrów' },
+      { ingredient: 'riceCakes', grams: 30, measure: '3 wafle' },
+    ],
+    steps: ['Połóż plastry na waflach i jedz jak kanapki.'],
+  },
+  {
+    id: 'losos-pieczywo',
+    name: 'Łosoś wędzony na pieczywie chrupkim',
+    kind: 'gotowiec',
+    minutes: 1,
+    tool: NO_DISHES,
+    description: 'Ponad 20 g białka i tłuszcze z ryby – kolacja, po której nie ma czego zmywać.',
+    items: [
+      { ingredient: 'smokedSalmon', grams: 100, measure: '1 opakowanie' },
+      { ingredient: 'crispbread', grams: 30, measure: '3 kromki' },
+    ],
+    steps: ['Rozłóż plastry łososia na kromkach.'],
+  },
+  {
+    id: 'tunczyk-wafle',
+    name: 'Tuńczyk z puszki z waflami ryżowymi',
+    kind: 'gotowiec',
+    minutes: 2,
+    tool: NO_DISHES,
+    description: 'Puszka z otwieraczem i paczka wafli – białkowy obiad w podróży.',
+    items: [
+      { ingredient: 'tuna', grams: 120, measure: '1 puszka, odsączona' },
+      { ingredient: 'riceCakes', grams: 30, measure: '3 wafle' },
+    ],
+    steps: ['Otwórz puszkę i odlej zalewę.', 'Nakładaj tuńczyka widelcem na wafle.'],
+  },
+  {
+    id: 'baton-napoj',
+    name: 'Baton białkowy i napój proteinowy',
+    kind: 'gotowiec',
+    minutes: 1,
+    tool: NO_DISHES,
+    description: 'Najwięcej białka bez gotowania – po treningu, gdy do domu daleko.',
+    items: [
+      { ingredient: 'proteinBar', grams: 45, measure: '1 baton', pack: true },
+      { ingredient: 'proteinDrink', grams: 250, measure: '1 butelka', pack: true },
+    ],
+    steps: ['Wypij napój, zjedz baton.'],
+  },
+  {
+    id: 'kefir-bulka',
+    name: 'Kefir z bułką grahamką',
+    kind: 'gotowiec',
+    minutes: 1,
+    tool: NO_DISHES,
+    description: 'Śniadanie w drodze po polsku: chłodny kefir z butelki i bułka.',
+    items: [
+      { ingredient: 'kefir', grams: 400, measure: '1 butelka' },
+      { ingredient: 'roll', grams: 60, measure: '1 bułka' },
+    ],
+    steps: ['Pij kefir z butelki, zagryzaj bułką.'],
+  },
+];
+
 export const RECIPES: Recipe[] = [
+  ...GOTOWCE,
   {
     id: 'bialko-woda',
     name: 'Białko z wodą',

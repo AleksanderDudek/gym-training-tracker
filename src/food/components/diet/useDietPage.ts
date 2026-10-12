@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { markDiet } from '../../dietFlag';
 import { buildPool } from '../../diet/pool';
-import { useClock, useCustomFoods, useNearbyChains, usePlan, useProfile } from '../../hooks/useDiet';
+import { useClock, useCustomFoods, useNearbyChains, usePlan, useProfile, useSets } from '../../hooks/useDiet';
 import { useDataset, type DatasetResult } from '../../hooks/useDataset';
 import type { Plan } from '../../diet/plan';
 import type { Profile } from '../../diet/types';
@@ -38,13 +38,14 @@ export interface FoodPool {
 
 /**
  * Wszystko, z czego da się ułożyć dzień: przepisy i gotowe produkty z sieci w pobliżu, pozycje
- * planu i własne jedzenie. W Produktach PL dieta czekała na bazę produktów razem z całą stroną;
+ * planu, własne jedzenie i zestawy. W Produktach PL dieta czekała na bazę produktów razem z całą stroną;
  * tu dziennik działa od razu (bilans, plan i zapisy bazy nie potrzebują), a przepisy i produkty
  * dochodzą do puli, gdy baza się wczyta. Bez bazy w tej wersji zostają plan i własne jedzenie.
  */
 export function useFoodPool(profile: Profile | null, plan: Plan | null, nowMs: number): FoodPool {
   const data = useDataset();
   const custom = useCustomFoods();
+  const sets = useSets();
   const products = data.status === 'ready' ? data.products : NO_PRODUCTS;
   const dict = data.status === 'ready' ? data.dataset.dictionaries : NO_DICT;
 
@@ -58,8 +59,18 @@ export function useFoodPool(profile: Profile | null, plan: Plan | null, nowMs: n
     [nearby, preferred],
   );
   const pool = useMemo(
-    () => buildPool({ products, dict, candidates, chains, fallbackRanking: ranking, plan, custom: custom ?? [] }),
-    [products, dict, candidates, chains, ranking, plan, custom],
+    () =>
+      buildPool({
+        products,
+        dict,
+        candidates,
+        chains,
+        fallbackRanking: ranking,
+        plan,
+        custom: custom ?? [],
+        sets: sets ?? [],
+      }),
+    [products, dict, candidates, chains, ranking, plan, custom, sets],
   );
   return { data, products, dict, pool, nearby };
 }

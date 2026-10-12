@@ -121,6 +121,15 @@ describe('kopia jedzenia', () => {
     expect(await hasFoodData(database)).toBe(true);
   });
 
+  it('sam zapisany zestaw to też dane jedzenia — trafia do kopii', async () => {
+    await database.sets.add({
+      name: 'Banan i batonik',
+      parts: [{ name: 'Banan', amountLabel: '120 g', kcal: 107, protein: 1.3, carbs: 27, fat: 0.4 }],
+    });
+    expect(await hasFoodData(database)).toBe(true);
+    expect((await dietBackup(database))?.sets).toHaveLength(1);
+  });
+
   it('baza, której nie da się odczytać, to brak danych jedzenia', async () => {
     expect(await hasFoodData(brokenDb())).toBe(false);
   });

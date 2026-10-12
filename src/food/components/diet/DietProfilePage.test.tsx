@@ -174,6 +174,24 @@ describe('Profil diety', () => {
     });
   });
 
+  test('moje zestawy: lista z sumą i składem, usuwanie jednym stuknięciem', async () => {
+    await saveProfile(completeProfile({ startDate: '2026-10-01' }));
+    await db.sets.add({
+      name: 'Banan i batonik',
+      parts: [
+        { name: 'Banan', amountLabel: '120 g', kcal: 107, protein: 1.3, carbs: 27.4, fat: 0.4 },
+        { name: 'Baton proteinowy', amountLabel: '45 g', kcal: 171, protein: 14.9, carbs: 13, fat: 7.2 },
+      ],
+    });
+    const user = userEvent.setup();
+    renderWithBridge(<DietProfilePage />);
+    const row = (await screen.findByText('Banan i batonik')).closest('li')!;
+    expect(row).toHaveTextContent('278 kcal · Banan 120 g + Baton proteinowy 45 g');
+    await user.click(within(row).getByRole('button', { name: 'Usuń zestaw: Banan i batonik' }));
+    await waitFor(async () => expect(await db.sets.count()).toBe(0));
+    expect(await screen.findByText(/W „Dodaj zjedzone → Zestaw”/)).toBeInTheDocument();
+  });
+
   test('wyczyszczenie danych diety zdejmuje znacznik karty z ekranu Dziś', async () => {
     await saveProfile(completeProfile({ startDate: '2026-10-01' }));
     const user = userEvent.setup();

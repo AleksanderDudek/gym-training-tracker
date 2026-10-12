@@ -666,7 +666,9 @@ export type Route =
   /** Sekcja zakładki Jedzenie. Stan strony (filtry, otwarty produkt) siedzi w zapytaniu hasha, poza trasą. */
   | { kind: 'food'; section: FoodSection }
   /** Plan posiłków, postęp albo profil diety — podstrony dziennika. */
-  | { kind: 'diet'; page: DietPage };
+  | { kind: 'diet'; page: DietPage }
+  /** Lokale — sieci gastronomiczne pod Produktami; z siecią — jej menu. Stan strony w zapytaniu hasha. */
+  | { kind: 'restaurants'; chain: string | null };
 
 /** Materiał wideo pokazujący technikę ćwiczenia. */
 export interface VideoRef {

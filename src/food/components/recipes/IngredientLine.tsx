@@ -40,7 +40,7 @@ export function proteinLine(p: IndexedProduct): string {
 
 /** Składnik przepisu: ilość, produkt, który go gra, zamiana i karta produktu. */
 export function IngredientLine({ resolved, store, dict, onSwap, onOpenProduct }: Props) {
-  const { item, def, product } = resolved;
+  const { item, def, product, grams } = resolved;
   const note = sourceNote(resolved, store);
   const canSwap = swapOptions(resolved).length > 1;
   const brand = product ? brandLine(product, dict) : '';
@@ -51,7 +51,7 @@ export function IngredientLine({ resolved, store, dict, onSwap, onOpenProduct }:
         <span className="fd-rec-ing-name">{def.label}</span>
         <span className="fd-rec-ing-amt">
           {item.measure ? `${item.measure} · ` : ''}
-          {formatNumber(item.grams, 0)}&nbsp;g
+          {formatNumber(grams, 0)}&nbsp;g
         </span>
       </div>
       {product && (

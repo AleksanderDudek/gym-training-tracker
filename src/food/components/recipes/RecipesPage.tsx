@@ -4,7 +4,7 @@ import { useDataset } from '../../hooks/useDataset';
 import { useUrlState } from '../../hooks/useUrlState';
 import { formatNumber, plural } from '../../lib/format';
 import type { Dataset, IndexedProduct } from '../../lib/types';
-import { KIND_LABELS, RECIPES, type Recipe, type RecipeKind } from '../../recipes/catalog';
+import { GOTOWIEC_MIN_PROTEIN, KIND_LABELS, RECIPES, type Recipe, type RecipeKind } from '../../recipes/catalog';
 import { readyProducts } from '../../recipes/ready';
 import { bestVariant, needsStore, recipeIndex, resolveRecipe, type Candidates } from '../../recipes/resolve';
 import { byTime, TIER_LABELS, tierOf, type TimeTier } from '../../recipes/tiers';
@@ -83,14 +83,17 @@ function Recipes({ dataset, products }: { dataset: Dataset; products: IndexedPro
   // Otwarcie dodaje wpis historii — Wstecz zamyka kartę produktu, zamiast wychodzić z Przepisów.
   const open = useCallback((code: string) => update({ product: code }, { push: true }), [update]);
   const filtered = state.kind !== null || state.tier !== null || store !== null;
+  const onlyGotowce = state.kind === 'gotowiec';
 
   return (
     <>
       <div className="wrap">
         <p className="lead">
           Zasada: w każdej porcji jest <strong>więcej białka niż węglowodanów i więcej białka niż tłuszczu</strong>.
-          Liczę ją z prawdziwych produktów ze sklepu, który widzisz na karcie. Najpierw szybkie (do 7 minut,
-          z błyskawicą), potem dania na chwilę dłużej i obiady do zrobienia w domu, często na kilka porcji.
+          Liczę ją z prawdziwych produktów ze sklepu, który widzisz na karcie. Na początku gotowce: kupujesz i jesz bez
+          gotowania i bez naczyń, a ich zasada to <strong>co najmniej {GOTOWIEC_MIN_PROTEIN} g białka w zestawie</strong>.
+          Dalej szybkie (do 7 minut, z błyskawicą), potem dania na chwilę dłużej i obiady do zrobienia w domu, często
+          na kilka porcji.
           {store
             ? ` Wszystko poniżej kupisz w sklepie ${storeName(store)}.`
             : ' Każdy przepis pokazuje sklep, w którym kupisz wszystkie składniki naraz.'}
@@ -141,11 +144,15 @@ function Recipes({ dataset, products }: { dataset: Dataset; products: IndexedPro
 
       <section className="fd-rec-section" aria-labelledby="fd-rec-title">
         <div className="wrap fd-rec-head">
-          <h2 id="fd-rec-title">Przepisy białkowe</h2>
+          <h2 id="fd-rec-title">{onlyGotowce ? 'Gotowce bez naczyń' : 'Przepisy białkowe'}</h2>
           <p className="fd-rec-count" aria-live="polite">
             {recipes.length > 0
-              ? `${formatNumber(recipes.length, 0)} ${plural(recipes.length, 'przepis', 'przepisy', 'przepisów')}${
-                  state.tier ? '' : ', najpierw szybkie'
+              ? `${formatNumber(recipes.length, 0)} ${
+                  onlyGotowce
+                    ? plural(recipes.length, 'gotowiec', 'gotowce', 'gotowców')
+                    : plural(recipes.length, 'przepis', 'przepisy', 'przepisów')
+                }${
+                  state.tier || onlyGotowce ? '' : ', najpierw szybkie'
                 }`
               : 'Brak przepisów'}
           </p>

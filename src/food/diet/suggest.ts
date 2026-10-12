@@ -42,6 +42,8 @@ export interface Suggestion {
 const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
 
 function availability(food: Food, ctx: Context): { score: number; where: string | null } {
+  // A set is a habit of the user's own: as much at hand as food at home, wherever its parts come from.
+  if (food.source === 'set') return { score: 0.3, where: 'Twój zestaw' };
   if (food.atHome) return { score: 0.3, where: 'masz w domu' };
   if (food.everywhere) return { score: 0.25, where: 'w każdym większym sklepie' };
   const nearIndex = ctx.nearby.findIndex((chain) => food.stores.includes(chain));
