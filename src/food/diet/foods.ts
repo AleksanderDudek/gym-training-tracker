@@ -151,3 +151,68 @@ export function customFood(c: CustomFood & { id: number }): Food {
     role: roleOf(c, c.kcal >= 350 ? 'main' : 'light'),
   };
 }
+
+/** One part of a set, as it was chosen: a snapshot, like an eaten entry. */
+export interface SetPart extends Nutrients {
+  name: string;
+  amountLabel: string;
+  /** The food it came from: "product:590…", "restaurant:kfc:strips". */
+  key?: string;
+}
+
+/**
+ * A set of the user's own: "Banan + batonik", eaten together and logged in one
+ * tap. Its parts are snapshots, so a rebuilt dataset (or one that fails to
+ * load) never changes what the same breakfast logs.
+ */
+export interface FoodSet {
+  id?: number;
+  name: string;
+  parts: SetPart[];
+}
+
+export function partOf(food: Food): SetPart {
+  return { name: food.name, amountLabel: food.amountLabel, ...food.nutrients, key: food.key };
+}
+
+/** The parts added up; a macro unknown in any part is unknown in the sum (never counted as zero). */
+export function setTotals(parts: SetPart[]): Nutrients {
+  const add = (key: 'protein' | 'carbs' | 'fat') =>
+    parts.every((p) => p[key] !== null) ? Math.round(parts.reduce((sum, p) => sum + p[key]!, 0) * 10) / 10 : null;
+  return {
+    kcal: Math.round(parts.reduce((sum, p) => sum + p.kcal, 0)),
+    protein: add('protein'),
+    carbs: add('carbs'),
+    fat: add('fat'),
+  };
+}
+
+const short = (name: string) => (name.length > 32 ? `${name.slice(0, 31).trimEnd()}…` : name);
+
+/** "Banan 120 g + Baton proteinowy 45 g": what is in it, at what amount. */
+export function setAmountLabel(parts: SetPart[]): string {
+  return parts.map((p) => [short(p.name), p.amountLabel].filter(Boolean).join(' ')).join(' + ');
+}
+
+/** "Banan + Baton proteinowy" — the name of a set nobody named. */
+export function autoSetName(parts: SetPart[]): string {
+  return parts.map((p) => short(p.name.replace(/\s*\([^)]*\)$/, ''))).join(' + ');
+}
+
+export function setFood(set: FoodSet): Food {
+  const nutrients = setTotals(set.parts);
+  const n = set.parts.length;
+  return {
+    key: set.id !== undefined ? `set:${set.id}` : `set:${set.name}`,
+    name: set.name,
+    detail: `zestaw · ${n} ${n === 1 ? 'pozycja' : n < 5 ? 'pozycje' : 'pozycji'}`,
+    source: 'set',
+    amountLabel: setAmountLabel(set.parts),
+    nutrients,
+    per100: null,
+    grams: null,
+    stores: [],
+    atHome: false,
+    role: roleOf(nutrients, nutrients.kcal >= 350 ? 'main' : 'light'),
+  };
+}

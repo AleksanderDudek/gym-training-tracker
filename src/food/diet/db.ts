@@ -1,5 +1,5 @@
 import Dexie, { type Table } from 'dexie';
-import type { CustomFood, FoodSource } from './foods';
+import type { CustomFood, FoodSet, FoodSource } from './foods';
 import type { DayChoices, Plan } from './plan';
 import type { Profile } from './types';
 
@@ -50,10 +50,13 @@ export class DietDb extends Dexie {
   entries!: Table<Entry, number>;
   plans!: Table<Plan, string>;
   foods!: Table<CustomFood & { id?: number }, number>;
+  sets!: Table<FoodSet, number>;
 
   constructor(name = 'produkty-pl-dieta') {
     super(name);
     this.version(1).stores({ profile: 'id', days: 'date', entries: '++id, date', plans: 'id', foods: '++id' });
+    // Własne zestawy („Banan + batonik”). Nowa tabela, reszta bez zmian — dane z wersji 1 zostają.
+    this.version(2).stores({ sets: '++id' });
   }
 }
 
