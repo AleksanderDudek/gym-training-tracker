@@ -7,15 +7,16 @@ import type { Nutrients } from './types';
 
 /**
  * One shape for everything that can be eaten, logged, suggested or swapped:
- * a product, a recipe serving, a line of the plan, a food of the user's own.
+ * a product, a recipe serving, a line of the plan, a food of the user's own,
+ * a set of the user's own, a position of a restaurant menu.
  */
-export type FoodSource = 'product' | 'recipe' | 'plan' | 'custom';
+export type FoodSource = 'product' | 'recipe' | 'plan' | 'custom' | 'set' | 'restaurant';
 
 /** 'main': a meal; 'light': breakfast, snack, shake; 'addon': butter, oil - never suggested on its own. */
 export type MealRole = 'main' | 'light' | 'addon';
 
 export interface Food {
-  /** Stable: "product:590…", "recipe:skyr-maliny", "plan:½ opak. Teriyaki", "custom:3". */
+  /** Stable: "product:590…", "recipe:skyr-maliny", "plan:½ opak. Teriyaki", "custom:3", "set:2", "restaurant:kfc:strips". */
   key: string;
   name: string;
   detail: string;
