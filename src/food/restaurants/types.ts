@@ -36,7 +36,7 @@ export const CATEGORY_LABELS: Record<MenuCategory, string> = {
   sos: 'Sosy',
 };
 
-export const CHAIN_KINDS = ['fast-food', 'kawiarnia', 'pizzeria', 'stacja', 'bar'] as const;
+export const CHAIN_KINDS = ['fast-food', 'kawiarnia', 'pizzeria', 'bar', 'stacja', 'sklep'] as const;
 export type ChainKind = (typeof CHAIN_KINDS)[number];
 
 export const CHAIN_KIND_LABELS: Record<ChainKind, string> = {
@@ -45,6 +45,7 @@ export const CHAIN_KIND_LABELS: Record<ChainKind, string> = {
   pizzeria: 'Pizzeria',
   stacja: 'Stacja paliw',
   bar: 'Bar i restauracja',
+  sklep: 'Sklep z gorącym jedzeniem',
 };
 
 /** Headings of the chain list, grouped by kind. */
@@ -54,6 +55,7 @@ export const CHAIN_KIND_GROUPS: Record<ChainKind, string> = {
   pizzeria: 'Pizzerie',
   stacja: 'Stacje paliw',
   bar: 'Bary i restauracje',
+  sklep: 'Sklepy',
 };
 
 /** One menu position as the file has it. */
