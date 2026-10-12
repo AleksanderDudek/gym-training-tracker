@@ -1,5 +1,6 @@
 import { Check, TriangleAlert } from 'lucide-react';
 import { formatNumber, plural } from '../../lib/format';
+import { GOTOWIEC_MIN_PROTEIN, type RecipeKind } from '../../recipes/catalog';
 import type { Macros } from '../../recipes/macros';
 
 const g = (n: number) => `${formatNumber(n, 0)} g`;
@@ -12,6 +13,8 @@ interface Props {
   /** Na ile porcji jest przepis; linijka o tym pojawia się od dwóch. */
   servings: number;
   passes: boolean;
+  /** Gotowiec ma własną zasadę (próg białka), reszta — białko ponad węglowodany i tłuszcz. */
+  kind: RecipeKind;
 }
 
 /** Skąd pochodzą kalorie porcji: białko i węglowodany po 4 kcal na gram, tłuszcz 9. */
@@ -26,14 +29,18 @@ export function energyParts(m: Macros) {
 }
 
 /** Komunikat o złamanej zasadzie — ten sam na karcie i w arkuszu zamiany. */
-export const RULE_BROKEN = 'Z tym produktem białka jest mniej niż węglowodanów lub tłuszczu – zasada nie jest spełniona.';
+export function ruleBroken(kind: RecipeKind): string {
+  return kind === 'gotowiec'
+    ? `Z tym produktem białka jest mniej niż ${GOTOWIEC_MIN_PROTEIN} g – gotowiec nie spełnia swojej zasady.`
+    : 'Z tym produktem białka jest mniej niż węglowodanów lub tłuszczu – zasada nie jest spełniona.';
+}
 
 /**
  * Jedna porcja: białko na pierwszym planie, kalorie i reszta makro obok, pasek udziału w kaloriach
  * i sama zasada wypisana liczbami. Złamana zasada to ostrzeżenie (`role="alert"`) w kolorze
  * `--warn`, z ikoną i zdaniem — kolor nigdy nie mówi tego sam.
  */
-export function MacroSummary({ serving, servings, passes }: Props) {
+export function MacroSummary({ serving, servings, passes, kind }: Props) {
   const parts = energyParts(serving);
   const pct = (share: number) => `${formatNumber(share * 100, 0)}%`;
 
@@ -72,14 +79,20 @@ export function MacroSummary({ serving, servings, passes }: Props) {
       {passes ? (
         <p className="fd-rec-rule fd-rec-ok">
           <Check size={16} strokeWidth={2} aria-hidden />
-          <span>
-            Białko {g1(serving.protein)} &gt; węglowodany {g1(serving.carbs)} i &gt; tłuszcz {g1(serving.fat)}
-          </span>
+          {kind === 'gotowiec' ? (
+            <span>
+              Białko {g1(serving.protein)} – co najmniej {GOTOWIEC_MIN_PROTEIN} g w zestawie
+            </span>
+          ) : (
+            <span>
+              Białko {g1(serving.protein)} &gt; węglowodany {g1(serving.carbs)} i &gt; tłuszcz {g1(serving.fat)}
+            </span>
+          )}
         </p>
       ) : (
         <p className="fd-rec-rule fd-rec-bad" role="alert">
           <TriangleAlert size={20} strokeWidth={2} aria-hidden />
-          <span>{RULE_BROKEN}</span>
+          <span>{ruleBroken(kind)}</span>
         </p>
       )}
     </div>

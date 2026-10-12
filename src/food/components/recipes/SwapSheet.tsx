@@ -6,7 +6,7 @@ import type { Dictionaries } from '../../lib/types';
 import type { Recipe } from '../../recipes/catalog';
 import { resolveRecipe, type Candidates, type Overrides, type ResolvedItem } from '../../recipes/resolve';
 import { Sheet } from '../common/Sheet';
-import { RULE_BROKEN } from './MacroSummary';
+import { ruleBroken } from './MacroSummary';
 import { proteinLine, swapOptions } from './IngredientLine';
 
 interface Props {
@@ -75,7 +75,7 @@ export function SwapSheet({ open, recipe, candidates, store, overrides, item, di
               <span>
                 {passes
                   ? `Porcja: ${formatNumber(serving?.protein ?? 0, 0)} g białka, ${formatNumber(serving?.kcal ?? 0, 0)} kcal – zasada spełniona.`
-                  : RULE_BROKEN}
+                  : ruleBroken(recipe.kind)}
               </span>
             </p>
             {/* Zamyka jak ×: przez `dialog.close()`, więc `onClose` przychodzi raz, ze zdarzenia. */}
@@ -89,8 +89,18 @@ export function SwapSheet({ open, recipe, candidates, store, overrides, item, di
       {item && (
         <fieldset className="fd-rec-swap">
           <legend className="fd-rec-swap-legend">
-            Ilość zostaje ta sama: {item.item.measure ? `${item.item.measure} · ` : ''}
-            {formatNumber(item.item.grams, 0)}&nbsp;g. Wybór od razu przelicza przepis.
+            {item.item.pack ? (
+              // Baton to baton: ilość idzie za opakowaniem wybranego produktu.
+              <>
+                Ilość: {item.item.measure ?? '1 opakowanie'} wybranego produktu, teraz {formatNumber(item.grams, 0)}
+                &nbsp;g. Wybór od razu przelicza przepis.
+              </>
+            ) : (
+              <>
+                Ilość zostaje ta sama: {item.item.measure ? `${item.item.measure} · ` : ''}
+                {formatNumber(item.item.grams, 0)}&nbsp;g. Wybór od razu przelicza przepis.
+              </>
+            )}
           </legend>
           <ul className="fd-rec-swap-list">
             {options.map((p) => {

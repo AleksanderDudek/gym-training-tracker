@@ -88,7 +88,7 @@ export function RecipeCard({ recipe, candidates, ranking, pageStore, dict, onOpe
         </h3>
         <p className="fd-rec-desc">{recipe.description}</p>
 
-        <MacroSummary serving={resolved.perServing} servings={servings} passes={resolved.passes} />
+        <MacroSummary serving={resolved.perServing} servings={servings} passes={resolved.passes} kind={recipe.kind} />
 
         <div className="fd-rec-shop">
           <p className="fd-rec-shop-line">

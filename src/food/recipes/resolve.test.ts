@@ -198,3 +198,55 @@ describe('stores', () => {
     expect(recipeIndex(products).ranking).toEqual(['biedronka', 'lidl', 'auchan']);
   });
 });
+
+describe('pack items', () => {
+  const bar = (code: string, quantity: string | null, stores = ['biedronka']) =>
+    makeProduct({
+      code,
+      name: `Baton proteinowy ${code}`,
+      quantity,
+      nutrition: n(380, 33, 29, 16, 3),
+      stores,
+      popularity: 10,
+    });
+  const SET: Recipe = {
+    id: 'set',
+    name: 'Banan i baton',
+    kind: 'gotowiec',
+    minutes: 1,
+    tool: 'Bez naczyń',
+    description: '',
+    items: [
+      { ingredient: 'banana', grams: 120 },
+      { ingredient: 'proteinBar', grams: 45, pack: true },
+    ],
+    steps: ['x'],
+  };
+
+  test("a pack item weighs what the chosen product's pack weighs", () => {
+    const c = buildCandidates(indexProducts([bar('b60', '60 g')], {}));
+    const r = resolveRecipe(SET, c, 'biedronka');
+    expect(r.items[1]!.grams).toBe(60);
+    expect(r.items[1]!.macros.protein).toBeCloseTo(19.8);
+    // Banana: a staple without a product, typical values at the catalog's grams.
+    expect(r.items[0]!.grams).toBe(120);
+  });
+
+  test('a multipack counts one piece; an unreadable size keeps the catalog grams', () => {
+    expect(
+      resolveRecipe(SET, buildCandidates(indexProducts([bar('m', '4 x 50 g')], {})), 'biedronka').items[1]!.grams,
+    ).toBe(50);
+    expect(resolveRecipe(SET, buildCandidates(indexProducts([bar('u', null)], {})), 'biedronka').items[1]!.grams).toBe(
+      45,
+    );
+  });
+
+  test('a gotowiec is judged by its protein floor, not by protein over carbs', () => {
+    const big = resolveRecipe(SET, buildCandidates(indexProducts([bar('b60', '60 g')], {})), 'biedronka');
+    expect(big.perServing.carbs).toBeGreaterThan(big.perServing.protein);
+    expect(big.passes).toBe(true);
+    const small = resolveRecipe(SET, buildCandidates(indexProducts([bar('b35', '35 g')], {})), 'biedronka');
+    expect(small.perServing.protein).toBeLessThan(15);
+    expect(small.passes).toBe(false);
+  });
+});

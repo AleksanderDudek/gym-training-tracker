@@ -1,7 +1,8 @@
+import { packGrams } from '../lib/quantity';
 import type { IndexedProduct } from '../lib/types';
-import { RECIPES, servingsOf, type Recipe, type RecipeItem } from './catalog';
+import { RECIPES, passesRule, servingsOf, type Recipe, type RecipeItem } from './catalog';
 import { INGREDIENTS, type IngredientDef } from './ingredients';
-import { divideMacros, isProteinForward, macrosOf, scale, sumMacros, type Macros } from './macros';
+import { divideMacros, macrosOf, scale, sumMacros, type Macros } from './macros';
 
 /** Ingredient id -> the products that can play it, best first. */
 export type Candidates = Map<string, IndexedProduct[]>;
@@ -44,6 +45,8 @@ export interface ResolvedItem {
   fromStore: boolean;
   /** What the user may swap to here. */
   alternatives: IndexedProduct[];
+  /** The amount used: the catalog's, or the chosen product's own pack for a pack item. */
+  grams: number;
   macros: Macros;
 }
 
@@ -60,7 +63,7 @@ export interface ResolvedRecipe {
   total: Macros;
   /** What one person eats: `total` over the recipe's servings. */
   perServing: Macros;
-  /** THE RULE, per serving, on the products actually chosen. */
+  /** The recipe's rule (`passesRule`), per serving, on the products actually chosen. */
   passes: boolean;
 }
 
@@ -107,13 +110,15 @@ export function resolveRecipe(
 
     const chosen = pool.find((p) => p.code === overrides[def.id]) ?? pool[0] ?? null;
     const per100 = chosen ? macrosOf(chosen)! : def.typical;
+    const grams = item.pack && chosen ? (packGrams(chosen.quantity) ?? item.grams) : item.grams;
     return {
       item,
       def,
       product: chosen,
       fromStore: !!chosen && store !== null && chosen.stores.includes(store),
       alternatives: pool,
-      macros: scale(per100, item.grams),
+      grams,
+      macros: scale(per100, grams),
     };
   });
 
@@ -129,7 +134,7 @@ export function resolveRecipe(
     items,
     total,
     perServing,
-    passes: isProteinForward(perServing),
+    passes: passesRule(recipe, perServing),
   };
 }
 

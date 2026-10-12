@@ -1,4 +1,5 @@
 import { brandLine } from '../lib/display';
+import { packGrams } from '../lib/quantity';
 import type { Dictionaries, Product } from '../lib/types';
 import type { Macros } from '../recipes/macros';
 import type { PlanItem } from './plan';
@@ -39,21 +40,9 @@ export interface Food {
   role: MealRole;
 }
 
-/**
- * The size of one pack from "150 g", "0,5 l", "4 x 125 g" or "330ml": one
- * piece of a multipack, millilitres as grams. Anything over 600 g (a family
- * pack, a litre of milk) or unreadable means 100 g - nobody eats a kilo of
- * twaróg as "one portion".
- */
+/** One pack ("150 g", "4 x 125 g", "330ml") as the portion; a family pack or an unreadable label means 100 g. */
 export function portionGrams(quantity: string | null): number {
-  if (!quantity) return 100;
-  const text = quantity.toLowerCase().replace(',', '.');
-  const multi = text.match(/\d+\s*[x×]\s*(\d+(?:\.\d+)?)\s*(g|ml)\b/);
-  const single = text.match(/(\d+(?:\.\d+)?)\s*(kg|g|ml|l)\b/);
-  let grams: number | null = null;
-  if (multi) grams = Number(multi[1]);
-  else if (single) grams = Number(single[1]) * (single[2] === 'kg' || single[2] === 'l' ? 1000 : 1);
-  return grams && grams > 0 && grams <= 600 ? Math.round(grams) : 100;
+  return packGrams(quantity) ?? 100;
 }
 
 const scaled = (per100: Macros, grams: number): Nutrients => {
