@@ -71,7 +71,7 @@ describe('catalog', () => {
   test('only gotowce are "Bez naczyń", and pack amounts are only for things sold one per pack', () => {
     for (const r of RECIPES.filter((x) => x.kind !== 'gotowiec')) expect(r.tool, r.id).not.toBe(NO_DISHES);
     const packed = RECIPES.flatMap((r) => r.items.filter((i) => i.pack).map((i) => i.ingredient));
-    expect(new Set(packed)).toEqual(new Set(['proteinBar', 'proteinDrink']));
+    expect(new Set(packed)).toEqual(new Set(['proteinBar', 'proteinDrink', 'proteinCrisps']));
   });
 
   test('a recipe for several servings is home cooking, not a quick snack split in two', () => {

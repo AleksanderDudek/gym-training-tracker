@@ -1,5 +1,6 @@
 import foodData from 'virtual:food-data';
 import { formatDate } from '../../lib/format';
+import { ONLINE_SHOPS } from '../../online/shops';
 import type { Dataset } from '../../lib/types';
 import './common.css';
 
@@ -28,6 +29,13 @@ export function DataFooter({ dataset }: { dataset?: Dataset }) {
         </a>{' '}
         (ODbL).
       </p>
+      {ONLINE_SHOPS.length > 0 && (
+        <p>
+          Produkty sklepów internetowych ({ONLINE_SHOPS.map((s) => s.name).join(', ')}): nazwy, wartości odżywcze, ceny
+          i odnośniki ze stron sklepów i producentów, sprawdzone w dniu podanym przy produkcie — w sklepie mogą być już
+          inne.
+        </p>
+      )}
       <p>
         {generatedAt && (
           <>

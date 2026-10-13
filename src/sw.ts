@@ -48,6 +48,16 @@ registerRoute(
   }),
 );
 
+// Produkty sklepów internetowych (`src/food/online/shopData`): paczka z haszem w nazwie, wczytywana
+// razem z bazą produktów i tak samo trzymana — jedna kopia, bez miejsca w instalacji.
+registerRoute(
+  ({ url, sameOrigin }) => sameOrigin && /\/assets\/shopData-[\w-]+\.js$/.test(url.pathname),
+  new CacheFirst({
+    cacheName: 'gt-shop-data',
+    plugins: [new ExpirationPlugin({ maxEntries: 1 }), new CacheableResponsePlugin({ statuses: [200] })],
+  }),
+);
+
 // Tylko odpowiedzi 200: nieprzezroczystą (bez CORS) Chrome liczy do limitu miejsca po kilka MB.
 registerRoute(
   /^https:\/\/images\.openfoodfacts\.org\//,

@@ -1,0 +1,749 @@
+{
+ "id": "bezmiesny",
+ "name": "Bezmięsny Mięsny",
+ "url": "https://bezmiesnymiesny.pl",
+ "checked": "2026-10-13",
+ "note": "Shoper; dane z kart produktów (tabela „Wartość odżywcza na 100 g”), cena regularna. Marka własna sklepu (producent BVTCHER sp. z o.o.) oraz bezmleczne sery Mr Plantel. Pominięto 2 pakiety (zestawy kilku produktów) i „Produkt Niespodzianka”. EAN nie jest publikowany na stronach. vegan=true dla produktów z kategorii „Wegańskie …” lub z opisem „100% roślinny”; batony 1 kg, pasty i Blok Grecki opisane tylko jako „produkt roślinny” – vegan=null. Kabanosy Chilli: na stronie „1333 kJ / 318 g” – przyjęto 318 kcal.",
+ "products": [
+  {
+   "name": "Bezmięsna Ale Kaszana! 260g",
+   "brand": "Bezmięsny Mięsny",
+   "url": "https://bezmiesnymiesny.pl/pl/p/Bezmiesna-Ale-Kaszana-260g/452",
+   "quantity": "260 g",
+   "category": "zamienniki-miesa",
+   "nutrition": {
+    "kcal": 237.0,
+    "protein": 6.66,
+    "carbs": 22.59,
+    "fat": 12.52,
+    "sugars": 3.14,
+    "fiber": 3.74,
+    "saturatedFat": 10.28,
+    "salt": 1.29
+   },
+   "price": 13.99,
+   "vegan": true,
+   "ean": null
+  },
+  {
+   "name": "Bezmięsna Czosnkowa baton 1kg",
+   "brand": "Bezmięsny Mięsny",
+   "url": "https://bezmiesnymiesny.pl/pl/p/Bezmiesna-Czosnkowa-baton-1kg/295",
+   "quantity": "1 kg",
+   "category": "zamienniki-miesa",
+   "nutrition": {
+    "kcal": 224.0,
+    "protein": 26.71,
+    "carbs": 10.7,
+    "fat": 7.39,
+    "sugars": 4.19,
+    "fiber": 4.16,
+    "saturatedFat": 0.91,
+    "salt": 2.17
+   },
+   "price": 69.9,
+   "vegan": null,
+   "ean": null
+  },
+  {
+   "name": "Bezmięsna Mielonka z Tyrolu Premium 100g",
+   "brand": "Bezmięsny Mięsny",
+   "url": "https://bezmiesnymiesny.pl/pl/p/Bezmiesna-Mielonka-z-Tyrolu-Premium-100g/377",
+   "quantity": "100 g",
+   "category": "zamienniki-miesa",
+   "nutrition": {
+    "kcal": 73.0,
+    "protein": 7.46,
+    "carbs": 11.62,
+    "fat": 1.42,
+    "sugars": 0.74,
+    "fiber": 8.02,
+    "saturatedFat": 0.32,
+    "salt": 2.09
+   },
+   "price": 10.99,
+   "vegan": true,
+   "ean": null
+  },
+  {
+   "name": "Bezmięsna Pasztetowa 120g",
+   "brand": "Bezmięsny Mięsny",
+   "url": "https://bezmiesnymiesny.pl/pl/p/Bezmiesna-Pasztetowa-120g/374",
+   "quantity": "120 g",
+   "category": "smarowidla",
+   "nutrition": {
+    "kcal": 187.0,
+    "protein": 6.38,
+    "carbs": 25.7,
+    "fat": 9.12,
+    "sugars": 3.66,
+    "fiber": 9.83,
+    "saturatedFat": 7.73,
+    "salt": 1.59
+   },
+   "price": 7.99,
+   "vegan": null,
+   "ean": null
+  },
+  {
+   "name": "Bezmięsna Pieczarkowa 125g",
+   "brand": "Bezmięsny Mięsny",
+   "url": "https://bezmiesnymiesny.pl/pl/p/Bezmiesna-Pieczarkowa-125g/500",
+   "quantity": "125 g",
+   "category": "smarowidla",
+   "nutrition": {
+    "kcal": 233.0,
+    "protein": 5.7,
+    "carbs": 4.5,
+    "fat": 21.0,
+    "sugars": 1.9,
+    "fiber": 1.7,
+    "saturatedFat": 2.1,
+    "salt": 1.1
+   },
+   "price": 7.99,
+   "vegan": null,
+   "ean": null
+  },
+  {
+   "name": "Bezmięsna Suszona 100g",
+   "brand": "Bezmięsny Mięsny",
+   "url": "https://bezmiesnymiesny.pl/pl/p/Bezmiesna-Suszona-100g/250",
+   "quantity": "100 g",
+   "category": "zamienniki-miesa",
+   "nutrition": {
+    "kcal": 266.0,
+    "protein": 28.0,
+    "carbs": 10.0,
+    "fat": 12.0,
+    "sugars": 2.7,
+    "fiber": 4.5,
+    "saturatedFat": 1.2,
+    "salt": 1.3
+   },
+   "price": 9.99,
+   "vegan": true,
+   "ean": null
+  },
+  {
+   "name": "Bezmięsna Suszona baton 1kg",
+   "brand": "Bezmięsny Mięsny",
+   "url": "https://bezmiesnymiesny.pl/pl/p/Bezmiesna-Suszona-baton-1kg/298",
+   "quantity": "1 kg",
+   "category": "zamienniki-miesa",
+   "nutrition": {
+    "kcal": 266.0,
+    "protein": 28.0,
+    "carbs": 10.0,
+    "fat": 12.0,
+    "sugars": 2.7,
+    "fiber": 4.5,
+    "saturatedFat": 1.2,
+    "salt": 1.3
+   },
+   "price": 69.9,
+   "vegan": null,
+   "ean": null
+  },
+  {
+   "name": "Bezmięsna Szynka Czosnkowa 120g",
+   "brand": "Bezmięsny Mięsny",
+   "url": "https://bezmiesnymiesny.pl/bezmiesna-szynka-czosnkowa",
+   "quantity": "120 g",
+   "category": "zamienniki-miesa",
+   "nutrition": {
+    "kcal": 224.0,
+    "protein": 26.71,
+    "carbs": 10.79,
+    "fat": 7.39,
+    "sugars": 4.19,
+    "fiber": 4.16,
+    "saturatedFat": 0.91,
+    "salt": 2.17
+   },
+   "price": 9.99,
+   "vegan": true,
+   "ean": null
+  },
+  {
+   "name": "Bezmięsna o Smaku Trufli PREMIUM 100g",
+   "brand": "Bezmięsny Mięsny",
+   "url": "https://bezmiesnymiesny.pl/pl/p/Bezmiesna-o-Smaku-Trufli-PREMIUM-100g/458",
+   "quantity": "100 g",
+   "category": "zamienniki-miesa",
+   "nutrition": {
+    "kcal": 246.0,
+    "protein": 25.0,
+    "carbs": 10.02,
+    "fat": 10.9,
+    "sugars": 2.87,
+    "fiber": 0.87,
+    "saturatedFat": 1.0,
+    "salt": 2.09
+   },
+   "price": 11.99,
+   "vegan": true,
+   "ean": null
+  },
+  {
+   "name": "Bezmięsne Białe Grillowe 180g",
+   "brand": "Bezmięsny Mięsny",
+   "url": "https://bezmiesnymiesny.pl/pl/p/Bezmiesne-Biale-Grillowe-180g/459",
+   "quantity": "180 g",
+   "category": "zamienniki-miesa",
+   "nutrition": {
+    "kcal": 194.0,
+    "protein": 20.55,
+    "carbs": 18.28,
+    "fat": 4.88,
+    "sugars": 3.47,
+    "fiber": 2.76,
+    "saturatedFat": 0.68,
+    "salt": 2.19
+   },
+   "price": 12.99,
+   "vegan": true,
+   "ean": null
+  },
+  {
+   "name": "Bezmięsne Burgery 220g",
+   "brand": "Bezmięsny Mięsny",
+   "url": "https://bezmiesnymiesny.pl/pl/p/Bezmiesne-Burgery-220g/485",
+   "quantity": "220 g",
+   "category": "zamienniki-miesa",
+   "nutrition": {
+    "kcal": 231.0,
+    "protein": 16.0,
+    "carbs": 5.8,
+    "fat": 16.0,
+    "sugars": 1.2,
+    "fiber": null,
+    "saturatedFat": 6.2,
+    "salt": 1.7
+   },
+   "price": 12.99,
+   "vegan": true,
+   "ean": null
+  },
+  {
+   "name": "Bezmięsne Chorizo Premium 100g",
+   "brand": "Bezmięsny Mięsny",
+   "url": "https://bezmiesnymiesny.pl/pl/p/Bezmiesne-Chorizo-Premium-100g/475",
+   "quantity": "100 g",
+   "category": "zamienniki-miesa",
+   "nutrition": {
+    "kcal": 264.0,
+    "protein": 28.0,
+    "carbs": 15.0,
+    "fat": 9.52,
+    "sugars": 0.44,
+    "fiber": 2.98,
+    "saturatedFat": 0.96,
+    "salt": 2.36
+   },
+   "price": 11.99,
+   "vegan": true,
+   "ean": null
+  },
+  {
+   "name": "Bezmięsne Chorizo baton 1kg",
+   "brand": "Bezmięsny Mięsny",
+   "url": "https://bezmiesnymiesny.pl/pl/p/Bezmiesne-Chorizo-baton-1kg-/297",
+   "quantity": "1 kg",
+   "category": "zamienniki-miesa",
+   "nutrition": {
+    "kcal": 243.0,
+    "protein": 26.0,
+    "carbs": 11.0,
+    "fat": 9.7,
+    "sugars": 3.5,
+    "fiber": 4.8,
+    "saturatedFat": 1.0,
+    "salt": 1.1
+   },
+   "price": 69.9,
+   "vegan": null,
+   "ean": null
+  },
+  {
+   "name": "Bezmięsne Filety 170g",
+   "brand": "Bezmięsny Mięsny",
+   "url": "https://bezmiesnymiesny.pl/pl/p/Bezmiesne-Filety-170g/491",
+   "quantity": "170 g",
+   "category": "zamienniki-miesa",
+   "nutrition": {
+    "kcal": 190.0,
+    "protein": 18.0,
+    "carbs": 6.6,
+    "fat": 9.7,
+    "sugars": 0.8,
+    "fiber": 2.0,
+    "saturatedFat": 1.4,
+    "salt": 2.0
+   },
+   "price": 12.99,
+   "vegan": true,
+   "ean": null
+  },
+  {
+   "name": "Bezmięsne Grillowe 160g",
+   "brand": "Bezmięsny Mięsny",
+   "url": "https://bezmiesnymiesny.pl/pl/p/Bezmiesne-Grillowe-160g/486",
+   "quantity": "160 g",
+   "category": "zamienniki-miesa",
+   "nutrition": {
+    "kcal": 230.0,
+    "protein": 17.0,
+    "carbs": 3.8,
+    "fat": 15.0,
+    "sugars": 0.5,
+    "fiber": 6.0,
+    "saturatedFat": 1.2,
+    "salt": 2.6
+   },
+   "price": 10.99,
+   "vegan": true,
+   "ean": null
+  },
+  {
+   "name": "Bezmięsne Kabanosy Cebulowo-Czosnkowe 160g",
+   "brand": "Bezmięsny Mięsny",
+   "url": "https://bezmiesnymiesny.pl/bezmiesne-kabanosy-cebulowe-160g-5-szt-w-paczce",
+   "quantity": "160 g",
+   "category": "zamienniki-miesa",
+   "nutrition": {
+    "kcal": 316.0,
+    "protein": 30.4,
+    "carbs": 18.4,
+    "fat": 13.3,
+    "sugars": 4.7,
+    "fiber": 0.5,
+    "saturatedFat": 4.21,
+    "salt": 2.52
+   },
+   "price": 13.99,
+   "vegan": true,
+   "ean": null
+  },
+  {
+   "name": "Bezmięsne Kabanosy Chilli 160g",
+   "brand": "Bezmięsny Mięsny",
+   "url": "https://bezmiesnymiesny.pl/bezmiesne-kabanosy-chilli-160g-5-szt-w-paczce",
+   "quantity": "160 g",
+   "category": "zamienniki-miesa",
+   "nutrition": {
+    "kcal": 318,
+    "protein": 36.54,
+    "carbs": 12.6,
+    "fat": 12.8,
+    "sugars": 5.23,
+    "fiber": 3.06,
+    "saturatedFat": 4.72,
+    "salt": 2.5
+   },
+   "price": 13.99,
+   "vegan": true,
+   "ean": null
+  },
+  {
+   "name": "Bezmięsne Kabanosy Klasyczne 160g",
+   "brand": "Bezmięsny Mięsny",
+   "url": "https://bezmiesnymiesny.pl/bezmiesne-kabanosy-klasyczne-160g-5-szt-w-paczce",
+   "quantity": "160 g",
+   "category": "zamienniki-miesa",
+   "nutrition": {
+    "kcal": 298.0,
+    "protein": 29.1,
+    "carbs": 11.99,
+    "fat": 14.25,
+    "sugars": 5.26,
+    "fiber": 2.87,
+    "saturatedFat": 4.32,
+    "salt": 1.53
+   },
+   "price": 13.99,
+   "vegan": true,
+   "ean": null
+  },
+  {
+   "name": "Bezmięsne Kabanosy o smaku serowym 160g",
+   "brand": "Bezmięsny Mięsny",
+   "url": "https://bezmiesnymiesny.pl/bezmiesne-kabanosy-serowe-160g-4-szt-w-paczce",
+   "quantity": "160 g",
+   "category": "zamienniki-miesa",
+   "nutrition": {
+    "kcal": 324.0,
+    "protein": 27.8,
+    "carbs": 16.5,
+    "fat": 16.3,
+    "sugars": 4.64,
+    "fiber": 0.5,
+    "saturatedFat": 11.4,
+    "salt": 2.5
+   },
+   "price": 13.99,
+   "vegan": true,
+   "ean": null
+  },
+  {
+   "name": "Bezmięsne Kawałki a'la Kurczak PREMIUM 150g",
+   "brand": "Bezmięsny Mięsny",
+   "url": "https://bezmiesnymiesny.pl/pl/p/Bezmiesne-Kawalki-ala-Kurczak-PREMIUM-150g/439",
+   "quantity": "150 g",
+   "category": "zamienniki-miesa",
+   "nutrition": {
+    "kcal": 190.0,
+    "protein": 18.51,
+    "carbs": 8.6,
+    "fat": 9.62,
+    "sugars": 1.48,
+    "fiber": 1.97,
+    "saturatedFat": 1.01,
+    "salt": 2.24
+   },
+   "price": 12.99,
+   "vegan": true,
+   "ean": null
+  },
+  {
+   "name": "Bezmięsne Kiełbaski Wiejskie 180g",
+   "brand": "Bezmięsny Mięsny",
+   "url": "https://bezmiesnymiesny.pl/pl/p/Bezmiesne-Kielbaski-Wiejskie-180g/334",
+   "quantity": "180 g",
+   "category": "zamienniki-miesa",
+   "nutrition": {
+    "kcal": 206.0,
+    "protein": 16.9,
+    "carbs": 8.8,
+    "fat": 11.1,
+    "sugars": 2.5,
+    "fiber": 1.7,
+    "saturatedFat": 0.8,
+    "salt": 1.6
+   },
+   "price": 12.99,
+   "vegan": true,
+   "ean": null
+  },
+  {
+   "name": "Bezmięsne Mielone 200g",
+   "brand": "Bezmięsny Mięsny",
+   "url": "https://bezmiesnymiesny.pl/pl/p/Bezmiesne-Mielone-200g/487",
+   "quantity": "200 g",
+   "category": "zamienniki-miesa",
+   "nutrition": {
+    "kcal": 190.0,
+    "protein": 15.0,
+    "carbs": 2.9,
+    "fat": 12.0,
+    "sugars": 0.9,
+    "fiber": 5.2,
+    "saturatedFat": 1.2,
+    "salt": 1.8
+   },
+   "price": 12.99,
+   "vegan": true,
+   "ean": null
+  },
+  {
+   "name": "Bezmięsne Nuggetsy 150g",
+   "brand": "Bezmięsny Mięsny",
+   "url": "https://bezmiesnymiesny.pl/pl/p/Bezmiesne-Nuggetsy-150g/489",
+   "quantity": "150 g",
+   "category": "zamienniki-miesa",
+   "nutrition": {
+    "kcal": 285.0,
+    "protein": 14.0,
+    "carbs": 17.0,
+    "fat": 17.0,
+    "sugars": 1.2,
+    "fiber": 3.8,
+    "saturatedFat": 2.0,
+    "salt": 1.6
+   },
+   "price": 10.99,
+   "vegan": true,
+   "ean": null
+  },
+  {
+   "name": "Bezmięsne Parówki PREMIUM 160g",
+   "brand": "Bezmięsny Mięsny",
+   "url": "https://bezmiesnymiesny.pl/pl/p/Bezmiesne-Parowki-PREMIUM-160g-/438",
+   "quantity": "160 g",
+   "category": "zamienniki-miesa",
+   "nutrition": {
+    "kcal": 222.0,
+    "protein": 21.1,
+    "carbs": 8.52,
+    "fat": 11.83,
+    "sugars": 2.02,
+    "fiber": 1.58,
+    "saturatedFat": 1.4,
+    "salt": 2.88
+   },
+   "price": 11.99,
+   "vegan": true,
+   "ean": null
+  },
+  {
+   "name": "Bezmięsne Pepperoni 100g",
+   "brand": "Bezmięsny Mięsny",
+   "url": "https://bezmiesnymiesny.pl/pl/p/Bezmiesne-Pepperoni-100g/370",
+   "quantity": "100 g",
+   "category": "zamienniki-miesa",
+   "nutrition": {
+    "kcal": 222.0,
+    "protein": 32.4,
+    "carbs": 10.0,
+    "fat": 5.2,
+    "sugars": 1.8,
+    "fiber": 1.9,
+    "saturatedFat": 0.7,
+    "salt": 2.7
+   },
+   "price": 9.99,
+   "vegan": true,
+   "ean": null
+  },
+  {
+   "name": "Bezmięsne Pepperoni Classic baton 1 kg",
+   "brand": "Bezmięsny Mięsny",
+   "url": "https://bezmiesnymiesny.pl/pl/p/Bezmiesne-Pepperoni-Classic-baton-1-kg-/299",
+   "quantity": "1 kg",
+   "category": "zamienniki-miesa",
+   "nutrition": {
+    "kcal": 221.0,
+    "protein": 27.28,
+    "carbs": 8.92,
+    "fat": 7.39,
+    "sugars": 3.85,
+    "fiber": 4.83,
+    "saturatedFat": 0.84,
+    "salt": 1.91
+   },
+   "price": 69.9,
+   "vegan": null,
+   "ean": null
+  },
+  {
+   "name": "Bezmięsne Salami 100g",
+   "brand": "Bezmięsny Mięsny",
+   "url": "https://bezmiesnymiesny.pl/bezmiesne-salami-100g",
+   "quantity": "100 g",
+   "category": "zamienniki-miesa",
+   "nutrition": {
+    "kcal": 212.0,
+    "protein": 21.81,
+    "carbs": 9.25,
+    "fat": 8.89,
+    "sugars": 3.36,
+    "fiber": 4.08,
+    "saturatedFat": 6.0,
+    "salt": 1.54
+   },
+   "price": 9.99,
+   "vegan": true,
+   "ean": null
+  },
+  {
+   "name": "Bezmięsne Serdelki 180g",
+   "brand": "Bezmięsny Mięsny",
+   "url": "https://bezmiesnymiesny.pl/pl/p/Bezmiesne-Serdelki-180g-/310",
+   "quantity": "180 g",
+   "category": "zamienniki-miesa",
+   "nutrition": {
+    "kcal": 223.0,
+    "protein": 8.5,
+    "carbs": 7.2,
+    "fat": 18.0,
+    "sugars": 1.0,
+    "fiber": 1.4,
+    "saturatedFat": 1.5,
+    "salt": 1.5
+   },
+   "price": 10.99,
+   "vegan": true,
+   "ean": null
+  },
+  {
+   "name": "Bezmięsny Boczek 100g",
+   "brand": "Bezmięsny Mięsny",
+   "url": "https://bezmiesnymiesny.pl/boczek-roslinny",
+   "quantity": "100 g",
+   "category": "zamienniki-miesa",
+   "nutrition": {
+    "kcal": 226.0,
+    "protein": 31.06,
+    "carbs": 8.11,
+    "fat": 6.94,
+    "sugars": 3.63,
+    "fiber": 3.33,
+    "saturatedFat": 1.09,
+    "salt": 1.3
+   },
+   "price": 9.99,
+   "vegan": true,
+   "ean": null
+  },
+  {
+   "name": "Bezmięsny Boczek w kostce 100g",
+   "brand": "Bezmięsny Mięsny",
+   "url": "https://bezmiesnymiesny.pl/pl/p/Bezmiesny-Boczek-w-kostce-100g/251",
+   "quantity": "100 g",
+   "category": "zamienniki-miesa",
+   "nutrition": {
+    "kcal": 260.0,
+    "protein": 32.0,
+    "carbs": 7.8,
+    "fat": 10.0,
+    "sugars": 3.4,
+    "fiber": 4.4,
+    "saturatedFat": 1.3,
+    "salt": 1.7
+   },
+   "price": 9.99,
+   "vegan": true,
+   "ean": null
+  },
+  {
+   "name": "Bezmięsny Falafel 200g",
+   "brand": "Bezmięsny Mięsny",
+   "url": "https://bezmiesnymiesny.pl/pl/p/Bezmiesny-Falafel-200g/488",
+   "quantity": "200 g",
+   "category": "dania",
+   "nutrition": {
+    "kcal": 260.0,
+    "protein": 9.7,
+    "carbs": 27.0,
+    "fat": 11.0,
+    "sugars": 4.6,
+    "fiber": 7.3,
+    "saturatedFat": 1.4,
+    "salt": 0.8
+   },
+   "price": 10.99,
+   "vegan": true,
+   "ean": null
+  },
+  {
+   "name": "Bezmięsny Kabanos Extra 35 g",
+   "brand": "Bezmięsny Mięsny",
+   "url": "https://bezmiesnymiesny.pl/pl/p/Bezmiesny-Kabanos-Extra-35-g/404",
+   "quantity": "35 g",
+   "category": "zamienniki-miesa",
+   "nutrition": {
+    "kcal": 249.0,
+    "protein": 26.0,
+    "carbs": 18.0,
+    "fat": 9.5,
+    "sugars": 4.3,
+    "fiber": 6.8,
+    "saturatedFat": 5.2,
+    "salt": 3.1
+   },
+   "price": 4.99,
+   "vegan": true,
+   "ean": null
+  },
+  {
+   "name": "Bezmięsny Kebab 160g",
+   "brand": "Bezmięsny Mięsny",
+   "url": "https://bezmiesnymiesny.pl/kebab",
+   "quantity": "160 g",
+   "category": "zamienniki-miesa",
+   "nutrition": {
+    "kcal": 289.0,
+    "protein": 27.0,
+    "carbs": 5.7,
+    "fat": 16.25,
+    "sugars": 2.79,
+    "fiber": 5.95,
+    "saturatedFat": 2.14,
+    "salt": 2.09
+   },
+   "price": 12.99,
+   "vegan": true,
+   "ean": null
+  },
+  {
+   "name": "Bezmięsny Sznycel 200g",
+   "brand": "Bezmięsny Mięsny",
+   "url": "https://bezmiesnymiesny.pl/pl/p/Bezmiesny-Sznycel-200g/490",
+   "quantity": "200 g",
+   "category": "zamienniki-miesa",
+   "nutrition": {
+    "kcal": 291.0,
+    "protein": 13.0,
+    "carbs": 17.0,
+    "fat": 18.0,
+    "sugars": 1.7,
+    "fiber": 4.4,
+    "saturatedFat": 2.2,
+    "salt": 1.6
+   },
+   "price": 11.99,
+   "vegan": true,
+   "ean": null
+  },
+  {
+   "name": "Bezmleczne Plastry o smaku sera Cheddar 150g",
+   "brand": "Mr Plantel",
+   "url": "https://bezmiesnymiesny.pl/pl/p/Bezmleczne-Plastry-o-smaku-sera-Cheddar-150g/495",
+   "quantity": "150 g",
+   "category": "nabial",
+   "nutrition": {
+    "kcal": 267.0,
+    "protein": 0.0,
+    "carbs": 19.5,
+    "fat": 21.0,
+    "sugars": 0.0,
+    "fiber": null,
+    "saturatedFat": 19.0,
+    "salt": 1.6
+   },
+   "price": 9.99,
+   "vegan": true,
+   "ean": null
+  },
+  {
+   "name": "Bezmleczny Blok Grecki 200g",
+   "brand": "Mr Plantel",
+   "url": "https://bezmiesnymiesny.pl/pl/p/Bezmleczny-Blok-Grecki-200g/494",
+   "quantity": "200 g",
+   "category": "nabial",
+   "nutrition": {
+    "kcal": 299.0,
+    "protein": 1.2,
+    "carbs": 8.4,
+    "fat": 29.0,
+    "sugars": 0.1,
+    "fiber": null,
+    "saturatedFat": 27.0,
+    "salt": 2.2
+   },
+   "price": 12.99,
+   "vegan": null,
+   "ean": null
+  },
+  {
+   "name": "FUDO 180g",
+   "brand": "Bezmięsny Mięsny",
+   "url": "https://bezmiesnymiesny.pl/pl/p/FUDO-180g/473",
+   "quantity": "180 g",
+   "category": "zamienniki-miesa",
+   "nutrition": {
+    "kcal": 185.0,
+    "protein": 16.9,
+    "carbs": 1.4,
+    "fat": 11.3,
+    "sugars": 1.35,
+    "fiber": 4.5,
+    "saturatedFat": 4.6,
+    "salt": 2.06
+   },
+   "price": 12.99,
+   "vegan": true,
+   "ean": null
+  }
+ ]
+}

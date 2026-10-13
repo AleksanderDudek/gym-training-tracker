@@ -2,6 +2,8 @@ import { gunzipSync } from 'fflate';
 import foodData from 'virtual:food-data';
 import { indexProducts } from './lib/search';
 import type { Dataset, IndexedProduct } from './lib/types';
+import { mergeOnline } from './online/merge';
+import type { ShopData } from './online/types';
 
 export interface LoadedDataset {
   dataset: Dataset;
@@ -25,9 +27,22 @@ export async function inflate(bytes: Uint8Array<ArrayBuffer>): Promise<string> {
   return new TextDecoder().decode(gunzipSync(bytes));
 }
 
+/**
+ * Produkty sklepów internetowych — osobna paczka, wczytywana razem z bazą. Gdy się nie wczyta
+ * (np. offline przed pierwszym zapisaniem paczki), baza przychodzi bez nich: to dodatek, nie powód,
+ * żeby nie pokazać 29 tysięcy produktów.
+ */
+function loadShops(): Promise<ShopData[]> {
+  return import('./online/shopData').then(
+    (m) => m.SHOPS,
+    () => [],
+  );
+}
+
 async function fetchDataset(): Promise<LoadedDataset> {
   const { url } = foodData;
   if (!url) throw new Error(MISSING_DATA_MESSAGE);
+  const shops = loadShops();
   // Zerwane połączenie wychodzi z `fetch` albo dopiero w trakcie czytania treści.
   const offline = () => {
     throw new Error('Nie udało się pobrać danych produktów. Sprawdź połączenie z internetem.');
@@ -40,6 +55,12 @@ async function fetchDataset(): Promise<LoadedDataset> {
     dataset = JSON.parse(await inflate(bytes)) as Dataset;
   } catch {
     throw new Error('Dane produktów są uszkodzone.');
+  }
+  try {
+    dataset = mergeOnline(dataset, await shops);
+  } catch (error) {
+    // Uszkodzony plik sklepu nie może zabrać 29 tysięcy produktów — baza przychodzi bez sklepów.
+    console.warn('Produkty sklepów internetowych pominięte:', error);
   }
   return { dataset, products: indexProducts(dataset.products, dataset.dictionaries.brands) };
 }

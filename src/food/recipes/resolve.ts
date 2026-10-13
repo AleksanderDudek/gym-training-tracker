@@ -1,5 +1,6 @@
 import { packGrams } from '../lib/quantity';
 import type { IndexedProduct } from '../lib/types';
+import { isOnlineShop } from '../online/shops';
 import { RECIPES, passesRule, servingsOf, type Recipe, type RecipeItem } from './catalog';
 import { INGREDIENTS, type IngredientDef } from './ingredients';
 import { divideMacros, macrosOf, scale, sumMacros, type Macros } from './macros';
@@ -31,7 +32,11 @@ export function buildCandidates(products: IndexedProduct[]): Candidates {
   for (const def of Object.values(INGREDIENTS)) {
     if (!def.match) continue;
     const match = def.match;
-    candidates.set(def.id, products.filter((p) => macrosOf(p) !== null && match(p)).sort(byPreference));
+    // A label that disagrees with itself (a shop's polyols, a slip) would plan a recipe on wrong numbers.
+    candidates.set(
+      def.id,
+      products.filter((p) => !p.labelMismatch && macrosOf(p) !== null && match(p)).sort(byPreference),
+    );
   }
   return candidates;
 }
@@ -41,8 +46,10 @@ export interface ResolvedItem {
   def: IngredientDef;
   /** null: no product known here, typical values are used. */
   product: IndexedProduct | null;
-  /** The product is sold in the chosen store. */
+  /** The product is sold in the chosen store (one of the basket's shops). */
   fromStore: boolean;
+  /** The basket shop it is bought in: the first of the basket that sells it; null when none does. */
+  shop: string | null;
   /** What the user may swap to here. */
   alternatives: IndexedProduct[];
   /** The amount used: the catalog's, or the chosen product's own pack for a pack item. */
@@ -52,8 +59,10 @@ export interface ResolvedItem {
 
 export interface ResolvedRecipe {
   recipe: Recipe;
-  /** null: products from anywhere. */
+  /** The basket's first shop; null: products from anywhere. */
   store: string | null;
+  /** The basket: one shop, or two with at least one online (the physical one first); empty: anywhere. */
+  stores: string[];
   /** Every store ingredient was found. */
   available: boolean;
   /** Store ingredients the store lacks. */
@@ -75,47 +84,83 @@ export function needsStore(recipe: Recipe): boolean {
 }
 
 /**
+ * Where the shopping happens: one shop, or two where at least one is online -
+ * a trip to a shop plus a delivery, or deliveries only. Never two physical
+ * shops: one trip to one shop stays the rule. The physical shop goes first.
+ */
+export type Basket = readonly string[];
+
+/** The basket's products, its first shop's first: what is on the shelf beats what has to be ordered. */
+function inBasket(all: IndexedProduct[], basket: Basket): IndexedProduct[] {
+  // One shop (nearly every call): a plain filter keeps the candidates' own order.
+  if (basket.length === 1) return all.filter((p) => p.stores.includes(basket[0]!));
+  const rank = (p: IndexedProduct) => {
+    const i = basket.findIndex((s) => p.stores.includes(s));
+    return i === -1 ? basket.length : i;
+  };
+  return all
+    .map((p, i) => ({ p, i, r: rank(p) }))
+    .filter((x) => x.r < basket.length)
+    .sort((a, b) => a.r - b.r || a.i - b.i)
+    .map((x) => x.p);
+}
+
+/**
  * Which products may play an ingredient here.
- * - store:  what the store sells (everything, when no store is chosen).
- * - staple: what the store sells; with NO store, nothing - every shop has
- *   milk, and naming one product would name one chain under "every store".
- * - pantry: it is at home already, so anything; the store's own goes first.
+ * - store:  what the basket's shops sell (everything, when there is no basket).
+ * - staple: what the basket's PHYSICAL shop sells; with none, nothing - every
+ *   shop has milk, and naming one product would name one chain under "every
+ *   store" (nor is milk ordered from a protein shop).
+ * - pantry: it is at home already, so anything; the basket's own goes first.
  */
 function poolFor(
   role: IngredientDef['role'],
-  store: string | null,
+  basket: Basket,
   all: IndexedProduct[],
   here: IndexedProduct[],
 ): IndexedProduct[] {
   if (role === 'store') return here;
-  if (role === 'staple') return store ? here : [];
-  if (!store) return all;
+  if (role === 'staple') {
+    const physical = basket.filter((s) => !isOnlineShop(s));
+    // A basket of physical shops only (one shop - nearly every call): its products as they are.
+    if (basket.length && physical.length === basket.length) return here;
+    return physical.length ? here.filter((p) => physical.some((s) => p.stores.includes(s))) : [];
+  }
+  if (!basket.length) return all;
   const own = new Set(here);
   return [...here, ...all.filter((p) => !own.has(p))];
 }
 
+/**
+ * The recipe bought in a basket (one shop, or a shop and an online shop; a
+ * plain store key is a basket of one; null is anywhere), with the user's
+ * product swaps, and judged by its rule on what was actually chosen.
+ */
 export function resolveRecipe(
   recipe: Recipe,
   candidates: Candidates,
-  store: string | null,
+  store: string | Basket | null,
   overrides: Overrides = {},
 ): ResolvedRecipe {
+  const basket: Basket = store === null ? [] : typeof store === 'string' ? [store] : store;
   const missing: string[] = [];
   const items = recipe.items.map((item): ResolvedItem => {
     const def = INGREDIENTS[item.ingredient];
     const all = candidates.get(def.id) ?? [];
-    const here = store ? all.filter((p) => p.stores.includes(store)) : all;
-    const pool = poolFor(def.role, store, all, here);
+    const here = basket.length ? inBasket(all, basket) : all;
+    const pool = poolFor(def.role, basket, all, here);
     if (def.role === 'store' && pool.length === 0) missing.push(def.id);
 
     const chosen = pool.find((p) => p.code === overrides[def.id]) ?? pool[0] ?? null;
     const per100 = chosen ? macrosOf(chosen)! : def.typical;
     const grams = item.pack && chosen ? (packGrams(chosen.quantity) ?? item.grams) : item.grams;
+    const shop = (chosen && basket.find((s) => chosen.stores.includes(s))) ?? null;
     return {
       item,
       def,
       product: chosen,
-      fromStore: !!chosen && store !== null && chosen.stores.includes(store),
+      fromStore: shop !== null,
+      shop,
       alternatives: pool,
       grams,
       macros: scale(per100, grams),
@@ -128,7 +173,8 @@ export function resolveRecipe(
   const perServing = divideMacros(total, servingsOf(recipe));
   return {
     recipe,
-    store,
+    store: basket[0] ?? null,
+    stores: [...basket],
     available: missing.length === 0,
     missing,
     items,
@@ -146,17 +192,25 @@ export function availableStores(recipe: Recipe, candidates: Candidates, stores: 
   });
 }
 
-/**
- * Stores worth offering, most useful first: by how many recipes that NEED a
- * store they cover. Recipes made of staples and pantry items alone are
- * available everywhere and would only inflate every count equally.
- */
-export function storeRanking(recipes: Recipe[], candidates: Candidates): string[] {
+/** Every store key that sells a candidate of some store ingredient. */
+function storesWithCandidates(candidates: Candidates): Set<string> {
   const stores = new Set<string>();
   for (const def of Object.values(INGREDIENTS)) {
     if (def.role !== 'store') continue;
     for (const p of candidates.get(def.id) ?? []) for (const s of p.stores) stores.add(s);
   }
+  return stores;
+}
+
+/**
+ * Physical stores worth offering, most useful first: by how many recipes that
+ * NEED a store they cover on their own. Recipes made of staples and pantry
+ * items alone are available everywhere and would only inflate every count
+ * equally. Online shops are ranked apart (`onlineRanking`): a shop down the
+ * road is the default, a delivery the complement.
+ */
+export function storeRanking(recipes: Recipe[], candidates: Candidates): string[] {
+  const stores = new Set([...storesWithCandidates(candidates)].filter((s) => !isOnlineShop(s)));
   const counts = new Map<string, number>();
   for (const recipe of recipes.filter(needsStore)) {
     for (const store of availableStores(recipe, candidates, [...stores]))
@@ -189,9 +243,26 @@ export function bestVariant(
   return null;
 }
 
+/**
+ * Online shops that sell anything a recipe needs from a store, the broadest
+ * first: by how many store ingredients they have candidates for.
+ */
+export function onlineRanking(candidates: Candidates): string[] {
+  const counts = new Map<string, number>();
+  for (const def of Object.values(INGREDIENTS)) {
+    if (def.role !== 'store') continue;
+    const shops = new Set((candidates.get(def.id) ?? []).flatMap((p) => p.stores.filter(isOnlineShop)));
+    for (const s of shops) counts.set(s, (counts.get(s) ?? 0) + 1);
+  }
+  return [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([s]) => s);
+}
+
 export interface RecipeIndex {
   candidates: Candidates;
+  /** Physical stores, most useful first. */
   ranking: string[];
+  /** Online shops, broadest first. */
+  online: string[];
 }
 
 const indexes = new WeakMap<IndexedProduct[], RecipeIndex>();
@@ -204,7 +275,7 @@ export function recipeIndex(products: IndexedProduct[]): RecipeIndex {
   let index = indexes.get(products);
   if (!index) {
     const candidates = buildCandidates(products);
-    index = { candidates, ranking: storeRanking(RECIPES, candidates) };
+    index = { candidates, ranking: storeRanking(RECIPES, candidates), online: onlineRanking(candidates) };
     indexes.set(products, index);
   }
   return index;

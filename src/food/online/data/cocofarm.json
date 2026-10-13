@@ -1,0 +1,49 @@
+{
+  "id": "cocofarm",
+  "name": "CocoFarm",
+  "url": "https://cocofarm.pl",
+  "checked": "2026-10-13",
+  "note": "Sklep cocofarmshop.com blokuje ruch automatyczny (weryfikacja „Nie jestem robotem”), więc dane pochodzą ze strony producenta cocofarm.pl (cocofarm.com.pl ma błędny certyfikat HTTPS) – bez cen. Tylko 2 z 38 stron produktów mają tam tabelę wartości odżywczych; produkty kokosowe (olej, mąka, chipsy, cukier, miąższ), mąki, orzechy, nasiona, słodziki itd. pominięte z braku tabeli.",
+  "products": [
+    {
+      "name": "Chleb Mocy – keto mieszanka do wypieku chleba bez zbóż",
+      "brand": "Coco Farm",
+      "url": "https://cocofarm.pl/produkty_chleb_mocy.html",
+      "quantity": "300 g",
+      "category": "maki",
+      "nutrition": {
+        "kcal": 319,
+        "protein": 12,
+        "carbs": 6,
+        "fat": 27,
+        "sugars": 2,
+        "fiber": 10,
+        "saturatedFat": 10,
+        "salt": 1
+      },
+      "price": null,
+      "vegan": null,
+      "ean": null
+    },
+    {
+      "name": "Naleśniki proteinowe – mieszanka bezglutenowa, bez dodatku cukru",
+      "brand": "Coco Farm",
+      "url": "https://cocofarm.pl/produkty_nalesniki_proteinowe.html",
+      "quantity": "200 g",
+      "category": "maki",
+      "nutrition": {
+        "kcal": 257,
+        "protein": 10,
+        "carbs": 36,
+        "fat": 9,
+        "sugars": 6,
+        "fiber": 2.4,
+        "saturatedFat": 5,
+        "salt": 1
+      },
+      "price": null,
+      "vegan": null,
+      "ean": null
+    }
+  ]
+}

@@ -52,6 +52,9 @@ function within(p: Product, bounds: Partial<Record<Bound, [number, number]>>): b
   return true;
 }
 
+/** A box of several: "pudełko x 4 batony", "12 x 45 g", "zestaw". One pack of it is not one portion. */
+const MULTIPACK = /\bpudelk\w*|\bbox\b|\bzestaw\w*|\bkarton\w*|\b\d+ ?(x|szt\w*|sztuk\w*) ?\d*/;
+
 const DRINKABLE = /\b(pitn\w*|drink|napoj\w*|shake|koktajl\w*)\b/;
 const FROZEN = (p: Product) => inCategory(p, 'en:frozen-fruits', 'en:frozen-foods') || /mrozon/.test(nameOf(p));
 
@@ -463,6 +466,7 @@ const DEFINITIONS = {
     // A third of the bar protein is what makes it a protein bar; below that it is
     // a candy bar with a word on the wrapper.
     match: (p) =>
+      !MULTIPACK.test(nameOf(p)) &&
       isProteinBar(p, nameOf(p)) &&
       !/\b(powder|proszk\w*|odzywk\w*)\b/.test(nameOf(p)) &&
       within(p, { protein: [30, 55], kcal: [250, 450] }),
@@ -474,7 +478,142 @@ const DEFINITIONS = {
     typical: { kcal: 61, protein: 10, carbs: 4.8, fat: 0.5 },
     // Ready to drink: a powder (300+ kcal) or a sweet milkshake stays out.
     match: (p) =>
+      !MULTIPACK.test(nameOf(p)) &&
       isProteinDrink(p, nameOf(p)) && within(p, { kcal: [30, 120], protein: [6, 15], sugars: [0, 8], fat: [0, 3] }),
+  },
+  // Bought online more often than not (src/food/online): protein mixes, keto bread and pasta,
+  // plant-based "meat". Physical shops that sell an equal product count too - the basket logic
+  // then needs no delivery. Typical values: medians of the matches in the merged data of 2026-10.
+  proteinPancakeMix: {
+    id: 'proteinPancakeMix',
+    label: 'Mieszanka na białkowe naleśniki',
+    role: 'store',
+    typical: { kcal: 390, protein: 54, carbs: 28, fat: 6 },
+    match: (p) =>
+      /\b(nalesnik\w*|pancake\w*|placuszk\w*)\b/.test(nameOf(p)) && within(p, { protein: [40, 80], kcal: [300, 420] }),
+  },
+  mugCake: {
+    id: 'mugCake',
+    label: 'Mieszanka na białkowe ciasto w kubku',
+    role: 'store',
+    typical: { kcal: 376, protein: 43, carbs: 33, fat: 6.7 },
+    match: (p) =>
+      /\bmug ?cake\b|ciast\w* w kubku/.test(nameOf(p)) && within(p, { protein: [35, 70], kcal: [300, 420] }),
+  },
+  peanutPowder: {
+    id: 'peanutPowder',
+    label: 'Masło orzechowe w proszku',
+    role: 'store',
+    typical: { kcal: 408, protein: 50, carbs: 26, fat: 12 },
+    match: (p) =>
+      /maslo orzechowe w proszku|peanut (butter )?powder|\bpb2\b/.test(nameOf(p)) &&
+      within(p, { protein: [40, 65], fat: [0, 15] }),
+  },
+  proteinCrisps: {
+    id: 'proteinCrisps',
+    label: 'Chipsy białkowe',
+    role: 'store',
+    typical: { kcal: 432, protein: 33.5, carbs: 42, fat: 13.3 },
+    match: (p) =>
+      !MULTIPACK.test(nameOf(p)) && /\b(chips\w*|crisps?)\b/.test(nameOf(p)) && within(p, { protein: [30, 60], fat: [0, 20] }),
+  },
+  ketoPasta: {
+    id: 'ketoPasta',
+    label: 'Makaron keto lub białkowy (suchy)',
+    role: 'store',
+    typical: { kcal: 284, protein: 36, carbs: 9.8, fat: 4.8 },
+    // The protein bound is what makes it: a lentil pasta (24 g) is `lentilPasta`, wheat pasta 12 g.
+    match: (p) =>
+      /\bmakaron\w*|\bpasta\b|\bpenne\b|\bfusilli\b/.test(nameOf(p)) &&
+      within(p, { protein: [30, 60], carbs: [0, 30] }),
+  },
+  konjac: {
+    id: 'konjac',
+    label: 'Makaron konjac (shirataki)',
+    role: 'store',
+    typical: { kcal: 6, protein: 0, carbs: 1.3, fat: 0 },
+    match: (p) => /\b(konjac\w*|konjak\w*|shirataki)\b/.test(nameOf(p)) && within(p, { kcal: [0, 40], fat: [0, 1] }),
+  },
+  proteinBread: {
+    id: 'proteinBread',
+    label: 'Chleb białkowy (keto)',
+    role: 'store',
+    typical: { kcal: 255, protein: 29, carbs: 8, fat: 10 },
+    match: (p) =>
+      // A bread, not a ham "tostowa" or a baking mix.
+      /\bchleb\w*/.test(nameOf(p)) &&
+      !/chrupk|mieszank|wypiek|szynk|szyneczk/.test(nameOf(p)) &&
+      within(p, { protein: [20, 40], carbs: [0, 20], fat: [0, 15] }),
+  },
+  ketoPizzaBase: {
+    id: 'ketoPizzaBase',
+    label: 'Spód do pizzy keto',
+    role: 'store',
+    typical: { kcal: 215, protein: 14, carbs: 7, fat: 7 },
+    match: (p) => /spod\w* do pizz|pizza base/.test(nameOf(p)) && within(p, { protein: [12, 40], carbs: [0, 15] }),
+  },
+  ketoTortilla: {
+    id: 'ketoTortilla',
+    label: 'Tortilla keto (niskowęglowodanowa)',
+    role: 'store',
+    typical: { kcal: 248, protein: 19.7, carbs: 11.6, fat: 12.9 },
+    match: (p) => /\btortill\w*|\bwrap\w*/.test(nameOf(p)) && within(p, { protein: [15, 40], carbs: [0, 25] }),
+  },
+  plantProtein: {
+    id: 'plantProtein',
+    label: 'Białko roślinne w proszku (groch, ryż, dynia, konopie)',
+    role: 'store',
+    typical: { kcal: 384, protein: 75, carbs: 6, fat: 5.4 },
+    // A powder made from plants: by its source in the name, and mostly protein - a "vege mix" of
+    // greens with 20 g of it is a superfood, not a protein powder.
+    match: (p) =>
+      /\b(bialk\w*|protein\w*)\b/.test(nameOf(p)) &&
+      /\b(grochu|groch\w*|ryzu|ryzow\w*|pestek dyni|dyni|konopn\w*|konopi|slonecznik\w*|pea|vege\w*|vegan\w*|plant|roslinn\w*|soj\w*)\b/.test(
+        nameOf(p),
+      ) &&
+      !/\b(baton\w*|bar|shake w puszce|napoj\w*|nalesnik\w*|ciast\w*)\b/.test(nameOf(p)) &&
+      within(p, { protein: [45, 92], carbs: [0, 25], kcal: [300, 450] }),
+  },
+  zeroSyrup: {
+    id: 'zeroSyrup',
+    label: 'Syrop zero (bez cukru)',
+    role: 'store',
+    typical: { kcal: 2, protein: 0, carbs: 0.5, fat: 0 },
+    match: (p) =>
+      /\bsyrop\w*/.test(nameOf(p)) &&
+      /\b(zero|bez cukru|0 ?kcal|sugar free|fit)\b/.test(nameOf(p)) &&
+      within(p, { kcal: [0, 40], carbs: [0, 15], fat: [0, 1] }),
+  },
+  zeroSauce: {
+    id: 'zeroSauce',
+    label: 'Sos zero (bez cukru), np. słodkie chili lub BBQ',
+    role: 'store',
+    typical: { kcal: 17, protein: 0.1, carbs: 4.1, fat: 0 },
+    match: (p) =>
+      /\bsos\w*/.test(nameOf(p)) &&
+      !/\bsojow\w*|\bsyrop\w*/.test(nameOf(p)) &&
+      /\b(zero|bez cukru|0 ?kcal|sugar free|fit|light)\b/.test(nameOf(p)) &&
+      within(p, { kcal: [0, 60], carbs: [0, 15], fat: [0, 3] }),
+  },
+  plantDeli: {
+    id: 'plantDeli',
+    label: 'Roślinna wędlina (pepperoni, szynka, kabanosy)',
+    role: 'store',
+    typical: { kcal: 260, protein: 28, carbs: 10, fat: 10 },
+    match: (p) =>
+      inCategory(p, 'en:meat-analogues') &&
+      /pepperoni|boczek|szynk\w*|kabanos\w*|salami|chorizo|polędwic|poledwic|suszon\w*/.test(nameOf(p)) &&
+      within(p, { protein: [20, 45], fat: [0, 15] }),
+  },
+  plantMeat: {
+    id: 'plantMeat',
+    label: 'Roślinne mięso do smażenia (kebab, kawałki, filety)',
+    role: 'store',
+    typical: { kcal: 226, protein: 21, carbs: 6.3, fat: 13 },
+    match: (p) =>
+      inCategory(p, 'en:meat-analogues') &&
+      /kebab|gyros|kawalk\w*|filet\w*|szarpan\w*|strips/.test(nameOf(p)) &&
+      within(p, { protein: [15, 40], fat: [0, 17] }),
   },
   cocoa: {
     id: 'cocoa',

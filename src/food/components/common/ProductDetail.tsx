@@ -1,9 +1,10 @@
 import { ExternalLink } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { brandLine, names } from '../../lib/display';
-import { formatDate, formatGrams, formatKcal } from '../../lib/format';
+import { formatDate, formatGrams, formatKcal, formatPrice } from '../../lib/format';
 import { NUTRIENT_LABELS, PALM_OIL_LABELS, TRI_LABELS } from '../../lib/labels';
 import { NUTRIENTS, type Dictionaries, type Product } from '../../lib/types';
+import { onlineShop } from '../../online/shops';
 import { PriceTag } from './PriceTag';
 import { ProductImage } from './ProductImage';
 import { ScoreBadge } from './ScoreBadge';
@@ -96,6 +97,27 @@ export function ProductDetail({ product: p, dict, onClose }: Props) {
         )}
       </div>
 
+      {p.online && p.online.length > 0 && (
+        <Block title="Kup w sklepie internetowym">
+          <ul className="fd-offers">
+            {p.online.map((o) => (
+              <li key={o.url}>
+                <a href={o.url} target="_blank" rel="noopener noreferrer">
+                  {dict.stores[o.shop] ?? onlineShop(o.shop)?.name ?? o.shop}
+                  <ExternalLink size={14} strokeWidth={2} aria-hidden />
+                  <span className="sr-only"> (otwiera się w nowej karcie)</span>
+                </a>
+                <span className="soft">
+                  {onlineShop(o.shop)?.kind === 'producent' && ' · strona producenta, kupisz w sklepach internetowych'}
+                  {o.price !== null && <> · {formatPrice(o.price)}</>} · sprawdzone {formatDate(o.checked)}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <p className="soft small">Ceny i dostępność ze strony sklepu w dniu sprawdzenia — w sklepie mogą być inne.</p>
+        </Block>
+      )}
+
       {(p.genericName || category) && (
         <Block title="Opis">
           {p.genericName && <p>{p.genericName}</p>}
@@ -115,6 +137,12 @@ export function ProductDetail({ product: p, dict, onClose }: Props) {
           </tbody>
         </table>
         {p.servingSize && <p className="soft small">Porcja: {p.servingSize}</p>}
+        {p.labelMismatch && (
+          <p className="soft small">
+            Na stronie sklepu energia nie zgadza się z białkiem, węglowodanami i tłuszczem — zwykle przez poliole albo
+            błonnik, czasem przez błąd. Pokazuję liczby tak, jak podaje sklep; do przepisów ten produkt nie trafia.
+          </p>
+        )}
       </Block>
 
       {p.ingredientsText && (
@@ -154,19 +182,24 @@ export function ProductDetail({ product: p, dict, onClose }: Props) {
         </Block>
       )}
 
-      <Block title="Kod kreskowy">
-        <p className="fd-code">{p.code}</p>
-      </Block>
+      {/* Produkt tylko ze sklepu internetowego, bez EAN, ma kod z nazwy strony — to nie kod kreskowy. */}
+      {/^\d+$/.test(p.code) && (
+        <Block title="Kod kreskowy">
+          <p className="fd-code">{p.code}</p>
+        </Block>
+      )}
 
-      <a
-        className="fd-extlink"
-        href={`https://pl.openfoodfacts.org/produkt/${encodeURIComponent(p.code)}`}
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        Zobacz w Open Food Facts <ExternalLink size={16} strokeWidth={2} aria-hidden />
-        <span className="sr-only"> (otwiera się w nowej karcie)</span>
-      </a>
+      {!p.shopOnly && (
+        <a
+          className="fd-extlink"
+          href={`https://pl.openfoodfacts.org/produkt/${encodeURIComponent(p.code)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Zobacz w Open Food Facts <ExternalLink size={16} strokeWidth={2} aria-hidden />
+          <span className="sr-only"> (otwiera się w nowej karcie)</span>
+        </a>
+      )}
     </Sheet>
   );
 }

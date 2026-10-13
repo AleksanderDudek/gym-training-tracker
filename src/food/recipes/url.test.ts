@@ -7,9 +7,16 @@ test('the default state is an empty query', () => {
 });
 
 test('store, kind, time tier and open product round-trip', () => {
-  const state = { store: 'biedronka', kind: 'shake' as const, tier: 'szybkie' as const, product: '590' };
+  const state = {
+    store: 'biedronka',
+    kind: 'shake' as const,
+    tier: 'szybkie' as const,
+    product: '590',
+    layout: 'sklepy' as const,
+  };
   expect(recipesFromParams(recipesToParams(state))).toEqual(state);
-  expect(recipesToParams(state).toString()).toBe('sklep=biedronka&typ=shake&czas=szybkie&p=590');
+  expect(recipesToParams(state).toString()).toBe('sklep=biedronka&typ=shake&czas=szybkie&p=590&uklad=sklepy');
+  expect(recipesFromParams(new URLSearchParams('uklad=cokolwiek')).layout).toBe('czas');
 });
 
 test('every time tier round-trips under its Polish key', () => {

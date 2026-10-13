@@ -1,8 +1,18 @@
 import type { Dictionaries, IndexedProduct } from '../lib/types';
+import { isOnlineShop } from '../online/shops';
 import { RECIPES } from '../recipes/catalog';
 import { readyProducts } from '../recipes/ready';
 import { availableStores, bestVariant, needsStore, type Candidates } from '../recipes/resolve';
-import { customFood, planFood, productFood, recipeFood, setFood, type CustomFood, type Food, type FoodSet } from './foods';
+import {
+  customFood,
+  planFood,
+  productFood,
+  recipeFood,
+  setFood,
+  type CustomFood,
+  type Food,
+  type FoodSet,
+} from './foods';
 import type { Plan } from './plan';
 
 interface PoolInput {
@@ -39,7 +49,9 @@ export function buildPool(input: PoolInput): Food[] {
   }
 
   for (const group of readyProducts(input.products, input.chains.length ? input.chains : null)) {
-    for (const product of group.items.slice(0, PER_GROUP)) {
+    // „Co teraz?” nie czeka na kuriera: produkt, który kupisz tylko przez internet, tu nie trafia.
+    const onShelves = group.items.filter((p) => !(p.stores.length && p.stores.every(isOnlineShop)));
+    for (const product of onShelves.slice(0, PER_GROUP)) {
       const food = productFood(product, input.dict);
       if (food) foods.push(food);
     }

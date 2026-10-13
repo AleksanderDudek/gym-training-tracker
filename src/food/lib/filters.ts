@@ -1,8 +1,9 @@
+import { isOnlineShop } from '../online/shops';
 import { matchesQuery } from './search';
 import { tokenize } from './text';
 import type { EcoGrade, IndexedProduct, NovaGroup, NutriGrade, Product } from './types';
 
-export const TOGGLE_KEYS = ['hasImage', 'hasPrice', 'hasNutrition', 'vegan', 'vegetarian', 'noPalmOil'] as const;
+export const TOGGLE_KEYS = ['hasImage', 'hasPrice', 'hasNutrition', 'online', 'vegan', 'vegetarian', 'noPalmOil'] as const;
 export type ToggleKey = (typeof TOGGLE_KEYS)[number];
 
 export const RANGE_KEYS = ['kcal', 'protein', 'fat', 'carbs', 'sugars', 'salt', 'fiber', 'price', 'additives'] as const;
@@ -69,6 +70,8 @@ export function toggleTest(key: ToggleKey, p: Product): boolean {
       return p.vegetarian === 'yes';
     case 'noPalmOil':
       return p.palmOil === 'free';
+    case 'online':
+      return p.stores.some(isOnlineShop);
   }
 }
 

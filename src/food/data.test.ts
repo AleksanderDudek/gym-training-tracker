@@ -11,6 +11,10 @@ const meta = vi.hoisted(() => ({
 }));
 vi.mock('virtual:food-data', () => ({ default: meta }));
 
+// Sklepy internetowe z próbki zamiast prawdziwych plików: liczby produktów w testach zostają stałe.
+const online = vi.hoisted(() => ({ SHOPS: [] as unknown[] }));
+vi.mock('./online/shopData', () => online);
+
 const TEXT = JSON.stringify(DATASET);
 const gz = (text: string) => gzipSync(strToU8(text));
 const plain = (text: string) => new TextEncoder().encode(text);
@@ -23,6 +27,7 @@ async function load() {
 
 beforeEach(() => {
   meta.url = 'data/products.abc123def456.json.gz';
+  online.SHOPS = [];
 });
 
 afterEach(() => {
@@ -62,6 +67,37 @@ describe('loadDataset', () => {
     expect(fetchMock).toHaveBeenCalledWith(`${import.meta.env.BASE_URL}data/products.abc123def456.json.gz`);
     expect(dataset.products).toHaveLength(DATASET.products.length);
     expect(products[0]?.searchText).toBe('zolty ser gouda mlekovita 1');
+  });
+
+  it('dokłada produkty sklepów internetowych — do wyszukiwania i ze sklepem w słowniku', async () => {
+    online.SHOPS = [
+      {
+        id: 'guiltfree',
+        name: 'GuiltFree',
+        url: 'https://guiltfree.pl',
+        checked: '2026-10-13',
+        products: [
+          {
+            name: 'Syrop zero klonowy',
+            brand: 'GuiltFree',
+            url: 'https://guiltfree.pl/products/syrop-klonowy',
+            quantity: '300 ml',
+            category: 'sosy',
+            nutrition: { kcal: 3, protein: 0, carbs: 0.5, fat: 0, sugars: 0, fiber: null, saturatedFat: 0, salt: 0.1 },
+            price: 19.99,
+            vegan: true,
+            ean: null,
+          },
+        ],
+      },
+    ];
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(gz(TEXT))));
+    const { loadDataset } = await load();
+    const { dataset, products } = await loadDataset();
+    expect(dataset.products).toHaveLength(DATASET.products.length + 1);
+    expect(dataset.dictionaries.stores.guiltfree).toBe('GuiltFree');
+    expect(products.at(-1)).toMatchObject({ code: 'guiltfree-syrop-klonowy', stores: ['guiltfree'] });
+    expect(products.at(-1)?.searchText).toContain('syrop zero klonowy guiltfree');
   });
 
   it('pobiera raz na życie strony, a wczytaną bazę oddaje też od ręki', async () => {

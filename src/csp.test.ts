@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { csp, withCsp } from '../vite/csp';
+import { ONLINE_SHOPS } from './food/online/shops';
 
 /**
  * Polityka bezpieczeństwa treści (CSP) a adresy w kodzie.
@@ -34,6 +35,8 @@ const NAVIGATION = new Set([
   'pl.openfoodfacts.org',
   'prices.openfoodfacts.org',
   'www.openstreetmap.org',
+  // Sklepy internetowe: odnośniki do sklepów i stron produktów, nic z nich nie jest pobierane.
+  ...ONLINE_SHOPS.map((shop) => new URL(shop.url).hostname),
 ]);
 
 /** Dyrektywa → jej wartości, z gotowego tekstu polityki. */

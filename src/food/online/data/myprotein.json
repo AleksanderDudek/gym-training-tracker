@@ -1,0 +1,1617 @@
+{
+  "id": "myprotein",
+  "name": "Myprotein",
+  "url": "https://www.myprotein.pl",
+  "checked": "2026-10-13",
+  "note": "Cena = regularna (przekreślona) cena katalogowa; Myprotein niemal stale pokazuje niższą cenę promocyjną. Jeden wpis na linię produktu, inne smaki tylko przy różnicy białka/kcal > 10% (link z ?variation= wskazuje smak). Gdy strona zawiera dane dla konkretnego wariantu smakowego, użyto ich zamiast ogólnej tabeli. Wartości podane jako „<x g” zapisano jako x. Sól w płatkach błyskawicznych przeliczona z sodu (×2,5). Niezgodność na stronie: Krople FlavDrops – Banan (293 kcal przy ~0 g makroskładników), FlavPowders (35 g błonnika), tłuszcz 0 g przy tłuszczach nasyconych > 0: Izolat Białka Serwatkowego Clear – Lemoniada i malina, Kolagenowe Białko w Proszku – Czekolada, FlavDrops – Banan. Niedostępne w dniu sprawdzenia: Izolat Białka Sojowego, Mieszanka Weight Gainer, Mieszanka na Białkowe Naleśniki. Pominięto: 8 produktów bez wartości odżywczych na stronie (m.in. Syrop bez cukru, Clear Protein Superblend, Filled Wafer, Vegan Double Dough Brownie), suplementy, elektrolity, żele, kreatynę, przedtreningówki, zestawy i boxy.",
+  "inconsistent": [
+    "Izolat Białka Serwatkowego Clear – Lemoniada i malina",
+    "Kolagenowe Białko w Proszku – Czekolada",
+    "Krople FlavDrops™ – Banan",
+    "FlavPowders – Czekoladowe Brownie"
+  ],
+  "products": [
+    {
+      "name": "Białko Serwatkowe (Impact Whey Protein) – Wanilia",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/bialko-serwatkowe-impact-whey-protein/10530943/",
+      "ean": "5059883569628",
+      "quantity": "900 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 379.0,
+        "protein": 72.0,
+        "carbs": 8.9,
+        "fat": 5.9,
+        "sugars": 5.1,
+        "fiber": null,
+        "saturatedFat": 3.6,
+        "salt": 0.44
+      },
+      "price": 286.99,
+      "vegan": null
+    },
+    {
+      "name": "Białko Serwatkowe (Impact Whey Protein) – Smak waniliowo-miodowy z chrupiącymi kawałkami herbatników",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/bialko-serwatkowe-impact-whey-protein/10530943/?variation=15644753",
+      "ean": "5059883477930",
+      "quantity": "960 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 395.0,
+        "protein": 62.0,
+        "carbs": 17.0,
+        "fat": 8.4,
+        "sugars": 7.5,
+        "fiber": null,
+        "saturatedFat": 5.2,
+        "salt": 0.41
+      },
+      "price": 286.99,
+      "vegan": null
+    },
+    {
+      "name": "Impact Whey Protein Milkshake – Słony Karmel",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/impact-whey-protein-milkshake/17755445/",
+      "ean": "5059883593432",
+      "quantity": "870 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 367.0,
+        "protein": 68.0,
+        "carbs": 14.0,
+        "fat": 4.1,
+        "sugars": 8.9,
+        "fiber": null,
+        "saturatedFat": 2.7,
+        "salt": 1.5
+      },
+      "price": 260.99,
+      "vegan": null
+    },
+    {
+      "name": "Impact Whey Isolate Milkshake – Lody Waniliowe",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/impact-whey-isolate-milkshake/17816822/",
+      "ean": "5059883596273",
+      "quantity": "450 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 360.0,
+        "protein": 74.0,
+        "carbs": 12.0,
+        "fat": 1.0,
+        "sugars": 6.8,
+        "fiber": null,
+        "saturatedFat": 0.7,
+        "salt": 0.58
+      },
+      "price": 230.99,
+      "vegan": null
+    },
+    {
+      "name": "Izolat serwatki (Impact Whey Isolate) – Wanilia",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/izolat-serwatki-impact-whey-isolate/10530911/",
+      "ean": "5059883571683",
+      "quantity": "900 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 361.0,
+        "protein": 82.0,
+        "carbs": 6.1,
+        "fat": 0.9,
+        "sugars": 1.9,
+        "fiber": null,
+        "saturatedFat": 0.4,
+        "salt": 0.65
+      },
+      "price": 503.99,
+      "vegan": null
+    },
+    {
+      "name": "Grass-Fed Impact Whey Isolate – Wild Strawberry (naturally derived sweeteners)",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/grass-fed-impact-whey-isolate/16795191/",
+      "ean": null,
+      "quantity": "1 kg",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 363.0,
+        "protein": 83.0,
+        "carbs": 5.6,
+        "fat": 1.0,
+        "sugars": 2.7,
+        "fiber": null,
+        "saturatedFat": 0.2,
+        "salt": 0.65
+      },
+      "price": 439.99,
+      "vegan": null
+    },
+    {
+      "name": "Białko Serwatkowe Elite – Natural Chocolate (Informed Sport)",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/bialko-serwatkowe-elite/11243021/",
+      "ean": "5059883485638",
+      "quantity": "1 kg",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 371.0,
+        "protein": 70.0,
+        "carbs": 6.7,
+        "fat": 6.5,
+        "sugars": 4.7,
+        "fiber": null,
+        "saturatedFat": 4.0,
+        "salt": 0.41
+      },
+      "price": 227.99,
+      "vegan": null
+    },
+    {
+      "name": "Essential Whey Protein – Truskawka z Kremem",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/essential-whey-protein/11052699/",
+      "ean": "5059883476544",
+      "quantity": "500 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 437.0,
+        "protein": 70.0,
+        "carbs": 2.4,
+        "fat": 17.0,
+        "sugars": 0.9,
+        "fiber": null,
+        "saturatedFat": 9.7,
+        "salt": 0.23
+      },
+      "price": 137.99,
+      "vegan": null
+    },
+    {
+      "name": "THE Whey – Słony Karmel",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/the-whey/11353515/",
+      "ean": "5060746521820",
+      "quantity": "1,02 kg",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 368.0,
+        "protein": 74.0,
+        "carbs": 7.9,
+        "fat": 4.3,
+        "sugars": 3.6,
+        "fiber": null,
+        "saturatedFat": 2.6,
+        "salt": 2.0
+      },
+      "price": 502.99,
+      "vegan": null
+    },
+    {
+      "name": "Hydrolizat Białka Serwatkowego – Bez smaku",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/hydrolizat-bialka-serwatkowego/12456583/",
+      "ean": "5056307390837",
+      "quantity": "1 kg",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 366.7,
+        "protein": 80.0,
+        "carbs": 5.3,
+        "fat": 1.7,
+        "sugars": null,
+        "fiber": null,
+        "saturatedFat": null,
+        "salt": null
+      },
+      "price": 275.99,
+      "vegan": null,
+      "computed": true
+    },
+    {
+      "name": "Impact Diet Whey – Naturalna wanilia",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/impact-diet-whey/10530657/",
+      "ean": "5059883479583",
+      "quantity": "420 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 359.0,
+        "protein": 59.0,
+        "carbs": 13.0,
+        "fat": 6.1,
+        "sugars": 4.6,
+        "fiber": 7.9,
+        "saturatedFat": 2.6,
+        "salt": 0.35
+      },
+      "price": 143.99,
+      "vegan": null
+    },
+    {
+      "name": "Izolat Białka Serwatkowego Clear – Lemoniada i malina",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/izolat-bialka-serwatkowego-clear/12081395/",
+      "ean": "5059883173832",
+      "quantity": "500 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 331.0,
+        "protein": 79.0,
+        "carbs": 3.1,
+        "fat": 0.0,
+        "sugars": 0.5,
+        "fiber": null,
+        "saturatedFat": 0.1,
+        "salt": 0.09
+      },
+      "price": 330.99,
+      "vegan": null
+    },
+    {
+      "name": "Izolat Białka Serwatkowego Clear – Raspberry & Lemon - Less Sweet",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/izolat-bialka-serwatkowego-clear/12081395/?variation=16111659",
+      "ean": "5059883482835",
+      "quantity": "420 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 330.0,
+        "protein": 70.0,
+        "carbs": 11.0,
+        "fat": 0.5,
+        "sugars": 1.9,
+        "fiber": null,
+        "saturatedFat": 0.0,
+        "salt": 1.0
+      },
+      "price": 260.99,
+      "vegan": null
+    },
+    {
+      "name": "Clear Whey Splash – Splash Ananasa",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/clear-whey-splash/16111658/",
+      "ean": null,
+      "quantity": "390 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 330.0,
+        "protein": 77.0,
+        "carbs": 5.1,
+        "fat": 0.5,
+        "sugars": 0.9,
+        "fiber": null,
+        "saturatedFat": 0.1,
+        "salt": 1.1
+      },
+      "price": 260.99,
+      "vegan": null
+    },
+    {
+      "name": "Clear Whey Electrolyte – Różowy Grejpfrut",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/clear-whey-electrolyte/12869895/",
+      "ean": "5060746509989",
+      "quantity": "20 x 16 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 310.0,
+        "protein": 70.0,
+        "carbs": 7.1,
+        "fat": 0.5,
+        "sugars": 0.8,
+        "fiber": null,
+        "saturatedFat": 0.1,
+        "salt": 2.7
+      },
+      "price": 171.99,
+      "vegan": null
+    },
+    {
+      "name": "Clear Whey Gainer – Jabłko",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/clear-whey-gainer/13096892/",
+      "ean": "5060746526603",
+      "quantity": "1,98 kg",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 366.0,
+        "protein": 28.0,
+        "carbs": 52.0,
+        "fat": 5.3,
+        "sugars": 0.7,
+        "fiber": null,
+        "saturatedFat": 5.2,
+        "salt": 0.04
+      },
+      "price": 307.99,
+      "vegan": null
+    },
+    {
+      "name": "Clear Protein | Whey & Collagen – Lemoniada i malina",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/clear-protein-whey-collagen/17263290/",
+      "ean": "5059883511597",
+      "quantity": "500 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 355.0,
+        "protein": 85.0,
+        "carbs": 3.4,
+        "fat": 0.0,
+        "sugars": 0.0,
+        "fiber": null,
+        "saturatedFat": 0.0,
+        "salt": 0.25
+      },
+      "price": 282.99,
+      "vegan": null
+    },
+    {
+      "name": "Clear Whey Protein and Collagen Plus – Cherry Raspberry",
+      "brand": "Myvitamins",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/clear-whey-protein-and-collagen-plus/17709010/",
+      "ean": "5059883569185",
+      "quantity": "486 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 345.0,
+        "protein": 70.0,
+        "carbs": 14.0,
+        "fat": 0.5,
+        "sugars": 4.7,
+        "fiber": 2.3,
+        "saturatedFat": 0.5,
+        "salt": 0.51
+      },
+      "price": 239.99,
+      "vegan": null
+    },
+    {
+      "name": "Klarowne białko wegańskie – Jelly Belly® – Raspberry Mojito",
+      "brand": "Myvegan",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/klarowne-bialko-weganskie-jelly-belly/12650592/",
+      "ean": "5060746510190",
+      "quantity": "320 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 380.0,
+        "protein": 63.0,
+        "carbs": 17.0,
+        "fat": 6.3,
+        "sugars": 4.9,
+        "fiber": 1.4,
+        "saturatedFat": 0.0,
+        "salt": 3.7
+      },
+      "price": 208.99,
+      "vegan": true
+    },
+    {
+      "name": "Białko Serwatkowe + Kolagen – Wanilia",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/bialko-serwatkowe-kolagen/17725536/",
+      "ean": "5059883572192",
+      "quantity": "750 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 386.0,
+        "protein": 79.0,
+        "carbs": 10.0,
+        "fat": 3.0,
+        "sugars": 2.9,
+        "fiber": null,
+        "saturatedFat": 1.8,
+        "salt": 0.41
+      },
+      "price": 249.99,
+      "vegan": null
+    },
+    {
+      "name": "Białko Serwatkowe + Kolagen – Bez smaku",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/bialko-serwatkowe-kolagen/17725536/?variation=17725539",
+      "ean": "5059883572123",
+      "quantity": "345 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 388.0,
+        "protein": 87.0,
+        "carbs": 3.1,
+        "fat": 3.3,
+        "sugars": 2.7,
+        "fiber": null,
+        "saturatedFat": 2.0,
+        "salt": 0.44
+      },
+      "price": 150.99,
+      "vegan": null
+    },
+    {
+      "name": "Kazeina o spowolnionym uwalnianiu – Chocolate",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/kazeina-o-spowolnionym-uwalnianiu/10798909/",
+      "ean": "5059883598437",
+      "quantity": "900 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 347.0,
+        "protein": 79.0,
+        "carbs": 3.8,
+        "fat": 1.6,
+        "sugars": 2.9,
+        "fiber": null,
+        "saturatedFat": 0.9,
+        "salt": 0.25
+      },
+      "price": 276.99,
+      "vegan": null
+    },
+    {
+      "name": "Totalna Mieszanka Białek – Chocolate",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/totalna-mieszanka-bialek/12456603/",
+      "ean": "5056307390912",
+      "quantity": "1 kg",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 346.5,
+        "protein": 77.5,
+        "carbs": 4.0,
+        "fat": 3.5,
+        "sugars": null,
+        "fiber": null,
+        "saturatedFat": null,
+        "salt": null
+      },
+      "price": 330.99,
+      "vegan": null,
+      "computed": true
+    },
+    {
+      "name": "Sproszkowane białko jajeczne – Bez smaku",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/sproszkowane-bialko-jajeczne/10529687/",
+      "ean": "5055534302149",
+      "quantity": "2,5 kg",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 343.0,
+        "protein": 77.0,
+        "carbs": 8.1,
+        "fat": 0.0,
+        "sugars": 8.1,
+        "fiber": null,
+        "saturatedFat": 0.0,
+        "salt": 0.17
+      },
+      "price": 984.99,
+      "vegan": null
+    },
+    {
+      "name": "Izolat Białka Grochu – Słony Karmel",
+      "brand": "Myvegan",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/izolat-bialka-grochu/10530136/",
+      "ean": "5059883598697",
+      "quantity": "480 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 368.0,
+        "protein": 65.0,
+        "carbs": 9.9,
+        "fat": 6.7,
+        "sugars": 0.7,
+        "fiber": 3.7,
+        "saturatedFat": 1.1,
+        "salt": 2.5
+      },
+      "price": 65.99,
+      "vegan": true
+    },
+    {
+      "name": "Izolat Białka Grochu – Bez smaku",
+      "brand": "Myvegan",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/izolat-bialka-grochu/10530136/?variation=17887500",
+      "ean": "5059883598611",
+      "quantity": "900 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 386.0,
+        "protein": 76.0,
+        "carbs": 2.9,
+        "fat": 7.0,
+        "sugars": 0.5,
+        "fiber": 2.7,
+        "saturatedFat": 1.2,
+        "salt": 1.9
+      },
+      "price": 124.49,
+      "vegan": true
+    },
+    {
+      "name": "Izolat Białka Sojowego – Bez smaku",
+      "brand": "Myvegan",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/izolat-bialka-sojowego/12456512/",
+      "ean": "5056307390424",
+      "quantity": "1 kg",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 360.0,
+        "protein": 90.0,
+        "carbs": 1.8,
+        "fat": 1.5,
+        "sugars": 0.5,
+        "fiber": null,
+        "saturatedFat": 0.5,
+        "salt": 0.5
+      },
+      "price": 220.99,
+      "vegan": true
+    },
+    {
+      "name": "Impact Plant Protein – Turmeric Latte",
+      "brand": "Myvegan",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/impact-plant-protein/11776868/",
+      "ean": "5056307360205",
+      "quantity": "500 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 391.0,
+        "protein": 72.0,
+        "carbs": 7.4,
+        "fat": 7.2,
+        "sugars": 0.6,
+        "fiber": 3.4,
+        "saturatedFat": 1.3,
+        "salt": 1.8
+      },
+      "price": 87.54,
+      "vegan": true
+    },
+    {
+      "name": "Plant Protein Superblend – Caramel",
+      "brand": "Myvegan",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/plant-protein-superblend/13972449/",
+      "ean": "5059883239200",
+      "quantity": "6 x 28 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 376.0,
+        "protein": 74.0,
+        "carbs": 15.0,
+        "fat": 1.6,
+        "sugars": 1.3,
+        "fiber": 2.9,
+        "saturatedFat": 0.3,
+        "salt": 0.0
+      },
+      "price": 125.99,
+      "vegan": true
+    },
+    {
+      "name": "Origin Protein – Chocolate Chip Cookie",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/origin-protein/15245849/",
+      "ean": "5059883470504",
+      "quantity": "1,2 kg",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 319.0,
+        "protein": 62.0,
+        "carbs": 6.9,
+        "fat": 4.5,
+        "sugars": 3.9,
+        "fiber": null,
+        "saturatedFat": 2.7,
+        "salt": 0.33
+      },
+      "price": 330.99,
+      "vegan": null
+    },
+    {
+      "name": "Essential Shakes – Vanilla Honeycomb",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/essential-shakes/16670299/",
+      "ean": "5059883523828",
+      "quantity": "500 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 399.0,
+        "protein": 62.0,
+        "carbs": 15.0,
+        "fat": 10.0,
+        "sugars": 12.0,
+        "fiber": null,
+        "saturatedFat": 6.0,
+        "salt": 0.44
+      },
+      "price": 125.99,
+      "vegan": null
+    },
+    {
+      "name": "Breakfast Smoothie – Borówka i Jabłko",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/breakfast-smoothie/13251950/",
+      "ean": "5059883110349",
+      "quantity": "500 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 381.0,
+        "protein": 57.0,
+        "carbs": 18.0,
+        "fat": 6.8,
+        "sugars": 6.8,
+        "fiber": 9.3,
+        "saturatedFat": 3.1,
+        "salt": 0.48
+      },
+      "price": 205.99,
+      "vegan": null
+    },
+    {
+      "name": "Advanced Weight Gainer – Truskawki z Kremem",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/advanced-weight-gainer/12457104/?variation=14853734",
+      "ean": "5059883363059",
+      "quantity": "2,5 kg",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 402.0,
+        "protein": 28.0,
+        "carbs": 50.0,
+        "fat": 6.2,
+        "sugars": 14.0,
+        "fiber": 0.0,
+        "saturatedFat": 0.5,
+        "salt": 0.3
+      },
+      "price": 319.0,
+      "vegan": null
+    },
+    {
+      "name": "Mieszanka Weight Gainer – Łagodna czekolada",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/mieszanka-weight-gainer/12456615/",
+      "ean": "5056307391025",
+      "quantity": "2,5 kg",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 380.1,
+        "protein": 27.9,
+        "carbs": 53.5,
+        "fat": 5.8,
+        "sugars": null,
+        "fiber": null,
+        "saturatedFat": null,
+        "salt": null
+      },
+      "price": 320.99,
+      "vegan": null
+    },
+    {
+      "name": "Origin Mass Gainer – Czekoladowy Sundae",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/origin-mass-gainer/15607337/",
+      "ean": "5059883476896",
+      "quantity": "2,74 kg",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 365.0,
+        "protein": 18.0,
+        "carbs": 66.0,
+        "fat": 2.9,
+        "sugars": 4.5,
+        "fiber": 1.5,
+        "saturatedFat": 1.3,
+        "salt": 0.36
+      },
+      "price": 299.99,
+      "vegan": null
+    },
+    {
+      "name": "Hydrolizowany Izolat Białka Wołowego – Czekolada",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/hydrolizowany-izolat-bialka-wolowego/10902405/",
+      "ean": "5059883592510",
+      "quantity": "30 x 29 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 397.0,
+        "protein": 87.0,
+        "carbs": 3.3,
+        "fat": 3.2,
+        "sugars": 0.5,
+        "fiber": 4.0,
+        "saturatedFat": 1.3,
+        "salt": 0.69
+      },
+      "price": 279.99,
+      "vegan": null
+    },
+    {
+      "name": "Kolagenowe Białko w Proszku – Wanilia",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/kolagenowe-bialko-w-proszku/11067704/",
+      "ean": "5055936802599",
+      "quantity": "1 kg",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 359.0,
+        "protein": 86.0,
+        "carbs": 4.2,
+        "fat": 0.0,
+        "sugars": 0.6,
+        "fiber": null,
+        "saturatedFat": 0.0,
+        "salt": 0.48
+      },
+      "price": 286.99,
+      "vegan": false
+    },
+    {
+      "name": "Kolagenowe Białko w Proszku – Czekolada",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/kolagenowe-bialko-w-proszku/11067704/?variation=17812388",
+      "ean": "5059883595856",
+      "quantity": "630 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 400.0,
+        "protein": 96.0,
+        "carbs": 2.2,
+        "fat": 0.0,
+        "sugars": 0.0,
+        "fiber": null,
+        "saturatedFat": 0.3,
+        "salt": 0.42
+      },
+      "price": 286.99,
+      "vegan": false
+    },
+    {
+      "name": "Collagen Powder – Bez smaku",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/collagen-powder/12865492/",
+      "ean": "5060746514631",
+      "quantity": "30 porcji",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 360.0,
+        "protein": 90.0,
+        "carbs": 0.0,
+        "fat": 0.0,
+        "sugars": 0.0,
+        "fiber": null,
+        "saturatedFat": 0.0,
+        "salt": 0.1
+      },
+      "price": 251.99,
+      "vegan": null
+    },
+    {
+      "name": "Collagen Powder – Winogron",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/collagen-powder/12865492/?variation=12917287",
+      "ean": "5060746514648",
+      "quantity": "30 porcji",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 323.0,
+        "protein": 78.0,
+        "carbs": 2.7,
+        "fat": 0.0,
+        "sugars": 0.0,
+        "fiber": null,
+        "saturatedFat": 0.0,
+        "salt": 1.8
+      },
+      "price": 251.99,
+      "vegan": null
+    },
+    {
+      "name": "Bone Broth Protein – Beef & Vegetables",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/bone-broth-protein/15980633/",
+      "ean": "5059883482316",
+      "quantity": "300 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 377.0,
+        "protein": 61.0,
+        "carbs": 24.0,
+        "fat": 3.4,
+        "sugars": 3.8,
+        "fiber": null,
+        "saturatedFat": 0.6,
+        "salt": 3.8
+      },
+      "price": 93.99,
+      "vegan": false
+    },
+    {
+      "name": "Bone Broth Protein – Bez smaku",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/bone-broth-protein/15980633/?variation=17620551",
+      "ean": "5059883536019",
+      "quantity": "300 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 401.0,
+        "protein": 88.0,
+        "carbs": 0.9,
+        "fat": 4.7,
+        "sugars": 0.0,
+        "fiber": null,
+        "saturatedFat": 0.8,
+        "salt": 2.7
+      },
+      "price": 93.99,
+      "vegan": false
+    },
+    {
+      "name": "Protein Iced Coffee – Iced Matcha",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/protein-iced-coffee/17631051/",
+      "ean": "5059883536552",
+      "quantity": "640 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 374.0,
+        "protein": 63.0,
+        "carbs": 16.0,
+        "fat": 5.5,
+        "sugars": 11.0,
+        "fiber": null,
+        "saturatedFat": 3.4,
+        "salt": 0.42
+      },
+      "price": 242.99,
+      "vegan": null
+    },
+    {
+      "name": "100% Błyskawiczne Płatki Owsiane – Bez smaku",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/100-blyskawiczne-platki-owsiane/12456376/?variation=12456378",
+      "ean": "5056307389725",
+      "quantity": "1 kg",
+      "category": "sniadania",
+      "nutrition": {
+        "kcal": 388.0,
+        "protein": 8.5,
+        "carbs": 70.7,
+        "fat": 7.9,
+        "sugars": 0.8,
+        "fiber": 8.8,
+        "saturatedFat": 1.3,
+        "salt": 0.075
+      },
+      "price": 49.0,
+      "vegan": true
+    },
+    {
+      "name": "100% Płatki Owsiane – Bez smaku",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/100-platki-owsiane/12457306/",
+      "ean": "5056307396563",
+      "quantity": "2,5 kg",
+      "category": "sniadania",
+      "nutrition": {
+        "kcal": 367.0,
+        "protein": 12.0,
+        "carbs": 56.0,
+        "fat": 8.4,
+        "sugars": 1.0,
+        "fiber": null,
+        "saturatedFat": 1.3,
+        "salt": 0.0
+      },
+      "price": 59.0,
+      "vegan": true
+    },
+    {
+      "name": "Perfect Protein Oats – Apple Pie",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/perfect-protein-oats/13636521/",
+      "ean": "5059883175638",
+      "quantity": "1 kg",
+      "category": "sniadania",
+      "nutrition": {
+        "kcal": 367.0,
+        "protein": 25.0,
+        "carbs": 41.0,
+        "fat": 8.0,
+        "sugars": 11.0,
+        "fiber": 15.0,
+        "saturatedFat": 1.8,
+        "salt": 0.45
+      },
+      "price": 109.0,
+      "vegan": null
+    },
+    {
+      "name": "Białkowa granola – Czekolada i karmel",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/bialkowa-granola/11091293/",
+      "ean": "5055936806672",
+      "quantity": "750 g",
+      "category": "sniadania",
+      "nutrition": {
+        "kcal": 403.0,
+        "protein": 37.0,
+        "carbs": 39.0,
+        "fat": 9.9,
+        "sugars": 19.0,
+        "fiber": 5.8,
+        "saturatedFat": 1.7,
+        "salt": 0.9
+      },
+      "price": 139.0,
+      "vegan": null
+    },
+    {
+      "name": "Cream of Rice – Cinnamon Swirl",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/cream-of-rice/13337581/",
+      "ean": "5059883417356",
+      "quantity": "1,04 kg",
+      "category": "sniadania",
+      "nutrition": {
+        "kcal": 370.0,
+        "protein": 6.3,
+        "carbs": 85.0,
+        "fat": 0.6,
+        "sugars": 0.0,
+        "fiber": null,
+        "saturatedFat": 0.2,
+        "salt": 0.01
+      },
+      "price": 188.99,
+      "vegan": true
+    },
+    {
+      "name": "Mieszanka na Białkowe Naleśniki – Cinnamon & Sugar",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/mieszanka-na-bialkowe-nalesniki/10867261/?variation=11720955",
+      "ean": "5056185786760",
+      "quantity": "200 g",
+      "category": "maki",
+      "nutrition": {
+        "kcal": 383.0,
+        "protein": 65.0,
+        "carbs": 17.0,
+        "fat": 6.0,
+        "sugars": 5.0,
+        "fiber": null,
+        "saturatedFat": 4.2,
+        "salt": 1.6
+      },
+      "price": 64.0,
+      "vegan": null
+    },
+    {
+      "name": "Protein Mug Cake – Słony Karmel",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/protein-mug-cake/11308926/",
+      "ean": "5055936868342",
+      "quantity": "500 g",
+      "category": "maki",
+      "nutrition": {
+        "kcal": 374.0,
+        "protein": 51.0,
+        "carbs": 29.0,
+        "fat": 4.8,
+        "sugars": 6.3,
+        "fiber": 6.2,
+        "saturatedFat": 1.3,
+        "salt": 1.4
+      },
+      "price": 79.0,
+      "vegan": null
+    },
+    {
+      "name": "All-Natural Peanut Butter – Oryginalny - Crunchy",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/all-natural-peanut-butter/10530743/",
+      "ean": "5055534301180",
+      "quantity": "1 kg",
+      "category": "smarowidla",
+      "nutrition": {
+        "kcal": 624.0,
+        "protein": 28.0,
+        "carbs": 14.0,
+        "fat": 49.0,
+        "sugars": 5.0,
+        "fiber": 7.9,
+        "saturatedFat": 7.2,
+        "salt": 0.02
+      },
+      "price": 79.0,
+      "vegan": true
+    },
+    {
+      "name": "All-Natural Peanut Butter – Kokosowe - Czyste",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/all-natural-peanut-butter/10530743/?variation=11194403",
+      "ean": "5055936830226",
+      "quantity": "1 kg",
+      "category": "smarowidla",
+      "nutrition": {
+        "kcal": 607.0,
+        "protein": 24.0,
+        "carbs": 13.0,
+        "fat": 49.0,
+        "sugars": 7.9,
+        "fiber": 9.2,
+        "saturatedFat": 19.0,
+        "salt": 0.05
+      },
+      "price": 79.0,
+      "vegan": true
+    },
+    {
+      "name": "Naturalne Masło Migdałowe – Oryginalny - Crunchy",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/naturalne-maslo-migdalowe/10575082/?variation=10864556",
+      "ean": "5055534325117",
+      "quantity": "1 kg",
+      "category": "smarowidla",
+      "nutrition": {
+        "kcal": 653.0,
+        "protein": 25.0,
+        "carbs": 6.5,
+        "fat": 56.0,
+        "sugars": 4.0,
+        "fiber": 12.0,
+        "saturatedFat": 4.4,
+        "salt": 0.0
+      },
+      "price": 159.0,
+      "vegan": true
+    },
+    {
+      "name": "Choc Nut Butter – Czekolada",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/choc-nut-butter/15354310/",
+      "ean": "5059883472263",
+      "quantity": "400 g",
+      "category": "smarowidla",
+      "nutrition": {
+        "kcal": 587.0,
+        "protein": 18.0,
+        "carbs": 31.0,
+        "fat": 42.0,
+        "sugars": 13.0,
+        "fiber": 4.5,
+        "saturatedFat": 13.0,
+        "salt": 0.03
+      },
+      "price": 39.0,
+      "vegan": true
+    },
+    {
+      "name": "Masło Orzechowe w proszku – Oryginalny",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/maslo-orzechowe-w-proszku/11413392/",
+      "ean": "5056104535141",
+      "quantity": "180 g",
+      "category": "smarowidla",
+      "nutrition": {
+        "kcal": 398.0,
+        "protein": 48.0,
+        "carbs": 26.0,
+        "fat": 9.4,
+        "sugars": 17.0,
+        "fiber": 9.8,
+        "saturatedFat": 1.3,
+        "salt": 0.84
+      },
+      "price": 59.0,
+      "vegan": true
+    },
+    {
+      "name": "Masło Orzechowe w proszku – Stevia",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/maslo-orzechowe-w-proszku/11413392/?variation=11413394",
+      "ean": "5056104535158",
+      "quantity": "180 g",
+      "category": "smarowidla",
+      "nutrition": {
+        "kcal": 393.0,
+        "protein": 56.0,
+        "carbs": 18.0,
+        "fat": 8.2,
+        "sugars": 7.8,
+        "fiber": 11.0,
+        "saturatedFat": 1.2,
+        "salt": 1.2
+      },
+      "price": 59.0,
+      "vegan": true
+    },
+    {
+      "name": "Krople FlavDrops™ – Banan",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/krople-flavdrops/10530471/",
+      "ean": "5055534306475",
+      "quantity": "50 ml",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 293.0,
+        "protein": 0.0,
+        "carbs": 9.6,
+        "fat": 0.0,
+        "sugars": 0.0,
+        "fiber": null,
+        "saturatedFat": 0.1,
+        "salt": 0.0
+      },
+      "price": 49.0,
+      "vegan": true
+    },
+    {
+      "name": "FlavPowders – Czekoladowe Brownie",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/flavpowders/13902179/",
+      "ean": "5059883235882",
+      "quantity": "65 x 3 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 330.0,
+        "protein": 10.0,
+        "carbs": 30.0,
+        "fat": 11.0,
+        "sugars": 17.0,
+        "fiber": 35.0,
+        "saturatedFat": 6.8,
+        "salt": 0.13
+      },
+      "price": 79.0,
+      "vegan": true
+    },
+    {
+      "name": "6 Warstwowy Baton Proteinowy – Triple Chocolate Fudge",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/6-warstwowy-baton-proteinowy/12116519/",
+      "ean": "5059883177434",
+      "quantity": "6 x 60 g",
+      "category": "batony",
+      "nutrition": {
+        "kcal": 354.0,
+        "protein": 33.0,
+        "carbs": 34.0,
+        "fat": 10.0,
+        "sugars": 3.2,
+        "fiber": 11.0,
+        "saturatedFat": 5.8,
+        "salt": 0.35
+      },
+      "price": 105.0,
+      "vegan": false
+    },
+    {
+      "name": "Baton Impact Protein Bar – Ciemna Czekolada z Solą Morską",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/baton-impact-protein-bar/13103437/",
+      "ean": "5059883113616",
+      "quantity": "6 x 64 g",
+      "category": "batony",
+      "nutrition": {
+        "kcal": 362.0,
+        "protein": 31.0,
+        "carbs": 30.0,
+        "fat": 14.0,
+        "sugars": 2.4,
+        "fiber": 12.0,
+        "saturatedFat": 7.2,
+        "salt": 0.7
+      },
+      "price": 79.0,
+      "vegan": false
+    },
+    {
+      "name": "Baton Oatbakes – Chocolate Chip",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/baton-oatbakes/12191274/",
+      "ean": "5056307325341",
+      "quantity": "12 x 75 g",
+      "category": "batony",
+      "nutrition": {
+        "kcal": 360.0,
+        "protein": 24.0,
+        "carbs": 45.0,
+        "fat": 12.0,
+        "sugars": 5.0,
+        "fiber": 3.0,
+        "saturatedFat": 4.8,
+        "salt": 0.7
+      },
+      "price": 135.0,
+      "vegan": null
+    },
+    {
+      "name": "Batonik Myprotein – Hazelnut Wafer",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/batonik-myprotein/15844506/",
+      "ean": "5059883480145",
+      "quantity": "12 x 65 g",
+      "category": "batony",
+      "nutrition": {
+        "kcal": 404.0,
+        "protein": 25.0,
+        "carbs": 39.0,
+        "fat": 17.0,
+        "sugars": 10.0,
+        "fiber": 3.0,
+        "saturatedFat": 8.9,
+        "salt": 0.98
+      },
+      "price": 125.0,
+      "vegan": null
+    },
+    {
+      "name": "Białkowy baton Flapjack – Traditional Oat",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/bialkowy-baton-flapjack/11147245/",
+      "ean": "5055936810228",
+      "quantity": "12 x 80 g",
+      "category": "batony",
+      "nutrition": {
+        "kcal": 428.0,
+        "protein": 25.0,
+        "carbs": 46.0,
+        "fat": 14.0,
+        "sugars": 24.0,
+        "fiber": 8.8,
+        "saturatedFat": 5.7,
+        "salt": 0.86
+      },
+      "price": 109.0,
+      "vegan": null
+    },
+    {
+      "name": "Lean Layered Bar – Chocolate and Cookie Dough",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/lean-layered-bar/13951658/",
+      "ean": "5059883239774",
+      "quantity": "3 x 40 g",
+      "category": "batony",
+      "nutrition": {
+        "kcal": 342.0,
+        "protein": 37.0,
+        "carbs": 29.0,
+        "fat": 8.1,
+        "sugars": 3.1,
+        "fiber": 14.0,
+        "saturatedFat": 3.7,
+        "salt": 0.48
+      },
+      "price": 39.0,
+      "vegan": false
+    },
+    {
+      "name": "Peanut Butter Bar – Masło orzechowe",
+      "brand": "Myvegan",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/peanut-butter-bar/14566174/",
+      "ean": "5059883304564",
+      "quantity": "12 x 38 g",
+      "category": "batony",
+      "nutrition": {
+        "kcal": 507.0,
+        "protein": 21.0,
+        "carbs": 37.0,
+        "fat": 27.0,
+        "sugars": 8.7,
+        "fiber": 20.0,
+        "saturatedFat": 13.0,
+        "salt": 0.52
+      },
+      "price": 99.0,
+      "vegan": true
+    },
+    {
+      "name": "Crispy Square – Marshmallow",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/crispy-square/14853231/",
+      "ean": "5059883362991",
+      "quantity": "6 x 30 g",
+      "category": "batony",
+      "nutrition": {
+        "kcal": 323.0,
+        "protein": 20.0,
+        "carbs": 43.0,
+        "fat": 4.4,
+        "sugars": 19.0,
+        "fiber": 17.0,
+        "saturatedFat": 3.1,
+        "salt": 0.58
+      },
+      "price": 49.0,
+      "vegan": null
+    },
+    {
+      "name": "Toffee Crunch – Karmel",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/toffee-crunch/13841282/",
+      "ean": "5059883233635",
+      "quantity": "12 x 30 g",
+      "category": "batony",
+      "nutrition": {
+        "kcal": 371.0,
+        "protein": 15.0,
+        "carbs": 34.0,
+        "fat": 17.0,
+        "sugars": 6.0,
+        "fiber": 23.0,
+        "saturatedFat": 11.0,
+        "salt": 0.7
+      },
+      "price": 154.0,
+      "vegan": null
+    },
+    {
+      "name": "Wafelki Białkowe – Czekolada",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/wafelki-bialkowe/10961185/",
+      "ean": "5055534338308",
+      "quantity": "10 szt.",
+      "category": "batony",
+      "nutrition": {
+        "kcal": 466.0,
+        "protein": 36.0,
+        "carbs": 31.0,
+        "fat": 22.0,
+        "sugars": 13.0,
+        "fiber": 2.4,
+        "saturatedFat": 14.0,
+        "salt": 0.5
+      },
+      "price": 119.0,
+      "vegan": false
+    },
+    {
+      "name": "Pop Rolls – Pistachio",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/pop-rolls/12590683/",
+      "ean": "5059883471600",
+      "quantity": "6 x 27 g",
+      "category": "slodycze",
+      "nutrition": {
+        "kcal": 350.0,
+        "protein": 29.0,
+        "carbs": 36.0,
+        "fat": 8.5,
+        "sugars": 3.8,
+        "fiber": 14.0,
+        "saturatedFat": 4.7,
+        "salt": 0.28
+      },
+      "price": 49.0,
+      "vegan": null
+    },
+    {
+      "name": "Baked Brownie – Chocolate Chunk",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/baked-brownie/13418460/",
+      "ean": "5059883179193",
+      "quantity": "6 x 75 g",
+      "category": "slodycze",
+      "nutrition": {
+        "kcal": 379.0,
+        "protein": 31.0,
+        "carbs": 32.0,
+        "fat": 12.0,
+        "sugars": 4.9,
+        "fiber": 10.0,
+        "saturatedFat": 5.1,
+        "salt": 0.37
+      },
+      "price": 79.0,
+      "vegan": false
+    },
+    {
+      "name": "Baked Brownie – White Chocolate Chunk",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/baked-brownie/13418460/?variation=13418462",
+      "ean": "5059883116600",
+      "quantity": "12 x 75 g",
+      "category": "slodycze",
+      "nutrition": {
+        "kcal": 391.0,
+        "protein": 35.0,
+        "carbs": 38.0,
+        "fat": 11.0,
+        "sugars": 5.7,
+        "fiber": 0.7,
+        "saturatedFat": 3.0,
+        "salt": 0.45
+      },
+      "price": 111.94,
+      "vegan": false
+    },
+    {
+      "name": "Białkowe Ciasteczko – Czekolada i Pomarańcza",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/bialkowe-ciasteczko/10530674/",
+      "ean": "5055534309568",
+      "quantity": "12 x 75 g",
+      "category": "slodycze",
+      "nutrition": {
+        "kcal": 427.0,
+        "protein": 50.0,
+        "carbs": 26.0,
+        "fat": 13.0,
+        "sugars": 9.7,
+        "fiber": 2.3,
+        "saturatedFat": 5.2,
+        "salt": 0.7
+      },
+      "price": 135.0,
+      "vegan": false
+    },
+    {
+      "name": "Białkowe Ciasteczko – Dark Chocolate and Berry (lean)",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/bialkowe-ciasteczko/10530674/?variation=11200868",
+      "ean": "5055936830363",
+      "quantity": "12 x 50 g",
+      "category": "slodycze",
+      "nutrition": {
+        "kcal": 380.0,
+        "protein": 50.0,
+        "carbs": 27.0,
+        "fat": 7.2,
+        "sugars": 3.1,
+        "fiber": 3.0,
+        "saturatedFat": 3.0,
+        "salt": 0.75
+      },
+      "price": 135.0,
+      "vegan": false
+    },
+    {
+      "name": "Białkowe Pieczone Ciasteczko – White Chocolate and Raspberry (Oat)",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/bialkowe-pieczone-ciasteczko/11214993/",
+      "ean": "5059883568188",
+      "quantity": "6 x 65 g",
+      "category": "slodycze",
+      "nutrition": {
+        "kcal": 397.0,
+        "protein": 23.0,
+        "carbs": 47.0,
+        "fat": 11.0,
+        "sugars": 18.0,
+        "fiber": 10.0,
+        "saturatedFat": 2.4,
+        "salt": 0.37
+      },
+      "price": 89.0,
+      "vegan": null
+    },
+    {
+      "name": "Białkowe Pieczone Ciasteczko – Chocolate Chip (Gooey Filled)",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/bialkowe-pieczone-ciasteczko/11214993/?variation=11865616",
+      "ean": "5056104587157",
+      "quantity": "12 x 75 g",
+      "category": "slodycze",
+      "nutrition": {
+        "kcal": 343.0,
+        "protein": 27.0,
+        "carbs": 39.0,
+        "fat": 13.0,
+        "sugars": 1.2,
+        "fiber": 6.7,
+        "saturatedFat": 6.3,
+        "salt": 0.7
+      },
+      "price": 165.0,
+      "vegan": null
+    },
+    {
+      "name": "Białkowe Pieczone Ciasteczko – Chocolate Salted Caramel (Gooey Filled)",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/bialkowe-pieczone-ciasteczko/11214993/?variation=12232830",
+      "ean": "5056307348357",
+      "quantity": "12 x 75 g",
+      "category": "slodycze",
+      "nutrition": {
+        "kcal": 330.0,
+        "protein": 18.0,
+        "carbs": 49.0,
+        "fat": 11.0,
+        "sugars": 3.5,
+        "fiber": 6.2,
+        "saturatedFat": 5.7,
+        "salt": 1.0
+      },
+      "price": 159.0,
+      "vegan": true
+    },
+    {
+      "name": "Białkowe Pieczone Ciasteczko – Ciastko podwójna czekolada",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/bialkowe-pieczone-ciasteczko/11214993/?variation=11214994",
+      "ean": "5055936839533",
+      "quantity": "12 x 75 g",
+      "category": "slodycze",
+      "nutrition": {
+        "kcal": 385.0,
+        "protein": 18.0,
+        "carbs": 50.0,
+        "fat": 12.0,
+        "sugars": 22.0,
+        "fiber": 5.2,
+        "saturatedFat": 5.2,
+        "salt": 0.7
+      },
+      "price": 139.0,
+      "vegan": true
+    },
+    {
+      "name": "Protein Pralines Share Bag – Słony Karmel",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/protein-pralines-share-bag/17707635/",
+      "ean": "5059883569154",
+      "quantity": "ok. 10 x 10 g",
+      "category": "slodycze",
+      "nutrition": {
+        "kcal": 485.0,
+        "protein": 25.0,
+        "carbs": 32.0,
+        "fat": 30.0,
+        "sugars": 18.0,
+        "fiber": null,
+        "saturatedFat": 19.0,
+        "salt": 0.49
+      },
+      "price": 29.99,
+      "vegan": null
+    },
+    {
+      "name": "Popped Protein Crisps – Sól i Ocet",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/popped-protein-crisps/12041688/",
+      "ean": "5055936830615",
+      "quantity": "6 x 25 g",
+      "category": "przekaski",
+      "nutrition": {
+        "kcal": 366.0,
+        "protein": 44.0,
+        "carbs": 17.0,
+        "fat": 10.0,
+        "sugars": 1.0,
+        "fiber": 16.0,
+        "saturatedFat": 1.1,
+        "salt": 5.7
+      },
+      "price": 59.0,
+      "vegan": true
+    },
+    {
+      "name": "Clear Protein Water – gotowy do spożycia napój (6-pak) – Herbata Brzoskwiniowa",
+      "brand": "Myprotein",
+      "url": "https://www.myprotein.pl/p/sports-nutrition/clear-protein-water-gotowy-do-spozycia-napoj-6-pak/13119648/",
+      "ean": "5059883098166",
+      "quantity": "6 x 500 ml",
+      "category": "napoje",
+      "nutrition": {
+        "kcal": 16.0,
+        "protein": 4.0,
+        "carbs": 0.0,
+        "fat": 0.0,
+        "sugars": 0.0,
+        "fiber": 0.0,
+        "saturatedFat": 0.0,
+        "salt": 0.0
+      },
+      "price": 99.0,
+      "vegan": null
+    }
+  ]
+}

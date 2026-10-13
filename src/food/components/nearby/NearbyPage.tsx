@@ -15,7 +15,7 @@ import { nearbyFromParams, nearbyToParams, type NearbyState } from '../../nearby
 import { RECIPES } from '../../recipes/catalog';
 import { chainsWithFood } from '../../recipes/chains';
 import { readyProducts } from '../../recipes/ready';
-import { bestVariant, needsStore, recipeIndex } from '../../recipes/resolve';
+import { availableStores, bestVariant, needsStore, recipeIndex } from '../../recipes/resolve';
 import { DataFooter } from '../common/DataFooter';
 import { ProductDetail } from '../common/ProductDetail';
 import { StatusScreen } from '../common/StatusScreen';
@@ -113,17 +113,23 @@ function Nearby({ dataset, products }: { dataset: Dataset; products: IndexedProd
   const store = state.store && byChain.has(state.store) ? state.store : null;
   const ranking = useMemo(() => (store ? [store] : chains.map((c) => c.chain)), [store, chains]);
 
-  // Każdy przepis z najbliższym sklepem, który ma wszystko; najbliższe najpierw.
+  // Każdy przepis z najbliższym sklepem, który ma wszystko; najbliższe najpierw. Tu kupuje się
+  // w jednym sklepie w pobliżu: koszyki karty to pojedyncze sieci — wybrana albo każda, która ma wszystko.
   const recipes = useMemo(() => {
     if (chains.length === 0) return [];
     return RECIPES.map((recipe) => ({ recipe, variant: bestVariant(recipe, candidates, ranking) }))
       .filter((r) => r.variant !== null)
       .map((r) => {
         const chain = r.variant?.store ? byChain.get(r.variant.store) : chains[0];
-        return { ...r, distance: chain?.nearest.distance ?? Infinity };
+        const baskets = needsStore(r.recipe)
+          ? availableStores(r.recipe, candidates, ranking).map((s) => [s])
+          : store
+            ? [[store]]
+            : [];
+        return { ...r, baskets, distance: chain?.nearest.distance ?? Infinity };
       })
       .sort((a, b) => a.distance - b.distance);
-  }, [chains, candidates, ranking, byChain]);
+  }, [chains, candidates, ranking, byChain, store]);
 
   const recipeCount = useMemo(() => {
     const counts = new Map<string, number>();
@@ -275,15 +281,14 @@ function Nearby({ dataset, products }: { dataset: Dataset; products: IndexedProd
           </div>
         ) : (
           <ul className="fd-rec-list">
-            {recipes.map(({ recipe }) => (
+            {recipes.map(({ recipe, baskets }) => (
               <li key={recipe.id}>
                 <RecipeCard
                   // Inny zestaw sieci zaczyna kartę od nowa: wybrany sklep i zamiany należały do poprzedniego.
                   key={ranking.join(',')}
                   recipe={recipe}
                   candidates={candidates}
-                  ranking={ranking}
-                  pageStore={store}
+                  baskets={baskets}
                   dict={dict}
                   onOpenProduct={open}
                   describeStore={describeStore}
