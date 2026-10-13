@@ -41,8 +41,19 @@ const isEan = (code: string | null): code is string => !!code && /^(\d{8}|\d{13}
 function codeOf(shop: ShopData, p: ShopProductData): string {
   if (isEan(p.ean)) return p.ean;
   const path = new URL(p.url).pathname.split('/').filter(Boolean);
-  return `${shop.id}-${keyOf(decodeURIComponent(path[path.length - 1] ?? p.name))}`;
+  const last = path[path.length - 1] ?? p.name;
+  let slug: string;
+  try {
+    slug = decodeURIComponent(last);
+  } catch {
+    // A stray "%" in an address: the raw text still makes a key.
+    slug = last;
+  }
+  return `${shop.id}-${keyOf(slug)}`;
 }
+
+/** The code every product of a shop gets in the dataset (exported for the data test). */
+export const productCode = codeOf;
 
 function priceOf(shop: ShopData, value: number | null): Price | null {
   if (value === null) return null;

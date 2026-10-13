@@ -2,7 +2,8 @@ import { describe, expect, test } from 'vitest';
 import { RECIPES } from '../recipes/catalog';
 import { recipeIndex } from '../recipes/resolve';
 import { indexProducts } from '../lib/search';
-import { DATASET, PRODUCTS as RAW } from '../test/fixtures';
+import { chainsWithFood } from '../recipes/chains';
+import { DATASET, PRODUCTS as RAW, makeProduct } from '../test/fixtures';
 import { buildPool } from './pool';
 
 const PRODUCTS = indexProducts(RAW, {});
@@ -43,5 +44,42 @@ describe('buildPool', () => {
     });
     expect(new Set(withCustom.map((f) => f.key)).size).toBe(withCustom.length);
     expect(withCustom.find((f) => f.key === 'custom:1')).toMatchObject({ atHome: true });
+  });
+
+  test('„Co teraz?” and the nearby chains leave out what is sold only online', () => {
+    const bar = (code: string, stores: string[]) =>
+      makeProduct({
+        code,
+        name: `Baton proteinowy ${code}`,
+        categories: ['en:protein-bars'],
+        nutrition: {
+          kcal: 380,
+          protein: 33,
+          carbs: 29,
+          fat: 16,
+          sugars: 3,
+          saturatedFat: null,
+          fiber: null,
+          salt: null,
+        },
+        stores,
+      });
+    const products = indexProducts([...RAW, bar('web', ['myprotein']), bar('both', ['rossmann', 'fitiron'])], {});
+    const index = recipeIndex(products);
+    const keys = buildPool({
+      products,
+      dict: DATASET.dictionaries,
+      candidates: index.candidates,
+      chains: [],
+      fallbackRanking: index.ranking,
+      plan: null,
+      custom: [],
+    }).map((f) => f.key);
+    expect(keys).not.toContain('product:web');
+    expect(keys).toContain('product:both');
+    const chains = chainsWithFood(products);
+    expect(chains.has('myprotein')).toBe(false);
+    expect(chains.has('fitiron')).toBe(false);
+    expect(chains.has('rossmann')).toBe(true);
   });
 });

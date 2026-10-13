@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest';
+import { productCode } from './merge';
 import { SHOPS } from './shopData';
 import { ONLINE_SHOPS, isOnlineShop } from './shops';
 import { SHOP_CATEGORIES } from './types';
@@ -37,11 +38,19 @@ describe.each(SHOPS.map((s) => [s.id, s] as const))('shop data: %s', (_, shop) =
       if (p.price !== null) expect(p.price, p.name).toBeGreaterThan(0);
     }
     expect(new Set(shop.products.map((p) => p.url)).size).toBe(shop.products.length);
+    // Without an EAN the code comes from the page address: two products must not fold into one.
+    const codes = shop.products.map((p) => productCode(shop, p));
+    const twice = codes.filter((c, i) => codes.indexOf(c) !== i && !/^\d+$/.test(c));
+    expect(twice).toEqual([]);
   });
 
   test('numbers per 100 g are physical, and energy agrees with the macros unless listed', () => {
     const listed = new Set(shop.inconsistent ?? []);
-    for (const listedName of listed) expect(shop.products.some((p) => p.name === listedName), listedName).toBe(true);
+    for (const listedName of listed)
+      expect(
+        shop.products.some((p) => p.name === listedName),
+        listedName,
+      ).toBe(true);
     for (const p of shop.products) {
       const n = p.nutrition;
       for (const k of ['kcal', 'protein', 'carbs', 'fat'] as const)

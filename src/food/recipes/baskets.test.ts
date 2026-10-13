@@ -78,6 +78,17 @@ test('a product whose own label disagrees with itself never plays an ingredient'
   expect(i.candidates.get('proteinBar')).toEqual([]);
 });
 
+test('a box of bars is not one bar: multipacks never play a pack item', () => {
+  const box = makeProduct({
+    code: 'box',
+    name: 'Baton proteinowy PUDEŁKO x 4 BATONY',
+    quantity: '240 g',
+    nutrition: n(380, 33, 29, 16, 3),
+    stores: ['guiltfree'],
+  });
+  expect(index([box]).candidates.get('proteinBar')).toEqual([]);
+});
+
 describe('resolveRecipe with a basket', () => {
   test('each item says which shop it is bought in; staples come from the physical shop', () => {
     const i = index([

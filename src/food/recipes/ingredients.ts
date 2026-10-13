@@ -52,6 +52,9 @@ function within(p: Product, bounds: Partial<Record<Bound, [number, number]>>): b
   return true;
 }
 
+/** A box of several: "pudełko x 4 batony", "12 x 45 g", "zestaw". One pack of it is not one portion. */
+const MULTIPACK = /\bpudelk\w*|\bbox\b|\bzestaw\w*|\bkarton\w*|\b\d+ ?(x|szt\w*|sztuk\w*) ?\d*/;
+
 const DRINKABLE = /\b(pitn\w*|drink|napoj\w*|shake|koktajl\w*)\b/;
 const FROZEN = (p: Product) => inCategory(p, 'en:frozen-fruits', 'en:frozen-foods') || /mrozon/.test(nameOf(p));
 
@@ -463,6 +466,7 @@ const DEFINITIONS = {
     // A third of the bar protein is what makes it a protein bar; below that it is
     // a candy bar with a word on the wrapper.
     match: (p) =>
+      !MULTIPACK.test(nameOf(p)) &&
       isProteinBar(p, nameOf(p)) &&
       !/\b(powder|proszk\w*|odzywk\w*)\b/.test(nameOf(p)) &&
       within(p, { protein: [30, 55], kcal: [250, 450] }),
@@ -474,6 +478,7 @@ const DEFINITIONS = {
     typical: { kcal: 61, protein: 10, carbs: 4.8, fat: 0.5 },
     // Ready to drink: a powder (300+ kcal) or a sweet milkshake stays out.
     match: (p) =>
+      !MULTIPACK.test(nameOf(p)) &&
       isProteinDrink(p, nameOf(p)) && within(p, { kcal: [30, 120], protein: [6, 15], sugars: [0, 8], fat: [0, 3] }),
   },
   // Bought online more often than not (src/food/online): protein mixes, keto bread and pasta,
@@ -509,7 +514,8 @@ const DEFINITIONS = {
     label: 'Chipsy białkowe',
     role: 'store',
     typical: { kcal: 432, protein: 33.5, carbs: 42, fat: 13.3 },
-    match: (p) => /\b(chips\w*|crisps?)\b/.test(nameOf(p)) && within(p, { protein: [30, 60], fat: [0, 20] }),
+    match: (p) =>
+      !MULTIPACK.test(nameOf(p)) && /\b(chips\w*|crisps?)\b/.test(nameOf(p)) && within(p, { protein: [30, 60], fat: [0, 20] }),
   },
   ketoPasta: {
     id: 'ketoPasta',

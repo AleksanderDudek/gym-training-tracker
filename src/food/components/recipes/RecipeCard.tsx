@@ -26,7 +26,12 @@ interface Props {
   onOpenProduct: (code: string) => void;
   /** Jak nazwać sieć na karcie: w pobliżu „Biedronka · 350 m · Marszałkowska 10”. */
   describeStore?: (chain: string) => string;
+  /** Miejsce karty w konspekcie: h3 na liście, h4 pod nagłówkiem grupy „Według sklepów”. */
+  headingLevel?: 3 | 4;
 }
+
+/** „Filet z piersi kurczaka” w środku zdania: od małej litery. */
+const inSentence = (label: string) => label.charAt(0).toLowerCase() + label.slice(1);
 
 /** Ile koszyków pokazać jako żetony — dalej są te same sklepy w innej parze. */
 const MAX_BASKET_CHIPS = 8;
@@ -43,7 +48,9 @@ export function OnlineShopLink({ id, dict }: { id: string; dict: Dictionaries })
         <ExternalLink size={14} strokeWidth={2} aria-hidden />
         <span className="sr-only"> (otwiera się w nowej karcie)</span>
       </a>{' '}
-      <span className="fd-rec-online-kind">({shop.kind === 'producent' ? 'producent, kupisz online' : 'sklep internetowy'})</span>
+      <span className="fd-rec-online-kind">
+        ({shop.kind === 'producent' ? 'producent, kupisz online' : 'sklep internetowy'})
+      </span>
     </>
   );
 }
@@ -53,7 +60,17 @@ export function OnlineShopLink({ id, dict }: { id: string; dict: Dictionaries })
  * koszyk sklepów z przełącznikiem, składniki z zamianą w arkuszu i kroki pod „Jak zrobić”. Wspólna
  * dla Przepisów i „W pobliżu”.
  */
-export function RecipeCard({ recipe, candidates, baskets, dict, onOpenProduct, describeStore }: Props) {
+export function RecipeCard({
+  recipe,
+  candidates,
+  baskets,
+  dict,
+  onOpenProduct,
+  describeStore,
+  headingLevel = 3,
+}: Props) {
+  const Title = headingLevel === 4 ? 'h4' : 'h3';
+  const Sub = headingLevel === 4 ? 'h5' : 'h4';
   const titleId = useId();
   const storeName = (chain: string) => dict.stores[chain] ?? onlineShop(chain)?.name ?? chain;
   const [choice, setChoice] = useState(0);
@@ -78,15 +95,26 @@ export function RecipeCard({ recipe, candidates, baskets, dict, onOpenProduct, d
   };
   const describe = (s: string) =>
     isOnlineShop(s) ? <OnlineShopLink id={s} dict={dict} /> : describeStore ? describeStore(s) : storeName(s);
-  const hasStaples = recipe.items.some((i) => INGREDIENTS[i.ingredient].role === 'staple');
+  // Koszyk z samych sklepów internetowych nie ma półki z mlekiem: podstawy przepisu idą z dowolnego
+  // sklepu — i karta mówi które, a nie „mleko, owoce” na ślepo.
+  const staples = recipe.items
+    .map((i) => INGREDIENTS[i.ingredient])
+    .filter((d) => d.role === 'staple')
+    .map((d) => d.label);
+  const onlineOnly = !!basket && basket.length > 0 && basket.every(isOnlineShop);
+  const staplesNote =
+    onlineOnly && staples.length > 0
+      ? ` – a ${staples.slice(0, 3).map(inSentence).join(', ')}${staples.length > 3 ? ' i reszta podstaw' : ''}` +
+        ' w dowolnym sklepie'
+      : '';
 
   let shopLine: ReactNode;
   if (!basket || !needsStore(recipe)) shopLine = 'Składniki są w każdym sklepie';
   else if (basket.length === 1)
     shopLine = isOnlineShop(basket[0]!) ? (
       <>
-        Wszystko kupisz przez internet: {describe(basket[0]!)}
-        {hasStaples && ' – a podstawy (mleko, owoce, warzywa) w każdym sklepie'}
+        Kupisz przez internet: {describe(basket[0]!)}
+        {staplesNote}
       </>
     ) : (
       <>Wszystko kupisz w: {describe(basket[0]!)}</>
@@ -95,6 +123,7 @@ export function RecipeCard({ recipe, candidates, baskets, dict, onOpenProduct, d
     shopLine = (
       <>
         Kupisz w 2 sklepach: {describe(basket[0]!)} + {describe(basket[1]!)}
+        {staplesNote}
       </>
     );
 
@@ -113,9 +142,9 @@ export function RecipeCard({ recipe, candidates, baskets, dict, onOpenProduct, d
             {recipe.tool}
           </span>
         </div>
-        <h3 id={titleId} className="fd-rec-name">
+        <Title id={titleId} className="fd-rec-name">
           {recipe.name}
-        </h3>
+        </Title>
         <p className="fd-rec-desc">{recipe.description}</p>
 
         <MacroSummary serving={resolved.perServing} servings={servings} passes={resolved.passes} kind={recipe.kind} />
@@ -137,7 +166,7 @@ export function RecipeCard({ recipe, candidates, baskets, dict, onOpenProduct, d
         </div>
 
         <div className="fd-rec-ings">
-          <h4 className="fd-rec-sub">Składniki</h4>
+          <Sub className="fd-rec-sub">Składniki</Sub>
           {servings > 1 && (
             <p className="fd-rec-ings-note">
               Ilości na cały przepis, czyli {servings} {plural(servings, 'porcję', 'porcje', 'porcji')}.

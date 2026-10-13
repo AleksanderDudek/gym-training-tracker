@@ -50,7 +50,7 @@ const DATA: Dataset = { ...DATASET, products: [...DATASET.products, BASE, PEPPER
 const LOADED: LoadedDataset = { dataset: DATA, products: indexProducts(DATA.products, DATA.dictionaries.brands) };
 
 function cardFor(name: string): HTMLElement {
-  const card = screen.getByRole('heading', { level: 3, name }).closest('article');
+  const card = screen.getByRole('heading', { name }).closest('article');
   if (!card) throw new Error(`Brak karty ${name}`);
   return card;
 }
@@ -85,6 +85,11 @@ describe('Przepisy z produktami sklepów internetowych', () => {
     }
     expect(within(pizza).getAllByText('(sklep internetowy)')).toHaveLength(2);
 
+    // Bez sklepu stacjonarnego w koszyku karta mówi, które podstawy kupić gdziekolwiek.
+    expect(
+      within(pizza).getByText(/passata pomidorowa, parmezan lub grana padano w dowolnym sklepie/),
+    ).toBeInTheDocument();
+
     const kabanosy = cardFor('Roślinne kabanosy i serek wiejski');
     expect(within(kabanosy).getByText(/Kupisz w 2 sklepach: Biedronka \+/)).toBeInTheDocument();
   });
@@ -97,10 +102,14 @@ describe('Przepisy z produktami sklepów internetowych', () => {
     expect(window.location.hash).toBe('#/przepisy?uklad=sklepy');
 
     const groups = screen.getAllByRole('heading', { level: 3 }).filter((h) => h.closest('.fd-rec-group-head'));
+    // Przepisy w grupie są o poziom niżej niż nazwa grupy.
+    expect(
+      screen.getByRole('heading', { level: 4, name: 'Pizza na keto spodzie z roślinnym pepperoni' }),
+    ).toBeInTheDocument();
     const names = groups.map((h) => h.textContent);
     expect(names.some((t) => /BeKeto.*\+.*Bezmięsny Mięsny/.test(t ?? ''))).toBe(true);
     expect(names.at(-1)).toBe('Składniki w każdym sklepie');
-    expect(screen.getByText(/dwa zamówienia przez internet/)).toBeInTheDocument();
+    expect(screen.getByText(/dwa zamówienia przez internet \+ podstawy z dowolnego sklepu/)).toBeInTheDocument();
   });
 
   test('żeton sklepu internetowego zostawia przepisy z jego produktami', async () => {

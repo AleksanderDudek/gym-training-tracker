@@ -56,7 +56,12 @@ async function fetchDataset(): Promise<LoadedDataset> {
   } catch {
     throw new Error('Dane produktów są uszkodzone.');
   }
-  dataset = mergeOnline(dataset, await shops);
+  try {
+    dataset = mergeOnline(dataset, await shops);
+  } catch (error) {
+    // Uszkodzony plik sklepu nie może zabrać 29 tysięcy produktów — baza przychodzi bez sklepów.
+    console.warn('Produkty sklepów internetowych pominięte:', error);
+  }
   return { dataset, products: indexProducts(dataset.products, dataset.dictionaries.brands) };
 }
 

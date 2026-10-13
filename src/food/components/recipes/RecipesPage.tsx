@@ -8,6 +8,7 @@ import { GOTOWIEC_MIN_PROTEIN, KIND_LABELS, RECIPES, type Recipe, type RecipeKin
 import { readyProducts } from '../../recipes/ready';
 import { isOnlineShop, onlineShop } from '../../online/shops';
 import { basketKey, groupByBasket, recipeBaskets, within } from '../../recipes/baskets';
+import { INGREDIENTS } from '../../recipes/ingredients';
 import { needsStore, recipeIndex, resolveRecipe, type RecipeIndex } from '../../recipes/resolve';
 import { byTime, TIER_LABELS, tierOf, type TimeTier } from '../../recipes/tiers';
 import { recipesFromParams, recipesToParams, type RecipesLayout } from '../../recipes/url';
@@ -46,11 +47,22 @@ function shownIn(recipe: Recipe, index: RecipeIndex, store: string | null): bool
   return r.available && r.passes;
 }
 
-/** Ile zakupów to jest — słowami, pod nazwą grupy. */
-function tripsLine(basket: readonly string[]): string {
+/**
+ * Ile zakupów to jest — słowami, pod nazwą grupy. Grupa z samych sklepów internetowych, której
+ * przepisy mają podstawy (mięso, warzywa, nabiał z każdego sklepu), mówi też o nich.
+ */
+function tripsLine(basket: readonly string[], recipes: Recipe[]): string {
   const online = basket.filter(isOnlineShop).length;
-  if (basket.length === 1) return online ? 'jedno zamówienie przez internet' : 'jedna wizyta w sklepie';
-  return online === 2 ? 'dwa zamówienia przez internet' : 'wizyta w sklepie i zamówienie przez internet';
+  const trips =
+    basket.length === 1
+      ? online
+        ? 'jedno zamówienie przez internet'
+        : 'jedna wizyta w sklepie'
+      : online === 2
+        ? 'dwa zamówienia przez internet'
+        : 'wizyta w sklepie i zamówienie przez internet';
+  const staples = recipes.some((r) => r.items.some((i) => INGREDIENTS[i.ingredient].role === 'staple'));
+  return online === basket.length && staples ? `${trips} + podstawy z dowolnego sklepu` : trips;
 }
 
 const LAYOUTS: { key: RecipesLayout; label: string }[] = [
@@ -133,7 +145,8 @@ function Recipes({ dataset, products }: { dataset: Dataset; products: IndexedPro
             ? isOnlineShop(store)
               ? ` Poniżej przepisy z zamówieniem w ${storeName(store)} — samym albo razem z jednym sklepem.`
               : ` Poniżej to, co kupisz w sklepie ${storeName(store)} — samym albo z jednym zamówieniem przez internet.`
-            : ' Każdy przepis pokazuje, gdzie kupisz wszystko naraz: w jednym sklepie, a gdy trzeba — w sklepie i sklepie internetowym. „Według sklepów” zbiera przepisy w jak najmniej zakupów.'}
+            : ' Każdy przepis pokazuje, gdzie kupisz wszystko naraz: w jednym sklepie, a gdy trzeba — w sklepie' +
+              ' i sklepie internetowym. „Według sklepów” zbiera przepisy w jak najmniej zakupów.'}
         </p>
       </div>
 
@@ -203,7 +216,8 @@ function Recipes({ dataset, products }: { dataset: Dataset; products: IndexedPro
                     : plural(recipes.length, 'przepis', 'przepisy', 'przepisów')
                 }${
                   groups
-                    ? `, ${formatNumber(groups.length, 0)} ${plural(groups.length, 'plan zakupów', 'plany zakupów', 'planów zakupów')}`
+                    ? `, ${formatNumber(groups.length, 0)} ` +
+                      plural(groups.length, 'plan zakupów', 'plany zakupów', 'planów zakupów')
                     : state.tier || onlyGotowce
                       ? ''
                       : ', najpierw szybkie'
@@ -246,7 +260,7 @@ function Recipes({ dataset, products }: { dataset: Dataset; products: IndexedPro
                   <p className="fd-rec-count">
                     {formatNumber(group.items.length, 0)}{' '}
                     {plural(group.items.length, 'przepis', 'przepisy', 'przepisów')}
-                    {group.basket && ` · ${tripsLine(group.basket)}`}
+                    {group.basket && ` · ${tripsLine(group.basket, group.items)}`}
                   </p>
                 </div>
                 <ul className="fd-rec-list">
@@ -260,6 +274,7 @@ function Recipes({ dataset, products }: { dataset: Dataset; products: IndexedPro
                         baskets={basketsOn(recipe, index, store).filter((b) => !group.basket || within(b, group.basket))}
                         dict={dict}
                         onOpenProduct={open}
+                        headingLevel={4}
                       />
                     </li>
                   ))}
