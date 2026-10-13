@@ -85,6 +85,13 @@ describe('mergeOnline', () => {
     expect(p.online?.[1]?.price).toBe(7.5);
   });
 
+  test('a product the shop lists as inconsistent is marked, and only that one', () => {
+    const odd = product({ name: 'Erytrytol', url: 'https://diet-food.pl/erytrytol' });
+    const merged = mergeOnline(BASE, [{ ...shop('diet-food', 'Diet-Food', [product(), odd]), inconsistent: ['Erytrytol'] }]);
+    expect(merged.products.at(-1)?.labelMismatch).toBe(true);
+    expect(merged.products.at(-2)?.labelMismatch).toBeUndefined();
+  });
+
   test('keys are folded ASCII; an invalid EAN is not a code', () => {
     expect(keyOf('Bezmięsny Mięsny')).toBe('bezmiesny-miesny');
     const merged = mergeOnline(BASE, [shop('x', 'X', [product({ ean: '123', url: 'https://x.pl/p/Śliwka/12' })])]);

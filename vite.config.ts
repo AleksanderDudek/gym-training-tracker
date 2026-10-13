@@ -68,7 +68,9 @@ export default defineConfig(({ mode }) => ({
         // Powłoka i kroje pisma w alfabecie łacińskim (z polskimi znakami). Pozostałe alfabety
         // przeglądarka pobiera dopiero, gdy trafi na taki znak; baza produktów ma własną kopię.
         globPatterns: ['**/*.{js,css,html,svg,png}', 'assets/*latin*.woff2'],
-        globIgnores: ['data/**'],
+        // Bazy jedzenia nie idą do instalacji: produkty i dane sklepów internetowych service worker
+        // zapisuje dopiero przy pierwszym wejściu w Jedzenie (`src/sw.ts`), po jednej kopii.
+        globIgnores: ['data/**', 'assets/shopData-*.js'],
       },
       // W trybie deweloperskim bez service workera: trzymałby stare pliki i każda zmiana
       // wymagałaby twardego odświeżenia.

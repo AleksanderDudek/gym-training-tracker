@@ -91,6 +91,11 @@ export interface Product {
   online?: OnlineOffer[];
   /** Known only from an online shop's page, not from Open Food Facts. */
   shopOnly?: true;
+  /**
+   * The shop's own label disagrees with itself (energy vs macros: polyols, fibre or a slip on the
+   * page). Kept as published and said in the detail, never used to plan recipes.
+   */
+  labelMismatch?: true;
 }
 
 export const DICTIONARY_NAMES = ['categories', 'labels', 'allergens', 'additives', 'brands', 'stores'] as const;

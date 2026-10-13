@@ -62,7 +62,7 @@ function priceOf(shop: ShopData, value: number | null): Price | null {
 const complete = (p: Product) =>
   p.nutrition.kcal !== null && p.nutrition.protein !== null && p.nutrition.carbs !== null && p.nutrition.fat !== null;
 
-function newProduct(shop: ShopData, p: ShopProductData, code: string, offer: OnlineOffer): Product {
+function newProduct(shop: ShopData, p: ShopProductData, code: string, offer: OnlineOffer, odd: boolean): Product {
   const categories = CATEGORY_TAGS[p.category];
   const n = p.nutrition;
   return {
@@ -102,6 +102,7 @@ function newProduct(shop: ShopData, p: ShopProductData, code: string, offer: Onl
     price: priceOf(shop, p.price),
     online: [offer],
     shopOnly: true,
+    ...(odd && { labelMismatch: true as const }),
   };
 }
 
@@ -120,24 +121,27 @@ export function mergeOnline(dataset: Dataset, shops: ShopData[]): Dataset {
 
   for (const shop of shops) {
     stores[shop.id] = shop.name;
+    const odd = new Set(shop.inconsistent ?? []);
     for (const p of shop.products) {
       const offer: OnlineOffer = { shop: shop.id, url: p.url, price: p.price, checked: shop.checked };
       const code = codeOf(shop, p);
       const at = index.get(code);
       if (at === undefined) {
         index.set(code, products.length);
-        products.push(newProduct(shop, p, code, offer));
+        products.push(newProduct(shop, p, code, offer, odd.has(p.name)));
         brands[keyOf(p.brand)] ??= p.brand;
         continue;
       }
       const known = products[at]!;
-      const fromShop = newProduct(shop, p, code, offer);
+      const fromShop = newProduct(shop, p, code, offer, odd.has(p.name));
+      const keep = complete(known);
       products[at] = {
         ...known,
         stores: known.stores.includes(shop.id) ? known.stores : [...known.stores, shop.id],
         online: [...(known.online ?? []), offer],
         price: known.price ?? fromShop.price,
-        nutrition: complete(known) ? known.nutrition : fromShop.nutrition,
+        nutrition: keep ? known.nutrition : fromShop.nutrition,
+        ...(!keep && fromShop.labelMismatch && { labelMismatch: true as const }),
       };
     }
   }

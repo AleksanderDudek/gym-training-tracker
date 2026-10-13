@@ -4,6 +4,7 @@ import { brandLine, names } from '../../lib/display';
 import { formatDate, formatGrams, formatKcal, formatPrice } from '../../lib/format';
 import { NUTRIENT_LABELS, PALM_OIL_LABELS, TRI_LABELS } from '../../lib/labels';
 import { NUTRIENTS, type Dictionaries, type Product } from '../../lib/types';
+import { onlineShop } from '../../online/shops';
 import { PriceTag } from './PriceTag';
 import { ProductImage } from './ProductImage';
 import { ScoreBadge } from './ScoreBadge';
@@ -102,11 +103,12 @@ export function ProductDetail({ product: p, dict, onClose }: Props) {
             {p.online.map((o) => (
               <li key={o.url}>
                 <a href={o.url} target="_blank" rel="noopener noreferrer">
-                  {dict.stores[o.shop] ?? o.shop}
+                  {dict.stores[o.shop] ?? onlineShop(o.shop)?.name ?? o.shop}
                   <ExternalLink size={14} strokeWidth={2} aria-hidden />
                   <span className="sr-only"> (otwiera się w nowej karcie)</span>
                 </a>
                 <span className="soft">
+                  {onlineShop(o.shop)?.kind === 'producent' && ' · strona producenta, kupisz w sklepach internetowych'}
                   {o.price !== null && <> · {formatPrice(o.price)}</>} · sprawdzone {formatDate(o.checked)}
                 </span>
               </li>
@@ -135,6 +137,12 @@ export function ProductDetail({ product: p, dict, onClose }: Props) {
           </tbody>
         </table>
         {p.servingSize && <p className="soft small">Porcja: {p.servingSize}</p>}
+        {p.labelMismatch && (
+          <p className="soft small">
+            Na stronie sklepu energia nie zgadza się z białkiem, węglowodanami i tłuszczem — zwykle przez poliole albo
+            błonnik, czasem przez błąd. Pokazuję liczby tak, jak podaje sklep; do przepisów ten produkt nie trafia.
+          </p>
+        )}
       </Block>
 
       {p.ingredientsText && (

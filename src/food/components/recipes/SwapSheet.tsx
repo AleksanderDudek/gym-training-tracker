@@ -4,7 +4,7 @@ import { brandLine } from '../../lib/display';
 import { formatNumber } from '../../lib/format';
 import type { Dictionaries } from '../../lib/types';
 import type { Recipe } from '../../recipes/catalog';
-import { resolveRecipe, type Candidates, type Overrides, type ResolvedItem } from '../../recipes/resolve';
+import { resolveRecipe, type Basket, type Candidates, type Overrides, type ResolvedItem } from '../../recipes/resolve';
 import { Sheet } from '../common/Sheet';
 import { ruleBroken } from './MacroSummary';
 import { proteinLine, swapOptions } from './IngredientLine';
@@ -13,7 +13,8 @@ interface Props {
   open: boolean;
   recipe: Recipe;
   candidates: Candidates;
-  store: string | null;
+  /** Koszyk karty; null: produkty z dowolnego sklepu. */
+  basket: Basket | null;
   overrides: Overrides;
   /** Składnik, który się zamienia; bez niego arkusz jest zamknięty. */
   item: ResolvedItem | null;
@@ -23,8 +24,8 @@ interface Props {
 }
 
 /** Skąd są produkty na liście — żeby nikt nie szukał w Lidlu zamiennika z Biedronki. */
-function sourceLine(item: ResolvedItem, store: string | null, dict: Dictionaries): string {
-  const name = store ? (dict.stores[store] ?? store) : null;
+function sourceLine(item: ResolvedItem, basket: Basket | null, dict: Dictionaries): string {
+  const name = basket?.length ? basket.map((s) => dict.stores[s] ?? s).join(' + ') : null;
   if (item.def.role === 'pantry') return name ? `Masz w domu – najpierw produkty z: ${name}` : 'Masz w domu – dowolny produkt';
   return name ? `Produkty z: ${name}` : 'Produkty z dowolnego sklepu';
 }
@@ -35,7 +36,7 @@ function sourceLine(item: ResolvedItem, store: string | null, dict: Dictionaries
  * liście po kolei, a produkt, który złamałby zasadę, jest oznaczony, zanim się go wybierze.
  * Stopka mówi, co wybór robi z porcją; „Gotowe” tylko zamyka.
  */
-export function SwapSheet({ open, recipe, candidates, store, overrides, item, dict, onPick, onClose }: Props) {
+export function SwapSheet({ open, recipe, candidates, basket, overrides, item, dict, onPick, onClose }: Props) {
   const name = useId();
   const options = useMemo(() => (item ? swapOptions(item) : []), [item]);
   // Werdykt dla każdej pozycji: przepis z tym produktem w miejsce obecnego, reszta bez zmian.
@@ -43,16 +44,16 @@ export function SwapSheet({ open, recipe, candidates, store, overrides, item, di
     const map = new Map<string, boolean>();
     if (!item) return map;
     for (const p of options) {
-      map.set(p.code, resolveRecipe(recipe, candidates, store, { ...overrides, [item.def.id]: p.code }).passes);
+      map.set(p.code, resolveRecipe(recipe, candidates, basket, { ...overrides, [item.def.id]: p.code }).passes);
     }
     return map;
-  }, [item, options, recipe, candidates, store, overrides]);
+  }, [item, options, recipe, candidates, basket, overrides]);
 
   const chosen = item?.product?.code ?? null;
   const passes = chosen ? (verdicts.get(chosen) ?? true) : true;
   const serving = useMemo(
-    () => (item ? resolveRecipe(recipe, candidates, store, overrides).perServing : null),
-    [item, recipe, candidates, store, overrides],
+    () => (item ? resolveRecipe(recipe, candidates, basket, overrides).perServing : null),
+    [item, recipe, candidates, basket, overrides],
   );
 
   return (
@@ -60,7 +61,7 @@ export function SwapSheet({ open, recipe, candidates, store, overrides, item, di
       open={open && item !== null}
       onClose={onClose}
       title={item ? `Zamień: ${item.def.label}` : 'Zamień składnik'}
-      subtitle={item ? sourceLine(item, store, dict) : undefined}
+      subtitle={item ? sourceLine(item, basket, dict) : undefined}
       closeLabel="Zamknij zamianę"
       className="fd-rec-swap-sheet"
       footer={
@@ -105,7 +106,9 @@ export function SwapSheet({ open, recipe, candidates, store, overrides, item, di
           <ul className="fd-rec-swap-list">
             {options.map((p) => {
               const breaks = verdicts.get(p.code) === false;
-              const meta = [brandLine(p, dict), p.quantity].filter(Boolean).join(' · ');
+              // W koszyku dwóch sklepów zamiennik mówi, z którego jest.
+              const from = basket && basket.length > 1 ? basket.find((s) => p.stores.includes(s)) : undefined;
+              const meta = [brandLine(p, dict), p.quantity, from && (dict.stores[from] ?? from)].filter(Boolean).join(' · ');
               return (
                 <li key={p.code}>
                   <label className="fd-rec-swap-opt">

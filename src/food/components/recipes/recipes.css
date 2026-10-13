@@ -86,6 +86,20 @@
 .fd-rec-shop-line{display:flex;align-items:flex-start;gap:8px;margin:0;font-size:15px;font-weight:600;line-height:1.35}
 .fd-rec-shop-line svg{flex:none;margin-top:-1px;color:var(--ink-soft)}
 .fd-rec-shop-chips{margin-top:8px}
+/* Sklep internetowy: odnośnik do sklepu i dopisek słowami. */
+.fd-rec-online{display:inline-flex;align-items:center;gap:3px;color:var(--steel);text-decoration:underline}
+.fd-rec-online svg{flex:none}
+.fd-rec-online-kind{font-weight:400;color:var(--ink-soft)}
+.fd-rec-ing-note a{display:inline-flex;align-items:center;gap:2px;color:var(--steel)}
+
+/* Układ listy i grupy „według sklepów”: nagłówek grupy to plan zakupów. */
+.fd-rec-layout{display:grid;gap:6px;margin:14px auto 0}
+.fd-rec-layout .seg{max-width:420px}
+.fd-rec-group + .fd-rec-group{margin-top:18px}
+.fd-rec-group-head{margin:10px auto 6px}
+.fd-rec-group-head h3{margin:0;font-family:var(--display);font-size:20px;font-weight:600;line-height:1.2;color:var(--ink)}
+.fd-rec-group-head h3 .fd-rec-online-kind{font-family:var(--body);font-size:13px}
+.fd-rec-group-head .fd-rec-count{margin:2px 0 0}
 
 /* ---------------- Składniki ---------------- */
 

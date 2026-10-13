@@ -1,12 +1,14 @@
-import { ArrowLeftRight, Info } from 'lucide-react';
+import { ArrowLeftRight, ExternalLink, Info } from 'lucide-react';
 import { brandLine } from '../../lib/display';
 import { formatNumber } from '../../lib/format';
 import type { Dictionaries, IndexedProduct } from '../../lib/types';
-import type { ResolvedItem } from '../../recipes/resolve';
+import { isOnlineShop, onlineShop } from '../../online/shops';
+import type { Basket, ResolvedItem } from '../../recipes/resolve';
 
 interface Props {
   resolved: ResolvedItem;
-  store: string | null;
+  /** Koszyk karty; null: produkty z dowolnego sklepu. */
+  basket: Basket | null;
   dict: Dictionaries;
   /** Otwiera arkusz zamiany dla tego składnika. */
   onSwap: () => void;
@@ -17,11 +19,18 @@ interface Props {
 const MAX_OPTIONS = 25;
 
 /** Skąd jest produkt w tej linijce, w kilku słowach — albo nic, gdy to zwykły produkt ze sklepu. */
-export function sourceNote({ def, product, fromStore }: ResolvedItem, store: string | null): string | null {
+export function sourceNote({ def, product, fromStore }: ResolvedItem, basket: Basket | null): string | null {
   if (def.role === 'pantry') return product && fromStore ? null : 'masz w domu';
   if (!product) return def.role === 'staple' ? 'w każdym sklepie · wartości typowe' : null;
-  if (store && !fromStore) return 'z innego sklepu';
+  if (basket?.length && !fromStore) return 'z innego sklepu';
   return null;
+}
+
+/** Strona produktu w sklepie internetowym, z którego idzie — albo strona sklepu, gdy produkt jej nie ma. */
+export function offerUrl(resolved: ResolvedItem): string | null {
+  const { product, shop } = resolved;
+  if (!product || !shop || !isOnlineShop(shop)) return null;
+  return product.online?.find((o) => o.shop === shop)?.url ?? onlineShop(shop)?.url ?? null;
 }
 
 /**
@@ -39,9 +48,11 @@ export function proteinLine(p: IndexedProduct): string {
 }
 
 /** Składnik przepisu: ilość, produkt, który go gra, zamiana i karta produktu. */
-export function IngredientLine({ resolved, store, dict, onSwap, onOpenProduct }: Props) {
-  const { item, def, product, grams } = resolved;
-  const note = sourceNote(resolved, store);
+export function IngredientLine({ resolved, basket, dict, onSwap, onOpenProduct }: Props) {
+  const { item, def, product, grams, shop } = resolved;
+  const note = sourceNote(resolved, basket);
+  const offer = offerUrl(resolved);
+  const shopName = shop ? (dict.stores[shop] ?? onlineShop(shop)?.name ?? shop) : null;
   const canSwap = swapOptions(resolved).length > 1;
   const brand = product ? brandLine(product, dict) : '';
 
@@ -86,6 +97,17 @@ export function IngredientLine({ resolved, store, dict, onSwap, onOpenProduct }:
           </div>
         </div>
       )}
+      {offer && shopName && (
+        <span className="fd-rec-ing-note">
+          {onlineShop(shop!)?.kind === 'producent' ? 'producent, kupisz online' : 'sklep internetowy'} ·{' '}
+          <a href={offer} target="_blank" rel="noopener noreferrer">
+            {shopName}
+            <ExternalLink size={12} strokeWidth={2} aria-hidden />
+            <span className="sr-only"> (otwiera się w nowej karcie)</span>
+          </a>
+        </span>
+      )}
+      {!offer && shopName && basket && basket.length > 1 && <span className="fd-rec-ing-note">z: {shopName}</span>}
       {note && <span className="fd-rec-ing-note">{note}</span>}
     </li>
   );

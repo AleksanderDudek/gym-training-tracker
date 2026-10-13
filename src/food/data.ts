@@ -33,7 +33,7 @@ export async function inflate(bytes: Uint8Array<ArrayBuffer>): Promise<string> {
  * żeby nie pokazać 29 tysięcy produktów.
  */
 function loadShops(): Promise<ShopData[]> {
-  return import('./online/catalog').then(
+  return import('./online/shopData').then(
     (m) => m.SHOPS,
     () => [],
   );

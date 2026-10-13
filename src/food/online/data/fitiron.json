@@ -1,0 +1,1577 @@
+{
+  "id": "fitiron",
+  "name": "FitIron",
+  "url": "https://fitironsklep.pl",
+  "checked": "2026-10-13",
+  "note": "Shoper; dane z opisów kart produktów (tabela „Wartości odżywcze w 100 g”), cena regularna i EAN wariantu domyślnego. Pominięto suplementy (kreatyna, aminokwasy, witaminy, carbo, izotonik, kolagen), akcesoria, vouchery i zestawy; bez wartości odżywczych na stronie: kawy, herbaty ziołowe, przyprawy (m.in. garam masala, kurkuma, kardamon), dżemy, miód, syrop porzeczkowy, olej kokosowy, ocet balsamiczny. Pominięto też: Ocet jabłkowy BIO (na stronie tłuszcz 91,6 g/100 ml), Olej z wiesiołka (niespójne wartości), Chałwa pistacjowa (białko „12,8,91 g”), Whey 700 g czekoladowego snu (inny smak tej samej linii). Niezgodność na stronie (kcal vs makroskładniki – błonnik liczony w energii lub w węglowodanach): BIO Ostropest plamisty, Drożdże suszone, Goździki całe, Inulina z cykorii, Owoce liofilizowane Mieszanka Leśna, Pieprz czarny. Fasola adzuki i Fasola mung mają na stronie identyczną tabelę. Wiele pozycji „na wyczerpaniu” lub chwilowo niedostępnych.",
+  "inconsistent": [
+    "BIO Ostropest plamisty mielony 200g",
+    "Drożdże suszone (instant) 100g",
+    "Goździki całe 100g",
+    "Inulina z korzenia cykorii 300 g",
+    "Owoce liofilizowane Mieszanka Leśna 20g",
+    "Pieprz czarny ziarno 500g"
+  ],
+  "products": [
+    {
+      "name": "BIO Sorgo- ziarno obłuszczone 500g",
+      "brand": "Bio Planet",
+      "url": "https://fitironsklep.pl/BIO-sorgo-ziarno-obluszczone",
+      "quantity": "500 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 344.0,
+        "protein": 9.3,
+        "carbs": 66.0,
+        "fat": 3.2,
+        "sugars": 0.0,
+        "fiber": 7.5,
+        "saturatedFat": 0.7,
+        "salt": 0.0
+      },
+      "price": 7.7,
+      "vegan": true,
+      "ean": "5902605414099"
+    },
+    {
+      "name": "Amarantus ziarno 500g",
+      "brand": "Targroch",
+      "url": "https://fitironsklep.pl/amarantus-ziarno",
+      "quantity": "500 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 401.0,
+        "protein": 16.9,
+        "carbs": 59.4,
+        "fat": 7.5,
+        "sugars": 5.7,
+        "fiber": 14.0,
+        "saturatedFat": 1.46,
+        "salt": 0.01
+      },
+      "price": 9.2,
+      "vegan": null,
+      "ean": "5903229001917"
+    },
+    {
+      "name": "Ananas kandyzowany kostka 500g",
+      "brand": "Targroch",
+      "url": "https://fitironsklep.pl/ananas-kandyzowany-kostka",
+      "quantity": "500 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 339.0,
+        "protein": 0.7,
+        "carbs": 81.0,
+        "fat": 0.0,
+        "sugars": 70.0,
+        "fiber": 6.0,
+        "saturatedFat": 0.0,
+        "salt": 0.9
+      },
+      "price": 19.5,
+      "vegan": null,
+      "ean": "5903229004413"
+    },
+    {
+      "name": "Baton Urwis Banan 40g",
+      "brand": "Zmiany Zmiany",
+      "url": "https://fitironsklep.pl/baton-bezglutenowy-ekologiczny-banan",
+      "quantity": "40 g",
+      "category": "batony",
+      "nutrition": {
+        "kcal": 392.0,
+        "protein": 7.0,
+        "carbs": 64.8,
+        "fat": 15.4,
+        "sugars": 45.7,
+        "fiber": null,
+        "saturatedFat": 2.9,
+        "salt": 0.01
+      },
+      "price": 4.9,
+      "vegan": true,
+      "ean": "5905279630284"
+    },
+    {
+      "name": "Baton Urwis Jabłko 40g",
+      "brand": "Zmiany Zmiany",
+      "url": "https://fitironsklep.pl/baton-bezglutenowy-ekologiczny-jablko",
+      "quantity": "40 g",
+      "category": "batony",
+      "nutrition": {
+        "kcal": 354.0,
+        "protein": 6.8,
+        "carbs": 59.5,
+        "fat": 13.4,
+        "sugars": 42.5,
+        "fiber": null,
+        "saturatedFat": 2.4,
+        "salt": 0.1
+      },
+      "price": 4.9,
+      "vegan": true,
+      "ean": "5905279630277"
+    },
+    {
+      "name": "Baton daktylowy z sezamem i kakao 40g",
+      "brand": "Targroch",
+      "url": "https://fitironsklep.pl/baton-daktylowy-z-kakao-bez-cukru",
+      "quantity": "40 g",
+      "category": "batony",
+      "nutrition": {
+        "kcal": 402.0,
+        "protein": 12.3,
+        "carbs": 42.7,
+        "fat": 18.0,
+        "sugars": 40.7,
+        "fiber": 9.9,
+        "saturatedFat": 2.6,
+        "salt": 0.1
+      },
+      "price": 3.5,
+      "vegan": true,
+      "ean": "5903229007841"
+    },
+    {
+      "name": "Baton migdał, włoski i czekolada Zregeneruj się 44g",
+      "brand": "Karma",
+      "url": "https://fitironsklep.pl/baton-migdalowy-z-orzechami-wloskimi-i-belgijska-czekolada",
+      "quantity": "44 g",
+      "category": "batony",
+      "nutrition": {
+        "kcal": 566.0,
+        "protein": 16.0,
+        "carbs": 30.0,
+        "fat": 41.0,
+        "sugars": 27.0,
+        "fiber": 7.5,
+        "saturatedFat": 5.6,
+        "salt": 0.51
+      },
+      "price": 5.9,
+      "vegan": null,
+      "ean": "5907622655135"
+    },
+    {
+      "name": "Baton proteinowy Muscle Up",
+      "brand": "Karma",
+      "url": "https://fitironsklep.pl/baton-proteinowy-muscle-up-karma",
+      "quantity": null,
+      "category": "batony",
+      "nutrition": {
+        "kcal": 502.0,
+        "protein": 26.0,
+        "carbs": 30.0,
+        "fat": 30.0,
+        "sugars": 25.0,
+        "fiber": 5.3,
+        "saturatedFat": 2.9,
+        "salt": 0.62
+      },
+      "price": 5.9,
+      "vegan": null,
+      "ean": null
+    },
+    {
+      "name": "Baton proteinowy Muscle Up Milk Chocolate",
+      "brand": "Karma",
+      "url": "https://fitironsklep.pl/baton-proteinowy-muscle-up-milk-chocolate-karma",
+      "quantity": null,
+      "category": "batony",
+      "nutrition": {
+        "kcal": 511.0,
+        "protein": 23.0,
+        "carbs": 33.0,
+        "fat": 31.0,
+        "sugars": 29.0,
+        "fiber": 4.5,
+        "saturatedFat": 5.7,
+        "salt": 0.55
+      },
+      "price": 6.9,
+      "vegan": null,
+      "ean": "5904094826278"
+    },
+    {
+      "name": "Baton Madagaskar",
+      "brand": "Zmiany Zmiany",
+      "url": "https://fitironsklep.pl/baton-sezamowy-madagaskar-z-wanilia",
+      "quantity": null,
+      "category": "batony",
+      "nutrition": {
+        "kcal": 427.62,
+        "protein": 10.35,
+        "carbs": 49.9,
+        "fat": 21.81,
+        "sugars": 38.65,
+        "fiber": null,
+        "saturatedFat": 3.17,
+        "salt": 0.03
+      },
+      "price": 6.3,
+      "vegan": null,
+      "ean": "5905279630215"
+    },
+    {
+      "name": "Baton proteinowy Sztanga 70g",
+      "brand": "Zmiany Zmiany",
+      "url": "https://fitironsklep.pl/batony-proteinowe-z-dobrym-skladem",
+      "quantity": "70 g",
+      "category": "batony",
+      "nutrition": {
+        "kcal": 380.0,
+        "protein": 22.1,
+        "carbs": 42.3,
+        "fat": 11.9,
+        "sugars": 35.1,
+        "fiber": null,
+        "saturatedFat": 1.7,
+        "salt": 0.0
+      },
+      "price": 7.4,
+      "vegan": true,
+      "ean": "5905279630123"
+    },
+    {
+      "name": "BIO Jagody Acai Liofilizowane Sproszkowane 100g",
+      "brand": "Superfoods",
+      "url": "https://fitironsklep.pl/bio-jagody-acai-liofilizowane-sproszkowane",
+      "quantity": "100 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 567.0,
+        "protein": 9.7,
+        "carbs": 8.6,
+        "fat": 49.0,
+        "sugars": 0.9,
+        "fiber": 26.0,
+        "saturatedFat": 15.0,
+        "salt": 0.09
+      },
+      "price": 43.7,
+      "vegan": true,
+      "ean": "5902175861453"
+    },
+    {
+      "name": "BIO Len Złoty 400g",
+      "brand": "Bio Planet",
+      "url": "https://fitironsklep.pl/bio-len-zloty",
+      "quantity": "400 g",
+      "category": "orzechy",
+      "nutrition": {
+        "kcal": 498.0,
+        "protein": 24.0,
+        "carbs": 4.2,
+        "fat": 37.0,
+        "sugars": 1.7,
+        "fiber": 26.0,
+        "saturatedFat": 4.7,
+        "salt": 0.11
+      },
+      "price": 7.9,
+      "vegan": true,
+      "ean": "5907814664006"
+    },
+    {
+      "name": "BIO Mąka orkiszowa razowa typ 2000 500g",
+      "brand": "Bio Planet",
+      "url": "https://fitironsklep.pl/bio-maka-orkiszowa-razowa-typ-2000",
+      "quantity": "500 g",
+      "category": "maki",
+      "nutrition": {
+        "kcal": 320.0,
+        "protein": 15.0,
+        "carbs": 67.0,
+        "fat": 1.1,
+        "sugars": 0.9,
+        "fiber": 4.8,
+        "saturatedFat": 0.9,
+        "salt": 0.0
+      },
+      "price": 7.9,
+      "vegan": true,
+      "ean": "5907814665508"
+    },
+    {
+      "name": "BIO Mąka z ciecierzycy 400g",
+      "brand": "Bio Planet",
+      "url": "https://fitironsklep.pl/bio-maka-z-ciecierzycy-bioplanet",
+      "quantity": "400 g",
+      "category": "maki",
+      "nutrition": {
+        "kcal": 361.0,
+        "protein": 22.0,
+        "carbs": 48.0,
+        "fat": 6.2,
+        "sugars": 2.7,
+        "fiber": 13.0,
+        "saturatedFat": 0.9,
+        "salt": 0.06
+      },
+      "price": 10.9,
+      "vegan": true,
+      "ean": "5907814668448"
+    },
+    {
+      "name": "BIO Makaron proteinowy z groszku zielonego bezglutenowy 250g",
+      "brand": "Bartolini",
+      "url": "https://fitironsklep.pl/bio-makaron-proteinowy-z-groszku-zielonego-bezglutenowy",
+      "quantity": "250 g",
+      "category": "makaron",
+      "nutrition": {
+        "kcal": 342.0,
+        "protein": 20.0,
+        "carbs": 57.0,
+        "fat": 1.8,
+        "sugars": 2.3,
+        "fiber": 10.0,
+        "saturatedFat": 0.3,
+        "salt": 0.08
+      },
+      "price": 15.3,
+      "vegan": true,
+      "ean": "5901902004569"
+    },
+    {
+      "name": "BIO Makaron ryżowy penne bezglutenowy 250g",
+      "brand": "Bartolini",
+      "url": "https://fitironsklep.pl/bio-makaron-ryzowy-penne-bezglutenowy",
+      "quantity": "250 g",
+      "category": "makaron",
+      "nutrition": {
+        "kcal": 353.0,
+        "protein": 8.1,
+        "carbs": 77.5,
+        "fat": 0.9,
+        "sugars": 0.4,
+        "fiber": 1.5,
+        "saturatedFat": 0.3,
+        "salt": 0.01
+      },
+      "price": 11.9,
+      "vegan": true,
+      "ean": "5901902004750"
+    },
+    {
+      "name": "BIO Makaron semolinowy spaghetti 500g",
+      "brand": "Alce Nero",
+      "url": "https://fitironsklep.pl/bio-makaron-semolinowy-spaghetti",
+      "quantity": "500 g",
+      "category": "makaron",
+      "nutrition": {
+        "kcal": 352.0,
+        "protein": 11.0,
+        "carbs": 73.0,
+        "fat": 1.1,
+        "sugars": 3.1,
+        "fiber": 2.9,
+        "saturatedFat": 0.2,
+        "salt": 0.0
+      },
+      "price": 7.8,
+      "vegan": true,
+      "ean": "8009004110014"
+    },
+    {
+      "name": "BIO Makaron z sorgo świderki bezglutenowy 250g",
+      "brand": "Bartolini",
+      "url": "https://fitironsklep.pl/bio-makaron-z-sorgo-swiderki-bezglutenowy",
+      "quantity": "250 g",
+      "category": "makaron",
+      "nutrition": {
+        "kcal": 384.0,
+        "protein": 8.0,
+        "carbs": 77.0,
+        "fat": 3.3,
+        "sugars": 1.9,
+        "fiber": 6.6,
+        "saturatedFat": 0.4,
+        "salt": 0.1
+      },
+      "price": 13.2,
+      "vegan": true,
+      "ean": "5901902004729"
+    },
+    {
+      "name": "BIO Ostropest plamisty mielony 200g",
+      "brand": "Superfoods",
+      "url": "https://fitironsklep.pl/bio-ostropest-plamisty-mielony",
+      "quantity": "200 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 270.0,
+        "protein": 20.0,
+        "carbs": 2.0,
+        "fat": 7.7,
+        "sugars": 1.2,
+        "fiber": 56.0,
+        "saturatedFat": 1.6,
+        "salt": 0.03
+      },
+      "price": 13.3,
+      "vegan": true,
+      "ean": "5903900369862"
+    },
+    {
+      "name": "BIO Płatki gryczane 600g",
+      "brand": "Bio Planet",
+      "url": "https://fitironsklep.pl/bio-platki-gryczane-bioplanet",
+      "quantity": "600 g",
+      "category": "sniadania",
+      "nutrition": {
+        "kcal": 357.0,
+        "protein": 11.0,
+        "carbs": 68.0,
+        "fat": 2.9,
+        "sugars": 0.1,
+        "fiber": 7.5,
+        "saturatedFat": 0.6,
+        "salt": 0.0
+      },
+      "price": 14.9,
+      "vegan": true,
+      "ean": "5907814667076"
+    },
+    {
+      "name": "Chipsy bananowe",
+      "brand": "Brat.pl",
+      "url": "https://fitironsklep.pl/chipsy-bananowe",
+      "quantity": "1000 g",
+      "category": "przekaski",
+      "nutrition": {
+        "kcal": 530.0,
+        "protein": 2.3,
+        "carbs": 50.7,
+        "fat": 33.6,
+        "sugars": 35.3,
+        "fiber": 7.7,
+        "saturatedFat": 29.0,
+        "salt": 0.02
+      },
+      "price": 18.3,
+      "vegan": true,
+      "ean": "5906721130253"
+    },
+    {
+      "name": "Ciastka owsiane z czekoladą i orzechami laskowymi bezglutenowe BIO 120g",
+      "brand": "Bio Planet",
+      "url": "https://fitironsklep.pl/ciasta-kruche-bezglutenowe-z-miodem",
+      "quantity": "120 g",
+      "category": "slodycze",
+      "nutrition": {
+        "kcal": 499.0,
+        "protein": 6.9,
+        "carbs": 56.0,
+        "fat": 27.0,
+        "sugars": 23.0,
+        "fiber": 5.1,
+        "saturatedFat": 11.0,
+        "salt": 0.6
+      },
+      "price": 16.7,
+      "vegan": null,
+      "ean": "3760092218277"
+    },
+    {
+      "name": "Orzechy ziemne",
+      "brand": "Targroch",
+      "url": "https://fitironsklep.pl/co-zawieraja-orzechy-ziemne",
+      "quantity": "500 g",
+      "category": "orzechy",
+      "nutrition": {
+        "kcal": 647.0,
+        "protein": 29.4,
+        "carbs": 11.9,
+        "fat": 46.1,
+        "sugars": 6.4,
+        "fiber": 7.3,
+        "saturatedFat": 6.1,
+        "salt": 0.04
+      },
+      "price": 9.3,
+      "vegan": null,
+      "ean": "5903229002365"
+    },
+    {
+      "name": "Ryż czerwony 1000g",
+      "brand": "Targroch",
+      "url": "https://fitironsklep.pl/czerwony-ryz-na-cholesterol",
+      "quantity": "1000 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 368.0,
+        "protein": 6.7,
+        "carbs": 80.0,
+        "fat": 2.4,
+        "sugars": 0.3,
+        "fiber": 3.4,
+        "saturatedFat": 0.2,
+        "salt": 0.0
+      },
+      "price": 13.2,
+      "vegan": null,
+      "ean": "5903229004895"
+    },
+    {
+      "name": "Czosnek granulowany",
+      "brand": "Brat.pl",
+      "url": "https://fitironsklep.pl/czosnek-granulowany-a-odpornosc",
+      "quantity": "1000 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 422.0,
+        "protein": 16.0,
+        "carbs": 81.5,
+        "fat": 1.3,
+        "sugars": 1.3,
+        "fiber": 10.3,
+        "saturatedFat": 0.03,
+        "salt": 0.0
+      },
+      "price": 23.0,
+      "vegan": null,
+      "ean": "5906721131601"
+    },
+    {
+      "name": "Syrop z agawy 350g",
+      "brand": "Targroch",
+      "url": "https://fitironsklep.pl/do-czego-syrop-z-agawy",
+      "quantity": "350 g",
+      "category": "sosy",
+      "nutrition": {
+        "kcal": 310.0,
+        "protein": 0.0,
+        "carbs": 78.0,
+        "fat": 0.0,
+        "sugars": 77.0,
+        "fiber": 0.0,
+        "saturatedFat": 0.0,
+        "salt": 0.03
+      },
+      "price": 13.5,
+      "vegan": null,
+      "ean": "5903229007674"
+    },
+    {
+      "name": "Drożdże suszone (instant) 100g",
+      "brand": "Brat.pl",
+      "url": "https://fitironsklep.pl/drozdze-suszone-instant",
+      "quantity": "100 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 355.0,
+        "protein": 43.5,
+        "carbs": 19.0,
+        "fat": 5.7,
+        "sugars": 14.0,
+        "fiber": 27.0,
+        "saturatedFat": 0.9,
+        "salt": 0.3
+      },
+      "price": 8.2,
+      "vegan": null,
+      "ean": "5906721132486"
+    },
+    {
+      "name": "Soczewica czerwona 500g",
+      "brand": "Bio Planet",
+      "url": "https://fitironsklep.pl/ekologiczna-soczewica-czerwona",
+      "quantity": "500 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 362.0,
+        "protein": 26.0,
+        "carbs": 60.0,
+        "fat": 2.1,
+        "sugars": 2.0,
+        "fiber": 11.0,
+        "saturatedFat": 0.4,
+        "salt": 0.02
+      },
+      "price": 10.8,
+      "vegan": true,
+      "ean": "5902983782773"
+    },
+    {
+      "name": "Fasola adzuki 1000g",
+      "brand": "Targroch",
+      "url": "https://fitironsklep.pl/fasola-adzuki-gdzie-kupic",
+      "quantity": "1000 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 315.0,
+        "protein": 21.4,
+        "carbs": 45.9,
+        "fat": 1.6,
+        "sugars": 2.7,
+        "fiber": 15.7,
+        "saturatedFat": 0.2,
+        "salt": 0.05
+      },
+      "price": 15.4,
+      "vegan": true,
+      "ean": "5903229007452"
+    },
+    {
+      "name": "Czekolada gorzka 70% 40g",
+      "brand": "Bio Planet",
+      "url": "https://fitironsklep.pl/gorzka-czekolada-70-procent",
+      "quantity": "40 g",
+      "category": "slodycze",
+      "nutrition": {
+        "kcal": 590.0,
+        "protein": 8.0,
+        "carbs": 33.0,
+        "fat": 45.0,
+        "sugars": 29.0,
+        "fiber": 10.0,
+        "saturatedFat": 29.0,
+        "salt": 0.2
+      },
+      "price": 15.6,
+      "vegan": true,
+      "ean": "5902565216566"
+    },
+    {
+      "name": "Goździki całe 100g",
+      "brand": "Brat.pl",
+      "url": "https://fitironsklep.pl/gozdziki-cale-zastosowanie",
+      "quantity": "100 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 274.0,
+        "protein": 5.0,
+        "carbs": 65.5,
+        "fat": 13.0,
+        "sugars": 2.4,
+        "fiber": 33.9,
+        "saturatedFat": 4.0,
+        "salt": 0.5
+      },
+      "price": 9.9,
+      "vegan": null,
+      "ean": "5906721130819"
+    },
+    {
+      "name": "Granola kokosowa z białą czekoladą 250g",
+      "brand": "Karma",
+      "url": "https://fitironsklep.pl/granola-kokosowa-z-biala-czekolada",
+      "quantity": "250 g",
+      "category": "sniadania",
+      "nutrition": {
+        "kcal": 490.0,
+        "protein": 9.0,
+        "carbs": 46.0,
+        "fat": 29.0,
+        "sugars": 26.0,
+        "fiber": 5.5,
+        "saturatedFat": 11.0,
+        "salt": 0.38
+      },
+      "price": 19.9,
+      "vegan": null,
+      "ean": "5904094826131"
+    },
+    {
+      "name": "Granola orzechowa z czekoladą 250g",
+      "brand": "Karma",
+      "url": "https://fitironsklep.pl/granola-orzechowa-z-czekolada",
+      "quantity": "250 g",
+      "category": "sniadania",
+      "nutrition": {
+        "kcal": 513.0,
+        "protein": 15.0,
+        "carbs": 39.0,
+        "fat": 32.0,
+        "sugars": 23.0,
+        "fiber": 7.2,
+        "saturatedFat": 5.7,
+        "salt": 0.49
+      },
+      "price": 16.4,
+      "vegan": null,
+      "ean": "5904094826360"
+    },
+    {
+      "name": "Inulina z korzenia cykorii 300 g",
+      "brand": "Pięć Przemian",
+      "url": "https://fitironsklep.pl/inulina-z-cykorii",
+      "quantity": "300 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 210.0,
+        "protein": 0.0,
+        "carbs": 8.0,
+        "fat": 0.0,
+        "sugars": 8.0,
+        "fiber": 89.0,
+        "saturatedFat": 0.0,
+        "salt": 0.0
+      },
+      "price": 13.99,
+      "vegan": null,
+      "ean": null
+    },
+    {
+      "name": "Fasola mung 1 kg",
+      "brand": "Targroch",
+      "url": "https://fitironsklep.pl/jak-gotowac-fasole-mung",
+      "quantity": "1 kg",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 315.0,
+        "protein": 21.4,
+        "carbs": 45.9,
+        "fat": 1.6,
+        "sugars": 2.7,
+        "fiber": 15.7,
+        "saturatedFat": 0.2,
+        "salt": 0.05
+      },
+      "price": 11.7,
+      "vegan": true,
+      "ean": "5903229003201"
+    },
+    {
+      "name": "Daktyle suszone",
+      "brand": "Brat.pl",
+      "url": "https://fitironsklep.pl/jak-jesc-daktyle-suszone",
+      "quantity": "500 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 295.0,
+        "protein": 2.5,
+        "carbs": 68.0,
+        "fat": 0.5,
+        "sugars": 63.0,
+        "fiber": 7.5,
+        "saturatedFat": 0.1,
+        "salt": 0.01
+      },
+      "price": 7.0,
+      "vegan": null,
+      "ean": "5906721132936"
+    },
+    {
+      "name": "Kakao kruszone",
+      "brand": "Targroch",
+      "url": "https://fitironsklep.pl/jakie-kakao-jest-najzdrowsze",
+      "quantity": "100 g",
+      "category": "kakao",
+      "nutrition": {
+        "kcal": 646.0,
+        "protein": 15.0,
+        "carbs": 33.0,
+        "fat": 46.0,
+        "sugars": 0.0,
+        "fiber": 20.0,
+        "saturatedFat": 30.0,
+        "salt": 0.0
+      },
+      "price": 19.9,
+      "vegan": null,
+      "ean": "5903229008107"
+    },
+    {
+      "name": "Baton Ciao Cacao",
+      "brand": "Zmiany Zmiany",
+      "url": "https://fitironsklep.pl/kakaowy-baton-z-kokosem-bez-cukru-ciao-cacao",
+      "quantity": null,
+      "category": "batony",
+      "nutrition": {
+        "kcal": 446.3,
+        "protein": 11.0,
+        "carbs": 52.0,
+        "fat": 20.8,
+        "sugars": 47.0,
+        "fiber": null,
+        "saturatedFat": 7.5,
+        "salt": 0.1
+      },
+      "price": 5.0,
+      "vegan": true,
+      "ean": "5905279630680"
+    },
+    {
+      "name": "Karma Krem Vegan Friendly",
+      "brand": "Karma",
+      "url": "https://fitironsklep.pl/karma-krem-orzechowy-vegan-friendly",
+      "quantity": null,
+      "category": "smarowidla",
+      "nutrition": {
+        "kcal": 516.0,
+        "protein": 10.0,
+        "carbs": 39.0,
+        "fat": 39.0,
+        "sugars": 2.2,
+        "fiber": 7.1,
+        "saturatedFat": 8.8,
+        "salt": 0.0
+      },
+      "price": 21.5,
+      "vegan": true,
+      "ean": "5904094826469"
+    },
+    {
+      "name": "Karma Krem Proteinowy Kakao",
+      "brand": "Karma",
+      "url": "https://fitironsklep.pl/karma-krem-proteinowy-kakao",
+      "quantity": null,
+      "category": "smarowidla",
+      "nutrition": {
+        "kcal": 520.0,
+        "protein": 22.0,
+        "carbs": 31.0,
+        "fat": 36.0,
+        "sugars": 4.0,
+        "fiber": 13.0,
+        "saturatedFat": 6.9,
+        "salt": 0.12
+      },
+      "price": 19.9,
+      "vegan": null,
+      "ean": null
+    },
+    {
+      "name": "Kasza bulgur 500g",
+      "brand": "Bio Planet",
+      "url": "https://fitironsklep.pl/kasza-bulgur-z-czym-jesc",
+      "quantity": "500 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 328.0,
+        "protein": 12.0,
+        "carbs": 58.0,
+        "fat": 1.3,
+        "sugars": 0.4,
+        "fiber": 18.0,
+        "saturatedFat": 0.2,
+        "salt": 0.04
+      },
+      "price": 8.2,
+      "vegan": null,
+      "ean": "5907814665591"
+    },
+    {
+      "name": "Kasza jaglana",
+      "brand": "Bio Planet",
+      "url": "https://fitironsklep.pl/kasza-jaglana-na-sniadanie",
+      "quantity": "1 kg",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 358.0,
+        "protein": 9.8,
+        "carbs": 69.0,
+        "fat": 3.9,
+        "sugars": 1.4,
+        "fiber": null,
+        "saturatedFat": 0.9,
+        "salt": 0.0
+      },
+      "price": 13.6,
+      "vegan": null,
+      "ean": "5907814664563"
+    },
+    {
+      "name": "Tapioka 500g",
+      "brand": "Brat.pl",
+      "url": "https://fitironsklep.pl/kuleczki-tapioki-gdzie-kupic",
+      "quantity": "500 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 354.0,
+        "protein": 0.2,
+        "carbs": 87.7,
+        "fat": 0.0,
+        "sugars": 3.3,
+        "fiber": 0.9,
+        "saturatedFat": 0.0,
+        "salt": 0.003
+      },
+      "price": 7.5,
+      "vegan": null,
+      "ean": "5906721138396"
+    },
+    {
+      "name": "Owoce liofilizowane Truskawka",
+      "brand": "MixIt",
+      "url": "https://fitironsklep.pl/liofilizowane-truskawki-gdzie-kupic",
+      "quantity": "13 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 287.0,
+        "protein": 8.0,
+        "carbs": 51.0,
+        "fat": 3.7,
+        "sugars": 51.0,
+        "fiber": 15.0,
+        "saturatedFat": 0.3,
+        "salt": 0.03
+      },
+      "price": 5.9,
+      "vegan": null,
+      "ean": "8594172180070"
+    },
+    {
+      "name": "BIO Mąka gryczana pełnoziarnista 500g",
+      "brand": "Bio Planet",
+      "url": "https://fitironsklep.pl/maka-gryczana-bezglutenowa-wlasciwosci",
+      "quantity": "500 g",
+      "category": "maki",
+      "nutrition": {
+        "kcal": 367.0,
+        "protein": 14.0,
+        "carbs": 68.6,
+        "fat": 2.7,
+        "sugars": 0.0,
+        "fiber": 5.9,
+        "saturatedFat": 0.6,
+        "salt": 0.01
+      },
+      "price": 10.9,
+      "vegan": null,
+      "ean": "5907814669834"
+    },
+    {
+      "name": "Migdał blanszowany 250g",
+      "brand": "Targroch",
+      "url": "https://fitironsklep.pl/migdaly-blanszowane-250g",
+      "quantity": "250 g",
+      "category": "orzechy",
+      "nutrition": {
+        "kcal": 602.0,
+        "protein": 21.9,
+        "carbs": 9.5,
+        "fat": 50.6,
+        "sugars": 5.0,
+        "fiber": 10.4,
+        "saturatedFat": 3.9,
+        "salt": 0.07
+      },
+      "price": 15.2,
+      "vegan": true,
+      "ean": "5903229005786"
+    },
+    {
+      "name": "Morele suszone niesiarkowane",
+      "brand": "Targroch",
+      "url": "https://fitironsklep.pl/morele-suszone-niesiarkowane",
+      "quantity": "500 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 301.0,
+        "protein": 10.0,
+        "carbs": 62.0,
+        "fat": 1.2,
+        "sugars": 62.0,
+        "fiber": 5.4,
+        "saturatedFat": 0.1,
+        "salt": 0.0
+      },
+      "price": 24.9,
+      "vegan": null,
+      "ean": "5903229000910"
+    },
+    {
+      "name": "Ryż do sushi 1000g",
+      "brand": "Targroch",
+      "url": "https://fitironsklep.pl/najlepszy-ryz-do-sushi",
+      "quantity": "1000 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 370.0,
+        "protein": 6.8,
+        "carbs": 81.7,
+        "fat": 0.6,
+        "sugars": 0.0,
+        "fiber": 2.8,
+        "saturatedFat": 0.2,
+        "salt": 0.0
+      },
+      "price": 10.9,
+      "vegan": null,
+      "ean": "5903229005120"
+    },
+    {
+      "name": "Nasiona konopi łuskane",
+      "brand": "Targroch",
+      "url": "https://fitironsklep.pl/nasiona-konopi-luskane-wlasciwosci",
+      "quantity": "250 g",
+      "category": "orzechy",
+      "nutrition": {
+        "kcal": 604.0,
+        "protein": 32.0,
+        "carbs": 1.0,
+        "fat": 52.0,
+        "sugars": 1.0,
+        "fiber": 2.0,
+        "saturatedFat": 4.0,
+        "salt": 0.0
+      },
+      "price": 15.9,
+      "vegan": true,
+      "ean": "5903229007490"
+    },
+    {
+      "name": "Olej z pestek dyni",
+      "brand": "Targroch",
+      "url": "https://fitironsklep.pl/olej-dyniowy-wlasciwosci",
+      "quantity": "250 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 900,
+        "protein": 0,
+        "carbs": 0,
+        "fat": 100,
+        "sugars": 0,
+        "fiber": 0,
+        "saturatedFat": 18,
+        "salt": 0
+      },
+      "price": 23.8,
+      "vegan": null,
+      "ean": "5903229005274"
+    },
+    {
+      "name": "Olej lniany 250ml",
+      "brand": "Targroch",
+      "url": "https://fitironsklep.pl/olej-lniany-250ml-targroch",
+      "quantity": "250 ml",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 900,
+        "protein": 0,
+        "carbs": 0,
+        "fat": 100,
+        "sugars": 0,
+        "fiber": 0,
+        "saturatedFat": 9,
+        "salt": 0
+      },
+      "price": 11.9,
+      "vegan": true,
+      "ean": "5903229005052"
+    },
+    {
+      "name": "Orzechy nerkowca",
+      "brand": "Targroch",
+      "url": "https://fitironsklep.pl/orzechy-nerkowca-cena",
+      "quantity": "1000 g",
+      "category": "orzechy",
+      "nutrition": {
+        "kcal": 603.0,
+        "protein": 15.3,
+        "carbs": 29.7,
+        "fat": 46.3,
+        "sugars": 5.0,
+        "fiber": 3.0,
+        "saturatedFat": 9.2,
+        "salt": 0.04
+      },
+      "price": 45.9,
+      "vegan": true,
+      "ean": "5903229008183"
+    },
+    {
+      "name": "Orzechy nerkowca połówki",
+      "brand": "Targroch",
+      "url": "https://fitironsklep.pl/orzechy-nerkowca-polowki",
+      "quantity": "1000 g",
+      "category": "orzechy",
+      "nutrition": {
+        "kcal": 603.0,
+        "protein": 15.3,
+        "carbs": 29.7,
+        "fat": 46.3,
+        "sugars": 5.0,
+        "fiber": 3.0,
+        "saturatedFat": 5.0,
+        "salt": 0.04
+      },
+      "price": 42.9,
+      "vegan": true,
+      "ean": "5903229007988"
+    },
+    {
+      "name": "Owoce liofilizowane Mieszanka Leśna 20g",
+      "brand": "MixIt",
+      "url": "https://fitironsklep.pl/owoce-lesne-liofilizowane-mieszanka",
+      "quantity": "20 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 247.0,
+        "protein": 7.5,
+        "carbs": 38.0,
+        "fat": 3.1,
+        "sugars": 38.0,
+        "fiber": 25.0,
+        "saturatedFat": 0.1,
+        "salt": 0.01
+      },
+      "price": 10.4,
+      "vegan": null,
+      "ean": "8594172181152"
+    },
+    {
+      "name": "Papryka słodka wędzona",
+      "brand": "Brat.pl",
+      "url": "https://fitironsklep.pl/papryka-slodka-wedzona",
+      "quantity": "250 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 390.0,
+        "protein": 14.1,
+        "carbs": 60.0,
+        "fat": 12.8,
+        "sugars": 10.3,
+        "fiber": 34.0,
+        "saturatedFat": 2.1,
+        "salt": 0.17
+      },
+      "price": 9.4,
+      "vegan": null,
+      "ean": "5906721137849"
+    },
+    {
+      "name": "Pasta orzechowa",
+      "brand": "Targroch",
+      "url": "https://fitironsklep.pl/pasta-orzechowa-targroch",
+      "quantity": "500 g",
+      "category": "smarowidla",
+      "nutrition": {
+        "kcal": 595,
+        "protein": 29.4,
+        "carbs": 11.9,
+        "fat": 46.1,
+        "sugars": 6.4,
+        "fiber": 7.3,
+        "saturatedFat": 6.1,
+        "salt": 0.04
+      },
+      "price": 12.9,
+      "vegan": true,
+      "ean": "5903229005243"
+    },
+    {
+      "name": "Pasta pistacjowa 170g",
+      "brand": "Targroch",
+      "url": "https://fitironsklep.pl/pasta-pistacjowa-targroch",
+      "quantity": "170 g",
+      "category": "smarowidla",
+      "nutrition": {
+        "kcal": 621,
+        "protein": 24.2,
+        "carbs": 18.9,
+        "fat": 48.5,
+        "sugars": 16.4,
+        "fiber": 6.1,
+        "saturatedFat": 6.0,
+        "salt": 0.02
+      },
+      "price": 37.9,
+      "vegan": true,
+      "ean": "5903229012159"
+    },
+    {
+      "name": "Pestki dyni",
+      "brand": "Targroch",
+      "url": "https://fitironsklep.pl/pestki-dyni-wartosci-odzywcze",
+      "quantity": "500 g",
+      "category": "orzechy",
+      "nutrition": {
+        "kcal": 589.0,
+        "protein": 28.9,
+        "carbs": 12.7,
+        "fat": 45.8,
+        "sugars": 1.1,
+        "fiber": 5.3,
+        "saturatedFat": 8.5,
+        "salt": 0.05
+      },
+      "price": 13.9,
+      "vegan": true,
+      "ean": "5903229002341"
+    },
+    {
+      "name": "Pieprz czarny ziarno 500g",
+      "brand": "Brat.pl",
+      "url": "https://fitironsklep.pl/pieprz-czarny-ziarnisty",
+      "quantity": "500 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 251.0,
+        "protein": 10.4,
+        "carbs": 64.0,
+        "fat": 3.3,
+        "sugars": 0.6,
+        "fiber": null,
+        "saturatedFat": 1.4,
+        "salt": 0.01
+      },
+      "price": 27.9,
+      "vegan": null,
+      "ean": "5906721136552"
+    },
+    {
+      "name": "OstroVit 100% Whey Isolate 700g, smak: słony karmel",
+      "brand": "Ostrovit",
+      "url": "https://fitironsklep.pl/pl/p/OstroVit-100-Whey-Isolate-700g/464",
+      "quantity": "700 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 345,
+        "protein": 83,
+        "carbs": 1.1,
+        "fat": 0.9,
+        "sugars": 1.1,
+        "fiber": null,
+        "saturatedFat": 0.6,
+        "salt": 0.79
+      },
+      "price": 129.0,
+      "vegan": null,
+      "ean": "5903933923093"
+    },
+    {
+      "name": "OstroVit 100% Whey Protein 2000 g, smak: Francuskiej wanilii",
+      "brand": "Ostrovit",
+      "url": "https://fitironsklep.pl/pl/p/OstroVit-100-Whey-Protein-2000-g/466",
+      "quantity": "2000 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 377,
+        "protein": 70,
+        "carbs": 15,
+        "fat": 2.2,
+        "sugars": 6.4,
+        "fiber": null,
+        "saturatedFat": 1.3,
+        "salt": 0.42
+      },
+      "price": 199.0,
+      "vegan": null,
+      "ean": "5903933910352"
+    },
+    {
+      "name": "OstroVit 100% Whey Protein 700g, smak: Biała czekolada",
+      "brand": "Ostrovit",
+      "url": "https://fitironsklep.pl/pl/p/OstroVit-100-Whey-Protein-700g/460",
+      "quantity": "700 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 377,
+        "protein": 70,
+        "carbs": 15,
+        "fat": 2.2,
+        "sugars": 6.4,
+        "fiber": null,
+        "saturatedFat": 1.3,
+        "salt": 0.42
+      },
+      "price": 134.9,
+      "vegan": null,
+      "ean": "5903933910291"
+    },
+    {
+      "name": "Płatki migdałowe 250g",
+      "brand": "Targroch",
+      "url": "https://fitironsklep.pl/platki-migdalowe-250g",
+      "quantity": "250 g",
+      "category": "orzechy",
+      "nutrition": {
+        "kcal": 602.0,
+        "protein": 21.9,
+        "carbs": 9.5,
+        "fat": 50.6,
+        "sugars": 5.0,
+        "fiber": 10.4,
+        "saturatedFat": 3.9,
+        "salt": 0.07
+      },
+      "price": 15.6,
+      "vegan": true,
+      "ean": "5903229004734"
+    },
+    {
+      "name": "Płatki orkiszowe",
+      "brand": "Targroch",
+      "url": "https://fitironsklep.pl/platki-orkiszowe-czy-owsiane",
+      "quantity": "1000 g",
+      "category": "sniadania",
+      "nutrition": {
+        "kcal": 344.0,
+        "protein": 14.6,
+        "carbs": 60.7,
+        "fat": 2.4,
+        "sugars": 6.8,
+        "fiber": 10.7,
+        "saturatedFat": 0.4,
+        "salt": 0.02
+      },
+      "price": 10.6,
+      "vegan": true,
+      "ean": "5903229003560"
+    },
+    {
+      "name": "Płatki owsiane",
+      "brand": "Brat.pl",
+      "url": "https://fitironsklep.pl/platki-owsiane-na-wodzie",
+      "quantity": "1000 g",
+      "category": "sniadania",
+      "nutrition": {
+        "kcal": 379.0,
+        "protein": 12.8,
+        "carbs": 62.4,
+        "fat": 7.2,
+        "sugars": 1.9,
+        "fiber": 6.9,
+        "saturatedFat": 1.25,
+        "salt": 0.01
+      },
+      "price": 8.2,
+      "vegan": true,
+      "ean": "5903229002167"
+    },
+    {
+      "name": "Rodzynki sułtańskie",
+      "brand": "Brat.pl",
+      "url": "https://fitironsklep.pl/rodzynki-sultanskie",
+      "quantity": "1000 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 326.0,
+        "protein": 3.1,
+        "carbs": 75.0,
+        "fat": 0.5,
+        "sugars": 59.0,
+        "fiber": 3.7,
+        "saturatedFat": 0.1,
+        "salt": 0.03
+      },
+      "price": 12.4,
+      "vegan": null,
+      "ean": "5906721130123"
+    },
+    {
+      "name": "BIO Ryż Basmati biały bezglutenowy 500g",
+      "brand": "Bio Planet",
+      "url": "https://fitironsklep.pl/ryz-basmati-bialy-bezglutenowy-bio-500g",
+      "quantity": "500 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 389.0,
+        "protein": 7.4,
+        "carbs": 78.0,
+        "fat": 0.6,
+        "sugars": 0.1,
+        "fiber": null,
+        "saturatedFat": 0.2,
+        "salt": 0.0
+      },
+      "price": 11.6,
+      "vegan": true,
+      "ean": "5907814664136"
+    },
+    {
+      "name": "Ryż brązowy",
+      "brand": "Brat.pl",
+      "url": "https://fitironsklep.pl/ryz-brazowy-indeks-glikemiczny",
+      "quantity": "500 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 353.0,
+        "protein": 7.1,
+        "carbs": 76.8,
+        "fat": 1.9,
+        "sugars": 0.8,
+        "fiber": 8.7,
+        "saturatedFat": 0.5,
+        "salt": 0.01
+      },
+      "price": 3.8,
+      "vegan": null,
+      "ean": "5906721133094"
+    },
+    {
+      "name": "Siemię lniane",
+      "brand": "Brat.pl",
+      "url": "https://fitironsklep.pl/siemie-lniane",
+      "quantity": "500 g",
+      "category": "orzechy",
+      "nutrition": {
+        "kcal": 499.0,
+        "protein": 28.9,
+        "carbs": 17.0,
+        "fat": 31.0,
+        "sugars": 0.3,
+        "fiber": 18.0,
+        "saturatedFat": 2.36,
+        "salt": 0.2
+      },
+      "price": 3.5,
+      "vegan": null,
+      "ean": "5906721132974"
+    },
+    {
+      "name": "Słonecznik łuskany",
+      "brand": "Brat.pl",
+      "url": "https://fitironsklep.pl/slonecznik-luskany-zastosowanie",
+      "quantity": "1000 g",
+      "category": "orzechy",
+      "nutrition": {
+        "kcal": 577.0,
+        "protein": 24.4,
+        "carbs": 18.6,
+        "fat": 43.7,
+        "sugars": 1.7,
+        "fiber": null,
+        "saturatedFat": 4.4,
+        "salt": 0.1
+      },
+      "price": 10.2,
+      "vegan": true,
+      "ean": "5906721130116"
+    },
+    {
+      "name": "Sól himalajska mielona 1000g",
+      "brand": "Brat.pl",
+      "url": "https://fitironsklep.pl/sol-himalajska-gdzie-kupic",
+      "quantity": "1000 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 0.0,
+        "protein": 0.0,
+        "carbs": 0.0,
+        "fat": 0.0,
+        "sugars": 0.0,
+        "fiber": 0.0,
+        "saturatedFat": 0.0,
+        "salt": 98.7
+      },
+      "price": 6.8,
+      "vegan": null,
+      "ean": "5902115103025"
+    },
+    {
+      "name": "BIO Spirulina sproszkowana 200g",
+      "brand": "Superfoods",
+      "url": "https://fitironsklep.pl/spirulina",
+      "quantity": "200 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 377.0,
+        "protein": 65.0,
+        "carbs": 16.0,
+        "fat": 5.4,
+        "sugars": 0.1,
+        "fiber": 3.1,
+        "saturatedFat": 2.6,
+        "salt": 1.7
+      },
+      "price": 22.5,
+      "vegan": true,
+      "ean": "5907814668684"
+    },
+    {
+      "name": "Syrop klonowy 250g",
+      "brand": "Targroch",
+      "url": "https://fitironsklep.pl/syrop-klonowy-czy-jest-zdrowy",
+      "quantity": "250 ml",
+      "category": "sosy",
+      "nutrition": {
+        "kcal": 260.0,
+        "protein": 0.0,
+        "carbs": 65.0,
+        "fat": 0.0,
+        "sugars": 65.0,
+        "fiber": null,
+        "saturatedFat": 0.0,
+        "salt": 0.01
+      },
+      "price": 29.9,
+      "vegan": true,
+      "ean": "5903229019592"
+    },
+    {
+      "name": "Baton daktylowy z nerkowcami i kokosem 40g",
+      "brand": "Targroch",
+      "url": "https://fitironsklep.pl/zdrowe-przekaski-dla-dzieci-do-szkoly",
+      "quantity": "40 g",
+      "category": "batony",
+      "nutrition": {
+        "kcal": 427.0,
+        "protein": 5.6,
+        "carbs": 46.3,
+        "fat": 22.1,
+        "sugars": 41.3,
+        "fiber": 10.0,
+        "saturatedFat": 12.6,
+        "salt": 0.07
+      },
+      "price": 2.9,
+      "vegan": true,
+      "ean": "5903229007391"
+    },
+    {
+      "name": "Baton HolaVanilla",
+      "brand": "Zmiany Zmiany",
+      "url": "https://fitironsklep.pl/zdrowy-baton-chalwowy-waniliowy-zmiany-zmiany",
+      "quantity": "40 g",
+      "category": "batony",
+      "nutrition": {
+        "kcal": 427.62,
+        "protein": 10.35,
+        "carbs": 49.9,
+        "fat": 21.81,
+        "sugars": 38.65,
+        "fiber": null,
+        "saturatedFat": 3.17,
+        "salt": 0.03
+      },
+      "price": 5.5,
+      "vegan": null,
+      "ean": "5905279630802"
+    },
+    {
+      "name": "Baton Aloha",
+      "brand": "Zmiany Zmiany",
+      "url": "https://fitironsklep.pl/zdrowy-baton-kokosowy-aloha",
+      "quantity": "70 g",
+      "category": "batony",
+      "nutrition": {
+        "kcal": 401.0,
+        "protein": 8.4,
+        "carbs": 52.4,
+        "fat": 21.4,
+        "sugars": 38.1,
+        "fiber": null,
+        "saturatedFat": 7.8,
+        "salt": 0.02
+      },
+      "price": 6.5,
+      "vegan": true,
+      "ean": "5905279630000"
+    },
+    {
+      "name": "Baton orzechowy Kompas",
+      "brand": "Zmiany Zmiany",
+      "url": "https://fitironsklep.pl/zdrowy-baton-orzechowy",
+      "quantity": "70 g",
+      "category": "batony",
+      "nutrition": {
+        "kcal": 431.0,
+        "protein": 12.3,
+        "carbs": 41.6,
+        "fat": 22.9,
+        "sugars": 34.1,
+        "fiber": null,
+        "saturatedFat": 4.0,
+        "salt": 0.0
+      },
+      "price": 5.9,
+      "vegan": true,
+      "ean": "5905279630109"
+    }
+  ]
+}

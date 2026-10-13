@@ -1,0 +1,1419 @@
+{
+  "id": "beketo",
+  "name": "BeKeto",
+  "url": "https://beketo.pl",
+  "checked": "2026-10-13",
+  "note": "Wartości odżywcze przepisane z grafik z tabelą wartości odżywczych na stronach produktów (sklep nie podaje ich tekstem). Pominięto: suplementy (kreatyna, elektrolity, ketony, witaminy, kapsułki, shoty, grzyby, żelki z kreatyną/biotyną, Keto Greens), akcesoria, e-booki, vouchery, zestawy. Jedna pozycja na linię smaków (inne smaki tylko przy różnicy >10% kcal lub białka); dla różnych pojemności tej samej pozycji wybrano najpopularniejszą. Keto Meal (saszetki 25 g) ujęte pod Keto Posiłek. Przy produktach ze słodzikami/błonnikiem kcal odbiega od 4/4/9 zgodnie z etykietą. W proszkach MCT, Keto Izolacie/Kolagenie i kawach błonnik jest na etykiecie wliczony w węglowodany. Gdzie etykieta podaje sód zamiast soli, sól = null. Wartości '<x' wpisano jako x (np. kolagen: białko >90 g -> 90). Niezgodność na stronie (kcal vs 4/4/9): Rustykalny Włoski Keto Spód do Pizzy, Włoski Keto Spód do Pizzy 100g, Keto Makaron Penne, Keto Tortilla, Keto Chleb Bezglutenowy, Kakao Funkcjonalne – Chillout, Keto Cukierki – Owocowa Mieszanka, BIO Erytrytol (sprawdzone ponownie; wynika z błonnika/polioli na etykiecie).",
+  "inconsistent": [
+    "Keto Cukierki – Owocowa Mieszanka 70g",
+    "Keto Makaron Penne 250g",
+    "Keto Chleb Bezglutenowy 190g",
+    "Keto Tortilla 4x40g",
+    "Rustykalny Włoski Keto Spód do Pizzy 190g",
+    "Włoski Keto Spód do Pizzy 100g",
+    "Kakao Funkcjonalne – Chillout (Olej MCT & Reishi) – Cynamon & Kardamon 250g",
+    "BIO Erytrytol 500g"
+  ],
+  "products": [
+    {
+      "name": "Czysty Izolat Białka – Bezsmakowy 800g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/czysty-izolat-bialka-bezsmakowy-800g/",
+      "quantity": "800 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 379,
+        "protein": 92,
+        "carbs": 4,
+        "fat": 1,
+        "sugars": 4,
+        "fiber": 0,
+        "saturatedFat": 1,
+        "salt": 0
+      },
+      "price": 199.9,
+      "vegan": null,
+      "ean": "5060834810713"
+    },
+    {
+      "name": "Czysty Kolagen Wołowy – Bezsmakowy 500g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/czysty-kolagen-wolowy-bezsmakowy-500g/",
+      "quantity": "500 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 370,
+        "protein": 90,
+        "carbs": 0.5,
+        "fat": 0.5,
+        "sugars": 0.5,
+        "fiber": 0,
+        "saturatedFat": 0.1,
+        "salt": 0.5
+      },
+      "price": 149.9,
+      "vegan": null,
+      "ean": "5060834811512"
+    },
+    {
+      "name": "Diet Keto Shake – Dzika Malina 500g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/keto-shake-dzika-malina-500g/",
+      "quantity": "500 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 356,
+        "protein": 61,
+        "carbs": 8.6,
+        "fat": 8.1,
+        "sugars": 5.6,
+        "fiber": 5.8,
+        "saturatedFat": 6.3,
+        "salt": 0
+      },
+      "price": 124.9,
+      "vegan": null,
+      "ean": "5060834810805"
+    },
+    {
+      "name": "Diet Keto Shake – Francuska Wanilia 500g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/keto-shake-francuska-wanilia-500g/",
+      "quantity": "500 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 361,
+        "protein": 68,
+        "carbs": 6.1,
+        "fat": 7.8,
+        "sugars": 3.7,
+        "fiber": 2.4,
+        "saturatedFat": 6.4,
+        "salt": 0.1
+      },
+      "price": 124.9,
+      "vegan": null,
+      "ean": "5060834810812"
+    },
+    {
+      "name": "Keto Izolat Białka z MCT – Francuska Wanilia 300g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/keto-izolat-bialka-z-mct-francuska-wanilia-300g/",
+      "quantity": "300 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 364,
+        "protein": 57,
+        "carbs": 5,
+        "fat": 13.6,
+        "sugars": 0,
+        "fiber": 5,
+        "saturatedFat": 13,
+        "salt": 0.5
+      },
+      "price": 111.9,
+      "vegan": null,
+      "ean": "5060834810119"
+    },
+    {
+      "name": "Keto Kolagen z olejem MCT – Bezsmakowy 300g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/keto-kolagen-z-olejem-mct-bezsmakowy-300g/",
+      "quantity": "300 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 436,
+        "protein": 71,
+        "carbs": 5.5,
+        "fat": 16.5,
+        "sugars": 0,
+        "fiber": 5.5,
+        "saturatedFat": 16.3,
+        "salt": 0
+      },
+      "price": 114.9,
+      "vegan": null,
+      "ean": "5060834810157"
+    },
+    {
+      "name": "Keto Kolagen z olejem MCT – Dzika Malina 300G",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/keto-kolagen-z-olejem-mct-dzika-malina-300g/",
+      "quantity": "300 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 353,
+        "protein": 51.5,
+        "carbs": 11,
+        "fat": 12,
+        "sugars": 4,
+        "fiber": 7,
+        "saturatedFat": 11.6,
+        "salt": 0
+      },
+      "price": 114.9,
+      "vegan": null,
+      "ean": "5060834810393"
+    },
+    {
+      "name": "Keto Kolagen z olejem MCT – Francuska Wanilia 300g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/keto-kolagen-z-olejem-mct-francuska-wanilia-300g/",
+      "quantity": "300 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 309,
+        "protein": 55,
+        "carbs": 3.5,
+        "fat": 10,
+        "sugars": 0,
+        "fiber": 3.5,
+        "saturatedFat": 9.8,
+        "salt": 0
+      },
+      "price": 114.9,
+      "vegan": null,
+      "ean": "5060834810164"
+    },
+    {
+      "name": "Wegańskie Białko – Francuska Wanilia 500g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/weganskie-bialko-francuska-wanilia-500g/",
+      "quantity": "500 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 371,
+        "protein": 71.9,
+        "carbs": 7.3,
+        "fat": 7.5,
+        "sugars": 5.0,
+        "fiber": 5.9,
+        "saturatedFat": 2.2,
+        "salt": 2.0
+      },
+      "price": 119.9,
+      "vegan": true,
+      "ean": "5060834811994"
+    },
+    {
+      "name": "Keto Baton – Kokos & Biała Czekolada 40g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/baton-keto-kokos-biala-czekolada-40g/",
+      "quantity": "40 g",
+      "category": "batony",
+      "nutrition": {
+        "kcal": 649,
+        "protein": 5.8,
+        "carbs": 19.0,
+        "fat": 58.0,
+        "sugars": 12.0,
+        "fiber": null,
+        "saturatedFat": 38.0,
+        "salt": 0.09
+      },
+      "price": 8.99,
+      "vegan": null,
+      "ean": "5060834810249"
+    },
+    {
+      "name": "Keto Baton – Orzechowy 40g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/baton-keto-orzechowy-40g/",
+      "quantity": "40 g",
+      "category": "batony",
+      "nutrition": {
+        "kcal": 638,
+        "protein": 15.0,
+        "carbs": 10.0,
+        "fat": 57.0,
+        "sugars": 3.0,
+        "fiber": null,
+        "saturatedFat": 21.0,
+        "salt": 0.21
+      },
+      "price": 8.99,
+      "vegan": null,
+      "ean": "5060834810225"
+    },
+    {
+      "name": "Keto Baton – Podwójna Czekolada 40g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/baton-keto-podwojna-czekolada-40g/",
+      "quantity": "40 g",
+      "category": "batony",
+      "nutrition": {
+        "kcal": 544,
+        "protein": 11.0,
+        "carbs": 21.0,
+        "fat": 41.0,
+        "sugars": 8.9,
+        "fiber": null,
+        "saturatedFat": 21.0,
+        "salt": 0.17
+      },
+      "price": 8.99,
+      "vegan": null,
+      "ean": "5060834810232"
+    },
+    {
+      "name": "Keto Baton – Waniliowe Brownie 40g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/keto-baton-waniliowe-brownie-40g/",
+      "quantity": "40 g",
+      "category": "batony",
+      "nutrition": {
+        "kcal": 440,
+        "protein": 20,
+        "carbs": 9.1,
+        "fat": 31,
+        "sugars": 2.6,
+        "fiber": 28,
+        "saturatedFat": 19,
+        "salt": 0.2
+      },
+      "price": 9.99,
+      "vegan": true,
+      "ean": "5060834811697"
+    },
+    {
+      "name": "BIO Kawa Ziarnista 250g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/bio-kawa-ziarnista-250g/",
+      "quantity": "250 g",
+      "category": "napoje",
+      "nutrition": {
+        "kcal": 0,
+        "protein": 0,
+        "carbs": 0,
+        "fat": 0,
+        "sugars": 0,
+        "fiber": null,
+        "saturatedFat": 0,
+        "salt": 0
+      },
+      "price": 49.9,
+      "vegan": true,
+      "ean": "5060834812168"
+    },
+    {
+      "name": "Kawa Rozpuszczalna – Brain Fuel (Olej MCT & Lion’s Mane) – Francuska Wanilia 250g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/kawa-rozpuszczalna-brain-fuel-olej-mct-lions-mane-francuska-wanilia-250g/",
+      "quantity": "250 g",
+      "category": "napoje",
+      "nutrition": {
+        "kcal": 50,
+        "protein": 1,
+        "carbs": 4,
+        "fat": 3,
+        "sugars": 0.5,
+        "fiber": 3.5,
+        "saturatedFat": 2.5,
+        "salt": 0
+      },
+      "price": 79.9,
+      "vegan": null,
+      "ean": "5060834811284"
+    },
+    {
+      "name": "Kawa Rozpuszczalna – Mushroom (Lion’s Mane & Cordyceps & Reishi) – Francuska Wanilia 250g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/kawa-rozpuszczalna-mushroom-lions-mane-cordyceps-reishi-francuska-wanilia-250g/",
+      "quantity": "250 g",
+      "category": "napoje",
+      "nutrition": {
+        "kcal": 25,
+        "protein": 0,
+        "carbs": 2,
+        "fat": 0,
+        "sugars": 0,
+        "fiber": 2,
+        "saturatedFat": 0,
+        "salt": 0
+      },
+      "price": 79.9,
+      "vegan": null,
+      "ean": "5060834811277"
+    },
+    {
+      "name": "Keto Kawa Supreme Coffee 250g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/keto-kawa-supreme-coffee-250g/",
+      "quantity": "250 g",
+      "category": "napoje",
+      "nutrition": {
+        "kcal": 52,
+        "protein": 0.2,
+        "carbs": 3.3,
+        "fat": 4.3,
+        "sugars": 0.4,
+        "fiber": 1.6,
+        "saturatedFat": 3.4,
+        "salt": 0.2
+      },
+      "price": 79.9,
+      "vegan": null,
+      "ean": "5060834810508"
+    },
+    {
+      "name": "Matcha Latte (Olej MCT C8 & Białko & Ghee) – Tradycyjna Japońska 250g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/matcha-latte-olej-mct-c8-bialko-ghee-tradycyjna-japonska-250g/",
+      "quantity": "250 g",
+      "category": "napoje",
+      "nutrition": {
+        "kcal": 632,
+        "protein": 14.8,
+        "carbs": 7.2,
+        "fat": 57.7,
+        "sugars": 0.0,
+        "fiber": 11.4,
+        "saturatedFat": 49.0,
+        "salt": 1.4
+      },
+      "price": 119.99,
+      "vegan": null,
+      "ean": "5060834812632"
+    },
+    {
+      "name": "Matcha Latte (Olej MCT C8 & Kolagen & Ghee) – Świeża Malina 250g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/matcha-latte-olej-mct-c8-kolagen-ghee-swieza-malina-250g/",
+      "quantity": "250 g",
+      "category": "napoje",
+      "nutrition": {
+        "kcal": 690,
+        "protein": 24.7,
+        "carbs": 9.8,
+        "fat": 58.0,
+        "sugars": 2.9,
+        "fiber": 13.9,
+        "saturatedFat": 49.1,
+        "salt": 1.2
+      },
+      "price": 119.99,
+      "vegan": null,
+      "ean": "5060834812625"
+    },
+    {
+      "name": "Galaretka Dietetyczna Konjac & Witaminy – Dzika Malina 150g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/galaretka-dietetyczna-konjac-dzika-malina-150g/",
+      "quantity": "150 g",
+      "category": "slodycze",
+      "nutrition": {
+        "kcal": 13,
+        "protein": 0.0,
+        "carbs": 7.7,
+        "fat": 0.0,
+        "sugars": 3.2,
+        "fiber": 0.6,
+        "saturatedFat": 0.0,
+        "salt": null
+      },
+      "price": 9.99,
+      "vegan": true,
+      "ean": "5060834812199"
+    },
+    {
+      "name": "Galaretka Dietetyczna Konjac – Zielone Jabłko 150g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/galaretka-dietetyczna-konjac-zielone-jablko-150g/",
+      "quantity": "150 g",
+      "category": "slodycze",
+      "nutrition": {
+        "kcal": 4,
+        "protein": 0.1,
+        "carbs": 0.9,
+        "fat": 0,
+        "sugars": 0,
+        "fiber": 0.2,
+        "saturatedFat": 0,
+        "salt": 0.0106
+      },
+      "price": 9.99,
+      "vegan": true,
+      "ean": "5060834811109"
+    },
+    {
+      "name": "Keto Ciastko – Biała Czekolada & Malina 40g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/keto-ciastko-biala-czekolada-malina-40g/",
+      "quantity": "40 g",
+      "category": "slodycze",
+      "nutrition": {
+        "kcal": 447,
+        "protein": 27.15,
+        "carbs": 25,
+        "fat": 25.5,
+        "sugars": 5.72,
+        "fiber": 21.2,
+        "saturatedFat": 5.7,
+        "salt": 0.11
+      },
+      "price": 8.49,
+      "vegan": null,
+      "ean": "5060834811550"
+    },
+    {
+      "name": "Keto Ciastko – Kokos & Migdał 50g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/keto-cookie-coconut-almond-50g/",
+      "quantity": "50 g",
+      "category": "slodycze",
+      "nutrition": {
+        "kcal": 456,
+        "protein": 8.7,
+        "carbs": 16.4,
+        "fat": 38.7,
+        "sugars": 3.3,
+        "fiber": 37.5,
+        "saturatedFat": 20.2,
+        "salt": 1
+      },
+      "price": 8.49,
+      "vegan": null,
+      "ean": "5060834810461"
+    },
+    {
+      "name": "Keto Ciastko – Masło Orzechowe 50g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/keto-cookie-peanut-butter-50g/",
+      "quantity": "50 g",
+      "category": "slodycze",
+      "nutrition": {
+        "kcal": 467,
+        "protein": 17.7,
+        "carbs": 11.3,
+        "fat": 33.1,
+        "sugars": 9.8,
+        "fiber": 26.7,
+        "saturatedFat": 12.6,
+        "salt": 1
+      },
+      "price": 8.49,
+      "vegan": null,
+      "ean": "5060834810454"
+    },
+    {
+      "name": "Keto Cukierki – Owocowa Mieszanka 70g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/keto-cukierki-owocowa-mieszanka-70g/",
+      "quantity": "70 g",
+      "category": "slodycze",
+      "nutrition": {
+        "kcal": 276,
+        "protein": 0,
+        "carbs": 87.35,
+        "fat": 6.1,
+        "sugars": 0.84,
+        "fiber": 0.2,
+        "saturatedFat": 3.37,
+        "salt": null
+      },
+      "price": 13.99,
+      "vegan": null,
+      "ean": "5060834811314"
+    },
+    {
+      "name": "Keto Dubajska Czekolada 130g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/keto-dubajska-czekolada-130g/",
+      "quantity": "130 g",
+      "category": "slodycze",
+      "nutrition": {
+        "kcal": 520,
+        "protein": 15.2,
+        "carbs": 28.3,
+        "fat": 35.4,
+        "sugars": 11.1,
+        "fiber": 14.0,
+        "saturatedFat": 16.9,
+        "salt": 0.3
+      },
+      "price": 44.9,
+      "vegan": null,
+      "ean": "5060834811871"
+    },
+    {
+      "name": "Wegańska Keto Czekolada z Olejem MCT – Chrupiący Migdał 80g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/weganska-keto-czekolada-z-olejem-mct-chrupiacy-migdal-80g/",
+      "quantity": "80 g",
+      "category": "slodycze",
+      "nutrition": {
+        "kcal": 577,
+        "protein": 10.5,
+        "carbs": 8.6,
+        "fat": 51.5,
+        "sugars": 4.8,
+        "fiber": 23.6,
+        "saturatedFat": 24.7,
+        "salt": 0.2
+      },
+      "price": 17.9,
+      "vegan": true,
+      "ean": "5060834810263"
+    },
+    {
+      "name": "Wegańska Keto Czekolada z Olejem MCT – Dzika Malina 80g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/weganska-keto-czekolada-z-olejem-mct-dzika-malina-80g/",
+      "quantity": "80 g",
+      "category": "slodycze",
+      "nutrition": {
+        "kcal": 552,
+        "protein": 6,
+        "carbs": 11.4,
+        "fat": 49.5,
+        "sugars": 6.6,
+        "fiber": 27,
+        "saturatedFat": 30.5,
+        "salt": 0.2
+      },
+      "price": 17.9,
+      "vegan": true,
+      "ean": "5060834810331"
+    },
+    {
+      "name": "Keto Dżem™ Mango & Marakuja 200g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/keto-dzem-mango-marakuja-200g/",
+      "quantity": "200 g",
+      "category": "smarowidla",
+      "nutrition": {
+        "kcal": 87,
+        "protein": 0.7,
+        "carbs": 18,
+        "fat": 0,
+        "sugars": 4.6,
+        "fiber": 3.5,
+        "saturatedFat": 0,
+        "salt": 0.03
+      },
+      "price": 15.99,
+      "vegan": null,
+      "ean": "5060834812120"
+    },
+    {
+      "name": "Keto Dżem™ Soczysta Brzoskwinia 200g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/keto-dzem-soczysta-brzoskwinia-200g/",
+      "quantity": "200 g",
+      "category": "smarowidla",
+      "nutrition": {
+        "kcal": 107,
+        "protein": 0.7,
+        "carbs": 25,
+        "fat": 0,
+        "sugars": 4.2,
+        "fiber": 1.8,
+        "saturatedFat": 0,
+        "salt": 0.03
+      },
+      "price": 15.99,
+      "vegan": null,
+      "ean": "5060834810560"
+    },
+    {
+      "name": "Keto Krem™ Biała Czekolada & Malina 250g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/keto-krem-biala-czekolada-malina-250g/",
+      "quantity": "250 g",
+      "category": "smarowidla",
+      "nutrition": {
+        "kcal": 551,
+        "protein": 3.9,
+        "carbs": 17.7,
+        "fat": 45.3,
+        "sugars": 5,
+        "fiber": 27.3,
+        "saturatedFat": 43.2,
+        "salt": 0
+      },
+      "price": 38.9,
+      "vegan": null,
+      "ean": "5060834810850"
+    },
+    {
+      "name": "Keto Krem™ Czekoladowy Król 250g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/keto-krem-czekoladowy-krol-250g/",
+      "quantity": "250 g",
+      "category": "smarowidla",
+      "nutrition": {
+        "kcal": 503,
+        "protein": 14,
+        "carbs": 5.2,
+        "fat": 42,
+        "sugars": 5,
+        "fiber": 13.4,
+        "saturatedFat": 8.4,
+        "salt": 0.3
+      },
+      "price": 44.9,
+      "vegan": null,
+      "ean": "5060834811451"
+    },
+    {
+      "name": "Keto Krem™ Królowa Pistacja 250g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/keto-krem-krolowa-pistacja-250g/",
+      "quantity": "250 g",
+      "category": "smarowidla",
+      "nutrition": {
+        "kcal": 520,
+        "protein": 9,
+        "carbs": 17,
+        "fat": 44,
+        "sugars": 8,
+        "fiber": 26,
+        "saturatedFat": 18,
+        "salt": 0
+      },
+      "price": 44.9,
+      "vegan": null,
+      "ean": "5060834811901"
+    },
+    {
+      "name": "Keto Krem™ Migdał & Wanilia 250g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/keto-krem-migdal-wanilia-250g/",
+      "quantity": "250 g",
+      "category": "smarowidla",
+      "nutrition": {
+        "kcal": 487,
+        "protein": 7.1,
+        "carbs": 7.6,
+        "fat": 40.7,
+        "sugars": 6.1,
+        "fiber": 31.4,
+        "saturatedFat": 27.7,
+        "salt": 0.4
+      },
+      "price": 38.9,
+      "vegan": null,
+      "ean": "5060834810324"
+    },
+    {
+      "name": "Keto Ketchup 470g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/keto-ketchup-470g/",
+      "quantity": "470 g",
+      "category": "sosy",
+      "nutrition": {
+        "kcal": 47,
+        "protein": 1.4,
+        "carbs": 8.9,
+        "fat": 0.2,
+        "sugars": 6.1,
+        "fiber": 1.7,
+        "saturatedFat": 0.0,
+        "salt": 1.8
+      },
+      "price": 24.99,
+      "vegan": null,
+      "ean": "5060834812106"
+    },
+    {
+      "name": "Keto Majonez 390g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/keto-majonez-390g/",
+      "quantity": "390 g",
+      "category": "sosy",
+      "nutrition": {
+        "kcal": 697,
+        "protein": 0.7,
+        "carbs": 0.1,
+        "fat": 77.1,
+        "sugars": 0.0,
+        "fiber": null,
+        "saturatedFat": 5.7,
+        "salt": 0.8
+      },
+      "price": 24.99,
+      "vegan": null,
+      "ean": "5060834812700"
+    },
+    {
+      "name": "Keto Musztarda 480g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/keto-musztarda-480g/",
+      "quantity": "480 g",
+      "category": "sosy",
+      "nutrition": {
+        "kcal": 84,
+        "protein": 5.1,
+        "carbs": 8.0,
+        "fat": 4.4,
+        "sugars": 0.8,
+        "fiber": null,
+        "saturatedFat": 0.5,
+        "salt": 2.2
+      },
+      "price": 24.99,
+      "vegan": null,
+      "ean": "5060834811949"
+    },
+    {
+      "name": "Keto Sos Czosnkowy 390g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/keto-sos-czosnkowy-390g/",
+      "quantity": "390 g",
+      "category": "sosy",
+      "nutrition": {
+        "kcal": 627,
+        "protein": 0.7,
+        "carbs": 0.7,
+        "fat": 69.0,
+        "sugars": 0.3,
+        "fiber": null,
+        "saturatedFat": 5.0,
+        "salt": 1.32
+      },
+      "price": 24.99,
+      "vegan": null,
+      "ean": "5060834812717"
+    },
+    {
+      "name": "Keto Makaron Penne 250g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/keto-makaron-penne-250g/",
+      "quantity": "250 g",
+      "category": "makaron",
+      "nutrition": {
+        "kcal": 284,
+        "protein": 36,
+        "carbs": 9.8,
+        "fat": 4.8,
+        "sugars": 0.4,
+        "fiber": 29,
+        "saturatedFat": 2,
+        "salt": 0.6
+      },
+      "price": 24.99,
+      "vegan": null,
+      "ean": "5060834811598"
+    },
+    {
+      "name": "Makaron Konjac Fettuccine 320g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/bio-makaron-konjac-fettuccine-320g/",
+      "quantity": "320 g",
+      "category": "makaron",
+      "nutrition": {
+        "kcal": 6,
+        "protein": 0.1,
+        "carbs": 1.3,
+        "fat": 0,
+        "sugars": 0,
+        "fiber": 0.5,
+        "saturatedFat": 0,
+        "salt": null
+      },
+      "price": 14.99,
+      "vegan": null,
+      "ean": "5060834810584"
+    },
+    {
+      "name": "Keto Chleb – Mieszanka do Wypieków 300g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/keto-chleb-mieszanka-do-wypiekow-300g/",
+      "quantity": "300 g",
+      "category": "maki",
+      "nutrition": {
+        "kcal": 293,
+        "protein": 14,
+        "carbs": 5,
+        "fat": 23,
+        "sugars": 2,
+        "fiber": 7,
+        "saturatedFat": 12,
+        "salt": 1
+      },
+      "price": 29.9,
+      "vegan": null,
+      "ean": "5060834810799"
+    },
+    {
+      "name": "Keto Bajgle Bezglutenowe 150g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/keto-bajgle-bezglutenowe-150g/",
+      "quantity": "2 x 75 g",
+      "category": "pieczywo",
+      "nutrition": {
+        "kcal": 407,
+        "protein": 15,
+        "carbs": 1.6,
+        "fat": 35,
+        "sugars": 1.5,
+        "fiber": 12,
+        "saturatedFat": 2.9,
+        "salt": 1.5
+      },
+      "price": 13.99,
+      "vegan": null,
+      "ean": "5060834811031"
+    },
+    {
+      "name": "Keto Bułeczki Bezglutenowe 4x25g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/keto-buleczki-bezglutenowe-4x25g/",
+      "quantity": "4 x 25 g",
+      "category": "pieczywo",
+      "nutrition": {
+        "kcal": 431,
+        "protein": 16,
+        "carbs": 1.7,
+        "fat": 38,
+        "sugars": 1.7,
+        "fiber": 10,
+        "saturatedFat": 3.3,
+        "salt": 1.5
+      },
+      "price": 11.99,
+      "vegan": null,
+      "ean": "5060834810645"
+    },
+    {
+      "name": "Keto Bułki do Burgerów 2x85g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/keto-bulki-do-burgerow-2x85g/",
+      "quantity": "2 x 85 g",
+      "category": "pieczywo",
+      "nutrition": {
+        "kcal": 431,
+        "protein": 16,
+        "carbs": 1.7,
+        "fat": 38,
+        "sugars": 1.7,
+        "fiber": 10,
+        "saturatedFat": 3.3,
+        "salt": 1.5
+      },
+      "price": 14.99,
+      "vegan": null,
+      "ean": "5060834811864"
+    },
+    {
+      "name": "Keto Chleb Bezglutenowy 190g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/keto-chleb-bezglutenowy-190g/",
+      "quantity": "190 g",
+      "category": "pieczywo",
+      "nutrition": {
+        "kcal": 280,
+        "protein": 15,
+        "carbs": 1.7,
+        "fat": 19,
+        "sugars": 1.7,
+        "fiber": 20,
+        "saturatedFat": 3.2,
+        "salt": 1
+      },
+      "price": 14.99,
+      "vegan": null,
+      "ean": "5060834810416"
+    },
+    {
+      "name": "Keto Chleb Tostowy Wysokobiałkowy 365g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/keto-chleb-tostowy-wysokobialkowy-365g/",
+      "quantity": "365 g",
+      "category": "pieczywo",
+      "nutrition": {
+        "kcal": 221,
+        "protein": 29.7,
+        "carbs": 9.0,
+        "fat": 4.1,
+        "sugars": 1.8,
+        "fiber": 10.4,
+        "saturatedFat": 1.5,
+        "salt": 0.6
+      },
+      "price": 27.99,
+      "vegan": null,
+      "ean": "5060834812250"
+    },
+    {
+      "name": "Keto Chleb Wieloziarnisty 360g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/keto-chleb-wieloziarnisty-360g/",
+      "quantity": "360 g",
+      "category": "pieczywo",
+      "nutrition": {
+        "kcal": 262,
+        "protein": 30.1,
+        "carbs": 8.1,
+        "fat": 10,
+        "sugars": 1.2,
+        "fiber": 9.1,
+        "saturatedFat": 1.42,
+        "salt": 1.36
+      },
+      "price": 24.99,
+      "vegan": null,
+      "ean": "5060834810867"
+    },
+    {
+      "name": "Keto Chrupkie Pieczywo 90g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/keto-chrupkie-pieczywo-90g/",
+      "quantity": "90 g",
+      "category": "pieczywo",
+      "nutrition": {
+        "kcal": 559,
+        "protein": 18,
+        "carbs": 15,
+        "fat": 44,
+        "sugars": 2.1,
+        "fiber": 16,
+        "saturatedFat": 4,
+        "salt": 1.34
+      },
+      "price": 10.99,
+      "vegan": null,
+      "ean": "5060834811796"
+    },
+    {
+      "name": "Keto Tortilla 4x40g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/keto-tortilla-4x40g/",
+      "quantity": "4 x 40 g",
+      "category": "pieczywo",
+      "nutrition": {
+        "kcal": 288,
+        "protein": 19.7,
+        "carbs": 11.6,
+        "fat": 12.9,
+        "sugars": 0.9,
+        "fiber": 23.2,
+        "saturatedFat": 2.8,
+        "salt": 1.7
+      },
+      "price": 24.99,
+      "vegan": null,
+      "ean": "5060834811048"
+    },
+    {
+      "name": "Niskowęglowodanowy Croissant 50g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/niskoweglowodanowy-croissant-50g/",
+      "quantity": "50 g",
+      "category": "pieczywo",
+      "nutrition": {
+        "kcal": 342,
+        "protein": 25,
+        "carbs": 8,
+        "fat": 20,
+        "sugars": 1,
+        "fiber": 15,
+        "saturatedFat": 11,
+        "salt": 1.12
+      },
+      "price": 9.99,
+      "vegan": null,
+      "ean": "5060834811116"
+    },
+    {
+      "name": "Niskowęglowodanowy Croissant Wyśmienita Pistacja 50g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/niskoweglowodanowy-croissant-wysmienita-pistacja-50g/",
+      "quantity": "50 g",
+      "category": "pieczywo",
+      "nutrition": {
+        "kcal": 336,
+        "protein": 15.0,
+        "carbs": 6.0,
+        "fat": 23.0,
+        "sugars": 1.0,
+        "fiber": 25.0,
+        "saturatedFat": 11.0,
+        "salt": 1.12
+      },
+      "price": 9.99,
+      "vegan": null,
+      "ean": "5060834812649"
+    },
+    {
+      "name": "Niskowęglowodanowy Croissant z Nadzieniem Czekoladowym 50g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/niskoweglowodanowy-croissant-z-nadzieniem-czekoladowym-50g/",
+      "quantity": "50 g",
+      "category": "pieczywo",
+      "nutrition": {
+        "kcal": 402,
+        "protein": 13.5,
+        "carbs": 27,
+        "fat": 25,
+        "sugars": 1,
+        "fiber": 10,
+        "saturatedFat": 12.5,
+        "salt": 1.15
+      },
+      "price": 9.99,
+      "vegan": null,
+      "ean": "5060834811260"
+    },
+    {
+      "name": "Rustykalny Włoski Keto Spód do Pizzy 190g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/rustykalny-wloski-keto-spod-do-pizzy-190g/",
+      "quantity": "190 g",
+      "category": "pieczywo",
+      "nutrition": {
+        "kcal": 175,
+        "protein": 13.7,
+        "carbs": 2.9,
+        "fat": 4.0,
+        "sugars": 0.5,
+        "fiber": 37.0,
+        "saturatedFat": 3.4,
+        "salt": 1.0
+      },
+      "price": 34.99,
+      "vegan": null,
+      "ean": "5060834813134"
+    },
+    {
+      "name": "Włoski Keto Spód do Pizzy 100g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/wloski-keto-spod-do-pizzy-100g/",
+      "quantity": "100 g",
+      "category": "pieczywo",
+      "nutrition": {
+        "kcal": 250,
+        "protein": 15,
+        "carbs": 10,
+        "fat": 10,
+        "sugars": 1,
+        "fiber": 30,
+        "saturatedFat": 4,
+        "salt": 1.2
+      },
+      "price": 18.99,
+      "vegan": null,
+      "ean": "5060834811369"
+    },
+    {
+      "name": "Świeży Keto Chleb Wieloziarnisty 550g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/swiezy-keto-chleb-wieloziarnisty-550g/",
+      "quantity": "550 g",
+      "category": "pieczywo",
+      "nutrition": {
+        "kcal": 352,
+        "protein": 14,
+        "carbs": 0.7,
+        "fat": 27,
+        "sugars": 0.6,
+        "fiber": 25,
+        "saturatedFat": 2.9,
+        "salt": 1.2
+      },
+      "price": 29.99,
+      "vegan": null,
+      "ean": "5060834812663"
+    },
+    {
+      "name": "BIO Keto Granola – Francuska Wanilia 250g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/bio-keto-granola-francuska-wanilia-250g/",
+      "quantity": "250 g",
+      "category": "sniadania",
+      "nutrition": {
+        "kcal": 596,
+        "protein": 14.3,
+        "carbs": 7.2,
+        "fat": 52,
+        "sugars": 5.7,
+        "fiber": 3.2,
+        "saturatedFat": 38,
+        "salt": 0.4
+      },
+      "price": 39.99,
+      "vegan": null,
+      "ean": "5060834811772"
+    },
+    {
+      "name": "BIO Keto Granola – Kakao i Czekolada 250g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/bio-keto-granola-kakao-i-czekolada-250g/",
+      "quantity": "250 g",
+      "category": "sniadania",
+      "nutrition": {
+        "kcal": 673,
+        "protein": 15,
+        "carbs": 7.8,
+        "fat": 60,
+        "sugars": 4.5,
+        "fiber": 5.8,
+        "saturatedFat": 34,
+        "salt": 0.2
+      },
+      "price": 39.99,
+      "vegan": null,
+      "ean": "5060834811789"
+    },
+    {
+      "name": "Keto Chipsy – Ser Szwajcarski & Francuska Cebulka 30g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/keto-chipsy-ser-szwajcarski-francuska-cebulka-30g/",
+      "quantity": "30 g",
+      "category": "przekaski",
+      "nutrition": {
+        "kcal": 359,
+        "protein": 44.8,
+        "carbs": 14.5,
+        "fat": 10,
+        "sugars": 0.8,
+        "fiber": 16,
+        "saturatedFat": 1.2,
+        "salt": 3.0
+      },
+      "price": 11.99,
+      "vegan": null,
+      "ean": "5060834810737"
+    },
+    {
+      "name": "Keto Chipsy – Świeża Czerwona Papryka 30g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/keto-chipsy-swieza-czerwona-papryka-30g/",
+      "quantity": "30 g",
+      "category": "przekaski",
+      "nutrition": {
+        "kcal": 362,
+        "protein": 40,
+        "carbs": 19.6,
+        "fat": 10.2,
+        "sugars": 2.9,
+        "fiber": 15.9,
+        "saturatedFat": 1,
+        "salt": 3.2
+      },
+      "price": 11.99,
+      "vegan": null,
+      "ean": "5060834810720"
+    },
+    {
+      "name": "Keto Posiłek – Belgijska Czekolada 700g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/keto-posilek-belgijska-czekolada-700g/",
+      "quantity": "700 g",
+      "category": "dania",
+      "nutrition": {
+        "kcal": 556,
+        "protein": 37,
+        "carbs": 12,
+        "fat": 39,
+        "sugars": 3.3,
+        "fiber": 7,
+        "saturatedFat": 32,
+        "salt": null
+      },
+      "price": 154.9,
+      "vegan": true,
+      "ean": "5060834811499"
+    },
+    {
+      "name": "Kakao Funkcjonalne – Chillout (Olej MCT & Reishi) – Cynamon & Kardamon 250g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/kakao-ceremonialne-chillout-olej-mct-reishi-cynamon-kardamon-250g/",
+      "quantity": "250 g",
+      "category": "kakao",
+      "nutrition": {
+        "kcal": 352,
+        "protein": 20.0,
+        "carbs": 21.4,
+        "fat": 14.5,
+        "sugars": 0.6,
+        "fiber": 28.2,
+        "saturatedFat": 9.9,
+        "salt": 0.4
+      },
+      "price": 109.99,
+      "vegan": null,
+      "ean": "5060834812267"
+    },
+    {
+      "name": "BIO Olej Kokosowy",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/bio-olej-kokosowy/",
+      "quantity": "250 ml",
+      "category": "kokos",
+      "nutrition": {
+        "kcal": 900,
+        "protein": 0,
+        "carbs": 0,
+        "fat": 99.8,
+        "sugars": 0,
+        "fiber": 0,
+        "saturatedFat": 93.4,
+        "salt": 0
+      },
+      "price": 19.99,
+      "vegan": null,
+      "ean": "5060834811918"
+    },
+    {
+      "name": "Masło Klarowane Ghee 240g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/maslo-klarowane-ghee-240g/",
+      "quantity": "240 g",
+      "category": "nabial",
+      "nutrition": {
+        "kcal": 896,
+        "protein": 0,
+        "carbs": 0,
+        "fat": 99.6,
+        "sugars": 0,
+        "fiber": 0,
+        "saturatedFat": 59,
+        "salt": 0
+      },
+      "price": 39.99,
+      "vegan": null,
+      "ean": "5060834810928"
+    },
+    {
+      "name": "BIO Erytrytol 500g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/bio-erytrytol-500g/",
+      "quantity": "500 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 0,
+        "protein": 0,
+        "carbs": 99.5,
+        "fat": 0,
+        "sugars": 0,
+        "fiber": 0,
+        "saturatedFat": 0,
+        "salt": 0
+      },
+      "price": 25.9,
+      "vegan": null,
+      "ean": "5060834810430"
+    },
+    {
+      "name": "BIO Olej MCT 100% C8 1000ml",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/bio-olej-mct-100-c8-1000ml/",
+      "quantity": "1000 ml",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 900,
+        "protein": 0,
+        "carbs": 0,
+        "fat": 100,
+        "sugars": 0,
+        "fiber": 0,
+        "saturatedFat": 100,
+        "salt": 0
+      },
+      "price": 152.9,
+      "vegan": null,
+      "ean": "5060834810072"
+    },
+    {
+      "name": "BIO Olej MCT w proszku – Bezsmakowy 300g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/bio-olej-mct-w-proszku-bezsmakowy-300g/",
+      "quantity": "300 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 689,
+        "protein": 0,
+        "carbs": 24,
+        "fat": 71,
+        "sugars": 0,
+        "fiber": 24,
+        "saturatedFat": 57,
+        "salt": 0
+      },
+      "price": 114.9,
+      "vegan": null,
+      "ean": "5060834810003"
+    },
+    {
+      "name": "Fat Expert Powder 300g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/fat-expert-powder-300g/",
+      "quantity": "300 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 711,
+        "protein": 10.9,
+        "carbs": 14.3,
+        "fat": 71,
+        "sugars": null,
+        "fiber": 14.3,
+        "saturatedFat": 61.5,
+        "salt": 0.23
+      },
+      "price": 124.9,
+      "vegan": null,
+      "ean": "5060834810485"
+    },
+    {
+      "name": "Krople Smakowe – Francuska Wanilia 50ml",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/krople-smakowe-francuska-wanilia-50ml/",
+      "quantity": "50 ml",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 0,
+        "protein": 0,
+        "carbs": 0,
+        "fat": 0,
+        "sugars": 0,
+        "fiber": null,
+        "saturatedFat": 0,
+        "salt": 0
+      },
+      "price": 29.99,
+      "vegan": true,
+      "ean": "5060834812083"
+    },
+    {
+      "name": "Olej MCT C8+C10 1000ml",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/olej-mct-c8c10-1000ml/",
+      "quantity": "1000 ml",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 900,
+        "protein": 0,
+        "carbs": 0,
+        "fat": 100,
+        "sugars": 0,
+        "fiber": 0,
+        "saturatedFat": 100,
+        "salt": 0
+      },
+      "price": 119.9,
+      "vegan": null,
+      "ean": "5060834810058"
+    },
+    {
+      "name": "Olej MCT w proszku – Francuska Wanilia 300g",
+      "brand": "BeKeto",
+      "url": "https://beketo.pl/produkt/olej-mct-w-proszku-francuska-wanilia-300g/",
+      "quantity": "300 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 543,
+        "protein": 0,
+        "carbs": 23.6,
+        "fat": 55,
+        "sugars": 0.6,
+        "fiber": 23,
+        "saturatedFat": 55,
+        "salt": 0
+      },
+      "price": 114.9,
+      "vegan": null,
+      "ean": "5060834810010"
+    }
+  ]
+}

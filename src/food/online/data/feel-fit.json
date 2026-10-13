@@ -1,0 +1,469 @@
+{
+  "id": "feel-fit",
+  "name": "Feel Fit",
+  "url": "https://feel-fit.pl",
+  "checked": "2026-10-13",
+  "note": "Strona producenta (Newtrition) – bez własnego sklepu i cen (sklep.feel-fit.pl nie działa, zakup przez Allegro/Amazon/sklepy partnerskie); wartości z tabel na stronach produktów. Pominięto smaki o zbliżonych wartościach (Protein 28% karmel, Raw Nuts & Seeds z wiśniami, ENJOY! Choco&Peanut, Protein Milky-nut) i zdublowane strony Protein Pistachio. Niezgodność na stronie: Raw Nuts & Seeds z migdałami – białko w kolumnach 100 g/20 g zamienione (2,5 g/12 g), przyjęto 12 g/100 g zgodnie z kcal. Granola Wake Up występuje tylko w angielskiej wersji strony – pominięta.",
+  "products": [
+    {
+      "name": "Raw Nuts & Seeds Energy – baton z orzechami nerkowca, surowymi ziarnami kakao i czarną porzeczką",
+      "brand": "Feel FIT",
+      "url": "https://feel-fit.pl/produkt/raw-nuts-seeds-energy-zolty/",
+      "quantity": null,
+      "category": "batony",
+      "nutrition": {
+        "kcal": 438.0,
+        "protein": 8.6,
+        "carbs": 46.0,
+        "fat": 21.0,
+        "sugars": 29.0,
+        "fiber": 17.0,
+        "saturatedFat": 3.7,
+        "salt": 0.09
+      },
+      "price": null,
+      "vegan": null,
+      "ean": null
+    },
+    {
+      "name": "Raw Nuts & Seeds Energy – baton z migdałami, żurawiną i nasionami dyni",
+      "brand": "Feel FIT",
+      "url": "https://feel-fit.pl/produkt/raw-nuts-seeds-energy-zielony/",
+      "quantity": null,
+      "category": "batony",
+      "nutrition": {
+        "kcal": 366.0,
+        "protein": 12.0,
+        "carbs": 47.0,
+        "fat": 9.5,
+        "sugars": 26.0,
+        "fiber": 22.0,
+        "saturatedFat": 1.0,
+        "salt": 0.08
+      },
+      "price": null,
+      "vegan": null,
+      "ean": null
+    },
+    {
+      "name": "Protein 35% – baton proteinowy o smaku kokosowym",
+      "brand": "Feel FIT",
+      "url": "https://feel-fit.pl/produkt/protein-35-kokos/",
+      "quantity": null,
+      "category": "batony",
+      "nutrition": {
+        "kcal": 394.0,
+        "protein": 35.0,
+        "carbs": 28.0,
+        "fat": 17.0,
+        "sugars": 4.0,
+        "fiber": 6.5,
+        "saturatedFat": 12.0,
+        "salt": 0.3
+      },
+      "price": null,
+      "vegan": null,
+      "ean": null
+    },
+    {
+      "name": "Protein 28% – baton proteinowy o smaku waniliowym",
+      "brand": "Feel FIT",
+      "url": "https://feel-fit.pl/produkt/protein-28-wanilia/",
+      "quantity": null,
+      "category": "batony",
+      "nutrition": {
+        "kcal": 402.0,
+        "protein": 28.0,
+        "carbs": 45.5,
+        "fat": 14.5,
+        "sugars": 4.0,
+        "fiber": 8.5,
+        "saturatedFat": 10.0,
+        "salt": 0.5
+      },
+      "price": null,
+      "vegan": null,
+      "ean": null
+    },
+    {
+      "name": "Protein Veggie Paste – pasta z wędzoną papryką",
+      "brand": "Feel FIT",
+      "url": "https://feel-fit.pl/produkt/protein-veggie-paste-papryka/",
+      "quantity": null,
+      "category": "smarowidla",
+      "nutrition": {
+        "kcal": 158.0,
+        "protein": 8.0,
+        "carbs": 8.5,
+        "fat": 9.8,
+        "sugars": 2.4,
+        "fiber": 3.0,
+        "saturatedFat": 0.9,
+        "salt": 0.98
+      },
+      "price": null,
+      "vegan": true,
+      "ean": null
+    },
+    {
+      "name": "Protein Veggie Paste – hummus naturalny z czarnuszką",
+      "brand": "Feel FIT",
+      "url": "https://feel-fit.pl/produkt/protein-veggie-paste-hummus/",
+      "quantity": null,
+      "category": "smarowidla",
+      "nutrition": {
+        "kcal": 186.0,
+        "protein": 9.3,
+        "carbs": 10.0,
+        "fat": 11.0,
+        "sugars": 0.6,
+        "fiber": 3.4,
+        "saturatedFat": 1.1,
+        "salt": 0.88
+      },
+      "price": null,
+      "vegan": true,
+      "ean": null
+    },
+    {
+      "name": "Protein Balls with Almonds – proteinowe kulki kokosowe bez dodatku cukru",
+      "brand": "Feel FIT",
+      "url": "https://feel-fit.pl/produkt/protein-balls-with-almonds/",
+      "quantity": null,
+      "category": "slodycze",
+      "nutrition": {
+        "kcal": 543.0,
+        "protein": 17.0,
+        "carbs": 32.0,
+        "fat": 42.0,
+        "sugars": 0.7,
+        "fiber": 4.5,
+        "saturatedFat": 24.0,
+        "salt": 0.08
+      },
+      "price": null,
+      "vegan": null,
+      "ean": null
+    },
+    {
+      "name": "Protein Quick Meal – włoskie danie warzywne z fasolą pinto",
+      "brand": "Feel FIT",
+      "url": "https://feel-fit.pl/produkt/protein-quick-meal-italian-taste/",
+      "quantity": null,
+      "category": "dania",
+      "nutrition": {
+        "kcal": 127.0,
+        "protein": 8.1,
+        "carbs": 6.7,
+        "fat": 7.1,
+        "sugars": 1.7,
+        "fiber": 2.8,
+        "saturatedFat": 0.6,
+        "salt": 0.96
+      },
+      "price": null,
+      "vegan": true,
+      "ean": null
+    },
+    {
+      "name": "Protein Quick Meal – indyjskie danie warzywne z ciecierzycą",
+      "brand": "Feel FIT",
+      "url": "https://feel-fit.pl/produkt/protein-quick-meal-indian-taste/",
+      "quantity": null,
+      "category": "dania",
+      "nutrition": {
+        "kcal": 154.0,
+        "protein": 9.2,
+        "carbs": 9.6,
+        "fat": 8.2,
+        "sugars": 2.3,
+        "fiber": 3.0,
+        "saturatedFat": 0.8,
+        "salt": 0.9
+      },
+      "price": null,
+      "vegan": true,
+      "ean": null
+    },
+    {
+      "name": "ProteinNut – proteinowy krem z orzechami laskowymi i kakao, bez dodatku cukru",
+      "brand": "Feel FIT",
+      "url": "https://feel-fit.pl/produkt/proteinnut/",
+      "quantity": null,
+      "category": "smarowidla",
+      "nutrition": {
+        "kcal": 490.0,
+        "protein": 17.0,
+        "carbs": 43.0,
+        "fat": 34.0,
+        "sugars": 3.3,
+        "fiber": 3.0,
+        "saturatedFat": 4.7,
+        "salt": 0.07
+      },
+      "price": null,
+      "vegan": null,
+      "ean": null
+    },
+    {
+      "name": "Protein Choco & Peanut – czekoladki proteinowe z orzechami bez dodatku cukru",
+      "brand": "Feel FIT",
+      "url": "https://feel-fit.pl/produkt/protein-choco-peanut/",
+      "quantity": null,
+      "category": "slodycze",
+      "nutrition": {
+        "kcal": 519.0,
+        "protein": 17.0,
+        "carbs": 40.0,
+        "fat": 34.0,
+        "sugars": 10.0,
+        "fiber": null,
+        "saturatedFat": 15.0,
+        "salt": 0.4
+      },
+      "price": null,
+      "vegan": null,
+      "ean": null
+    },
+    {
+      "name": "ProteinNut & Go – proteinowy krem z orzechami i mini grissini",
+      "brand": "Feel FIT",
+      "url": "https://feel-fit.pl/produkt/proteinnut-go/",
+      "quantity": "25 g",
+      "category": "slodycze",
+      "nutrition": {
+        "kcal": 461.0,
+        "protein": 15.0,
+        "carbs": 52.0,
+        "fat": 26.0,
+        "sugars": 3.2,
+        "fiber": null,
+        "saturatedFat": 3.5,
+        "salt": 0.87
+      },
+      "price": null,
+      "vegan": null,
+      "ean": null
+    },
+    {
+      "name": "Protein Peanut Butter Pralines – proteinowe praliny z masłem orzechowym",
+      "brand": "Feel FIT",
+      "url": "https://feel-fit.pl/produkt/protein-peanut-butter-pralines-praliny-z-maslem-orzechowym/",
+      "quantity": null,
+      "category": "slodycze",
+      "nutrition": {
+        "kcal": 534.0,
+        "protein": 17.3,
+        "carbs": 31.0,
+        "fat": 41.0,
+        "sugars": 6.0,
+        "fiber": null,
+        "saturatedFat": 17.0,
+        "salt": 0.4
+      },
+      "price": null,
+      "vegan": null,
+      "ean": null
+    },
+    {
+      "name": "Veganela Kakao-Orzech Laskowy – krem wegański bez dodatku cukru",
+      "brand": "Feel FIT",
+      "url": "https://feel-fit.pl/produkt/veganela/",
+      "quantity": null,
+      "category": "smarowidla",
+      "nutrition": {
+        "kcal": 519.0,
+        "protein": 4.5,
+        "carbs": 50.0,
+        "fat": 42.0,
+        "sugars": 0.4,
+        "fiber": null,
+        "saturatedFat": 14.0,
+        "salt": 0.02
+      },
+      "price": null,
+      "vegan": true,
+      "ean": null
+    },
+    {
+      "name": "Veganela Słony Karmel – krem wegański bez dodatku cukru",
+      "brand": "Feel FIT",
+      "url": "https://feel-fit.pl/produkt/veganela-slony-karmel/",
+      "quantity": null,
+      "category": "smarowidla",
+      "nutrition": {
+        "kcal": 506.0,
+        "protein": 3.8,
+        "carbs": 51.0,
+        "fat": 40.0,
+        "sugars": 0.2,
+        "fiber": null,
+        "saturatedFat": 14.0,
+        "salt": 0.47
+      },
+      "price": null,
+      "vegan": true,
+      "ean": null
+    },
+    {
+      "name": "Veganela 45% Pistachio – wegański krem pistacjowy bez dodatku cukru",
+      "brand": "Feel FIT",
+      "url": "https://feel-fit.pl/produkt/veganela-pistacja/",
+      "quantity": null,
+      "category": "smarowidla",
+      "nutrition": {
+        "kcal": 585.0,
+        "protein": 12.0,
+        "carbs": 38.0,
+        "fat": 47.0,
+        "sugars": 2.7,
+        "fiber": 5.0,
+        "saturatedFat": 9.6,
+        "salt": 0.29
+      },
+      "price": null,
+      "vegan": true,
+      "ean": null
+    },
+    {
+      "name": "Veganela Balls – wegańskie kulki kokosowe z migdałami, bez dodatku cukru",
+      "brand": "Feel FIT",
+      "url": "https://feel-fit.pl/produkt/veganela-balls/",
+      "quantity": "63 g",
+      "category": "slodycze",
+      "nutrition": {
+        "kcal": 532.0,
+        "protein": 4.4,
+        "carbs": 41.0,
+        "fat": 42.0,
+        "sugars": 3.0,
+        "fiber": 10.6,
+        "saturatedFat": 26.0,
+        "salt": 0.1
+      },
+      "price": null,
+      "vegan": true,
+      "ean": null
+    },
+    {
+      "name": "DUO High Protein – wysokobiałkowe ciasteczka kakaowe z nadzieniem kakaowym",
+      "brand": "Feel FIT",
+      "url": "https://feel-fit.pl/produkt/duo-high-protein-3/",
+      "quantity": null,
+      "category": "slodycze",
+      "nutrition": {
+        "kcal": 432.0,
+        "protein": 22.0,
+        "carbs": 44.0,
+        "fat": 21.0,
+        "sugars": 2.6,
+        "fiber": 3.0,
+        "saturatedFat": 10.0,
+        "salt": 0.8
+      },
+      "price": null,
+      "vegan": null,
+      "ean": null
+    },
+    {
+      "name": "DUO Sugar Free – ciasteczka kakaowe z nadzieniem o smaku waniliowym, bez cukru",
+      "brand": "Feel FIT",
+      "url": "https://feel-fit.pl/produkt/duo-sugar-free-2/",
+      "quantity": null,
+      "category": "slodycze",
+      "nutrition": {
+        "kcal": 420.0,
+        "protein": 7.0,
+        "carbs": 60.0,
+        "fat": 20.0,
+        "sugars": 0.4,
+        "fiber": 2.0,
+        "saturatedFat": 10.0,
+        "salt": 0.8
+      },
+      "price": null,
+      "vegan": null,
+      "ean": null
+    },
+    {
+      "name": "ENJOY! Peanut Caramel – ciasteczka z karmelem i orzeszkami ziemnymi w mlecznej czekoladzie",
+      "brand": "Feel FIT",
+      "url": "https://feel-fit.pl/produkt/enjoy-peanut-caramel-3/",
+      "quantity": null,
+      "category": "slodycze",
+      "nutrition": {
+        "kcal": 483.0,
+        "protein": 8.4,
+        "carbs": 51.0,
+        "fat": 32.0,
+        "sugars": 4.3,
+        "fiber": 3.5,
+        "saturatedFat": 19.0,
+        "salt": 0.28
+      },
+      "price": null,
+      "vegan": null,
+      "ean": null
+    },
+    {
+      "name": "ENJOY! Brownie – ciasteczka kakaowe z kremem o smaku brownie w ciemnej czekoladzie",
+      "brand": "Feel FIT",
+      "url": "https://feel-fit.pl/produkt/enjoy-brownie-3/",
+      "quantity": null,
+      "category": "slodycze",
+      "nutrition": {
+        "kcal": 457.0,
+        "protein": 5.9,
+        "carbs": 53.0,
+        "fat": 29.0,
+        "sugars": 4.9,
+        "fiber": 7.5,
+        "saturatedFat": 18.0,
+        "salt": 0.72
+      },
+      "price": null,
+      "vegan": null,
+      "ean": null
+    },
+    {
+      "name": "ENJOY! Milky Peanut – ciastka proteinowe bez dodatku cukru, 18% białka",
+      "brand": "Feel FIT",
+      "url": "https://feel-fit.pl/produkt/milky-peanut/",
+      "quantity": null,
+      "category": "slodycze",
+      "nutrition": {
+        "kcal": 505.0,
+        "protein": 18.0,
+        "carbs": 37.0,
+        "fat": 33.0,
+        "sugars": 2.3,
+        "fiber": 7.5,
+        "saturatedFat": 18.0,
+        "salt": 0.76
+      },
+      "price": null,
+      "vegan": null,
+      "ean": null
+    },
+    {
+      "name": "Protein Pistachio – proteinowy krem pistacjowy 24%, bez dodatku cukru",
+      "brand": "Feel FIT",
+      "url": "https://feel-fit.pl/produkt/proteinpistachio-2/",
+      "quantity": "200 ml",
+      "category": "smarowidla",
+      "nutrition": {
+        "kcal": 549.0,
+        "protein": 24.0,
+        "carbs": 32.0,
+        "fat": 40.0,
+        "sugars": 4.2,
+        "fiber": 1.7,
+        "saturatedFat": 12.0,
+        "salt": 0.36
+      },
+      "price": null,
+      "vegan": null,
+      "ean": null
+    }
+  ]
+}

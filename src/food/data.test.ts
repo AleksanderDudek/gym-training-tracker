@@ -13,7 +13,7 @@ vi.mock('virtual:food-data', () => ({ default: meta }));
 
 // Sklepy internetowe z próbki zamiast prawdziwych plików: liczby produktów w testach zostają stałe.
 const online = vi.hoisted(() => ({ SHOPS: [] as unknown[] }));
-vi.mock('./online/catalog', () => online);
+vi.mock('./online/shopData', () => online);
 
 const TEXT = JSON.stringify(DATASET);
 const gz = (text: string) => gzipSync(strToU8(text));

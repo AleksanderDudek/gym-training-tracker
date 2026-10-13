@@ -32,7 +32,11 @@ export function buildCandidates(products: IndexedProduct[]): Candidates {
   for (const def of Object.values(INGREDIENTS)) {
     if (!def.match) continue;
     const match = def.match;
-    candidates.set(def.id, products.filter((p) => macrosOf(p) !== null && match(p)).sort(byPreference));
+    // A label that disagrees with itself (a shop's polyols, a slip) would plan a recipe on wrong numbers.
+    candidates.set(
+      def.id,
+      products.filter((p) => !p.labelMismatch && macrosOf(p) !== null && match(p)).sort(byPreference),
+    );
   }
   return candidates;
 }

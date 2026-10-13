@@ -5,8 +5,8 @@ wyniki, a silnik sam decyduje, kiedy podnieść powtórzenia i kiedy wejść na 
 Atlas obejmuje 114 ćwiczeń: kettlebell, sztanga, hantle, maszyny i kalistenika — 30 z nich zrobisz bez żadnego sprzętu.
 Trening idzie część po części z zegarem w pasku, a zakładka Jedzenie dokłada dziennik jedzenia
 z dietą, która nagina się do tego, co naprawdę zjedzone, białkowe przepisy i gotowce bez naczyń,
-własne zestawy, 29 tysięcy produktów sprzedawanych w Polsce, menu 18 sieci gastronomicznych
-i sklepy w pobliżu.
+własne zestawy, ponad 32 tysiące produktów sprzedawanych w Polsce (także w dziewięciu sklepach
+internetowych), menu 18 sieci gastronomicznych i sklepy w pobliżu.
 
 React 19 + TypeScript 6 + Vite 8, aplikacja do zainstalowania z własnym service workerem
 (vite-plugin-pwa). Bez backendu — dane leżą w przeglądarce (trening w `localStorage`, dziennik
@@ -28,13 +28,13 @@ npm run build      # typecheck + produkcyjny build do dist/ z service workerem (
 npm run preview    # podgląd builda — tu działa też praca offline
 npm run typecheck  # tsc: aplikacja, testy, konfiguracja Vite i skrypty, service worker
 npm run lint       # oxlint
-npm test           # 1419 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, serwer… (vitest)
+npm test           # 1514 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, serwer… (vitest)
 ```
 
 Baza produktów i przepisy:
 
 ```bash
-npm run food:check-recipes  # pokrycie przepisów na dołączonej bazie produktów
+npm run food:check-recipes  # pokrycie przepisów i ich koszyki sklepów: baza produktów razem ze sklepami internetowymi
 npm run food:data           # nowa baza z Open Food Facts i Open Prices (szczegóły w „Jedzenie”)
 ```
 
@@ -709,6 +709,40 @@ Aktualizacja: plik sieci w `src/food/restaurants/data/<sieć>.json` (schemat w `
 masa porcji, wartości na porcję, źródło z datą `checked`, rynek); test powie, które liczby się nie
 zgadzają.
 
+**Sklepy internetowe**: do bazy dochodzą produkty dziewięciu sklepów i producentów — Myprotein,
+GuiltFree, Diet-Food, BeKeto, Cocoa, FitIron, Bezmięsny Mięsny oraz strony producentów Feel Fit
+i CocoFarm (ich produkty kupuje się w innych sklepach internetowych) — 3187 pozycji z wartościami
+odżywczymi na 100 g, ceną i odnośnikiem do strony produktu; najwięcej w GuiltFree (2678, sklep
+z produktami wielu marek). Produkt z kodem EAN, który jest już w Open Food Facts albo w innym
+sklepie, nie dubluje się: dostaje ofertę sklepu (sklep, link, cenę) — tak 139 produktów z Open Food
+Facts ma dziś link do sklepu, a 35 jest w dwóch sklepach naraz. Baza rośnie do 32 268 produktów. Karta
+produktu mówi „Sklep internetowy: …”, szczegóły mają odnośniki z ceną i datą sprawdzenia, filtry —
+„W sklepach internetowych”. Z danych sklepów wzięte są tylko fakty: nazwa, gramatura, wartości
+odżywcze, cena, adres strony, EAN — bez opisów i zdjęć, zebrane zgodnie z `robots.txt` sklepu.
+Dane leżą w `src/food/online/data/<sklep>.json` (schemat w `types.ts`), a test sprawdza je jak
+menu lokali; to, co błędnie podaje sama strona sklepu (np. słodycze bez cukru liczące poliole),
+stoi w `inconsistent` — produkt zostaje z liczbami sklepu, szczegóły o tym mówią, a do przepisów
+i gotowych produktów białkowych nie trafia. Paczka (`shopData`, ok. 295 kB po kompresji) ładuje się
+razem z bazą produktów i jak ona nie wchodzi do instalacji aplikacji: service worker zapisuje jedną
+kopię przy pierwszym wejściu w Jedzenie. Gdy się nie wczyta, baza przychodzi bez niej.
+
+**Przepisy z produktów sklepów internetowych i zakupy w jak najmniej sklepach.** Czternaście
+przepisów zbudowanych na tym, co sprzedają sklepy internetowe — naleśniki z białkowej mieszanki,
+ciasto w kubku, jogurt z masłem orzechowym w proszku, wegański shake z białkiem roślinnym, skyr
+z syropem zero, tosty na chlebie keto, keto penne z roślinnym boczkiem, pizza na keto spodzie,
+wrap z roślinnym kebabem, makaron konjac z kurczakiem, kurczak w sosie zero z ryżem konjac i dwa
+gotowce. Każdy przepis kupuje się w **koszyku**: w jednym sklepie, a gdy żaden
+nie ma wszystkiego — w sklepie i sklepie internetowym albo w dwóch sklepach internetowych (nigdy
+w dwóch stacjonarnych: jedna wizyta w jednym sklepie zostaje zasadą). Karta mówi „Kupisz
+w 2 sklepach: Biedronka + Myprotein (sklep internetowy)” z odnośnikami do sklepów, linijka
+składnika — z którego sklepu jest i prowadzi do strony produktu, a żetony przełączają koszyki.
+Przepisy mają **„Układ listy: Według sklepów”** (`#/przepisy?uklad=sklepy`): zachłannie, najpierw
+koszyk, w którym zrobisz najwięcej przepisów (także te z jednego jego sklepu), potem następny —
+najmniej planów zakupów dla całej listy, z nagłówkiem „wizyta w sklepie i zamówienie przez
+internet”. Filtr sklepu obejmuje sklepy internetowe („BeKeto · online”). „Co teraz?” i „W pobliżu”
+zostają przy jednym sklepie stacjonarnym — przepis, który wymaga zamówienia, planuje się
+w Przepisach.
+
 **W pobliżu** (`#/w-poblizu`): lokalizacja (albo kliknięcie na mapie), sklepy spożywcze
 z OpenStreetMap w promieniu od 500 m do 10 km i przepisy, które zrobisz w jednym pobliskim sklepie
 („Wszystko kupisz w: Żabka · 250 m”). Pozycja zaokrąglona do ok. 100 m idzie do serwera Overpass
@@ -1097,9 +1131,10 @@ src/
     data.ts                 baza produktów: adres z buildu, pobranie, gzip albo czysty JSON, indeks do wyszukiwania
     hash.ts                 stan stron w zapytaniu wewnątrz hasha (`#/produkty?q=skyr&ns=a`)
     food.css                miejsce na style wspólne całej zakładce; obszary mają arkusze obok swoich stron
-    *.test.ts(x)            32 testy karty Dziś, kopii i resetu, arkuszy bez zderzeń klas, bazy produktów i hasha
+    *.test.ts(x)            33 testy karty Dziś, kopii i resetu, arkuszy bez zderzeń klas, bazy produktów i hasha
     lib/                    produkty: filtry, fasety, sortowanie, wyszukiwanie bez względu na ogonki, stan w adresie, formaty, opakowania — 51 testów
-    recipes/                przepisy białkowe i gotowce: katalog, składniki z jednego sklepu, zamiany, progi, makro, gotowe produkty — 211 testów
+    recipes/                przepisy białkowe i gotowce: katalog, składniki, koszyki sklepów i grupowanie, zamiany, progi, makro, gotowe produkty — 265 testów
+    online/                 sklepy internetowe: rejestr, dane sklepów (`data/*.json`), scalanie z bazą po EAN, kontrola liczb — 33 testy
     nearby/                 w pobliżu: odległości, zapytanie do Overpass z zapasowym serwerem, kopia na dobę, promień — 33 testy
     diet/                   dieta: baza Dexie (`produkty-pl-dieta`, wersja 2 z zestawami), model energii, sposoby odżywiania, dzień, plan z Excela, zestawy, wyszukiwanie, podpowiedzi — 120 testów
     restaurants/            lokale: dane sieci (`data/*.json`), kontrola liczb, wyszukiwanie, kolejność, „Najwięcej białka”, stan w adresie — 101 testów
@@ -1110,7 +1145,7 @@ src/
     components/nearby/      „W pobliżu”: mapa Leaflet, promień, sklepy i przepisy z nich
     components/diet/        dziennik, plan posiłków, postęp, profil diety, pierwsze kroki, wybór jedzenia i zestawy, import z Excela
     components/restaurants/ Lokale: lista sieci z wyszukiwaniem, menu sieci, karta pozycji z dodaniem do dziennika
-    components/**/*.test.tsx 104 testy stron pod jsdom — przez role i etykiety, nie znaczniki
+    components/**/*.test.tsx 111 testów stron pod jsdom — przez role i etykiety, nie znaczniki
     test/                   dane do testów: produkty, most do treningu, arkusz Excela
   api.ts                    adres serwera aplikacji z buildu (`VITE_API_URL`)
   push.ts                   przypomnienia w przeglądarce: zgoda, subskrypcja Web Push, wysyłka listy
@@ -1170,7 +1205,7 @@ Silnik jest w całości oddzielony od interfejsu. `engine/` nie importuje niczeg
 przyjmują stan i zwracają zmiany, więc dają się testować bez DOM-u. Funkcje mutujące (`applyResult`,
 `applyLayoff`) działają na przekazanym obiekcie — `App.tsx` woła je zawsze na kopii stanu.
 
-Jedzenie ma ten sam podział: `food/lib`, `recipes`, `nearby`, `diet` i `restaurants` to czysta logika bez Reacta
+Jedzenie ma ten sam podział: `food/lib`, `recipes`, `nearby`, `diet`, `restaurants` i `online` to czysta logika bez Reacta
 (testowana w node), a komponenty tylko wyświetlają — ich testy renderują strony pod jsdom. Do głównej
 paczki trafia z jedzenia tylko to, czego potrzebuje ekran Dziś i App, zanim ktoś wejdzie w Jedzenie:
 znacznik diety, most, zaślepka karty i stan w hashu (`dietFlag.ts`, `bridge.ts`,

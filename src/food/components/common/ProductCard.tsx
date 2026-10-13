@@ -1,6 +1,7 @@
 import { brandLine } from '../../lib/display';
 import { formatGrams, formatNumber, UNKNOWN } from '../../lib/format';
 import type { Dictionaries, IndexedProduct, Product } from '../../lib/types';
+import { onlineShop } from '../../online/shops';
 import { PriceTag } from './PriceTag';
 import { ProductImage } from './ProductImage';
 import { ScoreBadge } from './ScoreBadge';
@@ -16,7 +17,7 @@ interface Props {
 
 /** Sklepy internetowe produktu po nazwie, bez powtórzeń: „GuiltFree, Diet-Food”. */
 export function shopNames(p: Product, dict: Dictionaries): string {
-  return [...new Set((p.online ?? []).map((o) => dict.stores[o.shop] ?? o.shop))].join(', ');
+  return [...new Set((p.online ?? []).map((o) => dict.stores[o.shop] ?? onlineShop(o.shop)?.name ?? o.shop))].join(', ');
 }
 
 /**

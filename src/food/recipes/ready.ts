@@ -91,6 +91,7 @@ export function readyProducts(products: IndexedProduct[], store: string | readon
   const buckets = new Map<string, IndexedProduct[]>(GROUPS.map((g) => [g.id, []]));
   for (const p of products) {
     if (stores && !stores.some((s) => p.stores.includes(s))) continue;
+    if (p.labelMismatch) continue;
     const per100 = macrosOf(p);
     if (!per100 || !isProteinForward(per100)) continue;
     const name = normalizeForSearch(p.name);

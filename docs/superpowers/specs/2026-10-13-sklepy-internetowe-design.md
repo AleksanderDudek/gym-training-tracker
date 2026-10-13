@@ -100,3 +100,15 @@ implementation).
 - Images and descriptions from the shops; live prices or stock; delivery costs.
 - Online shops in „Co teraz?” and „W pobliżu”.
 - Updating the shop data automatically (a manual re-run of the research is documented in README).
+
+## Implementation notes (decided while building)
+
+| Topic | Decision | Why |
+| --- | --- | --- |
+| What the shops turned out to be | 3187 products: GuiltFree 2678 (a multi-brand shop, not a small brand store), Diet-Food 156, Myprotein 80, FitIron 78, BeKeto 70, Cocoa 63, Bezmięsny Mięsny 37, Feel Fit 23, CocoFarm 2. Feel Fit and CocoFarm are **brand sites** (no checkout; CocoFarm's shop blocks robots): registry `kind: 'producent'`, links say so | The shops the user named, each as what it is |
+| Merge result | 3013 new products, 139 OFF products gained a shop link, 35 products sold by two shops | EAN merge works as designed |
+| Label disagreements | Listed in each file's `inconsistent` (GuiltFree 598, mostly polyols and fibre; some page slips). Merged products carry `labelMismatch`: the detail says so, and they never become recipe candidates or ready protein products | Erythritol's "0 kcal, 100 g carbs" is a correct EU label, an edamame pasta with 32 kcal and 41 g protein is not; telling them apart automatically is guesswork, keeping wrong numbers out of plans is not |
+| Loading and offline | The shop data is its own chunk (`shopData`, ~295 kB gzipped), excluded from the install precache and runtime-cached cache-first with one entry, exactly like the product dataset | Doubling the install size for an optional part would be wrong; offline still works after the first visit |
+| Recipes | 14 recipes: naleśniki z mieszanki, ciasto w kubku, jogurt z masłem orzechowym w proszku, wegański shake z białkiem roślinnym, skyr z syropem zero, tosty białkowe (×2), wrap keto z roślinnym kebabem, makaron konjac z kurczakiem, kurczak w sosie zero z ryżem konjac, keto penne z roślinnym boczkiem, pizza na keto spodzie, and two gotowce. New ingredients: protein pancake mix, mug cake, peanut powder, protein crisps, keto pasta, konjac, protein bread, keto pizza base, keto tortilla, plant protein powder, zero syrup, zero sauce, plant cold cuts, plant meat | Built on what the shops actually sell; every recipe has a basket in the real data |
+| Pairs scope | Physical shops in pairs come from the ranking (chains that make recipes on their own) | No obscure shop that one crowd-sourced product lists |
+| CSP | Shop hosts are navigation-only (links), taken from the registry in the CSP test | Nothing is fetched from them |

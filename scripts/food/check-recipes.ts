@@ -1,20 +1,39 @@
 // How the recipe catalog meets the real data: candidates per ingredient, which
-// stores cover each recipe, and what the default variant looks like.
+// shops cover each recipe (one shop, or a shop and an online shop), and what
+// the default variant looks like. Online shops' data is merged as the app does.
 // Usage: npm run food:check-recipes
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { gunzipSync } from 'node:zlib';
 import { indexProducts } from '../../src/food/lib/search';
 import type { Dataset } from '../../src/food/lib/types';
 import { RECIPES, servingsOf } from '../../src/food/recipes/catalog';
 import { INGREDIENTS } from '../../src/food/recipes/ingredients';
 import { readyProducts } from '../../src/food/recipes/ready';
-import { availableStores, bestVariant, buildCandidates, storeRanking } from '../../src/food/recipes/resolve';
+import { mergeOnline } from '../../src/food/online/merge';
+import type { ShopData } from '../../src/food/online/types';
+import { basketsFor } from '../../src/food/recipes/baskets';
+import {
+  availableStores,
+  bestVariant,
+  buildCandidates,
+  onlineRanking,
+  resolveRecipe,
+  storeRanking,
+} from '../../src/food/recipes/resolve';
 import { byTime, tierOf } from '../../src/food/recipes/tiers';
 
-const dataset = JSON.parse(gunzipSync(await readFile('data/food/products.json.gz')).toString('utf8')) as Dataset;
+const SHOP_DIR = 'src/food/online/data';
+const shops = await Promise.all(
+  (await readdir(SHOP_DIR))
+    .filter((f) => f.endsWith('.json'))
+    .map(async (f) => JSON.parse(await readFile(`${SHOP_DIR}/${f}`, 'utf8')) as ShopData),
+);
+const offData = JSON.parse(gunzipSync(await readFile('data/food/products.json.gz')).toString('utf8')) as Dataset;
+const dataset = mergeOnline(offData, shops);
 const products = indexProducts(dataset.products, dataset.dictionaries.brands);
 const candidates = buildCandidates(products);
 const ranking = storeRanking(RECIPES, candidates);
+const online = onlineRanking(candidates);
 
 console.log('INGREDIENTS (candidates, top stores)');
 for (const def of Object.values(INGREDIENTS)) {
@@ -33,22 +52,26 @@ for (const def of Object.values(INGREDIENTS)) {
 }
 
 console.log(`\nSTORE RANKING: ${ranking.join(', ')}`);
+console.log(`ONLINE SHOPS: ${online.join(', ') || '-'} (merged ${shops.length} shop files)`);
 console.log('Macros are PER SERVING; "x3" is a recipe for three.\n');
 for (const recipe of [...RECIPES].sort(byTime)) {
-  const stores = availableStores(recipe, candidates, ranking);
-  const v = bestVariant(recipe, candidates, ranking);
+  const baskets = basketsFor(recipe, candidates, ranking, online);
+  const stores = baskets.length
+    ? baskets.slice(0, 6).map((b) => b.join('+'))
+    : availableStores(recipe, candidates, ranking);
+  const v = baskets.length ? resolveRecipe(recipe, candidates, baskets[0]!) : bestVariant(recipe, candidates, ranking);
   const t = v?.perServing;
   const macros = t
     ? `P ${t.protein.toFixed(0)} / C ${t.carbs.toFixed(0)} / F ${t.fat.toFixed(0)} / ${t.kcal.toFixed(0)} kcal`
     : 'NOT AVAILABLE';
   const when = `${tierOf(recipe.minutes).padEnd(7)} ${String(recipe.minutes).padStart(2)}' x${servingsOf(recipe)}`;
   console.log(
-    `${recipe.id.padEnd(20)} ${when}  ${macros.padEnd(36)} default: ${v ? (v.store ?? 'anywhere') : '-'}  | stores: ${stores.join(', ') || '-'}`,
+    `${recipe.id.padEnd(20)} ${when}  ${macros.padEnd(36)} default: ${v ? v.stores.join('+') || 'anywhere' : '-'}  | baskets: ${stores.join(', ') || '-'}`,
   );
   if (v)
     for (const i of v.items)
       console.log(
-        `    ${i.def.id.padEnd(13)} ${i.product ? i.product.name : '(typical values)'}${i.fromStore ? '' : i.product ? '  [not from this store]' : ''}`,
+        `    ${i.def.id.padEnd(13)} ${i.product ? i.product.name : '(typical values)'}${i.shop ? `  @${i.shop}` : i.product ? '  [not from this store]' : ''}`,
       );
 }
 

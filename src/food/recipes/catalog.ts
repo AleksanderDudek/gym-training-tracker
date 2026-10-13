@@ -218,6 +218,250 @@ const GOTOWCE: Recipe[] = [
   },
 ];
 
+/**
+ * Made with products that are usually ordered online (src/food/online): protein mixes, keto
+ * bread and pasta, plant-based "meat". Each still meets its rule on typical values; where it is
+ * bought - a shop, a shop and an online order, or two orders - is decided by the baskets.
+ */
+const FROM_ONLINE_SHOPS: Recipe[] = [
+  {
+    id: 'kabanosy-roslinne-serek',
+    name: 'Roślinne kabanosy i serek wiejski',
+    kind: 'gotowiec',
+    minutes: 1,
+    tool: NO_DISHES,
+    description: 'Roślinne kabanosy mają tyle białka co mięsne, a serek dokłada drugie tyle – bez gotowania.',
+    items: [
+      { ingredient: 'plantDeli', grams: 80, measure: 'pół opakowania kabanosów' },
+      { ingredient: 'cottage', grams: 200, measure: '1 opakowanie' },
+    ],
+    steps: ['Jedz kabanosy na zmianę z serkiem prosto z opakowania.'],
+  },
+  {
+    id: 'chipsy-bialkowe-napoj',
+    name: 'Chipsy białkowe i napój proteinowy',
+    kind: 'gotowiec',
+    minutes: 1,
+    tool: NO_DISHES,
+    description: 'Słona przekąska z białkiem zamiast zwykłych chipsów, do tego butelka białka.',
+    items: [
+      { ingredient: 'proteinCrisps', grams: 30, measure: '1 paczka', pack: true },
+      { ingredient: 'proteinDrink', grams: 250, measure: '1 butelka', pack: true },
+    ],
+    steps: ['Otwórz paczkę i butelkę – i tyle.'],
+  },
+  {
+    id: 'jogurt-maslo-w-proszku',
+    name: 'Jogurt proteinowy z masłem orzechowym w proszku',
+    kind: 'miska',
+    minutes: 2,
+    tool: 'Łyżka',
+    description: 'Smak masła orzechowego za ułamek jego tłuszczu: proszek ma białka jak odżywka.',
+    items: [
+      { ingredient: 'proteinYogurt', grams: 200, measure: '1 kubek' },
+      { ingredient: 'peanutPowder', grams: 15, measure: '1 czubata łyżka' },
+      { ingredient: 'raspberries', grams: 50, measure: 'pół garści' },
+    ],
+    steps: ['Wmieszaj proszek w jogurt na gładki krem.', 'Posyp malinami.'],
+  },
+  {
+    id: 'ciasto-w-kubku',
+    name: 'Białkowe ciasto w kubku',
+    kind: 'miska',
+    minutes: 3,
+    tool: 'Kubek i mikrofala',
+    description: 'Ciepłe ciasto w półtorej minuty: mieszanka, odrobina mleka i mikrofala.',
+    items: [
+      { ingredient: 'mugCake', grams: 40, measure: '4 łyżki' },
+      { ingredient: 'milk', grams: 60, measure: '4 łyżki' },
+    ],
+    steps: [
+      'Wymieszaj w dużym kubku mieszankę z mlekiem na gęste ciasto bez grudek.',
+      'Piecz w mikrofali 60–90 sekund na pełnej mocy – ma zostać lekko wilgotne w środku.',
+    ],
+  },
+  {
+    id: 'shake-roslinny-banan',
+    name: 'Wegański shake z białkiem roślinnym, bananem i kakao',
+    kind: 'shake',
+    minutes: 3,
+    tool: 'Blender lub shaker',
+    description: 'Bez nabiału: białko z grochu, ryżu albo pestek dyni, banan dla smaku i kakao.',
+    items: [
+      { ingredient: 'plantProtein', grams: 40, measure: '1,5 miarki' },
+      { ingredient: 'banana', grams: 100, measure: 'mały banan' },
+      { ingredient: 'cocoa', grams: 5, measure: '1 łyżeczka' },
+      { ingredient: 'water', grams: 300, measure: '1,5 szklanki zimnej wody' },
+    ],
+    steps: ['Zmiksuj wszystko przez 30 sekund.', 'W shakerze: banana rozgnieć widelcem albo zjedz obok.'],
+  },
+  {
+    id: 'skyr-maliny-syrop-zero',
+    name: 'Skyr z malinami i syropem zero',
+    kind: 'miska',
+    minutes: 2,
+    tool: 'Łyżka',
+    description: 'Deser z ponad 20 g białka: syrop bez cukru daje smak karmelu czy wanilii za 1 kcal.',
+    items: [
+      { ingredient: 'skyr', grams: 200, measure: 'duży kubek' },
+      { ingredient: 'raspberries', grams: 80, measure: 'garść' },
+      { ingredient: 'zeroSyrup', grams: 15, measure: '1 łyżka' },
+    ],
+    steps: ['Przełóż skyr do miseczki albo jedz z kubka.', 'Dodaj maliny i polej syropem.'],
+  },
+  {
+    id: 'kurczak-chili-ryz-konjac',
+    name: 'Kurczak w sosie słodkie chili zero z ryżem konjac',
+    kind: 'obiad',
+    minutes: 15,
+    tool: 'Patelnia',
+    description: 'Smak słodko-ostrego dania z chińskiej budki: sos bez cukru, ryż konjac prawie bez kalorii.',
+    items: [
+      { ingredient: 'konjac', grams: 200, measure: '1 opakowanie ryżu konjac, odsączone' },
+      { ingredient: 'chickenFillet', grams: 150, measure: '1 mały filet' },
+      { ingredient: 'pepper', grams: 100, measure: '1 mała papryka' },
+      { ingredient: 'zeroSauce', grams: 40, measure: '2 łyżki' },
+      { ingredient: 'oil', grams: 5, measure: '1 łyżeczka' },
+    ],
+    steps: [
+      'Przepłucz ryż konjac i podsmaż go 2 minuty na suchej patelni.',
+      'Na oleju usmaż pokrojonego kurczaka z papryką, aż się zrumieni.',
+      'Dodaj sos, wymieszaj z ryżem i podgrzej jeszcze minutę.',
+    ],
+  },
+  {
+    id: 'tosty-szynka-roslinna',
+    name: 'Tosty białkowe z roślinną szynką i pomidorem',
+    kind: 'slone',
+    minutes: 6,
+    tool: 'Toster lub patelnia',
+    description: 'Chleb keto ma trzy razy więcej białka niż zwykły – z roślinną szynką to ponad 40 g na talerz.',
+    items: [
+      { ingredient: 'proteinBread', grams: 80, measure: '3 kromki' },
+      { ingredient: 'plantDeli', grams: 60, measure: 'pół opakowania' },
+      { ingredient: 'tomato', grams: 100, measure: '1 pomidor' },
+    ],
+    steps: ['Opiecz kromki w tosterze albo na suchej patelni.', 'Połóż szynkę i plastry pomidora, dopraw pieprzem.'],
+  },
+  {
+    id: 'tosty-twarozek-rzodkiewka',
+    name: 'Tosty białkowe z twarożkiem i rzodkiewką',
+    kind: 'slone',
+    minutes: 5,
+    tool: 'Toster i miska',
+    description: 'Klasyczny twarożek ze szczypiorkiem na chlebie, który sam ma 29 g białka w 100 g.',
+    items: [
+      { ingredient: 'proteinBread', grams: 80, measure: '3 kromki' },
+      { ingredient: 'quark', grams: 150, measure: 'pół kostki' },
+      { ingredient: 'radish', grams: 50, measure: '4 rzodkiewki' },
+      { ingredient: 'chives', grams: 5, measure: 'kilka źdźbeł' },
+    ],
+    steps: [
+      'Rozgnieć twaróg z odrobiną wody, wymieszaj z posiekanym szczypiorkiem, dopraw solą i pieprzem.',
+      'Opiecz kromki, posmaruj twarożkiem i połóż plasterki rzodkiewki.',
+    ],
+  },
+  {
+    id: 'nalesniki-bialkowe-mieszanka',
+    name: 'Białkowe naleśniki z mieszanki ze skyrem i borówkami',
+    kind: 'miska',
+    minutes: 12,
+    tool: 'Patelnia',
+    description: 'Naleśniki, które same są białkowe – mieszanka ma ponad połowę białka. Skyr zamiast bitej śmietany.',
+    items: [
+      { ingredient: 'proteinPancakeMix', grams: 50, measure: '5 łyżek' },
+      { ingredient: 'milk', grams: 100, measure: 'pół szklanki' },
+      { ingredient: 'skyr', grams: 100, measure: 'pół kubka' },
+      { ingredient: 'blueberries', grams: 50, measure: 'pół garści' },
+    ],
+    steps: [
+      'Wymieszaj mieszankę z mlekiem na gładkie ciasto i odstaw na 2 minuty.',
+      'Smaż małe placki na lekko natłuszczonej patelni po 1–2 minuty z każdej strony.',
+      'Podawaj ze skyrem i borówkami.',
+    ],
+  },
+  {
+    id: 'wrap-keto-kebab',
+    name: 'Wrap keto z roślinnym kebabem i warzywami',
+    kind: 'slone',
+    minutes: 10,
+    tool: 'Patelnia',
+    description: 'Kebab bez mięsa w niskowęglowodanowej tortilli – więcej białka niż tłuszczu, mimo sosu.',
+    items: [
+      { ingredient: 'ketoTortilla', grams: 40, measure: '1 placek' },
+      { ingredient: 'plantMeat', grams: 80, measure: 'pół opakowania' },
+      { ingredient: 'tomato', grams: 60, measure: 'pół pomidora' },
+      { ingredient: 'cucumber', grams: 60, measure: 'kawałek ogórka' },
+    ],
+    steps: [
+      'Podsmaż roślinny kebab na suchej patelni 3–4 minuty, aż się zrumieni.',
+      'Ogrzej tortillę 20 sekund na tej samej patelni.',
+      'Ułóż kebab i pokrojone warzywa, zawiń.',
+    ],
+  },
+  {
+    id: 'konjac-kurczak-pomidory',
+    name: 'Makaron konjac z kurczakiem w sosie pomidorowym',
+    kind: 'obiad',
+    minutes: 15,
+    tool: 'Patelnia',
+    description: 'Talerz makaronu za kilkanaście kalorii: konjac ma ich prawie zero, białko daje kurczak.',
+    items: [
+      { ingredient: 'konjac', grams: 200, measure: '1 opakowanie, odsączone' },
+      { ingredient: 'chickenFillet', grams: 150, measure: '1 mały filet' },
+      { ingredient: 'passata', grams: 150, measure: '3/4 szklanki' },
+      { ingredient: 'garlic', grams: 5, measure: '1 ząbek' },
+      { ingredient: 'parmesan', grams: 10, measure: '1 łyżka tartego' },
+      { ingredient: 'oil', grams: 5, measure: '1 łyżeczka' },
+    ],
+    steps: [
+      'Przepłucz konjac pod zimną wodą i podsmaż go 2 minuty na suchej patelni, żeby odparował.',
+      'Na oleju zrumień pokrojonego kurczaka z czosnkiem, wlej passatę i duś 5 minut.',
+      'Wymieszaj z makaronem, posyp parmezanem.',
+    ],
+  },
+  {
+    id: 'keto-penne-boczek',
+    name: 'Keto penne z roślinnym boczkiem i pomidorami',
+    kind: 'obiad',
+    minutes: 15,
+    tool: 'Garnek i patelnia',
+    description: 'Makaron, który ma 36 g białka w 100 g, i boczek bez mięsa – obiad z ponad 50 g białka.',
+    items: [
+      { ingredient: 'ketoPasta', grams: 80, measure: '1/3 opakowania' },
+      { ingredient: 'plantDeli', grams: 100, measure: '1 opakowanie boczku' },
+      { ingredient: 'cannedTomatoes', grams: 200, measure: 'pół puszki' },
+      { ingredient: 'onion', grams: 50, measure: 'pół cebuli' },
+      { ingredient: 'garlic', grams: 5, measure: '1 ząbek' },
+      { ingredient: 'oil', grams: 5, measure: '1 łyżeczka' },
+    ],
+    steps: [
+      'Ugotuj makaron według opakowania.',
+      'Na oleju zeszklij cebulę z czosnkiem, dodaj pokrojony boczek i smaż 2 minuty.',
+      'Wlej pomidory, duś 5 minut, wymieszaj z makaronem.',
+    ],
+  },
+  {
+    id: 'pizza-keto-pepperoni',
+    name: 'Pizza na keto spodzie z roślinnym pepperoni',
+    kind: 'obiad',
+    minutes: 15,
+    tool: 'Piekarnik',
+    description: 'Gotowy spód keto, passata, pepperoni bez mięsa i parmezan – pizza, w której białko wygrywa.',
+    items: [
+      { ingredient: 'ketoPizzaBase', grams: 100, measure: '1 spód' },
+      { ingredient: 'plantDeli', grams: 60, measure: 'pół opakowania pepperoni' },
+      { ingredient: 'passata', grams: 60, measure: '4 łyżki' },
+      { ingredient: 'parmesan', grams: 15, measure: '1,5 łyżki tartego' },
+    ],
+    steps: [
+      'Rozgrzej piekarnik do 220°C.',
+      'Posmaruj spód passatą, ułóż pepperoni i posyp parmezanem.',
+      'Piecz 8–10 minut, aż brzegi się zrumienią.',
+    ],
+  },
+];
+
 export const RECIPES: Recipe[] = [
   ...GOTOWCE,
   {
@@ -875,4 +1119,5 @@ export const RECIPES: Recipe[] = [
       'Dodaj paprykę, pieczarki i passatę i duś jeszcze 25–30 minut, aż mięso będzie miękkie. Dopraw solą i pieprzem.',
     ],
   },
+  ...FROM_ONLINE_SHOPS,
 ];

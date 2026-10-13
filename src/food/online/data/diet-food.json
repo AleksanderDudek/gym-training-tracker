@@ -1,0 +1,3157 @@
+{
+  "id": "diet-food",
+  "name": "Diet-Food",
+  "url": "https://sklep.diet-food.pl",
+  "checked": "2026-10-13",
+  "note": "Źródło: opisy produktów sklep.diet-food.pl (PrestaShop), mapa strony + kategoria „Wszystkie produkty”. Pominięto suplementy, herbaty bez tabeli wartości, zestawy i produkty bez pełnych wartości na 100 g; inne gramatury i smaki o podobnych wartościach połączono (maks. 3 warianty na linię). Wartości „<0,5 g” zapisano jako 0, „>x” jako x. Niezgodność na stronie (energia ≠ 4×B+4×W+9×T, zwykle błonnik/poliole; Cocosa Mango ma na stronie białko 7 g): Bio Keto Gorąca Czekolada 200 g; Bio Pokrzywa 200 g; Super Erytrytol 500 g; Bio Flax Siemie Lniane Jabłko Słonecznik 200 g; Ksylitol Fiński 500 g; Bio Woda Kokosowa w Proszku 150 g; Bio Mąka Kokosowa 450 g; Matcha Latte Keto Friendly 300 g; Kawa Latte Keto Friendly 300 g; MCT Powder Olej Kokosowy 300 g; Bio Flax Krakersy Pomidor i Papryka 90 g; Bio Golden Berries Miechunka Peruwiańska 200 g; Bio Super Detox Mix 300 g; Bio Jagody Acai 100 g; Bio Chlorella 200 g; Bio Kakao o obniżonej zawartości tłuszczu 200 g; Bio Jarmuż 100 g; Bio Vege Protein Mix - białko kakao 500 g; Bio Triphala 100 g; Bio Baobab 200 g; Bio Super Colon Mix 300 g; Bio Trawa Jęczmienna 200 g; Bio Jagody Amla 200 g; Cocosa Woda Kokosowa z młodego kokosa Niegazowana z sokiem z Mango NFC 330 ml (kaucja); Bio Keto Syrop z Tapioki 180 ml; Bio Matcha Detox Boom 300 g.",
+  "inconsistent": [
+    "Bio Keto Gorąca Czekolada 200 g",
+    "Bio Pokrzywa 200 g",
+    "Super Erytrytol 500 g",
+    "Bio Flax Siemie Lniane Jabłko Słonecznik 200 g",
+    "Ksylitol Fiński 500 g",
+    "Bio Woda Kokosowa w Proszku 150 g",
+    "Bio Mąka Kokosowa 450 g",
+    "Matcha Latte Keto Friendly 300 g",
+    "Kawa Latte Keto Friendly 300 g",
+    "MCT Powder Olej Kokosowy 300 g",
+    "Bio Flax Krakersy Pomidor i Papryka 90 g",
+    "Bio Golden Berries Miechunka Peruwiańska 200 g",
+    "Bio Super Detox Mix 300 g",
+    "Bio Jagody Acai 100 g",
+    "Bio Chlorella 200 g",
+    "Bio Kakao o obniżonej zawartości tłuszczu 200 g",
+    "Bio Jarmuż 100 g",
+    "Bio Vege Protein Mix - białko kakao 500 g",
+    "Bio Triphala 100 g",
+    "Bio Baobab 200 g",
+    "Bio Super Colon Mix 300 g",
+    "Bio Trawa Jęczmienna 200 g",
+    "Bio Jagody Amla 200 g",
+    "Cocosa Woda Kokosowa z młodego kokosa Niegazowana z sokiem z Mango NFC 330 ml (kaucja)",
+    "Bio Keto Syrop z Tapioki 180 ml",
+    "Bio Matcha Detox Boom 300 g"
+  ],
+  "products": [
+    {
+      "name": "Bio Keto Gorąca Czekolada 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/napoje-i-napary/62-bio-keto-goraca-czekolada-200-g-5903933643069.html",
+      "quantity": "200 g",
+      "category": "kakao",
+      "nutrition": {
+        "kcal": 337.0,
+        "protein": 9.7,
+        "carbs": 40.0,
+        "fat": 27.0,
+        "sugars": 2.2,
+        "fiber": 20.0,
+        "saturatedFat": 25.0,
+        "salt": 0.2
+      },
+      "price": 38.0,
+      "vegan": null,
+      "ean": "5903933643069"
+    },
+    {
+      "name": "Bio Olej Kokosowy Nierafinowany Extra Virgin 250 ml",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/oleje/99-bio-olej-kokosowy-nierafinowany-extra-virgin-250-ml-5901549275742.html",
+      "quantity": "250 ml",
+      "category": "kokos",
+      "nutrition": {
+        "kcal": 862.0,
+        "protein": 0.0,
+        "carbs": 0.0,
+        "fat": 100.0,
+        "sugars": 0.0,
+        "fiber": null,
+        "saturatedFat": 94.0,
+        "salt": 0.0
+      },
+      "price": 24.9,
+      "vegan": true,
+      "ean": "5901549275742"
+    },
+    {
+      "name": "Bio Pokrzywa 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/blonnik-wlokna/68-bio-pokrzywa-200-g-5906395147175.html",
+      "quantity": "200 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 243.0,
+        "protein": 26.3,
+        "carbs": 14.0,
+        "fat": 3.0,
+        "sugars": 3.0,
+        "fiber": 16.0,
+        "saturatedFat": 1.0,
+        "salt": 0.3
+      },
+      "price": 38.0,
+      "vegan": null,
+      "ean": "5906395147175"
+    },
+    {
+      "name": "Makaron Shirataki Konjac Spaghetti 270 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/makarony-konjac-shirataki/69-makaron-shirataki-konjac-spaghetti-270-g-5901549275056.html",
+      "quantity": "270 g",
+      "category": "makaron",
+      "nutrition": {
+        "kcal": 8.0,
+        "protein": 0.0,
+        "carbs": 1.1,
+        "fat": 0.0,
+        "sugars": 0.0,
+        "fiber": 1.8,
+        "saturatedFat": 0.0,
+        "salt": 0.0
+      },
+      "price": 6.15,
+      "vegan": true,
+      "ean": "5901549275056"
+    },
+    {
+      "name": "Super Erytrytol 500 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/cukry-i-slodziki/72-super-erytrytol-500-g-5906395147076.html",
+      "quantity": "500 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 0.2,
+        "protein": 0.0,
+        "carbs": 99.0,
+        "fat": 0.0,
+        "sugars": 0.0,
+        "fiber": null,
+        "saturatedFat": 0.0,
+        "salt": 0.0
+      },
+      "price": 32.0,
+      "vegan": null,
+      "ean": "5906395147076"
+    },
+    {
+      "name": "Bio Flax Siemie Lniane Jabłko Słonecznik 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/blonnik-wlokna/78-bio-flax-siemie-lniane-jablko-slonecznik-200-g-5901549275414.html",
+      "quantity": "200 g",
+      "category": "orzechy",
+      "nutrition": {
+        "kcal": 320.0,
+        "protein": 28.6,
+        "carbs": 12.75,
+        "fat": 10.3,
+        "sugars": 3.33,
+        "fiber": 36.8,
+        "saturatedFat": 1.24,
+        "salt": 0.13
+      },
+      "price": 11.9,
+      "vegan": null,
+      "ean": "5901549275414"
+    },
+    {
+      "name": "Bio Nasiona Chia 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/nasiona/79-bio-nasiona-chia-200-g-5901549275452.html",
+      "quantity": "200 g",
+      "category": "orzechy",
+      "nutrition": {
+        "kcal": 444.0,
+        "protein": 21.0,
+        "carbs": 4.9,
+        "fat": 31.0,
+        "sugars": 0.8,
+        "fiber": 33.7,
+        "saturatedFat": 3.8,
+        "salt": 0.02
+      },
+      "price": 13.7,
+      "vegan": true,
+      "ean": "5901549275452"
+    },
+    {
+      "name": "Bio Łuskane Nasiona Konopi 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/nasiona/80-bio-luskane-nasiona-konopi-200-g-5901549275469.html",
+      "quantity": "200 g",
+      "category": "orzechy",
+      "nutrition": {
+        "kcal": 605.0,
+        "protein": 32.0,
+        "carbs": 0.9,
+        "fat": 51.7,
+        "sugars": 0.5,
+        "fiber": 4.2,
+        "saturatedFat": 27.0,
+        "salt": 0.03
+      },
+      "price": 34.1,
+      "vegan": null,
+      "ean": "5901549275469"
+    },
+    {
+      "name": "Bio Liście Moringa 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/ziola-ajurwedyjskie/84-bio-liscie-moringa-200-g-5901549275551.html",
+      "quantity": "200 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 205.0,
+        "protein": 24.0,
+        "carbs": 20.4,
+        "fat": 4.3,
+        "sugars": 7.3,
+        "fiber": 29.5,
+        "saturatedFat": 1.4,
+        "salt": 0.34
+      },
+      "price": 30.0,
+      "vegan": null,
+      "ean": "5901549275551"
+    },
+    {
+      "name": "Bio Krem Orzechowo Pomarańczowy 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/pozostale/85-bio-krem-orzechowo-pomaranczowy-200-g-5901549275155.html",
+      "quantity": "200 g",
+      "category": "smarowidla",
+      "nutrition": {
+        "kcal": 588.0,
+        "protein": 12.0,
+        "carbs": 25.0,
+        "fat": 47.0,
+        "sugars": 13.0,
+        "fiber": null,
+        "saturatedFat": 28.0,
+        "salt": 0.04
+      },
+      "price": 25.9,
+      "vegan": null,
+      "ean": "5901549275155"
+    },
+    {
+      "name": "Bio Krem Orzechowo Kakaowy - Crunchy 300 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/crunchy/200-bio-krem-orzechowo-kakaowy-crunchy-300-g-5906395147557.html",
+      "quantity": "300 g",
+      "category": "smarowidla",
+      "nutrition": {
+        "kcal": 630.0,
+        "protein": 10.0,
+        "carbs": 29.0,
+        "fat": 51.0,
+        "sugars": 19.0,
+        "fiber": 9.8,
+        "saturatedFat": 4.9,
+        "salt": 0.04
+      },
+      "price": 75.2,
+      "vegan": null,
+      "ean": "5906395147557"
+    },
+    {
+      "name": "Bio Olej Kokosowy Rafinowany 1000 ml",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/oleje/87-bio-olej-kokosowy-rafinowany-1000-ml-5906660508328.html",
+      "quantity": "1000 ml",
+      "category": "kokos",
+      "nutrition": {
+        "kcal": 900.0,
+        "protein": 0.0,
+        "carbs": 0.0,
+        "fat": 99.85,
+        "sugars": 0.0,
+        "fiber": null,
+        "saturatedFat": 81.0,
+        "salt": 0.0
+      },
+      "price": 52.0,
+      "vegan": true,
+      "ean": "5906660508328"
+    },
+    {
+      "name": "Bio Makaron Jaglany Millet 250 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/makarony-zbozowe/88-bio-makaron-jaglany-millet-250-g-5906395147618.html",
+      "quantity": "250 g",
+      "category": "makaron",
+      "nutrition": {
+        "kcal": 360.0,
+        "protein": 8.0,
+        "carbs": 79.0,
+        "fat": 1.5,
+        "sugars": 0.0,
+        "fiber": 1.0,
+        "saturatedFat": 0.0,
+        "salt": 0.0
+      },
+      "price": 15.0,
+      "vegan": true,
+      "ean": "5906395147618"
+    },
+    {
+      "name": "Ksylitol Fiński 500 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/cukry-i-slodziki/90-ksylitol-finski-500-g-5906395147120.html",
+      "quantity": "500 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 240.0,
+        "protein": 0.0,
+        "carbs": 99.8,
+        "fat": 0.0,
+        "sugars": 0.2,
+        "fiber": null,
+        "saturatedFat": 0.0,
+        "salt": 0.0
+      },
+      "price": 39.0,
+      "vegan": null,
+      "ean": "5906395147120"
+    },
+    {
+      "name": "Bio Woda Kokosowa w Proszku 150 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/woda-kokosowa/91-bio-woda-kokosowa-w-proszku-150-g-5901549275599.html",
+      "quantity": "150 g",
+      "category": "napoje",
+      "nutrition": {
+        "kcal": 284.0,
+        "protein": 0.48,
+        "carbs": 91.9,
+        "fat": 0.27,
+        "sugars": 54.5,
+        "fiber": null,
+        "saturatedFat": 0.27,
+        "salt": 0.3
+      },
+      "price": 59.2,
+      "vegan": null,
+      "ean": "5901549275599"
+    },
+    {
+      "name": "Bio Cukier Kokosowy 400 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/cukry-i-slodziki/92-bio-cukier-kokosowy-400-g-5901549275605.html",
+      "quantity": "400 g",
+      "category": "kokos",
+      "nutrition": {
+        "kcal": 385.0,
+        "protein": 1.9,
+        "carbs": 92.4,
+        "fat": 0.0,
+        "sugars": 87.0,
+        "fiber": null,
+        "saturatedFat": 0.0,
+        "salt": 0.4
+      },
+      "price": 23.0,
+      "vegan": null,
+      "ean": "5901549275605"
+    },
+    {
+      "name": "Bio Mąka Kokosowa 450 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/maki/93-bio-maka-kokosowa-450-g-5906395147083.html",
+      "quantity": "450 g",
+      "category": "maki",
+      "nutrition": {
+        "kcal": 351.0,
+        "protein": 21.5,
+        "carbs": 24.5,
+        "fat": 11.5,
+        "sugars": 6.2,
+        "fiber": 31.7,
+        "saturatedFat": 9.7,
+        "salt": 1.37
+      },
+      "price": 17.5,
+      "vegan": null,
+      "ean": "5906395147083"
+    },
+    {
+      "name": "Bio Ghee Masło Klarowane 300 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/masla/95-bio-ghee-maslo-klarowane-300-g-5901549275971.html",
+      "quantity": "300 g",
+      "category": "nabial",
+      "nutrition": {
+        "kcal": 895.0,
+        "protein": 0.0,
+        "carbs": 0.0,
+        "fat": 99.5,
+        "sugars": 0.0,
+        "fiber": null,
+        "saturatedFat": 62.5,
+        "salt": 0.0
+      },
+      "price": 57.3,
+      "vegan": null,
+      "ean": "5901549275971"
+    },
+    {
+      "name": "Bio Kokosowy Muss 500 ml",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/masla/96-bio-kokosowy-muss-500-ml-5901549275896.html",
+      "quantity": "500 ml",
+      "category": "kokos",
+      "nutrition": {
+        "kcal": 705.0,
+        "protein": 7.0,
+        "carbs": 26.0,
+        "fat": 64.0,
+        "sugars": 6.0,
+        "fiber": null,
+        "saturatedFat": 60.0,
+        "salt": 0.48
+      },
+      "price": 38.0,
+      "vegan": true,
+      "ean": "5901549275896"
+    },
+    {
+      "name": "Bio Komosa Ryżowa Biała 400 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/nasiona/97-bio-komosa-ryzowa-biala-400-g-5901549275612.html",
+      "quantity": "400 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 360.0,
+        "protein": 14.4,
+        "carbs": 67.8,
+        "fat": 5.2,
+        "sugars": 0.0,
+        "fiber": 6.5,
+        "saturatedFat": 0.7,
+        "salt": 0.005
+      },
+      "price": 24.5,
+      "vegan": true,
+      "ean": "5901549275612"
+    },
+    {
+      "name": "Bio Cukier Trzcinowy Ciemny Demerar 400 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/cukry-i-slodziki/102-bio-cukier-trzcinowy-ciemny-demerar-400-g-5901549275858.html",
+      "quantity": "400 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 380.0,
+        "protein": 0.2,
+        "carbs": 99.0,
+        "fat": 0.0,
+        "sugars": 99.0,
+        "fiber": 0.0,
+        "saturatedFat": 0.0,
+        "salt": 0.0
+      },
+      "price": 15.5,
+      "vegan": null,
+      "ean": "5901549275858"
+    },
+    {
+      "name": "Bio Napój Kokosowy 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/napoje-i-napary/106-bio-napoj-kokosowy-200-g-5901549275902.html",
+      "quantity": "200 g",
+      "category": "kokos",
+      "nutrition": {
+        "kcal": 700.0,
+        "protein": 7.0,
+        "carbs": 27.0,
+        "fat": 63.0,
+        "sugars": 11.0,
+        "fiber": null,
+        "saturatedFat": 60.0,
+        "salt": 0.5
+      },
+      "price": 28.7,
+      "vegan": null,
+      "ean": "5901549275902"
+    },
+    {
+      "name": "Bio Krem z Orzechów Arachidowych 300 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/aksamitne/107-bio-krem-z-orzechow-arachidowych-300-g-5906660508397.html",
+      "quantity": "300 g",
+      "category": "smarowidla",
+      "nutrition": {
+        "kcal": 585.0,
+        "protein": 24.0,
+        "carbs": 13.5,
+        "fat": 50.0,
+        "sugars": 4.2,
+        "fiber": null,
+        "saturatedFat": 6.9,
+        "salt": 0.015
+      },
+      "price": 23.2,
+      "vegan": null,
+      "ean": "5906660508397"
+    },
+    {
+      "name": "Bio Granola Keto 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/granole/108-bio-granola-keto-200-g-5906660508014.html",
+      "quantity": "200 g",
+      "category": "sniadania",
+      "nutrition": {
+        "kcal": 590.0,
+        "protein": 14.0,
+        "carbs": 9.0,
+        "fat": 51.0,
+        "sugars": 3.2,
+        "fiber": 16.0,
+        "saturatedFat": 20.0,
+        "salt": 0.06
+      },
+      "price": 21.7,
+      "vegan": null,
+      "ean": "5906660508014"
+    },
+    {
+      "name": "Bio Keto Granola Kakao z Olejkiem Pomarańczowym 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/granole/110-bio-keto-granola-kakao-z-olejkiem-pomaranczowym-200-g-5906660508137.html",
+      "quantity": "200 g",
+      "category": "sniadania",
+      "nutrition": {
+        "kcal": 512.0,
+        "protein": 15.6,
+        "carbs": 12.0,
+        "fat": 43.0,
+        "sugars": 2.5,
+        "fiber": 17.5,
+        "saturatedFat": 6.0,
+        "salt": 0.014
+      },
+      "price": 28.5,
+      "vegan": null,
+      "ean": "5906660508137"
+    },
+    {
+      "name": "Bio Krem Kokosowy z Kakao 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/pozostale/111-bio-krem-kokosowy-z-kakao-200-g-5901549275131.html",
+      "quantity": "200 g",
+      "category": "smarowidla",
+      "nutrition": {
+        "kcal": 451.0,
+        "protein": 4.6,
+        "carbs": 41.0,
+        "fat": 28.0,
+        "sugars": 40.0,
+        "fiber": null,
+        "saturatedFat": 26.0,
+        "salt": 0.08
+      },
+      "price": 27.0,
+      "vegan": null,
+      "ean": "5901549275131"
+    },
+    {
+      "name": "Bio Krem Kokosowy z Orzechami i Malinami 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/pozostale/130-bio-krem-kokosowy-z-orzechami-i-malinami-200-g-5901549275148.html",
+      "quantity": "200 g",
+      "category": "smarowidla",
+      "nutrition": {
+        "kcal": 616.0,
+        "protein": 17.0,
+        "carbs": 12.0,
+        "fat": 55.0,
+        "sugars": 5.4,
+        "fiber": null,
+        "saturatedFat": 29.0,
+        "salt": 0.02
+      },
+      "price": 24.5,
+      "vegan": null,
+      "ean": "5901549275148"
+    },
+    {
+      "name": "Bio Granola Owocowa z Burakiem 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/granole/112-bio-granola-owocowa-z-burakiem-200-g-5906660508199.html",
+      "quantity": "200 g",
+      "category": "sniadania",
+      "nutrition": {
+        "kcal": 458.0,
+        "protein": 16.0,
+        "carbs": 44.0,
+        "fat": 26.0,
+        "sugars": 22.0,
+        "fiber": null,
+        "saturatedFat": 6.0,
+        "salt": 0.06
+      },
+      "price": 19.5,
+      "vegan": null,
+      "ean": "5906660508199"
+    },
+    {
+      "name": "Bio Makaron Shirataki Konjac Ryż 385 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/makarony-konjac-shirataki/114-bio-makaron-shirataki-konjac-ryz-385-g-5906660508922.html",
+      "quantity": "385 g",
+      "category": "makaron",
+      "nutrition": {
+        "kcal": 7.0,
+        "protein": 0.0,
+        "carbs": 0.0,
+        "fat": 0.0,
+        "sugars": 0.0,
+        "fiber": 2.6,
+        "saturatedFat": 0.0,
+        "salt": 0.0
+      },
+      "price": 9.42,
+      "vegan": true,
+      "ean": "5906660508922"
+    },
+    {
+      "name": "Bio Keto Bowl Tiger Attack 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/keto-bowl/115-bio-keto-bowl-tiger-attack-200-g-5901549275070.html",
+      "quantity": "200 g",
+      "category": "sniadania",
+      "nutrition": {
+        "kcal": 513.0,
+        "protein": 17.3,
+        "carbs": 19.7,
+        "fat": 41.0,
+        "sugars": 7.0,
+        "fiber": 12.0,
+        "saturatedFat": 34.0,
+        "salt": 0.112
+      },
+      "price": 17.7,
+      "vegan": null,
+      "ean": "5901549275070"
+    },
+    {
+      "name": "Bio Keto Bowl Coconut Force 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/keto-bowl/116-bio-keto-bowl-coconut-force-200-g-5901549275025.html",
+      "quantity": "200 g",
+      "category": "sniadania",
+      "nutrition": {
+        "kcal": 497.0,
+        "protein": 13.0,
+        "carbs": 18.6,
+        "fat": 37.0,
+        "sugars": 7.0,
+        "fiber": 25.0,
+        "saturatedFat": 29.0,
+        "salt": 0.117
+      },
+      "price": 16.4,
+      "vegan": null,
+      "ean": "5901549275025"
+    },
+    {
+      "name": "Keto Bowl Bio Peanut Protein 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/keto-bowl/117-keto-bowl-bio-peanut-protein-200-g-5901549275018.html",
+      "quantity": "200 g",
+      "category": "sniadania",
+      "nutrition": {
+        "kcal": 368.0,
+        "protein": 22.0,
+        "carbs": 20.0,
+        "fat": 24.0,
+        "sugars": 17.5,
+        "fiber": null,
+        "saturatedFat": 12.0,
+        "salt": 2.0
+      },
+      "price": 16.4,
+      "vegan": null,
+      "ean": "5901549275018"
+    },
+    {
+      "name": "Bio Krem z Migdałów 300 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/aksamitne/125-bio-krem-z-migdalow-300-g-5906660508533.html",
+      "quantity": "300 g",
+      "category": "smarowidla",
+      "nutrition": {
+        "kcal": 628.0,
+        "protein": 21.0,
+        "carbs": 19.0,
+        "fat": 52.0,
+        "sugars": 4.6,
+        "fiber": null,
+        "saturatedFat": 3.8,
+        "salt": 0.0
+      },
+      "price": 45.0,
+      "vegan": null,
+      "ean": "5906660508533"
+    },
+    {
+      "name": "Bio Krem z Orzechów Laskowych 300 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/aksamitne/127-bio-krem-z-orzechow-laskowych-300-g-5906660508557.html",
+      "quantity": "300 g",
+      "category": "smarowidla",
+      "nutrition": {
+        "kcal": 710.0,
+        "protein": 11.6,
+        "carbs": 11.0,
+        "fat": 67.0,
+        "sugars": 3.7,
+        "fiber": null,
+        "saturatedFat": 6.1,
+        "salt": 0.0
+      },
+      "price": 76.5,
+      "vegan": null,
+      "ean": "5906660508557"
+    },
+    {
+      "name": "Bio Ramen Makaron Jaglany 280 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/makarony-zbozowe/137-bio-ramen-makaron-jaglany-280-g-5906660508236.html",
+      "quantity": "280 g",
+      "category": "makaron",
+      "nutrition": {
+        "kcal": 360.0,
+        "protein": 8.0,
+        "carbs": 79.0,
+        "fat": 1.5,
+        "sugars": 0.0,
+        "fiber": 1.0,
+        "saturatedFat": 0.0,
+        "salt": 0.0
+      },
+      "price": 19.1,
+      "vegan": true,
+      "ean": "5906660508236"
+    },
+    {
+      "name": "Bio Ramen Makaron Gryczany 280 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/makarony-zbozowe/138-bio-ramen-makaron-gryczany-280-g-5906660508243.html",
+      "quantity": "280 g",
+      "category": "makaron",
+      "nutrition": {
+        "kcal": 360.0,
+        "protein": 13.0,
+        "carbs": 72.0,
+        "fat": 3.0,
+        "sugars": 3.0,
+        "fiber": 3.0,
+        "saturatedFat": 0.5,
+        "salt": 0.0
+      },
+      "price": 19.1,
+      "vegan": true,
+      "ean": "5906660508243"
+    },
+    {
+      "name": "Matcha Latte Keto Friendly 300 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/napoje-i-napary/154-matcha-latte-keto-friendly-300-g-5901549275926.html",
+      "quantity": "300 g",
+      "category": "napoje",
+      "nutrition": {
+        "kcal": 378.0,
+        "protein": 3.1,
+        "carbs": 20.0,
+        "fat": 42.0,
+        "sugars": 0.2,
+        "fiber": 8.5,
+        "saturatedFat": 42.0,
+        "salt": 0.1
+      },
+      "price": 68.8,
+      "vegan": null,
+      "ean": "5901549275926"
+    },
+    {
+      "name": "Kawa Latte Keto Friendly 300 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/napoje-i-napary/155-kawa-latte-keto-friendly-300-g-5901549275872.html",
+      "quantity": "300 g",
+      "category": "napoje",
+      "nutrition": {
+        "kcal": 203.0,
+        "protein": 1.6,
+        "carbs": 10.0,
+        "fat": 22.0,
+        "sugars": 0.1,
+        "fiber": 4.5,
+        "saturatedFat": 22.0,
+        "salt": 0.07
+      },
+      "price": 70.4,
+      "vegan": null,
+      "ean": "5901549275872"
+    },
+    {
+      "name": "Keto Krem z Orzechów Laskowych z Olejem MCT 300 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/keto/164-keto-krem-z-orzechow-laskowych-z-olejem-mct-300-g-5903933640716.html",
+      "quantity": "300 g",
+      "category": "smarowidla",
+      "nutrition": {
+        "kcal": 635.0,
+        "protein": 9.4,
+        "carbs": 19.0,
+        "fat": 61.0,
+        "sugars": 3.0,
+        "fiber": 10.0,
+        "saturatedFat": 12.0,
+        "salt": 0.0
+      },
+      "price": 65.5,
+      "vegan": null,
+      "ean": "5903933640716"
+    },
+    {
+      "name": "Bio Ocet Kokosowy 250 ml",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/octy/168-bio-ocet-kokosowy-250-ml-5906660508595.html",
+      "quantity": "250 ml",
+      "category": "kokos",
+      "nutrition": {
+        "kcal": 0.0,
+        "protein": 0.0,
+        "carbs": 0.0,
+        "fat": 0.0,
+        "sugars": 0.0,
+        "fiber": null,
+        "saturatedFat": 0.0,
+        "salt": 0.0
+      },
+      "price": 21.6,
+      "vegan": null,
+      "ean": "5906660508595"
+    },
+    {
+      "name": "Bio Sos Kokosowy Aminos 250 ml",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/sosy-i-syropy/169-bio-sos-kokosowy-aminos-250-ml-5906660508588.html",
+      "quantity": "250 ml",
+      "category": "sosy",
+      "nutrition": {
+        "kcal": 180.0,
+        "protein": 0.0,
+        "carbs": 45.0,
+        "fat": 0.0,
+        "sugars": 45.0,
+        "fiber": null,
+        "saturatedFat": 0.0,
+        "salt": 6.7
+      },
+      "price": 22.5,
+      "vegan": true,
+      "ean": "5906660508588"
+    },
+    {
+      "name": "Bio Syrop Kokosowy 250 ml",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/sosy-i-syropy/170-bio-syrop-kokosowy-250-g-5906660508571.html",
+      "quantity": "250 ml",
+      "category": "kokos",
+      "nutrition": {
+        "kcal": 312.0,
+        "protein": 0.0,
+        "carbs": 78.0,
+        "fat": 0.8,
+        "sugars": 78.0,
+        "fiber": null,
+        "saturatedFat": 0.0,
+        "salt": 0.057
+      },
+      "price": 35.0,
+      "vegan": null,
+      "ean": "5906660508571"
+    },
+    {
+      "name": "Bio Mąka Migdałowa 250 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/maki/171-bio-maka-migdalowa-250-g-5906660508717.html",
+      "quantity": "250 g",
+      "category": "maki",
+      "nutrition": {
+        "kcal": 619.0,
+        "protein": 22.0,
+        "carbs": 5.4,
+        "fat": 54.0,
+        "sugars": 4.8,
+        "fiber": null,
+        "saturatedFat": 3.9,
+        "salt": 0.0
+      },
+      "price": 45.0,
+      "vegan": null,
+      "ean": "5906660508717"
+    },
+    {
+      "name": "Bio Krem z Nasion Sezamu Tahini 300 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/pozostale/172-bio-krem-z-nasion-sezamu-tahini-300-g-5906660508564.html",
+      "quantity": "300 g",
+      "category": "smarowidla",
+      "nutrition": {
+        "kcal": 573.0,
+        "protein": 11.8,
+        "carbs": 12.0,
+        "fat": 50.0,
+        "sugars": 0.3,
+        "fiber": null,
+        "saturatedFat": 7.0,
+        "salt": 0.0
+      },
+      "price": 22.9,
+      "vegan": null,
+      "ean": "5906660508564"
+    },
+    {
+      "name": "Bio olej kokosowy MCT C8+C10 250 ml",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/oleje/173-bio-olej-kokosowy-mct-c8c10-250-ml-5903933643878.html",
+      "quantity": "250 ml",
+      "category": "kokos",
+      "nutrition": {
+        "kcal": 900.0,
+        "protein": 0.0,
+        "carbs": 0.0,
+        "fat": 100.0,
+        "sugars": 0.0,
+        "fiber": 0.0,
+        "saturatedFat": 100.0,
+        "salt": null
+      },
+      "price": 46.4,
+      "vegan": null,
+      "ean": "5903933643878"
+    },
+    {
+      "name": "Bio Krem z Nasion Słonecznika 300 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/pozostale/174-bio-krem-z-nasion-slonecznika-300-g-5906660508755.html",
+      "quantity": "300 g",
+      "category": "smarowidla",
+      "nutrition": {
+        "kcal": 574.0,
+        "protein": 22.5,
+        "carbs": 12.3,
+        "fat": 49.0,
+        "sugars": 0.25,
+        "fiber": 6.3,
+        "saturatedFat": 5.7,
+        "salt": 0.005
+      },
+      "price": 17.8,
+      "vegan": null,
+      "ean": "5906660508755"
+    },
+    {
+      "name": "Bio Matcha Latte 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/napoje-i-napary/178-bio-matcha-latte-200-g-5906395147335.html",
+      "quantity": "200 g",
+      "category": "napoje",
+      "nutrition": {
+        "kcal": 547.0,
+        "protein": 3.9,
+        "carbs": 52.0,
+        "fat": 36.0,
+        "sugars": 42.0,
+        "fiber": null,
+        "saturatedFat": 34.0,
+        "salt": 0.5
+      },
+      "price": 28.1,
+      "vegan": null,
+      "ean": "5906395147335"
+    },
+    {
+      "name": "Bio Latte Kakao 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/napoje-i-napary/195-bio-latte-kakao-200-g-5906395147359.html",
+      "quantity": "200 g",
+      "category": "kakao",
+      "nutrition": {
+        "kcal": 552.0,
+        "protein": 6.6,
+        "carbs": 54.0,
+        "fat": 34.0,
+        "sugars": 39.0,
+        "fiber": null,
+        "saturatedFat": 32.0,
+        "salt": 0.6
+      },
+      "price": 30.4,
+      "vegan": null,
+      "ean": "5906395147359"
+    },
+    {
+      "name": "Bio Latte z Kurkumą 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/napoje-i-napary/197-bio-latte-z-kurkuma-200-g-5906395147373.html",
+      "quantity": "200 g",
+      "category": "napoje",
+      "nutrition": {
+        "kcal": 480.0,
+        "protein": 3.0,
+        "carbs": 63.0,
+        "fat": 24.0,
+        "sugars": 42.0,
+        "fiber": 1.0,
+        "saturatedFat": 22.0,
+        "salt": 0.4
+      },
+      "price": 28.1,
+      "vegan": null,
+      "ean": "5906395147373"
+    },
+    {
+      "name": "Bio Granola z Owocami 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/granole/181-bio-granola-z-owocami-200-g-5906660508823.html",
+      "quantity": "200 g",
+      "category": "sniadania",
+      "nutrition": {
+        "kcal": 479.0,
+        "protein": 15.0,
+        "carbs": 33.0,
+        "fat": 38.0,
+        "sugars": 16.0,
+        "fiber": 6.5,
+        "saturatedFat": 8.1,
+        "salt": 0.06
+      },
+      "price": 16.9,
+      "vegan": null,
+      "ean": "5906660508823"
+    },
+    {
+      "name": "Bio Musli Crunch z Chia 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/musli/185-bio-musli-crunch-z-chia-200-g-5906660508854.html",
+      "quantity": "200 g",
+      "category": "sniadania",
+      "nutrition": {
+        "kcal": 322.0,
+        "protein": 8.9,
+        "carbs": 60.0,
+        "fat": 3.6,
+        "sugars": 12.0,
+        "fiber": 9.5,
+        "saturatedFat": 0.5,
+        "salt": 1.0
+      },
+      "price": 13.5,
+      "vegan": null,
+      "ean": "5906660508854"
+    },
+    {
+      "name": "Bio Musli Crunch z Superfood 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/musli/186-bio-musli-crunch-z-superfood-200-g-5906660508939.html",
+      "quantity": "200 g",
+      "category": "sniadania",
+      "nutrition": {
+        "kcal": 336.0,
+        "protein": 7.8,
+        "carbs": 64.0,
+        "fat": 4.6,
+        "sugars": 33.0,
+        "fiber": 8.9,
+        "saturatedFat": 2.7,
+        "salt": 0.09
+      },
+      "price": 14.0,
+      "vegan": null,
+      "ean": "5906660508939"
+    },
+    {
+      "name": "Bio Krem z Orzechów Włoskich 300 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/aksamitne/189-bio-krem-z-orzechow-wloskich-300-g-5906660508885.html",
+      "quantity": "300 g",
+      "category": "smarowidla",
+      "nutrition": {
+        "kcal": 713.0,
+        "protein": 16.4,
+        "carbs": 3.4,
+        "fat": 69.0,
+        "sugars": 3.1,
+        "fiber": null,
+        "saturatedFat": 6.3,
+        "salt": 0.41
+      },
+      "price": 49.0,
+      "vegan": null,
+      "ean": "5906660508885"
+    },
+    {
+      "name": "Bio Krem z Orzechów Nerkowca 300 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/aksamitne/191-bio-krem-z-orzechow-nerkowca-300-g-5906395147021.html",
+      "quantity": "300 g",
+      "category": "smarowidla",
+      "nutrition": {
+        "kcal": 600.0,
+        "protein": 15.0,
+        "carbs": 30.0,
+        "fat": 46.0,
+        "sugars": 5.1,
+        "fiber": null,
+        "saturatedFat": 9.1,
+        "salt": 0.68
+      },
+      "price": 41.0,
+      "vegan": null,
+      "ean": "5906395147021"
+    },
+    {
+      "name": "Bio Makaron Gryczany Soba 250 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/makarony-zbozowe/199-bio-makaron-gryczany-soba-250-g-5906395147632.html",
+      "quantity": "250 g",
+      "category": "makaron",
+      "nutrition": {
+        "kcal": 370.0,
+        "protein": 13.0,
+        "carbs": 72.0,
+        "fat": 3.0,
+        "sugars": 3.0,
+        "fiber": 3.0,
+        "saturatedFat": 0.5,
+        "salt": 0.0
+      },
+      "price": 15.0,
+      "vegan": true,
+      "ean": "5906395147632"
+    },
+    {
+      "name": "MCT Powder Olej Kokosowy 300 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/oleje/204-mct-powder-olej-kokosowy-300-g-5906660508069.html",
+      "quantity": "300 g",
+      "category": "kokos",
+      "nutrition": {
+        "kcal": 535.0,
+        "protein": 0.3,
+        "carbs": 0.0,
+        "fat": 70.0,
+        "sugars": 0.0,
+        "fiber": 25.0,
+        "saturatedFat": 70.0,
+        "salt": 0.07
+      },
+      "price": 92.7,
+      "vegan": true,
+      "ean": "5906660508069"
+    },
+    {
+      "name": "Bio Cukier Trzcinowy Jasny 400 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/cukry-i-slodziki/205-bio-cukier-trzcinowy-jasny-400-g-5901549275841.html",
+      "quantity": "400 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 396.0,
+        "protein": 0.0,
+        "carbs": 99.0,
+        "fat": 0.0,
+        "sugars": 99.0,
+        "fiber": 0.0,
+        "saturatedFat": 0.0,
+        "salt": 0.0
+      },
+      "price": 14.0,
+      "vegan": null,
+      "ean": "5901549275841"
+    },
+    {
+      "name": "Bio Napój Ryżowy w Proszku 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/napoje-i-napary/206-bio-napoj-ryzowy-w-proszku-200-g-5903933643342.html",
+      "quantity": "200 g",
+      "category": "napoje",
+      "nutrition": {
+        "kcal": 396.0,
+        "protein": 0.5,
+        "carbs": 91.0,
+        "fat": 3.0,
+        "sugars": 20.0,
+        "fiber": 8.0,
+        "saturatedFat": 1.0,
+        "salt": 0.26
+      },
+      "price": 19.1,
+      "vegan": true,
+      "ean": "5903933643342"
+    },
+    {
+      "name": "Bio Owsianka Kokosowa z Prebiotykiem 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/import/212-bio-owsianka-kokosowa-z-prebiotykiem-200-g-5903933643434.html",
+      "quantity": "200 g",
+      "category": "sniadania",
+      "nutrition": {
+        "kcal": 400.0,
+        "protein": 8.2,
+        "carbs": 58.0,
+        "fat": 14.0,
+        "sugars": 18.0,
+        "fiber": 8.9,
+        "saturatedFat": 9.8,
+        "salt": 0.6
+      },
+      "price": 16.4,
+      "vegan": null,
+      "ean": "5903933643434"
+    },
+    {
+      "name": "Bio Owsianka Kakaowa z Prebiotykiem 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/owsianki/213-bio-owsianka-kakaowa-z-prebiotykiem-200-g-5903933643427.html",
+      "quantity": "200 g",
+      "category": "sniadania",
+      "nutrition": {
+        "kcal": 355.0,
+        "protein": 9.7,
+        "carbs": 61.0,
+        "fat": 6.3,
+        "sugars": 21.0,
+        "fiber": 12.0,
+        "saturatedFat": 1.2,
+        "salt": 0.6
+      },
+      "price": 13.5,
+      "vegan": null,
+      "ean": "5903933643427"
+    },
+    {
+      "name": "Bio Jagody Goji 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/torebka-przekasek/239-bio-jagody-goji-200-g-5906395147137.html",
+      "quantity": "200 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 292.0,
+        "protein": 13.0,
+        "carbs": 54.0,
+        "fat": 2.7,
+        "sugars": 53.0,
+        "fiber": null,
+        "saturatedFat": 0.34,
+        "salt": 0.75
+      },
+      "price": 31.4,
+      "vegan": null,
+      "ean": "5906395147137"
+    },
+    {
+      "name": "Bio Flax Krakersy Pomidor i Papryka 90 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/ciastka-i-krakersy/240-bio-flax-krakersy-pomidor-i-papryka-90-g-5906395147939.html",
+      "quantity": "90 g",
+      "category": "pieczywo",
+      "nutrition": {
+        "kcal": 440.0,
+        "protein": 18.0,
+        "carbs": 4.5,
+        "fat": 31.0,
+        "sugars": 2.7,
+        "fiber": 26.0,
+        "saturatedFat": 2.7,
+        "salt": 0.07
+      },
+      "price": 10.2,
+      "vegan": null,
+      "ean": "5906395147939"
+    },
+    {
+      "name": "Bio Flax Krakersy z Ziołami i Nasionami 90 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/ciastka-i-krakersy/241-bio-flax-krakersy-z-ziolami-i-nasionami-90-g-5906395147946.html",
+      "quantity": "90 g",
+      "category": "pieczywo",
+      "nutrition": {
+        "kcal": 503.0,
+        "protein": 20.0,
+        "carbs": 5.5,
+        "fat": 39.0,
+        "sugars": 1.0,
+        "fiber": 20.0,
+        "saturatedFat": 4.5,
+        "salt": 0.05
+      },
+      "price": 10.9,
+      "vegan": null,
+      "ean": "5906395147946"
+    },
+    {
+      "name": "Bio Ciasteczka Kokosowe z Jabłkami i Prebiotykiem",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/ciastka-i-krakersy/243-bio-ciasteczka-kokosowe-jablko-80-g-5906395147915.html",
+      "quantity": "80 g",
+      "category": "slodycze",
+      "nutrition": {
+        "kcal": 298.0,
+        "protein": 3.0,
+        "carbs": 27.0,
+        "fat": 22.0,
+        "sugars": 18.0,
+        "fiber": 11.0,
+        "saturatedFat": 18.0,
+        "salt": 0.2
+      },
+      "price": 12.9,
+      "vegan": null,
+      "ean": "5906395147915"
+    },
+    {
+      "name": "Bio Ciasteczka Jabłko Rabarbar 100 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/ciastka-i-krakersy/247-bio-ciasteczka-jablko-rabarbar-100-g-5906395147878.html",
+      "quantity": "100 g",
+      "category": "slodycze",
+      "nutrition": {
+        "kcal": 273.0,
+        "protein": 5.4,
+        "carbs": 21.0,
+        "fat": 18.0,
+        "sugars": 18.0,
+        "fiber": 6.9,
+        "saturatedFat": 11.0,
+        "salt": 0.6
+      },
+      "price": 11.6,
+      "vegan": null,
+      "ean": "5906395147878"
+    },
+    {
+      "name": "Bio Chipsy Kokosowe 150 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/torebka-przekasek/250-bio-chipsy-kokosowe-150-g-5906395147090.html",
+      "quantity": "150 g",
+      "category": "przekaski",
+      "nutrition": {
+        "kcal": 547.0,
+        "protein": 5.7,
+        "carbs": 20.0,
+        "fat": 54.0,
+        "sugars": 6.1,
+        "fiber": 13.0,
+        "saturatedFat": 47.0,
+        "salt": 0.05
+      },
+      "price": 15.0,
+      "vegan": true,
+      "ean": "5906395147090"
+    },
+    {
+      "name": "Bio Golden Berries Miechunka Peruwiańska 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/torebka-przekasek/251-bio-golden-berries-miechunka-peruwianska-200-g-5906395147151.html",
+      "quantity": "200 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 295.0,
+        "protein": 6.8,
+        "carbs": 42.0,
+        "fat": 6.1,
+        "sugars": 36.0,
+        "fiber": 23.0,
+        "saturatedFat": 0.7,
+        "salt": 1.6
+      },
+      "price": 36.9,
+      "vegan": null,
+      "ean": "5906395147151"
+    },
+    {
+      "name": "Bio Cynamonowe Nasiona 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/torebka-przekasek/253-bio-cynamonowe-nasiona-200-g-5906395147236.html",
+      "quantity": "200 g",
+      "category": "orzechy",
+      "nutrition": {
+        "kcal": 575.0,
+        "protein": 19.0,
+        "carbs": 25.0,
+        "fat": 44.0,
+        "sugars": 8.9,
+        "fiber": 7.5,
+        "saturatedFat": 18.0,
+        "salt": 0.6
+      },
+      "price": 16.8,
+      "vegan": null,
+      "ean": "5906395147236"
+    },
+    {
+      "name": "Bio Ciasteczka Keto z Cynamonem 80 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/ciastka-i-krakersy/256-bio-ciasteczka-keto-z-cynamonem-80-g-5906660508540.html",
+      "quantity": "80 g",
+      "category": "slodycze",
+      "nutrition": {
+        "kcal": 567.0,
+        "protein": 5.7,
+        "carbs": 25.0,
+        "fat": 54.0,
+        "sugars": 6.8,
+        "fiber": 9.0,
+        "saturatedFat": 51.0,
+        "salt": 0.14
+      },
+      "price": 10.8,
+      "vegan": null,
+      "ean": "5906660508540"
+    },
+    {
+      "name": "Keto Shake Malina + MCT 300 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/odzywki-bialkowe/258-keto-shake-malina-mct-300-g-5906660508205.html",
+      "quantity": "300 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 441.0,
+        "protein": 63.0,
+        "carbs": 4.8,
+        "fat": 17.0,
+        "sugars": 1.4,
+        "fiber": 6.2,
+        "saturatedFat": 16.0,
+        "salt": 0.5
+      },
+      "price": 95.0,
+      "vegan": null,
+      "ean": "5906660508205"
+    },
+    {
+      "name": "Bio Żelki Owocowe Czarna Porzeczka 50 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/zelki-owocowe/266-bio-zelki-owocowe-czarna-porzeczka-50-g-5906395147748.html",
+      "quantity": "50 g",
+      "category": "slodycze",
+      "nutrition": {
+        "kcal": 174.0,
+        "protein": 0.9,
+        "carbs": 42.0,
+        "fat": 0.2,
+        "sugars": 34.0,
+        "fiber": 4.0,
+        "saturatedFat": 0.0,
+        "salt": 0.1
+      },
+      "price": 10.9,
+      "vegan": true,
+      "ean": "5906395147748"
+    },
+    {
+      "name": "Bio Żelki Owocowe - Mango i Jabłko 50 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/zelki-owocowe/305-bio-zelki-owocowe-mango-i-jablko-50-g-5903933643205.html",
+      "quantity": "50 g",
+      "category": "slodycze",
+      "nutrition": {
+        "kcal": 121.0,
+        "protein": 0.6,
+        "carbs": 28.0,
+        "fat": 0.5,
+        "sugars": 24.0,
+        "fiber": 4.7,
+        "saturatedFat": 0.1,
+        "salt": 0.2
+      },
+      "price": 9.6,
+      "vegan": true,
+      "ean": "5903933643205"
+    },
+    {
+      "name": "Bio Żelki Owocowe - Marchew i Mango 50 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/zelki-owocowe/306-bio-zelki-owocowe-marchew-i-mango-50-g-5903933643229.html",
+      "quantity": "50 g",
+      "category": "slodycze",
+      "nutrition": {
+        "kcal": 100.0,
+        "protein": 0.6,
+        "carbs": 24.0,
+        "fat": 0.2,
+        "sugars": 19.0,
+        "fiber": 5.0,
+        "saturatedFat": 0.1,
+        "salt": 0.3
+      },
+      "price": 9.6,
+      "vegan": true,
+      "ean": "5903933643229"
+    },
+    {
+      "name": "Bio Rodzynki Sułtańskie 250 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/torebka-przekasek/272-bio-rodzynki-sultanskie-250-g-5906660508304.html",
+      "quantity": "250 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 328.0,
+        "protein": 3.0,
+        "carbs": 76.0,
+        "fat": 0.5,
+        "sugars": 73.0,
+        "fiber": null,
+        "saturatedFat": 0.2,
+        "salt": 0.06
+      },
+      "price": 20.0,
+      "vegan": null,
+      "ean": "5906660508304"
+    },
+    {
+      "name": "Bio Daktyle Bez Pestek 250 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/torebka-przekasek/274-bio-daktyle-bez-pestek-250-g-5906660508298.html",
+      "quantity": "250 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 294.0,
+        "protein": 2.4,
+        "carbs": 67.0,
+        "fat": 0.0,
+        "sugars": 63.0,
+        "fiber": null,
+        "saturatedFat": 0.0,
+        "salt": 0.0
+      },
+      "price": 19.0,
+      "vegan": null,
+      "ean": "5906660508298"
+    },
+    {
+      "name": "Bio Papier Owocowy Truskawka 25 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/papiery-owocowe/291-bio-papier-owocowy-truskawka-25-g-5906660508625.html",
+      "quantity": "25 g",
+      "category": "slodycze",
+      "nutrition": {
+        "kcal": 330.0,
+        "protein": 6.2,
+        "carbs": 61.0,
+        "fat": 2.6,
+        "sugars": 47.6,
+        "fiber": 18.9,
+        "saturatedFat": 0.2,
+        "salt": 0.006
+      },
+      "price": 15.0,
+      "vegan": null,
+      "ean": "5906660508625"
+    },
+    {
+      "name": "Bio Papier Jabłko z Rabarbarem 25 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/papiery-owocowe/299-bio-papier-jablko-z-rabarbarem-25-g-5906395147380.html",
+      "quantity": "25 g",
+      "category": "slodycze",
+      "nutrition": {
+        "kcal": 320.0,
+        "protein": 4.1,
+        "carbs": 66.0,
+        "fat": 0.8,
+        "sugars": 63.0,
+        "fiber": 16.0,
+        "saturatedFat": 0.2,
+        "salt": 0.1
+      },
+      "price": 9.6,
+      "vegan": null,
+      "ean": "5906395147380"
+    },
+    {
+      "name": "Bio Orzechy Tygrysie 250 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/torebka-przekasek/295-bio-orzechy-tygrysie-250-g-5906395147045.html",
+      "quantity": "250 g",
+      "category": "orzechy",
+      "nutrition": {
+        "kcal": 459.0,
+        "protein": 4.0,
+        "carbs": 62.0,
+        "fat": 24.0,
+        "sugars": 16.2,
+        "fiber": null,
+        "saturatedFat": 5.2,
+        "salt": 0.06
+      },
+      "price": 23.2,
+      "vegan": null,
+      "ean": "5906395147045"
+    },
+    {
+      "name": "Bio Super Sport Mix 300 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/seria-super-mix/309-bio-super-sport-mix-300-g-5901549275186.html",
+      "quantity": "300 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 349.0,
+        "protein": 24.0,
+        "carbs": 45.0,
+        "fat": 8.4,
+        "sugars": 8.3,
+        "fiber": 24.0,
+        "saturatedFat": 2.2,
+        "salt": 0.03
+      },
+      "price": 73.6,
+      "vegan": true,
+      "ean": "5901549275186"
+    },
+    {
+      "name": "Bio Super Day Mix 300 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/seria-super-mix/310-bio-super-day-mix-300-g-5901549275223.html",
+      "quantity": "300 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 290.0,
+        "protein": 21.6,
+        "carbs": 35.6,
+        "fat": 5.2,
+        "sugars": 19.0,
+        "fiber": 26.6,
+        "saturatedFat": 2.5,
+        "salt": 0.3
+      },
+      "price": 68.8,
+      "vegan": null,
+      "ean": "5901549275223"
+    },
+    {
+      "name": "Bio Super Detox Mix 300 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/seria-super-mix/311-bio-super-detox-mix-300-g-5901549275230.html",
+      "quantity": "300 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 298.0,
+        "protein": 26.0,
+        "carbs": 27.0,
+        "fat": 4.5,
+        "sugars": 5.7,
+        "fiber": 40.0,
+        "saturatedFat": 1.7,
+        "salt": 0.3
+      },
+      "price": 62.4,
+      "vegan": null,
+      "ean": "5901549275230"
+    },
+    {
+      "name": "Bio Super Slim Mix 300 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/seria-super-mix/312-bio-super-slim-mix-300-g-5901549275193.html",
+      "quantity": "300 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 354.0,
+        "protein": 44.0,
+        "carbs": 30.9,
+        "fat": 7.2,
+        "sugars": 1.2,
+        "fiber": 13.9,
+        "saturatedFat": 0.8,
+        "salt": null
+      },
+      "price": 66.0,
+      "vegan": null,
+      "ean": "5901549275193"
+    },
+    {
+      "name": "Bio Super Morning Mix 300 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/seria-super-mix/313-bio-super-morning-mix-300-g-5901549275209.html",
+      "quantity": "300 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 352.0,
+        "protein": 26.0,
+        "carbs": 38.0,
+        "fat": 8.8,
+        "sugars": 8.2,
+        "fiber": 22.0,
+        "saturatedFat": 2.8,
+        "salt": 0.3
+      },
+      "price": 67.2,
+      "vegan": null,
+      "ean": "5901549275209"
+    },
+    {
+      "name": "Bio Białko Konopne 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/odzywki-bialkowe/314-bio-bialko-konopne-200-g-5901549275292.html",
+      "quantity": "200 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 384.0,
+        "protein": 51.0,
+        "carbs": 10.0,
+        "fat": 12.0,
+        "sugars": 0.0,
+        "fiber": 25.0,
+        "saturatedFat": 1.5,
+        "salt": 0.5
+      },
+      "price": 22.5,
+      "vegan": null,
+      "ean": "5901549275292"
+    },
+    {
+      "name": "Bio Lucuma 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/owoce-superfood/315-bio-lucuma-200-g-5901549275285.html",
+      "quantity": "200 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 329.0,
+        "protein": 1.4,
+        "carbs": 66.0,
+        "fat": 2.4,
+        "sugars": 17.0,
+        "fiber": 45.0,
+        "saturatedFat": 0.7,
+        "salt": 0.5
+      },
+      "price": 38.2,
+      "vegan": null,
+      "ean": "5901549275285"
+    },
+    {
+      "name": "Bio Jagody Acai 100 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/owoce-superfood/316-bio-jagody-acai-100-g-5901549275261.html",
+      "quantity": "100 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 541.0,
+        "protein": 9.8,
+        "carbs": 32.0,
+        "fat": 54.0,
+        "sugars": 1.7,
+        "fiber": null,
+        "saturatedFat": 15.0,
+        "salt": 0.16
+      },
+      "price": 61.4,
+      "vegan": null,
+      "ean": "5901549275261"
+    },
+    {
+      "name": "Bio Chlorella 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/adaptogeny/317-bio-chlorella-200-g-5901549275308.html",
+      "quantity": "200 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 326.0,
+        "protein": 60.0,
+        "carbs": 17.3,
+        "fat": 12.4,
+        "sugars": 0.0,
+        "fiber": 12.0,
+        "saturatedFat": 0.95,
+        "salt": 2.0
+      },
+      "price": 59.2,
+      "vegan": null,
+      "ean": "5901549275308"
+    },
+    {
+      "name": "Bio Maca 100 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/adaptogeny/318-bio-maca-100-g-5901549275483.html",
+      "quantity": "100 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 289.0,
+        "protein": 9.7,
+        "carbs": 61.3,
+        "fat": 0.6,
+        "sugars": 38.2,
+        "fiber": 0.5,
+        "saturatedFat": 0.1,
+        "salt": 0.25
+      },
+      "price": 16.4,
+      "vegan": null,
+      "ean": "5901549275483"
+    },
+    {
+      "name": "Bio Guarana 100 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/zdrowa-zywnosc/319-bio-guarana-100-g-5901549275346.html",
+      "quantity": "100 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 346.0,
+        "protein": 17.0,
+        "carbs": 65.0,
+        "fat": 2.0,
+        "sugars": 0.0,
+        "fiber": 1.0,
+        "saturatedFat": 0.0,
+        "salt": 1.5
+      },
+      "price": 44.0,
+      "vegan": null,
+      "ean": "5901549275346"
+    },
+    {
+      "name": "Bio Kakao o obniżonej zawartości tłuszczu 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/napoje-i-napary/320-bio-kakao-o-obnizonej-zawartosci-tluszczu-200-g-5901549275254.html",
+      "quantity": "200 g",
+      "category": "kakao",
+      "nutrition": {
+        "kcal": 346.0,
+        "protein": 25.0,
+        "carbs": 14.0,
+        "fat": 11.0,
+        "sugars": 0.0,
+        "fiber": 46.0,
+        "saturatedFat": 6.5,
+        "salt": 0.3
+      },
+      "price": 43.0,
+      "vegan": null,
+      "ean": "5901549275254"
+    },
+    {
+      "name": "Bio Spirulina 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/import/321-bio-spirulina-200-g-5901549275315.html",
+      "quantity": "200 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 350.0,
+        "protein": 50.0,
+        "carbs": 15.0,
+        "fat": 8.2,
+        "sugars": 0.0,
+        "fiber": 7.0,
+        "saturatedFat": 1.1,
+        "salt": 1.4
+      },
+      "price": 40.0,
+      "vegan": null,
+      "ean": "5901549275315"
+    },
+    {
+      "name": "Bio Białko z Pestek Dyni 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/odzywki-bialkowe/324-bio-bialko-z-pestek-dyni-200-g-5906395147199.html",
+      "quantity": "200 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 385.0,
+        "protein": 65.0,
+        "carbs": 4.9,
+        "fat": 9.3,
+        "sugars": 1.4,
+        "fiber": 10.0,
+        "saturatedFat": 1.3,
+        "salt": 0.06
+      },
+      "price": 26.7,
+      "vegan": true,
+      "ean": "5906395147199"
+    },
+    {
+      "name": "Bio Białko z Nasion Słonecznika 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/odzywki-bialkowe/325-bio-bialko-z-nasion-slonecznika-200-g-5906395147205.html",
+      "quantity": "200 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 340.0,
+        "protein": 53.0,
+        "carbs": 4.1,
+        "fat": 7.2,
+        "sugars": 2.8,
+        "fiber": 23.0,
+        "saturatedFat": 0.6,
+        "salt": 0.01
+      },
+      "price": 26.7,
+      "vegan": true,
+      "ean": "5906395147205"
+    },
+    {
+      "name": "Bio Acerola 100 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/owoce-superfood/326-bio-acerola-100-g-5901549275520.html",
+      "quantity": "100 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 345.0,
+        "protein": 7.6,
+        "carbs": 87.0,
+        "fat": 0.0,
+        "sugars": 31.0,
+        "fiber": 8.2,
+        "saturatedFat": 0.0,
+        "salt": 0.04
+      },
+      "price": 75.1,
+      "vegan": null,
+      "ean": "5901549275520"
+    },
+    {
+      "name": "Bio Kurkuma 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/przyprawy/330-bio-kurkuma-200-g-5906660508168.html",
+      "quantity": "200 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 395.0,
+        "protein": 10.0,
+        "carbs": 53.6,
+        "fat": 11.5,
+        "sugars": 3.0,
+        "fiber": 13.0,
+        "saturatedFat": 4.0,
+        "salt": 0.1
+      },
+      "price": 25.3,
+      "vegan": null,
+      "ean": "5906660508168"
+    },
+    {
+      "name": "Bio Białko Serwatkowe Whey protein 500 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/odzywki-bialkowe/331-bio-bialko-serwatkowe-whey-protein-500-g-5901549275667.html",
+      "quantity": "500 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 367.0,
+        "protein": 77.0,
+        "carbs": 3.5,
+        "fat": 5.0,
+        "sugars": 3.5,
+        "fiber": null,
+        "saturatedFat": 3.2,
+        "salt": 0.5
+      },
+      "price": 229.0,
+      "vegan": null,
+      "ean": "5901549275667"
+    },
+    {
+      "name": "Bio Białko Serwatkowe z Kakao 500 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/odzywki-bialkowe/332-bio-bialko-serwatkowe-z-kakao-500-g-5901549275674.html",
+      "quantity": "500 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 382.0,
+        "protein": 62.0,
+        "carbs": 20.0,
+        "fat": 7.6,
+        "sugars": 3.0,
+        "fiber": null,
+        "saturatedFat": 4.3,
+        "salt": 0.4
+      },
+      "price": 192.0,
+      "vegan": null,
+      "ean": "5901549275674"
+    },
+    {
+      "name": "Bio Białko Serwatkowe z Wanilią 500 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/odzywki-bialkowe/1017-bio-bialko-serwatkowe-z-wanilia-500-g-5903933643588.html",
+      "quantity": "500 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 331.0,
+        "protein": 65.0,
+        "carbs": 18.0,
+        "fat": 4.3,
+        "sugars": null,
+        "fiber": null,
+        "saturatedFat": 2.8,
+        "salt": 0.0
+      },
+      "price": 214.0,
+      "vegan": null,
+      "ean": "5903933643588"
+    },
+    {
+      "name": "Bio Jarmuż 100 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/owoce-superfood/333-bio-jarmuz-100-g-5901549275827.html",
+      "quantity": "100 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 311.0,
+        "protein": 17.0,
+        "carbs": 42.0,
+        "fat": 2.5,
+        "sugars": 33.0,
+        "fiber": 28.0,
+        "saturatedFat": 0.7,
+        "salt": 0.0
+      },
+      "price": 23.2,
+      "vegan": null,
+      "ean": "5901549275827"
+    },
+    {
+      "name": "Bio Białko z Ryżu 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/odzywki-bialkowe/334-bio-bialko-z-ryzu-200-g-5901549275803.html",
+      "quantity": "200 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 392.0,
+        "protein": 84.0,
+        "carbs": 3.2,
+        "fat": 5.0,
+        "sugars": 1.2,
+        "fiber": null,
+        "saturatedFat": 2.0,
+        "salt": 0.3
+      },
+      "price": 26.7,
+      "vegan": true,
+      "ean": "5901549275803"
+    },
+    {
+      "name": "Bio Białko z Grochu 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/odzywki-bialkowe/335-bio-bialko-z-grochu-200-g-5901549275810.html",
+      "quantity": "200 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 428.0,
+        "protein": 83.0,
+        "carbs": 4.5,
+        "fat": 7.6,
+        "sugars": 0.25,
+        "fiber": null,
+        "saturatedFat": 2.0,
+        "salt": 1.1
+      },
+      "price": 26.7,
+      "vegan": true,
+      "ean": "5901549275810"
+    },
+    {
+      "name": "Bio Aronia 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/owoce-superfood/336-bio-aronia-200-g-5901549275889.html",
+      "quantity": "200 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 265.0,
+        "protein": 2.5,
+        "carbs": 60.0,
+        "fat": 1.5,
+        "sugars": 28.0,
+        "fiber": null,
+        "saturatedFat": 0.3,
+        "salt": 1.1
+      },
+      "price": 30.0,
+      "vegan": null,
+      "ean": "5901549275889"
+    },
+    {
+      "name": "Bio Vege Protein Mix - białko 500 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/odzywki-bialkowe/337-bio-vege-protein-mix-bialko-500-g-5906395147113.html",
+      "quantity": "500 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 400.0,
+        "protein": 70.0,
+        "carbs": 6.0,
+        "fat": 8.6,
+        "sugars": 0.3,
+        "fiber": null,
+        "saturatedFat": 1.6,
+        "salt": 0.75
+      },
+      "price": 64.6,
+      "vegan": true,
+      "ean": "5906395147113"
+    },
+    {
+      "name": "Bio Vege Protein Mix - białko truskawka 500 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/odzywki-bialkowe/357-bio-vege-protein-mix-bialko-truskawka-500-g-5903933640747.html",
+      "quantity": "500 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 387.0,
+        "protein": 50.0,
+        "carbs": 21.0,
+        "fat": 11.0,
+        "sugars": 15.0,
+        "fiber": 6.8,
+        "saturatedFat": 6.0,
+        "salt": 0.4
+      },
+      "price": 73.0,
+      "vegan": true,
+      "ean": "5903933640747"
+    },
+    {
+      "name": "Bio Vege Protein Mix - białko kakao 500 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/odzywki-bialkowe/358-bio-vege-protein-mix-bialko-kakao-500-g-5903933640754.html",
+      "quantity": "500 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 300.0,
+        "protein": 60.0,
+        "carbs": 23.0,
+        "fat": 2.9,
+        "sugars": 0.6,
+        "fiber": 9.0,
+        "saturatedFat": 1.2,
+        "salt": 0.4
+      },
+      "price": 78.0,
+      "vegan": true,
+      "ean": "5903933640754"
+    },
+    {
+      "name": "Bio Banan 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/owoce-superfood/338-bio-banan-200-g-5906395147144.html",
+      "quantity": "200 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 390.0,
+        "protein": 4.0,
+        "carbs": 90.0,
+        "fat": 1.0,
+        "sugars": 49.0,
+        "fiber": 2.5,
+        "saturatedFat": 0.0,
+        "salt": 0.15
+      },
+      "price": 25.9,
+      "vegan": null,
+      "ean": "5906395147144"
+    },
+    {
+      "name": "Bio Burak 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/przyprawy/339-bio-burak-200-g-5906395147182.html",
+      "quantity": "200 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 374.0,
+        "protein": 11.3,
+        "carbs": 70.0,
+        "fat": 1.1,
+        "sugars": 45.9,
+        "fiber": 6.1,
+        "saturatedFat": 0.1,
+        "salt": 3.5
+      },
+      "price": 31.4,
+      "vegan": null,
+      "ean": "5906395147182"
+    },
+    {
+      "name": "Bio Camu Camu 100 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/owoce-superfood/341-bio-camu-camu-100-g-5901549275995.html",
+      "quantity": "100 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 348.0,
+        "protein": 1.6,
+        "carbs": 81.0,
+        "fat": 0.13,
+        "sugars": 0.0,
+        "fiber": null,
+        "saturatedFat": 0.0,
+        "salt": 0.02
+      },
+      "price": 32.8,
+      "vegan": null,
+      "ean": "5901549275995"
+    },
+    {
+      "name": "Keto Kolagen Coffee Creamer + MCT - śmietanka do kawy 300 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/kolageny/343-keto-kolagen-coffee-creamer-mct-smietanka-do-kawy-300-g-5901549275919.html",
+      "quantity": "300 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 488.0,
+        "protein": 55.0,
+        "carbs": 2.7,
+        "fat": 27.0,
+        "sugars": 1.1,
+        "fiber": null,
+        "saturatedFat": 27.0,
+        "salt": 0.3
+      },
+      "price": 66.0,
+      "vegan": null,
+      "ean": "5901549275919"
+    },
+    {
+      "name": "Izolat Białka Whey Protein 500 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/odzywki-bialkowe/346-izolat-bialka-whey-protein-500-g-5906660508229.html",
+      "quantity": "500 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 369.0,
+        "protein": 87.0,
+        "carbs": 0.4,
+        "fat": 1.0,
+        "sugars": 0.4,
+        "fiber": null,
+        "saturatedFat": 0.2,
+        "salt": 0.6
+      },
+      "price": 214.0,
+      "vegan": null,
+      "ean": "5906660508229"
+    },
+    {
+      "name": "Bio Triphala 100 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/ziola-ajurwedyjskie/349-bio-triphala-100-g-5906660508113.html",
+      "quantity": "100 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 291.0,
+        "protein": 2.3,
+        "carbs": 52.0,
+        "fat": 0.3,
+        "sugars": 11.5,
+        "fiber": 35.0,
+        "saturatedFat": 0.1,
+        "salt": 0.1
+      },
+      "price": 20.5,
+      "vegan": null,
+      "ean": "5906660508113"
+    },
+    {
+      "name": "Keto Izolat Białko Serwatkowe z Olejem Kokosowym MCT 500 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/odzywki-bialkowe/350-keto-izolat-bialko-serwatkowe-z-olejem-kokosowym-mct-500-g-5903933640235.html",
+      "quantity": "500 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 430.0,
+        "protein": 71.0,
+        "carbs": 0.5,
+        "fat": 15.8,
+        "sugars": 0.4,
+        "fiber": 3.0,
+        "saturatedFat": 15.1,
+        "salt": 0.5
+      },
+      "price": 192.0,
+      "vegan": null,
+      "ean": "5903933640235"
+    },
+    {
+      "name": "Białko Serwatkowe Whey Izolat z Kolagenem 500 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/odzywki-bialkowe/351-bialko-serwatkowe-whey-izolat-z-kolagenem-500-g-5903933640242.html",
+      "quantity": "500 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 349.0,
+        "protein": 79.0,
+        "carbs": 10.0,
+        "fat": 0.8,
+        "sugars": 3.4,
+        "fiber": 0.15,
+        "saturatedFat": 0.18,
+        "salt": 0.1
+      },
+      "price": 185.0,
+      "vegan": null,
+      "ean": "5903933640242"
+    },
+    {
+      "name": "Bio Psyllium Babka Jajowata 150 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/blonnik-wlokna/354-bio-psyllium-babka-jajowata-150-g-5903933640372.html",
+      "quantity": "150 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 90.0,
+        "protein": 0.0,
+        "carbs": 20.0,
+        "fat": 0.0,
+        "sugars": 0.0,
+        "fiber": 70.0,
+        "saturatedFat": 0.0,
+        "salt": 0.0
+      },
+      "price": 27.0,
+      "vegan": null,
+      "ean": "5903933640372"
+    },
+    {
+      "name": "Bio Baobab 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/owoce-superfood/366-bio-baobab-200-g-5906395147298.html",
+      "quantity": "200 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 266.0,
+        "protein": 2.8,
+        "carbs": 39.0,
+        "fat": 1.2,
+        "sugars": 26.0,
+        "fiber": 45.0,
+        "saturatedFat": 0.6,
+        "salt": 0.02
+      },
+      "price": 31.0,
+      "vegan": null,
+      "ean": "5906395147298"
+    },
+    {
+      "name": "Kolagen Wołowy 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/kolageny/374-kolagen-wolowy-200-g-5906395147700.html",
+      "quantity": "200 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 378.0,
+        "protein": 90.0,
+        "carbs": 1.0,
+        "fat": 0.0,
+        "sugars": 0.0,
+        "fiber": null,
+        "saturatedFat": 0.0,
+        "salt": 0.75
+      },
+      "price": 54.4,
+      "vegan": null,
+      "ean": "5906395147700"
+    },
+    {
+      "name": "Bio Super Colon Mix 300 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/seria-super-mix/383-bio-super-colon-mix-300-g-5903933643601.html",
+      "quantity": "300 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 275.0,
+        "protein": 0.9,
+        "carbs": 29.0,
+        "fat": 4.2,
+        "sugars": 3.0,
+        "fiber": 61.0,
+        "saturatedFat": 0.0,
+        "salt": 0.5
+      },
+      "price": 68.8,
+      "vegan": null,
+      "ean": "5903933643601"
+    },
+    {
+      "name": "Bio Super Balance Mix 300 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/seria-super-mix/384-bio-super-balance-mix-300-g-5903933643595.html",
+      "quantity": "300 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 273.0,
+        "protein": 7.6,
+        "carbs": 57.0,
+        "fat": 1.5,
+        "sugars": 18.0,
+        "fiber": 21.0,
+        "saturatedFat": 0.1,
+        "salt": 0.12
+      },
+      "price": 56.2,
+      "vegan": null,
+      "ean": "5903933643595"
+    },
+    {
+      "name": "Bio Trawa Jęczmienna 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/import/393-bio-trawa-jeczmienna-200-g-5901549275322.html",
+      "quantity": "200 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 268.0,
+        "protein": 17.2,
+        "carbs": 8.0,
+        "fat": 4.3,
+        "sugars": 0.0,
+        "fiber": 55.7,
+        "saturatedFat": 0.8,
+        "salt": 0.9
+      },
+      "price": 31.4,
+      "vegan": null,
+      "ean": "5901549275322"
+    },
+    {
+      "name": "Bio Ashwagandha 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/adaptogeny/400-bio-ashwagandha-200-g-5906395147168.html",
+      "quantity": "200 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 218.0,
+        "protein": 4.0,
+        "carbs": 50.0,
+        "fat": 0.3,
+        "sugars": 0.0,
+        "fiber": 3.0,
+        "saturatedFat": 0.1,
+        "salt": 0.01
+      },
+      "price": 39.6,
+      "vegan": null,
+      "ean": "5906395147168"
+    },
+    {
+      "name": "Bio Jagody Amla 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/owoce-superfood/401-bio-jagody-amla-200-g-5906395147267.html",
+      "quantity": "200 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 322.0,
+        "protein": 1.2,
+        "carbs": 63.6,
+        "fat": 1.0,
+        "sugars": 8.4,
+        "fiber": null,
+        "saturatedFat": 0.1,
+        "salt": 0.0
+      },
+      "price": 38.2,
+      "vegan": null,
+      "ean": "5906395147267"
+    },
+    {
+      "name": "Bio Haritaki Powder Owoce Migdałecznika 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/adaptogeny/415-bio-haritaki-powder-owoce-migdalecznika-200-g-5906660508731.html",
+      "quantity": "200 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 362.0,
+        "protein": 1.2,
+        "carbs": 80.6,
+        "fat": 3.9,
+        "sugars": 44.0,
+        "fiber": 7.1,
+        "saturatedFat": 0.0,
+        "salt": 0.18
+      },
+      "price": 17.7,
+      "vegan": null,
+      "ean": "5906660508731"
+    },
+    {
+      "name": "Bio Ayurveda Organic Mix 300 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/ziola-ajurwedyjskie/420-bio-ayurveda-organic-mix-300-g-5906395147540.html",
+      "quantity": "300 g",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 273.0,
+        "protein": 9.8,
+        "carbs": 43.0,
+        "fat": 2.8,
+        "sugars": 8.4,
+        "fiber": 18.0,
+        "saturatedFat": 0.9,
+        "salt": 0.1
+      },
+      "price": 53.4,
+      "vegan": null,
+      "ean": "5906395147540"
+    },
+    {
+      "name": "Hydrolizowany Kolagen Rybi 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/kolageny/421-kolagen-rybny-200-g-5906395147717.html",
+      "quantity": "200 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 389.0,
+        "protein": 92.0,
+        "carbs": 0.5,
+        "fat": 0.5,
+        "sugars": 0.5,
+        "fiber": null,
+        "saturatedFat": 0.1,
+        "salt": 5.0
+      },
+      "price": 80.0,
+      "vegan": null,
+      "ean": "5906395147717"
+    },
+    {
+      "name": "Bio Vegan Bites CHILL OUT owocowe kostki - superfoods 120 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/batony-i-bitesy/425-bio-vegan-bites-chill-out-owocowe-kostki-superfoods-120-g-5903933643793.html",
+      "quantity": "120 g",
+      "category": "batony",
+      "nutrition": {
+        "kcal": 371.0,
+        "protein": 5.2,
+        "carbs": 51.0,
+        "fat": 13.0,
+        "sugars": 41.0,
+        "fiber": 12.0,
+        "saturatedFat": 6.8,
+        "salt": 1.0
+      },
+      "price": 13.5,
+      "vegan": true,
+      "ean": "5903933643793"
+    },
+    {
+      "name": "Bio Vegan Bites SATISFY owocowe kostki - czekolada z pomarańczą 120 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/batony-i-bitesy/426-bio-vegan-bites-satisfy-owocowe-kostki-czekolada-z-pomarancza-120-g-5903933643755.html",
+      "quantity": "120 g",
+      "category": "batony",
+      "nutrition": {
+        "kcal": 377.0,
+        "protein": 9.5,
+        "carbs": 44.0,
+        "fat": 15.0,
+        "sugars": 39.0,
+        "fiber": 14.0,
+        "saturatedFat": 2.0,
+        "salt": 0.05
+      },
+      "price": 15.8,
+      "vegan": true,
+      "ean": "5903933643755"
+    },
+    {
+      "name": "Bio Vegan Bites FEEL GOOD owocowe kostki - z prebiotykiem 120 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/batony-i-bitesy/428-bio-vegan-bites-feel-good-owocowe-kostki-z-prebiotykiem-120-g-5903933643779.html",
+      "quantity": "120 g",
+      "category": "batony",
+      "nutrition": {
+        "kcal": 405.0,
+        "protein": 17.0,
+        "carbs": 48.0,
+        "fat": 18.0,
+        "sugars": 42.0,
+        "fiber": 11.0,
+        "saturatedFat": 5.5,
+        "salt": 1.0
+      },
+      "price": 13.5,
+      "vegan": true,
+      "ean": "5903933643779"
+    },
+    {
+      "name": "Bio Wegański Batonik CHILL OUT - superfoods 35 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/zdrowe-przekaski/526-bio-weganski-batonik-chill-out-superfoods-35-g-5903933644387.html",
+      "quantity": "35 g",
+      "category": "batony",
+      "nutrition": {
+        "kcal": 366.0,
+        "protein": 5.2,
+        "carbs": 50.0,
+        "fat": 13.0,
+        "sugars": 39.0,
+        "fiber": 12.0,
+        "saturatedFat": 7.0,
+        "salt": 1.0
+      },
+      "price": 4.8,
+      "vegan": true,
+      "ean": "5903933644387"
+    },
+    {
+      "name": "Bio Wegański Batonik SATISFY - kakaowy z olejkiem pomarańczowym 35 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/zdrowe-przekaski/1046-bio-weganski-batonik-satisfy-kakaowy-z-olejkiem-pomaranczowym-35-g-5903933643809.html",
+      "quantity": "35 g",
+      "category": "batony",
+      "nutrition": {
+        "kcal": 377.0,
+        "protein": 9.5,
+        "carbs": 44.0,
+        "fat": 15.0,
+        "sugars": 39.0,
+        "fiber": 14.0,
+        "saturatedFat": 2.0,
+        "salt": 0.05
+      },
+      "price": 5.7,
+      "vegan": true,
+      "ean": "5903933643809"
+    },
+    {
+      "name": "Bio Batonik ACTIVITY - proteinowy 35 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/zdrowe-przekaski/1047-bio-batonik-activity-proteinowy-35-g-5903933643823.html",
+      "quantity": "35 g",
+      "category": "batony",
+      "nutrition": {
+        "kcal": 405.0,
+        "protein": 20.0,
+        "carbs": 35.0,
+        "fat": 19.0,
+        "sugars": 31.0,
+        "fiber": 16.0,
+        "saturatedFat": 8.0,
+        "salt": 0.01
+      },
+      "price": 5.7,
+      "vegan": null,
+      "ean": "5903933643823"
+    },
+    {
+      "name": "Bio Ocet Jabłkowy 6% 250 ml",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/octy/1018-bio-ocet-jablkowy-6-250-ml-5903933643700.html",
+      "quantity": "250 ml",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 22.0,
+        "protein": 0.0,
+        "carbs": 1.0,
+        "fat": 0.0,
+        "sugars": 0.0,
+        "fiber": null,
+        "saturatedFat": 0.0,
+        "salt": 0.0
+      },
+      "price": 19.2,
+      "vegan": null,
+      "ean": "5903933643700"
+    },
+    {
+      "name": "Bio Ocet Jabłkowy - Cydrowy 5% 250 ml",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/octy/1020-bio-ocet-jablkowy-cydrowy-5-250-ml-5903933644257.html",
+      "quantity": "250 ml",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 3.0,
+        "protein": 0.0,
+        "carbs": 0.8,
+        "fat": 0.0,
+        "sugars": 0.0,
+        "fiber": null,
+        "saturatedFat": 0.0,
+        "salt": 0.0
+      },
+      "price": 19.2,
+      "vegan": null,
+      "ean": "5903933644257"
+    },
+    {
+      "name": "Bio Vege Shake Białkowy - waniliowy 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/odzywki-bialkowe/1056-bio-vege-shake-bialkowy-waniliowy-200-g-5903933645056.html",
+      "quantity": "200 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 290.0,
+        "protein": 45.0,
+        "carbs": 14.6,
+        "fat": 6.0,
+        "sugars": 2.3,
+        "fiber": 23.0,
+        "saturatedFat": 0.5,
+        "salt": 0.5
+      },
+      "price": 37.9,
+      "vegan": true,
+      "ean": "5903933645056"
+    },
+    {
+      "name": "Bio Vege Shake Białkowy - bananowy 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/odzywki-bialkowe/1057-bio-vege-shake-bialkowy-bananowy-200-g-5903933645063.html",
+      "quantity": "200 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 297.0,
+        "protein": 32.0,
+        "carbs": 34.0,
+        "fat": 4.3,
+        "sugars": 16.0,
+        "fiber": 19.0,
+        "saturatedFat": 0.4,
+        "salt": 0.5
+      },
+      "price": 28.1,
+      "vegan": true,
+      "ean": "5903933645063"
+    },
+    {
+      "name": "Bio Vege Shake Białkowy - kakaowy 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/odzywki-bialkowe/1059-bio-vege-shake-bialkowy-kakaowy-200-g-5903933645070.html",
+      "quantity": "200 g",
+      "category": "bialko",
+      "nutrition": {
+        "kcal": 275.0,
+        "protein": 39.0,
+        "carbs": 20.0,
+        "fat": 6.1,
+        "sugars": 2.0,
+        "fiber": 24.0,
+        "saturatedFat": 1.1,
+        "salt": 0.5
+      },
+      "price": 30.0,
+      "vegan": true,
+      "ean": "5903933645070"
+    },
+    {
+      "name": "Bio Krem z Orzechów Makadamia 300 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/aksamitne/1081-bio-krem-z-orzechow-makadamia-300-g-5903933644943.html",
+      "quantity": "300 g",
+      "category": "smarowidla",
+      "nutrition": {
+        "kcal": 734.0,
+        "protein": 8.5,
+        "carbs": 5.0,
+        "fat": 73.0,
+        "sugars": 5.0,
+        "fiber": 10.8,
+        "saturatedFat": 12.5,
+        "salt": 0.0
+      },
+      "price": 58.5,
+      "vegan": null,
+      "ean": "5903933644943"
+    },
+    {
+      "name": "Bio Krem Pistacjowy 180 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/aksamitne/1083-bio-krem-pistacjowy-180-g-5903933645193.html",
+      "quantity": "180 g",
+      "category": "smarowidla",
+      "nutrition": {
+        "kcal": 608.0,
+        "protein": 26.2,
+        "carbs": 10.9,
+        "fat": 49.7,
+        "sugars": 6.1,
+        "fiber": 6.3,
+        "saturatedFat": 5.9,
+        "salt": 0.06
+      },
+      "price": 84.5,
+      "vegan": null,
+      "ean": "5903933645193"
+    },
+    {
+      "name": "Suchy Makaron Shirataki Konjac Spaghetti 150 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/makarony-konjac-shirataki/1084-suchy-makaron-shirataki-konjac-spaghetti-150-g-5903933645162.html",
+      "quantity": "150 g",
+      "category": "makaron",
+      "nutrition": {
+        "kcal": 97.0,
+        "protein": 0.0,
+        "carbs": 22.0,
+        "fat": 0.0,
+        "sugars": 0.0,
+        "fiber": 3.4,
+        "saturatedFat": 0.0,
+        "salt": 0.0
+      },
+      "price": 23.9,
+      "vegan": null,
+      "ean": "5903933645162"
+    },
+    {
+      "name": "Suchy Makaron Shirataki Konjac Spaghetti 1 kg",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/makarony-konjac-shirataki/1259-suchy-makaron-shirataki-konjac-spaghetti-1-kg-5903933645902.html",
+      "quantity": "1 kg",
+      "category": "makaron",
+      "nutrition": {
+        "kcal": 31.0,
+        "protein": 0.0,
+        "carbs": 7.1,
+        "fat": 0.0,
+        "sugars": 0.0,
+        "fiber": 1.3,
+        "saturatedFat": 0.0,
+        "salt": 0.02
+      },
+      "price": 79.0,
+      "vegan": null,
+      "ean": "5903933645902"
+    },
+    {
+      "name": "Bio Żelki Owocowe Fred The Snake - Czarna Porzeczka 30 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/zelki/1087-bio-zelki-owocowe-fred-the-snake-czarna-porzeczka-30-g-5903933645209.html",
+      "quantity": "30 g",
+      "category": "slodycze",
+      "nutrition": {
+        "kcal": 328.0,
+        "protein": 2.2,
+        "carbs": 73.0,
+        "fat": 0.7,
+        "sugars": 32.0,
+        "fiber": 9.6,
+        "saturatedFat": 0.2,
+        "salt": 0.1
+      },
+      "price": 8.2,
+      "vegan": true,
+      "ean": "5903933645209"
+    },
+    {
+      "name": "Bio Żelki Owocowe Fred The Snake - Malina 30 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/zelki/1088-bio-zelki-owocowe-fred-the-snake-malina-30-g-5903933645216.html",
+      "quantity": "30 g",
+      "category": "slodycze",
+      "nutrition": {
+        "kcal": 177.0,
+        "protein": 1.0,
+        "carbs": 40.0,
+        "fat": 0.2,
+        "sugars": 36.0,
+        "fiber": 6.0,
+        "saturatedFat": 0.1,
+        "salt": 0.1
+      },
+      "price": 8.2,
+      "vegan": true,
+      "ean": "5903933645216"
+    },
+    {
+      "name": "Bio Żelki Owocowe Fred The Snake - Mango i Jabłko 30 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/zelki/1089-bio-zelki-owocowe-fred-the-snake-mango-i-jablko-30-g-5903933645223.html",
+      "quantity": "30 g",
+      "category": "slodycze",
+      "nutrition": {
+        "kcal": 121.0,
+        "protein": 0.6,
+        "carbs": 28.0,
+        "fat": 0.5,
+        "sugars": 24.0,
+        "fiber": 4.7,
+        "saturatedFat": 0.1,
+        "salt": 0.2
+      },
+      "price": 8.2,
+      "vegan": true,
+      "ean": "5903933645223"
+    },
+    {
+      "name": "Suchy Makaron Owsiany Shirataki Konjac Spaghetti 80 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/makarony-konjac-shirataki/1105-suchy-makaron-owsiany-shirataki-konjac-spaghetti-80-g-5903933645315.html",
+      "quantity": "80 g",
+      "category": "makaron",
+      "nutrition": {
+        "kcal": 37.0,
+        "protein": 0.0,
+        "carbs": 8.6,
+        "fat": 0.1,
+        "sugars": 0.0,
+        "fiber": 2.1,
+        "saturatedFat": 0.0,
+        "salt": 0.0
+      },
+      "price": 10.9,
+      "vegan": null,
+      "ean": "5903933645315"
+    },
+    {
+      "name": "Bio Makaron z Brązowego Ryżu 250 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/makarony-zbozowe/1188-bio-makaron-z-brazowego-ryzu-250-g-5906395147625.html",
+      "quantity": "250 g",
+      "category": "makaron",
+      "nutrition": {
+        "kcal": 357.0,
+        "protein": 7.1,
+        "carbs": 77.0,
+        "fat": 2.7,
+        "sugars": 0.0,
+        "fiber": 5.4,
+        "saturatedFat": 0.0,
+        "salt": 0.0
+      },
+      "price": 15.0,
+      "vegan": true,
+      "ean": "5906395147625"
+    },
+    {
+      "name": "Cocosa Woda Kokosowa z młodego kokosa Niegazowana z sokiem z Mango NFC 330 ml (kaucja)",
+      "brand": "Cocosa",
+      "url": "https://sklep.diet-food.pl/pl/woda-kokosowa/1189-cocosa-woda-kokosowa-niegazowana-z-sokiem-z-mango-nfc-330-ml-kaucja-5903933645575.html",
+      "quantity": "330 ml",
+      "category": "napoje",
+      "nutrition": {
+        "kcal": 26.0,
+        "protein": 7.0,
+        "carbs": 6.5,
+        "fat": 0.0,
+        "sugars": 6.0,
+        "fiber": null,
+        "saturatedFat": 0.0,
+        "salt": 0.05
+      },
+      "price": 6.7,
+      "vegan": null,
+      "ean": "5903933645575"
+    },
+    {
+      "name": "Cocosa Woda Kokosowa z młodego kokosa Niegazowana z sokiem z Arbuza NFC 330 ml (kaucja)",
+      "brand": "Cocosa",
+      "url": "https://sklep.diet-food.pl/pl/woda-kokosowa/1190-cocosa-woda-kokosowa-niegazowana-z-sokiem-z-arbuza-nfc-330-ml-kaucja-5903933645551.html",
+      "quantity": "330 ml",
+      "category": "napoje",
+      "nutrition": {
+        "kcal": 25.0,
+        "protein": 0.0,
+        "carbs": 6.3,
+        "fat": 0.0,
+        "sugars": 5.8,
+        "fiber": null,
+        "saturatedFat": 0.0,
+        "salt": 0.05
+      },
+      "price": 6.7,
+      "vegan": null,
+      "ean": "5903933645551"
+    },
+    {
+      "name": "Bio Makaron z Białego Ryżu PAD THAI 250 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/makarony-zbozowe/1197-bio-makaron-z-bialego-ryzu-pad-thai-250-g-5903933645391.html",
+      "quantity": "250 g",
+      "category": "makaron",
+      "nutrition": {
+        "kcal": 357.0,
+        "protein": 5.4,
+        "carbs": 80.0,
+        "fat": 1.8,
+        "sugars": 0.0,
+        "fiber": 1.79,
+        "saturatedFat": 0.0,
+        "salt": 0.0
+      },
+      "price": 15.0,
+      "vegan": true,
+      "ean": "5903933645391"
+    },
+    {
+      "name": "Bio Suchy Makaron Shirataki Konjac Spaghetti 80 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/makarony-konjac-shirataki/1199-bio-suchy-makaron-shirataki-konjac-spaghetti-80-g-5903933645407.html",
+      "quantity": "80 g",
+      "category": "makaron",
+      "nutrition": {
+        "kcal": 60.0,
+        "protein": 0.1,
+        "carbs": 13.0,
+        "fat": 0.0,
+        "sugars": 0.0,
+        "fiber": 3.8,
+        "saturatedFat": 0.0,
+        "salt": 0.0
+      },
+      "price": 12.0,
+      "vegan": null,
+      "ean": "5903933645407"
+    },
+    {
+      "name": "Bio Suchy Makaron Shirataki Konjac Ryż 80 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/makarony-konjac-shirataki/1317-bio-suchy-makaron-shirataki-konjac-ryz-80-g-5903933645896.html",
+      "quantity": "80 g",
+      "category": "makaron",
+      "nutrition": {
+        "kcal": 34.0,
+        "protein": 0.1,
+        "carbs": 8.1,
+        "fat": 0.0,
+        "sugars": 0.0,
+        "fiber": 0.9,
+        "saturatedFat": 0.0,
+        "salt": 0.01
+      },
+      "price": 13.0,
+      "vegan": true,
+      "ean": "5903933645896"
+    },
+    {
+      "name": "Bio Keto Syrop z Tapioki 180 ml",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/sosy-i-syropy/1204-bio-syrop-z-tapioki-180-ml-5903933645681.html",
+      "quantity": "180 ml",
+      "category": "sosy",
+      "nutrition": {
+        "kcal": 165.0,
+        "protein": 0.0,
+        "carbs": 75.0,
+        "fat": 0.0,
+        "sugars": 7.5,
+        "fiber": 67.5,
+        "saturatedFat": 0.0,
+        "salt": 0.0
+      },
+      "price": 29.9,
+      "vegan": null,
+      "ean": "5903933645681"
+    },
+    {
+      "name": "Bio Fit Granola z Adaptogenami 200 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/granole/1250-bio-fit-granola-z-adaptogenami-200-g-5903933645827.html",
+      "quantity": "200 g",
+      "category": "sniadania",
+      "nutrition": {
+        "kcal": 444.0,
+        "protein": 9.5,
+        "carbs": 42.0,
+        "fat": 27.0,
+        "sugars": 15.0,
+        "fiber": 16.0,
+        "saturatedFat": 6.9,
+        "salt": 0.1
+      },
+      "price": 20.99,
+      "vegan": null,
+      "ean": "5903933645827"
+    },
+    {
+      "name": "Bio Migdały 1 kg",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/horeca/1267-bio-migdaly-1-kg-5903933645469.html",
+      "quantity": "1 kg",
+      "category": "orzechy",
+      "nutrition": {
+        "kcal": 612.0,
+        "protein": 19.0,
+        "carbs": 5.4,
+        "fat": 54.0,
+        "sugars": 3.9,
+        "fiber": null,
+        "saturatedFat": 4.1,
+        "salt": 0.0
+      },
+      "price": 58.0,
+      "vegan": true,
+      "ean": "5903933645469"
+    },
+    {
+      "name": "Bio Komosa Ryżowa (Quinoa) 1 kg",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/horeca/1270-bio-komosa-ryzowa-quinoa-1-kg-5903933645445.html",
+      "quantity": "1 kg",
+      "category": "inne",
+      "nutrition": {
+        "kcal": 360.0,
+        "protein": 14.4,
+        "carbs": 67.8,
+        "fat": 5.2,
+        "sugars": 0.0,
+        "fiber": 6.5,
+        "saturatedFat": 0.7,
+        "salt": 0.005
+      },
+      "price": 30.0,
+      "vegan": true,
+      "ean": "5903933645445"
+    },
+    {
+      "name": "Bio Matcha Detox Boom 300 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/napoje-i-napary/1280-matcha-detox-boom-300-g-5903933645858.html",
+      "quantity": "300 g",
+      "category": "napoje",
+      "nutrition": {
+        "kcal": 278.0,
+        "protein": 22.0,
+        "carbs": 31.0,
+        "fat": 2.6,
+        "sugars": 7.2,
+        "fiber": 40.0,
+        "saturatedFat": 0.6,
+        "salt": 0.2
+      },
+      "price": 54.0,
+      "vegan": true,
+      "ean": "5903933645858"
+    },
+    {
+      "name": "Bio Vege Latte Pink 300 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/napoje-i-napary/1293-bio-vege-latte-pink-300-g-5903933645773.html",
+      "quantity": "300 g",
+      "category": "napoje",
+      "nutrition": {
+        "kcal": 397.0,
+        "protein": 4.7,
+        "carbs": 34.0,
+        "fat": 27.0,
+        "sugars": 9.0,
+        "fiber": 17.0,
+        "saturatedFat": 25.0,
+        "salt": 0.1
+      },
+      "price": 48.9,
+      "vegan": true,
+      "ean": "5903933645773"
+    },
+    {
+      "name": "Bio Ramen Makaron Jaglany z Fioletowym Batatem 280 g",
+      "brand": "Diet-Food",
+      "url": "https://sklep.diet-food.pl/pl/makarony-zbozowe/1304-bio-ramen-makaron-jaglany-z-fioletowym-batatem-280-g-5903933645384.html",
+      "quantity": "280 g",
+      "category": "makaron",
+      "nutrition": {
+        "kcal": 358.0,
+        "protein": 7.9,
+        "carbs": 78.0,
+        "fat": 1.7,
+        "sugars": 0.0,
+        "fiber": 0.8,
+        "saturatedFat": 0.6,
+        "salt": 0.0
+      },
+      "price": 19.1,
+      "vegan": true,
+      "ean": "5903933645384"
+    }
+  ]
+}
