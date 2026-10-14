@@ -1,0 +1,429 @@
+{
+  "id": "prepmymeal",
+  "name": "PrepMyMeal",
+  "url": "https://prepmymeal.eu",
+  "checked": "2026-10-14",
+  "note": "Dania mrożone z BOX 24 DAŃ (prepmymeal.eu/products/box-24-porcji-1): box składa się z dań sklepu wybieranych w konfiguratorze, każde danie to opakowanie XL na 2 porcje. Wartości na 100 g z opisu produktu („Wartości odżywcze na 100 g”), dane z publicznego /products.json sklepu (Shopify). Cena = cena regularna dania (52 zł za opakowanie); w większych boxach to samo danie kosztuje 46–50 zł. Pominięto boxy, kartę podarunkową i program Body Challenge (to nie dania).",
+  "products": [
+    {
+      "name": "Kurczak teriyaki (XL, 2 porcje)",
+      "brand": "PrepMyMeal",
+      "url": "https://prepmymeal.eu/products/kurczak-teriyaki-xl-2-porcje",
+      "quantity": "2 x 500 g",
+      "category": "dania",
+      "nutrition": {
+        "kcal": 95.0,
+        "protein": 8.6,
+        "carbs": 11.0,
+        "fat": 1.5,
+        "sugars": 1.8,
+        "fiber": 1.4,
+        "saturatedFat": 0.4,
+        "salt": 0.77
+      },
+      "price": 52.0,
+      "vegan": null,
+      "ean": null
+    },
+    {
+      "name": "Smażony ryż w sosie orzechowym (XL, 2 porcje)",
+      "brand": "PrepMyMeal",
+      "url": "https://prepmymeal.eu/products/smazony-ryz-w-sosie-zorzechowym-xl-2-porcje",
+      "quantity": "2 x 500 g",
+      "category": "dania",
+      "nutrition": {
+        "kcal": 117.0,
+        "protein": 8.5,
+        "carbs": 10.9,
+        "fat": 4.2,
+        "sugars": 1.2,
+        "fiber": 1.0,
+        "saturatedFat": 1.2,
+        "salt": 0.82
+      },
+      "price": 52.0,
+      "vegan": null,
+      "ean": null
+    },
+    {
+      "name": "Makaron azjatycki w sosie orzechowym (XL, 2 porcje)",
+      "brand": "PrepMyMeal",
+      "url": "https://prepmymeal.eu/products/makaron-azjatycki-w-sosie-orzechowym-xl-2-porcje",
+      "quantity": "2 x 500 g",
+      "category": "dania",
+      "nutrition": {
+        "kcal": 114.0,
+        "protein": 8.7,
+        "carbs": 8.4,
+        "fat": 4.8,
+        "sugars": 1.5,
+        "fiber": 1.5,
+        "saturatedFat": 1.3,
+        "salt": 0.66
+      },
+      "price": 52.0,
+      "vegan": null,
+      "ean": null
+    },
+    {
+      "name": "Paella (XL, 2 porcje)",
+      "brand": "PrepMyMeal",
+      "url": "https://prepmymeal.eu/products/paella-xl-2-porcje",
+      "quantity": "2 x 500 g",
+      "category": "dania",
+      "nutrition": {
+        "kcal": 98.0,
+        "protein": 8.0,
+        "carbs": 9.0,
+        "fat": 2.9,
+        "sugars": 2.3,
+        "fiber": null,
+        "saturatedFat": 0.6,
+        "salt": 0.88
+      },
+      "price": 52.0,
+      "vegan": null,
+      "ean": null
+    },
+    {
+      "name": "Butter Chicken (XL, 2 porcje)",
+      "brand": "PrepMyMeal",
+      "url": "https://prepmymeal.eu/products/butter-chicken-xl-2-porcje",
+      "quantity": "2 x 500 g",
+      "category": "dania",
+      "nutrition": {
+        "kcal": 125.0,
+        "protein": 9.0,
+        "carbs": 13.2,
+        "fat": 3.8,
+        "sugars": 1.2,
+        "fiber": 0.7,
+        "saturatedFat": 2.0,
+        "salt": 0.79
+      },
+      "price": 52.0,
+      "vegan": null,
+      "ean": null
+    },
+    {
+      "name": "Wegański makaron z sosem bolońskim (XL, 2 porcje)",
+      "brand": "PrepMyMeal",
+      "url": "https://prepmymeal.eu/products/vegane-protein-pasta-bolognese-xl-2-portionen",
+      "quantity": "2 x 500 g",
+      "category": "dania",
+      "nutrition": {
+        "kcal": 110.0,
+        "protein": 8.2,
+        "carbs": 15.0,
+        "fat": 1.4,
+        "sugars": 2.6,
+        "fiber": null,
+        "saturatedFat": 0.2,
+        "salt": 0.8
+      },
+      "price": 52.0,
+      "vegan": true,
+      "ean": null
+    },
+    {
+      "name": "Bowl z kurczakiem w stylu Buffalo (XL, 2 porcje)",
+      "brand": "PrepMyMeal",
+      "url": "https://prepmymeal.eu/products/bowl-z-kurczakiem-w-stylu-buffalo-xl-2-porcje",
+      "quantity": "2 x 500 g",
+      "category": "dania",
+      "nutrition": {
+        "kcal": 92.0,
+        "protein": 8.2,
+        "carbs": 8.6,
+        "fat": 2.2,
+        "sugars": 2.4,
+        "fiber": 2.5,
+        "saturatedFat": 1.4,
+        "salt": 0.79
+      },
+      "price": 52.0,
+      "vegan": null,
+      "ean": null
+    },
+    {
+      "name": "Smażone ziemniaki z kurczakiem (XL, 2 porcje)",
+      "brand": "PrepMyMeal",
+      "url": "https://prepmymeal.eu/products/smazone-ziemniaki-z-kurczakiem-xl-2-porcje",
+      "quantity": "2 x 500 g",
+      "category": "dania",
+      "nutrition": {
+        "kcal": 82.0,
+        "protein": 8.5,
+        "carbs": 8.0,
+        "fat": 1.5,
+        "sugars": 1.6,
+        "fiber": 1.4,
+        "saturatedFat": 0.4,
+        "salt": 0.87
+      },
+      "price": 52.0,
+      "vegan": null,
+      "ean": null
+    },
+    {
+      "name": "Szpecle serowe z kurczakiem (XL, 2 porcje)",
+      "brand": "PrepMyMeal",
+      "url": "https://prepmymeal.eu/products/szpecle-serowe-z-kurczakiem-xl-2-porcje",
+      "quantity": "2 x 500 g",
+      "category": "dania",
+      "nutrition": {
+        "kcal": 138.0,
+        "protein": 10.9,
+        "carbs": 14.0,
+        "fat": 4.1,
+        "sugars": 0.8,
+        "fiber": 2.5,
+        "saturatedFat": 2.7,
+        "salt": 0.83
+      },
+      "price": 52.0,
+      "vegan": null,
+      "ean": null
+    },
+    {
+      "name": "Makaron proteinowy All'Alfredo (XL, 2 porcje)",
+      "brand": "PrepMyMeal",
+      "url": "https://prepmymeal.eu/products/makaron-bialkowy-alfredo-xl-2-porcje",
+      "quantity": "2 x 500 g",
+      "category": "dania",
+      "nutrition": {
+        "kcal": 116.0,
+        "protein": 12.0,
+        "carbs": 12.0,
+        "fat": 1.9,
+        "sugars": 0.7,
+        "fiber": 1.6,
+        "saturatedFat": 1.1,
+        "salt": 0.74
+      },
+      "price": 52.0,
+      "vegan": null,
+      "ean": null
+    },
+    {
+      "name": "Makaron proteinowy z łososiem (XL, 2 porcje)",
+      "brand": "PrepMyMeal",
+      "url": "https://prepmymeal.eu/products/makaron-bialkowy-z-lososiem-xl-2-porcje",
+      "quantity": "2 x 500 g",
+      "category": "dania",
+      "nutrition": {
+        "kcal": 113.0,
+        "protein": 9.4,
+        "carbs": 14.6,
+        "fat": 1.5,
+        "sugars": 1.9,
+        "fiber": 1.3,
+        "saturatedFat": 0.8,
+        "salt": 0.84
+      },
+      "price": 52.0,
+      "vegan": null,
+      "ean": null
+    },
+    {
+      "name": "Chili con carne (XL, 2 porcje)",
+      "brand": "PrepMyMeal",
+      "url": "https://prepmymeal.eu/products/chili-con-carne-xl-2-porcje",
+      "quantity": "2 x 500 g",
+      "category": "dania",
+      "nutrition": {
+        "kcal": 120.0,
+        "protein": 7.1,
+        "carbs": 11.0,
+        "fat": 4.6,
+        "sugars": 1.8,
+        "fiber": 2.9,
+        "saturatedFat": 2.0,
+        "salt": 0.83
+      },
+      "price": 52.0,
+      "vegan": null,
+      "ean": null
+    },
+    {
+      "name": "Bowl z kurczakiem fajita (XL, 2 porcje)",
+      "brand": "PrepMyMeal",
+      "url": "https://prepmymeal.eu/products/bowl-z-kurczakiem-fajita-xl-2-porcje",
+      "quantity": "2 x 500 g",
+      "category": "dania",
+      "nutrition": {
+        "kcal": 110.0,
+        "protein": 10.9,
+        "carbs": 11.5,
+        "fat": 2.1,
+        "sugars": 1.3,
+        "fiber": 2.0,
+        "saturatedFat": 0.5,
+        "salt": 1.01
+      },
+      "price": 52.0,
+      "vegan": null,
+      "ean": null
+    },
+    {
+      "name": "Makaron w stylu azjatyckim (XL, 2 porcje)",
+      "brand": "PrepMyMeal",
+      "url": "https://prepmymeal.eu/products/makaron-w-stylu-azjatyckim-xl-2-porcje",
+      "quantity": "2 x 500 g",
+      "category": "dania",
+      "nutrition": {
+        "kcal": 102.0,
+        "protein": 9.6,
+        "carbs": 9.6,
+        "fat": 2.3,
+        "sugars": 1.5,
+        "fiber": 1.9,
+        "saturatedFat": 0.5,
+        "salt": 0.95
+      },
+      "price": 52.0,
+      "vegan": null,
+      "ean": null
+    },
+    {
+      "name": "Makaron proteinowy z sosem bolońskim (XL, 2 porcje)",
+      "brand": "PrepMyMeal",
+      "url": "https://prepmymeal.eu/products/makaron-bialkowy-z-sosem-bolonskim-xl-2-porcje",
+      "quantity": "2 x 500 g",
+      "category": "dania",
+      "nutrition": {
+        "kcal": 126.0,
+        "protein": 8.6,
+        "carbs": 15.0,
+        "fat": 3.2,
+        "sugars": 1.9,
+        "fiber": 1.4,
+        "saturatedFat": 1.4,
+        "salt": 0.74
+      },
+      "price": 52.0,
+      "vegan": null,
+      "ean": null
+    },
+    {
+      "name": "Mintaj, ryż i warzywa (XL, 2 porcje)",
+      "brand": "PrepMyMeal",
+      "url": "https://prepmymeal.eu/products/morszczuk-ryz-i-warzywa-xl-2-porcje",
+      "quantity": "2 x 500 g",
+      "category": "dania",
+      "nutrition": {
+        "kcal": 79.0,
+        "protein": 6.4,
+        "carbs": 7.2,
+        "fat": 2.5,
+        "sugars": 1.5,
+        "fiber": 1.1,
+        "saturatedFat": 1.6,
+        "salt": 0.77
+      },
+      "price": 52.0,
+      "vegan": null,
+      "ean": null
+    },
+    {
+      "name": "Red Thai Curry (XL, 2 porcje)",
+      "brand": "PrepMyMeal",
+      "url": "https://prepmymeal.eu/products/red-thai-curry-xl-2-porcje",
+      "quantity": "2 x 500 g",
+      "category": "dania",
+      "nutrition": {
+        "kcal": 111.0,
+        "protein": 8.6,
+        "carbs": 9.4,
+        "fat": 4.1,
+        "sugars": 1.6,
+        "fiber": 1.05,
+        "saturatedFat": 2.9,
+        "salt": 0.64
+      },
+      "price": 52.0,
+      "vegan": null,
+      "ean": null
+    },
+    {
+      "name": "Makaron proteinowy w sosie śmietankowym (XL, 2 porcje)",
+      "brand": "PrepMyMeal",
+      "url": "https://prepmymeal.eu/products/makaron-bialkowy-z-sosem-z-sera-smietankowego-xl-2-porcje",
+      "quantity": "2 x 500 g",
+      "category": "dania",
+      "nutrition": {
+        "kcal": 118.0,
+        "protein": 6.3,
+        "carbs": 14.0,
+        "fat": 3.8,
+        "sugars": 1.9,
+        "fiber": 1.53,
+        "saturatedFat": 2.0,
+        "salt": 0.85
+      },
+      "price": 52.0,
+      "vegan": null,
+      "ean": null
+    },
+    {
+      "name": "Bowl z kurczakiem i batatami (XL, 2 porcje)",
+      "brand": "PrepMyMeal",
+      "url": "https://prepmymeal.eu/products/bowl-z-kurczakiem-i-batatami-xl-2-porcje",
+      "quantity": "2 x 500 g",
+      "category": "dania",
+      "nutrition": {
+        "kcal": 81.0,
+        "protein": 8.2,
+        "carbs": 7.2,
+        "fat": 1.7,
+        "sugars": 2.3,
+        "fiber": null,
+        "saturatedFat": 0.4,
+        "salt": 0.79
+      },
+      "price": 52.0,
+      "vegan": null,
+      "ean": null
+    },
+    {
+      "name": "Kurczak, ryż i brokuły (XL, 2 porcje)",
+      "brand": "PrepMyMeal",
+      "url": "https://prepmymeal.eu/products/kurczak-ryz-i-brokuly-xl-2-porcje",
+      "quantity": "2 x 500 g",
+      "category": "dania",
+      "nutrition": {
+        "kcal": 91.0,
+        "protein": 8.3,
+        "carbs": 11.8,
+        "fat": 0.9,
+        "sugars": 1.2,
+        "fiber": 0.95,
+        "saturatedFat": 0.4,
+        "salt": 0.69
+      },
+      "price": 52.0,
+      "vegan": null,
+      "ean": null
+    },
+    {
+      "name": "Bowl z kurczakiem po tajsku (XL, 2 porcje)",
+      "brand": "PrepMyMeal",
+      "url": "https://prepmymeal.eu/products/bowl-z-kurczakiem-po-tajsku-xl-2-porcje",
+      "quantity": "2 x 500 g",
+      "category": "dania",
+      "nutrition": {
+        "kcal": 66.0,
+        "protein": 10.0,
+        "carbs": 2.5,
+        "fat": 1.3,
+        "sugars": 1.6,
+        "fiber": 2.0,
+        "saturatedFat": 0.3,
+        "salt": 0.77
+      },
+      "price": 52.0,
+      "vegan": null,
+      "ean": null
+    }
+  ]
+}

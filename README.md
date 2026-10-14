@@ -5,7 +5,7 @@ wyniki, a silnik sam decyduje, kiedy podnieść powtórzenia i kiedy wejść na 
 Atlas obejmuje 114 ćwiczeń: kettlebell, sztanga, hantle, maszyny i kalistenika — 30 z nich zrobisz bez żadnego sprzętu.
 Trening idzie część po części z zegarem w pasku, a zakładka Jedzenie dokłada dziennik jedzenia
 z dietą, która nagina się do tego, co naprawdę zjedzone, białkowe przepisy i gotowce bez naczyń,
-własne zestawy, ponad 32 tysiące produktów sprzedawanych w Polsce (także w dziewięciu sklepach
+własne zestawy, ponad 32 tysiące produktów sprzedawanych w Polsce (także w dziesięciu sklepach
 internetowych), menu 18 sieci gastronomicznych i sklepy w pobliżu.
 
 React 19 + TypeScript 6 + Vite 8, aplikacja do zainstalowania z własnym service workerem
@@ -28,7 +28,7 @@ npm run build      # typecheck + produkcyjny build do dist/ z service workerem (
 npm run preview    # podgląd builda — tu działa też praca offline
 npm run typecheck  # tsc: aplikacja, testy, konfiguracja Vite i skrypty, service worker
 npm run lint       # oxlint
-npm test           # 1516 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, serwer… (vitest)
+npm test           # 1519 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, serwer… (vitest)
 ```
 
 Baza produktów i przepisy:
@@ -709,13 +709,15 @@ Aktualizacja: plik sieci w `src/food/restaurants/data/<sieć>.json` (schemat w `
 masa porcji, wartości na porcję, źródło z datą `checked`, rynek); test powie, które liczby się nie
 zgadzają.
 
-**Sklepy internetowe**: do bazy dochodzą produkty dziewięciu sklepów i producentów — Myprotein,
-GuiltFree, Diet-Food, BeKeto, Cocoa, FitIron, Bezmięsny Mięsny oraz strony producentów Feel Fit
-i CocoFarm (ich produkty kupuje się w innych sklepach internetowych) — 3187 pozycji z wartościami
-odżywczymi na 100 g, ceną i odnośnikiem do strony produktu; najwięcej w GuiltFree (2678, sklep
-z produktami wielu marek). Produkt z kodem EAN, który jest już w Open Food Facts albo w innym
-sklepie, nie dubluje się: dostaje ofertę sklepu (sklep, link, cenę) — tak 139 produktów z Open Food
-Facts ma dziś link do sklepu, a 35 jest w dwóch sklepach naraz. Baza rośnie do 32 268 produktów. Karta
+**Sklepy internetowe**: do bazy dochodzą produkty dziesięciu sklepów i producentów — Myprotein,
+GuiltFree, Diet-Food, BeKeto, Cocoa, FitIron, Bezmięsny Mięsny, PrepMyMeal oraz strony producentów
+Feel Fit i CocoFarm (ich produkty kupuje się w innych sklepach internetowych) — 3208 pozycji
+z wartościami odżywczymi na 100 g, ceną i odnośnikiem do strony produktu; najwięcej w GuiltFree
+(2678, sklep z produktami wielu marek). PrepMyMeal to 21 mrożonych dań z „BOX 24 DAŃ” — każde danie
+to opakowanie XL na 2 porcje po 500 g, więc w dzienniku domyślnie jedna porcja. Produkt z kodem EAN,
+który jest już w Open Food Facts albo w innym sklepie, nie dubluje się: dostaje ofertę sklepu (sklep,
+link, cenę) — tak 139 produktów z Open Food Facts ma dziś link do sklepu, a 35 jest w dwóch sklepach
+naraz. Baza rośnie do 32 289 produktów. Karta
 produktu mówi „Sklep internetowy: …”, szczegóły mają odnośniki z ceną i datą sprawdzenia, filtry —
 „W sklepach internetowych”. Z danych sklepów wzięte są tylko fakty: nazwa, gramatura, wartości
 odżywcze, cena, adres strony, EAN — bez opisów i zdjęć, zebrane zgodnie z `robots.txt` sklepu.
@@ -1134,7 +1136,7 @@ src/
     *.test.ts(x)            33 testy karty Dziś, kopii i resetu, arkuszy bez zderzeń klas, bazy produktów i hasha
     lib/                    produkty: filtry, fasety, sortowanie, wyszukiwanie bez względu na ogonki, stan w adresie, formaty, opakowania — 51 testów
     recipes/                przepisy białkowe i gotowce: katalog, składniki, koszyki sklepów i grupowanie, zamiany, progi, makro, gotowe produkty — 266 testów
-    online/                 sklepy internetowe: rejestr, dane sklepów (`data/*.json`), scalanie z bazą po EAN, kontrola liczb — 33 testy
+    online/                 sklepy internetowe: rejestr, dane sklepów (`data/*.json`), scalanie z bazą po EAN, kontrola liczb — 36 testów
     nearby/                 w pobliżu: odległości, zapytanie do Overpass z zapasowym serwerem, kopia na dobę, promień — 33 testy
     diet/                   dieta: baza Dexie (`produkty-pl-dieta`, wersja 2 z zestawami), model energii, sposoby odżywiania, dzień, plan z Excela, zestawy, wyszukiwanie, podpowiedzi — 121 testów
     restaurants/            lokale: dane sieci (`data/*.json`), kontrola liczb, wyszukiwanie, kolejność, „Najwięcej białka”, stan w adresie — 101 testów

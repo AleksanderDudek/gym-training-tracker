@@ -26,6 +26,7 @@ export const ONLINE_SHOPS: readonly OnlineShop[] = [
   { id: 'fitiron', name: 'FitIron', url: 'https://fitironsklep.pl', kind: 'sklep' },
   { id: 'guiltfree', name: 'GuiltFree', url: 'https://guiltfree.pl', kind: 'sklep' },
   { id: 'myprotein', name: 'Myprotein', url: 'https://www.myprotein.pl', kind: 'sklep' },
+  { id: 'prepmymeal', name: 'PrepMyMeal', url: 'https://prepmymeal.eu', kind: 'sklep' },
 ];
 
 const IDS = new Set(ONLINE_SHOPS.map((s) => s.id));
