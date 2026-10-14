@@ -39,6 +39,7 @@ const brokenDb = () => {
     entries: table,
     plans: table,
     foods: table,
+    sets: table,
     transaction: fail,
   } as unknown as DietDb;
 };
