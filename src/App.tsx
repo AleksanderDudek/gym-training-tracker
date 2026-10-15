@@ -99,6 +99,7 @@ import { forgetWatch, garminConfigured, garminKey, pullWatch } from './garmin';
 import type { PullResult } from './garmin';
 import { attachTrail, trail } from './trail';
 import { FeedbackDialog } from './components/Feedback';
+import { ContactDialog } from './components/Contact';
 import { UpdateBar } from './components/UpdateBar';
 import { withExtension, withWeekdays } from './engine/planedit';
 import { BridgeContext } from './food/bridge';
@@ -257,6 +258,8 @@ export default function App() {
   const route = useRoute();
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const closeFeedback = useCallback(() => setFeedbackOpen(false), []);
+  const [contactOpen, setContactOpen] = useState(false);
+  const closeContact = useCallback(() => setContactOpen(false), []);
 
   // Ślad wizyty do wiadomości z uwagą — tylko w pamięci, patrz `trail.ts`.
   useEffect(() => attachTrail(), []);
@@ -1593,8 +1596,22 @@ export default function App() {
         onSnooze={snoozeSupport}
         settings={!screen.parent && !inSession}
         onFeedback={apiConfigured() ? () => setFeedbackOpen(true) : undefined}
+        onContact={inSession ? undefined : () => setContactOpen(true)}
         clock={inSession && state.cfg.clock !== false ? (state.session!.clock?.begin ?? null) : null}
       />
+      {contactOpen && (
+        <ContactDialog
+          onClose={closeContact}
+          onFeedback={
+            apiConfigured()
+              ? () => {
+                  setContactOpen(false);
+                  setFeedbackOpen(true);
+                }
+              : undefined
+          }
+        />
+      )}
       {feedbackOpen && (
         <FeedbackDialog
           state={state}

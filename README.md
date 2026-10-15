@@ -28,7 +28,7 @@ npm run build      # typecheck + produkcyjny build do dist/ z service workerem (
 npm run preview    # podgląd builda — tu działa też praca offline
 npm run typecheck  # tsc: aplikacja, testy, konfiguracja Vite i skrypty, service worker, filmy demo
 npm run lint       # oxlint
-npm test           # 1539 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, serwer… (vitest)
+npm test           # 1554 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, serwer… (vitest)
 ```
 
 Baza produktów i przepisy:
@@ -288,6 +288,20 @@ i w katalogu planów. **Krzyżyk chowa pasek na tydzień** — prośba, której 
 przestaje być prośbą; po tygodniu wraca sama. Żart idzie z aplikacji, z goryla i z kawy, nigdy
 z czytającego — nie ma tu liczników zbiórki, pasków „do celu" ani zdań o tym, jak bardzo autor
 potrzebuje.
+
+**Kawa według kraju.** W Polsce pasek, baner i okno kontaktu prowadzą do buycoffee.to (BLIK,
+przelewy), gdzie indziej do buymeacoffee.com (karta z każdego kraju) — tak jak w drugiej
+aplikacji autora, Teleo. „Polska” to polski wśród preferowanych języków przeglądarki albo polska
+strefa czasowa: bez pytania o lokalizację, a obejmuje i Polaków za granicą, i telefony po
+angielsku w kraju. Pod przyciskiem banera stoi adres, dokąd naprawdę prowadzi.
+
+**Kontakt z autorem** to „@” w pasku aplikacji, tuż przed dymkiem „Napisz do autora”, i sekcja
+„Kontakt” w Ustawieniach. Okno (arkusz od dołu, jak okno wiadomości) zbiera drogi poza aplikacją:
+Instagram autora, w Polsce serwer na Discordzie (rozmowy idą po polsku, więc za granicą go nie ma)
+i kawę według kraju; gdy działa serwer wiadomości, ma też „Napisz w aplikacji”. Każdy odnośnik
+pokazuje swój adres i otwiera się w nowej karcie. „@” jest zawsze — odnośniki nie potrzebują
+serwera — poza trwającym treningiem. Adres Instagrama to jedna stała, `INSTAGRAM_URL`
+w `src/contact.ts`; dopóki jest pusta, wiersza Instagrama nie ma.
 
 **Miejsce w układzie zależy od tego, po co ktoś przyszedł.** Na ekranie Dziś baner stoi **pod**
 wyjściami do treningu i przekąski, bo kto przyszedł ćwiczyć, ten najpierw widzi przycisk startu.
@@ -1123,6 +1137,7 @@ src/
     ExercisePicker.tsx      pole wyboru ćwiczenia z podpowiedziami (wzorzec combobox)
     Support.tsx             złoty pasek wsparcia pod paskiem aplikacji i baner Siwego z espresso
     Support.test.ts         4 testy chowania paska, długości i głosu jego tekstów
+    Support.links.test.tsx  2 testy kawy według kraju w pasku i banerze
     TopBar.tsx              przyklejony pasek aplikacji: tytuł, wstecz, ustawienia, zegar sesji, pasek wsparcia
     Gorilla.tsx             obsada: Gustaw, Gosia i Trener Siwy, siedemnaście min
     cast.test.ts            18 testów obsady, pasm, blankietu, miny postaci i rady dnia
@@ -1134,6 +1149,8 @@ src/
     Garmin.tsx              karta zegarka w ustawieniach: klucz, kroki połączenia, stan, odłączenie
     Boost.tsx               „Na postęp w dzień wolny” na zakładce Plan i ekranie Dziś
     Feedback.tsx            okno „Napisz do autora”: e-mail, wiadomość, zrzut ekranu
+    Contact.tsx             okno „Kontakt z autorem” i lista odnośników (Instagram, Discord w Polsce, kawa według kraju)
+    Contact.test.tsx        7 testów „@” w pasku, okna w Polsce i poza nią, zamykania, fokusu i przejścia do wiadomości
     LoadBoundary.tsx        granica błędu zakładki Jedzenie: niewczytana paczka albo błąd zamyka tylko ten ekran
     RootBoundary.tsx        granica błędu całej aplikacji: „Coś poszło nie tak” i „Odśwież”, które wpuszcza poprawioną wersję
     RootBoundary.test.tsx   3 testy ekranu awarii: bez błędu, po błędzie i „Odśwież” bez ruszania danych
@@ -1170,6 +1187,8 @@ src/
   trail.ts                  ślad wizyty: ekrany, stuknięcia, błędy, czas — tylko w pamięci
   trail.test.ts             4 testy kolejności, maskowania liczb, limitu i czasu aktywnego
   feedback.ts               wiadomość do autora: kontekst, zrzut ekranu, obraz z galerii, wysyłka
+  contact.ts                kontakt z autorem: Instagram, Discord (Polska), kawa według kraju, „Polska” z języka i strefy czasowej
+  contact.test.ts           6 testów kraju, kawy, adresów i kolejności odnośników
   push.test.ts              5 testów stanu przypomnień na telefonie i klucza serwera
   watchseal.ts              koperta zegarka: klucz, klucze pochodne, AES-256-CBC i HMAC-SHA256
   watchseal.test.ts         5 testów: wektor wspólny z zegarkiem, podróbki, czytanie klucza
