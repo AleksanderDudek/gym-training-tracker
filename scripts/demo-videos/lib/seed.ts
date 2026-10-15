@@ -1,4 +1,3 @@
-/// <reference lib="dom" />
 // Puts the demo person into the app the way a person would: Ustawienia → „Importuj plik” with a
 // backup made by seed/generate.seed.ts (training state + food diary). What the import leaves out
 // on purpose (the intro already seen) and what a scenario needs on top goes into the training

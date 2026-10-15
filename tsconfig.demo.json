@@ -1,0 +1,10 @@
+{
+  // Filmy demo (`scripts/demo-videos/`): kod node, który wysyła funkcje do przeglądarki
+  // (`page.evaluate`) — potrzebuje typów DOM, których reszta kodu node mieć nie powinna.
+  "extends": "./tsconfig.node.json",
+  "compilerOptions": {
+    "lib": ["ES2023", "DOM"]
+  },
+  "include": ["scripts/demo-videos", "vite.config.ts", "vite", "src/vite-env.d.ts"],
+  "exclude": []
+}

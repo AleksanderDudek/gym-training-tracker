@@ -71,7 +71,7 @@ share sheet is not part of the page).
 | [09-jem-na-miescie](09-jem-na-miescie.md) | Eating out without wrecking the diet | 33.2 s |
 | [10-przepisy-z-jednego-sklepu](10-przepisy-z-jednego-sklepu.md) | High-protein recipes from the shop you go to | 31.8 s |
 | [11-ktory-skyr-ma-najwiecej-bialka](11-ktory-skyr-ma-najwiecej-bialka.md) | Which skyr has the most protein? | 30.2 s |
-| [12-ulubione-szybki-wybor](12-ulubione-szybki-wybor.md) | Favourites: what I eat most, one tap away | 30.6 s |
+| [12-ulubione-szybki-wybor](12-ulubione-szybki-wybor.md) | Favourites: what I eat most, one tap away | 30.7 s |
 <!-- videos:end -->
 
 ## Post-production guide

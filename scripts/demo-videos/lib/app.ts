@@ -1,4 +1,3 @@
-/// <reference lib="dom" />
 import type { Page } from 'playwright';
 
 /** Opens a screen of the app and waits until it has settled: fonts in, first render done. */

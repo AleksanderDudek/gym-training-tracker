@@ -1,4 +1,3 @@
-/// <reference lib="dom" />
 // How a person moves through the app on camera: a visible touch on every tap, smooth scrolling
 // instead of jumps, typing at a human pace, and pauses long enough to read.
 import type { BrowserContext, Locator, Page } from 'playwright';

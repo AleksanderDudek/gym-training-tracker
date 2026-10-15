@@ -1,4 +1,3 @@
-/// <reference lib="dom" />
 // One take of a demo video: frames from Playwright's screencast (only when the picture changes, each
 // with its own time), turned into a constant 30 fps H.264 MP4 by ffmpeg. Beats are marked on the
 // same clock as the frames, so the scenario's description gets the real timestamps of the take.
@@ -127,23 +126,31 @@ export class Take {
     const seconds = (this.stoppedAt - this.t0) / 1000;
     const list = join(this.dir, 'frames.ffconcat');
     await writeFile(list, lines.join('\n'));
-    await ffmpeg([
-      '-f', 'concat', '-safe', '0', '-i', list,
-      // JPEG frames are full-range BT.601; video players and editors expect limited-range BT.709.
-      '-vf',
-      `fps=${FPS},scale=in_range=full:in_color_matrix=bt601:out_range=tv:out_color_matrix=bt709:flags=lanczos,format=yuv420p`,
-      '-color_range', 'tv', '-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709',
-      '-c:v', 'libx264', '-preset', 'slow', '-crf', '16', '-profile:v', 'high',
-      '-t', seconds.toFixed(3), '-movflags', '+faststart', '-an', out,
-    ]);
-    const result = {
+    try {
+      await ffmpeg([
+        '-f', 'concat', '-safe', '0', '-i', list,
+        // JPEG frames are full-range BT.601; video players and editors expect limited-range BT.709.
+        '-vf',
+        `fps=${FPS},scale=in_range=full:in_color_matrix=bt601:out_range=tv:out_color_matrix=bt709:flags=lanczos,format=yuv420p`,
+        '-color_range', 'tv', '-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709',
+        '-c:v', 'libx264', '-preset', 'slow', '-crf', '16', '-profile:v', 'high',
+        '-t', seconds.toFixed(3), '-movflags', '+faststart', '-an', out,
+      ]);
+    } finally {
+      await this.dispose();
+    }
+    return {
       duration: round((this.stoppedAt - this.t0) / 1000),
       frames: this.frames.length,
       beats: this.beats,
       taps: this.taps,
     };
-    await rm(this.dir, { recursive: true, force: true });
-    return result;
+  }
+
+  /** Removes the frames on disk; a failed take leaves nothing behind (hundreds of MB otherwise). */
+  async dispose(): Promise<void> {
+    if (this.dir) await rm(this.dir, { recursive: true, force: true });
+    this.dir = '';
   }
 }
 

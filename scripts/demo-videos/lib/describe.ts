@@ -1,4 +1,3 @@
-/// <reference lib="dom" />
 // The description of a take for post-production: the need and the story, then the real timeline
 // of this take (beats, taps with zoom boxes), and a contact sheet of stills so an editor — or
 // Claude in Claude Desktop, which reads images but not video — can see every beat.

@@ -26,7 +26,7 @@ Pozostałe polecenia:
 ```bash
 npm run build      # typecheck + produkcyjny build do dist/ z service workerem (injectManifest)
 npm run preview    # podgląd builda — tu działa też praca offline
-npm run typecheck  # tsc: aplikacja, testy, konfiguracja Vite i skrypty, service worker
+npm run typecheck  # tsc: aplikacja, testy, konfiguracja Vite i skrypty, service worker, filmy demo
 npm run lint       # oxlint
 npm test           # 1539 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, serwer… (vitest)
 ```
@@ -1221,6 +1221,7 @@ vite.config.ts              wtyczki: React, CSP, baza produktów, PWA (service w
 tsconfig.json               typy kodu przeglądarki i serwera — bez typów node'a
 tsconfig.test.json          testy: te same ustawienia plus typy node'a
 tsconfig.node.json          node: konfiguracja Vite, `vite/` i `scripts/`
+tsconfig.demo.json          filmy demo (`scripts/demo-videos/`): node z typami DOM dla funkcji wysyłanych do przeglądarki
 tsconfig.sw.json            service worker: typy WebWorker zamiast DOM
 .oxlintrc.json              lint (`npm run lint`, oxlint)
 ```

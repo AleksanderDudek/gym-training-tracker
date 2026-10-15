@@ -31,13 +31,19 @@ export async function cacheOutsideRequests(context: BrowserContext): Promise<voi
     } catch {
       // not cached yet
     }
-    const response = await route.fetch({ timeout: 60_000 });
-    const body = await response.body();
-    if (response.ok()) {
-      const headers = response.headers();
-      await writeFile(`${file}.bin`, body);
-      await writeFile(`${file}.json`, JSON.stringify({ status: response.status(), headers } satisfies Meta));
+    // A route handler that throws takes the whole recorder down (Playwright rethrows it where
+    // nothing catches it): a server that does not answer is a failed request, not a crash.
+    try {
+      const response = await route.fetch({ timeout: 60_000 });
+      const body = await response.body();
+      if (response.ok()) {
+        const headers = response.headers();
+        await writeFile(`${file}.bin`, body);
+        await writeFile(`${file}.json`, JSON.stringify({ status: response.status(), headers } satisfies Meta));
+      }
+      await route.fulfill({ response, body });
+    } catch {
+      await route.abort('failed').catch(() => {});
     }
-    await route.fulfill({ response, body });
   });
 }

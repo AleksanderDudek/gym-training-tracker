@@ -1,17 +1,17 @@
-/// <reference lib="dom" />
 // A look at a screen with the demo data, for writing and fixing scenarios: the accessibility tree
 // (roles and names to use in locators) and a screenshot. Needs `npm run preview -- --port 4327`.
-// Usage: npx tsx scripts/demo-videos/explore.ts <full|fresh> <HH:MM> <#/route> <out-dir> [steps.json]
+// Usage: npx tsx scripts/demo-videos/explore.ts <full|fresh> <HH:MM> <#/route> [out-dir (default: tmp)] [steps.json]
 // Steps: [{"click":"Button name"}, {"text":"Visible text"}, {"fill":["Field name","value"]}, {"option":"Option"},
 //   {"select":["Select name","Label"]}, {"press":"Enter"}, {"wait":500}, {"scroll":600}]
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { chromium, type Page } from 'playwright';
 import { cacheOutsideRequests } from './lib/netcache';
 import { seed } from './lib/seed';
 import type { Scenario } from './lib/types';
 
-const [who = 'full', time = '13:00', route = '#/sesja', out = 'demo-explore', stepsFile] = process.argv.slice(2);
+const [who = 'full', time = '13:00', route = '#/sesja', out = join(tmpdir(), 'demo-explore'), stepsFile] = process.argv.slice(2);
 type Step = {
   click?: string;
   text?: string;
@@ -51,6 +51,7 @@ await writeFile(join(out, `${name}.aria.txt`), await page.locator('body').ariaSn
 await page.screenshot({ path: join(out, `${name}.png`) });
 await page.screenshot({ path: join(out, `${name}.full.png`), fullPage: true });
 console.log(join(out, name));
+await context.unrouteAll({ behavior: 'ignoreErrors' });
 await browser.close();
 
 async function act(page: Page, s: Step) {
