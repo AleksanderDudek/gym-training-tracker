@@ -91,7 +91,7 @@ describe('Dziennik', () => {
 
     // Gwiazdka przy tym, co zjedzone wczoraj.
     await user.click(screen.getByRole('button', { name: 'Ulubione: Obiad u mamy' }));
-    const quick = await within(card).findByRole('button', { name: 'Zjadłem: Obiad u mamy' });
+    const quick = await within(card).findByRole('button', { name: 'Zjadłem z ulubionych: Obiad u mamy' });
     await user.click(quick);
     await waitFor(() => expect(bridge.toast).toHaveBeenCalledWith('Zapisane: Obiad u mamy · 650 kcal.'));
     expect(await db.entries.where('date').equals('2026-10-14').count()).toBe(2);
@@ -120,7 +120,7 @@ describe('Dziennik', () => {
     renderWithBridge(<DiaryPage />);
     const card = await screen.findByRole('region', { name: 'Ulubione' });
     await waitFor(() => expect(within(card).getAllByRole('button', { name: /^Zjadłem/ })).toHaveLength(8));
-    expect(within(card).getAllByRole('button', { name: /^Zjadłem/ })[0]).toHaveAccessibleName('Zjadłem: Jedzenie 9');
+    expect(within(card).getAllByRole('button', { name: /^Zjadłem/ })[0]).toHaveAccessibleName('Zjadłem z ulubionych: Jedzenie 9');
     await user.click(within(card).getByRole('button', { name: 'Pokaż wszystkie (10)' }));
     expect(within(card).getAllByRole('button', { name: /^Zjadłem/ })).toHaveLength(10);
   });

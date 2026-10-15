@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { db } from '../../diet/db';
 import { customFood } from '../../diet/foods';
@@ -187,5 +188,38 @@ describe('„Dodaj zjedzone”', () => {
     await user.click(dialog.getByRole('button', { name: 'Dodaj od razu: Owsianka mamy' }));
     await waitFor(() => expect(onLogged).toHaveBeenCalledWith('Zapisane: Owsianka mamy · 420 kcal.'));
     expect(await db.entries.toArray()).toMatchObject([{ name: 'Owsianka mamy', key: 'custom:9' }]);
+  });
+
+  test('a starred row moves under „Ulubione” with the focus still on its star', async () => {
+    const user = userEvent.setup();
+    // Jak w aplikacji: pula liczona na nowo z ulubionych, więc wiersz przechodzi do drugiej grupy.
+    function LivePicker() {
+      const starred = useLiveQuery(() => db.favorites.toArray(), []) ?? [];
+      const pool = POOL.map((f) => (starred.some((s) => s.key === f.key) ? { ...f, favorite: true as const } : f));
+      return (
+        <FoodPicker
+          open
+          date="2026-10-12"
+          pool={[customFood({ id: 3, name: 'Banan z masłem', amountLabel: '1', kcal: 300, protein: 8, carbs: 40, fat: 12 }), ...pool]}
+          products={PRODUCTS}
+          dict={DATASET.dictionaries}
+          productsLoading={false}
+          onClose={vi.fn()}
+          onLogged={vi.fn()}
+        />
+      );
+    }
+    render(<LivePicker />);
+    const dialog = within(screen.getByRole('dialog', { name: 'Dodaj zjedzone' }));
+    const star = await dialog.findByRole('button', { name: 'Ulubione: Owsianka mamy' });
+    expect(dialog.queryByText('Ulubione')).not.toBeInTheDocument();
+    star.focus();
+    await user.keyboard('{Enter}');
+    await waitFor(() => expect(dialog.getByText('Ulubione')).toBeInTheDocument());
+    const items = dialog.getAllByRole('listitem').map((li) => li.textContent);
+    expect(items[0]).toBe('Ulubione');
+    expect(items[1]).toMatch(/^Owsianka mamy/);
+    expect(document.activeElement).toBe(dialog.getByRole('button', { name: 'Ulubione: Owsianka mamy' }));
+    expect(document.activeElement).toHaveAttribute('aria-pressed', 'true');
   });
 });

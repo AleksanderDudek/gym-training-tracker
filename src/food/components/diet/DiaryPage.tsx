@@ -337,7 +337,7 @@ function FavoritesCard({ date, today, onLog }: { date: string; today: string; on
                       className="btn ghost sm fd-diet-act"
                       onClick={() => onLog(food)}
                       disabled={future}
-                      aria-label={`Zjadłem: ${food.name}`}
+                      aria-label={`Zjadłem z ulubionych: ${food.name}`}
                     >
                       <Plus size={20} strokeWidth={2} aria-hidden /> Zjadłem
                     </button>

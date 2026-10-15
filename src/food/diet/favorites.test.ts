@@ -5,7 +5,7 @@ import { indexProducts } from '../lib/search';
 import { recipeIndex } from '../recipes/resolve';
 import { DietDb, type Entry } from './db';
 import { byUse, entryFood, favoriteFood, toggleFavorite } from './favorites';
-import { customFood, planFood, productFood, type Food } from './foods';
+import { customFood, planFood, productFood, withGrams, type Food } from './foods';
 import { buildPool } from './pool';
 import { DIET_PROFILES } from './profiles';
 import { searchFoods } from './search';
@@ -108,6 +108,26 @@ describe('favourites', () => {
     );
   });
 
+  test('a product from the diary keeps its grams and its values per 100 g, so its grams can change', () => {
+    const skyr: Entry = {
+      date: '2026-10-15',
+      time: '08:00',
+      name: 'Skyr naturalny',
+      amountLabel: '300 g',
+      kcal: 189,
+      protein: 33,
+      carbs: 12,
+      fat: 0.6,
+      source: 'product',
+      key: 'product:590',
+    };
+    expect(entryFood(skyr)).toMatchObject({ grams: 300, per100: { kcal: 63, protein: 11, carbs: 4, fat: 0.2 } });
+    expect(entryFood({ ...skyr, amountLabel: '12,5 g' }).grams).toBe(12.5);
+    expect(entryFood({ ...skyr, fat: null })).toMatchObject({ grams: null, per100: null });
+    expect(entryFood({ ...skyr, amountLabel: '1 opakowanie' })).toMatchObject({ grams: null, per100: null });
+    expect(entryFood({ ...skyr, source: 'recipe', amountLabel: '1 porcja' }).per100).toBeNull();
+  });
+
   test('favourites go into the backup and come back; a broken one is dropped; clearing clears them', async () => {
     await toggleFavorite(SKYR, db);
     const backup = await exportAll(db);
@@ -184,6 +204,23 @@ describe('favourites in the pool, the picker and suggestions', () => {
     });
     expect(pool.filter((f) => f.key === 'custom:7')).toEqual([{ ...own, favorite: true }]);
     expect(pool.find((f) => f.key === 'product:590')).toMatchObject({ favorite: true, grams: 150 });
+  });
+
+  test('a starred product the pool has already comes at the grams it was starred at', () => {
+    const input = {
+      products,
+      dict: DATASET.dictionaries,
+      candidates,
+      chains: [],
+      fallbackRanking: ranking,
+      plan: null,
+      custom: [],
+    };
+    expect(buildPool(input).find((f) => f.key === 'product:590')).toMatchObject({ grams: 150 });
+    const pool = buildPool({ ...input, favorites: [star(withGrams(SKYR, 300))] });
+    expect(pool.filter((f) => f.key === 'product:590')).toMatchObject([
+      { favorite: true, grams: 300, amountLabel: '300 g', nutrients: { kcal: 189, protein: 33 } },
+    ]);
   });
 
   test('the picker shows favourites first, and a starred product only once', () => {

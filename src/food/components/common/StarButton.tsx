@@ -12,7 +12,13 @@ import './common.css';
  * szybkiego wyboru działała bez bazy produktów.
  */
 export function StarButton({ food }: { food: Food }) {
-  const on = useLiveQuery(async () => !!(await db.favorites.get(food.key)), [food.key]) ?? false;
+  // Zanim baza odpowie: znak z listy (bez mignięcia pustej gwiazdki). Baza nie działa: gwiazdka gaśnie,
+  // a szczegóły produktu czy lokalu zostają na ekranie.
+  const on = useLiveQuery(
+    async () => !!(await db.favorites.get(food.key).catch(() => undefined)),
+    [food.key],
+    food.favorite === true,
+  );
   return (
     <button
       type="button"

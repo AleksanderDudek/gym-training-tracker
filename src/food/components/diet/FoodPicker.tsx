@@ -113,20 +113,23 @@ function FoodResults({ results, onPick, onQuickAdd }: ResultsProps) {
       <StarButton food={food} />
     </li>
   );
+  const heading = (text: string) => (
+    <li key={`grupa:${text}`} className="fd-diet-group">
+      {text}
+    </li>
+  );
+  // Jedna lista z kluczami, nagłówki grup w niej: wiersz, któremu stuknięto gwiazdkę, przechodzi do
+  // drugiej grupy jako ten sam element — React go przesuwa i fokus zostaje na gwiazdce.
+  const rows = favorites.length
+    ? [heading('Ulubione'), ...favorites.map(row), ...(rest.length ? [heading('Pozostałe')] : []), ...rest.map(row)]
+    : rest.map(row);
   return (
     <>
       <p className="sr-only" aria-live="polite">
         {results.length ? `Wyników: ${results.length}` : 'Brak wyników'}
       </p>
-      {favorites.length > 0 && (
-        <>
-          <p className="fd-diet-group">Ulubione</p>
-          <ul className="fd-diet-results">{favorites.map(row)}</ul>
-          {rest.length > 0 && <p className="fd-diet-group">Pozostałe</p>}
-        </>
-      )}
       <ul className="fd-diet-results">
-        {rest.map(row)}
+        {rows}
         {results.length === 0 && <li className="fd-diet-empty">Nic nie pasuje – dodaj samo „Tylko kalorie”.</li>}
       </ul>
     </>

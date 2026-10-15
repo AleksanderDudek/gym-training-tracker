@@ -133,8 +133,10 @@
 .fd-diet-list > li.fd-diet-eaten{display:grid;grid-template-columns:44px 1fr 44px 44px;gap:4px;align-items:center;
   padding:6px 0}
 .fd-diet-fav-ico{vertical-align:-4px;margin-right:2px;color:var(--c-gold-ink);fill:var(--c-gold)}
-/* Nagłówki grup w wynikach („Ulubione”, „Pozostałe”) z oddechem od pola wyszukiwania i od listy wyżej. */
-.fd-diet-picker .fd-diet-group{margin:14px 0 2px}
+/* Nagłówki grup w wynikach („Ulubione”, „Pozostałe”) w samej liście, z oddechem od wierszy wyżej. */
+.fd-diet-results li.fd-diet-group{margin:14px 0 0;padding:0 0 8px;border-top:0}
+.fd-diet-results li.fd-diet-group:first-child{margin-top:6px}
+.fd-diet-results li.fd-diet-group + li{border-top:0}
 .fd-diet-time{font-family:var(--display);font-size:13px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
 .fd-diet-eaten .fd-diet-icon-btn,.fd-diet-custom .fd-diet-icon-btn{color:var(--ink-soft)}
 .fd-diet-list > li.fd-diet-custom{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:2px 0;font-size:14px}

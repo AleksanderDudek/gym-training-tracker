@@ -9,6 +9,7 @@ import {
   productFood,
   recipeFood,
   setFood,
+  withGrams,
   type CustomFood,
   type Food,
   type FoodSet,
@@ -65,10 +66,16 @@ export function buildPool(input: PoolInput): Food[] {
   for (const c of input.custom) foods.push(customFood(c));
   for (const s of input.sets ?? []) foods.push(setFood(s));
 
-  // A starred food is marked where the pool has it already, and joins it from its snapshot where not
-  // (a product from anywhere in the base, a restaurant position, something eaten once).
+  // A starred food is marked where the pool has it already - a product at the grams it was starred
+  // at - and joins it from its snapshot where not (a product from anywhere in the base, a restaurant
+  // position, something eaten once).
   const starred = new Map((input.favorites ?? []).map((f) => [f.key, f]));
-  const marked = foods.map((f) => (starred.has(f.key) ? { ...f, favorite: true as const } : f));
+  const marked = foods.map((f) => {
+    const star = starred.get(f.key);
+    if (!star) return f;
+    const grams = star.food.per100 ? star.food.grams : null;
+    return { ...(grams ? withGrams(f, grams) : f), favorite: true as const };
+  });
   const inPool = new Set(marked.map((f) => f.key));
   for (const f of starred.values()) if (!inPool.has(f.key)) marked.push(favoriteFood(f));
 
