@@ -1,4 +1,4 @@
-import { SUPPORT_URL } from '../engine/share';
+import { inPoland, shortUrl, supportUrl } from '../contact';
 import { COACH_TIPS, SUPPORT_SHORT, daySeed, pick } from '../engine/quips';
 import { addDays } from '../engine/schedule';
 import { Gorilla } from './Gorilla';
@@ -28,9 +28,11 @@ export function SupportLine({
   compact?: boolean;
 }) {
   const t = pick(COACH_TIPS, seed);
+  // Kawa po polsku w Polsce, po międzynarodowemu gdzie indziej — jak w oknie kontaktu.
+  const url = supportUrl(inPoland());
 
   return (
-    <a className={`mbanner${compact ? ' compact' : ''}`} href={SUPPORT_URL} target="_blank" rel="noopener noreferrer">
+    <a className={`mbanner${compact ? ' compact' : ''}`} href={url} target="_blank" rel="noopener noreferrer">
       <span className="mbanner-art" aria-hidden="true">
         <Gorilla who="siwy" mood={t.mood} {...(compact ? { crop: 'face' as const, size: 56 } : { size: 150 })} />
       </span>
@@ -44,7 +46,7 @@ export function SupportLine({
           Nadpis nad radą i tak mówi, czyja to rada, więc imię w przycisku było powtórzeniem.
         */}
         <span className="btn sm coffee">Postaw espresso</span>
-        {!compact && <span className="mbanner-url">buycoffee.to/uriel · otwiera się w nowej karcie</span>}
+        {!compact && <span className="mbanner-url">{shortUrl(url)} · otwiera się w nowej karcie</span>}
       </span>
     </a>
   );
@@ -78,7 +80,7 @@ export function SupportStrip({ onSnooze }: { onSnooze: () => void }) {
   const seed = daySeed();
   return (
     <div className="strip">
-      <a className="strip-link" href={SUPPORT_URL} target="_blank" rel="noopener noreferrer">
+      <a className="strip-link" href={supportUrl(inPoland())} target="_blank" rel="noopener noreferrer">
         <span className="strip-face" aria-hidden="true">
           <Gorilla who="siwy" mood={pick(STRIP_MOODS, seed)} crop="face" size={30} />
         </span>

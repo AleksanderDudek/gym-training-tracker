@@ -21,6 +21,7 @@ import { GarminCard } from './Garmin';
 import { PromoCard } from './Promo';
 import type { PullResult } from '../garmin';
 import { SupportLine } from './Support';
+import { ContactLinks } from './Contact';
 import { Segmented } from './ui';
 import type { AppState, EffortKey, ExerciseId, ReadyKey, ReminderPrefs, SetResult, Workout } from '../types';
 
@@ -259,6 +260,15 @@ export function SettingsView({
           </button>
         </div>
       )}
+
+      <div className="grp">
+        <h2>Kontakt</h2>
+        <p className="tight">
+          Poza aplikacją: Instagram autora, w Polsce także serwer na Discordzie, i kawa dla autora —
+          to samo okno otwiera „@” w pasku na górze.
+        </p>
+        <ContactLinks />
+      </div>
 
       <div className="grp">
         <h2>Dostępne kettlebelle</h2>

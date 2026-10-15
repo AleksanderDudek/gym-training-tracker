@@ -52,6 +52,7 @@ export function TopBar({
   onSnooze,
   settings,
   onFeedback,
+  onContact,
   clock,
 }: {
   title: string;
@@ -65,6 +66,8 @@ export function TopBar({
   settings: boolean;
   /** Okno „Napisz do autora” — na każdym ekranie, bo liczy się, z którego ktoś pisze. Brak — bez serwera. */
   onFeedback?: (() => void) | undefined;
+  /** Okno „Kontakt z autorem” (Instagram, Discord, wsparcie) — tuż przy „Napisz do autora”. Brak — w trakcie treningu. */
+  onContact?: (() => void) | undefined;
   /** Start zegara trwającej sesji (ms) — w pasku stoi wtedy licznik czasu treningu. */
   clock?: number | null | undefined;
 }) {
@@ -85,6 +88,11 @@ export function TopBar({
           {subtitle && <div className="appbar-sub">{subtitle}</div>}
         </div>
         {clock != null && <ClockPill begin={clock} />}
+        {onContact && (
+          <button className="appbar-btn" onClick={onContact} aria-label="Kontakt z autorem" aria-haspopup="dialog">
+            <Icon name="contact" size={22} />
+          </button>
+        )}
         {onFeedback && (
           <button className="appbar-btn" onClick={onFeedback} aria-label="Napisz do autora — uwaga albo błąd">
             <Icon name="feedback" size={22} />

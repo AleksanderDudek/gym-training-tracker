@@ -29,6 +29,11 @@ const NAVIGATION = new Set([
   'twitter.com',
   'www.facebook.com',
   'buycoffee.to',
+  // Kontakt z autorem: wsparcie spoza Polski, serwer na Discordzie i Instagram (`contact.ts`).
+  'buymeacoffee.com',
+  'discord.gg',
+  'www.instagram.com',
+  'instagram.com',
   'aleksanderdudek.github.io',
   // Jedzenie: źródła danych w stopce i strona produktu w Open Food Facts.
   'world.openfoodfacts.org',
