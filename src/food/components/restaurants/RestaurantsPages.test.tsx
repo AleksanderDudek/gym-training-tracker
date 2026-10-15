@@ -149,6 +149,9 @@ describe('menu sieci', () => {
     expect(within(table).getByRole('row', { name: /Błonnik/ })).toHaveTextContent('—');
     expect(await within(sheet).findByText(/Redukcja wysokobiałkowa:/)).toBeInTheDocument();
 
+    // Gwiazdka w karcie pozycji: Zinger trafia do ulubionych jako porcja z menu.
+    await user.click(within(sheet).getByRole('button', { name: 'Ulubione: Zinger (KFC)' }));
+    await waitFor(async () => expect(await db.favorites.get('restaurant:kfc:zinger')).toBeTruthy());
     await user.click(within(sheet).getByRole('button', { name: /Dodaj do dziennika/ }));
     await waitFor(() => expect(bridge.toast).toHaveBeenCalledWith(expect.stringContaining('Zinger (KFC) · 480 kcal')));
     const [entry] = await db.entries.toArray();

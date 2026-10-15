@@ -8,7 +8,9 @@ import { onlineShop } from '../../online/shops';
 import { PriceTag } from './PriceTag';
 import { ProductImage } from './ProductImage';
 import { ScoreBadge } from './ScoreBadge';
+import { productFood } from '../../diet/foods';
 import { Sheet } from './Sheet';
+import { StarButton } from './StarButton';
 import './common.css';
 
 interface Props {
@@ -63,9 +65,19 @@ export function ProductDetail({ product: p, dict, onClose }: Props) {
     p.palmOil && PALM_OIL_LABELS[p.palmOil],
   ].filter((x): x is string => !!x);
   const subtitle = [brand, p.quantity].filter(Boolean).join(' · ');
+  const food = productFood(p, dict);
 
   return (
-    <Sheet open full onClose={onClose} title={p.name} subtitle={subtitle || undefined} className="fd-detail">
+    <Sheet
+      open
+      full
+      onClose={onClose}
+      title={p.name}
+      subtitle={subtitle || undefined}
+      className="fd-detail"
+      // Gwiazdka zapamiętuje produkt w jego opakowaniu; gramy zmienia się potem w „Dodaj zjedzone”.
+      actions={food && <StarButton food={food} />}
+    >
       <div className="fd-detail-media">
         <ProductImage path={p.images[shown]} size={400} alt={`${p.name} – ${IMAGE_LABELS[shown]}`} padded className="fd-detail-photo" />
         {kinds.length > 1 && (

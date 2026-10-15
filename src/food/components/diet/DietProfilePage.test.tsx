@@ -192,6 +192,35 @@ describe('Profil diety', () => {
     expect(await screen.findByText(/W „Dodaj zjedzone → Zestaw”/)).toBeInTheDocument();
   });
 
+  test('ulubione: lista z liczbą zjedzeń i usuwanie z ulubionych', async () => {
+    await saveProfile(completeProfile({ startDate: '2026-10-01' }));
+    await db.favorites.put({
+      key: 'custom:1',
+      food: {
+        key: 'custom:1',
+        name: 'Owsianka',
+        detail: 'moje',
+        source: 'custom',
+        amountLabel: '1 miska',
+        nutrients: { kcal: 400, protein: 20, carbs: 50, fat: 10 },
+        per100: null,
+        grams: null,
+        stores: [],
+        atHome: true,
+        role: 'main',
+      },
+      addedAt: '',
+      uses: 3,
+      lastUsed: null,
+    });
+    const user = userEvent.setup();
+    renderWithBridge(<DietProfilePage />);
+    const row = (await screen.findByText('Owsianka')).closest('li')!;
+    expect(row).toHaveTextContent('400 kcal · 1 miska · zjedzone 3×');
+    await user.click(within(row).getByRole('button', { name: 'Usuń z ulubionych: Owsianka' }));
+    await waitFor(async () => expect(await db.favorites.count()).toBe(0));
+  });
+
   test('wyczyszczenie danych diety zdejmuje znacznik karty z ekranu Dziś', async () => {
     await saveProfile(completeProfile({ startDate: '2026-10-01' }));
     const user = userEvent.setup();

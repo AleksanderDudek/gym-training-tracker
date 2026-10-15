@@ -80,6 +80,51 @@ describe('Dziennik', () => {
     await waitFor(() => expect(window.localStorage.getItem('gt:diet')).toBe('1'));
   });
 
+  test('ulubione: bez nich — jak je dodać; gwiazdka przy zjedzonym dodaje je, a „Zjadłem” zapisuje jednym stuknięciem', async () => {
+    await saveProfile(completeProfile({ startDate: '2026-10-01', adaptWeekly: false }));
+    await logQuick('2026-10-14', 'Obiad u mamy', 650);
+    window.history.replaceState(null, '', '/#/jedzenie?dzien=2026-10-14');
+    const user = userEvent.setup();
+    const { bridge } = renderWithBridge(<DiaryPage />);
+    const card = await screen.findByRole('region', { name: 'Ulubione' });
+    expect(within(card).getByText(/oznacz gwiazdką/)).toBeInTheDocument();
+
+    // Gwiazdka przy tym, co zjedzone wczoraj.
+    await user.click(screen.getByRole('button', { name: 'Ulubione: Obiad u mamy' }));
+    const quick = await within(card).findByRole('button', { name: 'Zjadłem z ulubionych: Obiad u mamy' });
+    await user.click(quick);
+    await waitFor(() => expect(bridge.toast).toHaveBeenCalledWith('Zapisane: Obiad u mamy · 650 kcal.'));
+    expect(await db.entries.where('date').equals('2026-10-14').count()).toBe(2);
+    expect(await db.favorites.get('quick:Obiad u mamy')).toMatchObject({ uses: 1 });
+  });
+
+  test('ulubione: najczęściej jedzone pierwsze, osiem od razu, reszta pod „Pokaż wszystkie”', async () => {
+    await saveProfile(completeProfile({ startDate: '2026-10-01' }));
+    const food = (i: number) => ({
+      key: `custom:${i}`,
+      name: `Jedzenie ${i}`,
+      detail: 'moje',
+      source: 'custom' as const,
+      amountLabel: '1 porcja',
+      nutrients: { kcal: 100 + i, protein: 10, carbs: 10, fat: 2 },
+      per100: null,
+      grams: null,
+      stores: [],
+      atHome: true,
+      role: 'light' as const,
+    });
+    await db.favorites.bulkPut(
+      Array.from({ length: 10 }, (_, i) => ({ key: `custom:${i}`, food: food(i), addedAt: '', uses: i, lastUsed: null })),
+    );
+    const user = userEvent.setup();
+    renderWithBridge(<DiaryPage />);
+    const card = await screen.findByRole('region', { name: 'Ulubione' });
+    await waitFor(() => expect(within(card).getAllByRole('button', { name: /^Zjadłem/ })).toHaveLength(8));
+    expect(within(card).getAllByRole('button', { name: /^Zjadłem/ })[0]).toHaveAccessibleName('Zjadłem z ulubionych: Jedzenie 9');
+    await user.click(within(card).getByRole('button', { name: 'Pokaż wszystkie (10)' }));
+    expect(within(card).getAllByRole('button', { name: /^Zjadłem/ })).toHaveLength(10);
+  });
+
   test('same kalorie da się zapisać, a dzień mówi, że makro są niepełne', async () => {
     await saveProfile(completeProfile({ startDate: '2026-10-01', adaptWeekly: false }));
     const user = userEvent.setup();

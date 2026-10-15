@@ -33,6 +33,7 @@ export async function hasFoodData(database: DietDb = defaultDb): Promise<boolean
       database.plans.count(),
       database.foods.count(),
       database.sets.count(),
+      database.favorites.count(),
     ]);
     return counts.some((n) => n > 0);
   } catch {
@@ -44,7 +45,13 @@ export async function hasFoodData(database: DietDb = defaultDb): Promise<boolean
 export async function dietBackup(database: DietDb = defaultDb): Promise<Backup | null> {
   const b = await exportAll(database);
   const empty =
-    !b.profile && !b.days.length && !b.entries.length && !b.plans.length && !b.foods.length && !b.sets?.length;
+    !b.profile &&
+    !b.days.length &&
+    !b.entries.length &&
+    !b.plans.length &&
+    !b.foods.length &&
+    !b.sets?.length &&
+    !b.favorites?.length;
   return empty ? null : b;
 }
 

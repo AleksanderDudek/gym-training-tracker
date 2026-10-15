@@ -1,5 +1,5 @@
 import Dexie, { type Table } from 'dexie';
-import type { CustomFood, FoodSet, FoodSource } from './foods';
+import type { CustomFood, Food, FoodSet, FoodSource } from './foods';
 import type { DayChoices, Plan } from './plan';
 import type { Profile } from './types';
 
@@ -44,6 +44,23 @@ export interface Entry {
   planIndex?: number;
 }
 
+/**
+ * A starred food („Ulubione”): a snapshot of the food as it was starred - the
+ * quick-pick list renders and logs it without the product base - and how
+ * often it is eaten, so the list sorts itself.
+ */
+export interface Favorite {
+  /** The food's key: "product:590…", "restaurant:kfc:strips", "set:3". */
+  key: string;
+  food: Food;
+  /** ISO time. */
+  addedAt: string;
+  /** Logs of a food with this key since it was starred. */
+  uses: number;
+  /** ISO time of the last such log. */
+  lastUsed: string | null;
+}
+
 export class DietDb extends Dexie {
   profile!: Table<ProfileRow, string>;
   days!: Table<DayRow, string>;
@@ -51,12 +68,15 @@ export class DietDb extends Dexie {
   plans!: Table<Plan, string>;
   foods!: Table<CustomFood & { id?: number }, number>;
   sets!: Table<FoodSet, number>;
+  favorites!: Table<Favorite, string>;
 
   constructor(name = 'produkty-pl-dieta') {
     super(name);
     this.version(1).stores({ profile: 'id', days: 'date', entries: '++id, date', plans: 'id', foods: '++id' });
     // Własne zestawy („Banan + batonik”). Nowa tabela, reszta bez zmian — dane z wersji 1 zostają.
     this.version(2).stores({ sets: '++id' });
+    // Ulubione — gwiazdka przy jedzeniu, klucz to klucz jedzenia.
+    this.version(3).stores({ favorites: 'key' });
   }
 }
 

@@ -1,5 +1,5 @@
-import type { CustomFood, FoodSet, SetPart } from './foods';
-import type { DayRow, Entry } from './db';
+import type { CustomFood, Food, FoodSet, FoodSource, MealRole, SetPart } from './foods';
+import type { DayRow, Entry, Favorite } from './db';
 import type { Plan, PlanItem, PlanVariant } from './plan';
 import { DIET_PROFILE_IDS } from './profiles';
 import type { Nutrients, Profile } from './types';
@@ -187,6 +187,52 @@ export function cleanSet(raw: unknown): FoodSet | null {
   const parts = raw.parts.map(cleanPart);
   if (!parts.length || !parts.every(Boolean)) return null;
   return { ...(finite(raw.id) && { id: raw.id }), name: raw.name, parts: parts as SetPart[] };
+}
+
+const SOURCES: FoodSource[] = ['product', 'recipe', 'plan', 'custom', 'set', 'restaurant'];
+const ROLES: MealRole[] = ['main', 'light', 'addon'];
+
+/** A food snapshot from a backup: the fields the app reads, each of the right kind, or nothing. */
+function cleanFood(raw: unknown): Food | null {
+  if (!isObject(raw) || typeof raw.key !== 'string' || !raw.key || typeof raw.name !== 'string' || !raw.name.trim())
+    return null;
+  const nutrients = isObject(raw.nutrients) ? cleanNutrients(raw.nutrients) : null;
+  const source = SOURCES.find((s) => s === raw.source);
+  const role = ROLES.find((r) => r === raw.role);
+  if (!nutrients || !source || !role) return null;
+  const p = isObject(raw.per100) ? raw.per100 : null;
+  const per100 =
+    p && [p.kcal, p.protein, p.carbs, p.fat].every(finite)
+      ? { kcal: p.kcal as number, protein: p.protein as number, carbs: p.carbs as number, fat: p.fat as number }
+      : null;
+  return {
+    key: raw.key,
+    name: raw.name,
+    detail: typeof raw.detail === 'string' ? raw.detail : '',
+    source,
+    amountLabel: typeof raw.amountLabel === 'string' ? raw.amountLabel : '',
+    nutrients,
+    per100,
+    grams: per100 && finite(raw.grams) && raw.grams > 0 ? raw.grams : null,
+    stores: Array.isArray(raw.stores) ? raw.stores.filter((s): s is string => typeof s === 'string') : [],
+    atHome: raw.atHome === true,
+    ...(raw.everywhere === true && { everywhere: true }),
+    role,
+  };
+}
+
+/** A favourite from a backup: its key must be its food's key. */
+export function cleanFavorite(raw: unknown): Favorite | null {
+  if (!isObject(raw)) return null;
+  const food = cleanFood(raw.food);
+  if (!food || raw.key !== food.key) return null;
+  return {
+    key: food.key,
+    food,
+    addedAt: typeof raw.addedAt === 'string' ? raw.addedAt : new Date(0).toISOString(),
+    uses: finite(raw.uses) && raw.uses >= 0 ? Math.floor(raw.uses) : 0,
+    lastUsed: typeof raw.lastUsed === 'string' ? raw.lastUsed : null,
+  };
 }
 
 /** Keeps the rows that can be read; reports how many could not. */

@@ -130,7 +130,13 @@
 .fd-diet-variant{margin:6px 0 4px;max-width:340px}
 
 /* Zjedzone: godzina, co i ile, kosz. */
-.fd-diet-list > li.fd-diet-eaten{display:grid;grid-template-columns:44px 1fr 44px;gap:8px;align-items:center;padding:6px 0}
+.fd-diet-list > li.fd-diet-eaten{display:grid;grid-template-columns:44px 1fr 44px 44px;gap:4px;align-items:center;
+  padding:6px 0}
+.fd-diet-fav-ico{vertical-align:-4px;margin-right:2px;color:var(--c-gold-ink);fill:var(--c-gold)}
+/* Nagłówki grup w wynikach („Ulubione”, „Pozostałe”) w samej liście, z oddechem od wierszy wyżej. */
+.fd-diet-results li.fd-diet-group{margin:14px 0 0;padding:0 0 8px;border-top:0}
+.fd-diet-results li.fd-diet-group:first-child{margin-top:6px}
+.fd-diet-results li.fd-diet-group + li{border-top:0}
 .fd-diet-time{font-family:var(--display);font-size:13px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
 .fd-diet-eaten .fd-diet-icon-btn,.fd-diet-custom .fd-diet-icon-btn{color:var(--ink-soft)}
 .fd-diet-list > li.fd-diet-custom{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:2px 0;font-size:14px}
@@ -167,6 +173,11 @@
 .fd-diet-hint,p.fd-diet-hint{margin:8px 0 0;font-size:12.5px;color:var(--ink-soft)}
 .fd-diet-results{list-style:none;margin:8px 0 0;padding:0}
 .fd-diet-results li{border-top:1px solid var(--surface-2)}
+.fd-diet-results li.fd-diet-result-row{display:flex;align-items:center;gap:2px}
+.fd-diet-result-row .fd-diet-result{flex:1;min-width:0}
+.fd-diet-result-row .fd-diet-icon-btn{flex:none;color:var(--steel)}
+.fd-diet-chosen-head{display:flex;align-items:flex-start;justify-content:space-between;gap:6px}
+.fd-diet-chosen-head .fd-star{margin:-10px -8px 0 0}
 .fd-diet-results li:first-child{border-top:0}
 .fd-diet-result{display:grid;gap:2px;width:100%;min-height:52px;padding:9px 4px;background:none;border:0;
   font:inherit;text-align:left;color:var(--ink);cursor:pointer;-webkit-tap-highlight-color:transparent}

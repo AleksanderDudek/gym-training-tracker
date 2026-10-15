@@ -155,3 +155,11 @@ html:has(.fd-sheet[open]){overflow:hidden}
 .fd-foot{max-width:640px;margin:0 auto;line-height:1.55}
 .fd-foot p{margin:0 0 6px}
 .fd-foot a{color:var(--steel);text-decoration:underline;text-underline-offset:2px}
+
+/* Gwiazdka „Ulubione”: przełącznik 44 px; zapalona — złoto wsparcia, a stan mówi też aria-pressed. */
+.fd-star{display:grid;place-items:center;flex:none;width:44px;height:44px;padding:0;border:0;border-radius:var(--r);
+  background:none;color:var(--ink-soft);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.fd-star:active{background:var(--surface-2)}
+.fd-star:focus-visible{outline:2px solid var(--steel);outline-offset:-2px}
+.fd-star[aria-pressed=true]{color:var(--c-gold-ink)}
+.fd-star[aria-pressed=true] svg{fill:var(--c-gold)}
