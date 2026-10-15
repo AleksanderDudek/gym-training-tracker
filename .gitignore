@@ -15,3 +15,7 @@ garmin/bin
 # w repozytorium jest tylko gotowy data/food/products.json.gz z `npm run food:data`.
 # Bez ukośnika na końcu: łapie też dowiązanie do katalogu z danymi trzymanymi gdzie indziej.
 data/food/raw
+
+# Filmy demo: nagrania i arkusze kadrów odtwarza `npm run demo:videos`; opisy (.md) są w repozytorium.
+demo-videos/*.mp4
+demo-videos/*.jpg

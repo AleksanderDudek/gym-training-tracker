@@ -85,5 +85,5 @@ export default defineConfig(({ mode }) => ({
   // po Testing Library w testach z `@vitest-environment jsdom`.
   // `.claude/**`: robocze kopie repozytorium (git worktree) leżą w katalogu projektu — ich testy
   // to cudza gałąź, nie ta.
-  test: { css: true, setupFiles: ['src/test/setup.ts'], exclude: [...configDefaults.exclude, '.claude/**'] },
+  test: { css: true, setupFiles: ['src/test/setup.ts'], exclude: [...configDefaults.exclude, '.claude/**', 'scripts/demo-videos/**'] },
 }));

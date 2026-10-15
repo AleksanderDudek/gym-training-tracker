@@ -26,7 +26,7 @@ Pozostałe polecenia:
 ```bash
 npm run build      # typecheck + produkcyjny build do dist/ z service workerem (injectManifest)
 npm run preview    # podgląd builda — tu działa też praca offline
-npm run typecheck  # tsc: aplikacja, testy, konfiguracja Vite i skrypty, service worker
+npm run typecheck  # tsc: aplikacja, testy, konfiguracja Vite i skrypty, service worker, filmy demo
 npm run lint       # oxlint
 npm test           # 1539 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, serwer… (vitest)
 ```
@@ -36,6 +36,14 @@ Baza produktów i przepisy:
 ```bash
 npm run food:check-recipes  # pokrycie przepisów i ich koszyki sklepów: baza produktów razem ze sklepami internetowymi
 npm run food:data           # nowa baza z Open Food Facts i Open Prices (szczegóły w „Jedzenie”)
+```
+
+Filmy demo (po jednym na potrzebę użytkownika, 25–45 s, z opisami do postprodukcji — `demo-videos/README.md`):
+
+```bash
+npm run demo:videos         # build i nagranie wszystkich filmów do demo-videos/ (Playwright + ffmpeg)
+npm run demo:videos -- 08   # tylko wybrane; --skip-build bez budowania, --describe-only same opisy
+npm run demo:seed           # osoba demo (7 tygodni treningów i dziennik jedzenia) — tylko po zmianie modelu danych
 ```
 
 Build jest w pełni statyczny (`base: './'`), więc `dist/` można wrzucić na dowolny hosting plików
@@ -1200,12 +1208,20 @@ scripts/food/               przygotowanie bazy produktów (`npm run food:*`, prz
   check-recipes.ts          pokrycie przepisów na dołączonej bazie: kandydaci, sklepy, domyślny wariant
   http.ts                   przedstawienie się API Open Food Facts i przerwy między zapytaniami
   lib/                      przekształcenie wiersza, ceny, sieci sklepów, taksonomie, pisownia, TSV — 51 testów
+scripts/demo-videos/        filmy demo (`npm run demo:*`): scenariusze potrzeb, nagrywanie przez Playwright, opisy
+  record.ts                 build, `vite preview`, ujęcie na scenariusz, MP4 30 kl./s, kontrola 25–45 s, opis i arkusz kadrów
+  explore.ts                ekran z danymi demo (drzewo dostępności i zrzut) — do pisania i poprawiania scenariuszy
+  scenarios/                po jednym pliku na potrzebę: kroki na ekranie i teksty do postprodukcji (PL/EN)
+  lib/                      ujęcie (screencast 2×), ruchy jak u człowieka, import danych demo, pamięć zapytań na zewnątrz
+  seed/                     generator osoby demo przez silnik aplikacji (`generate.seed.ts`) i gotowe kopie `full.json`, `fresh.json`
+demo-videos/                filmy demo: opisy `.md` w repozytorium, nagrania `.mp4` i arkusze `.jpg` z `npm run demo:videos`
 public/icons/               ikony: zwykłe, maskowalna, iOS i wektorowa
 index.html                  szkielet strony: kolor paska, ikony i tryb pełnoekranowy na iOS; build dopisuje CSP i manifest
 vite.config.ts              wtyczki: React, CSP, baza produktów, PWA (service worker i manifest); ustawienia Vitesta
 tsconfig.json               typy kodu przeglądarki i serwera — bez typów node'a
 tsconfig.test.json          testy: te same ustawienia plus typy node'a
 tsconfig.node.json          node: konfiguracja Vite, `vite/` i `scripts/`
+tsconfig.demo.json          filmy demo (`scripts/demo-videos/`): node z typami DOM dla funkcji wysyłanych do przeglądarki
 tsconfig.sw.json            service worker: typy WebWorker zamiast DOM
 .oxlintrc.json              lint (`npm run lint`, oxlint)
 ```

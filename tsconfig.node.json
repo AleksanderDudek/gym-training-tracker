@@ -21,5 +21,7 @@
     "allowImportingTsExtensions": true,
     "types": ["node"]
   },
-  "include": ["vite.config.ts", "vite", "scripts", "src/vite-env.d.ts"]
+  "include": ["vite.config.ts", "vite", "scripts", "src/vite-env.d.ts"],
+  // Filmy demo mają własny `tsconfig.demo.json` (z typami DOM).
+  "exclude": ["scripts/demo-videos"]
 }
