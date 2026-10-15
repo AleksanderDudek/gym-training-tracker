@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, test } from 'vitest';
+import { db } from '../../diet/db';
 import { toggleTest } from '../../lib/filters';
 import { indexProducts } from '../../lib/search';
 import { DATASET, makeProduct } from '../../test/fixtures';
@@ -65,5 +67,31 @@ describe('produkt ze sklepu internetowego', () => {
     expect(toggleTest('online', SYRUP!)).toBe(true);
     expect(toggleTest('online', OFF_BAR!)).toBe(true);
     expect(toggleTest('online', makeProduct({ code: 'x', name: 'x', stores: ['biedronka'] }))).toBe(false);
+  });
+
+  test('gwiazdka w szczegółach dodaje produkt do ulubionych w jego opakowaniu', async () => {
+    await db.favorites.clear();
+    const user = userEvent.setup();
+    const [SKYR] = indexProducts(
+      [
+        makeProduct({
+          code: '777',
+          name: 'Skyr',
+          quantity: '150 g',
+          nutrition: { kcal: 63, protein: 11, carbs: 4, fat: 0.2, sugars: 4, saturatedFat: null, fiber: null, salt: null },
+        }),
+      ],
+      {},
+    );
+    render(<ProductDetail product={SKYR!} dict={dict} onClose={() => {}} />);
+    const star = screen.getByRole('button', { name: 'Ulubione: Skyr' });
+    await user.click(star);
+    await waitFor(() => expect(star).toHaveAttribute('aria-pressed', 'true'));
+    expect(await db.favorites.get('product:777')).toMatchObject({ food: { amountLabel: '150 g', grams: 150 } });
+  });
+
+  test('produkt bez pełnych wartości nie ma gwiazdki — nie dałoby się go zapisać', () => {
+    render(<ProductDetail product={OFF_BAR!} dict={dict} onClose={() => {}} />);
+    expect(screen.queryByRole('button', { name: /^Ulubione/ })).not.toBeInTheDocument();
   });
 });

@@ -1,9 +1,19 @@
 import { db, type DayRow, type DietDb, type Entry } from './db';
+import { bumpFavorite } from './favorites';
 import type { Food } from './foods';
 import type { DayChoices, Plan, PlanItem } from './plan';
 import { importPlan, type ImportedPlan } from './plan-import';
 import { MODEL_DEFAULTS, type Profile } from './types';
-import { cleanCustomFood, cleanDay, cleanEntry, cleanPlan, cleanProfile, cleanRows, cleanSet } from './validate';
+import {
+  cleanCustomFood,
+  cleanDay,
+  cleanEntry,
+  cleanFavorite,
+  cleanPlan,
+  cleanProfile,
+  cleanRows,
+  cleanSet,
+} from './validate';
 import { readWorkbook } from './xlsx';
 
 /** The one active plan lives under this id. */
@@ -46,7 +56,7 @@ export async function logFood(
   extra: Partial<Entry> = {},
   database: DietDb = db,
 ): Promise<number> {
-  return database.entries.add({
+  const entry: Entry = {
     date,
     time: now().time,
     name: food.name,
@@ -58,6 +68,12 @@ export async function logFood(
     source: food.source,
     key: food.key,
     ...extra,
+  };
+  // One transaction: the entry and the favourite's count go together.
+  return database.transaction('rw', database.entries, database.favorites, async () => {
+    const id = await database.entries.add(entry);
+    await bumpFavorite(entry.key, database);
+    return id;
   });
 }
 
@@ -84,18 +100,23 @@ export async function logQuick(
 
 /** Ticking off a plan line logs it as eaten, linked to the line. */
 export async function logPlanItem(date: string, index: number, item: PlanItem, database: DietDb = db): Promise<number> {
-  return database.entries.add({
-    date,
-    time: now().time,
-    name: item.text,
-    amountLabel: 'z planu',
-    kcal: item.kcal,
-    protein: item.protein,
-    carbs: item.carbs,
-    fat: item.fat,
-    source: 'plan',
-    key: `plan:${item.text}`,
-    planIndex: index,
+  const key = `plan:${item.text}`;
+  return database.transaction('rw', database.entries, database.favorites, async () => {
+    const id = await database.entries.add({
+      date,
+      time: now().time,
+      name: item.text,
+      amountLabel: 'z planu',
+      kcal: item.kcal,
+      protein: item.protein,
+      carbs: item.carbs,
+      fat: item.fat,
+      source: 'plan',
+      key,
+      planIndex: index,
+    });
+    await bumpFavorite(key, database);
+    return id;
   });
 }
 
@@ -195,6 +216,8 @@ export interface Backup {
   foods: unknown[];
   /** Own sets; absent in backups made before they existed. */
   sets?: unknown[];
+  /** Starred foods; absent in backups made before they existed. */
+  favorites?: unknown[];
 }
 
 export async function exportAll(database: DietDb = db): Promise<Backup> {
@@ -209,6 +232,7 @@ export async function exportAll(database: DietDb = db): Promise<Backup> {
     plans: await database.plans.toArray(),
     foods: await database.foods.toArray(),
     sets: await database.sets.toArray(),
+    favorites: await database.favorites.toArray(),
   };
 }
 
@@ -225,9 +249,18 @@ export async function restoreAll(backup: unknown, database: DietDb = db): Promis
   const plans = cleanRows(b.plans, cleanPlan);
   const foods = cleanRows(b.foods, cleanCustomFood);
   const sets = cleanRows(b.sets, cleanSet);
+  const favorites = cleanRows(b.favorites, cleanFavorite);
   await database.transaction(
     'rw',
-    [database.profile, database.days, database.entries, database.plans, database.foods, database.sets],
+    [
+      database.profile,
+      database.days,
+      database.entries,
+      database.plans,
+      database.foods,
+      database.sets,
+      database.favorites,
+    ],
     async () => {
       await Promise.all([
         database.profile.clear(),
@@ -236,6 +269,7 @@ export async function restoreAll(backup: unknown, database: DietDb = db): Promis
         database.plans.clear(),
         database.foods.clear(),
         database.sets.clear(),
+        database.favorites.clear(),
       ]);
       if (b.profile) await database.profile.put({ ...cleanProfile(b.profile, completeProfile({})), id: 'me' });
       await database.days.bulkPut(days.rows);
@@ -243,15 +277,26 @@ export async function restoreAll(backup: unknown, database: DietDb = db): Promis
       await database.plans.bulkPut(plans.rows);
       await database.foods.bulkPut(foods.rows);
       await database.sets.bulkPut(sets.rows);
+      await database.favorites.bulkPut(favorites.rows);
     },
   );
-  return { dropped: days.dropped + entries.dropped + plans.dropped + foods.dropped + sets.dropped };
+  return {
+    dropped: days.dropped + entries.dropped + plans.dropped + foods.dropped + sets.dropped + favorites.dropped,
+  };
 }
 
 export async function clearAll(database: DietDb = db): Promise<void> {
   await database.transaction(
     'rw',
-    [database.profile, database.days, database.entries, database.plans, database.foods, database.sets],
+    [
+      database.profile,
+      database.days,
+      database.entries,
+      database.plans,
+      database.foods,
+      database.sets,
+      database.favorites,
+    ],
     async () => {
       await Promise.all([
         database.profile.clear(),
@@ -260,6 +305,7 @@ export async function clearAll(database: DietDb = db): Promise<void> {
         database.plans.clear(),
         database.foods.clear(),
         database.sets.clear(),
+        database.favorites.clear(),
       ]);
     },
   );

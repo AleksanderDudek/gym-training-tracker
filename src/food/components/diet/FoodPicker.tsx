@@ -1,4 +1,4 @@
-import { Trash2 } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
 import { Segmented } from '../../../components/ui';
 import { db } from '../../diet/db';
@@ -18,6 +18,7 @@ import { formatNumber } from '../../lib/format';
 import type { Dictionaries, IndexedProduct } from '../../lib/types';
 import type { Chain } from '../../restaurants/types';
 import { Sheet } from '../common/Sheet';
+import { StarButton } from '../common/StarButton';
 import { MacroLine } from './SuggestionList';
 
 interface Props {
@@ -76,24 +77,56 @@ function useMenus(): Chain[] {
   return menus.status === 'ready' ? menus.chains : NO_CHAINS;
 }
 
-/** Lista wyników: przycisk na pozycję, z liczbami, ilością i pochodzeniem. */
-function FoodResults({ results, onPick }: { results: Food[]; onPick: (food: Food) => void }) {
+interface ResultsProps {
+  results: Food[];
+  onPick: (food: Food) => void;
+  /** Ulubione zapisuje się jednym stuknięciem „+” — w ilości z gwiazdki. */
+  onQuickAdd?: (food: Food) => void;
+}
+
+/**
+ * Lista wyników: przycisk na pozycję, z liczbami, ilością i pochodzeniem, i gwiazdka „Ulubione”.
+ * Ulubione stoją na górze, pod własnym nagłówkiem.
+ */
+function FoodResults({ results, onPick, onQuickAdd }: ResultsProps) {
+  const favorites = results.filter((f) => f.favorite);
+  const rest = results.filter((f) => !f.favorite);
+  const row = (food: Food) => (
+    <li key={food.key} className="fd-diet-result-row">
+      <button type="button" className="fd-diet-result" onClick={() => onPick(food)}>
+        <span className="fd-diet-name">{food.name}</span>
+        <span className="fd-diet-meta">
+          <MacroLine food={food} /> · {food.amountLabel} · {food.detail}
+        </span>
+      </button>
+      {onQuickAdd && food.favorite && (
+        <button
+          type="button"
+          className="fd-diet-icon-btn"
+          onClick={() => onQuickAdd(food)}
+          aria-label={`Dodaj od razu: ${food.name}`}
+          title="Dodaj od razu"
+        >
+          <Plus size={20} strokeWidth={2} aria-hidden />
+        </button>
+      )}
+      <StarButton food={food} />
+    </li>
+  );
   return (
     <>
       <p className="sr-only" aria-live="polite">
         {results.length ? `Wyników: ${results.length}` : 'Brak wyników'}
       </p>
+      {favorites.length > 0 && (
+        <>
+          <p className="fd-diet-group">Ulubione</p>
+          <ul className="fd-diet-results">{favorites.map(row)}</ul>
+          {rest.length > 0 && <p className="fd-diet-group">Pozostałe</p>}
+        </>
+      )}
       <ul className="fd-diet-results">
-        {results.map((food) => (
-          <li key={food.key}>
-            <button type="button" className="fd-diet-result" onClick={() => onPick(food)}>
-              <span className="fd-diet-name">{food.name}</span>
-              <span className="fd-diet-meta">
-                <MacroLine food={food} /> · {food.amountLabel} · {food.detail}
-              </span>
-            </button>
-          </li>
-        ))}
+        {rest.map(row)}
         {results.length === 0 && <li className="fd-diet-empty">Nic nie pasuje – dodaj samo „Tylko kalorie”.</li>}
       </ul>
     </>
@@ -149,12 +182,10 @@ function SearchMode({ date, pool, products, dict, productsLoading, onDone, onLog
   );
   const chosen = selected ? atGrams(selected, grams) : null;
 
+  const log = (food: Food) =>
+    void once(() => logFood(date, food), `Zapisane: ${food.name} · ${formatNumber(food.nutrients.kcal, 0)} kcal.`);
   const add = () => {
-    if (chosen)
-      void once(
-        () => logFood(date, chosen),
-        `Zapisane: ${chosen.name} · ${formatNumber(chosen.nutrients.kcal, 0)} kcal.`,
-      );
+    if (chosen) log(chosen);
   };
 
   return (
@@ -177,7 +208,11 @@ function SearchMode({ date, pool, products, dict, productsLoading, onDone, onLog
       )}
       {chosen ? (
         <div className="fd-diet-chosen">
-          <p className="fd-diet-name">{chosen.name}</p>
+          <div className="fd-diet-chosen-head">
+            <p className="fd-diet-name">{chosen.name}</p>
+            {/* Gwiazdka zapamiętuje jedzenie w ilości, którą tu widać. */}
+            <StarButton food={chosen} />
+          </div>
           <p className="fd-diet-meta">{chosen.detail}</p>
           {chosen.per100 && (
             <label className="fld fd-diet-grams">
@@ -211,6 +246,7 @@ function SearchMode({ date, pool, products, dict, productsLoading, onDone, onLog
             setSelected(food);
             setGrams(food.grams ? String(food.grams) : '');
           }}
+          onQuickAdd={log}
         />
       )}
     </div>
@@ -262,7 +298,7 @@ function SetBuilder({ date, pool, products, dict, productsLoading, onDone, onLog
     void once(
       () =>
         // Jedna transakcja: zestaw i wpis przychodzą razem albo wcale.
-        db.transaction('rw', db.entries, db.sets, async () => {
+        db.transaction('rw', [db.entries, db.sets, db.favorites], async () => {
           const id = save ? await db.sets.add(set) : undefined;
           await logFood(date, setFood(id === undefined ? set : { ...set, id }));
         }),

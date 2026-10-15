@@ -1,4 +1,4 @@
-import { CalendarDays, ChevronLeft, ChevronRight, MapPin, Plus, TrendingDown, Trash2, UserRound } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight, MapPin, Plus, Star, TrendingDown, Trash2, UserRound } from 'lucide-react';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { WEIGHT_RANGE, validWeight } from '../../../engine/body';
 import { NEARBY_PATH, dietPath } from '../../../routing';
@@ -7,6 +7,7 @@ import { MISSING_DATA_MESSAGE } from '../../data';
 import { hashWith } from '../../hash';
 import { macroStatus, totals } from '../../diet/day';
 import { db, type DayRow, type Entry } from '../../diet/db';
+import { entryFood, favoriteFood } from '../../diet/favorites';
 import { planFood, type Food } from '../../diet/foods';
 import { addDays, dayGoal, dayLabel, longDay, mealsLeftAt, mondayOf, remainingOf } from '../../diet/model';
 import { plannedDay, plannedKcal, type Plan, type PlannedItem, type PlanItem } from '../../diet/plan';
@@ -18,6 +19,7 @@ import { diaryFromParams, diaryToParams } from '../../diet/url';
 import {
   useDay,
   useEntries,
+  useFavorites,
   useMergedDay,
   useMergedHistory,
   type History,
@@ -29,10 +31,11 @@ import type { Dictionaries } from '../../lib/types';
 import { formatDistance } from '../../nearby/geo';
 import { AutoDayCard } from './AutoDayCard';
 import { FoodPicker } from './FoodPicker';
+import { StarButton } from '../common/StarButton';
 import { MacroBars } from './MacroBars';
 import { Loading, Onboarding } from './Onboarding';
 import { PlanDayCard } from './PlanDayCard';
-import { SuggestionList } from './SuggestionList';
+import { MacroLine, SuggestionList } from './SuggestionList';
 import { SwapDialog } from './SwapDialog';
 import { useDietBase, useFoodPool, type FoodPool } from './useDietPage';
 import './diet.css';
@@ -174,6 +177,8 @@ function TodayView({ profile, plan, date, today, hour, nowMs, history, pickerOpe
         </div>
       </MacroBars>
 
+      <FavoritesCard date={date} today={today} onLog={log} />
+
       <DietLinks date={date} today={today} />
 
       {planned && plan ? (
@@ -289,6 +294,69 @@ function DietLinks({ date, today }: { date: string; today: string }) {
   );
 }
 
+/** Ile ulubionych widać od razu — reszta pod „Pokaż wszystkie”. */
+const FAVORITES_SHOWN = 8;
+
+/**
+ * Lista szybkiego wyboru: ulubione z „+ Zjadłem” — zapis jednym stuknięciem, w ilości z gwiazdki,
+ * na oglądany dzień. Najczęściej jedzone na górze (każdy zapis takiego jedzenia liczy się do
+ * kolejności). Bez ulubionych — jedno zdanie, jak je dodać.
+ */
+function FavoritesCard({ date, today, onLog }: { date: string; today: string; onLog: (food: Food) => void }) {
+  const favorites = useFavorites();
+  const [all, setAll] = useState(false);
+  if (!favorites) return null;
+  const shown = all ? favorites : favorites.slice(0, FAVORITES_SHOWN);
+  const future = date > today;
+  return (
+    <section className="grp" aria-labelledby="fd-diet-fav-title">
+      <h2 id="fd-diet-fav-title">
+        <Star {...ICON} className="fd-diet-fav-ico" /> Ulubione
+      </h2>
+      {favorites.length === 0 ? (
+        <p className="tight">
+          To, co jesz najczęściej, oznacz gwiazdką — w „Dodaj zjedzone”, w produktach, w lokalach albo przy tym, co już
+          zjedzone. Pojawi się tutaj do dodania jednym stuknięciem.
+        </p>
+      ) : (
+        <>
+          <ul className="fd-diet-list">
+            {shown.map((f) => {
+              const food = favoriteFood(f);
+              return (
+                <li key={f.key} className="fd-diet-sug">
+                  <div className="fd-diet-row">
+                    <div className="fd-diet-row-main">
+                      <p className="fd-diet-name">{food.name}</p>
+                      <p className="fd-diet-meta">
+                        <MacroLine food={food} /> · {food.amountLabel || 'porcja'}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn ghost sm fd-diet-act"
+                      onClick={() => onLog(food)}
+                      disabled={future}
+                      aria-label={`Zjadłem: ${food.name}`}
+                    >
+                      <Plus size={20} strokeWidth={2} aria-hidden /> Zjadłem
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+          {favorites.length > FAVORITES_SHOWN && (
+            <button type="button" className="fd-diet-link" onClick={() => setAll(!all)} aria-expanded={all}>
+              {all ? 'Pokaż mniej' : `Pokaż wszystkie (${favorites.length})`}
+            </button>
+          )}
+        </>
+      )}
+    </section>
+  );
+}
+
 function EatenCard({ entries, kcal }: { entries: Entry[]; kcal: number }) {
   return (
     <section className="grp" aria-labelledby="fd-diet-eaten-title">
@@ -314,6 +382,7 @@ function EatenCard({ entries, kcal }: { entries: Entry[]; kcal: number }) {
                   {e.amountLabel && ` · ${e.amountLabel}`}
                 </p>
               </div>
+              <StarButton food={entryFood(e)} />
               <button
                 type="button"
                 className="fd-diet-icon-btn"

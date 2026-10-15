@@ -39,6 +39,8 @@ export interface Food {
    */
   everywhere?: boolean;
   role: MealRole;
+  /** Starred by the user („Ulubione”): first in the picker, a bonus in suggestions. */
+  favorite?: true;
 }
 
 /** One pack ("150 g", "4 x 125 g", "330ml") as the portion; a family pack or an unreadable label means 100 g. */

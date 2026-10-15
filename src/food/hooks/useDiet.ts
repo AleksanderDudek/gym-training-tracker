@@ -2,7 +2,8 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useMemo, useState } from 'react';
 import { useBridge } from '../bridge';
 import { mergeBody } from '../diet/body';
-import { db, type DayRow, type Entry, type ProfileRow } from '../diet/db';
+import { db, type DayRow, type Entry, type Favorite, type ProfileRow } from '../diet/db';
+import { byUse } from '../diet/favorites';
 import type { CustomFood, FoodSet } from '../diet/foods';
 import type { Plan } from '../diet/plan';
 import { ACTIVE_PLAN, now } from '../diet/store';
@@ -62,6 +63,11 @@ export function useCustomFoods(): (CustomFood & { id: number })[] | undefined {
 
 export function useSets(): (FoodSet & { id: number })[] | undefined {
   return useLiveQuery(() => db.sets.toArray() as Promise<(FoodSet & { id: number })[]>, []);
+}
+
+/** Starred foods, most eaten first. */
+export function useFavorites(): Favorite[] | undefined {
+  return useLiveQuery(async () => (await db.favorites.toArray()).sort(byUse), []);
 }
 
 export interface History {

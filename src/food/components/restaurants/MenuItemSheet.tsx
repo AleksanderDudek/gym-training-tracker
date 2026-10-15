@@ -9,6 +9,7 @@ import { energyAgrees } from '../../restaurants/normalize';
 import { isDrink, portionLabel, restaurantFood } from '../../restaurants/food';
 import { CATEGORY_LABELS, type Chain, type MenuItem } from '../../restaurants/types';
 import { Sheet } from '../common/Sheet';
+import { StarButton } from '../common/StarButton';
 import { FitBadge } from '../diet/SuggestionList';
 
 interface Props {
@@ -45,6 +46,7 @@ export function MenuItemSheet({ chain, item, diet, linkChain = false, onClose }:
       subtitle={chain && item ? `${chain.name} · ${CATEGORY_LABELS[item.category]} · ${portionLabel(item)}` : undefined}
       closeLabel="Zamknij pozycję menu"
       className="fd-rest-sheet"
+      actions={chain && item && <StarButton food={restaurantFood(chain, item)} />}
       footer={chain && item && <AddButton chain={chain} item={item} />}
     >
       {chain && item && <Body chain={chain} item={item} diet={diet} linkChain={linkChain} />}

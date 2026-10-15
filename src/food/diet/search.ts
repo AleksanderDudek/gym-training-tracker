@@ -31,6 +31,9 @@ interface Input {
   noSets?: boolean;
 }
 
+/** Starred first, then the user's own things: a set or own food is what they eat, a recipe is an idea. */
+const rank = (f: Food) => (f.favorite ? -1 : (OWN_ORDER[f.source] ?? 9));
+
 /**
  * How well a name answers the query: 0 the name itself ("Banan" for "banan"),
  * 1 starts with it, 2 every word starts a word of the name ("Ciasto bananowe"),
@@ -61,11 +64,13 @@ function byRelevance(foods: Food[], query: string): Food[] {
  * at most 12 of them from restaurants.
  */
 export function searchFoods({ query, pool, chains, products, dict, noSets = false }: Input): Food[] {
+  // A starred product or restaurant position is the user's own too.
   const own = pool
-    .filter((f) => f.source !== 'product' && !(noSets && f.source === 'set'))
+    .filter((f) => (f.favorite || f.source !== 'product') && !(noSets && f.source === 'set'))
     .map((f, i) => ({ f, i }))
-    .sort((a, b) => (OWN_ORDER[a.f.source] ?? 9) - (OWN_ORDER[b.f.source] ?? 9) || a.i - b.i)
+    .sort((a, b) => rank(a.f) - rank(b.f) || a.i - b.i)
     .map(({ f }) => f);
+  const ownKeys = new Set(own.map((f) => f.key));
   const tokens = tokenize(query);
   if (!tokens.length) return own.slice(0, MAX_RESULTS);
 
@@ -82,5 +87,7 @@ export function searchFoods({ query, pool, chains, products, dict, noSets = fals
     if (food) fromProducts.push(food);
   }
   // Restaurants before products on a tie: "latte" means the café's latte before a carton of latte drink.
-  return [...fromPool, ...byRelevance([...fromMenus, ...fromProducts], query)].slice(0, MAX_RESULTS);
+  // A starred product found by the search is already up there, starred.
+  const bought = [...fromMenus, ...fromProducts].filter((f) => !ownKeys.has(f.key));
+  return [...fromPool, ...byRelevance(bought, query)].slice(0, MAX_RESULTS);
 }

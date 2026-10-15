@@ -1,7 +1,15 @@
 import { useEffect, useMemo } from 'react';
 import { markDiet } from '../../dietFlag';
 import { buildPool } from '../../diet/pool';
-import { useClock, useCustomFoods, useNearbyChains, usePlan, useProfile, useSets } from '../../hooks/useDiet';
+import {
+  useClock,
+  useCustomFoods,
+  useFavorites,
+  useNearbyChains,
+  usePlan,
+  useProfile,
+  useSets,
+} from '../../hooks/useDiet';
 import { useDataset, type DatasetResult } from '../../hooks/useDataset';
 import type { Plan } from '../../diet/plan';
 import type { Profile } from '../../diet/types';
@@ -46,6 +54,7 @@ export function useFoodPool(profile: Profile | null, plan: Plan | null, nowMs: n
   const data = useDataset();
   const custom = useCustomFoods();
   const sets = useSets();
+  const favorites = useFavorites();
   const products = data.status === 'ready' ? data.products : NO_PRODUCTS;
   const dict = data.status === 'ready' ? data.dataset.dictionaries : NO_DICT;
 
@@ -69,8 +78,9 @@ export function useFoodPool(profile: Profile | null, plan: Plan | null, nowMs: n
         plan,
         custom: custom ?? [],
         sets: sets ?? [],
+        favorites: favorites ?? [],
       }),
-    [products, dict, candidates, chains, ranking, plan, custom, sets],
+    [products, dict, candidates, chains, ranking, plan, custom, sets, favorites],
   );
   return { data, products, dict, pool, nearby };
 }

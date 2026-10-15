@@ -28,7 +28,7 @@ npm run build      # typecheck + produkcyjny build do dist/ z service workerem (
 npm run preview    # podgląd builda — tu działa też praca offline
 npm run typecheck  # tsc: aplikacja, testy, konfiguracja Vite i skrypty, service worker
 npm run lint       # oxlint
-npm test           # 1519 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, serwer… (vitest)
+npm test           # 1536 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, serwer… (vitest)
 ```
 
 Baza produktów i przepisy:
@@ -646,8 +646,15 @@ aplikacji. Dane produktów: [Open Food Facts](https://world.openfoodfacts.org), 
   suma na bieżąco, w dzienniku jeden wpis. Zaznaczone „Zapisz jako mój zestaw” zostawia go na
   później — wraca pierwszy w wyszukiwaniu i w propozycjach („Twój zestaw”), a usuwa się go
   w Profilu diety → Twoje dane. Zestaw trzyma kopie części, jak wpisy dziennika, więc nowa baza
-  produktów nie zmienia tego samego śniadania. Cel dnia koryguje się według tygodnia — nadwyżka rozkłada się na kolejne dni (najwyżej
-  10% celu dziennie), niedojedzone kalorie wracają. „Co teraz?” podpowiada resztę dnia z gwiazdką
+  produktów nie zmienia tego samego śniadania. **Ulubione**: gwiazdką oznacza się dowolne jedzenie —
+  w „Dodaj zjedzone”, w szczegółach produktu, w karcie pozycji lokalu i przy tym, co już zjedzone.
+  Pod bilansem dnia stoi lista szybkiego wyboru z „+ Zjadłem” (zapis jednym stuknięciem, w ilości
+  z gwiazdki), najczęściej jedzone na górze — każdy zapis takiego jedzenia liczy się do kolejności.
+  W „Dodaj zjedzone” ulubione stoją pierwsze, z „+” do zapisu bez otwierania, a w „Co teraz?” dostają
+  niewielką premię („Twoje ulubione”). Ulubione to migawki jak zestawy: działają bez bazy produktów
+  i offline; listę widać i czyści się w Profilu diety → Twoje dane. Cel dnia koryguje się według
+  tygodnia — nadwyżka rozkłada się na kolejne dni (najwyżej 10% celu dziennie), niedojedzone kalorie
+  wracają. „Co teraz?” podpowiada resztę dnia z gwiazdką
   przy najlepszych i powodem.
 - **Postęp** (podstrona): wykres wagi z planem, prognozą od ostatniego ważenia i celem, kalorie
   z 14 dni i średnie makro z tygodnia.
@@ -1138,7 +1145,7 @@ src/
     recipes/                przepisy białkowe i gotowce: katalog, składniki, koszyki sklepów i grupowanie, zamiany, progi, makro, gotowe produkty — 266 testów
     online/                 sklepy internetowe: rejestr, dane sklepów (`data/*.json`), scalanie z bazą po EAN, kontrola liczb — 36 testów
     nearby/                 w pobliżu: odległości, zapytanie do Overpass z zapasowym serwerem, kopia na dobę, promień — 33 testy
-    diet/                   dieta: baza Dexie (`produkty-pl-dieta`, wersja 2 z zestawami), model energii, sposoby odżywiania, dzień, plan z Excela, zestawy, wyszukiwanie, podpowiedzi — 121 testów
+    diet/                   dieta: baza Dexie (`produkty-pl-dieta`, wersja 3 z zestawami i ulubionymi), model energii, sposoby odżywiania, dzień, plan z Excela, zestawy, ulubione, wyszukiwanie, podpowiedzi — 131 testów
     restaurants/            lokale: dane sieci (`data/*.json`), kontrola liczb, wyszukiwanie, kolejność, „Najwięcej białka”, stan w adresie — 101 testów
     hooks/                  baza produktów, menu lokali, dieta na żywo i scalona z treningiem, stan w adresie, lokalizacja, sklepy w pobliżu — 22 testy
     components/common/      karta i szczegóły produktu, zdjęcie, oceny, cena, arkusz od dołu, ekrany stanu
@@ -1147,7 +1154,7 @@ src/
     components/nearby/      „W pobliżu”: mapa Leaflet, promień, sklepy i przepisy z nich
     components/diet/        dziennik, plan posiłków, postęp, profil diety, pierwsze kroki, wybór jedzenia i zestawy, import z Excela
     components/restaurants/ Lokale: lista sieci z wyszukiwaniem, menu sieci, karta pozycji z dodaniem do dziennika
-    components/**/*.test.tsx 111 testów stron pod jsdom — przez role i etykiety, nie znaczniki
+    components/**/*.test.tsx 118 testów stron pod jsdom — przez role i etykiety, nie znaczniki
     test/                   dane do testów: produkty, most do treningu, arkusz Excela
   api.ts                    adres serwera aplikacji z buildu (`VITE_API_URL`)
   push.ts                   przypomnienia w przeglądarce: zgoda, subskrypcja Web Push, wysyłka listy
@@ -1951,8 +1958,8 @@ zapisuje w dzienniku `time`: sekundy całości i części (początek i koniec od
 i imporcie zepsuty zegar albo czas odpada, a trening zostaje.
 
 **Jedzenie leży osobno, w IndexedDB** (baza `produkty-pl-dieta`, Dexie): profil diety, dni, wpisy,
-plan z Excela, własne potrawy i zestawy (od wersji 2 bazy; starsza baza i starsza kopia bez zestawów
-wczytują się bez zmian) — jest ich za dużo i są po dniach, więc nie pasują do jednego zapisu
+plan z Excela, własne potrawy, zestawy i ulubione (wersje 2 i 3 bazy; starsza baza i starsza kopia
+bez nich wczytują się bez zmian) — jest ich za dużo i są po dniach, więc nie pasują do jednego zapisu
 `localStorage`. Waga ma jedno źródło: ważenia z diety, z kopii diety albo z planu z Excela przy
 wejściu w Jedzenie przechodzą do dziennika wagi i znikają z diety; kroki dieta czyta z wpisów
 i zegarka. Eksport z Ustawień zapisuje jeden plik — trening, a gdy dziennik jedzenia ma cokolwiek

@@ -59,12 +59,12 @@ const POOL = [
   customFood({ id: 9, name: 'Owsianka mamy', amountLabel: '1 miska', kcal: 420, protein: 18, carbs: 60, fat: 11 }),
 ];
 
-function open(onLogged = vi.fn()) {
+function open(onLogged = vi.fn(), pool = POOL) {
   render(
     <FoodPicker
       open
       date="2026-10-12"
-      pool={POOL}
+      pool={pool}
       products={PRODUCTS}
       dict={DATASET.dictionaries}
       productsLoading={false}
@@ -85,7 +85,7 @@ describe('„Dodaj zjedzone”', () => {
     const onLogged = vi.fn();
     const dialog = open(onLogged);
     await user.type(dialog.getByRole('searchbox', { name: 'Szukaj jedzenia' }), 'strips');
-    await user.click(await dialog.findByRole('button', { name: /Strips \(KFC\)/ }));
+    await user.click(await dialog.findByRole('button', { name: /^Strips \(KFC\)/ }));
     // Porcja z menu: bez pola gramów.
     expect(dialog.queryByRole('textbox', { name: 'Ile gramów' })).not.toBeInTheDocument();
     await user.click(dialog.getByRole('button', { name: 'Dodaj' }));
@@ -155,7 +155,7 @@ describe('„Dodaj zjedzone”', () => {
     await user.click(dialog.getByRole('button', { name: 'Zestaw' }));
     const search = dialog.getByRole('searchbox', { name: 'Szukaj rzeczy do zestawu' });
     await user.type(search, 'owsianka');
-    await user.click(await dialog.findByRole('button', { name: /Owsianka mamy/ }));
+    await user.click(await dialog.findByRole('button', { name: /^Owsianka mamy/ }));
     await user.type(search, 'banan');
     await user.click(await dialog.findByRole('button', { name: /^Banan/ }));
     await user.click(dialog.getByRole('button', { name: 'Usuń z zestawu: Banan' }));
@@ -164,5 +164,28 @@ describe('„Dodaj zjedzone”', () => {
     await waitFor(async () => expect(await db.entries.count()).toBe(1));
     expect(await db.sets.count()).toBe(0);
     expect((await db.entries.toArray())[0]).toMatchObject({ name: 'Owsianka mamy', kcal: 420, source: 'set' });
+  });
+
+  test('a star puts the food under „Ulubione” first, and its „+” logs it in one tap', async () => {
+    const user = userEvent.setup();
+    const onLogged = vi.fn();
+    const dialog = open(onLogged);
+    await user.type(dialog.getByRole('searchbox', { name: 'Szukaj jedzenia' }), 'banan');
+    const star = await dialog.findByRole('button', { name: 'Ulubione: Banan' });
+    expect(star).toHaveAttribute('aria-pressed', 'false');
+    await user.click(star);
+    await waitFor(() => expect(star).toHaveAttribute('aria-pressed', 'true'));
+    expect(await db.favorites.get('product:ban')).toMatchObject({ food: { name: 'Banan', grams: 100 } });
+  });
+
+  test('favourites stand first under their own heading, and „+” logs one without opening it', async () => {
+    const user = userEvent.setup();
+    const onLogged = vi.fn();
+    const oats = { ...POOL[0]!, favorite: true as const };
+    const dialog = open(onLogged, [oats]);
+    expect(dialog.getByText('Ulubione')).toBeInTheDocument();
+    await user.click(dialog.getByRole('button', { name: 'Dodaj od razu: Owsianka mamy' }));
+    await waitFor(() => expect(onLogged).toHaveBeenCalledWith('Zapisane: Owsianka mamy · 420 kcal.'));
+    expect(await db.entries.toArray()).toMatchObject([{ name: 'Owsianka mamy', key: 'custom:9' }]);
   });
 });

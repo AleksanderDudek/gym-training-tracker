@@ -96,7 +96,10 @@ function evaluate(food: Food, ctx: Context): Omit<Suggestion, 'best'> {
     reasons.push(`${n.kcal} z ${Math.round(Math.max(0, ctx.remaining.kcal))} kcal, które zostały`);
   reasons.push(fit.reason);
 
-  const score = 2 * kcalFit + 2 * proteinFit + fitScore + availabilityScore + penalty;
+  // What this person stars is what they eat: a nudge, not a trump card.
+  const favoriteBonus = food.favorite ? 0.3 : 0;
+  if (food.favorite) reasons.unshift('Twoje ulubione');
+  const score = 2 * kcalFit + 2 * proteinFit + fitScore + availabilityScore + favoriteBonus + penalty;
   return { food, score: Math.round(score * 100) / 100, fit, reasons, where };
 }
 

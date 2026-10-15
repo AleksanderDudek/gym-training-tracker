@@ -5,7 +5,7 @@ import { markDiet } from '../../dietFlag';
 import { db } from '../../diet/db';
 import { clearAll, exportAll, now, restoreAll } from '../../diet/store';
 import { setFood } from '../../diet/foods';
-import { useCustomFoods, useSets } from '../../hooks/useDiet';
+import { useCustomFoods, useFavorites, useSets } from '../../hooks/useDiet';
 import { formatNumber } from '../../lib/format';
 import { ImportWorkbook } from './ImportWorkbook';
 
@@ -19,6 +19,7 @@ export function DataSection() {
   const restoreId = useId();
   const custom = useCustomFoods();
   const sets = useSets();
+  const favorites = useFavorites();
   const { req, ask } = useModal();
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
 
@@ -64,7 +65,8 @@ export function DataSection() {
     const ok = await ask(
       'Usunąć wszystkie dane diety?',
       <p>
-        Profil diety, zapisy jedzenia, plan, moje jedzenie i zestawy znikną z tego urządzenia. Tego nie da się cofnąć.
+        Profil diety, zapisy jedzenia, plan, moje jedzenie, zestawy i ulubione znikną z tego urządzenia. Tego nie da się
+        cofnąć.
         Waga i kroki zostają w treningach.
       </p>,
       'Usuń wszystko',
@@ -123,6 +125,33 @@ export function DataSection() {
                 className="fd-diet-icon-btn"
                 onClick={() => void db.foods.delete(f.id)}
                 aria-label={`Usuń: ${f.name}`}
+              >
+                <Trash2 {...ICON} />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <h3>Ulubione</h3>
+      {!favorites?.length ? (
+        <p className="tight">Nic jeszcze. Gwiazdką przy jedzeniu dodasz je do listy szybkiego wyboru w dzienniku.</p>
+      ) : (
+        <ul className="fd-diet-list">
+          {favorites.map((f) => (
+            <li key={f.key} className="fd-diet-custom">
+              <span>
+                {f.food.name}{' '}
+                <span className="fd-diet-meta fd-diet-nums">
+                  · {formatNumber(f.food.nutrients.kcal, 0)} kcal · {f.food.amountLabel}
+                  {f.uses > 0 && ` · zjedzone ${f.uses}×`}
+                </span>
+              </span>
+              <button
+                type="button"
+                className="fd-diet-icon-btn"
+                onClick={() => void db.favorites.delete(f.key)}
+                aria-label={`Usuń z ulubionych: ${f.food.name}`}
               >
                 <Trash2 {...ICON} />
               </button>
