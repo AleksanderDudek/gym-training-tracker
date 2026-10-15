@@ -6,11 +6,8 @@ import { SUPPORT_URL } from './engine/share';
  * jako adresy nawigacji (`csp.test.ts`).
  */
 
-/**
- * Profil autora na Instagramie, pełny adres. Pusty: wiersz Instagrama się nie pokazuje — adresu
- * nie było w prośbie ani nigdzie w kodzie, a zgadywanie cudzego konta nie wchodzi w grę.
- */
-export const INSTAGRAM_URL: string | null = null;
+/** Profil autora na Instagramie (podany przez autora 2026-10-15). Pusty — wiersz Instagrama znika. */
+export const INSTAGRAM_URL: string | null = 'https://instagram.com/aleksanderdudek';
 
 /** Serwer społeczności na Discordzie. Rozmowy idą po polsku, więc odnośnik widzi tylko Polska. */
 export const DISCORD_URL = 'https://discord.gg/U6jCW6tvg';

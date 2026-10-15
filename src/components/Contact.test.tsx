@@ -30,9 +30,16 @@ describe('kontakt z autorem', () => {
     expect(screen.queryByRole('button', { name: 'Kontakt z autorem' })).not.toBeInTheDocument();
   });
 
-  it('w Polsce: Discord i kawa przez buycoffee.to, w nowej karcie, z adresem pod nazwą', () => {
+  it('w Polsce: Instagram, Discord i kawa przez buycoffee.to, w nowej karcie, z adresem pod nazwą', () => {
     render(<ContactDialog onClose={vi.fn()} pl />);
     const dialog = screen.getByRole('dialog', { name: 'Kontakt z autorem' });
+    expect(within(dialog).getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual([
+      'https://instagram.com/aleksanderdudek',
+      'https://discord.gg/U6jCW6tvg',
+      'https://buycoffee.to/uriel',
+    ]);
+    const instagram = within(dialog).getByRole('link', { name: /^Instagram/ });
+    expect(instagram).toHaveTextContent('instagram.com/aleksanderdudek');
     const discord = within(dialog).getByRole('link', { name: /^Discord/ });
     expect(discord).toHaveAttribute('href', 'https://discord.gg/U6jCW6tvg');
     expect(discord).toHaveAttribute('target', '_blank');
@@ -43,12 +50,16 @@ describe('kontakt z autorem', () => {
       'https://buycoffee.to/uriel',
     );
     // Fokus od razu na pierwszym odnośniku.
-    expect(discord).toHaveFocus();
+    expect(instagram).toHaveFocus();
   });
 
-  it('poza Polską: bez Discorda, kawa przez buymeacoffee.com', () => {
+  it('poza Polską: Instagram, bez Discorda, kawa przez buymeacoffee.com', () => {
     render(<ContactDialog onClose={vi.fn()} pl={false} />);
     const dialog = screen.getByRole('dialog', { name: 'Kontakt z autorem' });
+    expect(within(dialog).getByRole('link', { name: /^Instagram/ })).toHaveAttribute(
+      'href',
+      'https://instagram.com/aleksanderdudek',
+    );
     expect(within(dialog).queryByRole('link', { name: /^Discord/ })).not.toBeInTheDocument();
     expect(within(dialog).getByRole('link', { name: /^Buy me a coffee/ })).toHaveAttribute(
       'href',

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   DISCORD_URL,
+  INSTAGRAM_URL,
   SUPPORT_URL_WORLD,
   contactLinks,
   isPoland,
@@ -47,6 +48,13 @@ describe('kontakt z autorem', () => {
     expect(contactLinks(false, null).map((l) => [l.id, l.href])).toEqual([
       ['support', 'https://buymeacoffee.com/atd_uriel'],
     ]);
+  });
+
+  it('profil autora na Instagramie jest pierwszy — w Polsce i poza nią', () => {
+    expect(INSTAGRAM_URL).toBe('https://instagram.com/aleksanderdudek');
+    expect(contactLinks(true)[0]).toMatchObject({ id: 'instagram', href: INSTAGRAM_URL });
+    expect(contactLinks(false)[0]).toMatchObject({ id: 'instagram', href: INSTAGRAM_URL });
+    expect(shortUrl(INSTAGRAM_URL!)).toBe('instagram.com/aleksanderdudek');
   });
 
   it('Instagram stoi pierwszy, gdy adres jest, i znika, gdy go nie ma', () => {

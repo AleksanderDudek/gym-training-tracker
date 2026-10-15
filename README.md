@@ -28,7 +28,7 @@ npm run build      # typecheck + produkcyjny build do dist/ z service workerem (
 npm run preview    # podgląd builda — tu działa też praca offline
 npm run typecheck  # tsc: aplikacja, testy, konfiguracja Vite i skrypty, service worker, filmy demo
 npm run lint       # oxlint
-npm test           # 1554 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, serwer… (vitest)
+npm test           # 1555 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, serwer… (vitest)
 ```
 
 Baza produktów i przepisy:
@@ -300,8 +300,8 @@ angielsku w kraju. Pod przyciskiem banera stoi adres, dokąd naprawdę prowadzi.
 Instagram autora, w Polsce serwer na Discordzie (rozmowy idą po polsku, więc za granicą go nie ma)
 i kawę według kraju; gdy działa serwer wiadomości, ma też „Napisz w aplikacji”. Każdy odnośnik
 pokazuje swój adres i otwiera się w nowej karcie. „@” jest zawsze — odnośniki nie potrzebują
-serwera — poza trwającym treningiem. Adres Instagrama to jedna stała, `INSTAGRAM_URL`
-w `src/contact.ts`; dopóki jest pusta, wiersza Instagrama nie ma.
+serwera — poza trwającym treningiem. Instagram (instagram.com/aleksanderdudek) stoi pierwszy,
+dla wszystkich; jego adres to jedna stała, `INSTAGRAM_URL` w `src/contact.ts`.
 
 **Miejsce w układzie zależy od tego, po co ktoś przyszedł.** Na ekranie Dziś baner stoi **pod**
 wyjściami do treningu i przekąski, bo kto przyszedł ćwiczyć, ten najpierw widzi przycisk startu.
@@ -1188,7 +1188,7 @@ src/
   trail.test.ts             4 testy kolejności, maskowania liczb, limitu i czasu aktywnego
   feedback.ts               wiadomość do autora: kontekst, zrzut ekranu, obraz z galerii, wysyłka
   contact.ts                kontakt z autorem: Instagram, Discord (Polska), kawa według kraju, „Polska” z języka i strefy czasowej
-  contact.test.ts           6 testów kraju, kawy, adresów i kolejności odnośników
+  contact.test.ts           7 testów kraju, kawy, adresów i kolejności odnośników
   push.test.ts              5 testów stanu przypomnień na telefonie i klucza serwera
   watchseal.ts              koperta zegarka: klucz, klucze pochodne, AES-256-CBC i HMAC-SHA256
   watchseal.test.ts         5 testów: wektor wspólny z zegarkiem, podróbki, czytanie klucza

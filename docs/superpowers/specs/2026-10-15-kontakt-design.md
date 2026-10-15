@@ -31,7 +31,7 @@ another country)."
 | Contents | Instagram (everyone) · Discord server (Poland only — the server is Polish) · support (Poland: buycoffee.to; elsewhere: buymeacoffee.com) · „Napisz do autora” when the feedback server exists | What was asked, plus the in-app message as the first alternative |
 | Poland or not | Poland when a preferred browser language is Polish **or** the time zone is `Europe/Warsaw` | No country is known without asking for location; language + zone is private, instant and covers Poles abroad and foreigners in Poland well enough for a link choice |
 | Support everywhere | The strip and the banner use the same country rule (their visible address follows the link) | One person should not see two different jars |
-| Instagram address | **Not known** (not in the request, the repo, other projects or the GitHub profile). One constant `INSTAGRAM_URL`; while it is `null` the Instagram row is hidden | No guessing someone's account; the feature works and the row appears the moment the address is filled in |
+| Instagram address | One constant `INSTAGRAM_URL`. It was not known at first (not in the request, the repo, other projects or the GitHub profile), so the row stayed hidden while it was `null`. The owner then gave `https://instagram.com/aleksanderdudek` (2026-10-15): first row, for everyone | No guessing someone's account |
 | Links | New tab, `rel="noopener noreferrer"`, visible host under each name | Standard for outside links; the user sees where they go |
 | Settings | Ustawienia gets a „Kontakt” section with the same links | Discoverable without hunting for an icon |
 | CSP | instagram.com, discord.gg and buymeacoffee.com join the navigation-only hosts | Links only, nothing is fetched |
