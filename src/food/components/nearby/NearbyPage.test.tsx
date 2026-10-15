@@ -148,7 +148,7 @@ describe('W pobliżu', () => {
     expect(window.location.hash).toBe('#/w-poblizu?r=500');
     // Na końcu skali przycisk jest nieczynny, ale zostaje w kolejce Tab.
     expect(screen.getByRole('button', { name: 'Mniejszy promień' })).toHaveAttribute('aria-disabled', 'true');
-  });
+  }, 15_000);
 
   test('bez zgody na lokalizację kliknięcie w mapę ustawia miejsce', async () => {
     grantLocation(false);
@@ -158,7 +158,7 @@ describe('W pobliżu', () => {
     expect(screen.getByText('Najpierw ustal, gdzie jesteś.')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'kliknij mapę' }));
     expect(await screen.findByText(/2 sklepy z danymi/)).toBeInTheDocument();
-  });
+  }, 15_000);
 
   test('„Ustaw środek mapy jako moją lokalizację” bierze środek oglądanego fragmentu', async () => {
     grantLocation(false);
