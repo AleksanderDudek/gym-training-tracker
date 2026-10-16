@@ -9,11 +9,29 @@ export interface SelgrosRecord {
   productBrand: string | null;
   categoryPath: string;
   productDetails?: { id: string; label: string; values: { id: string; label: string; value: string }[] }[];
-  units?: { eans?: string[]; baseUnit?: boolean; weight?: { netValue?: number | null } }[];
+  units?: { eans?: string[]; baseUnit?: boolean; unit?: { code?: string }; weight?: { netValue?: number | null } }[];
   prices?: { unit?: string; price?: { grossPrice?: number } }[];
 }
 
 type Nutrition = ChainProductData['nutrition'];
+
+/** The unit sold one at a time: its EAN, price and weight describe the product. */
+export function baseUnit(r: SelgrosRecord) {
+  const units = r.units ?? [];
+  return units.find((u) => u.baseUnit) ?? units[0];
+}
+
+/**
+ * The regular price of the base unit — not of a portion, a carton or a pallet, and not an empty
+ * placeholder. Goods sold by weight have a price per kilogram.
+ */
+export function priceOf(r: SelgrosRecord): { price: number | null; perKg: boolean } {
+  const want = baseUnit(r)?.unit?.code;
+  const priced = (p: NonNullable<SelgrosRecord['prices']>[number]) => typeof p.price?.grossPrice === 'number' && p.price.grossPrice > 0;
+  const chosen =
+    (want ? r.prices?.find((p) => p.unit === want && priced(p)) : undefined) ?? r.prices?.find((p) => p.unit === 'KG' && priced(p));
+  return chosen ? { price: chosen.price!.grossPrice!, perKg: chosen.unit === 'KG' } : { price: null, perKg: false };
+}
 
 /** A value from one group of the product's details ("generalInfo", "nutrition", "allergen"). */
 export function detail(r: SelgrosRecord, group: string, label: RegExp): string | undefined {
@@ -191,28 +209,31 @@ const PATHS: [string, string[]][] = [
   ['Produkty wegetariańskie i wegańskie', PLANT],
 ];
 
-/** What the name says better than the shelf it stands on (matched on the folded, lower-case name). */
-const BY_NAME: [RegExp, string[]][] = [
-  [/\bmleko\b/, ['en:milks']],
-  [/\bsmietan/, ['en:creams']],
-  [/\bmaslo\b/, ['en:dairies', 'en:butters']],
-  [/\bmargaryn/, ['en:margarines']],
-  [/\bskyr\b/, ['en:yogurts']],
-  [/\btwarog|\btwarozek/, ['en:quarks']],
-  [/serek wiejski|cottage/, ['en:cottage-cheeses']],
-  [/\bkefir/, ['en:fermented-milk-products']],
-  [/\bmaslank/, ['en:buttermilks']],
-  [/\bbasmati\b/, ['en:basmati-rices']],
-  [/\bdlugoziarn/, ['en:long-grain-rices']],
-  [/\bryz bial/, ['en:white-rices']],
-  [/\boliwa\b/, ['en:olive-oils']],
-  [/\borzech|\bmigdal|\bnerkowc|\bpistacj|\barachid/, ['en:nuts']],
-  [/\bsuszon|\brodzynk|\bdaktyl|\bzurawin/, ['en:dried-fruits']],
-  [/\bkurczak|\bindyk|\bdrob/, ['en:poultries']],
-  [/\btunczyk/, ['en:fishes']],
-  [/\bhumus|\bhummus/, ['en:spreads']],
-  [/\btofu\b|\broslinn\w* (kotlet|burger|kielbas|parowk)/, ['en:meat-analogues']],
-  [/\bchleb\b|\bbulk/, ['en:breads']],
+/**
+ * What the name says better than the shelf it stands on, matched on the folded, lower-case name —
+ * and only on the shelves where the word means that: „śmietankowe” lody are no cream, „drobny” cukier
+ * no poultry, a chocolate „z orzechami” no nuts, „masło orzechowe” no butter.
+ */
+const BY_NAME: { re: RegExp; tags: string[]; on: string[] }[] = [
+  { re: /\bmleko\b/, tags: ['en:milks'], on: ['Nabiał/Mleko'] },
+  { re: /\bsmietan(a|y|e|ie|ka|ki)\b/, tags: ['en:creams'], on: ['Nabiał/Mleko', 'Kawa i herbata/Śmietanki'] },
+  { re: /\bmaslo\b(?! orzech)/, tags: ['en:dairies', 'en:butters'], on: ['Nabiał/Masła'] },
+  { re: /\bmargaryn/, tags: ['en:margarines'], on: ['Nabiał/Masła'] },
+  { re: /\bskyr\b/, tags: ['en:yogurts'], on: ['Nabiał'] },
+  { re: /\btwarog\w*|\btwarozek/, tags: ['en:quarks'], on: ['Nabiał/Sery białe'] },
+  { re: /serek wiejski|\bcottage\b/, tags: ['en:cottage-cheeses'], on: ['Nabiał/Sery białe'] },
+  { re: /\bkefir/, tags: ['en:fermented-milk-products'], on: ['Nabiał'] },
+  { re: /\bmaslank/, tags: ['en:buttermilks'], on: ['Nabiał'] },
+  { re: /\bbasmati\b/, tags: ['en:basmati-rices'], on: ['Sypkie/Ryż'] },
+  { re: /\bdlugoziarn/, tags: ['en:long-grain-rices'], on: ['Sypkie/Ryż'] },
+  { re: /\bryz bial/, tags: ['en:white-rices'], on: ['Sypkie/Ryż'] },
+  { re: /\boliwa\b/, tags: ['en:olive-oils'], on: ['Przetwory/Oleje'] },
+  { re: /\b(orzech\w*|migdal\w*|nerkowc\w*|pistacj\w*|arachid\w*)\b/, tags: ['en:nuts'], on: ['Słodycze i przekąski/Orzeszki', 'Sypkie'] },
+  { re: /\b(suszon\w*|rodzynk\w*|daktyl\w*|zurawin\w*)\b/, tags: ['en:dried-fruits'], on: ['Słodycze i przekąski/Orzeszki', 'Sypkie'] },
+  { re: /^(?!.*\b(o smaku|a['’]?\s?la|smak\w*)\b).*\b(kurczak\w*|indyk\w*|drobiow\w*|drobiu)\b/, tags: ['en:poultries'], on: ['Mięso, wędliny i ryby'] },
+  { re: /\btunczyk\w*/, tags: ['en:fishes'], on: ['Mięso, wędliny i ryby'] },
+  { re: /\bhum+us\b/, tags: ['en:spreads'], on: ['Przetwory', 'Produkty wegetariańskie i wegańskie'] },
+  { re: /\btofu\b|\broslinn\w* (kotlet|burger|kielbas|parowk)/, tags: ['en:meat-analogues'], on: ['Produkty wegetariańskie i wegańskie'] },
 ];
 
 const normal = (path: string) => path.replace(/\s+/g, ' ').trim();
@@ -223,7 +244,9 @@ export function categoriesFor(path: string, name: string): string[] {
     .filter(([prefix]) => p === prefix || p.startsWith(`${prefix}/`))
     .sort((a, b) => b[0].length - a[0].length)[0]?.[1];
   const folded = foldDiacritics(name.toLowerCase());
-  const fromName = BY_NAME.filter(([re]) => re.test(folded)).flatMap(([, tags]) => tags);
+  const fromName = BY_NAME.filter((r) => r.on.some((shelf) => p.startsWith(shelf)) && r.re.test(folded)).flatMap(
+    (r) => r.tags,
+  );
   return [...new Set([...(fromPath ?? []), ...fromName])];
 }
 
@@ -246,14 +269,29 @@ export function tidyBrand(brand: string): string {
     .replace(/(^|[\s-])(\p{L})/gu, (_m, s: string, c: string) => s + c.toLocaleUpperCase('pl'));
 }
 
-/** "400g", "1,5 l", "6x200ml" in a title → "400 g", "1,5 l", "6 x 200 ml"; the last one wins (the pack, not "100% soku"). */
+const UNITS: Record<string, number> = { g: 1, kg: 1000, ml: 1, l: 1000 };
+
+/**
+ * The pack size out of a title, for the unit the EAN, the price and the net weight describe. A title
+ * can name several amounts — "6x330ml", "240 g (40 g x 6 szt.)", "10 g x 200 szt." — so the one
+ * closest to the base unit's net weight wins; without it, a multipack as a whole, else the first.
+ */
 export function quantityOf(title: string, netKg?: number | null): string | null {
-  const re = /(?:(\d+)\s*[x×]\s*)?(\d+(?:[.,]\d+)?)\s*(kg|g|ml|l)\b/gi;
-  let last: RegExpMatchArray | null = null;
-  for (const m of title.matchAll(re)) last = m;
-  if (last) {
-    const [, count, amount, unit] = last;
-    return `${count ? `${count} x ` : ''}${amount} ${unit!.toLowerCase()}`;
+  const found: { label: string; amount: number }[] = [];
+  const add = (amount: string, unit: string, count?: string) => {
+    const u = unit.toLowerCase();
+    const value = Number(amount.replace(',', '.')) * (UNITS[u] ?? 1);
+    found.push({ label: `${amount} ${u}`, amount: value });
+    if (count) found.push({ label: `${count} x ${amount} ${u}`, amount: value * Number(count) });
+  };
+  for (const m of title.matchAll(/(?:(\d+)\s*[x×]\s*)?(\d+(?:[.,]\d+)?)\s*(kg|g|ml|l)\b(?:\s*[x×]\s*(\d+))?/gi))
+    add(m[2]!, m[3]!, m[1] ?? m[4]);
+  if (found.length) {
+    if (netKg && netKg > 0) {
+      const target = netKg * 1000;
+      return found.reduce((best, f) => (Math.abs(f.amount - target) < Math.abs(best.amount - target) ? f : best)).label;
+    }
+    return (found.find((f) => f.label.includes(' x ')) ?? found[0]!).label;
   }
   if (netKg && netKg > 0) return netKg < 1 ? `${Math.round(netKg * 1000)} g` : `${String(netKg).replace('.', ',')} kg`;
   return null;

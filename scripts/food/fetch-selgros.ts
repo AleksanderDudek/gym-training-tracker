@@ -2,11 +2,12 @@
 // Read the way a visitor's browser reads it: Playwright opens each food category page by page and
 // keeps the product data the page itself fetches (name, brand, EAN of the selling unit, nutrition
 // per 100 g, allergens, regular shelf price) and the product page addresses it shows. One page at a
-// time with a pause between pages; every page is saved, so an interrupted run carries on.
-// Usage: npm run food:selgros            (crawl what is missing, then write the data file)
-//        npm run food:selgros -- --fresh (crawl everything again)
-//        npm run food:selgros -- --limit=1 (a trial: at most N pages a department)
-import { mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+// time with a pause between pages; every page is saved, so an interrupted run carries on, and a page
+// older than a week is read again.
+// Usage: npm run food:selgros            (read what is missing or stale, then write the data file)
+//        npm run food:selgros -- --fresh (read everything again)
+//        npm run food:selgros -- --limit=1 (a trial: at most N pages a department; the data file stays)
+import { mkdir, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises';
 import { gunzipSync } from 'node:zlib';
 import { join } from 'node:path';
 import { chromium, type Page } from 'playwright';
@@ -14,10 +15,12 @@ import type { Dataset } from '../../src/food/lib/types';
 import type { ChainData, ChainProductData } from '../../src/food/chains/types';
 import {
   allergenTag,
+  baseUnit,
   categoriesFor,
   labelAddsUp,
   nutritionOf,
   plausible,
+  priceOf,
   quantityOf,
   tidyBrand,
   tidyName,
@@ -31,6 +34,8 @@ const OUT = 'src/food/chains/data/selgros.json';
 const CACHE = 'node_modules/.cache/selgros';
 const PER_PAGE = 24;
 const PAUSE_MS = 1500;
+/** A saved page older than this is read again: the prices and the range change. */
+const MAX_AGE_DAYS = 7;
 
 /**
  * Food departments of the finder. Alcohol and everything non-food stay out, and so does „Dla dzieci”:
@@ -52,9 +57,10 @@ const FOOD = [
 
 interface SavedPage {
   records: SelgrosRecord[];
-  links: Record<string, string>;
   count: number;
   market: string | null;
+  /** When the page was read (ISO); pages saved before this field had their file's time. */
+  fetchedAt?: string;
 }
 
 const fresh = process.argv.includes('--fresh');
@@ -66,16 +72,15 @@ const browser = await chromium.launch();
 try {
   const page = await browser.newPage({ locale: 'pl-PL' });
   const { departments, halls } = await startPage(page);
+  const missing = FOOD.filter((name) => !departments.has(name));
+  // A department the finder no longer links would quietly vanish from the data: stop instead.
+  if (missing.length) throw new Error(`no link on the finder page for: ${missing.join(', ')}`);
   for (const name of FOOD) {
-    const href = departments.get(name);
-    if (!href) {
-      console.warn(`! ${name}: no link on the finder page`);
-      continue;
-    }
+    const href = departments.get(name)!;
     let pages = 1;
     for (let n = 1; n <= Math.min(pages, limit); n++) {
       const file = join(CACHE, `${slug(name)}-${String(n).padStart(3, '0')}.json`);
-      const saved = await readJson<SavedPage>(file);
+      const saved = await readSaved(file);
       const got = saved ?? (await patiently(() => crawl(page, href, n), `${name} ${n}`));
       if (!saved) {
         await writeFile(file, JSON.stringify(got));
@@ -85,9 +90,19 @@ try {
       if (n === 1 || n % 10 === 0 || n === pages) console.log(`${name}: page ${n}/${pages}`);
     }
   }
-  await writeData(halls);
+  if (limit === Infinity) await writeData(halls);
+  else console.log(`a trial (--limit=${limit}): pages saved, ${OUT} left as it was`);
 } finally {
   await browser.close();
+}
+
+/** A saved page, unless it is older than a week (then it is read again). */
+async function readSaved(file: string): Promise<SavedPage | null> {
+  const saved = await readJson<SavedPage>(file);
+  if (!saved) return null;
+  saved.fetchedAt ??= (await stat(file)).mtime.toISOString();
+  const age = (Date.now() - Date.parse(saved.fetchedAt)) / 86_400_000;
+  return age > MAX_AGE_DAYS ? null : saved;
 }
 
 /** A page that did not answer gets two more tries, a while apart, before the run gives up. */
@@ -133,18 +148,8 @@ async function crawl(page: Page, href: string, n: number): Promise<SavedPage> {
   await page.goto(`${BASE}${href}?page=${n}`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
   const r = await response;
   const body = (await r.json()) as { '@odata.count'?: number; value?: SelgrosRecord[] };
-  await page.waitForLoadState('networkidle').catch(() => {});
-  const hrefs = await page
-    .locator('a[href*="/znajdz-produkt/product/"]')
-    .evaluateAll((as) => as.map((a) => a.getAttribute('href') ?? ''));
-  const links: Record<string, string> = {};
-  for (const raw of hrefs) {
-    const h = new URL(raw, BASE).href.replace(/[?#].*$/, '');
-    const id = h.match(/-(\d+)$/)?.[1];
-    if (id) links[id] = h;
-  }
   const market = (r.request().postData() ?? '').match(/markets\/any\(m: m eq (\d+)\)/)?.[1] ?? null;
-  return { records: body.value ?? [], links, count: body['@odata.count'] ?? 0, market };
+  return { records: body.value ?? [], count: body['@odata.count'] ?? 0, market, fetchedAt: new Date().toISOString() };
 }
 
 /** All saved pages → the data file the app merges in. */
@@ -155,8 +160,10 @@ async function writeData(halls: Map<string, string>) {
     allergens: new Set(Object.keys(dataset.dictionaries.allergens)),
   };
   const pages: SavedPage[] = [];
-  for (const f of (await readdir(CACHE)).filter((f) => f.endsWith('.json')).sort())
-    pages.push((await readJson<SavedPage>(join(CACHE, f)))!);
+  for (const f of (await readdir(CACHE)).filter((f) => f.endsWith('.json')).sort()) {
+    const saved = await readSaved(join(CACHE, f));
+    if (saved) pages.push(saved);
+  }
 
   const products: ChainProductData[] = [];
   const inconsistent: string[] = [];
@@ -165,8 +172,7 @@ async function writeData(halls: Map<string, string>) {
   const unknownTags = new Set<string>();
   for (const pg of pages)
     for (const r of pg.records) {
-      const units = r.units ?? [];
-      const base = units.find((u) => u.baseUnit) ?? units[0];
+      const base = baseUnit(r);
       const ean = (base?.eans ?? []).find(validEan);
       if (!ean) {
         drop.noEan++;
@@ -194,7 +200,7 @@ async function writeData(halls: Map<string, string>) {
         .filter((v) => /^tak$/i.test(v.value.trim()))
         .map((v) => allergenTag(v.label))
         .filter((t): t is string => !!t && known.allergens.has(t));
-      const price = r.prices?.[0];
+      const { price, perKg } = priceOf(r);
       products.push({
         ean,
         id: r.productId,
@@ -205,8 +211,8 @@ async function writeData(halls: Map<string, string>) {
         categories: tags.filter((t) => known.categories.has(t)),
         allergens: [...new Set(allergens)],
         nutrition,
-        price: price?.price?.grossPrice ?? null,
-        ...(price?.unit === 'KG' && { perKg: true as const }),
+        price,
+        ...(perKg && { perKg: true as const }),
       });
       if (!labelAddsUp(nutrition)) inconsistent.push(ean);
     }
@@ -217,7 +223,8 @@ async function writeData(halls: Map<string, string>) {
     name: 'Selgros',
     url: 'https://www.selgros.pl',
     productUrl: `${BASE}/znajdz-produkt/product/{id}`,
-    checked: new Date().toISOString().slice(0, 10),
+    // The day of the oldest page read: no price is newer than it says.
+    checked: pages.map((p) => p.fetchedAt!).sort()[0]!.slice(0, 10),
     hall: market ? (halls.get(market) ?? `hala ${market}`) : null,
     note: 'Wyszukiwarka produktów selgros.pl: nazwa, marka, EAN, wartości odżywcze na 100 g, alergeny i cena regularna brutto z karty produktu.',
     inconsistent,

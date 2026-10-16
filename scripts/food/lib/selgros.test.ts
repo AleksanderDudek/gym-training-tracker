@@ -5,6 +5,7 @@ import {
   labelAddsUp,
   nutritionOf,
   plausible,
+  priceOf,
   quantityOf,
   tidyBrand,
   tidyName,
@@ -128,8 +129,40 @@ describe('reading a Selgros product', () => {
       'en:poultries',
     ]);
     expect(categoriesFor('Sypkie/Ryż', 'Ryż basmati 1 kg')).toContain('en:basmati-rices');
-    // An unknown shelf: only what the name says.
-    expect(categoriesFor('Nowy dział', 'Tuńczyk w sosie własnym')).toEqual(['en:fishes']);
+    expect(categoriesFor('Mięso, wędliny i ryby/Wędliny', 'Polędwica z indyka')).toContain('en:poultries');
+    // An unknown shelf: nothing from the name either.
+    expect(categoriesFor('Nowy dział', 'Tuńczyk w sosie własnym')).toEqual([]);
+  });
+
+  test('a word means the thing only on its own shelf', () => {
+    expect(categoriesFor('Sypkie/Cukier', 'Cukier trzcinowy drobny')).not.toContain('en:poultries');
+    expect(categoriesFor('Owoce i warzywa/Konserwy warzywne i owocowe', 'Groszek bardzo drobny')).not.toContain('en:poultries');
+    expect(categoriesFor('Słodycze i przekąski/Lody', 'Lody śmietankowe 1 l')).not.toContain('en:creams');
+    expect(categoriesFor('Słodycze i przekąski/Czekolady', 'Czekolada mleczna z orzechami')).not.toContain('en:nuts');
+    expect(categoriesFor('Przetwory/Kremy do smarowania pieczywa', 'Masło orzechowe 350 g')).not.toContain('en:butters');
+    expect(categoriesFor('Mięso, wędliny i ryby/Wędliny', 'Kiełbasa a’la kurczak roślinna')).not.toContain('en:poultries');
+    expect(categoriesFor('Mięso, wędliny i ryby/Wędliny', 'Parówki o smaku kurczaka')).not.toContain('en:poultries');
+    expect(categoriesFor('Słodycze i przekąski/Orzeszki i suszone owoce', 'Orzechy nerkowca 200 g')).toContain('en:nuts');
+    expect(categoriesFor('Nabiał/Mleko i śmietana', 'Śmietana 18% 200 g')).toContain('en:creams');
+  });
+
+  test('the price of the base unit — not of a portion, a carton or an empty placeholder', () => {
+    const units = [
+      { eans: ['5905625003427'], baseUnit: true, unit: { code: 'ST' } },
+      { eans: [], baseUnit: false, unit: { code: 'CO' } },
+    ];
+    expect(
+      priceOf({
+        ...ALMETTE,
+        units,
+        prices: [{ unit: 'POR', price: { grossPrice: 0.4 } }, { unit: 'CO', price: { grossPrice: 79.79 } }, { unit: 'ST', price: { grossPrice: 11.54 } }],
+      }),
+    ).toEqual({ price: 11.54, perKg: false });
+    expect(priceOf({ ...ALMETTE, units, prices: [{ unit: 'ST', price: {} }, { unit: 'KG', price: { grossPrice: 25.19 } }] })).toEqual({
+      price: 25.19,
+      perKg: true,
+    });
+    expect(priceOf({ ...ALMETTE, units, prices: [{ unit: 'ST' }] })).toEqual({ price: null, perKg: false });
   });
 
   test('names and brands in capitals become readable; the brand keeps its spelling inside the name', () => {
@@ -142,11 +175,16 @@ describe('reading a Selgros product', () => {
     expect(withBrand('Come a casa lasagne bolognese 400g', 'Come a Casa')).toBe('Come a Casa lasagne bolognese 400g');
   });
 
-  test('the pack from the title (the page’s „Waga” is gross), else the net weight', () => {
+  test('the pack from the title for the unit sold (closest to its net weight), else the net weight', () => {
     expect(quantityOf('COME A CASA LASAGNE BOLOGNESE 400G', 0.42)).toBe('400 g');
     expect(quantityOf('Tymbark pomidor sok 100% 200 ml butelka')).toBe('200 ml');
     expect(quantityOf('Woda mineralna 6x1,5l')).toBe('6 x 1,5 l');
     expect(quantityOf('Makaron 3kg Knorr')).toBe('3 kg');
+    // The EAN and the price are of one can, one portion, the whole box: so is the size.
+    expect(quantityOf('Coca-Cola 6x330ml', 0.33)).toBe('330 ml');
+    expect(quantityOf('Tgq masło porcjowane 10 g x 200 szt.', 0.01)).toBe('10 g');
+    expect(quantityOf('Batony proteinowe 240 g (40 g x 6 szt.)', 0.24)).toBe('240 g');
+    expect(quantityOf('Pierogi 250G X 40SZT', 10)).toBe('40 x 250 g');
     expect(quantityOf('Jaja przepiórcze', 0.15)).toBe('150 g');
     expect(quantityOf('Jaja przepiórcze', null)).toBeNull();
   });

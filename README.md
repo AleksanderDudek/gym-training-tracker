@@ -28,14 +28,14 @@ npm run build      # typecheck + produkcyjny build do dist/ z service workerem (
 npm run preview    # podgląd builda — tu działa też praca offline
 npm run typecheck  # tsc: aplikacja, testy, konfiguracja Vite i skrypty, service worker, filmy demo
 npm run lint       # oxlint
-npm test           # 1579 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, serwer… (vitest)
+npm test           # 1581 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, serwer… (vitest)
 ```
 
 Baza produktów i przepisy:
 
 ```bash
 npm run food:check-recipes  # pokrycie przepisów i ich koszyki sklepów: baza produktów razem z Selgrosem i sklepami internetowymi
-npm run food:selgros        # produkty Selgrosa z wyszukiwarki selgros.pl (Playwright, ok. godziny, przerwany przebieg wznawia)
+npm run food:selgros        # produkty Selgrosa z wyszukiwarki selgros.pl (Playwright, ok. godziny; wznawia, strony starsze niż tydzień czyta ponownie; --fresh od zera)
 npm run food:data           # nowa baza z Open Food Facts i Open Prices (szczegóły w „Jedzenie”)
 ```
 
@@ -777,7 +777,9 @@ opakowania) w domyślnych propozycjach przepisów stoi **po** supermarketach —
 i Makro (OpenStreetMap: `shop=wholesale` z marką). Dane zbiera `npm run food:selgros`: Playwright
 przegląda dział po dziale tak, jak przeglądarka odwiedzającego, i bierze dane, które strona sama
 pobiera — bez wyciągania klucza wyszukiwarki, z przerwą między stronami, zgodnie z `robots.txt`;
-każda strona trafia do `node_modules/.cache/selgros`, więc przerwany przebieg się wznawia. Plik
+każda strona trafia do `node_modules/.cache/selgros`, więc przerwany przebieg się wznawia, a strona
+starsza niż tydzień jest czytana ponownie; data przy cenie to dzień najstarszej strony. Cena
+i gramatura dotyczą tej samej jednostki co EAN (sztuka, zgrzewka albo karton). Plik
 `src/food/chains/data/selgros.json` (jeden produkt w wierszu, adres strony z szablonu i numeru
 artykułu) jedzie w tej samej paczce co sklepy internetowe. Makro nie ma danych: makro.pl odpowiada
 403 każdej automatycznej wizycie.
@@ -1253,7 +1255,7 @@ scripts/food/               przygotowanie bazy produktów (`npm run food:*`, prz
   check-recipes.ts          pokrycie przepisów na dołączonej bazie: kandydaci, sklepy, domyślny wariant
   fetch-selgros.ts          produkty Selgrosa z wyszukiwarki selgros.pl (Playwright, pamięć stron, wznawianie)
   http.ts                   przedstawienie się API Open Food Facts i przerwy między zapytaniami
-  lib/                      przekształcenie wiersza, ceny, sieci sklepów, taksonomie, pisownia, TSV, rekordy Selgrosa — 59 testów
+  lib/                      przekształcenie wiersza, ceny, sieci sklepów, taksonomie, pisownia, TSV, rekordy Selgrosa — 61 testów
 scripts/demo-videos/        filmy demo (`npm run demo:*`): scenariusze potrzeb, nagrywanie przez Playwright, opisy
   record.ts                 build, `vite preview`, ujęcie na scenariusz, MP4 30 kl./s, kontrola 25–45 s, opis i arkusz kadrów
   explore.ts                ekran z danymi demo (drzewo dostępności i zrzut) — do pisania i poprawiania scenariuszy
