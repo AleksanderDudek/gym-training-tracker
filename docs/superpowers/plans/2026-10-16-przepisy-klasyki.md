@@ -43,4 +43,11 @@ it came from.
   - `npm test`;
   - `npm run build`;
   - `npm run food:check-recipes`.
-- [ ] Code review, fixes, commit, local merge into `main` (no push).
+- [x] Code review (subagent) and its fixes:
+  - matcher tests whose rejected products fit the macro bounds, so the name exclusion is tested;
+  - a quark pack is 200 g, an egg 50 g, passata in grams;
+  - more flour in leniwe;
+  - the potrawka sauce is heated, not boiled;
+  - `lang="en"` on an English source title;
+  - sauerkraut in either word order.
+- [x] Commit, local merge into `main` (no push).

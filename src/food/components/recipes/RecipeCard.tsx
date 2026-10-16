@@ -205,7 +205,8 @@ export function RecipeCard({
           <p className="fd-rec-source">
             Na motywach przepisu{' '}
             <a href={recipe.inspiredBy.url} target="_blank" rel="noopener noreferrer">
-              „{recipe.inspiredBy.title}”<span className="sr-only"> (otwiera się w nowej karcie)</span>
+              „<span lang={recipe.inspiredBy.lang}>{recipe.inspiredBy.title}</span>”
+              <span className="sr-only"> (otwiera się w nowej karcie)</span>
             </a>{' '}
             z Książki kucharskiej w Wikibooks (licencja{' '}
             <a href={CC_BY_SA} target="_blank" rel="noopener noreferrer">

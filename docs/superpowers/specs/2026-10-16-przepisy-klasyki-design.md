@@ -32,9 +32,10 @@ sklep online.”
 | --- | --- | --- |
 | What to take | **Classic Polish dishes, reworked into protein recipes**. 16 were chosen from the Wikibooks set: gzik, leniwe, ryba po grecku, bigos, ogórkowa, potrawka, gołąbki, mielone, szaszłyki, sałatka gyros, śledzie, jajka w sosie szczypiorkowym, placki z cukinii, sernik, twaróg z awokado and racuchy | The set is mostly classic home cooking that breaks THE RULE (fat, flour, sugar). A known dish, reworked so it passes, is what the app has been missing. A copy of an existing dish would not pass |
 | Rework | Skyr instead of sour cream and mayonnaise; turkey or chicken instead of pork, bacon and sausage; lean quark; less flour; a sweetener instead of sugar; meat stays in the soup. The amounts, steps and descriptions are our own | THE RULE per serving; ideas and dishes are free to use, while the Wikibooks text is under CC BY-SA |
-| Attribution | `Recipe.inspiredBy {title, url}`. The card ends with „Na motywach przepisu „…” z Książki kucharskiej w Wikibooks (licencja CC BY-SA 4.0)”, with both links opening in a new tab | Honest about the source, as the dataset's README asks. Nothing is fetched from it, so only the CSP navigation list grows |
+| Attribution | `Recipe.inspiredBy {title, url, lang?}`. The card ends with „Na motywach przepisu „…” z Książki kucharskiej w Wikibooks (licencja CC BY-SA 4.0)”, with both links opening in a new tab. A title from the English cookbook carries `lang="en"` (WCAG 3.1.2) | Honest about the source, as the dataset's README asks. Nothing is fetched from it, so only the CSP navigation list grows |
 | Basket philosophy | 15 recipes can be bought in one physical store. 3 of them (ryba po grecku, bigos, gołąbki) are all staples, so „Składniki są w każdym sklepie”. Racuchy use the protein pancake mix from Myprotein, so they are bought in a physical store plus an online shop | This is exactly the rule the user asked to keep, and `food:check-recipes` shows every basket |
-| New ingredients | turkey fillet, white and Peking cabbage, carrot, potato and avocado are staples with no matcher (raw produce and raw meat cannot be told apart from cold cuts or blends in the data). Sauerkraut, brined cucumbers (`brinedCucumber`, „ogórki kiszone”) and wheat flour are staples with matchers. Herring fillets are a staple with a matcher: they are in every Polish chiller, but only Selgros and Auchan have them in the data, so a `store` role would leave śledź with Selgros only. Gelatin is pantry | Same approach as the existing produce; a matcher only where names and macros can separate the plain product from salads, soups, crisps and mixes |
+| New ingredients | turkey fillet, white and Peking cabbage, carrot, potato and avocado are staples with no matcher (raw produce and raw meat cannot be told apart from cold cuts or blends in the data). Sauerkraut (either word order: „kapusta biała kiszona”, „kiszona kapusta”), brined cucumbers (`brinedCucumber`, „ogórki kiszone”) and wheat flour are staples with matchers. Herring fillets are a staple with a matcher: they are in every Polish chiller, but only Selgros and Auchan have them in the data, so a `store` role would leave śledź with Selgros only. Gelatin is pantry | Same approach as the existing produce; a matcher only where names and macros can separate the plain product from salads, soups, crisps and mixes |
+| Measures | A pack of quark is 200 g, as elsewhere in the catalog; an egg is 50 g; passata in grams. Leniwe get enough flour to hold their shape (120 g per 500 g of quark) and still pass THE RULE | A shopper follows the measure, not the grams |
 | Classic group | `CLASSICS` is appended to `RECIPES` after `FROM_ONLINE_SHOPS`, with its own comment on the source | Keeps the catalog readable by origin |
 
 ## Testing
@@ -43,9 +44,9 @@ sklep online.”
   servings, and multi-serving recipes take more than 20 minutes.
 - A test checks that every classic links an https Wikibooks cookbook page (pl or en).
 - Matcher tests for herring, sauerkraut, brined cucumbers, flour and gelatin, each with the
-  products that must stay out. Another test checks that turkey fillet has no matcher.
-- A card test checks the source link, the licence link, the new tab, and that our own recipes
-  have no source line.
+  products that must stay out — with macros inside the bounds, so the name is what keeps them out. Another test checks that turkey fillet has no matcher.
+- Card tests check the source link, the licence link, the new tab, that our own recipes have no
+  source line, and racuchy: bought in Biedronka plus Myprotein, with the English title marked `en`.
 - The CSP test gets the navigation hosts pl.wikibooks.org, en.wikibooks.org and
   creativecommons.org.
 - `npm run food:check-recipes` checks the baskets against real data.

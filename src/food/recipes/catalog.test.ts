@@ -47,6 +47,8 @@ describe('catalog', () => {
       expect(url.protocol, id).toBe('https:');
       expect(url.hostname, id).toMatch(/^(pl|en)\.wikibooks\.org$/);
       expect(url.pathname, id).toMatch(/^\/wiki\/(Ksi%C4%85%C5%BCka_kucharska\/|Cookbook:)/);
+      // A title from the English cookbook is marked as English.
+      expect(inspiredBy!.lang ?? 'pl', id).toBe(url.hostname.split('.')[0]);
     }
   });
 
@@ -324,8 +326,8 @@ describe('ingredient matchers', () => {
     const fillet = { kcal: 175, protein: 16, carbs: 0.5, fat: 12.5 };
     expect(matches('herring', "Filety śledziowe a'la matjas", fillet)).toBe(true);
     expect(matches('herring', 'Matjas podwójny filet ze śledzia', fillet)).toBe(true);
-    expect(matches('herring', 'Filety śledziowe w oleju', { kcal: 280, protein: 14, carbs: 1, fat: 25 })).toBe(false);
-    expect(matches('herring', 'Śledź w śmietanie', { kcal: 190, protein: 13, carbs: 3, fat: 14 })).toBe(false);
+    expect(matches('herring', 'Filety śledziowe w oleju', fillet)).toBe(false);
+    expect(matches('herring', 'Śledź w śmietanie', fillet)).toBe(false);
     expect(matches('herring', 'Sałatka śledziowa', fillet)).toBe(false);
     expect(matches('herring', 'Śledź wędzony', fillet)).toBe(false);
   });
@@ -333,24 +335,24 @@ describe('ingredient matchers', () => {
   test('sauerkraut and brined cucumbers: the vegetable in; a salad, dumplings and crisps out', () => {
     const kraut = { kcal: 19, protein: 1.1, carbs: 3.4, fat: 0.2 };
     expect(matches('sauerkraut', 'Kapusta kiszona z Charsznicy', kraut)).toBe(true);
+    expect(matches('sauerkraut', 'Kapusta biała kiszona', kraut)).toBe(true);
+    expect(matches('sauerkraut', 'Kiszona kapusta', kraut)).toBe(true);
     expect(matches('sauerkraut', 'Surówka z kapusty kiszonej', kraut)).toBe(false);
-    expect(matches('sauerkraut', 'Pierogi z kapustą kiszoną i grzybami', { kcal: 210, protein: 5, carbs: 35, fat: 5 })).toBe(
-      false,
-    );
+    expect(matches('sauerkraut', 'Pierogi z kapustą kiszoną i grzybami', kraut)).toBe(false);
     const cucumber = { kcal: 12, protein: 0.6, carbs: 1.8, fat: 0.1 };
     expect(matches('brinedCucumber', 'Ogórki kiszone', cucumber)).toBe(true);
     expect(matches('brinedCucumber', 'Sałatka z ogórków kiszonych', cucumber)).toBe(false);
-    expect(
-      matches('brinedCucumber', 'Chipsy o smaku ogórków kiszonych', { kcal: 530, protein: 6, carbs: 55, fat: 32 }),
-    ).toBe(false);
+    expect(matches('brinedCucumber', 'Chipsy o smaku ogórków kiszonych', cucumber)).toBe(false);
   });
 
-  test('wheat flour in; a pizza or pancake mix out; gelatin must be nearly all protein', () => {
-    expect(matches('flour', 'Mąka pszenna typ 450', { kcal: 345, protein: 11, carbs: 72, fat: 1.4 })).toBe(true);
-    expect(matches('flour', 'Mąka pszenna do pizzy z drożdżami', { kcal: 350, protein: 12, carbs: 70, fat: 1.5 })).toBe(
-      false,
-    );
-    expect(matches('gelatin', 'Żelatyna wieprzowa', { kcal: 335, protein: 84, carbs: 0, fat: 0.1 })).toBe(true);
-    expect(matches('gelatin', 'Śmietan-fix z żelatyną', { kcal: 380, protein: 8, carbs: 88, fat: 0.5 })).toBe(false);
+  test('wheat flour in; a pizza, pancake or bread mix out; gelatin in, a cream fixer out', () => {
+    const flour = { kcal: 345, protein: 11, carbs: 72, fat: 1.4 };
+    expect(matches('flour', 'Mąka pszenna typ 450', flour)).toBe(true);
+    expect(matches('flour', 'Mąka pszenna do pizzy z drożdżami', flour)).toBe(false);
+    expect(matches('flour', 'Mąka pszenna naleśnikowa', flour)).toBe(false);
+    expect(matches('flour', 'Mąka pszenna mieszanka do chleba', flour)).toBe(false);
+    const gelatin = { kcal: 335, protein: 84, carbs: 0, fat: 0.1 };
+    expect(matches('gelatin', 'Żelatyna wieprzowa', gelatin)).toBe(true);
+    expect(matches('gelatin', 'Żelatyna fix do bitej śmietany', gelatin)).toBe(false);
   });
 });

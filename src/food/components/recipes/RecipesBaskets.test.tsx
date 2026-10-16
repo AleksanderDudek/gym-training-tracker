@@ -46,7 +46,15 @@ const COTTAGE = makeProduct({
   stores: ['biedronka'],
   popularity: 5,
 });
-const DATA: Dataset = { ...DATASET, products: [...DATASET.products, BASE, PEPPERONI, COTTAGE] };
+// Racuchy: skyr z Biedronki (próbki), mieszanka na białkowe naleśniki z Myproteinu.
+const PANCAKE_MIX = makeProduct({
+  code: 'mix',
+  name: 'Mieszanka na Białkowe Naleśniki',
+  nutrition: n(380, 50, 30, 6),
+  stores: ['myprotein'],
+  online: [{ shop: 'myprotein', url: 'https://www.myprotein.pl/p/mix/1', price: 59.99, checked: '2026-10-14' }],
+});
+const DATA: Dataset = { ...DATASET, products: [...DATASET.products, BASE, PEPPERONI, COTTAGE, PANCAKE_MIX] };
 const LOADED: LoadedDataset = { dataset: DATA, products: indexProducts(DATA.products, DATA.dictionaries.brands) };
 
 function cardFor(name: string): HTMLElement {
@@ -92,6 +100,19 @@ describe('Przepisy z produktami sklepów internetowych', () => {
 
     const kabanosy = cardFor('Roślinne kabanosy i serek wiejski');
     expect(within(kabanosy).getByText(/Kupisz w 2 sklepach: Biedronka \+/)).toBeInTheDocument();
+  });
+
+  test('klasyk z produktem ze sklepu internetowego: sklep i zamówienie, a angielski tytuł źródła po angielsku', async () => {
+    render(<RecipesPage />);
+    await screen.findByRole('heading', { level: 2, name: 'Przepisy białkowe' });
+    const racuchy = cardFor('Białkowe racuchy z jabłkami');
+    expect(within(racuchy).getByText(/Kupisz w 2 sklepach: Biedronka \+/)).toBeInTheDocument();
+    expect(within(racuchy).getByText('(sklep internetowy)')).toBeInTheDocument();
+    expect(within(racuchy).getByText('Racuszki (Polish Pancakes)')).toHaveAttribute('lang', 'en');
+    expect(within(racuchy).getByRole('link', { name: /Racuszki/ })).toHaveAttribute(
+      'href',
+      'https://en.wikibooks.org/wiki/Cookbook:Racuszki_(Polish_Pancakes)',
+    );
   });
 
   test('„Według sklepów” zbiera przepisy w plany zakupów, a układ stoi w adresie', async () => {

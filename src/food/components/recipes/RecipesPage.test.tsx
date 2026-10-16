@@ -190,6 +190,7 @@ describe('Przepisy', () => {
       'href',
       'https://creativecommons.org/licenses/by-sa/4.0/deed.pl',
     );
+    expect(within(card).getByText('Ryba po grecku')).not.toHaveAttribute('lang');
     // Własne przepisy aplikacji nie mają źródła.
     expect(within(cardFor('Chili z indyka')).queryByText(/Na motywach/)).not.toBeInTheDocument();
   });

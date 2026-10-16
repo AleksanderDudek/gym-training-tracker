@@ -33,8 +33,11 @@ export interface Recipe {
   steps: string[];
   /** How many people it feeds; 1 when absent. Home cooking is often for two or for the week. */
   servings?: number;
-  /** The open cookbook page a classic was reworked from (title and https address); the card links it. */
-  inspiredBy?: { title: string; url: string };
+  /**
+   * The open cookbook page a classic was reworked from (title and https address); the card links it.
+   * `lang` marks a title that is not Polish, so a screen reader reads it in its own language.
+   */
+  inspiredBy?: { title: string; url: string; lang?: string };
 }
 
 export function servingsOf(recipe: Recipe): number {
@@ -464,8 +467,11 @@ const FROM_ONLINE_SHOPS: Recipe[] = [
   },
 ];
 
-/** A Wikibooks cookbook page a classic was reworked from. */
-const wikibooks = (title: string, url: string) => ({ title, url });
+/** A Wikibooks cookbook page a classic was reworked from; a title in another language than Polish says so. */
+function wikibooks(title: string, url: string): NonNullable<Recipe['inspiredBy']> {
+  const lang = new URL(url).hostname.split('.')[0]!;
+  return lang === 'pl' ? { title, url } : { title, url, lang };
+}
 
 /**
  * Polish classics reworked to be high-protein, inspired by the open cookbook on Wikibooks
@@ -485,7 +491,7 @@ const CLASSICS: Recipe[] = [
       'Wielkopolska klasyka: ziemniaki w mundurkach i gzik – chudy twaróg rozrobiony skyrem zamiast śmietany, z rzodkiewką, cebulką i szczypiorem.',
     inspiredBy: wikibooks('Gzik', 'https://pl.wikibooks.org/wiki/Ksi%C4%85%C5%BCka_kucharska/Gzik'),
     items: [
-      { ingredient: 'potato', grams: 350, measure: '4 średnie ziemniaki' },
+      { ingredient: 'potato', grams: 350, measure: '3–4 ziemniaki' },
       { ingredient: 'quark', grams: 400, measure: '2 kostki' },
       { ingredient: 'skyr', grams: 150, measure: '1 mały kubek' },
       { ingredient: 'radish', grams: 100, measure: 'pęczek' },
@@ -512,13 +518,13 @@ const CLASSICS: Recipe[] = [
     items: [
       { ingredient: 'quark', grams: 500, measure: '2 i pół kostki' },
       { ingredient: 'egg', grams: 100, measure: '2 jajka' },
-      { ingredient: 'flour', grams: 80, measure: 'pół szklanki' },
+      { ingredient: 'flour', grams: 120, measure: '3/4 szklanki' },
       { ingredient: 'skyr', grams: 150, measure: '1 mały kubek' },
       { ingredient: 'cinnamon', grams: 2, measure: 'szczypta' },
       { ingredient: 'saltPepper', grams: 1, measure: 'szczypta soli' },
     ],
     steps: [
-      'Zmiel albo dokładnie rozgnieć twaróg, wbij jajka, dodaj szczyptę soli i mąkę. Zagnieć krótko – im krócej, tym leniwe delikatniejsze.',
+      'Zmiel albo dokładnie rozgnieć twaróg, wbij jajka, dodaj szczyptę soli i mąkę. Zagnieć krótko – im krócej, tym leniwe delikatniejsze. Jeśli ciasto klei się do rąk, dosyp łyżkę mąki.',
       'Podziel ciasto na 3–4 części, z każdej uformuj wałek grubości kciuka, lekko spłaszcz i pokrój ukośnie na kluski.',
       'Wrzucaj partiami do osolonego wrzątku, a gdy wypłyną, gotuj jeszcze 2 minuty. Wyjmuj łyżką cedzakową.',
       'Podawaj ze skyrem i cynamonem.',
@@ -538,7 +544,7 @@ const CLASSICS: Recipe[] = [
       { ingredient: 'whiteFish', grams: 600, measure: '600 g filetów' },
       { ingredient: 'carrot', grams: 300, measure: '3 marchewki' },
       { ingredient: 'onion', grams: 150, measure: '1 duża cebula' },
-      { ingredient: 'passata', grams: 300, measure: 'ok. 1/3 butelki' },
+      { ingredient: 'passata', grams: 300, measure: '300 g' },
       { ingredient: 'oil', grams: 15, measure: '1,5 łyżki' },
       { ingredient: 'spices', grams: 4, measure: 'liść laurowy, 3 ziela angielskie, papryka słodka' },
       { ingredient: 'saltPepper', grams: 2, measure: 'do smaku' },
@@ -566,7 +572,7 @@ const CLASSICS: Recipe[] = [
       { ingredient: 'whiteCabbage', grams: 400, measure: 'ćwierć główki' },
       { ingredient: 'mushrooms', grams: 300, measure: '1 opakowanie' },
       { ingredient: 'onion', grams: 150, measure: '1 duża cebula' },
-      { ingredient: 'passata', grams: 200, measure: 'ok. 1/4 butelki' },
+      { ingredient: 'passata', grams: 200, measure: '200 g' },
       { ingredient: 'spices', grams: 6, measure: 'liść laurowy, ziele angielskie, majeranek, papryka wędzona' },
       { ingredient: 'oil', grams: 15, measure: '1,5 łyżki' },
       { ingredient: 'water', grams: 300, measure: 'półtorej szklanki' },
@@ -632,7 +638,7 @@ const CLASSICS: Recipe[] = [
     steps: [
       'Kurczaka pokrój w kostkę i obsmaż krótko na oleju. Dodaj cebulę, marchew w plasterkach i pokrojone pieczarki.',
       'Wlej wodę, przykryj i duś na małym ogniu 20 minut.',
-      'Skyr wymieszaj z mąką ziemniaczaną i chochlą sosu, wlej do garnka i zagotuj, mieszając, aż sos zgęstnieje.',
+      'Zmniejsz ogień. Skyr wymieszaj z mąką ziemniaczaną i chochlą sosu, wlej do garnka i podgrzewaj, mieszając, aż sos zgęstnieje – skrobia nie pozwoli mu się zwarzyć.',
       'Dopraw solą i pieprzem, posyp koperkiem.',
     ],
   },
@@ -797,7 +803,7 @@ const CLASSICS: Recipe[] = [
       'https://pl.wikibooks.org/wiki/Ksi%C4%85%C5%BCka_kucharska/Jajka_w_sosie_szczypiorkowym',
     ),
     items: [
-      { ingredient: 'egg', grams: 360, measure: '6 jajek' },
+      { ingredient: 'egg', grams: 300, measure: '6 jajek' },
       { ingredient: 'skyr', grams: 200, measure: '1 kubek' },
       { ingredient: 'chives', grams: 20, measure: 'pęczek' },
       { ingredient: 'lemon', grams: 10, measure: 'łyżeczka soku' },
@@ -821,7 +827,7 @@ const CLASSICS: Recipe[] = [
     inspiredBy: wikibooks('Placki z cukinii', 'https://pl.wikibooks.org/wiki/Ksi%C4%85%C5%BCka_kucharska/Placki_z_cukinii'),
     items: [
       { ingredient: 'zucchini', grams: 500, measure: '1 duża cukinia' },
-      { ingredient: 'quark', grams: 250, measure: '1 kostka' },
+      { ingredient: 'quark', grams: 200, measure: '1 kostka' },
       { ingredient: 'egg', grams: 100, measure: '2 jajka' },
       { ingredient: 'flour', grams: 40, measure: '4 łyżki' },
       { ingredient: 'dill', grams: 15, measure: 'garść' },
@@ -847,7 +853,7 @@ const CLASSICS: Recipe[] = [
       'Sernik na zimno z chudego twarogu i skyru na żelatynie, z truskawkami. Bez spodu z biszkoptów, masła i cukru – słodzik zamiast cukru pudru.',
     inspiredBy: wikibooks('Sernik truskawkowy', 'https://pl.wikibooks.org/wiki/Ksi%C4%85%C5%BCka_kucharska/Sernik_truskawkowy'),
     items: [
-      { ingredient: 'quark', grams: 750, measure: '3 kostki' },
+      { ingredient: 'quark', grams: 800, measure: '4 kostki' },
       { ingredient: 'skyr', grams: 300, measure: '2 kubki' },
       { ingredient: 'gelatin', grams: 25, measure: '2,5 łyżki' },
       { ingredient: 'strawberries', grams: 400, measure: '2 szklanki' },
@@ -873,7 +879,7 @@ const CLASSICS: Recipe[] = [
       'Kremowa pasta z chudego twarogu i awokado z podsmażonymi pieczarkami i cebulką. Do kanapek albo prosto z miski.',
     inspiredBy: wikibooks('Twaróg z awokado', 'https://pl.wikibooks.org/wiki/Ksi%C4%85%C5%BCka_kucharska/Twar%C3%B3g_z_awokado'),
     items: [
-      { ingredient: 'quark', grams: 250, measure: '1 kostka' },
+      { ingredient: 'quark', grams: 200, measure: '1 kostka' },
       { ingredient: 'avocado', grams: 150, measure: '1 dojrzałe awokado' },
       { ingredient: 'mushrooms', grams: 150, measure: '8 pieczarek' },
       { ingredient: 'onion', grams: 50, measure: 'pół cebuli' },

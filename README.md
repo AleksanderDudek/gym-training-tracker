@@ -28,7 +28,7 @@ npm run build      # typecheck + produkcyjny build do dist/ z service workerem (
 npm run preview    # podgląd builda — tu działa też praca offline
 npm run typecheck  # tsc: aplikacja, testy, konfiguracja Vite i skrypty, service worker, filmy demo
 npm run lint       # oxlint
-npm test           # 1634 testy: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, serwer… (vitest)
+npm test           # 1635 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, serwer… (vitest)
 ```
 
 Baza produktów i przepisy:
@@ -808,7 +808,8 @@ z indykiem, mielone z mizerią, szaszłyki z tzatziki, sałatka gyros, śledź w
 szczypiorkowym, placki z cukinii z twarogiem, sernik na zimno bez cukru, pasta z twarogu
 z awokado i białkowe racuchy z jabłkami. Z Wikibooks pochodzi danie i jego pomysł; ilości, zamiany
 (skyr zamiast śmietany, indyk zamiast wieprzowiny, chudy twaróg, słodzik zamiast cukru) i tekst są
-własne, a karta kończy się odnośnikiem „Na motywach przepisu …” do strony w Wikibooks i licencji.
+własne, a karta kończy się odnośnikiem „Na motywach przepisu …” do strony w Wikibooks i licencji
+(tytuł z angielskiej książki kucharskiej ma `lang="en"`).
 Każdy trzyma zasadę na porcję i ma koszyk jak reszta: piętnaście kupisz w jednym sklepie
 stacjonarnym (ryba po grecku, bigos i gołąbki — w każdym), racuchy w sklepie i sklepie
 internetowym (mieszanka na białkowe naleśniki z Myproteina). Nowe składniki: filet z indyka,

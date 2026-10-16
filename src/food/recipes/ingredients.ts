@@ -698,7 +698,7 @@ const DEFINITIONS = {
     role: 'staple',
     typical: { kcal: 19, protein: 1.1, carbs: 3.4, fat: 0.2 },
     match: (p) =>
-      /\bkapust\w* kiszon\w*/.test(nameOf(p)) &&
+      /\b(kapust\w*( \w+)? kiszon\w*|kiszon\w* kapust\w*)/.test(nameOf(p)) &&
       !/\b(salatk\w*|surowk\w*|bigos\w*|pierog\w*|krokiet\w*)\b/.test(nameOf(p)) &&
       within(p, { kcal: [8, 40], carbs: [0, 7], fat: [0, 1] }),
   },
