@@ -137,6 +137,10 @@
 .fd-rec-steps li{margin:0 0 4px}
 @media (prefers-reduced-motion:no-preference){.fd-rec-steps-caret{transition:transform .15s ease-out}}
 
+/* Źródło pomysłu (klasyki z Wikibooks): podpis pod przepisem. */
+.fd-rec-source{margin:2px 0 0;font-size:12px;line-height:1.45;color:var(--ink-soft)}
+.fd-rec-source a{color:var(--steel);text-decoration:underline}
+
 /* ---------------- Arkusz zamiany ---------------- */
 
 .fd-rec-swap{min-width:0;margin:0;padding:0;border:0}

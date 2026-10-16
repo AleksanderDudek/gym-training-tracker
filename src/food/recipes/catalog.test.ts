@@ -38,6 +38,18 @@ describe('catalog', () => {
     },
   );
 
+  test('a classic links the Wikibooks cookbook page it was reworked from, over https', () => {
+    const classics = RECIPES.filter((r) => r.inspiredBy);
+    expect(classics.length).toBeGreaterThanOrEqual(16);
+    for (const { id, inspiredBy } of classics) {
+      expect(inspiredBy!.title.trim(), id).not.toBe('');
+      const url = new URL(inspiredBy!.url);
+      expect(url.protocol, id).toBe('https:');
+      expect(url.hostname, id).toMatch(/^(pl|en)\.wikibooks\.org$/);
+      expect(url.pathname, id).toMatch(/^\/wiki\/(Ksi%C4%85%C5%BCka_kucharska\/|Cookbook:)/);
+    }
+  });
+
   test('a recipe that is not a gotowiec still meets THE RULE, a gotowiec the protein floor', () => {
     const banana = { kcal: 330, protein: 16, carbs: 50, fat: 8 };
     expect(passesRule({ kind: 'gotowiec' }, banana)).toBe(true);
@@ -305,5 +317,40 @@ describe('ingredient matchers', () => {
   test('raw chicken and lean beef have no matcher: the data cannot tell them from cold cuts', () => {
     expect(INGREDIENTS.chickenFillet.match).toBeUndefined();
     expect(INGREDIENTS.leanBeef.match).toBeUndefined();
+    expect(INGREDIENTS.turkeyFillet.match).toBeUndefined();
+  });
+
+  test('herring: plain or matjas fillets in; herring in oil or cream, a salad and smoked herring out', () => {
+    const fillet = { kcal: 175, protein: 16, carbs: 0.5, fat: 12.5 };
+    expect(matches('herring', "Filety śledziowe a'la matjas", fillet)).toBe(true);
+    expect(matches('herring', 'Matjas podwójny filet ze śledzia', fillet)).toBe(true);
+    expect(matches('herring', 'Filety śledziowe w oleju', { kcal: 280, protein: 14, carbs: 1, fat: 25 })).toBe(false);
+    expect(matches('herring', 'Śledź w śmietanie', { kcal: 190, protein: 13, carbs: 3, fat: 14 })).toBe(false);
+    expect(matches('herring', 'Sałatka śledziowa', fillet)).toBe(false);
+    expect(matches('herring', 'Śledź wędzony', fillet)).toBe(false);
+  });
+
+  test('sauerkraut and brined cucumbers: the vegetable in; a salad, dumplings and crisps out', () => {
+    const kraut = { kcal: 19, protein: 1.1, carbs: 3.4, fat: 0.2 };
+    expect(matches('sauerkraut', 'Kapusta kiszona z Charsznicy', kraut)).toBe(true);
+    expect(matches('sauerkraut', 'Surówka z kapusty kiszonej', kraut)).toBe(false);
+    expect(matches('sauerkraut', 'Pierogi z kapustą kiszoną i grzybami', { kcal: 210, protein: 5, carbs: 35, fat: 5 })).toBe(
+      false,
+    );
+    const cucumber = { kcal: 12, protein: 0.6, carbs: 1.8, fat: 0.1 };
+    expect(matches('brinedCucumber', 'Ogórki kiszone', cucumber)).toBe(true);
+    expect(matches('brinedCucumber', 'Sałatka z ogórków kiszonych', cucumber)).toBe(false);
+    expect(
+      matches('brinedCucumber', 'Chipsy o smaku ogórków kiszonych', { kcal: 530, protein: 6, carbs: 55, fat: 32 }),
+    ).toBe(false);
+  });
+
+  test('wheat flour in; a pizza or pancake mix out; gelatin must be nearly all protein', () => {
+    expect(matches('flour', 'Mąka pszenna typ 450', { kcal: 345, protein: 11, carbs: 72, fat: 1.4 })).toBe(true);
+    expect(matches('flour', 'Mąka pszenna do pizzy z drożdżami', { kcal: 350, protein: 12, carbs: 70, fat: 1.5 })).toBe(
+      false,
+    );
+    expect(matches('gelatin', 'Żelatyna wieprzowa', { kcal: 335, protein: 84, carbs: 0, fat: 0.1 })).toBe(true);
+    expect(matches('gelatin', 'Śmietan-fix z żelatyną', { kcal: 380, protein: 8, carbs: 88, fat: 0.5 })).toBe(false);
   });
 });

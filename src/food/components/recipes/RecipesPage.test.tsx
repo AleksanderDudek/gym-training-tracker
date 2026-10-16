@@ -177,6 +177,23 @@ describe('Przepisy', () => {
     expect(within(cardFor('Białko z wodą')).queryByText(/na porcję/)).not.toBeInTheDocument();
   });
 
+  test('klasyk podaje stronę w Wikibooks, na której motywach powstał, i jej licencję', async () => {
+    render(<RecipesPage />);
+    await pageReady();
+    const card = cardFor('Ryba po grecku z dorszem');
+    expect(within(card).getByText(/Na motywach przepisu/)).toBeInTheDocument();
+    const source = within(card).getByRole('link', { name: /„Ryba po grecku”/ });
+    expect(source).toHaveAttribute('href', 'https://pl.wikibooks.org/wiki/Ksi%C4%85%C5%BCka_kucharska/Ryba_po_grecku');
+    expect(source).toHaveAttribute('target', '_blank');
+    expect(source).toHaveAttribute('rel', 'noopener noreferrer');
+    expect(within(card).getByRole('link', { name: /CC BY-SA 4\.0/ })).toHaveAttribute(
+      'href',
+      'https://creativecommons.org/licenses/by-sa/4.0/deed.pl',
+    );
+    // Własne przepisy aplikacji nie mają źródła.
+    expect(within(cardFor('Chili z indyka')).queryByText(/Na motywach/)).not.toBeInTheDocument();
+  });
+
   test('najpierw szybkie, dalej według czasu', async () => {
     render(<RecipesPage />);
     const list = await screen.findByRole('region', { name: 'Przepisy białkowe' });
