@@ -5,8 +5,8 @@ wyniki, a silnik sam decyduje, kiedy podnieść powtórzenia i kiedy wejść na 
 Atlas obejmuje 114 ćwiczeń: kettlebell, sztanga, hantle, maszyny i kalistenika — 30 z nich zrobisz bez żadnego sprzętu.
 Trening idzie część po części z zegarem w pasku, a zakładka Jedzenie dokłada dziennik jedzenia
 z dietą, która nagina się do tego, co naprawdę zjedzone, białkowe przepisy i gotowce bez naczyń,
-własne zestawy, ponad 32 tysiące produktów sprzedawanych w Polsce (także w dziesięciu sklepach
-internetowych), menu 18 sieci gastronomicznych i sklepy w pobliżu.
+własne zestawy, prawie 40 tysięcy produktów sprzedawanych w Polsce (także w dziesięciu sklepach
+internetowych i w halach Selgros), menu 18 sieci gastronomicznych i sklepy w pobliżu.
 
 React 19 + TypeScript 6 + Vite 8, aplikacja do zainstalowania z własnym service workerem
 (vite-plugin-pwa). Bez backendu — dane leżą w przeglądarce (trening w `localStorage`, dziennik
@@ -28,13 +28,14 @@ npm run build      # typecheck + produkcyjny build do dist/ z service workerem (
 npm run preview    # podgląd builda — tu działa też praca offline
 npm run typecheck  # tsc: aplikacja, testy, konfiguracja Vite i skrypty, service worker, filmy demo
 npm run lint       # oxlint
-npm test           # 1555 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, serwer… (vitest)
+npm test           # 1581 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, serwer… (vitest)
 ```
 
 Baza produktów i przepisy:
 
 ```bash
-npm run food:check-recipes  # pokrycie przepisów i ich koszyki sklepów: baza produktów razem ze sklepami internetowymi
+npm run food:check-recipes  # pokrycie przepisów i ich koszyki sklepów: baza produktów razem z Selgrosem i sklepami internetowymi
+npm run food:selgros        # produkty Selgrosa z wyszukiwarki selgros.pl (Playwright, ok. godziny; wznawia, strony starsze niż tydzień czyta ponownie; --fresh od zera)
 npm run food:data           # nowa baza z Open Food Facts i Open Prices (szczegóły w „Jedzenie”)
 ```
 
@@ -701,7 +702,7 @@ składniki naraz, z przełączaniem na inny; każdy składnik da się zamienić 
 samego sklepu, a zamiana łamiąca zasadę jest oznaczona. Niżej gotowe produkty spełniające zasadę
 na 100 g.
 
-**Produkty** (`#/produkty`): ok. 29 tysięcy produktów sprzedawanych w Polsce — zdjęcia, wartości
+**Produkty** (`#/produkty`): prawie 40 tysięcy produktów sprzedawanych w Polsce (29 tysięcy z Open Food Facts, reszta ze sklepów internetowych i z Selgrosa) — zdjęcia, wartości
 odżywcze, skład, alergeny, dodatki, Nutri-Score, NOVA, Eco-Score i ceny. Karty albo tabela,
 sortowanie po każdej wartości, filtry z licznikami w arkuszu („Pokaż N produktów”), wyszukiwanie
 po nazwie, marce i kodzie kreskowym bez względu na polskie znaki. Cały stan ekranu stoi w adresie
@@ -756,6 +757,32 @@ stoi w `inconsistent` — produkt zostaje z liczbami sklepu, szczegóły o tym m
 i gotowych produktów białkowych nie trafia. Paczka (`shopData`, ok. 295 kB po kompresji) ładuje się
 razem z bazą produktów i jak ona nie wchodzi do instalacji aplikacji: service worker zapisuje jedną
 kopię przy pierwszym wejściu w Jedzenie. Gdy się nie wczyta, baza przychodzi bez niej.
+
+**Selgros**: produkty sieci hal Selgros (cash & carry) — 9931 produktów spożywczych z wyszukiwarki
+na selgros.pl (`/znajdz-produkt`): nazwa, marka, EAN, wartości odżywcze na 100 g, alergeny i cena
+regularna z jednej hali (Kraków), z datą. To sklep stacjonarny, nie internetowy: produkt dostaje
+Selgros jako sklep (filtr sklepu, przepisy „Wszystko kupisz w: Selgros”, „W pobliżu”), cenę
+„Selgros, Kraków” i odnośnik „Karta produktu w sieci” do strony produktu na selgros.pl — bez oferty
+„kup przez internet”. Łączenie po EAN: 2698 produktów było już w Open Food Facts i zostają sobą
+(nazwa, zdjęcia, Nutri-Score, cena z Open Prices), dostając Selgros jako sklep i odnośnik; 7233 są
+nowe, więc baza rośnie do 39 497 produktów, a 833 z nich ma co najmniej 20 g białka w 100 g. Do bazy
+trafiają tylko produkty z prawidłowym EAN-em i pełną, możliwą etykietą (kcal, białko, węglowodany,
+tłuszcz; cukry nie więcej niż węglowodany, nasycone nie więcej niż tłuszcz); etykieta, w której
+energia nie zgadza się z makro, stoi w `inconsistent` (179) — jak w sklepach internetowych.
+Kategorie Selgrosa („Nabiał/Sery białe”) zamieniają się w tagi Open Food Facts z rodzicami, więc
+filtry i dopasowania przepisów traktują produkt jak każdy inny; nazwy z wielkich liter zamieniają
+się w zdania, a marka w nazwie zachowuje pisownię. Hala hurtowa (karta klienta, często duże
+opakowania) w domyślnych propozycjach przepisów stoi **po** supermarketach — wybrana wprost
+(filtr, „W pobliżu”, profil diety) działa jak każdy sklep. „W pobliżu” szuka też hal Selgros
+i Makro (OpenStreetMap: `shop=wholesale` z marką). Dane zbiera `npm run food:selgros`: Playwright
+przegląda dział po dziale tak, jak przeglądarka odwiedzającego, i bierze dane, które strona sama
+pobiera — bez wyciągania klucza wyszukiwarki, z przerwą między stronami, zgodnie z `robots.txt`;
+każda strona trafia do `node_modules/.cache/selgros`, więc przerwany przebieg się wznawia, a strona
+starsza niż tydzień jest czytana ponownie; data przy cenie to dzień najstarszej strony. Cena
+i gramatura dotyczą tej samej jednostki co EAN (sztuka, zgrzewka albo karton). Plik
+`src/food/chains/data/selgros.json` (jeden produkt w wierszu, adres strony z szablonu i numeru
+artykułu) jedzie w tej samej paczce co sklepy internetowe. Makro nie ma danych: makro.pl odpowiada
+403 każdej automatycznej wizycie.
 
 **Przepisy z produktów sklepów internetowych i zakupy w jak najmniej sklepach.** Czternaście
 przepisów zbudowanych na tym, co sprzedają sklepy internetowe — naleśniki z białkowej mieszanki,
@@ -1167,9 +1194,10 @@ src/
     food.css                miejsce na style wspólne całej zakładce; obszary mają arkusze obok swoich stron
     *.test.ts(x)            33 testy karty Dziś, kopii i resetu, arkuszy bez zderzeń klas, bazy produktów i hasha
     lib/                    produkty: filtry, fasety, sortowanie, wyszukiwanie bez względu na ogonki, stan w adresie, formaty, opakowania — 51 testów
-    recipes/                przepisy białkowe i gotowce: katalog, składniki, koszyki sklepów i grupowanie, zamiany, progi, makro, gotowe produkty — 266 testów
+    recipes/                przepisy białkowe i gotowce: katalog, składniki, koszyki sklepów i grupowanie, zamiany, progi, makro, gotowe produkty, hale po supermarketach — 267 testów
     online/                 sklepy internetowe: rejestr, dane sklepów (`data/*.json`), scalanie z bazą po EAN, kontrola liczb — 36 testów
-    nearby/                 w pobliżu: odległości, zapytanie do Overpass z zapasowym serwerem, kopia na dobę, promień — 33 testy
+    chains/                 sieci z własnymi danymi (Selgros): rejestr, dane (`data/*.json`), scalanie po EAN bez oferty online, kontrola liczb — 10 testów
+    nearby/                 w pobliżu: odległości, zapytanie do Overpass (z halami Selgros i Makro) z zapasowym serwerem, kopia na dobę, promień — 33 testy
     diet/                   dieta: baza Dexie (`produkty-pl-dieta`, wersja 3 z zestawami i ulubionymi), model energii, sposoby odżywiania, dzień, plan z Excela, zestawy, ulubione, wyszukiwanie, podpowiedzi — 133 testów
     restaurants/            lokale: dane sieci (`data/*.json`), kontrola liczb, wyszukiwanie, kolejność, „Najwięcej białka”, stan w adresie — 101 testów
     hooks/                  baza produktów, menu lokali, dieta na żywo i scalona z treningiem, stan w adresie, lokalizacja, sklepy w pobliżu — 22 testy
@@ -1179,7 +1207,7 @@ src/
     components/nearby/      „W pobliżu”: mapa Leaflet, promień, sklepy i przepisy z nich
     components/diet/        dziennik, plan posiłków, postęp, profil diety, pierwsze kroki, wybór jedzenia i zestawy, import z Excela
     components/restaurants/ Lokale: lista sieci z wyszukiwaniem, menu sieci, karta pozycji z dodaniem do dziennika
-    components/**/*.test.tsx 119 testów stron pod jsdom — przez role i etykiety, nie znaczniki
+    components/**/*.test.tsx 123 testy stron pod jsdom — przez role i etykiety, nie znaczniki
     test/                   dane do testów: produkty, most do treningu, arkusz Excela
   api.ts                    adres serwera aplikacji z buildu (`VITE_API_URL`)
   push.ts                   przypomnienia w przeglądarce: zgoda, subskrypcja Web Push, wysyłka listy
@@ -1225,8 +1253,9 @@ scripts/food/               przygotowanie bazy produktów (`npm run food:*`, prz
   extract-priced.ts         produkty z ceną w PLN z pełnego zrzutu — połowy brakuje w wyciągu „en:poland”
   prepare-data.ts           złożenie `data/food/products.json.gz` z wyciągu, cen i taksonomii
   check-recipes.ts          pokrycie przepisów na dołączonej bazie: kandydaci, sklepy, domyślny wariant
+  fetch-selgros.ts          produkty Selgrosa z wyszukiwarki selgros.pl (Playwright, pamięć stron, wznawianie)
   http.ts                   przedstawienie się API Open Food Facts i przerwy między zapytaniami
-  lib/                      przekształcenie wiersza, ceny, sieci sklepów, taksonomie, pisownia, TSV — 51 testów
+  lib/                      przekształcenie wiersza, ceny, sieci sklepów, taksonomie, pisownia, TSV, rekordy Selgrosa — 61 testów
 scripts/demo-videos/        filmy demo (`npm run demo:*`): scenariusze potrzeb, nagrywanie przez Playwright, opisy
   record.ts                 build, `vite preview`, ujęcie na scenariusz, MP4 30 kl./s, kontrola 25–45 s, opis i arkusz kadrów
   explore.ts                ekran z danymi demo (drzewo dostępności i zrzut) — do pisania i poprawiania scenariuszy

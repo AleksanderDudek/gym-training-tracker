@@ -1,4 +1,5 @@
 import { packGrams } from '../lib/quantity';
+import { CASH_AND_CARRY } from '../lib/stores';
 import type { IndexedProduct } from '../lib/types';
 import { isOnlineShop } from '../online/shops';
 import { RECIPES, passesRule, servingsOf, type Recipe, type RecipeItem } from './catalog';
@@ -216,7 +217,12 @@ export function storeRanking(recipes: Recipe[], candidates: Candidates): string[
     for (const store of availableStores(recipe, candidates, [...stores]))
       counts.set(store, (counts.get(store) ?? 0) + 1);
   }
-  return [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([store]) => store);
+  // Supermarkets first, cash & carry halls after them: a hall covers a lot, but it is nobody's
+  // default shop.
+  const hall = (store: string) => (CASH_AND_CARRY.has(store) ? 1 : 0);
+  return [...counts]
+    .sort((a, b) => hall(a[0]) - hall(b[0]) || b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([store]) => store);
 }
 
 /**

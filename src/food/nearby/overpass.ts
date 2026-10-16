@@ -24,10 +24,21 @@ export class OverpassUnavailable extends Error {
   }
 }
 
+/**
+ * Cash & carry halls of the chains with product data (OpenStreetMap tags them `shop=wholesale`):
+ * named by brand, so a builders' merchant or a furniture wholesaler stays out.
+ */
+const WHOLESALE_BRANDS = ['Selgros', 'Makro'];
+
 /** Food shops around a point; `out center` gives buildings (ways) a position too. */
 export function buildQuery(center: LatLon, radius: number): string {
   const around = `around:${Math.round(radius)},${center.lat},${center.lon}`;
-  return `[out:json][timeout:25];nwr["shop"~"^(${SHOP_TYPES.join('|')})$"](${around});out center tags;`;
+  return (
+    `[out:json][timeout:25];(` +
+    `nwr["shop"~"^(${SHOP_TYPES.join('|')})$"](${around});` +
+    `nwr["shop"="wholesale"]["brand"~"^(${WHOLESALE_BRANDS.join('|')})",i](${around});` +
+    `);out center tags;`
+  );
 }
 
 interface Element {

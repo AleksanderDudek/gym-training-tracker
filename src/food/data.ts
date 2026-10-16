@@ -2,6 +2,8 @@ import { gunzipSync } from 'fflate';
 import foodData from 'virtual:food-data';
 import { indexProducts } from './lib/search';
 import type { Dataset, IndexedProduct } from './lib/types';
+import { mergeChains } from './chains/merge';
+import type { ChainData } from './chains/types';
 import { mergeOnline } from './online/merge';
 import type { ShopData } from './online/types';
 
@@ -28,14 +30,14 @@ export async function inflate(bytes: Uint8Array<ArrayBuffer>): Promise<string> {
 }
 
 /**
- * Produkty sklepów internetowych — osobna paczka, wczytywana razem z bazą. Gdy się nie wczyta
- * (np. offline przed pierwszym zapisaniem paczki), baza przychodzi bez nich: to dodatek, nie powód,
- * żeby nie pokazać 29 tysięcy produktów.
+ * Produkty sklepów internetowych i sieci z własnymi danymi (Selgros) — osobna paczka, wczytywana
+ * razem z bazą. Gdy się nie wczyta (np. offline przed pierwszym zapisaniem paczki), baza przychodzi
+ * bez nich: to dodatek, nie powód, żeby nie pokazać 29 tysięcy produktów.
  */
-function loadShops(): Promise<ShopData[]> {
+function loadShops(): Promise<{ shops: ShopData[]; chains: ChainData[] }> {
   return import('./online/shopData').then(
-    (m) => m.SHOPS,
-    () => [],
+    (m) => ({ shops: m.SHOPS, chains: m.CHAIN_DATA }),
+    () => ({ shops: [], chains: [] }),
   );
 }
 
@@ -56,8 +58,17 @@ async function fetchDataset(): Promise<LoadedDataset> {
   } catch {
     throw new Error('Dane produktów są uszkodzone.');
   }
+  const extra = await shops;
+  // Najpierw sieci stacjonarne (ich produkty łączą się z bazą po EAN), potem sklepy internetowe —
+  // produkt z obu dostaje i sieć, i ofertę sklepu.
   try {
-    dataset = mergeOnline(dataset, await shops);
+    dataset = mergeChains(dataset, extra.chains);
+  } catch (error) {
+    // Uszkodzony plik sieci nie może zabrać 29 tysięcy produktów — baza przychodzi bez niej.
+    console.warn('Produkty sieci pominięte:', error);
+  }
+  try {
+    dataset = mergeOnline(dataset, extra.shops);
   } catch (error) {
     // Uszkodzony plik sklepu nie może zabrać 29 tysięcy produktów — baza przychodzi bez sklepów.
     console.warn('Produkty sklepów internetowych pominięte:', error);

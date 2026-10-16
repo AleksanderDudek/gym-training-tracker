@@ -11,8 +11,8 @@ const meta = vi.hoisted(() => ({
 }));
 vi.mock('virtual:food-data', () => ({ default: meta }));
 
-// Sklepy internetowe z próbki zamiast prawdziwych plików: liczby produktów w testach zostają stałe.
-const online = vi.hoisted(() => ({ SHOPS: [] as unknown[] }));
+// Sklepy internetowe i sieci z próbki zamiast prawdziwych plików: liczby produktów w testach zostają stałe.
+const online = vi.hoisted(() => ({ SHOPS: [] as unknown[], CHAIN_DATA: [] as unknown[] }));
 vi.mock('./online/shopData', () => online);
 
 const TEXT = JSON.stringify(DATASET);
@@ -28,6 +28,7 @@ async function load() {
 beforeEach(() => {
   meta.url = 'data/products.abc123def456.json.gz';
   online.SHOPS = [];
+  online.CHAIN_DATA = [];
 });
 
 afterEach(() => {
@@ -98,6 +99,43 @@ describe('loadDataset', () => {
     expect(dataset.dictionaries.stores.guiltfree).toBe('GuiltFree');
     expect(products.at(-1)).toMatchObject({ code: 'guiltfree-syrop-klonowy', stores: ['guiltfree'] });
     expect(products.at(-1)?.searchText).toContain('syrop zero klonowy guiltfree');
+  });
+
+  it('dokłada produkty sieci (Selgros) — sieć jako sklep, z odnośnikiem do karty produktu', async () => {
+    online.CHAIN_DATA = [
+      {
+        id: 'selgros',
+        name: 'Selgros',
+        url: 'https://www.selgros.pl',
+        productUrl: 'https://www.selgros.pl/znajdz-produkt/product/{id}',
+        checked: '2026-10-16',
+        hall: 'Kraków',
+        products: [
+          {
+            ean: '5902899143835',
+            id: '339221',
+            name: 'Almette śmietankowy',
+            brand: 'Almette',
+            quantity: '150 g',
+            categories: ['en:dairies'],
+            allergens: ['en:milk'],
+            nutrition: { kcal: 260, protein: 6.3, carbs: 2.4, fat: 25, sugars: 2.3, fiber: null, saturatedFat: 17, salt: 0.78 },
+            price: 5.19,
+          },
+        ],
+      },
+    ];
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(gz(TEXT))));
+    const { loadDataset } = await load();
+    const { dataset, products } = await loadDataset();
+    expect(dataset.products).toHaveLength(DATASET.products.length + 1);
+    expect(dataset.dictionaries.stores.selgros).toBe('Selgros');
+    expect(products.at(-1)).toMatchObject({
+      code: '5902899143835',
+      stores: ['selgros'],
+      pages: [{ store: 'selgros', url: 'https://www.selgros.pl/znajdz-produkt/product/339221' }],
+    });
+    expect(products.at(-1)?.searchText).toContain('almette smietankowy');
   });
 
   it('pobiera raz na życie strony, a wczytaną bazę oddaje też od ręki', async () => {

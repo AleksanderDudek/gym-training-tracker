@@ -79,6 +79,8 @@ describe('overpass', () => {
     expect(q).toContain('around:1500,52.2318,21.006');
     expect(q).toContain('out center tags');
     expect(q).toMatch(/supermarket\|convenience/);
+    // Hale Selgrosa i Makro: hurtownie, ale tylko tych marek.
+    expect(q).toContain('nwr["shop"="wholesale"]["brand"~"^(Selgros|Makro)",i](around:1500,52.2318,21.006);');
   });
 
   test('shops are read from nodes and from ways via their centre; the chain comes from brand, else name', () => {

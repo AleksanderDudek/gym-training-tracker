@@ -57,6 +57,13 @@ export interface OnlineOffer {
   checked: string;
 }
 
+/** A product's page on a store chain's own site: a store you walk into, not one that delivers. */
+export interface ChainPage {
+  /** Store key of the chain. */
+  store: string;
+  url: string;
+}
+
 export interface Product {
   code: string;
   name: string;
@@ -89,7 +96,9 @@ export interface Product {
   price: Price | null;
   /** Online shops that sell it, with links (merged in at load time; absent in the OFF file). */
   online?: OnlineOffer[];
-  /** Known only from an online shop's page, not from Open Food Facts. */
+  /** Its pages on the sites of store chains with their own data (Selgros), merged in at load time. */
+  pages?: ChainPage[];
+  /** Known only from a shop's or a chain's page, not from Open Food Facts. */
   shopOnly?: true;
   /**
    * The shop's own label disagrees with itself (energy vs macros: polyols, fibre or a slip on the

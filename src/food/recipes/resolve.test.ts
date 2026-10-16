@@ -170,6 +170,23 @@ describe('stores', () => {
     expect(storeRanking([SKYR_BOWL, WHEY_MILK], candidates)).toEqual(['biedronka', 'lidl']);
   });
 
+  test('storeRanking puts cash & carry halls after the supermarkets, however much they cover', () => {
+    const withHall = buildCandidates(
+      indexProducts(
+        [
+          ...PRODUCTS,
+          skyr('s-sel', ['selgros'], 20),
+          makeProduct({ code: 'w-sel', name: 'Whey', categories: ['en:protein-powders'], nutrition: n(390, 75, 8, 6), stores: ['selgros'], popularity: 2 }),
+          makeProduct({ code: 'm-sel', name: 'Mleko 2%', categories: ['en:milks'], nutrition: n(50, 3.3, 4.8, 2, 4.8), stores: ['selgros'], popularity: 2 }),
+        ],
+        {},
+      ),
+    );
+    expect(storeRanking([SKYR_BOWL, WHEY_MILK], withHall)).toEqual(['biedronka', 'lidl', 'selgros']);
+    // Chosen on purpose, the hall is a store like any other.
+    expect(bestVariant(SKYR_BOWL, withHall, ['selgros'])?.store).toBe('selgros');
+  });
+
   test('bestVariant picks the first covering store in the ranking', () => {
     const v = bestVariant(SKYR_BOWL, candidates, ['lidl', 'biedronka']);
     expect(v?.store).toBe('lidl');
