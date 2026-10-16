@@ -20,6 +20,7 @@
     "food:data": "npm run food:taxonomies && npm run food:prices && npm run food:prepare",
     "food:extract-priced": "tsx scripts/food/extract-priced.ts",
     "food:check-recipes": "tsx scripts/food/check-recipes.ts",
+    "food:selgros": "tsx scripts/food/fetch-selgros.ts",
     "demo:seed": "TZ=Europe/Warsaw vitest run --config scripts/demo-videos/seed/vitest.config.ts",
     "demo:videos": "tsx scripts/demo-videos/record.ts"
   },

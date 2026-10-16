@@ -37,6 +37,13 @@ const CHAINS: { key: string; label: string; pattern: RegExp }[] = [
   { key: 'frisco', label: 'Frisco', pattern: /^frisco\b/ },
 ];
 
+/**
+ * Cash & carry halls: a customer card at the door and often catering-size packs. A store like any
+ * other once chosen (a filter, „W pobliżu”, the diet profile), but never the default suggestion
+ * ahead of the supermarkets most people shop at.
+ */
+export const CASH_AND_CARRY: ReadonlySet<string> = new Set(['selgros', 'makro']);
+
 const MAX_STORE_CHARS = 60;
 
 export function storeKey(raw: string): Store | null {

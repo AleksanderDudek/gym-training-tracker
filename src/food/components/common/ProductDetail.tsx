@@ -130,6 +130,23 @@ export function ProductDetail({ product: p, dict, onClose }: Props) {
         </Block>
       )}
 
+      {p.pages && p.pages.length > 0 && (
+        <Block title="Karta produktu w sieci">
+          <ul className="fd-offers">
+            {p.pages.map((page) => (
+              <li key={page.url}>
+                <a href={page.url} target="_blank" rel="noopener noreferrer">
+                  {dict.stores[page.store] ?? page.store}
+                  <ExternalLink size={14} strokeWidth={2} aria-hidden />
+                  <span className="sr-only"> (otwiera się w nowej karcie)</span>
+                </a>
+                <span className="soft"> · skład, alergeny i dostępność w halach</span>
+              </li>
+            ))}
+          </ul>
+        </Block>
+      )}
+
       {(p.genericName || category) && (
         <Block title="Opis">
           {p.genericName && <p>{p.genericName}</p>}

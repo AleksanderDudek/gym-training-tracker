@@ -1,6 +1,6 @@
 // How the recipe catalog meets the real data: candidates per ingredient, which
 // shops cover each recipe (one shop, or a shop and an online shop), and what
-// the default variant looks like. Online shops' data is merged as the app does.
+// the default variant looks like. Chains' and online shops' data is merged as the app does.
 // Usage: npm run food:check-recipes
 import { readFile, readdir } from 'node:fs/promises';
 import { gunzipSync } from 'node:zlib';
@@ -9,6 +9,8 @@ import type { Dataset } from '../../src/food/lib/types';
 import { RECIPES, servingsOf } from '../../src/food/recipes/catalog';
 import { INGREDIENTS } from '../../src/food/recipes/ingredients';
 import { readyProducts } from '../../src/food/recipes/ready';
+import { mergeChains } from '../../src/food/chains/merge';
+import type { ChainData } from '../../src/food/chains/types';
 import { mergeOnline } from '../../src/food/online/merge';
 import type { ShopData } from '../../src/food/online/types';
 import { basketsFor } from '../../src/food/recipes/baskets';
@@ -23,13 +25,19 @@ import {
 import { byTime, tierOf } from '../../src/food/recipes/tiers';
 
 const SHOP_DIR = 'src/food/online/data';
+const CHAIN_DIR = 'src/food/chains/data';
 const shops = await Promise.all(
   (await readdir(SHOP_DIR))
     .filter((f) => f.endsWith('.json'))
     .map(async (f) => JSON.parse(await readFile(`${SHOP_DIR}/${f}`, 'utf8')) as ShopData),
 );
 const offData = JSON.parse(gunzipSync(await readFile('data/food/products.json.gz')).toString('utf8')) as Dataset;
-const dataset = mergeOnline(offData, shops);
+const chains = await Promise.all(
+  (await readdir(CHAIN_DIR))
+    .filter((f) => f.endsWith('.json'))
+    .map(async (f) => JSON.parse(await readFile(`${CHAIN_DIR}/${f}`, 'utf8')) as ChainData),
+);
+const dataset = mergeOnline(mergeChains(offData, chains), shops);
 const products = indexProducts(dataset.products, dataset.dictionaries.brands);
 const candidates = buildCandidates(products);
 const ranking = storeRanking(RECIPES, candidates);

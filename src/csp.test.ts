@@ -29,6 +29,8 @@ const NAVIGATION = new Set([
   'twitter.com',
   'www.facebook.com',
   'buycoffee.to',
+  // Sieć z własnymi danymi: karta produktu na stronie sieci (`chains/merge.ts`).
+  'www.selgros.pl',
   // Kontakt z autorem: wsparcie spoza Polski, serwer na Discordzie i Instagram (`contact.ts`).
   'buymeacoffee.com',
   'discord.gg',

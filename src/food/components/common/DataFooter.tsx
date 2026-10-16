@@ -1,5 +1,6 @@
 import foodData from 'virtual:food-data';
 import { formatDate } from '../../lib/format';
+import { DATA_CHAINS } from '../../chains/chains';
 import { ONLINE_SHOPS } from '../../online/shops';
 import type { Dataset } from '../../lib/types';
 import './common.css';
@@ -34,6 +35,13 @@ export function DataFooter({ dataset }: { dataset?: Dataset }) {
           Produkty sklepów internetowych ({ONLINE_SHOPS.map((s) => s.name).join(', ')}): nazwy, wartości odżywcze, ceny
           i odnośniki ze stron sklepów i producentów, sprawdzone w dniu podanym przy produkcie — w sklepie mogą być już
           inne.
+        </p>
+      )}
+      {DATA_CHAINS.length > 0 && (
+        <p>
+          Produkty sieci {DATA_CHAINS.map((c) => c.name).join(', ')}: nazwy, EAN, wartości odżywcze, alergeny i ceny
+          regularne z wyszukiwarki produktów na stronie sieci (jedna hala), sprawdzone w dniu podanym przy cenie — w hali
+          mogą być inne.
         </p>
       )}
       <p>
