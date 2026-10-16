@@ -36,6 +36,9 @@ const inSentence = (label: string) => label.charAt(0).toLowerCase() + label.slic
 /** Ile koszyków pokazać jako żetony — dalej są te same sklepy w innej parze. */
 const MAX_BASKET_CHIPS = 8;
 
+/** Licencja Książki kucharskiej w Wikibooks, z której pochodzą pomysły klasyków. */
+const CC_BY_SA = 'https://creativecommons.org/licenses/by-sa/4.0/deed.pl';
+
 /** Sklep internetowy jako odnośnik do sklepu, z dopiskiem — kolor nie mówi tego sam. */
 export function OnlineShopLink({ id, dict }: { id: string; dict: Dictionaries }) {
   const shop = onlineShop(id);
@@ -197,6 +200,21 @@ export function RecipeCard({
             ))}
           </ol>
         </details>
+
+        {recipe.inspiredBy && (
+          <p className="fd-rec-source">
+            Na motywach przepisu{' '}
+            <a href={recipe.inspiredBy.url} target="_blank" rel="noopener noreferrer">
+              „<span lang={recipe.inspiredBy.lang}>{recipe.inspiredBy.title}</span>”
+              <span className="sr-only"> (otwiera się w nowej karcie)</span>
+            </a>{' '}
+            z Książki kucharskiej w Wikibooks (licencja{' '}
+            <a href={CC_BY_SA} target="_blank" rel="noopener noreferrer">
+              CC BY-SA 4.0<span className="sr-only"> (otwiera się w nowej karcie)</span>
+            </a>
+            ).
+          </p>
+        )}
       </article>
 
       <SwapSheet

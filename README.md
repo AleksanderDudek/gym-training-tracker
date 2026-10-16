@@ -28,7 +28,7 @@ npm run build      # typecheck + produkcyjny build do dist/ z service workerem (
 npm run preview    # podgląd builda — tu działa też praca offline
 npm run typecheck  # tsc: aplikacja, testy, konfiguracja Vite i skrypty, service worker, filmy demo
 npm run lint       # oxlint
-npm test           # 1581 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, serwer… (vitest)
+npm test           # 1635 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, serwer… (vitest)
 ```
 
 Baza produktów i przepisy:
@@ -800,6 +800,21 @@ najmniej planów zakupów dla całej listy, z nagłówkiem „wizyta w sklepie i
 internet”. Filtr sklepu obejmuje sklepy internetowe („BeKeto · online”). „Co teraz?” i „W pobliżu”
 zostają przy jednym sklepie stacjonarnym — przepis, który wymaga zamówienia, planuje się
 w Przepisach.
+
+**Klasyki kuchni polskiej w wersji białkowej.** Szesnaście przepisów na motywach otwartej
+Książki kucharskiej z Wikibooks (pl.wikibooks.org, CC BY-SA 4.0): pyry
+z gzikiem, leniwe, ryba po grecku, bigos z indykiem, ogórkowa z kurczakiem, potrawka, gołąbki
+z indykiem, mielone z mizerią, szaszłyki z tzatziki, sałatka gyros, śledź w skyrze, jajka w sosie
+szczypiorkowym, placki z cukinii z twarogiem, sernik na zimno bez cukru, pasta z twarogu
+z awokado i białkowe racuchy z jabłkami. Z Wikibooks pochodzi danie i jego pomysł; ilości, zamiany
+(skyr zamiast śmietany, indyk zamiast wieprzowiny, chudy twaróg, słodzik zamiast cukru) i tekst są
+własne, a karta kończy się odnośnikiem „Na motywach przepisu …” do strony w Wikibooks i licencji
+(tytuł z angielskiej książki kucharskiej ma `lang="en"`).
+Każdy trzyma zasadę na porcję i ma koszyk jak reszta: piętnaście kupisz w jednym sklepie
+stacjonarnym (ryba po grecku, bigos i gołąbki — w każdym), racuchy w sklepie i sklepie
+internetowym (mieszanka na białkowe naleśniki z Myproteina). Nowe składniki: filet z indyka,
+kapusta kiszona, biała i pekińska, ogórki kiszone, marchew, ziemniaki, awokado, mąka pszenna,
+filety śledziowe i żelatyna.
 
 **W pobliżu** (`#/w-poblizu`): lokalizacja (albo kliknięcie na mapie), sklepy spożywcze
 z OpenStreetMap w promieniu od 500 m do 10 km i przepisy, które zrobisz w jednym pobliskim sklepie

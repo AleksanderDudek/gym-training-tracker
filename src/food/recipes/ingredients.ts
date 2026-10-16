@@ -682,6 +682,82 @@ const DEFINITIONS = {
     role: 'pantry',
     typical: { kcal: 0, protein: 0, carbs: 0, fat: 0 },
   },
+
+  // Klasyki kuchni polskiej w wersji białkowej (2026-10-16): kiszonki, warzywa do zup i bigosu, mąka,
+  // indyk, śledź, awokado i żelatyna.
+  turkeyFillet: {
+    id: 'turkeyFillet',
+    label: 'Filet z piersi indyka (surowy)',
+    role: 'staple',
+    // No match, like the chicken fillet: what the data calls a turkey fillet is mostly a cold cut.
+    typical: { kcal: 105, protein: 23.5, carbs: 0, fat: 1.2 },
+  },
+  sauerkraut: {
+    id: 'sauerkraut',
+    label: 'Kapusta kiszona',
+    role: 'staple',
+    typical: { kcal: 19, protein: 1.1, carbs: 3.4, fat: 0.2 },
+    match: (p) =>
+      /\b(kapust\w*( \w+)? kiszon\w*|kiszon\w* kapust\w*)/.test(nameOf(p)) &&
+      !/\b(salatk\w*|surowk\w*|bigos\w*|pierog\w*|krokiet\w*)\b/.test(nameOf(p)) &&
+      within(p, { kcal: [8, 40], carbs: [0, 7], fat: [0, 1] }),
+  },
+  brinedCucumber: {
+    id: 'brinedCucumber',
+    label: 'Ogórki kiszone',
+    role: 'staple',
+    typical: { kcal: 12, protein: 0.6, carbs: 1.8, fat: 0.1 },
+    // Kiszone, not konserwowe: those sit in sweetened vinegar.
+    match: (p) =>
+      /\bogor\w* kiszon\w*/.test(nameOf(p)) &&
+      !/\b(konserwow\w*|salatk\w*|zup\w*|chips\w*)\b/.test(nameOf(p)) &&
+      within(p, { kcal: [3, 30], carbs: [0, 5], fat: [0, 0.5] }),
+  },
+  whiteCabbage: {
+    id: 'whiteCabbage',
+    label: 'Kapusta biała (świeża)',
+    role: 'staple',
+    typical: { kcal: 25, protein: 1.3, carbs: 5.8, fat: 0.1 },
+  },
+  pekingCabbage: {
+    id: 'pekingCabbage',
+    label: 'Kapusta pekińska',
+    role: 'staple',
+    typical: { kcal: 16, protein: 1.2, carbs: 3.2, fat: 0.2 },
+  },
+  carrot: { id: 'carrot', label: 'Marchew', role: 'staple', typical: { kcal: 41, protein: 0.9, carbs: 9.6, fat: 0.2 } },
+  potato: { id: 'potato', label: 'Ziemniaki', role: 'staple', typical: { kcal: 77, protein: 2, carbs: 17, fat: 0.1 } },
+  avocado: { id: 'avocado', label: 'Awokado', role: 'staple', typical: { kcal: 160, protein: 2, carbs: 8.5, fat: 14.7 } },
+  flour: {
+    id: 'flour',
+    label: 'Mąka pszenna',
+    role: 'staple',
+    typical: { kcal: 345, protein: 11, carbs: 72, fat: 1.4 },
+    match: (p) =>
+      /\bmaka pszenn\w*/.test(nameOf(p)) &&
+      !/\b(mieszank\w*|bezglutenow\w*|nalesnik\w*|pizz\w*)\b/.test(nameOf(p)) &&
+      within(p, { carbs: [65, 80], protein: [8, 15], fat: [0, 3] }),
+  },
+  herring: {
+    id: 'herring',
+    label: 'Filety śledziowe (a’la matjas lub solone)',
+    // In every Polish supermarket's chiller, though few of them are in the data yet.
+    role: 'staple',
+    typical: { kcal: 175, protein: 16, carbs: 0.5, fat: 12.5 },
+    // Plain fillets: herring in oil, cream or tomato, salads, spreads and smoked or dried fish stay out.
+    match: (p) =>
+      /\b(sled\w*|matjas\w*)/.test(nameOf(p)) &&
+      !/\b(w oleju|olej\w*|smietan\w*|jogurt\w*|pomidor\w*|sos\w*|salatk\w*|pasta|krajank\w*|tatar\w*|wedzon\w*|suszon\w*|koreczk\w*|zalew\w*|marynat\w* (korzenn|octow)\w*)\b/.test(nameOf(p)) &&
+      within(p, { protein: [13, 25], fat: [0, 18], carbs: [0, 3] }),
+  },
+  gelatin: {
+    id: 'gelatin',
+    label: 'Żelatyna',
+    role: 'pantry',
+    typical: { kcal: 335, protein: 84, carbs: 0, fat: 0.1 },
+    // Pure gelatine; a "fix" with sugar is a dessert mix.
+    match: (p) => /\bzelatyn\w*/.test(nameOf(p)) && !/\bfix\b/.test(nameOf(p)) && within(p, { protein: [75, 95] }),
+  },
 } satisfies Record<string, IngredientDef>;
 
 /** An ingredient a recipe can name: a typo in the catalog is a type error, not a crash. */

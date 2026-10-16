@@ -37,6 +37,10 @@ const NAVIGATION = new Set([
   'www.instagram.com',
   'instagram.com',
   'aleksanderdudek.github.io',
+  // Przepisy klasyczne: strona w Książce kucharskiej (Wikibooks), na której motywach powstały, i licencja.
+  'pl.wikibooks.org',
+  'en.wikibooks.org',
+  'creativecommons.org',
   // Jedzenie: źródła danych w stopce i strona produktu w Open Food Facts.
   'world.openfoodfacts.org',
   'pl.openfoodfacts.org',
