@@ -41,6 +41,7 @@ const brokenDb = () => {
     foods: table,
     sets: table,
     favorites: table,
+    prep: table,
     transaction: fail,
   } as unknown as DietDb;
 };
@@ -130,6 +131,13 @@ describe('kopia jedzenia', () => {
     });
     expect(await hasFoodData(database)).toBe(true);
     expect((await dietBackup(database))?.sets).toHaveLength(1);
+  });
+
+  it('sam plan z listą zakupów to też dane jedzenia — trafia do kopii', async () => {
+    // Kopia czyta wiersz tak, jak leży: zawartość planu sprawdza dopiero przywracanie.
+    await database.prep.add({ createdAt: '2026-10-20T08:00:00.000Z', bought: [] } as never);
+    expect(await hasFoodData(database)).toBe(true);
+    expect((await dietBackup(database))?.prep).toHaveLength(1);
   });
 
   it('baza, której nie da się odczytać, to brak danych jedzenia', async () => {

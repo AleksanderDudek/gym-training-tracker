@@ -34,6 +34,7 @@ export async function hasFoodData(database: DietDb = defaultDb): Promise<boolean
       database.foods.count(),
       database.sets.count(),
       database.favorites.count(),
+      database.prep.count(),
     ]);
     return counts.some((n) => n > 0);
   } catch {
@@ -51,7 +52,8 @@ export async function dietBackup(database: DietDb = defaultDb): Promise<Backup |
     !b.plans.length &&
     !b.foods.length &&
     !b.sets?.length &&
-    !b.favorites?.length;
+    !b.favorites?.length &&
+    !b.prep?.length;
   return empty ? null : b;
 }
 
