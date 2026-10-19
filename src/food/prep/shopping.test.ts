@@ -6,7 +6,7 @@ import type { Candidates } from '../recipes/resolve';
 import { makeProduct } from '../test/fixtures';
 import { PREP_DICT, prepCandidates } from '../test/prep';
 import { SIDES } from './sides';
-import { amountText, packSize, packsFor, priceSum, shoppingList, shoppingText } from './shopping';
+import { amountText, packSize, packsFor, priceSum, pricedEnough, shoppingList, shoppingText } from './shopping';
 import type { PrepPlan } from './types';
 
 const recipe = (id: string, items: Recipe['items'], servings = 1): Recipe => ({
@@ -185,6 +185,10 @@ describe('the shopping list', () => {
     });
     expect(list.map((i) => i.key)).toEqual(['tomato', 'skyr', 'oats', 'konjac', 'oil']);
     expect(priceSum(list.filter((i) => i.group !== 'home'))).toEqual({ total: 5.49 + 29.99, known: 2, unknown: 2 });
+    // Half the lines priced is enough for a total; fewer is not the cost of the shopping.
+    expect(pricedEnough({ known: 2, unknown: 2 })).toBe(true);
+    expect(pricedEnough({ known: 1, unknown: 34 })).toBe(false);
+    expect(pricedEnough({ known: 0, unknown: 0 })).toBe(false);
   });
 
   test('as text: shop by shop, aisle by aisle, ticked lines marked', () => {

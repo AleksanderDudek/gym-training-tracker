@@ -434,7 +434,7 @@ const DEFINITIONS = {
     // A plain roll, not a sweet bun, a burger bun or breadcrumbs ("bułka tarta").
     match: (p) =>
       /^(bulk[ai]|kajzerk\w*)\b|grahamk/.test(nameOf(p)) &&
-      !/\b(tart\w*|burger\w*|hot ?dog\w*|maslan\w*|slodk\w*|drozdzow\w*|maslem)\b/.test(nameOf(p)) &&
+      !/\b(tart\w*|(ham)?burger\w*|hot ?dog\w*|maslan\w*|slodk\w*|drozdzow\w*|maslem)\b/.test(nameOf(p)) &&
       within(p, { kcal: [230, 310], protein: [7, 13], fat: [0, 5], sugars: [0, 6] }),
   },
   riceCakes: {

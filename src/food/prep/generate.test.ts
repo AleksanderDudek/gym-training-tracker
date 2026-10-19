@@ -67,14 +67,15 @@ describe('a plan meets the day, whatever the style', () => {
     ([3, 4, 5] as const).flatMap((meals) => (['lunch', 'both'] as Cooking[]).map((cooking) => ({ style, meals, cooking }))),
   );
 
-  test.each(cases)('$style, $meals meals, cooking $cooking: energy ±7 %, protein ≥ minimum, carbs within a limit', ({ style, meals, cooking }) => {
+  test.each(cases)('$style, $meals meals, cooking $cooking: energy ±7 %, protein ≥ minimum, carbs within the limit', ({ style, meals, cooking }) => {
     const p = plan({ meals, cooking }, style);
     expect(p.meals).toHaveLength(7 * meals);
     for (const { date, targets } of p.dayTargets) {
       const t = dayTotal(p, date);
       expect(Math.abs(t.kcal - targets.kcal) / targets.kcal, `${date} kcal ${t.kcal} / ${targets.kcal}`).toBeLessThanOrEqual(0.07);
       expect(t.protein, date).toBeGreaterThanOrEqual(targets.protein.min);
-      if (targets.carbs.max !== null) expect(t.carbs, date).toBeLessThanOrEqual(targets.carbs.max * 1.05);
+      // A carb limit is a limit: not even a gram over.
+      if (targets.carbs.max !== null) expect(t.carbs, date).toBeLessThanOrEqual(targets.carbs.max + 0.05);
     }
   });
 

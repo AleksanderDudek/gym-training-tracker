@@ -92,6 +92,8 @@ export function PrepPlanView({ plan, profile, today, onNext }: Props) {
   };
 
   const roles = ROLE_ORDER.filter((r) => plan.choices[r]?.length);
+  // A rotation of one recipe for a week: the same breakfast every day.
+  const repeats = (['breakfast', 'snack', 'dinner'] as const).some((r) => plan.choices[r]?.length === 1);
   const sessions = [...new Set(plan.batches.map((b) => b.date))];
   const freezes = plan.shopping.flatMap((i) => i.freeze.map((f) => ({ ...f, name: itemName(i) })));
 
@@ -116,6 +118,12 @@ export function PrepPlanView({ plan, profile, today, onNext }: Props) {
           <p className="tight fd-prep-warn">
             Od ułożenia planu zmienił się cel w profilu diety ({kcal(profile.dailyKcal)}, {profile.dietProfile === plan.goal.dietProfile ? 'ten sam styl' : 'inny styl'}).
             Kupione zostaje kupione — następny plan pójdzie za nowym celem.
+          </p>
+        )}
+        {repeats && (
+          <p className="tight">
+            Ten styl i koszyk mają mało pasujących przepisów, więc dania się powtarzają. Więcej da inny sklep albo
+            zamówienie przez internet.
           </p>
         )}
         {plan.settings.cooking === 'both' && !plan.choices.dinnerBox && (

@@ -209,6 +209,13 @@ export function priceSum(items: readonly ShoppingItem[]): { total: number; known
   };
 }
 
+/**
+ * Whether the known prices say anything about the total: at least half of the lines priced. A sum
+ * of two prices out of thirty lines would read as the cost of the shopping.
+ */
+export const pricedEnough = (sum: { known: number; unknown: number }): boolean =>
+  sum.known > 0 && sum.known >= sum.unknown;
+
 /** The list as plain text, to send or paste into notes: shop by shop, aisle by aisle. */
 export function shoppingText(plan: PrepPlan): string {
   const end = addDays(plan.settings.start, plan.settings.days - 1);
@@ -236,6 +243,10 @@ export function shoppingText(plan: PrepPlan): string {
     }
   }
   const sum = priceSum(plan.shopping.filter((i) => i.group !== 'home'));
-  if (sum.known) out.push('', `Razem ok. ${formatPrice(sum.total)} (ceny znane dla ${formatNumber(sum.known, 0)} z ${formatNumber(sum.known + sum.unknown, 0)} pozycji).`);
+  if (pricedEnough(sum))
+    out.push(
+      '',
+      `Razem ok. ${formatPrice(sum.total)} (ceny znane dla ${formatNumber(sum.known, 0)} z ${formatNumber(sum.known + sum.unknown, 0)} pozycji).`,
+    );
   return out.join('\n');
 }

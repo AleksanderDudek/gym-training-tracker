@@ -29,8 +29,9 @@ const rel = (x: number, ref: number) => x / Math.max(ref, 1);
 /**
  * How far a day is from its targets; 0 is perfect. Energy weighs most. Protein below the target
  * (and much more below the minimum) is a shortfall; far above it, it crowds out the rest. A carb
- * LIMIT (keto, low carb) is a limit; otherwise carbohydrates and fat only drift towards their
- * targets, with fat's minimum and maximum enforced. Each meal stays near its share of the day.
+ * LIMIT (keto, low carb) is a limit - crossing it costs a step; otherwise carbohydrates and fat
+ * drift towards their targets, with fat's minimum and maximum enforced. Each meal stays near its
+ * share of the day.
  */
 export function dayScore(m: Macros, t: MacroTargets, meals: readonly { kcal: number; share: number }[]): number {
   let s = 50 * rel(m.kcal - t.kcal, t.kcal) ** 2;
@@ -38,7 +39,8 @@ export function dayScore(m: Macros, t: MacroTargets, meals: readonly { kcal: num
   if (p < 0) s += 20 * p ** 2;
   if (m.protein < t.protein.min) s += 40 * rel(t.protein.min - m.protein, t.protein.target) ** 2;
   if (p > 0.25) s += 4 * (p - 0.25) ** 2;
-  if (t.carbs.max !== null && m.carbs > t.carbs.max) s += 60 * rel(m.carbs - t.carbs.max, t.carbs.max) ** 2;
+  // Any gram over a carb limit costs a step, not only a slope: "1 g ponad limit" is still over.
+  if (t.carbs.max !== null && m.carbs > t.carbs.max + 0.05) s += 0.5 + 60 * rel(m.carbs - t.carbs.max, t.carbs.max) ** 2;
   s += (t.carbs.max !== null ? 0.5 : 2) * rel(m.carbs - t.carbs.target, Math.max(t.carbs.target, 50)) ** 2;
   if (m.fat < t.fat.min) s += 20 * rel(t.fat.min - m.fat, t.fat.target) ** 2;
   if (t.fat.max !== null && m.fat > t.fat.max) s += 20 * rel(m.fat - t.fat.max, t.fat.target) ** 2;

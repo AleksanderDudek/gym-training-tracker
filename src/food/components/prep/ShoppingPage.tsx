@@ -8,7 +8,7 @@ import { usePrepPlans } from '../../hooks/usePrep';
 import { formatNumber, formatPrice } from '../../lib/format';
 import { AISLE_LABELS } from '../../prep/aisles';
 import { gramsLabel, rangeLabel, shortDate } from '../../prep/format';
-import { amountText, itemName, priceSum, shoppingText } from '../../prep/shopping';
+import { amountText, itemName, priceSum, pricedEnough, shoppingText } from '../../prep/shopping';
 import { clearBought, currentPlan, planEnd, toggleBought } from '../../prep/store';
 import type { PrepPlan, PrepShop, ShoppingItem } from '../../prep/types';
 import { Loading } from '../diet/Onboarding';
@@ -151,7 +151,7 @@ function Group({ plan, id, title, lead, shop, items, bought, aisles = false }: G
     <section className="grp" aria-labelledby={id}>
       <h2 id={id}>{title}</h2>
       {lead && <p className="tight">{lead}</p>}
-      {sum.known > 0 && (
+      {pricedEnough(sum) && (
         <p className="tight fd-prep-nums">
           Ok. {formatPrice(sum.total)}
           {sum.unknown > 0 && ` (ceny znane dla ${sum.known} z ${items.length} pozycji)`}
