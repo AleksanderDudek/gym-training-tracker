@@ -113,6 +113,17 @@ describe('Postęp', () => {
     await waitFor(() => expect(bridge.stepsOn).toHaveBeenCalledWith('2026-10-05'));
   });
 
+  test('cel wyżej niż start: do celu liczy się w górę, a data celu to pierwszy dzień na celu albo nad nim', async () => {
+    await saveProfile(
+      completeProfile({ startDate: '2026-10-01', startWeightKg: 70, targetWeightKg: 74, dailyKcal: 3200, sex: 'M' }),
+    );
+    window.history.replaceState(null, '', '/#/jedzenie/postep');
+    renderWithBridge(<DietProgressPage />, testBridge({ weights: [{ day: '2026-10-12', kg: 71 }] }));
+    expect(await screen.findByText('3 kg')).toBeInTheDocument();
+    expect(screen.getByText(/Do celu · cel 74 kg/)).toBeInTheDocument();
+    expect(screen.getByText(/Według planu cel/)).not.toHaveTextContent('nie zostanie osiągnięty');
+  });
+
   /** Co mówi prognoza przy danym moście: model dnia, data celu według planu i od ostatniego ważenia. */
   async function forecastWith(bridge: GymBridge) {
     window.history.replaceState(null, '', '/#/jedzenie/postep');

@@ -76,6 +76,46 @@ describe('Profil diety', () => {
     expect(await db.plans.count()).toBe(1);
   });
 
+  test('cel według tempa: chudnięcie, utrzymanie i przybieranie — ostrzeżenia idą za kierunkiem celu', async () => {
+    await saveProfile(
+      completeProfile({ sex: 'M', age: 30, heightCm: 180, startWeightKg: 70, targetWeightKg: 76, startDate: '2026-10-01' }),
+    );
+    const user = userEvent.setup();
+    renderWithBridge(<DietProfilePage />);
+    const paces = await screen.findByRole('group', { name: 'Cel według tempa' });
+    const chips = within(paces).getAllByRole('button');
+    expect(chips.map((c) => c.textContent?.split(' · ')[0])).toEqual([
+      '−0,25 kg/tydz.',
+      '−0,5 kg/tydz.',
+      '−0,75 kg/tydz.',
+      '−1 kg/tydz.',
+      'utrzymanie',
+      '+0,25 kg/tydz.',
+    ]);
+
+    // Cel jest wyżej niż start: nadwyżka to plan, a nie ostrzeżenie.
+    await user.click(within(paces).getByRole('button', { name: /^\+0,25 kg\/tydz\./ }));
+    expect(screen.getByText('Nadwyżka')).toBeInTheDocument();
+    expect(screen.getByText('+0,25 kg/tydz.', { selector: 'dd' })).toBeInTheDocument();
+    expect(screen.queryByText('To nadwyżka kalorii – waga będzie rosła.')).not.toBeInTheDocument();
+    expect(screen.getByText(/^cel ok\./)).toBeInTheDocument();
+
+    // Deficyt przy celu wyżej niż start — to już zasługuje na zdanie.
+    await user.click(within(paces).getByRole('button', { name: /^−0,5 kg\/tydz\./ }));
+    expect(screen.getByText('To deficyt kalorii – waga będzie spadać, a cel jest wyżej.')).toBeInTheDocument();
+  });
+
+  test('utrzymanie: waga docelowa równa startowej, bez daty celu', async () => {
+    await saveProfile(completeProfile({ startWeightKg: 80, targetWeightKg: 80, startDate: '2026-10-01' }));
+    const user = userEvent.setup();
+    renderWithBridge(<DietProfilePage />);
+    const paces = await screen.findByRole('group', { name: 'Cel według tempa' });
+    await user.click(within(paces).getByRole('button', { name: /^utrzymanie/ }));
+    expect(screen.getByText('utrzymanie wagi')).toBeInTheDocument();
+    expect(screen.queryByText(/To nadwyżka kalorii/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Waga docelowa to waga startowa/)).not.toBeInTheDocument();
+  });
+
   test('literówka w liczbie zatrzymuje zapis i mówi, czego się spodziewa', async () => {
     const user = userEvent.setup();
     renderWithBridge(<DietProfilePage />);

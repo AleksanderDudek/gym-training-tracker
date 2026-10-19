@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useBridge } from '../../bridge';
 import { withGymSteps } from '../../diet/body';
 import { macroStatus, totals, type DayTotals, type Status } from '../../diet/day';
-import { dayReaching, forecast } from '../../diet/energy';
+import { dayReaching, forecast, goalDirection } from '../../diet/energy';
 import { addDays, dayGoal, forecastInputs, lastWeighing, projectFromWeighing, shortDay } from '../../diet/model';
 import type { Plan } from '../../diet/plan';
 import { DIET_PROFILES } from '../../diet/profiles';
@@ -63,12 +63,13 @@ function ProgressView({
     const weighing = lastWeighing(history.days.values());
     const projection = projectFromWeighing(body, inputs, weighing);
     const projected = [...projection].map(([date, w]) => ({ date, plan: w, real: w }));
+    const direction = goalDirection(body);
     return {
       series,
       weighing,
       projection,
-      planReach: dayReaching(body.targetWeightKg, series, 'plan'),
-      projectedReach: dayReaching(body.targetWeightKg, projected, 'real'),
+      planReach: dayReaching(body.targetWeightKg, series, 'plan', direction),
+      projectedReach: dayReaching(body.targetWeightKg, projected, 'real', direction),
     };
   }, [body, plan, history, today, stepsOn]);
 
@@ -88,7 +89,9 @@ function ProgressView({
 
   const current = model.weighing?.kg ?? profile.startWeightKg;
   const lost = profile.startWeightKg - current;
-  const toGo = current - profile.targetWeightKg;
+  const direction = goalDirection(profile);
+  // Do celu w stronę celu: przy przybieraniu cel jest nad obecną wagą.
+  const toGo = direction === 'gain' ? profile.targetWeightKg - current : current - profile.targetWeightKg;
   const modelToday = model.series.find((p) => p.date === today)?.real;
 
   // Ostatnie dwa tygodnie wobec celu każdego dnia.
@@ -138,7 +141,7 @@ function ProgressView({
             <span>{lost >= 0 ? 'Mniej o' : 'Więcej o'}</span>
           </div>
           <div className="tile">
-            <b>{toGo > 0 ? kg(toGo) : 'cel osiągnięty'}</b>
+            <b>{direction === 'keep' ? 'utrzymanie' : toGo > 0 ? kg(toGo) : 'cel osiągnięty'}</b>
             <span>Do celu · cel {kg(profile.targetWeightKg)}</span>
           </div>
         </div>
@@ -154,16 +157,20 @@ function ProgressView({
           target={profile.targetWeightKg}
         />
         <ul className="fd-diet-bullets">
-          <li>
-            Według planu cel{' '}
-            {model.planReach ? (
-              <strong>{formatDate(model.planReach)}</strong>
-            ) : (
-              'nie zostanie osiągnięty w ciągu dwóch lat'
-            )}
-            .
-          </li>
-          {model.weighing && (
+          {direction === 'keep' ? (
+            <li>Cel to utrzymanie wagi – linia planu pokazuje, dokąd prowadzi cel kalorii.</li>
+          ) : (
+            <li>
+              Według planu cel{' '}
+              {model.planReach ? (
+                <strong>{formatDate(model.planReach)}</strong>
+              ) : (
+                'nie zostanie osiągnięty w ciągu dwóch lat'
+              )}
+              .
+            </li>
+          )}
+          {model.weighing && direction !== 'keep' && (
             <li>
               Od ostatniego ważenia, jedząc według planu:{' '}
               {model.projectedReach ? (

@@ -3,8 +3,8 @@ import { useState } from 'react';
 import { FOOD_PATH, go } from '../../../routing';
 import { useBridge } from '../../bridge';
 import { markDiet } from '../../dietFlag';
-import { bmr, dayReaching, forecast, paceKgPerWeek, suggestedKcal, tdee } from '../../diet/energy';
-import { addDays, weightOn } from '../../diet/model';
+import { bmr, dayReaching, forecast, goalDirection, paceKgPerWeek, suggestedKcal, tdee } from '../../diet/energy';
+import { addDays, paceText, weightOn } from '../../diet/model';
 import { DIET_PROFILE_IDS, DIET_PROFILES } from '../../diet/profiles';
 import { completeProfile, saveProfile } from '../../diet/store';
 import type { Profile } from '../../diet/types';
@@ -68,7 +68,11 @@ const ACTIVITY: { value: number; label: string }[] = [
   { value: 1.725, label: 'Bardzo aktywny: codzienny wysiłek' },
 ];
 
-const PACES = [0.25, 0.5, 0.75, 1];
+/** Kilogramy na tydzień: chudnięcie (dodatnie), utrzymanie i spokojne przybieranie (ujemne). */
+const PACES = [0.25, 0.5, 0.75, 1, 0, -0.25];
+
+/** Poniżej tego tempa (w obie strony) waga stoi: cel zaokrąglony do 10 kcal nie rusza jej bardziej. */
+const STILL = 0.05;
 
 function sameProfile(a: Profile, b: Profile): boolean {
   const keys = new Set([...Object.keys(a), ...Object.keys(b)].filter((k) => k !== 'id'));
@@ -90,9 +94,18 @@ function warningsOf(p: Profile, weight: number): string[] {
     out.push(
       `Tempo ${formatNumber(pace, 2)} kg/tydz. to ponad 1% masy ciała – zwykle za szybko, by utrzymać mięśnie i wytrwać.`,
     );
-  if (pace < 0) out.push('To nadwyżka kalorii – waga będzie rosła.');
-  if (p.targetWeightKg >= p.startWeightKg)
-    out.push('Waga docelowa nie jest niższa od startowej – prognoza nie pokaże daty osiągnięcia celu.');
+  // Przy treningu siłowym 0,25–0,5% masy ciała na tydzień to tempo, przy którym rosną mięśnie, a nie sam tłuszcz.
+  if (-pace > weight * 0.005)
+    out.push(
+      `Przybieranie ${formatNumber(-pace, 2)} kg/tydz. to ponad 0,5% masy ciała – zwykle więcej tłuszczu niż mięśni.`,
+    );
+  const direction = goalDirection(p);
+  if (pace < -STILL && direction !== 'gain') out.push('To nadwyżka kalorii – waga będzie rosła.');
+  if (pace > STILL && direction === 'gain') out.push('To deficyt kalorii – waga będzie spadać, a cel jest wyżej.');
+  if (direction === 'keep' && Math.abs(pace) >= 2 * STILL)
+    out.push(
+      `Waga docelowa to waga startowa, a ten cel zmienia ją o ${paceText(pace)} – wybierz utrzymanie albo ustaw wagę docelową.`,
+    );
   return out;
 }
 
@@ -145,7 +158,8 @@ function ProfileForm({ profile, isNew, currentWeight, stores }: FormProps) {
     date: addDays(draft.startDate, i),
     plannedKcal: draft.dailyKcal,
   }));
-  const reach = dayReaching(draft.targetWeightKg, forecast(draft, days), 'plan');
+  const direction = goalDirection(draft);
+  const reach = dayReaching(draft.targetWeightKg, forecast(draft, days), 'plan', direction);
   const warnings = warningsOf(draft, weight);
   const activityKnown = ACTIVITY.some((a) => a.value === draft.activityMultiplier);
   const storeKnown = !draft.preferredStore || stores.some((s) => s.key === draft.preferredStore);
@@ -328,13 +342,15 @@ function ProfileForm({ profile, isNew, currentWeight, stores }: FormProps) {
               <dd>{formatNumber(expenditure, 0)} kcal</dd>
             </div>
             <div className="tile">
-              <dt>Deficyt</dt>
-              <dd>{formatNumber(expenditure - draft.dailyKcal, 0)} kcal/dzień</dd>
+              <dt>{expenditure >= draft.dailyKcal ? 'Deficyt' : 'Nadwyżka'}</dt>
+              <dd>{formatNumber(Math.abs(expenditure - draft.dailyKcal), 0)} kcal/dzień</dd>
             </div>
             <div className="tile">
               <dt>Tempo</dt>
-              <dd>{formatNumber(pace, 2)} kg/tydz.</dd>
-              <dd className="fd-diet-soft">{reach ? `cel ok. ${formatDate(reach)}` : 'cel poza zasięgiem'}</dd>
+              <dd>{paceText(pace)}</dd>
+              <dd className="fd-diet-soft">
+                {reach ? `cel ok. ${formatDate(reach)}` : direction === 'keep' ? 'utrzymanie wagi' : 'cel poza zasięgiem'}
+              </dd>
             </div>
           </dl>
           <p className="tight">
@@ -361,7 +377,7 @@ function ProfileForm({ profile, isNew, currentWeight, stores }: FormProps) {
                   aria-pressed={draft.dailyKcal === kcal}
                   onClick={() => set({ dailyKcal: kcal })}
                 >
-                  −{formatNumber(p, 2)} kg/tydz. · {formatNumber(kcal, 0)} kcal
+                  {p === 0 ? 'utrzymanie' : paceText(p)} · {formatNumber(kcal, 0)} kcal
                 </button>
               );
             })}

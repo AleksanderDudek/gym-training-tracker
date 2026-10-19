@@ -4,6 +4,7 @@ import { tdee, type ForecastInput } from './energy';
 import { plannedDay, plannedKcal, type Plan } from './plan';
 import type { MacroTargets } from './profiles';
 import type { Remaining } from './suggest';
+import { formatNumber } from '../lib/format';
 import type { Profile } from './types';
 
 /**
@@ -42,6 +43,15 @@ export function dayLabel(date: string, today: string): string {
 }
 
 export const shortDay = (date: string) => SHORT.format(at(date));
+
+/**
+ * Tempo as a change of weight: "−0,5 kg/tydz." is losing, "+0,25 kg/tydz." gaining (the energy
+ * model's pace is positive when losing). Below 5 g a week there is no sign.
+ */
+export function paceText(pace: number): string {
+  const sign = pace >= 0.005 ? '−' : pace <= -0.005 ? '+' : '';
+  return `${sign}${formatNumber(Math.abs(pace), 2)} kg/tydz.`;
+}
 export const longDay = (date: string) => LONG.format(at(date));
 
 /** The last weight logged on or before `date`; the start weight before the first one. */

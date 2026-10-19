@@ -60,6 +60,28 @@ export function forecast(p: Profile, days: ForecastInput[]): ForecastPoint[] {
   return points;
 }
 
-export function dayReaching(target: number, series: ForecastPoint[], which: 'plan' | 'real'): string | null {
-  return series.find((point) => point[which] <= target)?.date ?? null;
+/** Losing, gaining or keeping: where the target weight lies from the start. */
+export type GoalDirection = 'loss' | 'gain' | 'keep';
+
+/** Half a kilogram either way is keeping: the scale moves more than that between two mornings. */
+const KEEP_KG = 0.5;
+
+export function goalDirection(p: Pick<Profile, 'startWeightKg' | 'targetWeightKg'>): GoalDirection {
+  const gap = p.targetWeightKg - p.startWeightKg;
+  return gap < -KEEP_KG ? 'loss' : gap > KEEP_KG ? 'gain' : 'keep';
+}
+
+/**
+ * The first day the series reaches the target: at or below it when losing, at or above it when
+ * gaining. Keeping weight has no day to reach.
+ */
+export function dayReaching(
+  target: number,
+  series: ForecastPoint[],
+  which: 'plan' | 'real',
+  direction: GoalDirection = 'loss',
+): string | null {
+  if (direction === 'keep') return null;
+  const reached = direction === 'loss' ? (w: number) => w <= target : (w: number) => w >= target;
+  return series.find((point) => reached(point[which]))?.date ?? null;
 }
