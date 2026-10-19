@@ -257,7 +257,7 @@ export const DAY_SLOTS: Slot[] = [
 ];
 
 /** A small deterministic generator: the same seed picks the same day; another seed, another day. */
-function random(seed: number): () => number {
+export function random(seed: number): () => number {
   let s = seed >>> 0 || 1;
   return () => {
     s = (s * 1664525 + 1013904223) >>> 0;
