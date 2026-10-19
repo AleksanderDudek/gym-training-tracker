@@ -55,15 +55,20 @@ export async function deletePrepPlan(id: number, database: DietDb = db): Promise
   await database.prep.delete(id);
 }
 
-/** Ticks a shopping line, or takes the tick off. */
-export async function toggleBought(id: number, key: string, database: DietDb = db): Promise<void> {
+/**
+ * A line ticked or not, as the checkbox now shows it. Idempotent: two quick taps in flight end as
+ * the last one says, never in the opposite state.
+ */
+export async function markBought(id: number, key: string, bought: boolean, database: DietDb = db): Promise<void> {
   await database.transaction('rw', database.prep, async () => {
     const plan = await database.prep.get(id);
-    if (!plan) return;
-    const bought = plan.bought.includes(key) ? plan.bought.filter((k) => k !== key) : [...plan.bought, key];
-    await database.prep.put({ ...plan, bought });
+    if (!plan || plan.bought.includes(key) === bought) return;
+    await database.prep.put({ ...plan, bought: withTick(plan.bought, key, bought) });
   });
 }
+
+const withTick = (list: string[], key: string, on: boolean): string[] =>
+  on ? [...list.filter((k) => k !== key), key] : list.filter((k) => k !== key);
 
 /** Every tick off at once ("Odznacz wszystko"). */
 export async function clearBought(id: number, database: DietDb = db): Promise<void> {

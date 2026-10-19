@@ -12,11 +12,11 @@ import {
   currentPlan,
   deletePrepPlan,
   latestPlan,
+  markBought,
   planCovering,
   planEnd,
   replacePrepPlan,
   savePrepPlan,
-  toggleBought,
 } from './store';
 import { planTargets } from './targets';
 import type { PrepPlan } from './types';
@@ -66,11 +66,13 @@ describe('which plan a day follows', () => {
 });
 
 describe('plans on the device', () => {
-  test('saved with a new id, ticked and unticked, replaced, deleted', async () => {
+  test('saved with a new id, ticked and unticked (idempotently), replaced, deleted', async () => {
     const id = await savePrepPlan(makePlan(), db);
-    await toggleBought(id, 'skyr', db);
-    await toggleBought(id, 'rice', db);
-    await toggleBought(id, 'skyr', db);
+    await markBought(id, 'skyr', true, db);
+    await markBought(id, 'rice', true, db);
+    // Twice the same tick is one tick; taking it off leaves the rest.
+    await markBought(id, 'rice', true, db);
+    await markBought(id, 'skyr', false, db);
     expect((await db.prep.get(id))!.bought).toEqual(['rice']);
     await clearBought(id, db);
     expect((await db.prep.get(id))!.bought).toEqual([]);
@@ -107,7 +109,7 @@ describe('plans on the device', () => {
 describe('plans in the backup', () => {
   test('exported, restored whole, cleared with everything else', async () => {
     const id = await savePrepPlan(makePlan(), db);
-    await toggleBought(id, 'skyr', db);
+    await markBought(id, 'skyr', true, db);
     const backup = JSON.parse(JSON.stringify(await exportAll(db)));
     expect(backup.prep).toHaveLength(1);
 

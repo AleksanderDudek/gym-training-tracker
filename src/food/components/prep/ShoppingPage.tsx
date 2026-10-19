@@ -1,5 +1,5 @@
 import { Check, ExternalLink, Share2, Snowflake } from 'lucide-react';
-import { Fragment } from 'react';
+import { Fragment, useState } from 'react';
 import { EmptyState } from '../../../components/ui';
 import { dietPath } from '../../../routing';
 import { useBridge } from '../../bridge';
@@ -9,7 +9,7 @@ import { formatNumber, formatPrice } from '../../lib/format';
 import { AISLE_LABELS } from '../../prep/aisles';
 import { gramsLabel, rangeLabel, shortDate } from '../../prep/format';
 import { amountText, itemName, priceSum, pricedEnough, shoppingText } from '../../prep/shopping';
-import { clearBought, currentPlan, planEnd, toggleBought } from '../../prep/store';
+import { clearBought, currentPlan, markBought, planEnd } from '../../prep/store';
 import type { PrepPlan, PrepShop, ShoppingItem } from '../../prep/types';
 import { Loading } from '../diet/Onboarding';
 import './prep.css';
@@ -45,10 +45,20 @@ export default function ShoppingPage() {
 
 function ShoppingList({ plan }: { plan: PrepPlan & { id: number } }) {
   const bridge = useBridge();
+  // What the checkboxes show at once, before IndexedDB answers: a tick in a shop must not flicker.
+  const [ticks, setTicks] = useState<ReadonlyMap<string, boolean>>(new Map());
   const physical = plan.shops.find((s) => !s.online);
   const visit = plan.shopping.filter((i) => i.group === 'visit');
   const home = plan.shopping.filter((i) => i.group === 'home');
-  const bought = new Set(plan.bought);
+  const bought = new Set(plan.shopping.map((i) => i.key).filter((k) => ticks.get(k) ?? plan.bought.includes(k)));
+  const tick = (key: string, on: boolean) => {
+    setTicks((m) => new Map(m).set(key, on));
+    void markBought(plan.id, key, on);
+  };
+  const untickAll = () => {
+    setTicks(new Map(plan.shopping.map((i) => [i.key, false])));
+    void clearBought(plan.id);
+  };
   const toBuy = plan.shopping.filter((i) => i.group !== 'home');
   const done = toBuy.filter((i) => bought.has(i.key)).length;
 
@@ -83,8 +93,8 @@ function ShoppingList({ plan }: { plan: PrepPlan & { id: number } }) {
           <button type="button" className="btn ghost sm" onClick={() => void share()}>
             <Share2 {...ICON} /> Udostępnij listę
           </button>
-          {plan.bought.length > 0 && (
-            <button type="button" className="btn ghost sm" onClick={() => void clearBought(plan.id)}>
+          {bought.size > 0 && (
+            <button type="button" className="btn ghost sm" onClick={untickAll}>
               Odznacz wszystko
             </button>
           )}
@@ -93,11 +103,11 @@ function ShoppingList({ plan }: { plan: PrepPlan & { id: number } }) {
 
       {physical && visit.length > 0 && (
         <Group
-          plan={plan}
           id="fd-prep-visit"
           title={`${physical.name} — wizyta w sklepie`}
           items={visit}
           bought={bought}
+          onTick={tick}
           aisles
         />
       )}
@@ -106,22 +116,22 @@ function ShoppingList({ plan }: { plan: PrepPlan & { id: number } }) {
         .map((s) => (
           <Group
             key={s.key}
-            plan={plan}
             id={`fd-prep-order-${s.key}`}
             title={`${s.name} — zamówienie przez internet`}
             shop={s}
             items={plan.shopping.filter((i) => i.group === 'order' && i.shop === s.key)}
             bought={bought}
+            onTick={tick}
           />
         ))}
       {home.length > 0 && (
         <Group
-          plan={plan}
           id="fd-prep-home"
           title="Sprawdź w domu"
           lead="Zwykle stoi w szafce: zajrzyj przed wyjściem, kup, czego brakuje."
           items={home}
           bought={bought}
+          onTick={tick}
         />
       )}
       <p className="wrap fd-prep-soft fd-prep-foot">
@@ -133,18 +143,18 @@ function ShoppingList({ plan }: { plan: PrepPlan & { id: number } }) {
 }
 
 interface GroupProps {
-  plan: PrepPlan & { id: number };
   id: string;
   title: string;
   lead?: string;
   shop?: PrepShop;
   items: ShoppingItem[];
   bought: Set<string>;
+  onTick: (key: string, on: boolean) => void;
   /** Headings by aisle: one walk through the shop. */
   aisles?: boolean;
 }
 
-function Group({ plan, id, title, lead, shop, items, bought, aisles = false }: GroupProps) {
+function Group({ id, title, lead, shop, items, bought, onTick, aisles = false }: GroupProps) {
   if (!items.length) return null;
   const sum = priceSum(items);
   return (
@@ -174,7 +184,7 @@ function Group({ plan, id, title, lead, shop, items, bought, aisles = false }: G
                 <h3>{AISLE_LABELS[item.aisle]}</h3>
               </li>
             )}
-            <Item plan={plan} item={item} done={bought.has(item.key)} />
+            <Item item={item} done={bought.has(item.key)} onTick={onTick} />
           </Fragment>
         ))}
       </ul>
@@ -182,12 +192,12 @@ function Group({ plan, id, title, lead, shop, items, bought, aisles = false }: G
   );
 }
 
-function Item({ plan, item, done }: { plan: PrepPlan & { id: number }; item: ShoppingItem; done: boolean }) {
+function Item({ item, done, onTick }: { item: ShoppingItem; done: boolean; onTick: (key: string, on: boolean) => void }) {
   const name = itemName(item);
   return (
     <li className={`fd-prep-item${done ? ' fd-prep-done' : ''}`}>
       <label>
-        <input type="checkbox" checked={done} onChange={() => void toggleBought(plan.id, item.key)} />
+        <input type="checkbox" checked={done} onChange={(e) => onTick(item.key, e.target.checked)} />
         <span className="fd-prep-item-main">
           <span className="fd-prep-name">
             {done && <Check size={16} strokeWidth={2} aria-hidden className="fd-prep-tick" />}
