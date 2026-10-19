@@ -19,7 +19,7 @@ import { planDates } from '../../prep/blocks';
 import { EXCLUSION_LABELS, planRecipes } from '../../prep/candidates';
 import { checkIn as runCheckIn, WINDOW_DAYS, type CheckIn } from '../../prep/checkin';
 import { goalName, shortDate } from '../../prep/format';
-import { generatePlan } from '../../prep/generate';
+import { generatePlan, newSeed } from '../../prep/generate';
 import { latestPlan, planEnd, savePrepPlan } from '../../prep/store';
 import { planTargets } from '../../prep/targets';
 import { MAX_DAYS, MIN_DAYS, type Cooking, type Exclusion, type PrepPlan } from '../../prep/types';
@@ -107,7 +107,7 @@ function Form({
   const pace = paceKgPerWeek(body, weight, kcal);
 
   // What an online order adds: recipes the shop alone cannot make.
-  const extra = useMemo(() => recipesAdded(index, store, exclude, profile), [index, store, exclude, profile]);
+  const extra = useMemo(() => recipesAdded(recipeIndex(products), store, exclude, profile), [products, store, exclude, profile]);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -117,7 +117,7 @@ function Form({
     const source = adjusts && useCheckIn ? 'checkin' : 'profile';
     const planned = { ...profile, dailyKcal: kcal };
     const result = generatePlan({
-      settings: { start, days, meals, cooking, store, online, exclude, seed: Math.floor(Math.random() * 2 ** 31), avoid: [] },
+      settings: { start, days, meals, cooking, store, online, exclude, seed: newSeed(), avoid: [] },
       index,
       dict,
       dayTargets: planTargets({ profile: planned, kcal, eaten: history.eaten, today, dates: planDates(start, days) }),

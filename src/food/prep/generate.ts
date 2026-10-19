@@ -63,6 +63,9 @@ const times = (m: Macros, k: number): Macros => ({
   fat: round2(m.fat * k),
 });
 
+/** A seed for a plan nobody has seen yet: "Ułóż plan" and "Inny plan". */
+export const newSeed = (): number => Math.floor(Math.random() * 2 ** 31);
+
 export const basketOf = (settings: Pick<PrepSettings, 'store' | 'online'>): string[] =>
   settings.online ? [settings.store, settings.online] : [settings.store];
 

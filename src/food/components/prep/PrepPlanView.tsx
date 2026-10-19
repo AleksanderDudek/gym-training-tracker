@@ -10,7 +10,7 @@ import { useDataset } from '../../hooks/useDataset';
 import { formatNumber, plural } from '../../lib/format';
 import { RECIPES } from '../../recipes/catalog';
 import { gramsLabel, longDate, portionLabel, rangeLabel, shortDate, weekdaySpan } from '../../prep/format';
-import { rerollPlan, swapRecipe } from '../../prep/generate';
+import { newSeed, rerollPlan, swapRecipe } from '../../prep/generate';
 import { averageDay, dayPlanTotals, mealAmount, mealsOn } from '../../prep/meals';
 import { itemName } from '../../prep/shopping';
 import { deletePrepPlan, planEnd, replacePrepPlan } from '../../prep/store';
@@ -75,7 +75,7 @@ export function PrepPlanView({ plan, profile, today, onNext }: Props) {
     if (bought && !(await ask('Ułożyć inny plan?', <p>Lista zakupów się zmieni; odhaczone zostaną tylko te pozycje, które są i w nowym planie.</p>, 'Ułóż inny')))
       return;
     setBusy(true);
-    await save(rerollPlan(plan, ready, Math.floor(Math.random() * 2 ** 31)), 'Nowy zestaw przepisów — lista zakupów też.');
+    await save(rerollPlan(plan, ready, newSeed()), 'Nowy zestaw przepisów — lista zakupów też.');
     setBusy(false);
   };
 
