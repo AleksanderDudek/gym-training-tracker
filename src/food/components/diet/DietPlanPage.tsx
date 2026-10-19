@@ -7,10 +7,12 @@ import { addDays, dayGoal, mondayOf, shortDay } from '../../diet/model';
 import { plannedDay, plannedKcal, type Plan } from '../../diet/plan';
 import { ACTIVE_PLAN } from '../../diet/store';
 import type { Profile } from '../../diet/types';
-import { diaryFromParams, diaryToParams } from '../../diet/url';
+import { diaryToParams, planPageFromParams, planPageToParams } from '../../diet/url';
 import { useMergedHistory, type History } from '../../hooks/useDiet';
+import { usePrepPlans } from '../../hooks/usePrep';
 import { useUrlState } from '../../hooks/useUrlState';
 import { formatDate, formatNumber } from '../../lib/format';
+import { PrepSection } from '../prep/PrepSection';
 import { ImportWorkbook } from './ImportWorkbook';
 import { Loading, Onboarding } from './Onboarding';
 import { useDietBase } from './useDietPage';
@@ -23,44 +25,59 @@ const diaryHref = (date: string, today: string): string =>
   hashWith(FOOD_PATH, diaryToParams({ date: date === today ? null : date, add: false }));
 
 /**
- * Plan posiłków — podstrona dziennika (w Produktach PL widok „Plan”): plan jako tydzień, czym
- * każdy dzień miał być i czym był, uwagi z planu i dni wzorcowe z wariantami. Oglądany tydzień
- * siedzi w adresie (`?dzien=`), jak dzień w dzienniku.
+ * Plan posiłków — podstrona dziennika. Na górze plan z zakupami (meal prep): bieżący albo formularz
+ * nowego (`?nowy=1`, Wstecz go zamyka). Pod nim plan z arkusza (w Produktach PL widok „Plan”): plan
+ * jako tydzień, czym każdy dzień miał być i czym był, uwagi z planu i dni wzorcowe z wariantami.
+ * Oglądany tydzień siedzi w adresie (`?dzien=`), jak dzień w dzienniku.
  */
 export default function DietPlanPage() {
-  const [state, update] = useUrlState(diaryFromParams, diaryToParams);
+  const [state, update, closeEntry] = useUrlState(planPageFromParams, planPageToParams);
   const { profile, plan, clock } = useDietBase();
+  const prepPlans = usePrepPlans();
   const today = clock.date;
   const date = state.date ?? today;
   const from = profile ? [mondayOf(date), mondayOf(today)].sort()[0]! : null;
   const history = useMergedHistory(from);
 
-  if (profile === undefined || plan === undefined) return <Loading />;
+  if (profile === undefined || plan === undefined || prepPlans === undefined) return <Loading />;
   if (!profile) return <Onboarding what="Plan posiłków" />;
-  if (!history) return <Loading />;
-  if (!plan) return <NoPlan />;
   return (
-    <PlanView
-      profile={profile}
-      plan={plan}
-      date={date}
-      today={today}
-      history={history}
-      onDate={(next) => update({ date: next === today ? null : next })}
-    />
+    <>
+      <PrepSection
+        profile={profile}
+        plans={prepPlans}
+        today={today}
+        formOpen={state.form}
+        onOpenForm={() => update({ form: true }, { push: true })}
+        onCloseForm={() => closeEntry({ form: false })}
+      />
+      {!plan ? (
+        <NoPlan />
+      ) : !history ? (
+        <Loading />
+      ) : (
+        <PlanView
+          profile={profile}
+          plan={plan}
+          date={date}
+          today={today}
+          history={history}
+          onDate={(next) => update({ date: next === today ? null : next })}
+        />
+      )}
+    </>
   );
 }
 
 function NoPlan() {
   return (
     <div className="grp">
-      <h2>Nie masz jeszcze planu</h2>
+      <h2>Plan z arkusza</h2>
       <p>
         Wczytaj swój arkusz z planem: dni wzorcowe z wariantami, potrawy z kaloriami i makro, parametry z panelu. Plik
-        jest czytany w przeglądarce i nigdzie nie jest wysyłany.
+        jest czytany w przeglądarce i nigdzie nie jest wysyłany. W dni planu z zakupami dziennik pokazuje plan z zakupami.
       </p>
-      <p>Bez planu też się da: dziennik układa propozycję dnia z tego, co jest w sklepach w pobliżu i w domu.</p>
-      <ImportWorkbook primary />
+      <ImportWorkbook />
     </div>
   );
 }
@@ -89,6 +106,7 @@ function PlanView({ profile, plan, date, today, history, onDate }: Props) {
   return (
     <>
       <div className="grp">
+        <div className="today-tag light">Plan z arkusza</div>
         <h2 className="today-name">{plan.name}</h2>
         <p>
           {formatDate(plan.startDate)} – {formatDate(end)} · {plan.days.length} dni ·{' '}

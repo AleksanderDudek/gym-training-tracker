@@ -1,3 +1,4 @@
+import { paceText } from '../diet/model';
 import { formatNumber, plural } from '../lib/format';
 
 const FRACTIONS: Record<number, string> = { 0.25: '¼', 0.5: '½', 0.75: '¾' };
@@ -64,4 +65,11 @@ export function roundGrams(grams: number): number {
   if (grams < 10) return Math.max(1, Math.round(grams));
   const step = grams < 100 ? 5 : 10;
   return Math.round(grams / step) * step;
+}
+
+/** Losing, keeping or gaining, by what the goal does at this weight (the model's pace, + is losing). */
+export function goalName(pace: number): string {
+  if (pace > 0.05) return `Redukcja · ${paceText(pace)}`;
+  if (pace < -0.05) return `Budowanie masy · ${paceText(pace)}`;
+  return 'Utrzymanie wagi';
 }

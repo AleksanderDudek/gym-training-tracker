@@ -57,6 +57,7 @@ export default defineConfig(({ mode }) => ({
           shortcut('Przekąska ruchowa', './#/przekaski/dodaj', 'Przekąska'),
           shortcut('Jedzenie dziś', './#/jedzenie', 'Jedzenie'),
           shortcut('Przepisy', './#/przepisy'),
+          shortcut('Lista zakupów', './#/jedzenie/zakupy', 'Zakupy'),
           shortcut('Sklepy w pobliżu', './#/w-poblizu', 'Sklepy'),
           shortcut('Osiągnięcia', './#/osiagniecia'),
         ],

@@ -10,6 +10,17 @@ import { renderWithBridge, testBridge } from '../../test/bridge';
 import DietPlanPage from './DietPlanPage';
 import DietProgressPage from './DietProgressPage';
 
+// Plan z zakupami nad planem z arkusza czyta bazę produktów: tu mała baza z testów.
+vi.mock('../../data', async () => {
+  const { DATASET, INDEXED } = await import('../../test/fixtures');
+  const loaded = { dataset: DATASET, products: INDEXED };
+  return {
+    MISSING_DATA_MESSAGE: 'Dane produktów nie są dołączone do tej wersji aplikacji.',
+    loadedDataset: () => loaded,
+    loadDataset: () => Promise.resolve(loaded),
+  };
+});
+
 const item = (text: string, kcal: number) => ({ text, kcal, protein: 30, carbs: 40, fat: 20, stores: [] });
 const PLAN: Plan = {
   id: 'active',
@@ -53,8 +64,10 @@ describe('Plan posiłków', () => {
     await saveProfile(completeProfile({ startDate: '2026-10-01' }));
     window.history.replaceState(null, '', '/#/jedzenie/plan');
     renderWithBridge(<DietPlanPage />);
-    expect(await screen.findByRole('heading', { name: 'Nie masz jeszcze planu' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Plan z arkusza' })).toBeInTheDocument();
     expect(screen.getByLabelText('Wczytaj plan z Excela')).toHaveAttribute('type', 'file');
+    // Nad nim plan z zakupami: bez planu — od razu jego formularz.
+    expect(screen.getByRole('heading', { name: 'Plan z listą zakupów' })).toBeInTheDocument();
   });
 
   test('tydzień planu: dzień prowadzi do dziennika, przejście o tydzień zostaje w adresie, plan da się usunąć', async () => {
@@ -82,7 +95,7 @@ describe('Plan posiłków', () => {
 
     await user.click(screen.getByRole('button', { name: 'Usuń plan' }));
     await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Usuń plan' }));
-    expect(await screen.findByRole('heading', { name: 'Nie masz jeszcze planu' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Plan z arkusza' })).toBeInTheDocument();
     expect(await db.plans.count()).toBe(0);
   });
 });

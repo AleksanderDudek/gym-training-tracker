@@ -30,3 +30,21 @@ export function diaryFromParams(params: URLSearchParams): DiaryState {
     add: params.get('dodaj') === '1',
   };
 }
+
+/**
+ * Plan posiłków: dzień tygodnia planu z arkusza (`?dzien=`, jak w dzienniku) i otwarty formularz
+ * nowego planu z zakupami (`?nowy=1`) — dopisany do historii, więc Wstecz go zamyka.
+ */
+export interface PlanPageState extends DiaryState {
+  form: boolean;
+}
+
+export function planPageToParams(state: PlanPageState): URLSearchParams {
+  const params = diaryToParams(state);
+  if (state.form) params.set('nowy', '1');
+  return params;
+}
+
+export function planPageFromParams(params: URLSearchParams): PlanPageState {
+  return { ...diaryFromParams(params), form: params.get('nowy') === '1' };
+}

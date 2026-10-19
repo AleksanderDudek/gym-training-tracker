@@ -25,10 +25,14 @@ import {
   type History,
   type NearbyChains,
 } from '../../hooks/useDiet';
+import { usePrepPlans } from '../../hooks/usePrep';
 import { useUrlState } from '../../hooks/useUrlState';
 import { formatNumber } from '../../lib/format';
 import type { Dictionaries } from '../../lib/types';
 import { formatDistance } from '../../nearby/geo';
+import { dayPlanTotals } from '../../prep/meals';
+import { planCovering } from '../../prep/store';
+import { PrepDayCard } from '../prep/PrepDayCard';
 import { AutoDayCard } from './AutoDayCard';
 import { FoodPicker } from './FoodPicker';
 import { StarButton } from '../common/StarButton';
@@ -118,6 +122,9 @@ function TodayView({ profile, plan, date, today, hour, nowMs, history, pickerOpe
   const day = useDay(date);
   const body = useMergedDay(date);
   const food = useFoodPool(profile, plan, nowMs);
+  // Plan z zakupami ma pierwszeństwo w swoje dni: to nowsza decyzja niż plan z arkusza.
+  const prepPlans = usePrepPlans();
+  const prep = prepPlans ? planCovering(prepPlans, date) : null;
   const [swapping, setSwapping] = useState<PlannedItem | null>(null);
 
   const eaten = useMemo(() => totals(entries ?? []), [entries]);
@@ -126,7 +133,7 @@ function TodayView({ profile, plan, date, today, hour, nowMs, history, pickerOpe
   const targets = dietProfile.targets(goal.kcal, profile.targetWeightKg);
   const dayDone = date < today || (date === today && hour >= 21);
   const status = macroStatus(targets, eaten, dayDone);
-  const planned = plan ? plannedDay(plan, date, day?.choices) : null;
+  const planned = plan && !prep ? plannedDay(plan, date, day?.choices) : null;
   const { nearby, dict, pool } = food;
 
   const base: Omit<Context, 'remaining' | 'mealsLeft'> = {
@@ -151,10 +158,10 @@ function TodayView({ profile, plan, date, today, hour, nowMs, history, pickerOpe
   const suggestions = suggest(pool, ctx, 8);
   const autoSeed = day?.autoSeed ?? seedOf(date);
   // Kilkaset pozycji oceniane cztery razy: na tyle tanio, że bez zapamiętywania.
-  const auto = planned ? null : autoDay(pool, base, autoSeed);
+  const auto = planned || prep ? null : autoDay(pool, base, autoSeed);
   const swapOptions = swapping ? swaps(planFood(swapping), pool, ctx) : [];
 
-  if (!entries || !day || !body) return <Loading />;
+  if (!entries || !day || !body || !prepPlans) return <Loading />;
 
   const log = (f: Food) =>
     void logFood(date, f).then(() => bridge.toast(`Zapisane: ${f.name} · ${formatNumber(f.nutrients.kcal, 0)} kcal.`));
@@ -168,7 +175,7 @@ function TodayView({ profile, plan, date, today, hour, nowMs, history, pickerOpe
         eaten={eaten}
         status={status}
         adjustment={goal.adjustment}
-        plannedKcal={plannedKcal(planned)}
+        plannedKcal={prep ? dayPlanTotals(prep, date).kcal : plannedKcal(planned)}
       >
         <div className="actions">
           <button type="button" className="btn wide" onClick={() => onPicker(true)}>
@@ -181,7 +188,9 @@ function TodayView({ profile, plan, date, today, hour, nowMs, history, pickerOpe
 
       <DietLinks date={date} today={today} />
 
-      {planned && plan ? (
+      {prep ? (
+        <PrepDayCard plan={prep} date={date} entries={entries} />
+      ) : planned && plan ? (
         <PlanDayCard plan={plan} planned={planned} date={date} entries={entries} onSwap={setSwapping} />
       ) : (
         <AutoDayCard
