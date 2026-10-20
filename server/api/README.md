@@ -50,7 +50,10 @@ npx wrangler secret put VAPID_PRIVATE_JWK < vapid-private.jwk.json
 # 3. Hasło do listy uwag (co najmniej 16 znaków; bez niego listy nie ma)
 npx wrangler secret put ADMIN_TOKEN
 
-# 4. Serwer
+# 4. Opcjonalnie: kopia każdej uwagi na kanale Discorda (niżej, „Na Discordzie”)
+npx wrangler secret put DISCORD_WEBHOOK_URL
+
+# 5. Serwer
 npx wrangler deploy                            # wypisze adres, np. https://gym-tracker-api.<konto>.workers.dev
 ```
 
@@ -99,6 +102,21 @@ treść od obcych ludzi nie wykona się jako kod. Albo bez przeglądarki:
 npx wrangler d1 execute gym-tracker-api --remote \
   --command "SELECT datetime(created/1000,'unixepoch'), email, view, text FROM feedback ORDER BY created DESC LIMIT 20"
 ```
+
+**Na Discordzie:** z sekretem `DISCORD_WEBHOOK_URL` każda nowa uwaga przychodzi też na kanał —
+treść, ekran, e-mail, zrzut jako obrazek i odnośnik do listy za hasłem. Ślad wizyty zostaje
+w bazie. Wiadomość zapisuje się najpierw w bazie, a na Discorda idzie w tle, już po odpowiedzi
+aplikacji: gdy Discord nie odpowie, nic nie ginie, a błąd widać w `npx wrangler tail`.
+Wzmianki są wyłączone, więc „@everyone” w treści nikogo nie zawoła. Serwer wysyła tylko na adres
+webhooka Discorda (`https://discord.com/api/webhooks/…`) — inny adres w sekrecie jest pomijany.
+
+1. Na Discordzie: **Ustawienia kanału → Integracje → Webhooki → Nowy webhook → Kopiuj adres URL**.
+   Kanał najlepiej prywatny — e-mail i zrzut widzi każdy, kto widzi kanał.
+2. `npx wrangler secret put DISCORD_WEBHOOK_URL` i wklej adres (nie trafia ani do repozytorium,
+   ani do `wrangler.toml`; kto ma adres, może pisać na kanał).
+3. `npx wrangler deploy`.
+
+Wyłączenie: `npx wrangler secret delete DISCORD_WEBHOOK_URL` albo usunięcie webhooka na Discordzie.
 
 **Ochrona:** limit 10 wiadomości na godzinę z jednego adresu (IP tylko jako skrót SHA-256
 z solą — samego adresu baza nie zna), ukryte pole-pułapka na boty, treść do 4000 znaków,

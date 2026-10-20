@@ -18,7 +18,9 @@ interface ExecutionContext {
 }
 
 export default {
-  fetch: (req: Request, env: Env): Promise<Response> => handle(req, env, d1Store(env.DB)),
+  // Kopia uwagi na Discorda wychodzi po odpowiedzi: `waitUntil` trzyma Workera, aż wyśle.
+  fetch: (req: Request, env: Env, ctx: ExecutionContext): Promise<Response> =>
+    handle(req, env, d1Store(env.DB), Date.now(), (p) => ctx.waitUntil(p)),
   scheduled: (_event: unknown, env: Env, ctx: ExecutionContext): void => {
     const store = d1Store(env.DB);
     // Ten sam przebieg sprząta skrzynki zegarków, które od tygodnia milczą.

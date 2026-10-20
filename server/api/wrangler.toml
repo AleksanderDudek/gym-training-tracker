@@ -1,5 +1,6 @@
 # Serwer aplikacji GYM TRACKER — przypomnienia push i uwagi od użytkowników.
-# Cloudflare Worker z cronem i bazą D1. Sekrety: VAPID_PRIVATE_JWK i ADMIN_TOKEN (hasło do listy uwag).
+# Cloudflare Worker z cronem i bazą D1. Sekrety: VAPID_PRIVATE_JWK, ADMIN_TOKEN (hasło do listy uwag)
+# i opcjonalnie DISCORD_WEBHOOK_URL (kopia każdej uwagi na kanale autora).
 # Wdrożenie krok po kroku: README.md w tym katalogu.
 name = "gym-tracker-api"
 main = "worker.ts"
