@@ -28,13 +28,14 @@ npm run build      # typecheck + produkcyjny build do dist/ z service workerem (
 npm run preview    # podgląd builda — tu działa też praca offline
 npm run typecheck  # tsc: aplikacja, testy, konfiguracja Vite i skrypty, service worker, filmy demo
 npm run lint       # oxlint
-npm test           # 1635 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, serwer… (vitest)
+npm test           # 1738 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, plan z zakupami, serwer… (vitest)
 ```
 
 Baza produktów i przepisy:
 
 ```bash
 npm run food:check-recipes  # pokrycie przepisów i ich koszyki sklepów: baza produktów razem z Selgrosem i sklepami internetowymi
+npm run food:check-prep     # plan z zakupami na prawdziwych danych: tydzień w najlepszych sklepach i każdym stylu diety
 npm run food:selgros        # produkty Selgrosa z wyszukiwarki selgros.pl (Playwright, ok. godziny; wznawia, strony starsze niż tydzień czyta ponownie; --fresh od zera)
 npm run food:data           # nowa baza z Open Food Facts i Open Prices (szczegóły w „Jedzenie”)
 ```
@@ -682,6 +683,57 @@ aplikacji. Dane produktów: [Open Food Facts](https://world.openfoodfacts.org), 
 - **Postęp** (podstrona): wykres wagi z planem, prognozą od ostatniego ważenia i celem, kalorie
   z 14 dni i średnie makro z tygodnia.
 
+**Cel w trzech kierunkach.** Tempo w profilu diety to −1…−0,25 kg na tydzień, **utrzymanie**
+i **+0,25 kg/tydz.** (spokojne budowanie masy). Kierunek wynika z wagi docelowej wobec startowej:
+przy celu wyżej nadwyżka nie jest ostrzeżeniem, ostrzeżeniem jest deficyt i przybieranie szybsze niż
+0,5% masy ciała na tydzień (zwykle więcej tłuszczu niż mięśni); data celu to pierwszy dzień na celu
+albo nad nim, a przy utrzymaniu daty nie ma.
+
+**Plan z zakupami (meal prep)** — u góry „Planu posiłków” (`#/jedzenie/plan`). Jedzenie na 5–14
+kolejnych dni dla jednej osoby, kupione w **jednym sklepie stacjonarnym albo w sklepie i jednym
+sklepie internetowym** — nigdy w dwóch stacjonarnych, jak w przepisach. Formularz: od kiedy, na ile
+dni, 3, 4 albo 5 posiłków, „Obiad z pudełka” albo „Obiad i kolacja z pudełka”, sklep (najbliższy
+z „W pobliżu”, potem ten z profilu), zamówienie przez internet (przy każdym sklepie: ile przepisów
+dokłada), „Bez mięsa”, „Bez ryb i owoców morza”, „Bez jajek”.
+
+- **Gotowanie na zapas**: dni dzielą się na bloki najwyżej czterech — danie ugotowane pierwszego
+  dnia bloku je się tego dnia i trzy kolejne (USDA FSIS: ugotowane jedzenie 3–4 dni w lodówce).
+  Tydzień to 4 + 3, czyli klasyczne gotowanie w niedzielę i w środę. Każdy blok ma własne danie na
+  obiad (przy „obiad i kolacja” — dwa), równe pudełka i ilości na całość; śniadania i przekąski idą
+  dwoma na zmianę, kolacje na świeżo do 20 minut, gotowce tylko jako przekąski. To samo danie nie
+  trafia dwa razy na jeden dzień.
+- **Pod styl i cel**: tylko przepisy kupione w całości w koszyku planu, nigdy „nie pasuje” do
+  sposobu odżywiania (przy limicie węglowodanów — keto, low carb — tylko „pasuje”, a limitu nie
+  przekracza żaden dzień). Porcje co ćwierć (½–2½), a do nich dodatki: ryż albo ziemniaki do
+  pudełka, bułka i awokado do wytrawnego śniadania, banan i orzechy do słodkiego, oliwa. Dzień trafia
+  w cel kalorii (w testach ±7%, na prawdziwych danych zwykle ±2–3%), białko nie spada poniżej minimum.
+  Ulubione przepisy mają pierwszeństwo, wspólne składniki też (jedno opakowanie skyru na dwa
+  przepisy). „Inny plan” losuje od nowa, „Wymień” podmienia jeden przepis w całym planie.
+- **Plan idzie za postępami (check-in)**: przed każdym planem 28 ostatnich dni — trend z ważeń
+  i średnia z zapisów jedzenia — mówi, ile naprawdę spalasz (zjedzone minus zmiana wagi razy energia
+  w kilogramie). Gdy to różni się od modelu o 100 kcal lub więcej, nowy cel to cel z profilu
+  poprawiony o tę różnicę: najwyżej o 250 kcal naraz, nigdy poniżej podstawowej przemiany materii
+  (i 1500 kcal u mężczyzn, 1200 u kobiet). Po dojściu do wagi docelowej — utrzymanie. Potrzeba co
+  najmniej 4 ważeń z 14 dni i zapisów z ¾ tych dni; zapisy, z których wychodzi spalanie poza
+  0,8–2,5 × BMR, uznaje za niepełne. Dopasowany cel jest zaznaczony jako zalecany, a plan zapisuje go
+  w profilu — dziennik i plan liczą tak samo. Tydzień z nadwyżką rozkłada się raz na dni planu
+  w bieżącym tygodniu.
+- **Lista zakupów** (`#/jedzenie/zakupy`, także skrót aplikacji): wizyta w sklepie dział po dziale,
+  zamówienie przez internet z odnośnikami do produktów, „Sprawdź w domu” (oliwa, przyprawy, białko
+  w proszku). Opakowania wybranego produktu („3 opak. · po 450 g”), sztuki („10 szt.” jajek) albo
+  gramy; ceny orientacyjne, a suma tylko wtedy, gdy cenę ma co najmniej połowa pozycji. Surowe mięso
+  i ryba potrzebne od trzeciego dnia: „zamroź po zakupach”, a dzień przed gotowaniem dziennik
+  przypomina, co przełożyć do lodówki. Odhaczenia zostają przy planie i działają bez zasięgu i bez
+  bazy produktów; „Udostępnij listę” wysyła ją jako tekst.
+- **W dzienniku**: w dni planu „Plan na ten dzień” — posiłki z porcją i dodatkami do odhaczenia
+  („Zjadłem” zapisuje je jak każde jedzenie), w dniu gotowania „Dziś gotujesz”. Plan z zakupami ma
+  w swoje dni pierwszeństwo przed planem z arkusza i „Propozycją dnia”; z kilku planów obowiązuje
+  najnowszy, więc następny tydzień można ułożyć zawczasu.
+- Plan to migawka w bazie diety (tabela `prep`, 12 najnowszych): przepisy, porcje, gotowanie
+  i lista nie zmieniają się z nową bazą produktów. Jest w kopii zapasowej i znika z „Usuń wszystkie
+  dane”. `npm run food:check-prep` układa tydzień na prawdziwych danych w czterech najlepszych
+  sklepach (i z zamówieniem) w każdym stylu.
+
 **Jedno ciało, jedno źródło.** Waga z dziennika jedzenia to ta sama waga co w profilu i na karcie
 ważenia — zapis z diety trafia do dziennika wagi. Kroki dieta bierze z wpisów i zegarka Garmin,
 a wpis kroków z diety staje się zwykłym wpisem kroków (z doświadczeniem i odznakami jak każdy inny).
@@ -1066,7 +1118,7 @@ dostaje rzadsze `setInterval`, więc licznik oparty na tyknięciach zostawałby 
 src/
   types.ts                  wszystkie typy domenowe
   routing.ts                trasy w hashu adresu: pięć zakładek, sekcje Treningu i Jedzenia z pamięcią ostatniej, podstrony, stan strony w zapytaniu, stare adresy
-  routing.test.ts           34 testy tras, zakładek, sekcji i ich pamięci, podstron, zapytania w hashu, przekąsek i starych adresów
+  routing.test.ts           35 testów tras, zakładek, sekcji i ich pamięci, podstron, zapytania w hashu, przekąsek i starych adresów
   routing.dom.test.ts       5 testów routera w przeglądarce: `hashchange`, pamięć sekcji i jej kopia w `sessionStorage`
   data/exercises.ts         biblioteka 114 ćwiczeń, drabiny sprzętu, lista „bez sprzętu”, cztery treningi, treningi profili
   data/exjokes.ts           dopiski do 114 ćwiczeń i do gotowych treningów
@@ -1207,13 +1259,14 @@ src/
     data.ts                 baza produktów: adres z buildu, pobranie, gzip albo czysty JSON, indeks do wyszukiwania
     hash.ts                 stan stron w zapytaniu wewnątrz hasha (`#/produkty?q=skyr&ns=a`)
     food.css                miejsce na style wspólne całej zakładce; obszary mają arkusze obok swoich stron
-    *.test.ts(x)            33 testy karty Dziś, kopii i resetu, arkuszy bez zderzeń klas, bazy produktów i hasha
+    *.test.ts(x)            35 testów karty Dziś, kopii i resetu, arkuszy bez zderzeń klas, bazy produktów i hasha
     lib/                    produkty: filtry, fasety, sortowanie, wyszukiwanie bez względu na ogonki, stan w adresie, formaty, opakowania — 51 testów
-    recipes/                przepisy białkowe i gotowce: katalog, składniki, koszyki sklepów i grupowanie, zamiany, progi, makro, gotowe produkty, hale po supermarketach — 267 testów
+    recipes/                przepisy białkowe i gotowce: katalog, składniki, koszyki sklepów i grupowanie, zamiany, progi, makro, gotowe produkty, hale po supermarketach — 319 testów
     online/                 sklepy internetowe: rejestr, dane sklepów (`data/*.json`), scalanie z bazą po EAN, kontrola liczb — 36 testów
     chains/                 sieci z własnymi danymi (Selgros): rejestr, dane (`data/*.json`), scalanie po EAN bez oferty online, kontrola liczb — 10 testów
     nearby/                 w pobliżu: odległości, zapytanie do Overpass (z halami Selgros i Makro) z zapasowym serwerem, kopia na dobę, promień — 33 testy
-    diet/                   dieta: baza Dexie (`produkty-pl-dieta`, wersja 3 z zestawami i ulubionymi), model energii, sposoby odżywiania, dzień, plan z Excela, zestawy, ulubione, wyszukiwanie, podpowiedzi — 133 testów
+    diet/                   dieta: baza Dexie (`produkty-pl-dieta`, wersja 4 z zestawami, ulubionymi i planami z zakupami), model energii z kierunkiem celu, sposoby odżywiania, dzień, plan z Excela, zestawy, ulubione, wyszukiwanie, podpowiedzi — 136 testów
+    prep/                   plan z zakupami (meal prep): bloki gotowania, przepisy z koszyka, wybór ról, porcje i dodatki, cele dni, check-in, lista zakupów, migawka w bazie, odczyt z kopii — 86 testów
     restaurants/            lokale: dane sieci (`data/*.json`), kontrola liczb, wyszukiwanie, kolejność, „Najwięcej białka”, stan w adresie — 101 testów
     hooks/                  baza produktów, menu lokali, dieta na żywo i scalona z treningiem, stan w adresie, lokalizacja, sklepy w pobliżu — 22 testy
     components/common/      karta i szczegóły produktu, zdjęcie, oceny, cena, arkusz od dołu, ekrany stanu
@@ -1221,8 +1274,9 @@ src/
     components/recipes/     przepisy: lista z filtrami, karta ze sklepem, zamiana składnika, gotowe produkty
     components/nearby/      „W pobliżu”: mapa Leaflet, promień, sklepy i przepisy z nich
     components/diet/        dziennik, plan posiłków, postęp, profil diety, pierwsze kroki, wybór jedzenia i zestawy, import z Excela
+    components/prep/        plan z zakupami: formularz z check-inem, plan (przepisy, gotowanie, dzień po dniu), lista zakupów, plan dnia w dzienniku
     components/restaurants/ Lokale: lista sieci z wyszukiwaniem, menu sieci, karta pozycji z dodaniem do dziennika
-    components/**/*.test.tsx 123 testy stron pod jsdom — przez role i etykiety, nie znaczniki
+    components/**/*.test.tsx 138 testów stron pod jsdom — przez role i etykiety, nie znaczniki
     test/                   dane do testów: produkty, most do treningu, arkusz Excela
   api.ts                    adres serwera aplikacji z buildu (`VITE_API_URL`)
   push.ts                   przypomnienia w przeglądarce: zgoda, subskrypcja Web Push, wysyłka listy
@@ -1268,6 +1322,7 @@ scripts/food/               przygotowanie bazy produktów (`npm run food:*`, prz
   extract-priced.ts         produkty z ceną w PLN z pełnego zrzutu — połowy brakuje w wyciągu „en:poland”
   prepare-data.ts           złożenie `data/food/products.json.gz` z wyciągu, cen i taksonomii
   check-recipes.ts          pokrycie przepisów na dołączonej bazie: kandydaci, sklepy, domyślny wariant
+  check-prep.ts             plan z zakupami na dołączonej bazie: tydzień w najlepszych sklepach i każdym stylu, trafienie w cel, lista
   fetch-selgros.ts          produkty Selgrosa z wyszukiwarki selgros.pl (Playwright, pamięć stron, wznawianie)
   http.ts                   przedstawienie się API Open Food Facts i przerwy między zapytaniami
   lib/                      przekształcenie wiersza, ceny, sieci sklepów, taksonomie, pisownia, TSV, rekordy Selgrosa — 61 testów
@@ -1293,7 +1348,7 @@ Silnik jest w całości oddzielony od interfejsu. `engine/` nie importuje niczeg
 przyjmują stan i zwracają zmiany, więc dają się testować bez DOM-u. Funkcje mutujące (`applyResult`,
 `applyLayoff`) działają na przekazanym obiekcie — `App.tsx` woła je zawsze na kopii stanu.
 
-Jedzenie ma ten sam podział: `food/lib`, `recipes`, `nearby`, `diet`, `restaurants` i `online` to czysta logika bez Reacta
+Jedzenie ma ten sam podział: `food/lib`, `recipes`, `nearby`, `diet`, `prep`, `restaurants` i `online` to czysta logika bez Reacta
 (testowana w node), a komponenty tylko wyświetlają — ich testy renderują strony pod jsdom. Do głównej
 paczki trafia z jedzenia tylko to, czego potrzebuje ekran Dziś i App, zanim ktoś wejdzie w Jedzenie:
 znacznik diety, most, zaślepka karty i stan w hashu (`dietFlag.ts`, `bridge.ts`,
