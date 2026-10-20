@@ -26,8 +26,18 @@ export interface SideDef {
   amount: (steps: number) => string;
 }
 
+/**
+ * Oil in kitchen spoons: a teaspoon is 5 ml, a tablespoon 15 ml, and a millilitre of oil weighs
+ * 0.915 g - 4.5 g and 13.5 g (USDA: 1 tbsp olive oil = 13.5 g).
+ */
+const TEASPOON_OIL = 4.5;
+
 function oilAmount(n: number): string {
-  return ['1 łyżeczka oliwy', '1 łyżka oliwy', '1½ łyżki oliwy', '2 łyżki oliwy'][n - 1] ?? `${n * 5} g oliwy`;
+  const spoons = Math.floor(n / 3);
+  const tea = n % 3;
+  const big = spoons === 1 ? '1 łyżka' : spoons > 1 ? `${spoons} łyżki` : '';
+  const small = tea === 1 ? '1 łyżeczka' : tea === 2 ? '2 łyżeczki' : '';
+  return `${[big, small].filter(Boolean).join(' i ')} oliwy`;
 }
 
 export const SIDES: Record<SideId, SideDef> = {
@@ -63,8 +73,8 @@ export const SIDES: Record<SideId, SideDef> = {
     id: 'oil',
     ingredient: 'oil',
     kind: 'fat',
-    step: 5,
-    max: 2,
+    step: TEASPOON_OIL,
+    max: 3,
     name: 'oliwa',
     amount: oilAmount,
   },
@@ -92,7 +102,11 @@ export const SIDES: Record<SideId, SideDef> = {
  * Oil under a carb limit: up to two tablespoons on a keto day's eggs or salad - the fat the protein
  * recipes leave out. Otherwise a tablespoon is enough.
  */
-export const KETO_OIL: SideDef = { ...SIDES.oil, max: 4 };
+export const KETO_OIL: SideDef = { ...SIDES.oil, max: 6 };
+
+/** A side's portion grows with a big meal, up to twice: 3500 kcal a day is not eaten with one roll. */
+const ROOM_KCAL = 700;
+export const roomFor = (slotKcal: number): number => Math.max(1, Math.min(2, slotKcal / ROOM_KCAL));
 
 /** What a recipe brings by itself, for choosing its sides. */
 export interface SideContext {
@@ -107,27 +121,32 @@ export interface SideContext {
   classic: boolean;
   /** Portion locked (a gotowiec, a bar): eaten as bought, no sides. */
   fixed: boolean;
-  /** The style caps carbohydrates (keto, low carb): its energy has to come from fat, nuts included. */
+  /** The style caps carbohydrates (keto, low carb): no starch next to the dish, the energy comes from fat. */
   carbLimited: boolean;
+  /** How much bigger than an ordinary meal this one is (1–2, `roomFor`): the sides may grow with it. */
+  room?: number;
 }
 
 /**
  * The sides a meal may get, by the meal and the dish: a box gets rice or potatoes and oil, a
- * savoury breakfast or supper a roll, avocado and oil (and nuts under a carb limit), a sweet one a
- * banana and nuts, a savoury snack nuts. A dish with a starch of its own gets more of that starch (more rice in the curry's
- * box), or none (no rice next to pasta). Each starts at zero: the portions decide whether a day
- * needs it.
+ * savoury breakfast or supper a roll, avocado and oil, a sweet one a banana and nuts, a savoury snack
+ * nuts. A dish with a starch of its own gets more of that starch (more rice in the curry's box), or
+ * none (no rice next to pasta). Under a carb limit (keto, low carb) there is no starch and no banana
+ * at all - the styles avoid them - but more oil, and nuts with every meal. Each starts at zero: the
+ * portions decide whether a day needs it.
  */
 export function sidesFor(c: SideContext): SideDef[] {
   if (c.fixed) return [];
-  const carb = (usual: SideDef): SideDef[] => (!c.starch ? [usual] : c.ownStarch ? [SIDES[c.ownStarch]] : []);
+  const carb = (usual: SideDef): SideDef[] =>
+    c.carbLimited ? [] : !c.starch ? [usual] : c.ownStarch ? [SIDES[c.ownStarch]] : [];
   const oil = c.carbLimited ? KETO_OIL : SIDES.oil;
-  if (c.slot === 'lunch' || (c.slot === 'dinner' && c.box)) return [...carb(c.classic ? SIDES.potato : SIDES.rice), oil];
-  if (c.savoury && c.slot !== 'snack')
-    return [...carb(SIDES.roll), SIDES.avocado, oil, ...(c.carbLimited ? [SIDES.nuts] : [])];
-  // A banana goes with oats or a cake too: it is fruit, not a second starch.
-  if (!c.savoury) return [SIDES.banana, SIDES.nuts];
-  return [SIDES.nuts];
+  const room = c.room ?? 1;
+  const grow = (defs: SideDef[]) => (room > 1 ? defs.map((d) => ({ ...d, max: Math.ceil(d.max * room) })) : defs);
+  if (c.slot === 'lunch' || (c.slot === 'dinner' && c.box)) return grow([...carb(c.classic ? SIDES.potato : SIDES.rice), oil]);
+  if (c.savoury && c.slot !== 'snack') return grow([...carb(SIDES.roll), SIDES.avocado, oil, ...(c.carbLimited ? [SIDES.nuts] : [])]);
+  // A banana goes with oats or a cake too: it is fruit, not a second starch - but not under a carb limit.
+  if (!c.savoury) return grow([...(c.carbLimited ? [] : [SIDES.banana]), SIDES.nuts]);
+  return grow([SIDES.nuts]);
 }
 
 /** A side as a recipe of one ingredient, so it is bought by exactly the rules recipes are. */
@@ -150,10 +169,20 @@ export interface ResolvedSide {
   perStep: Macros;
 }
 
-/** The side's macros per step in this basket: the physical shop's product, or typical values. */
+/** Below this, an oil's "100 g" is a label per 100 ml: a gram of fat has 9 kcal, so 100 g of oil ~880-900. */
+const OIL_PER_ML_BELOW = 860;
+const OIL_DENSITY = 0.915;
+
+/**
+ * The side's macros per step in this basket: the physical shop's product, or typical values. Oil
+ * labels give 100 ml; a step is in grams, so their numbers are read per millilitre.
+ */
 export function resolveSide(def: SideDef, candidates: Candidates, basket: Basket): ResolvedSide {
   const item = resolveRecipe(asRecipe(def, def.step), candidates, basket).items[0]!;
-  return { def, perStep: item.macros };
+  const perHundred = (item.macros.kcal / def.step) * 100;
+  const k = def.ingredient === 'oil' && perHundred < OIL_PER_ML_BELOW ? 1 / OIL_DENSITY : 1;
+  const m = item.macros;
+  return { def, perStep: { kcal: m.kcal * k, protein: m.protein * k, carbs: m.carbs * k, fat: m.fat * k } };
 }
 
 /** The macros of `steps` steps. */

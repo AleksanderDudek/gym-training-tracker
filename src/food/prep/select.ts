@@ -103,9 +103,15 @@ export function scoreFor(r: PlanRecipe, role: Role, ctx: SelectContext, chosen: 
   return fit + density + (r.fixed ? 2 : 1) * size + quick + favorite + shared - locked;
 }
 
-/** The candidates of a role. */
+/**
+ * The candidates of a role. A recipe whose portion cannot change (a gotowiec) must fit the meal:
+ * a 340 kcal bar and drink is no 180 kcal snack of a 1200 kcal day - unless nothing else is left.
+ */
 function candidatesFor(role: Role, ctx: SelectContext): PlanRecipe[] {
-  return ctx.pool.filter((r) => fitsRole(r, role) && !ctx.avoid.has(r.recipe.id));
+  const all = ctx.pool.filter((r) => fitsRole(r, role) && !ctx.avoid.has(r.recipe.id));
+  const limit = 1.6 * slotKcal(role, ctx);
+  const sized = all.filter((r) => !r.fixed || r.perServing.kcal <= limit);
+  return sized.length ? sized : all;
 }
 
 /** One of the four best, the better likelier (weights 4, 3, 2, 1) - the same seed, the same pick. */

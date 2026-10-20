@@ -10,7 +10,7 @@ import type { CheckIn } from './checkin';
 import { planRecipes, type PlanRecipe } from './candidates';
 import { fitPortions, mealMacros, type MealSpec } from './portions';
 import { selectRecipes, swapCandidate, type SelectContext } from './select';
-import { resolveSide, sideMacros, sidesFor, type ResolvedSide, type SideDef } from './sides';
+import { resolveSide, roomFor, sideMacros, sidesFor, type ResolvedSide, type SideDef } from './sides';
 import { shoppingList, type RecipeUse, type SideUse } from './shopping';
 import { slotsFor } from './slots';
 import {
@@ -203,6 +203,7 @@ export function generatePlan(input: GenerateInput): GenerateResult {
         classic: recipe.classic,
         fixed: recipe.fixed,
         carbLimited: ctx.carbLimited,
+        room: roomFor(slot.share * ctx.dayKcal),
       }).map(resolved);
       specs.push({
         day: d,

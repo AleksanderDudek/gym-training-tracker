@@ -3,7 +3,8 @@ import { INGREDIENTS } from '../recipes/ingredients';
 import { AISLE, AISLE_LABELS, AISLE_ORDER } from './aisles';
 import { BLOCK_DAYS, cookingBlocks, planDates } from './blocks';
 import { gramsLabel, mixed, portionLabel, rangeLabel, roundGrams, weekdaySpan } from './format';
-import { SIDES, sidesFor } from './sides';
+import { prepCandidates } from '../test/prep';
+import { SIDES, resolveSide, roomFor, sidesFor } from './sides';
 import { MEAL_COUNTS, slotsFor } from './slots';
 
 describe('cooking blocks', () => {
@@ -89,19 +90,44 @@ describe('sides', () => {
     expect(sidesFor({ ...ctx, fixed: true })).toEqual([]);
   });
 
-  test('under a carb limit: more oil, and nuts with a savoury meal too', () => {
+  test('under a carb limit: no starch and no banana, two tablespoons of oil, nuts with a savoury meal too', () => {
     const keto = sidesFor({ ...ctx, slot: 'dinner', box: false, carbLimited: true });
-    expect(keto.map((s) => s.id)).toEqual(['roll', 'avocado', 'oil', 'nuts']);
-    expect(keto.find((s) => s.id === 'oil')!.max).toBe(4);
-    expect(sidesFor(ctx).find((s) => s.id === 'oil')!.max).toBe(2);
+    expect(keto.map((s) => s.id)).toEqual(['avocado', 'oil', 'nuts']);
+    expect(keto.find((s) => s.id === 'oil')!.max).toBe(6);
+    expect(sidesFor({ ...ctx, carbLimited: true }).map((s) => s.id)).toEqual(['oil']);
+    expect(sidesFor({ ...ctx, slot: 'breakfast', box: false, savoury: false, carbLimited: true }).map((s) => s.id)).toEqual([
+      'nuts',
+    ]);
+    expect(sidesFor(ctx).find((s) => s.id === 'oil')!.max).toBe(3);
+  });
+
+  test('an oil label per 100 ml is read per millilitre: a teaspoon of 4.5 g has the energy of 4.9 ml', () => {
+    // The typical oil (824 kcal "per 100 g") is a label per 100 ml: 4.5 g of it is 4.5 / 0.915 ml.
+    const oil = resolveSide(SIDES.oil, prepCandidates(), ['biedronka']);
+    expect(oil.perStep.kcal).toBeCloseTo((4.5 / 0.915) * 8.24, 1);
+  });
+
+  test('a big meal may get bigger sides, up to twice', () => {
+    expect(roomFor(500)).toBe(1);
+    expect(roomFor(1050)).toBe(1.5);
+    expect(roomFor(2000)).toBe(2);
+    const big = sidesFor({ ...ctx, room: 1.5 });
+    expect(big.map((s) => [s.id, s.max])).toEqual([
+      ['rice', 6],
+      ['oil', 5],
+    ]);
   });
 
   test('amounts a person can measure', () => {
     expect(SIDES.rice.amount(3)).toBe('75 g ryżu (suchego)');
     expect(SIDES.roll.amount(2)).toBe('2 bułki');
+    // Spoons as a kitchen has them: 5 and 15 ml, 4.5 and 13.5 g of oil.
+    expect(SIDES.oil.step).toBe(4.5);
     expect(SIDES.oil.amount(1)).toBe('1 łyżeczka oliwy');
-    expect(SIDES.oil.amount(2)).toBe('1 łyżka oliwy');
-    expect(SIDES.oil.amount(4)).toBe('2 łyżki oliwy');
+    expect(SIDES.oil.amount(2)).toBe('2 łyżeczki oliwy');
+    expect(SIDES.oil.amount(3)).toBe('1 łyżka oliwy');
+    expect(SIDES.oil.amount(4)).toBe('1 łyżka i 1 łyżeczka oliwy');
+    expect(SIDES.oil.amount(6)).toBe('2 łyżki oliwy');
     expect(SIDES.avocado.amount(1)).toBe('½ awokado');
   });
 });

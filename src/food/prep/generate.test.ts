@@ -67,15 +67,48 @@ describe('a plan meets the day, whatever the style', () => {
     ([3, 4, 5] as const).flatMap((meals) => (['lunch', 'both'] as Cooking[]).map((cooking) => ({ style, meals, cooking }))),
   );
 
-  test.each(cases)('$style, $meals meals, cooking $cooking: energy ±7 %, protein ≥ minimum, carbs within the limit', ({ style, meals, cooking }) => {
+  test.each(cases)('$style, $meals meals, cooking $cooking: energy −7…+5 %, protein ≥ minimum, carbs within the limit', ({ style, meals, cooking }) => {
     const p = plan({ meals, cooking }, style);
     expect(p.meals).toHaveLength(7 * meals);
     for (const { date, targets } of p.dayTargets) {
       const t = dayTotal(p, date);
-      expect(Math.abs(t.kcal - targets.kcal) / targets.kcal, `${date} kcal ${t.kcal} / ${targets.kcal}`).toBeLessThanOrEqual(0.07);
+      // Never 5 % over (the diary's "ponad cel"), at most 7 % under.
+      expect((t.kcal - targets.kcal) / targets.kcal, `${date} kcal ${t.kcal} / ${targets.kcal}`).toBeLessThanOrEqual(0.05);
+      expect((t.kcal - targets.kcal) / targets.kcal, `${date} kcal ${t.kcal} / ${targets.kcal}`).toBeGreaterThanOrEqual(-0.07);
       expect(t.protein, date).toBeGreaterThanOrEqual(targets.protein.min);
       // A carb limit is a limit: not even a gram over.
       if (targets.carbs.max !== null) expect(t.carbs, date).toBeLessThanOrEqual(targets.carbs.max + 0.05);
+    }
+  });
+
+  test.each([
+    { sex: 'K' as const, kcal: 1200, weight: 55, meals: 3 as const },
+    { sex: 'K' as const, kcal: 1200, weight: 55, meals: 4 as const },
+    { sex: 'M' as const, kcal: 3200, weight: 85, meals: 3 as const },
+    { sex: 'M' as const, kcal: 3500, weight: 85, meals: 4 as const },
+  ])('$kcal kcal ($sex, $meals meals): every style fed within −7…+5 %, carbs within a limit, fat at its minimum', ({ sex, kcal, weight, meals }) => {
+    for (const style of DIET_PROFILE_IDS) {
+      const profile = prepProfile({ sex, dietProfile: style, dailyKcal: kcal, startWeightKg: weight, targetWeightKg: weight });
+      const result = generatePlan({
+        ...input({ meals }, style, kcal),
+        dayTargets: planTargets({ profile, kcal, eaten: new Map(), today: '2026-10-20', dates: planDates('2026-10-20', 7) }),
+      });
+      if (!result.ok) throw new Error(result.message);
+      for (const { date, targets } of result.plan.dayTargets) {
+        const t = dayTotal(result.plan, date);
+        expect((t.kcal - targets.kcal) / targets.kcal, `${style} ${date}`).toBeLessThanOrEqual(0.05);
+        expect((t.kcal - targets.kcal) / targets.kcal, `${style} ${date}`).toBeGreaterThanOrEqual(-0.07);
+        if (targets.carbs.max !== null) expect(t.carbs, `${style} ${date}`).toBeLessThanOrEqual(targets.carbs.max);
+        expect(t.fat, `${style} ${date}`).toBeGreaterThanOrEqual(targets.fat.min);
+      }
+    }
+  });
+
+  test('keto and low carb get no starch and no banana next to their dishes', () => {
+    for (const style of ['keto', 'lowcarb'] as const) {
+      const p = plan({ meals: 5 }, style);
+      const starch = p.meals.flatMap((m) => m.sides).filter((x) => ['rice', 'potato', 'roll', 'banana'].includes(x.ingredient));
+      expect(starch, style).toEqual([]);
     }
   });
 

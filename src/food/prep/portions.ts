@@ -3,8 +3,16 @@ import type { Macros } from '../recipes/macros';
 import type { PlanRecipe } from './candidates';
 import { sideMacros, type ResolvedSide } from './sides';
 
-/** Servings a meal may have: what a spoon or a ladle can measure, from half to two and a half. */
-export const PORTIONS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5] as const;
+/** Servings a meal may have: what a spoon or a ladle can measure, from half to three. */
+export const PORTIONS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3] as const;
+
+/**
+ * A carb limit is kept with half a gram to spare: the diary rounds a day to a tenth, and 100.05 g
+ * would show as "ponad limit". The fat minimum gets the same half gram.
+ */
+const MARGIN = 0.5;
+/** The diary flags a day over 5 % above its goal; the plan keeps a little below that. */
+const OVER = 0.045;
 const ONE = PORTIONS.indexOf(1);
 
 export interface MealSpec {
@@ -34,20 +42,27 @@ const rel = (x: number, ref: number) => x / Math.max(ref, 1);
  * share of the day.
  */
 export function dayScore(m: Macros, t: MacroTargets, meals: readonly { kcal: number; share: number }[]): number {
-  let s = 50 * rel(m.kcal - t.kcal, t.kcal) ** 2;
+  const energy = rel(m.kcal - t.kcal, t.kcal);
+  // More than 5 % over is what the diary calls "ponad cel": a step, as for the other limits.
+  let s = 50 * energy ** 2 + (energy > OVER ? 0.5 : 0);
   const p = rel(m.protein - t.protein.target, t.protein.target);
   if (p < 0) s += 20 * p ** 2;
   if (m.protein < t.protein.min) s += 40 * rel(t.protein.min - m.protein, t.protein.target) ** 2;
   if (p > 0.25) s += 4 * (p - 0.25) ** 2;
-  // Any gram over a carb limit costs a step, not only a slope: "1 g ponad limit" is still over.
-  if (t.carbs.max !== null && m.carbs > t.carbs.max + 0.05) s += 0.5 + 60 * rel(m.carbs - t.carbs.max, t.carbs.max) ** 2;
-  s += (t.carbs.max !== null ? 0.5 : 2) * rel(m.carbs - t.carbs.target, Math.max(t.carbs.target, 50)) ** 2;
-  if (m.fat < t.fat.min) s += 20 * rel(t.fat.min - m.fat, t.fat.target) ** 2;
+  if (t.carbs.max !== null) {
+    // A limit, not a target: under it nothing pulls carbohydrates up; over it costs a step and a slope.
+    if (m.carbs > t.carbs.max - MARGIN) s += 0.5 + 60 * rel(m.carbs - t.carbs.max + MARGIN, t.carbs.max) ** 2;
+  } else s += 2 * rel(m.carbs - t.carbs.target, Math.max(t.carbs.target, 50)) ** 2;
+  // Fat below its minimum (hormones, vitamins) costs a step too: the diary calls it "za mało".
+  if (m.fat < t.fat.min + MARGIN) s += 0.5 + 20 * rel(t.fat.min + MARGIN - m.fat, t.fat.target) ** 2;
   if (t.fat.max !== null && m.fat > t.fat.max) s += 20 * rel(m.fat - t.fat.max, t.fat.target) ** 2;
   s += rel(m.fat - t.fat.target, t.fat.target) ** 2;
   for (const meal of meals) s += 3 * (rel(meal.kcal, m.kcal) - meal.share) ** 2;
   return s;
 }
+
+/** Whether a day keeps its carb limit (with the margin). */
+const withinLimit = (m: Macros, t: MacroTargets) => t.carbs.max === null || m.carbs <= t.carbs.max - MARGIN;
 
 interface Var {
   key: string;
@@ -127,7 +142,7 @@ export function fitPortions(
   const byDay = new Map<number, MealSpec[]>();
   for (const m of meals) byDay.set(m.day, [...(byDay.get(m.day) ?? []), m]);
 
-  const scoreDay = (day: number): number => {
+  const dayOf = (day: number): { total: Macros; kcals: { kcal: number; share: number }[] } => {
     const list = byDay.get(day) ?? [];
     const total: Macros = { kcal: 0, protein: 0, carbs: 0, fat: 0 };
     const kcals: { kcal: number; share: number }[] = [];
@@ -147,21 +162,35 @@ export function fitPortions(
       total.fat += macros.fat;
       kcals.push({ kcal: macros.kcal, share: m.share });
     }
+    return { total, kcals };
+  };
+  const scoreDay = (day: number): number => {
+    const { total, kcals } = dayOf(day);
     return dayScore(total, targets[day]!, kcals);
   };
 
   const dayScores = new Map<number, number>();
   for (const day of byDay.keys()) dayScores.set(day, scoreDay(day));
 
-  /** The change of the whole plan's score if these moves were made. */
+  /**
+   * The change of the whole plan's score if these moves were made. A move that takes a day over its
+   * carb limit (or further over it) is not made at all: the limit is the style's own rule.
+   */
   const gain = (moves: Move[]): number => {
-    const days = new Set(moves.flatMap((m) => m.v.days));
+    const days = [...new Set(moves.flatMap((m) => m.v.days))];
     const touched = new Set(moves.map((m) => m.v));
-    const before = [...days].reduce((s, d) => s + dayScores.get(d)!, 0) + [...touched].reduce((s, v) => s + cost(v), 0);
+    const carbsBefore = days.map((d) => dayOf(d).total.carbs);
+    const before = days.reduce((s, d) => s + dayScores.get(d)!, 0) + [...touched].reduce((s, v) => s + cost(v), 0);
     moves.forEach((m) => apply(m));
-    const after = [...days].reduce((s, d) => s + scoreDay(d), 0) + [...touched].reduce((s, v) => s + cost(v), 0);
+    let after = [...touched].reduce((s, v) => s + cost(v), 0);
+    let breaks = false;
+    for (const [i, d] of days.entries()) {
+      const { total, kcals } = dayOf(d);
+      if (!withinLimit(total, targets[d]!) && total.carbs > carbsBefore[i]! + 1e-9) breaks = true;
+      after += dayScore(total, targets[d]!, kcals);
+    }
     [...moves].reverse().forEach((m) => apply(m, -1));
-    return after - before;
+    return breaks ? Number.POSITIVE_INFINITY : after - before;
   };
 
   const commit = (moves: Move[]) => {
