@@ -8,7 +8,7 @@ import { useDataset } from '../../hooks/useDataset';
 import { useFavorites } from '../../hooks/useDiet';
 import { formatNumber, plural } from '../../lib/format';
 import { RECIPES } from '../../recipes/catalog';
-import { gramsLabel, longDate, portionLabel, rangeLabel, shortDate, weekdaySpan } from '../../prep/format';
+import { gramsLabel, longDate, portionAfterPo, portionLabel, rangeLabel, shortDate, weekdaySpan } from '../../prep/format';
 import { canSwap, newSeed, rerollPlan, swapRecipe, type GenerateResult } from '../../prep/generate';
 import { averageDay, dayCheck, dayPlanTotals, mealAmount, mealsOn, shoppingProgress } from '../../prep/meals';
 import { itemName } from '../../prep/shopping';
@@ -328,7 +328,7 @@ function BatchRow({ batch }: { batch: PrepBatch }) {
         <p className="fd-prep-name">{batch.name}</p>
         <p className="fd-prep-meta">
           {portionLabel(batch.servings)} (przepis × {formatNumber(batch.factor, 2)}) · {boxes}{' '}
-          {plural(boxes, 'pudełko', 'pudełka', 'pudełek')} po {portionLabel(batch.portion)}
+          {plural(boxes, 'pudełko', 'pudełka', 'pudełek')} po {portionAfterPo(batch.portion)}
           {batch.sides.length > 0 && ` + ${batch.sides.map((s) => s.amount).join(' + ')}`} · {weekdaySpan(batch.boxes.map((b) => b.date))}
         </p>
         <details className="fd-prep-more">

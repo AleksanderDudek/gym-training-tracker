@@ -23,6 +23,9 @@ export function portionLabel(n: number): string {
   return `${n} ${plural(n, 'porcja', 'porcje', 'porcji')}`;
 }
 
+/** After „po” („4 pudełka po …”): one is „1 porcji”, the rest as `portionLabel` („po ¾ porcji”, „po 2 porcje”). */
+export const portionAfterPo = (n: number): string => (n === 1 ? '1 porcji' : portionLabel(n));
+
 const DAY_MONTH = new Intl.DateTimeFormat('pl-PL', { day: 'numeric', month: 'short', timeZone: 'UTC' });
 const WEEKDAY = new Intl.DateTimeFormat('pl-PL', { weekday: 'short', timeZone: 'UTC' });
 const WEEKDAY_LONG = new Intl.DateTimeFormat('pl-PL', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });

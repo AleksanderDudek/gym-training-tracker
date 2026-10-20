@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest';
 import { INGREDIENTS } from '../recipes/ingredients';
 import { AISLE, AISLE_LABELS, AISLE_ORDER } from './aisles';
 import { BLOCK_DAYS, cookingBlocks, planDates } from './blocks';
-import { gramsLabel, mixed, portionLabel, rangeLabel, roundGrams, weekdaySpan } from './format';
+import { gramsLabel, mixed, portionAfterPo, portionLabel, rangeLabel, roundGrams, weekdaySpan } from './format';
 import { prepCandidates } from '../test/prep';
 import { SIDES, resolveSide, roomFor, sidesFor } from './sides';
 import { dayCheck } from './meals';
@@ -145,6 +145,10 @@ describe('words for amounts and days', () => {
     expect(portionLabel(5)).toBe('5 porcji');
     expect(portionLabel(1.5)).toBe('1½ porcji');
     expect(portionLabel(0.75)).toBe('¾ porcji');
+    // „4 pudełka po 1 porcji”, „po ¾ porcji”, „po 2 porcje”.
+    expect(portionAfterPo(1)).toBe('1 porcji');
+    expect(portionAfterPo(0.75)).toBe('¾ porcji');
+    expect(portionAfterPo(2)).toBe('2 porcje');
   });
 
   test('ranges and spans of days', () => {
