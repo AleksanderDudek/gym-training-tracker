@@ -704,31 +704,42 @@ dokłada), „Bez mięsa”, „Bez ryb i owoców morza”, „Bez jajek”.
   trafia dwa razy na jeden dzień.
 - **Pod styl i cel**: tylko przepisy kupione w całości w koszyku planu, nigdy „nie pasuje” do
   sposobu odżywiania (przy limicie węglowodanów — keto, low carb — tylko „pasuje”, a limitu nie
-  przekracza żaden dzień). Porcje co ćwierć (½–2½), a do nich dodatki: ryż albo ziemniaki do
-  pudełka, bułka i awokado do wytrawnego śniadania, banan i orzechy do słodkiego, oliwa. Dzień trafia
-  w cel kalorii (w testach ±7%, na prawdziwych danych zwykle ±2–3%), białko nie spada poniżej minimum.
-  Ulubione przepisy mają pierwszeństwo, wspólne składniki też (jedno opakowanie skyru na dwa
-  przepisy). „Inny plan” losuje od nowa, „Wymień” podmienia jeden przepis w całym planie.
+  przekracza żaden dzień). Porcje co ćwierć (½–3), a do nich dodatki: ryż albo ziemniaki do
+  pudełka, bułka i awokado do wytrawnego śniadania, banan i orzechy do słodkiego, oliwa w łyżeczkach
+  (4,5 g) i łyżkach (13,5 g); przy keto i low carb bez skrobi i banana, za to z orzechami i oliwą.
+  Dodatki rosną z wielkością posiłku, więc plan karmi od 1200 do 3500 kcal. Dzień trafia w cel
+  kalorii (nigdy ponad 5% — tyle dziennik nazywa „ponad cel” — najwyżej 7% pod; na prawdziwych danych
+  zwykle ±2%), białko i tłuszcz nie spadają poniżej minimum; dzień, którego koszyk nie domyka, plan
+  pokazuje i mówi, co pomoże. Ulubione przepisy mają pierwszeństwo, wspólne składniki też (jedno
+  opakowanie skyru na dwa przepisy). „Inny plan” i „Wymień” zmieniają plan od dziś: zjedzone dni
+  i ugotowane pudełka zostają.
 - **Plan idzie za postępami (check-in)**: przed każdym planem 28 ostatnich dni — trend z ważeń
   i średnia z zapisów jedzenia — mówi, ile naprawdę spalasz (zjedzone minus zmiana wagi razy energia
-  w kilogramie). Gdy to różni się od modelu o 100 kcal lub więcej, nowy cel to cel z profilu
-  poprawiony o tę różnicę: najwyżej o 250 kcal naraz, nigdy poniżej podstawowej przemiany materii
-  (i 1500 kcal u mężczyzn, 1200 u kobiet). Po dojściu do wagi docelowej — utrzymanie. Potrzeba co
-  najmniej 4 ważeń z 14 dni i zapisów z ¾ tych dni; zapisy, z których wychodzi spalanie poza
-  0,8–2,5 × BMR, uznaje za niepełne. Dopasowany cel jest zaznaczony jako zalecany, a plan zapisuje go
-  w profilu — dziennik i plan liczą tak samo. Tydzień z nadwyżką rozkłada się raz na dni planu
-  w bieżącym tygodniu.
+  w kilogramie). Różnicę wobec wzoru check-in przyjmuje tylko w części pewnej (ponad dwa błędy
+  standardowe trendu — skacząca waga i rzadkie ważenia nie ruszają celu), od 100 kcal, najwyżej
+  o 250 kcal naraz, nigdy poniżej podstawowej przemiany materii albo 1500 kcal u mężczyzn i 1200
+  u kobiet. Zmierzona różnica zostaje w profilu jako **korekta spalania** — część wzoru od tej pory:
+  tempo, cele według tempa, prognoza i kolejny check-in liczą z nią, więc ten sam błąd nie odejmuje się
+  dwa razy (w „Zaawansowanych” można ją zmienić albo wyzerować). Po dojściu do wagi docelowej —
+  utrzymanie, krokami do 500 kcal. Potrzeba co najmniej 5 ważeń z 14 dni i pełnych zapisów z ¾ tych
+  dni (dzień zapisany poniżej połowy celu to dzień niedopisany); spalanie poza 0,8–2,5 × BMR to
+  niepełne zapisy albo woda. Dopasowany cel jest zaznaczony jako zalecany, a plan zapisuje go
+  w profilu razem z planem — dziennik i plan liczą tak samo. Nowy cel zaczyna własny bilans tygodnia
+  (dni zjedzone na stary cel nie są nadwyżką), a nadwyżka tygodnia rozkłada się od dziś na dni do
+  niedzieli, raz.
 - **Lista zakupów** (`#/jedzenie/zakupy`, także skrót aplikacji): wizyta w sklepie dział po dziale,
   zamówienie przez internet z odnośnikami do produktów, „Sprawdź w domu” (oliwa, przyprawy, białko
-  w proszku). Opakowania wybranego produktu („3 opak. · po 450 g”), sztuki („10 szt.” jajek) albo
-  gramy; ceny orientacyjne, a suma tylko wtedy, gdy cenę ma co najmniej połowa pozycji. Surowe mięso
+  w proszku). Opakowania wybranego produktu („3 opak. · po 450 g”, puszki tuńczyka i fasoli liczone po
+  odsączeniu), sztuki zaokrąglone w górę („10 szt.” jajek) albo gramy; ceny orientacyjne, a suma
+  tylko wtedy, gdy cenę ma co najmniej połowa pozycji. Surowe mięso
   i ryba potrzebne od trzeciego dnia: „zamroź po zakupach”, a dzień przed gotowaniem dziennik
   przypomina, co przełożyć do lodówki. Odhaczenia zostają przy planie i działają bez zasięgu i bez
   bazy produktów; „Udostępnij listę” wysyła ją jako tekst.
 - **W dzienniku**: w dni planu „Plan na ten dzień” — posiłki z porcją i dodatkami do odhaczenia
   („Zjadłem” zapisuje je jak każde jedzenie), w dniu gotowania „Dziś gotujesz”. Plan z zakupami ma
   w swoje dni pierwszeństwo przed planem z arkusza i „Propozycją dnia”; z kilku planów obowiązuje
-  najnowszy, więc następny tydzień można ułożyć zawczasu.
+  najnowszy, więc następny tydzień można ułożyć zawczasu — plan i lista pokazują wtedy bieżący,
+  a ułożony na kolejne dni jest pod przełącznikiem („Teraz” · „Następny”, adres `?plan=`).
 - Plan to migawka w bazie diety (tabela `prep`, 12 najnowszych): przepisy, porcje, gotowanie
   i lista nie zmieniają się z nową bazą produktów. Jest w kopii zapasowej i znika z „Usuń wszystkie
   dane”. `npm run food:check-prep` układa tydzień na prawdziwych danych w czterech najlepszych
