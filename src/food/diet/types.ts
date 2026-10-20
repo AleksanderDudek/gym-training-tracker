@@ -26,11 +26,17 @@ export interface Profile {
   /** The daily calorie goal before any weekly adjustment. */
   dailyKcal: number;
   /**
-   * The part of `dailyKcal` that check-ins added to the energy model's goal (kcal a day): the model's
-   * error, as the scale and the log showed it. 0 when the goal was set by hand or by a pace. The next
-   * check-in corrects from the goal without it, so the same error is never applied twice.
+   * What the energy model gets wrong for this person, in kcal a day, as the check-ins measured it
+   * from the scale and the log: part of the expenditure (`tdee`) everywhere - the pace, the goals of
+   * the pace chips, the forecast. A check-in compares the scale with the corrected model, so the
+   * same error is never applied twice. 0 until a check-in is accepted; editable in the profile.
    */
   kcalCorrection: number;
+  /**
+   * The day `dailyKcal` last changed (YYYY-MM-DD). The week's balance counts only the days since:
+   * days eaten to an older goal are not a surplus over a new one.
+   */
+  goalSince?: string;
   dietProfile: DietProfileId;
   /** Correct today's goal by this week's surplus or deficit. */
   adaptWeekly: boolean;

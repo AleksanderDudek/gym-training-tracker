@@ -6,7 +6,7 @@ import { markDiet } from '../../dietFlag';
 import { bmr, dayReaching, forecast, goalDirection, paceKgPerWeek, suggestedKcal, tdee } from '../../diet/energy';
 import { addDays, paceText, weightOn } from '../../diet/model';
 import { DIET_PROFILE_IDS, DIET_PROFILES } from '../../diet/profiles';
-import { completeProfile, saveProfile } from '../../diet/store';
+import { completeProfile, now, saveProfile } from '../../diet/store';
 import type { Profile } from '../../diet/types';
 import { useMergedHistory } from '../../hooks/useDiet';
 import { formatDate, formatNumber } from '../../lib/format';
@@ -165,8 +165,8 @@ function ProfileForm({ profile, isNew, currentWeight, stores }: FormProps) {
   const storeKnown = !draft.preferredStore || stores.some((s) => s.key === draft.preferredStore);
 
   const submit = async () => {
-    // A goal set here by hand or by a pace is the model's own: what check-ins added to the old one is gone.
-    await saveProfile(draft.dailyKcal === profile.dailyKcal ? draft : { ...draft, kcalCorrection: 0 });
+    // A new goal starts its own week's balance: days eaten to the old one are not its surplus.
+    await saveProfile(draft.dailyKcal === profile.dailyKcal ? draft : { ...draft, goalSince: now().date });
     // Wzrost jest jeden: zapis profilu diety poprawia też wzrost w treningach.
     if (draft.heightCm !== bridge.heightCm) bridge.setHeight(draft.heightCm);
     markDiet(true);
@@ -327,7 +327,20 @@ function ProfileForm({ profile, isNew, currentWeight, stores }: FormProps) {
                 max={9000}
                 suffix="kcal"
               />
+              <NumberField
+                label="Korekta spalania z check-inów"
+                value={draft.kcalCorrection}
+                onChange={(kcalCorrection) => set({ kcalCorrection })}
+                integer
+                min={-2000}
+                max={2000}
+                suffix="kcal/dzień"
+              />
             </div>
+            <p className="tight fd-diet-soft">
+              Korektę ustawia check-in przed planem z zakupami: o tyle Twoje spalanie różni się od wzoru według wagi
+              i zapisów. Wpisz 0, żeby liczyć samym wzorem.
+            </p>
           </details>
         </section>
 
@@ -355,7 +368,10 @@ function ProfileForm({ profile, isNew, currentWeight, stores }: FormProps) {
             </div>
           </dl>
           <p className="tight">
-            Liczone dla wagi {formatNumber(weight, 1)} kg{isNew ? '' : ' (ostatnie ważenie)'}.
+            Liczone dla wagi {formatNumber(weight, 1)} kg{isNew ? '' : ' (ostatnie ważenie)'}
+            {draft.kcalCorrection !== 0 &&
+              `, z korektą spalania z check-inów: ${draft.kcalCorrection > 0 ? '+' : '−'}${formatNumber(Math.abs(draft.kcalCorrection), 0)} kcal`}
+            .
           </p>
           <div className="fd-diet-kcal-goal">
             <NumberField

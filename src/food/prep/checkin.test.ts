@@ -32,7 +32,7 @@ describe('check-in', () => {
     const r = checkIn({ profile, days: [{ date: '2026-10-18', weightKg: 82 }], eaten: new Map(), today: TODAY });
     expect(r.status).toBe('za-malo-danych');
     expect(r.suggestedKcal).toBe(2200);
-    expect(r.reason).toMatch(/^Do dopasowania celu potrzebuję co najmniej 4 ważeń z 14 dni/);
+    expect(r.reason).toMatch(/^Do dopasowania celu potrzebuję co najmniej 5 ważeń z 14 dni/);
     expect(r.reason).toContain('1 ważenie');
   });
 
@@ -75,7 +75,7 @@ describe('check-in', () => {
     expect(two.status).toBe('zgodnie');
     expect(two.suggestedKcal).toBe(1950);
     expect(two.correction).toBe(-250);
-    // The pace aimed at is the model's at the goal without corrections: the same as at the first check-in.
+    // The pace aimed at stays: the corrected model at the corrected goal, as the uncorrected one at the old goal.
     expect(two.plannedPace).toBeCloseTo(one.plannedPace, 1);
   });
 
@@ -112,11 +112,63 @@ describe('check-in', () => {
     expect(r.reason).toMatch(/^Cel 76 kg osiągnięty/);
   });
 
-  test('a log that cannot be true (half the food missing) is not used', () => {
+  test('days logged at under half the goal are half-logged days: they do not count, and alone they are not enough', () => {
     const { days, eaten } = history({ startKg: 82, perWeek: 0, kcal: 900 });
     const r = checkIn({ profile, days, eaten, today: TODAY });
     expect(r.status).toBe('za-malo-danych');
-    expect(r.reason).toContain('zapisy jedzenia są chyba niepełne');
+    expect(r.reason).toContain('pełne zapisy z 0');
+  });
+
+  test('a few breakfast-only days do not move the goal of someone the model describes well', () => {
+    const pace = ((tdee(profile, 81) - 2200) * 7) / 7500;
+    const { days, eaten } = history({ startKg: 82, perWeek: -pace, kcal: 2200 });
+    for (const n of [3, 9, 15, 21]) eaten.set(addDays(TODAY, n - 28), 500);
+    expect(checkIn({ profile, days, eaten, today: TODAY }).status).toBe('zgodnie');
+  });
+
+  test('a scale that jumps half a kilo is not believed: the goal stays, and why', () => {
+    // Weighed once a week, on the model's own line, but half a kilo up or down each time.
+    const pace = ((tdee(profile, 81) - 2200) * 7) / 7500;
+    const jumps = [0.4, -0.3, 0.5, -0.4, -0.3];
+    const days = [0, 7, 14, 21, 27].map((n, i) => ({ date: addDays(TODAY, n - 28), weightKg: 82 - (pace / 7) * n + jumps[i]! }));
+    const { eaten } = history({ startKg: 82, perWeek: 0, kcal: 2200 });
+    const r = checkIn({ profile, days, eaten, today: TODAY });
+    // The scale alone would say 170 kcal a day more than the model: inside the noise of five weigh-ins.
+    expect(Math.abs(r.observedTdee! - r.modelTdee)).toBeGreaterThan(100);
+    expect(r).toMatchObject({ status: 'zgodnie', suggestedKcal: 2200 });
+    expect(r.reason).toContain('Waga skacze za bardzo');
+  });
+
+  test('a scale that cannot be true either: water at the start of a diet is not a burn of 5000 kcal', () => {
+    const { days, eaten } = history({ startKg: 86, perWeek: -3, kcal: 2200 });
+    const r = checkIn({ profile, days, eaten, today: TODAY });
+    expect(r.status).toBe('za-malo-danych');
+    expect(r.reason).toContain('woda, która schodzi na początku diety');
+  });
+
+  test('reaching the target on a low goal moves to maintenance in steps of at most 500 kcal', () => {
+    // Losing 0.8 kg a week on 1500 kcal: maintenance is about 2400.
+    const low = { ...profile, dailyKcal: 1500 };
+    const { days, eaten } = history({ startKg: 77.5, perWeek: -0.8, kcal: 1500 });
+    const r = checkIn({ profile: low, days, eaten, today: TODAY });
+    expect(r.status).toBe('cel');
+    expect(r.suggestedKcal).toBe(2000);
+    expect(r.limited).toBe('cap');
+    expect(r.reason).toContain('po 500 kcal');
+  });
+
+  test('a goal already below the floor is not raised by a correction downwards; the floor is named', () => {
+    // BMR under 1200 kcal: the floor is the minimum for women, not the BMR.
+    const small = prepProfile({ sex: 'K', age: 50, heightCm: 155, dailyKcal: 1100, startWeightKg: 52, targetWeightKg: 48 });
+    const { days, eaten } = history({ startKg: 50, perWeek: 0, kcal: 1100 });
+    const r = checkIn({ profile: small, days, eaten, today: TODAY });
+    expect(r.suggestedKcal).toBe(1100);
+    expect(r.reason).toContain('1100 kcal to już mniej niż minimum 1200 kcal dla kobiet');
+  });
+
+  test('the correction lives in the model: the pace of the profile and its chips see it', () => {
+    const corrected = { ...profile, kcalCorrection: -300 };
+    expect(tdee(corrected, 82)).toBeCloseTo(tdee(profile, 82) - 300, 9);
   });
 });
 
@@ -130,6 +182,21 @@ describe('day targets of a plan', () => {
     // 600 over six days left (Tue–Sun) = −100 a day.
     expect(t.map((d) => d.targets.kcal)).toEqual([1900, 1900, 1900, 2000]);
     expect(t[0]!.targets).toEqual(DIET_PROFILES.redukcja.targets(1900, profile.targetWeightKg));
+  });
+
+  test('a plan starting later this week gets the same share: the days before it carry theirs in the diary', () => {
+    const profile = prepProfile({ dailyKcal: 2000, adaptWeekly: true });
+    const eaten = new Map([['2026-10-19', 2600]]);
+    // Friday to Sunday, made on Tuesday: still 600 over six days, not over the three of the plan.
+    const t = planTargets({ profile, kcal: 2000, eaten, today: TODAY, dates: ['2026-10-23', '2026-10-24', '2026-10-25'] });
+    expect(t.map((d) => d.targets.kcal)).toEqual([1900, 1900, 1900]);
+  });
+
+  test('a goal changed today starts its own balance: days eaten to the old goal are no surplus over the new one', () => {
+    const profile = prepProfile({ dailyKcal: 1950, adaptWeekly: true, goalSince: TODAY });
+    const eaten = new Map([['2026-10-19', 2200]]);
+    const t = planTargets({ profile, kcal: 1950, eaten, today: TODAY, dates: [TODAY, '2026-10-21'] });
+    expect(t.map((d) => d.targets.kcal)).toEqual([1950, 1950]);
   });
 
   test('without the weekly correction every day has the goal', () => {

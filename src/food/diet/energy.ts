@@ -10,11 +10,12 @@ export function bmr(p: Body, weightKg: number): number {
 /**
  * Total expenditure: BMR × activity multiplier, plus walking beyond the steps
  * the multiplier already assumes (never minus: a lazy day is inside the
- * multiplier), plus exercise beyond it spread over the week.
+ * multiplier), plus exercise beyond it spread over the week, plus what the
+ * check-ins measured the formula gets wrong for this person (`kcalCorrection`).
  */
 export function tdee(p: Profile, weightKg: number, steps: number = p.targetSteps): number {
   const walking = (Math.max(0, steps - p.baseSteps) / 1000) * weightKg * p.kcalPer1000StepsPerKg;
-  return bmr(p, weightKg) * p.activityMultiplier + walking + p.extraWeeklyKcal / 7;
+  return bmr(p, weightKg) * p.activityMultiplier + walking + p.extraWeeklyKcal / 7 + (p.kcalCorrection ?? 0);
 }
 
 export function paceKgPerWeek(p: Profile, weightKg: number, kcal: number): number {

@@ -105,18 +105,25 @@ describe('Profil diety', () => {
     expect(screen.getByText('To deficyt kalorii – waga będzie spadać, a cel jest wyżej.')).toBeInTheDocument();
   });
 
-  test('cel ustawiony ręcznie zdejmuje korektę z check-inu; zapis bez zmiany celu ją zostawia', async () => {
-    await saveProfile(completeProfile({ dailyKcal: 1950, kcalCorrection: -250, startDate: '2026-10-01' }));
+  test('korekta spalania z check-inu jest częścią wzoru: tempo i cele według tempa ją widzą, da się ją wyzerować', async () => {
+    const base = completeProfile({ sex: 'M', age: 30, heightCm: 180, startWeightKg: 82, targetWeightKg: 76, startDate: '2026-10-01' });
+    await saveProfile({ ...base, dailyKcal: 1950, kcalCorrection: -300 });
     const user = userEvent.setup();
     renderWithBridge(<DietProfilePage />);
-    await user.click(await screen.findByRole('button', { name: 'Zapisz profil' }));
-    await waitFor(async () => expect(await db.profile.get('me')).toMatchObject({ dailyKcal: 1950, kcalCorrection: -250 }));
-
+    expect(await screen.findByText(/z korektą spalania z check-inów: −300 kcal/)).toBeInTheDocument();
     const paces = screen.getByRole('group', { name: 'Cel według tempa' });
-    await user.click(within(paces).getByRole('button', { name: /^−0,5 kg\/tydz\./ }));
+    const chip = within(paces).getByRole('button', { name: /^−0,5 kg\/tydz\./ });
+    const corrected = Number(chip.textContent!.match(/· (\d[\d\s ]*) kcal/)![1]!.replace(/\D/g, ''));
+
+    // Zero in „Zaawansowane”: the same chip offers 300 kcal more.
+    await user.click(screen.getByText('Zaawansowane (wartości z arkusza)'));
+    const field = screen.getByLabelText('Korekta spalania z check-inów');
+    await user.clear(field);
+    await user.type(field, '0');
+    const plain = Number(chip.textContent!.match(/· (\d[\d\s ]*) kcal/)![1]!.replace(/\D/g, ''));
+    expect(plain - corrected).toBe(300);
     await user.click(screen.getByRole('button', { name: 'Zapisz profil' }));
     await waitFor(async () => expect((await db.profile.get('me'))!.kcalCorrection).toBe(0));
-    expect((await db.profile.get('me'))!.dailyKcal).not.toBe(1950);
   });
 
   test('utrzymanie: waga docelowa równa startowej, bez daty celu', async () => {

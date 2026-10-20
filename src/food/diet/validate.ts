@@ -58,6 +58,7 @@ export function cleanProfile(input: unknown, defaults: Profile): Profile {
   if (typeof raw.adaptWeekly === 'boolean') profile.adaptWeekly = raw.adaptWeekly;
   if (raw.preferredStore === null || typeof raw.preferredStore === 'string')
     profile.preferredStore = raw.preferredStore;
+  if (isCalendarDate(raw.goalSince)) profile.goalSince = raw.goalSince;
   return profile;
 }
 

@@ -103,7 +103,8 @@ function Form({
   const kcal = adjusts && useCheckIn ? check.suggestedKcal : profile.dailyKcal;
   const style = DIET_PROFILES[profile.dietProfile];
   const targets = style.targets(kcal, profile.targetWeightKg);
-  const pace = paceKgPerWeek(body, weight, kcal);
+  // The pace of the goal chosen: with the check-in's correction when its goal is chosen.
+  const pace = paceKgPerWeek(adjusts && useCheckIn ? { ...body, kcalCorrection: check.correction } : body, weight, kcal);
 
   // What an online order adds: recipes the shop alone cannot make.
   const extra = useMemo(() => recipesAdded(recipeIndex(products), store, exclude, profile), [products, store, exclude, profile]);
@@ -115,7 +116,10 @@ function Form({
     setError(null);
     const source = adjusts && useCheckIn ? 'checkin' : 'profile';
     // Accepted, the check-in's goal carries its correction, so the next check-in starts from the model's goal.
-    const planned = source === 'checkin' && check ? { ...profile, dailyKcal: kcal, kcalCorrection: check.correction } : profile;
+    const planned =
+      source === 'checkin' && check
+        ? { ...profile, dailyKcal: kcal, kcalCorrection: check.correction, goalSince: today }
+        : profile;
     const result = generatePlan({
       settings: { start, days, meals, cooking, store, online, exclude, seed: newSeed(), avoid: [] },
       index,

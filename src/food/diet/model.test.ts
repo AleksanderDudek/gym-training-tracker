@@ -62,6 +62,13 @@ describe('model', () => {
     });
   });
 
+  test('a goal changed mid-week starts its own balance: days eaten to the old goal are no surplus', () => {
+    const eaten = new Map([['2026-10-05', 2600]]);
+    // Monday ate 2600 to the old goal; the goal changed on Tuesday.
+    expect(dayGoal({ ...profile, goalSince: '2026-10-06' }, eaten, '2026-10-06', '2026-10-06').kcal).toBe(2000);
+    expect(dayGoal({ ...profile, goalSince: '2026-10-05' }, eaten, '2026-10-06', '2026-10-06').kcal).toBe(1900);
+  });
+
   test("looking ahead, today's half-eaten day does not count as a day eaten", () => {
     // Tuesday's breakfast (300 kcal) seen from Wednesday must not read as a 1700 kcal deficit.
     const eaten = new Map([

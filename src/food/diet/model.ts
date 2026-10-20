@@ -95,7 +95,11 @@ export function dayGoal(
   today: string,
 ): { kcal: number; adjustment: Adjustment | null } {
   if (!profile.adaptWeekly) return { kcal: profile.dailyKcal, adjustment: null };
-  const history = [...eatenByDate].filter(([d]) => d < today).map(([d, kcal]) => ({ date: d, eatenKcal: kcal }));
+  // Days eaten to an older goal are no surplus over this one: the balance starts when the goal did.
+  const since = profile.goalSince ?? '';
+  const history = [...eatenByDate]
+    .filter(([d]) => d < today && d >= since)
+    .map(([d, kcal]) => ({ date: d, eatenKcal: kcal }));
   const adjustment = weeklyAdjustment(profile.dailyKcal, history, date);
   return { kcal: adjustment.adjusted, adjustment };
 }
