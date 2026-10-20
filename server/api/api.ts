@@ -1,3 +1,4 @@
+import { notifyDiscord, validWebhook } from './discord';
 import { garmin } from './garmin';
 import { dueItems, isStale, localParts, pruneSent, sentKey } from './schedule';
 import type { ReminderItem } from './schedule';
@@ -11,7 +12,8 @@ import type { Vapid } from './webpush';
  * - `POST /subscribe` — subskrypcja telefonu, jego strefa czasowa i lista gotowych
  *   przypomnień na najbliższe dni. Każde otwarcie aplikacji przysyła listę od nowa.
  * - `POST /unsubscribe` — wyłączenie przypomnień.
- * - `POST /feedback` — uwaga albo zgłoszenie błędu: e-mail, treść, zrzut ekranu i ślad wizyty.
+ * - `POST /feedback` — uwaga albo zgłoszenie błędu: e-mail, treść, zrzut ekranu i ślad wizyty;
+ *   z ustawionym webhookiem idzie też na kanał autora na Discordzie.
  * - `GET /admin/feedback` — lista uwag dla autora, za hasłem (`ADMIN_TOKEN`).
  * - `POST /garmin/push` — zaszyfrowana paczka z zegarka Garmin (serwer nie ma klucza).
  * - `POST /garmin/pull`, `POST /garmin/forget` — odbiór paczki i odłączenie zegarka.
@@ -31,7 +33,12 @@ export interface Env {
   ALLOWED_ORIGINS: string;
   /** Sekret: hasło do listy uwag. Puste albo krótsze niż 16 znaków — listy nie ma. */
   ADMIN_TOKEN?: string;
+  /** Sekret: webhook kanału na Discordzie. Każda nowa uwaga idzie też tam; bez niego — tylko do bazy. */
+  DISCORD_WEBHOOK_URL?: string;
 }
+
+/** Praca po odpowiedzi (`ctx.waitUntil` Workera): użytkownik nie czeka na Discorda. */
+export type Defer = (p: Promise<unknown>) => void;
 
 /**
  * Usługi powiadomień przeglądarek: Chrome i Edge na Androidzie (FCM), Safari na iOS
@@ -129,7 +136,13 @@ async function readJson(req: Request, max = MAX_BODY): Promise<Record<string, un
   }
 }
 
-export async function handle(req: Request, env: Env, store: Store, now = Date.now()): Promise<Response> {
+export async function handle(
+  req: Request,
+  env: Env,
+  store: Store,
+  now = Date.now(),
+  defer: Defer = (p) => void p,
+): Promise<Response> {
   const headers = cors(req, env);
   const reply = (status: number, msg?: string) => new Response(msg ?? null, { status, headers });
   const path = new URL(req.url).pathname.replace(/\/+$/, '');
@@ -142,7 +155,7 @@ export async function handle(req: Request, env: Env, store: Store, now = Date.no
   const data = await readJson(req, path === '/feedback' ? MAX_FEEDBACK_BODY : MAX_BODY);
   if (!data) return reply(400, 'zły JSON');
 
-  if (path === '/feedback') return feedback(req, data, env, store, now, reply);
+  if (path === '/feedback') return feedback(req, data, env, store, now, reply, defer);
 
   if (path.startsWith('/garmin/')) {
     const json = (status: number, d: unknown) => {
@@ -265,6 +278,7 @@ async function feedback(
   store: Store,
   now: number,
   reply: (status: number, msg?: string) => Response,
+  defer: Defer,
 ): Promise<Response> {
   // Pole, którego człowiek nie widzi: wypełnia je tylko bot. Bot dostaje „ok”, żeby nie
   // uczył się, co go zdradziło.
@@ -287,7 +301,7 @@ async function feedback(
   const ipHash = await ipHashOf(req, env);
   if ((await store.recentFeedback(ipHash, now - 3_600_000)) >= FEEDBACK_PER_HOUR) return reply(429, 'za dużo wiadomości');
 
-  await store.addFeedback({
+  const record = {
     id: crypto.randomUUID(),
     created: now,
     email: email || null,
@@ -296,7 +310,11 @@ async function feedback(
     context,
     screenshot: shot as string | null,
     ipHash,
-  });
+  };
+  await store.addFeedback(record);
+  // Najpierw baza, potem kopia na kanał autora — w tle, więc nieudany Discord nie psuje wysyłki.
+  if (validWebhook(env.DISCORD_WEBHOOK_URL))
+    defer(notifyDiscord(env.DISCORD_WEBHOOK_URL, record, new URL('/admin/feedback', req.url).href));
   return reply(204);
 }
 

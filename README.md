@@ -28,7 +28,7 @@ npm run build      # typecheck + produkcyjny build do dist/ z service workerem (
 npm run preview    # podgląd builda — tu działa też praca offline
 npm run typecheck  # tsc: aplikacja, testy, konfiguracja Vite i skrypty, service worker, filmy demo
 npm run lint       # oxlint
-npm test           # 1765 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, plan z zakupami, serwer… (vitest)
+npm test           # 1773 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, plan z zakupami, serwer… (vitest)
 ```
 
 Baza produktów i przepisy:
@@ -1316,10 +1316,11 @@ server/api/                 serwer aplikacji: przypomnienia, uwagi i skrzynki ze
   webpush.ts                szyfrowanie RFC 8291 i podpis VAPID na samym WebCrypto
   schedule.ts               co komu wysłać: czas lokalny, okno 90 minut, raz dziennie
   api.ts                    subskrypcje, przebieg crona, uwagi i lista dla autora za hasłem
+  discord.ts                kopia nowej uwagi na kanale autora przez webhook Discorda, w tle
   garmin.ts                 skrzynki zegarka: tylko szyfrogram, limity, odbiór i odłączenie
   store.ts                  subskrypcje, uwagi i skrzynki w D1 albo w pamięci
   worker.ts                 punkt wejścia Workera
-  *.test.ts                 37 testów: wektor RFC, VAPID, harmonogram, API, cron, uwagi, podgląd i skrzynki
+  *.test.ts                 45 testów: wektor RFC, VAPID, harmonogram, API, cron, uwagi, podgląd, Discord i skrzynki
   README.md                 wdrożenie krok po kroku
 garmin/                     aplikacja na zegarek (Connect IQ, Monkey C) — opis i build w garmin/README.md
 vite/                       wtyczki Vite
@@ -2028,7 +2029,8 @@ nie trafia do śladu. W oknie stoi jedna linijka „wysyłam też informacje tec
 „co dokładnie” — bez przeszkadzania, ale bez ukrywania.
 
 Wiadomości trafiają do serwera aplikacji (`server/api`, ten sam co przypomnienia), a autor
-czyta je na stronie za hasłem — z miniaturą zrzutu i rozwijanym śladem. Szczegóły, limity
+czyta je na stronie za hasłem — z miniaturą zrzutu i rozwijanym śladem — a z webhookiem
+Discorda także na swoim kanale, zaraz po wysłaniu (ślad zostaje w bazie). Szczegóły, limity
 i ochrona przed botami: `server/api/README.md`.
 
 ## Przypomnienia
