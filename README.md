@@ -28,7 +28,7 @@ npm run build      # typecheck + produkcyjny build do dist/ z service workerem (
 npm run preview    # podgląd builda — tu działa też praca offline
 npm run typecheck  # tsc: aplikacja, testy, konfiguracja Vite i skrypty, service worker, filmy demo
 npm run lint       # oxlint
-npm test           # 1738 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, plan z zakupami, serwer… (vitest)
+npm test           # 1765 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, plan z zakupami, serwer… (vitest)
 ```
 
 Baza produktów i przepisy:
@@ -1276,8 +1276,8 @@ src/
     online/                 sklepy internetowe: rejestr, dane sklepów (`data/*.json`), scalanie z bazą po EAN, kontrola liczb — 36 testów
     chains/                 sieci z własnymi danymi (Selgros): rejestr, dane (`data/*.json`), scalanie po EAN bez oferty online, kontrola liczb — 10 testów
     nearby/                 w pobliżu: odległości, zapytanie do Overpass (z halami Selgros i Makro) z zapasowym serwerem, kopia na dobę, promień — 33 testy
-    diet/                   dieta: baza Dexie (`produkty-pl-dieta`, wersja 4 z zestawami, ulubionymi i planami z zakupami), model energii z kierunkiem celu, sposoby odżywiania, dzień, plan z Excela, zestawy, ulubione, wyszukiwanie, podpowiedzi — 136 testów
-    prep/                   plan z zakupami (meal prep): bloki gotowania, przepisy z koszyka, wybór ról, porcje i dodatki, cele dni, check-in, lista zakupów, migawka w bazie, odczyt z kopii — 86 testów
+    diet/                   dieta: baza Dexie (`produkty-pl-dieta`, wersja 4 z zestawami, ulubionymi i planami z zakupami), model energii z kierunkiem celu, sposoby odżywiania, dzień, plan z Excela, zestawy, ulubione, wyszukiwanie, podpowiedzi — 137 testów
+    prep/                   plan z zakupami (meal prep): bloki gotowania, przepisy z koszyka, wybór ról, porcje i dodatki, cele dni, check-in, lista zakupów, migawka w bazie, odczyt z kopii — 110 testów
     restaurants/            lokale: dane sieci (`data/*.json`), kontrola liczb, wyszukiwanie, kolejność, „Najwięcej białka”, stan w adresie — 101 testów
     hooks/                  baza produktów, menu lokali, dieta na żywo i scalona z treningiem, stan w adresie, lokalizacja, sklepy w pobliżu — 22 testy
     components/common/      karta i szczegóły produktu, zdjęcie, oceny, cena, arkusz od dołu, ekrany stanu
@@ -1287,7 +1287,7 @@ src/
     components/diet/        dziennik, plan posiłków, postęp, profil diety, pierwsze kroki, wybór jedzenia i zestawy, import z Excela
     components/prep/        plan z zakupami: formularz z check-inem, plan (przepisy, gotowanie, dzień po dniu), lista zakupów, plan dnia w dzienniku
     components/restaurants/ Lokale: lista sieci z wyszukiwaniem, menu sieci, karta pozycji z dodaniem do dziennika
-    components/**/*.test.tsx 138 testów stron pod jsdom — przez role i etykiety, nie znaczniki
+    components/**/*.test.tsx 140 testów stron pod jsdom — przez role i etykiety, nie znaczniki
     test/                   dane do testów: produkty, most do treningu, arkusz Excela
   api.ts                    adres serwera aplikacji z buildu (`VITE_API_URL`)
   push.ts                   przypomnienia w przeglądarce: zgoda, subskrypcja Web Push, wysyłka listy
