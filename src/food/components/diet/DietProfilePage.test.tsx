@@ -76,6 +76,67 @@ describe('Profil diety', () => {
     expect(await db.plans.count()).toBe(1);
   });
 
+  test('cel według tempa: chudnięcie, utrzymanie i przybieranie — ostrzeżenia idą za kierunkiem celu', async () => {
+    await saveProfile(
+      completeProfile({ sex: 'M', age: 30, heightCm: 180, startWeightKg: 70, targetWeightKg: 76, startDate: '2026-10-01' }),
+    );
+    const user = userEvent.setup();
+    renderWithBridge(<DietProfilePage />);
+    const paces = await screen.findByRole('group', { name: 'Cel według tempa' });
+    const chips = within(paces).getAllByRole('button');
+    expect(chips.map((c) => c.textContent?.split(' · ')[0])).toEqual([
+      '−0,25 kg/tydz.',
+      '−0,5 kg/tydz.',
+      '−0,75 kg/tydz.',
+      '−1 kg/tydz.',
+      'utrzymanie',
+      '+0,25 kg/tydz.',
+    ]);
+
+    // Cel jest wyżej niż start: nadwyżka to plan, a nie ostrzeżenie.
+    await user.click(within(paces).getByRole('button', { name: /^\+0,25 kg\/tydz\./ }));
+    expect(screen.getByText('Nadwyżka')).toBeInTheDocument();
+    expect(screen.getByText('+0,25 kg/tydz.', { selector: 'dd' })).toBeInTheDocument();
+    expect(screen.queryByText('To nadwyżka kalorii – waga będzie rosła.')).not.toBeInTheDocument();
+    expect(screen.getByText(/^cel ok\./)).toBeInTheDocument();
+
+    // Deficyt przy celu wyżej niż start — to już zasługuje na zdanie.
+    await user.click(within(paces).getByRole('button', { name: /^−0,5 kg\/tydz\./ }));
+    expect(screen.getByText('To deficyt kalorii – waga będzie spadać, a cel jest wyżej.')).toBeInTheDocument();
+  });
+
+  test('korekta spalania z check-inu jest częścią wzoru: tempo i cele według tempa ją widzą, da się ją wyzerować', async () => {
+    const base = completeProfile({ sex: 'M', age: 30, heightCm: 180, startWeightKg: 82, targetWeightKg: 76, startDate: '2026-10-01' });
+    await saveProfile({ ...base, dailyKcal: 1950, kcalCorrection: -300 });
+    const user = userEvent.setup();
+    renderWithBridge(<DietProfilePage />);
+    expect(await screen.findByText(/z korektą spalania z check-inów: −300 kcal/)).toBeInTheDocument();
+    const paces = screen.getByRole('group', { name: 'Cel według tempa' });
+    const chip = within(paces).getByRole('button', { name: /^−0,5 kg\/tydz\./ });
+    const corrected = Number(chip.textContent!.match(/· (\d[\d\s ]*) kcal/)![1]!.replace(/\D/g, ''));
+
+    // Zero in „Zaawansowane”: the same chip offers 300 kcal more.
+    await user.click(screen.getByText('Zaawansowane (wartości z arkusza)'));
+    const field = screen.getByLabelText('Korekta spalania z check-inów');
+    await user.clear(field);
+    await user.type(field, '0');
+    const plain = Number(chip.textContent!.match(/· (\d[\d\s ]*) kcal/)![1]!.replace(/\D/g, ''));
+    expect(plain - corrected).toBe(300);
+    await user.click(screen.getByRole('button', { name: 'Zapisz profil' }));
+    await waitFor(async () => expect((await db.profile.get('me'))!.kcalCorrection).toBe(0));
+  });
+
+  test('utrzymanie: waga docelowa równa startowej, bez daty celu', async () => {
+    await saveProfile(completeProfile({ startWeightKg: 80, targetWeightKg: 80, startDate: '2026-10-01' }));
+    const user = userEvent.setup();
+    renderWithBridge(<DietProfilePage />);
+    const paces = await screen.findByRole('group', { name: 'Cel według tempa' });
+    await user.click(within(paces).getByRole('button', { name: /^utrzymanie/ }));
+    expect(screen.getByText('utrzymanie wagi')).toBeInTheDocument();
+    expect(screen.queryByText(/To nadwyżka kalorii/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Waga docelowa to waga startowa/)).not.toBeInTheDocument();
+  });
+
   test('literówka w liczbie zatrzymuje zapis i mówi, czego się spodziewa', async () => {
     const user = userEvent.setup();
     renderWithBridge(<DietProfilePage />);

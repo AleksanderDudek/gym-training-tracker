@@ -6,7 +6,7 @@ import { db, type DayRow, type Entry, type Favorite, type ProfileRow } from '../
 import { byUse } from '../diet/favorites';
 import type { CustomFood, FoodSet } from '../diet/foods';
 import type { Plan } from '../diet/plan';
-import { ACTIVE_PLAN, now } from '../diet/store';
+import { ACTIVE_PLAN, completeProfile, now } from '../diet/store';
 import { readCache } from '../nearby/cache';
 import { formatDistance } from '../nearby/geo';
 import { DEFAULT_RADIUS } from '../nearby/radius';
@@ -40,9 +40,16 @@ export function useClock(): Clock {
   return clock;
 }
 
-/** `undefined` while loading, `null` when there is none. */
+/**
+ * `undefined` while loading, `null` when there is none. A row stored by an older version lacks the
+ * fields added since (the check-in's `kcalCorrection`): they come with their defaults, never as
+ * `undefined` in a sum.
+ */
 export function useProfile(): ProfileRow | null | undefined {
-  return useLiveQuery(async () => (await db.profile.get('me')) ?? null, []);
+  return useLiveQuery(async () => {
+    const row = await db.profile.get('me');
+    return row ? { ...completeProfile(row), id: 'me' as const } : null;
+  }, []);
 }
 
 export function usePlan(): Plan | null | undefined {

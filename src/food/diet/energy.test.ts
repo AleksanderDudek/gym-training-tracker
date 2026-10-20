@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { bmr, dayReaching, forecast, paceKgPerWeek, suggestedKcal, tdee } from './energy';
+import { bmr, dayReaching, forecast, goalDirection, paceKgPerWeek, suggestedKcal, tdee } from './energy';
 import { MODEL_DEFAULTS, type Profile } from './types';
 
 // A made-up person on the workbook's model: 84 -> 70 kg, 168 cm, 41 y, K, with
@@ -14,6 +14,7 @@ const P: Profile = {
   startDate: '2026-03-02',
   ...MODEL_DEFAULTS,
   dailyKcal: 1500,
+  kcalCorrection: 0,
   dietProfile: 'redukcja',
   adaptWeekly: true,
   preferredStore: null,
@@ -74,5 +75,30 @@ describe("energy, the workbook's model", () => {
 
   test('a goal for a pace: TDEE minus the weekly energy spread over seven days', () => {
     expect(suggestedKcal(P, 84, 0.5)).toBe(Math.round(TDEE - (0.5 * 7500) / 7));
+  });
+
+  test('a gaining pace is a surplus: the goal sits above TDEE', () => {
+    expect(suggestedKcal(P, 84, -0.25)).toBe(Math.round(TDEE + (0.25 * 7500) / 7));
+    expect(suggestedKcal(P, 84, 0)).toBe(Math.round(TDEE));
+  });
+});
+
+describe('the direction of the goal', () => {
+  test('below the start is losing, above it gaining, half a kilo either way keeping', () => {
+    expect(goalDirection({ startWeightKg: 84, targetWeightKg: 70 })).toBe('loss');
+    expect(goalDirection({ startWeightKg: 70, targetWeightKg: 74 })).toBe('gain');
+    expect(goalDirection({ startWeightKg: 70, targetWeightKg: 70.5 })).toBe('keep');
+    expect(goalDirection({ startWeightKg: 70, targetWeightKg: 69.5 })).toBe('keep');
+  });
+
+  test('a gain is reached at or above the target, keeping never', () => {
+    const days = Array.from({ length: 400 }, (_, i) => ({ date: `d${i}`, plannedKcal: 2600 }));
+    const series = forecast({ ...P, startWeightKg: 60, targetWeightKg: 63 }, days);
+    const day = dayReaching(63, series, 'plan', 'gain');
+    expect(day).not.toBeNull();
+    expect(series.find((s) => s.date === day)!.plan).toBeGreaterThanOrEqual(63);
+    // Read as a loss (the default), a series that starts below the target has reached it on day one.
+    expect(dayReaching(63, series, 'plan')).toBe('d0');
+    expect(dayReaching(63, series, 'plan', 'keep')).toBeNull();
   });
 });

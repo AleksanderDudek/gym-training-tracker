@@ -308,6 +308,7 @@ describe('ingredient matchers', () => {
     expect(matches('roll', 'Kajzerka pszenna', roll)).toBe(true);
     expect(matches('roll', 'Bułka tarta', { ...roll, kcal: 355 })).toBe(false);
     expect(matches('roll', 'Bułka burger', roll)).toBe(false);
+    expect(matches('roll', 'Bułki do hamburgerów z sezamem', roll)).toBe(false);
     expect(matches('roll', 'Bułka słodka z kruszonką', roll)).toBe(false);
   });
 

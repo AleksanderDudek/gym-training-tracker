@@ -1,0 +1,93 @@
+/*
+ * Plan z zakupami (meal prep): formularz, plan, lista zakupów i karta dnia w dzienniku. Klocki
+ * aplikacji (`.grp`, `.btn`, `.fld`, `.seg`, `.chips`, `.dnote`, `.check-row`), a tu tylko wiersze,
+ * dni i lista do odhaczania. Każda klasa ma przedrostek `fd-prep-` (`src/food/css.test.ts`).
+ */
+
+.fd-prep-nums{font-variant-numeric:tabular-nums}
+.grp p.fd-prep-soft,.fd-prep-soft{color:var(--ink-soft);font-weight:400}
+.grp p.fd-prep-warn,p.fd-prep-warn{color:var(--warn)}
+.fd-prep-ico{vertical-align:-4px;margin-right:2px;color:var(--steel)}
+.fd-prep-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.fd-prep-actions .btn{gap:6px}
+.fd-prep-actions .btn:disabled,.fd-prep-row .btn:disabled{opacity:.45;cursor:default;transform:none}
+.fd-prep-retry{background:none;border:0;padding:10px 0;min-height:44px;font:inherit;font-weight:600;color:var(--steel);
+  text-decoration:underline;text-underline-offset:2px;cursor:pointer}
+.fd-prep-switch{margin-top:12px;margin-bottom:0}
+.fd-prep-bullets{margin:4px 0 6px;padding-left:18px;font-size:13px;color:var(--ink-soft);line-height:1.45;max-width:62ch}
+.fd-prep-bullets li{margin:2px 0}
+
+/* ---------------- Formularz ---------------- */
+
+.fd-prep-form .seg{margin-bottom:10px}
+.fd-prep-fields{display:grid;grid-template-columns:1fr;gap:10px;margin:6px 0 12px}
+@media (min-width:400px){.fd-prep-fields{grid-template-columns:1fr 1fr}}
+.fd-prep-fields select{width:100%}
+.fd-prep-form .chips{margin:2px 0 12px}
+.fd-prep-goal{margin-top:6px;padding-top:10px;border-top:1px solid var(--surface-2)}
+.fd-prep-goal h3{margin:0 0 6px}
+.fd-prep-kcal{border:0;margin:0 0 4px;padding:0}
+.fd-prep-kcal .check-row{margin:0}
+.grp p.fd-prep-reason,p.fd-prep-reason{margin:4px 0 8px;padding:8px 10px;background:var(--surface-2);border-left:3px solid var(--steel);
+  border-radius:var(--r);color:var(--ink)}
+.fd-prep-error{margin:10px 0 0;padding:9px 11px;border-left:3px solid var(--warn);background:var(--surface-2);
+  border-radius:var(--r);font-size:13.5px;color:var(--ink)}
+
+/* ---------------- Plan ---------------- */
+
+.fd-prep-head .fd-prep-actions .btn:first-child{flex:1 1 100%}
+.fd-prep-role h3,.fd-prep-session h3{margin:12px 0 2px;font-family:var(--display);font-size:12px;font-weight:600;
+  letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft)}
+.fd-prep-rows{list-style:none;margin:4px 0;padding:0}
+.fd-prep-rows > li{border-top:1px solid var(--surface-2);padding:10px 0}
+.fd-prep-rows > li:first-child{border-top:0}
+.fd-prep-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:start}
+.fd-prep-row .btn{gap:6px;white-space:nowrap}
+.fd-prep-row-main{min-width:0}
+.grp p.fd-prep-name,.fd-prep-name{margin:0;font-size:15px;font-weight:600;color:var(--ink);overflow-wrap:anywhere}
+.grp p.fd-prep-meta,.fd-prep-meta{margin:2px 0 0;font-size:12.5px;color:var(--ink-soft);font-weight:400}
+.grp p.fd-prep-group,.fd-prep-group{margin:0 0 3px;font-family:var(--display);font-size:11px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink-soft)}
+.fd-prep-tick{display:inline-flex;vertical-align:-4px;margin-right:4px;color:var(--ok)}
+.fd-prep-more{margin-top:6px}
+.fd-prep-more summary{display:inline-flex;align-items:center;min-height:44px;font-size:13.5px;font-weight:600;color:var(--steel);
+  cursor:pointer}
+.fd-prep-freeze{margin-top:10px}
+.fd-prep-freeze b,.fd-prep-cooknote b{display:flex;align-items:center;gap:6px}
+.fd-prep-cooknote{margin:4px 0 10px}
+.fd-prep-cooknote a{display:inline-flex;align-items:center;min-height:44px;font-size:13.5px;font-weight:600;color:var(--steel)}
+
+/* Dzień po dniu: dzień zwinięty do jednej linijki z kaloriami, dziś rozwinięty. */
+.fd-prep-day{border-top:1px solid var(--surface-2)}
+.fd-prep-day:first-of-type{border-top:0}
+.fd-prep-day summary{display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:48px;cursor:pointer;
+  font-size:14.5px;font-weight:600;color:var(--ink)}
+.fd-prep-day summary span:last-child{font-weight:500;font-size:13px;color:var(--ink-soft)}
+.fd-prep-day[open] summary{margin-bottom:2px}
+.fd-prep-day .fd-prep-rows{margin-top:0}
+
+/* ---------------- Lista zakupów ---------------- */
+
+.fd-prep-progress{height:8px;background:var(--surface-2);margin:8px 0 4px;overflow:hidden}
+.fd-prep-progress i{display:block;height:100%;background:var(--c-green)}
+@media (prefers-reduced-motion:no-preference){.fd-prep-progress i{transition:width .3s ease-out}}
+.fd-prep-list{list-style:none;margin:6px 0 0;padding:0}
+.fd-prep-list > li{border-top:1px solid var(--surface-2)}
+.fd-prep-list > li:first-child{border-top:0}
+.fd-prep-list > li.fd-prep-aisle{border-top:0;padding:12px 0 2px}
+.fd-prep-aisle h3{margin:0;font-family:var(--display);font-size:11.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-soft)}
+.fd-prep-aisle + li{border-top:0}
+.fd-prep-item{display:flex;align-items:center;gap:2px}
+.fd-prep-item label{flex:1;min-width:0;display:flex;gap:12px;align-items:flex-start;padding:10px 0;min-height:52px;cursor:pointer;
+  -webkit-tap-highlight-color:transparent}
+.fd-prep-item input{flex:none;width:24px;height:24px;margin:1px 0 0;accent-color:var(--steel)}
+.fd-prep-item-main{display:grid;gap:2px;min-width:0}
+.fd-prep-item .fd-prep-name{font-size:15px}
+.fd-prep-done .fd-prep-name,.fd-prep-done .fd-prep-meta{color:var(--ink-soft);text-decoration:line-through}
+.fd-prep-cold{display:inline-flex;align-items:center;gap:4px;color:var(--c-blue-ink)}
+.grp p.fd-prep-cold{display:flex;color:var(--c-blue-ink)}
+.fd-prep-link{flex:none;width:44px;height:44px;display:grid;place-items:center;color:var(--steel);border-radius:50%}
+.fd-prep-link:focus-visible{outline:2px solid var(--steel);outline-offset:-2px}
+p.fd-prep-foot{margin:10px auto 18px;font-size:12.5px;max-width:62ch}
+.fd-prep-listlink{margin-top:4px;gap:6px}

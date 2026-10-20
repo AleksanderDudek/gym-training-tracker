@@ -1,5 +1,6 @@
 import Dexie, { type Table } from 'dexie';
 import type { CustomFood, Food, FoodSet, FoodSource } from './foods';
+import type { PrepPlan } from '../prep/types';
 import type { DayChoices, Plan } from './plan';
 import type { Profile } from './types';
 
@@ -69,6 +70,7 @@ export class DietDb extends Dexie {
   foods!: Table<CustomFood & { id?: number }, number>;
   sets!: Table<FoodSet, number>;
   favorites!: Table<Favorite, string>;
+  prep!: Table<PrepPlan, number>;
 
   constructor(name = 'produkty-pl-dieta') {
     super(name);
@@ -77,6 +79,8 @@ export class DietDb extends Dexie {
     this.version(2).stores({ sets: '++id' });
     // Ulubione — gwiazdka przy jedzeniu, klucz to klucz jedzenia.
     this.version(3).stores({ favorites: 'key' });
+    // Meal prep — plany na kolejne dni z listą zakupów, każdy jako migawka.
+    this.version(4).stores({ prep: '++id' });
   }
 }
 

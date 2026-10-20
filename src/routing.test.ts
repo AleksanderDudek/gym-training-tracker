@@ -53,6 +53,7 @@ describe('zakładki i sekcje', () => {
     expect(parseHash('#/jedzenie/plan')).toEqual({ kind: 'diet', page: 'plan' });
     expect(parseHash('#/jedzenie/postep')).toEqual({ kind: 'diet', page: 'progress' });
     expect(parseHash('#/jedzenie/profil')).toEqual({ kind: 'diet', page: 'profile' });
+    expect(parseHash('#/jedzenie/zakupy')).toEqual({ kind: 'diet', page: 'shopping' });
     // Nieznana podstrona dziennika prowadzi do dziennika, a nie na ekran Dziś.
     expect(parseHash('#/jedzenie/cos')).toEqual({ kind: 'food', section: 'diary' });
   });
@@ -101,7 +102,7 @@ describe('zakładki i sekcje', () => {
   });
 
   it('sekcje i podstrony jedzenia podświetlają Jedzenie', () => {
-    ['#/jedzenie', '#/przepisy', '#/produkty?q=a', '#/w-poblizu', '#/jedzenie/plan', '#/jedzenie/postep', '#/jedzenie/profil'].forEach(
+    ['#/jedzenie', '#/przepisy', '#/produkty?q=a', '#/w-poblizu', '#/jedzenie/plan', '#/jedzenie/postep', '#/jedzenie/profil', '#/jedzenie/zakupy'].forEach(
       (h) => expect(activeTab(parseHash(h)), h).toBe('food' as TabKey),
     );
   });
@@ -120,6 +121,8 @@ describe('zakładki i sekcje', () => {
     expect(screenOf(parseHash('#/jedzenie/plan'))).toEqual({ title: 'Plan posiłków', parent: '#/jedzenie' });
     expect(screenOf(parseHash('#/jedzenie/postep'))).toEqual({ title: 'Postęp', parent: '#/jedzenie' });
     expect(screenOf(parseHash('#/jedzenie/profil'))).toEqual({ title: 'Profil diety', parent: '#/jedzenie' });
+    // Lista zakupów wraca do planu, z którego powstała.
+    expect(screenOf(parseHash('#/jedzenie/zakupy'))).toEqual({ title: 'Lista zakupów', parent: '#/jedzenie/plan' });
   });
 
   it('przełącznik sekcji: Plan · Treningi · Ćwiczenia i Dziennik · Przepisy · Produkty · W pobliżu', () => {

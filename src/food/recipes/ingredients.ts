@@ -434,7 +434,7 @@ const DEFINITIONS = {
     // A plain roll, not a sweet bun, a burger bun or breadcrumbs ("bułka tarta").
     match: (p) =>
       /^(bulk[ai]|kajzerk\w*)\b|grahamk/.test(nameOf(p)) &&
-      !/\b(tart\w*|burger\w*|hot ?dog\w*|maslan\w*|slodk\w*|drozdzow\w*|maslem)\b/.test(nameOf(p)) &&
+      !/\b(tart\w*|(ham)?burger\w*|hot ?dog\w*|maslan\w*|slodk\w*|drozdzow\w*|maslem)\b/.test(nameOf(p)) &&
       within(p, { kcal: [230, 310], protein: [7, 13], fat: [0, 5], sugars: [0, 6] }),
   },
   riceCakes: {
@@ -750,6 +750,10 @@ const DEFINITIONS = {
       !/\b(w oleju|olej\w*|smietan\w*|jogurt\w*|pomidor\w*|sos\w*|salatk\w*|pasta|krajank\w*|tatar\w*|wedzon\w*|suszon\w*|koreczk\w*|zalew\w*|marynat\w* (korzenn|octow)\w*)\b/.test(nameOf(p)) &&
       within(p, { protein: [13, 25], fat: [0, 18], carbs: [0, 3] }),
   },
+  // Meal prep (2026-10-20): the fat a keto or low-carb day needs and protein recipes do not bring.
+  // A staple with no matcher, like fruit: nuts in the data are mostly salted, coated or in mixes.
+  // Typical values from a Polish walnut label (EU carbohydrate, fibre not counted).
+  nuts: { id: 'nuts', label: 'Orzechy włoskie', role: 'staple', typical: { kcal: 665, protein: 15, carbs: 7, fat: 65 } },
   gelatin: {
     id: 'gelatin',
     label: 'Żelatyna',
