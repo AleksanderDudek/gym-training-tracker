@@ -1,5 +1,4 @@
 import { Check, ChefHat, ListChecks, Snowflake, Undo2 } from 'lucide-react';
-import { dietPath } from '../../../routing';
 import { useBridge } from '../../bridge';
 import { db, type Entry } from '../../diet/db';
 import { logFood } from '../../diet/store';
@@ -9,6 +8,7 @@ import { gramsLabel, portionLabel, weekdaySpan } from '../../prep/format';
 import { dayPlanTotals, mealAmount, mealFood, mealsOn } from '../../prep/meals';
 import { itemName } from '../../prep/shopping';
 import type { PrepMeal, PrepPlan } from '../../prep/types';
+import { planHref, shoppingHref } from './links';
 import './prep.css';
 
 const ICON = { size: 20, strokeWidth: 2, 'aria-hidden': true } as const;
@@ -65,7 +65,7 @@ export function PrepDayCard({ plan, date, entries }: Props) {
               </li>
             ))}
           </ul>
-          <a href={dietPath('plan')}>Ilości i przepis w planie</a>
+          <a href={planHref(plan)}>Ilości i przepis w planie</a>
         </div>
       )}
       {thaw.length > 0 && (
@@ -121,7 +121,7 @@ export function PrepDayCard({ plan, date, entries }: Props) {
         Plan: {formatNumber(total.kcal, 0)} kcal
         {left > 0 && left < total.kcal && <> · do zjedzenia z planu jeszcze {formatNumber(left, 0)} kcal</>}
       </p>
-      <a className="btn ghost sm fd-prep-listlink" href={dietPath('shopping')}>
+      <a className="btn ghost sm fd-prep-listlink" href={shoppingHref(plan)}>
         <ListChecks {...ICON} /> Lista zakupów
       </a>
     </section>

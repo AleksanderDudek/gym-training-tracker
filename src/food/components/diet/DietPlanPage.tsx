@@ -47,6 +47,7 @@ export default function DietPlanPage() {
         profile={profile}
         plans={prepPlans}
         today={today}
+        wanted={state.plan}
         formOpen={state.form}
         onOpenForm={() => update({ form: true }, { push: true })}
         onCloseForm={() => closeEntry({ form: false })}

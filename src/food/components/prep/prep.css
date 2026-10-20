@@ -11,6 +11,9 @@
 .fd-prep-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
 .fd-prep-actions .btn{gap:6px}
 .fd-prep-actions .btn:disabled,.fd-prep-row .btn:disabled{opacity:.45;cursor:default;transform:none}
+.fd-prep-retry{background:none;border:0;padding:10px 0;min-height:44px;font:inherit;font-weight:600;color:var(--steel);
+  text-decoration:underline;text-underline-offset:2px;cursor:pointer}
+.fd-prep-switch{margin-top:12px;margin-bottom:0}
 .fd-prep-bullets{margin:4px 0 6px;padding-left:18px;font-size:13px;color:var(--ink-soft);line-height:1.45;max-width:62ch}
 .fd-prep-bullets li{margin:2px 0}
 

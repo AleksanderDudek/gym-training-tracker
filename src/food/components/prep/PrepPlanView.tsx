@@ -1,21 +1,22 @@
 import { ChefHat, ListChecks, Repeat, Shuffle, Snowflake, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { Modal, useModal } from '../../../components/ui';
-import { dietPath } from '../../../routing';
 import { useBridge } from '../../bridge';
 import { macroStatus, type Status } from '../../diet/day';
 import { addDays } from '../../diet/model';
 import type { Profile } from '../../diet/types';
 import { useDataset } from '../../hooks/useDataset';
+import { useFavorites } from '../../hooks/useDiet';
 import { formatNumber, plural } from '../../lib/format';
 import { RECIPES } from '../../recipes/catalog';
 import { gramsLabel, longDate, portionLabel, rangeLabel, shortDate, weekdaySpan } from '../../prep/format';
-import { newSeed, rerollPlan, swapRecipe } from '../../prep/generate';
-import { averageDay, dayPlanTotals, mealAmount, mealsOn } from '../../prep/meals';
+import { canSwap, newSeed, rerollPlan, swapRecipe, type GenerateResult } from '../../prep/generate';
+import { averageDay, dayPlanTotals, mealAmount, mealsOn, shoppingProgress } from '../../prep/meals';
 import { itemName } from '../../prep/shopping';
 import { deletePrepPlan, planEnd, replacePrepPlan } from '../../prep/store';
 import type { PrepBatch, PrepPlan, Role } from '../../prep/types';
 import { recipeIndex } from '../../recipes/resolve';
+import { shoppingHref } from './links';
 import './prep.css';
 
 const ICON = { size: 20, strokeWidth: 2, 'aria-hidden': true } as const;
@@ -49,6 +50,7 @@ interface Props {
 export function PrepPlanView({ plan, profile, today, onNext }: Props) {
   const bridge = useBridge();
   const data = useDataset();
+  const favorites = useFavorites();
   const { req, ask } = useModal();
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
@@ -56,39 +58,68 @@ export function PrepPlanView({ plan, profile, today, onNext }: Props) {
   const average = averageDay(plan);
   const physical = plan.shops.find((s) => !s.online);
   const order = plan.shops.find((s) => s.online);
-  const bought = plan.bought.length;
+  const progress = shoppingProgress(plan, new Set(plan.bought));
   const stale = plan.goal.kcal !== profile.dailyKcal || plan.goal.dietProfile !== profile.dietProfile;
-  const ready = data.status === 'ready' ? { index: recipeIndex(data.products), dict: data.dataset.dictionaries } : null;
+  // A change touches only what is ahead: from today (or the plan's first day, when it starts later).
+  const from = plan.settings.start > today ? plan.settings.start : today;
+  const ready =
+    data.status === 'ready'
+      ? {
+          index: recipeIndex(data.products),
+          dict: data.dataset.dictionaries,
+          favorites: new Set((favorites ?? []).filter((f) => f.key.startsWith('recipe:')).map((f) => f.key.slice(7))),
+        }
+      : null;
 
-  const save = async (next: ReturnType<typeof rerollPlan>, done: string) => {
-    if (!next.ok) {
-      setNote(next.message);
-      return;
+  const save = async (make: () => GenerateResult, done: string) => {
+    setBusy(true);
+    try {
+      const next = make();
+      if (!next.ok) {
+        setNote(next.message);
+        return;
+      }
+      await replacePrepPlan({ ...next.plan, id: plan.id });
+      setNote(null);
+      bridge.toast(done);
+    } catch {
+      setNote('Nie udało się zapisać zmiany na tym urządzeniu — spróbuj jeszcze raz.');
+    } finally {
+      setBusy(false);
     }
-    await replacePrepPlan({ ...next.plan, id: plan.id });
-    setNote(null);
-    bridge.toast(done);
   };
 
   const reroll = async () => {
     if (!ready || busy) return;
-    if (bought && !(await ask('Ułożyć inny plan?', <p>Lista zakupów się zmieni; odhaczone zostaną tylko te pozycje, które są i w nowym planie.</p>, 'Ułóż inny')))
+    const started = from > plan.settings.start;
+    if (
+      (started || progress.done) &&
+      !(await ask(
+        'Ułożyć inny plan?',
+        <p>
+          {started ? 'Dni do dziś i ugotowane już pudełka zostają, reszta planu się zmieni. ' : ''}
+          Lista zakupów pójdzie za planem: odhaczone zostanie tylko to, czego nowy plan nie potrzebuje więcej.
+        </p>,
+        'Ułóż inny',
+      ))
+    )
       return;
-    setBusy(true);
-    await save(rerollPlan(plan, ready, newSeed()), 'Nowy zestaw przepisów — lista zakupów też.');
-    setBusy(false);
+    await save(() => rerollPlan(plan, ready, newSeed(), from), 'Nowy zestaw przepisów — lista zakupów też.');
   };
 
   const swap = async (role: Role, recipeId: string) => {
     if (!ready || busy) return;
-    setBusy(true);
-    await save(swapRecipe(plan, role, recipeId, ready), 'Przepis wymieniony — porcje i lista zakupów poszły za nim.');
-    setBusy(false);
+    await save(() => swapRecipe(plan, role, recipeId, ready, from), 'Przepis wymieniony — porcje i lista zakupów poszły za nim.');
   };
 
   const remove = async () => {
-    if (await ask('Usunąć plan z zakupami?', <p>Zapisy jedzenia zostaną, zniknie tylko plan i jego lista.</p>, 'Usuń plan'))
+    if (!(await ask('Usunąć plan z zakupami?', <p>Zapisy jedzenia zostaną, zniknie tylko plan i jego lista.</p>, 'Usuń plan')))
+      return;
+    try {
       await deletePrepPlan(plan.id);
+    } catch {
+      setNote('Nie udało się usunąć planu — spróbuj jeszcze raz.');
+    }
   };
 
   const roles = ROLE_ORDER.filter((r) => plan.choices[r]?.length);
@@ -135,9 +166,9 @@ export function PrepPlanView({ plan, profile, today, onNext }: Props) {
           </p>
         )}
         <div className="fd-prep-actions">
-          <a className="btn" href={dietPath('shopping')}>
+          <a className="btn" href={shoppingHref(plan)}>
             <ListChecks {...ICON} /> Lista zakupów
-            {bought > 0 && ` (${bought}/${plan.shopping.length})`}
+            {progress.done > 0 && ` (${progress.done}/${progress.total})`}
           </a>
           <button type="button" className="btn ghost sm" onClick={() => void reroll()} disabled={!ready || busy}>
             <Shuffle {...ICON} /> Inny plan
@@ -149,7 +180,15 @@ export function PrepPlanView({ plan, profile, today, onNext }: Props) {
             <Trash2 {...ICON} /> Usuń plan
           </button>
         </div>
-        {!ready && data.status === 'loading' && <p className="tight fd-prep-soft">Wczytuję bazę produktów — wymiana przepisów zaraz będzie gotowa.</p>}
+        {data.status === 'loading' && <p className="tight fd-prep-soft">Wczytuję bazę produktów — wymiana przepisów zaraz będzie gotowa.</p>}
+        {data.status === 'error' && (
+          <p className="tight fd-prep-warn">
+            Bez bazy produktów nie wymienię przepisu ani nie ułożę innego planu — plan i lista działają dalej.{' '}
+            <button type="button" className="fd-prep-retry" onClick={data.retry}>
+              Spróbuj ponownie
+            </button>
+          </p>
+        )}
       </section>
 
       <section className="grp" aria-labelledby="fd-prep-recipes-title">
@@ -162,6 +201,7 @@ export function PrepPlanView({ plan, profile, today, onNext }: Props) {
               {[...new Set(plan.choices[role])].map((id) => {
                 const uses = plan.meals.filter((m) => m.role === role && m.recipeId === id);
                 const name = uses[0]?.name ?? RECIPES.find((r) => r.id === id)?.name ?? id;
+                const swappable = canSwap(plan, role, id, from);
                 return (
                   <li key={id} className="fd-prep-row">
                     <div className="fd-prep-row-main">
@@ -170,15 +210,19 @@ export function PrepPlanView({ plan, profile, today, onNext }: Props) {
                         {weekdaySpan(uses.map((u) => u.date))} · {uses.length} ×
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      className="btn ghost sm"
-                      disabled={!ready || busy}
-                      onClick={() => void swap(role, id)}
-                      aria-label={`Wymień: ${name}`}
-                    >
-                      <Repeat {...ICON} /> Wymień
-                    </button>
+                    {swappable ? (
+                      <button
+                        type="button"
+                        className="btn ghost sm"
+                        disabled={!ready || busy}
+                        onClick={() => void swap(role, id)}
+                        aria-label={`Wymień: ${name}`}
+                      >
+                        <Repeat {...ICON} /> Wymień
+                      </button>
+                    ) : (
+                      <span className="fd-prep-meta">zjedzone albo ugotowane</span>
+                    )}
                   </li>
                 );
               })}

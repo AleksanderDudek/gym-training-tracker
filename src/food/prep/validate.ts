@@ -3,6 +3,7 @@ import type { MacroTargets } from '../diet/profiles';
 import { DIET_PROFILE_IDS } from '../diet/profiles';
 import type { DietProfileId } from '../diet/types';
 import type { Macros } from '../recipes/macros';
+import { planDates } from './blocks';
 import type { CheckIn, CheckInStatus } from './checkin';
 import { MAX_DAYS, MIN_DAYS } from './types';
 import type {
@@ -42,6 +43,9 @@ const EXCLUSIONS: readonly Exclusion[] = ['meat', 'fish', 'eggs'];
 const AISLES: readonly Aisle[] = ['warzywa', 'pieczywo', 'nabial', 'mieso', 'mrozonki', 'suche', 'inne'];
 const STATUSES: readonly CheckInStatus[] = ['za-malo-danych', 'zgodnie', 'korekta', 'cel'];
 const one = <T extends string>(list: readonly T[], v: unknown): T | null => list.find((x) => x === v) ?? null;
+const index = (v: unknown): v is number => finite(v) && Number.isInteger(v) && v >= 0;
+/** A link the page will open: an https address, nothing else (no `javascript:`, no `data:`). */
+const https = (v: unknown): v is string => text(v) && /^https:\/\/[^\s]+$/.test(v);
 
 /** Every element cleaned, or null when any one fails. */
 function all<T>(v: unknown, clean: (x: unknown) => T | null): T[] | null {
@@ -85,7 +89,7 @@ function settings(v: unknown): PrepSettings | null {
 
 function shop(v: unknown): PrepShop | null {
   if (!isObject(v) || !text(v.key) || !text(v.name) || typeof v.online !== 'boolean') return null;
-  return { key: v.key, name: v.name, online: v.online, url: orNull(v.url, text) };
+  return { key: v.key, name: v.name, online: v.online, url: orNull(v.url, https) };
 }
 
 function checkIn(v: unknown): CheckIn | null {
@@ -125,14 +129,14 @@ function side(v: unknown): PrepSide | null {
 }
 
 function meal(v: unknown): PrepMeal | null {
-  if (!isObject(v) || !isCalendarDate(v.date) || !finite(v.slot) || !text(v.slotName) || !text(v.recipeId) || !text(v.name))
+  if (!isObject(v) || !isCalendarDate(v.date) || !index(v.slot) || !text(v.slotName) || !text(v.recipeId) || !text(v.name))
     return null;
   const role = one(ROLES, v.role);
   const sides = all(v.sides, side);
   const recipe = macros(v.recipe);
   const total = macros(v.total);
   if (!role || !sides || !recipe || !total || !finite(v.portion) || v.portion <= 0) return null;
-  if (!(v.box === null || (finite(v.box) && Number.isInteger(v.box) && v.box >= 0))) return null;
+  if (!(v.box === null || index(v.box))) return null;
   return {
     date: v.date,
     slot: v.slot,
@@ -171,7 +175,7 @@ function batch(v: unknown): PrepBatch | null {
 
 function product(v: unknown): ShoppingProduct | null {
   if (!isObject(v) || !text(v.code) || !text(v.name)) return null;
-  return { code: v.code, name: v.name, brand: orNull(v.brand, text), quantity: orNull(v.quantity, text), url: orNull(v.url, text) };
+  return { code: v.code, name: v.name, brand: orNull(v.brand, text), quantity: orNull(v.quantity, text), url: orNull(v.url, https) };
 }
 
 function item(v: unknown): ShoppingItem | null {
@@ -231,9 +235,10 @@ export function cleanPrepPlan(raw: unknown): PrepPlan | null {
     return null;
   if (![g.kcal, g.pace, g.weightKg].every(finite) || !text(g.styleLabel) || (g.source !== 'profile' && g.source !== 'checkin'))
     return null;
-  // The parts must agree: a meal's box exists, its slot exists, every day has its targets.
+  // The parts must agree: a meal's box exists, its slot exists, every day of the plan has its targets.
   if (meals.some((m) => (m.box !== null && m.box >= batches.length) || m.slot >= slots.length)) return null;
-  if (dayTargets.length !== s.days) return null;
+  const dates = planDates(s.start, s.days);
+  if (dayTargets.length !== dates.length || dayTargets.some((d, i) => d.date !== dates[i])) return null;
   return {
     ...(finite(raw.id) && { id: raw.id }),
     createdAt: raw.createdAt,

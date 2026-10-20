@@ -3,15 +3,20 @@ import { Fragment, useState } from 'react';
 import { EmptyState } from '../../../components/ui';
 import { dietPath } from '../../../routing';
 import { useBridge } from '../../bridge';
+import { shoppingFromParams, shoppingToParams } from '../../diet/url';
 import { useClock } from '../../hooks/useDiet';
 import { usePrepPlans } from '../../hooks/usePrep';
+import { useUrlState } from '../../hooks/useUrlState';
 import { formatNumber, formatPrice } from '../../lib/format';
 import { AISLE_LABELS } from '../../prep/aisles';
 import { gramsLabel, rangeLabel, shortDate } from '../../prep/format';
+import { shoppingProgress } from '../../prep/meals';
 import { amountText, itemName, priceSum, pricedEnough, shoppingText } from '../../prep/shopping';
-import { clearBought, currentPlan, markBought, planEnd } from '../../prep/store';
+import { clearBought, markBought, openPlans, planEnd, shownPlan } from '../../prep/store';
 import type { PrepPlan, PrepShop, ShoppingItem } from '../../prep/types';
 import { Loading } from '../diet/Onboarding';
+import { shoppingHref } from './links';
+import { PlanSwitch } from './PlanSwitch';
 import './prep.css';
 
 const ICON = { size: 20, strokeWidth: 2, 'aria-hidden': true } as const;
@@ -22,10 +27,11 @@ const ICON = { size: 20, strokeWidth: 2, 'aria-hidden': true } as const;
  * potem zamówienie przez internet, na końcu to, co zwykle jest w domu.
  */
 export default function ShoppingPage() {
+  const [state] = useUrlState(shoppingFromParams, shoppingToParams);
   const plans = usePrepPlans();
   const { date: today } = useClock();
   if (!plans) return <Loading />;
-  const plan = currentPlan(plans, today);
+  const plan = shownPlan(plans, today, state.plan);
   if (!plan || plan.id === undefined)
     return (
       <div className="wrap">
@@ -40,27 +46,42 @@ export default function ShoppingPage() {
         />
       </div>
     );
-  return <ShoppingList plan={plan as PrepPlan & { id: number }} />;
+  return (
+    <>
+      <PlanSwitch plans={openPlans(plans, today)} shown={plan} today={today} href={shoppingHref} />
+      {/* Another plan, another list: ticks shown before IndexedDB answers belong to one plan. */}
+      <ShoppingList key={plan.id} plan={plan as PrepPlan & { id: number }} />
+    </>
+  );
 }
 
 function ShoppingList({ plan }: { plan: PrepPlan & { id: number } }) {
   const bridge = useBridge();
   // What the checkboxes show at once, before IndexedDB answers: a tick in a shop must not flicker.
+  // A tick the stored plan already agrees with is dropped, so a change from another tab shows too.
   const [ticks, setTicks] = useState<ReadonlyMap<string, boolean>>(new Map());
+  const [stored, setStored] = useState(plan.bought);
+  if (stored !== plan.bought) {
+    setStored(plan.bought);
+    setTicks((m) => new Map([...m].filter(([k, on]) => plan.bought.includes(k) !== on)));
+  }
   const physical = plan.shops.find((s) => !s.online);
   const visit = plan.shopping.filter((i) => i.group === 'visit');
   const home = plan.shopping.filter((i) => i.group === 'home');
   const bought = new Set(plan.shopping.map((i) => i.key).filter((k) => ticks.get(k) ?? plan.bought.includes(k)));
+  const failed = () => {
+    setTicks(new Map());
+    bridge.toast('Nie udało się zapisać odhaczenia na tym urządzeniu.');
+  };
   const tick = (key: string, on: boolean) => {
     setTicks((m) => new Map(m).set(key, on));
-    void markBought(plan.id, key, on);
+    markBought(plan.id, key, on).catch(failed);
   };
   const untickAll = () => {
     setTicks(new Map(plan.shopping.map((i) => [i.key, false])));
-    void clearBought(plan.id);
+    clearBought(plan.id).catch(failed);
   };
-  const toBuy = plan.shopping.filter((i) => i.group !== 'home');
-  const done = toBuy.filter((i) => bought.has(i.key)).length;
+  const { done, total } = shoppingProgress(plan, bought);
 
   const share = async () => {
     const text = shoppingText(plan);
@@ -83,11 +104,11 @@ function ShoppingList({ plan }: { plan: PrepPlan & { id: number } }) {
       <div className="grp fd-prep-head">
         <h2 className="today-name">Zakupy na {rangeLabel(plan.settings.start, planEnd(plan))}</h2>
         <p className="tight" aria-live="polite">
-          Kupione {formatNumber(done, 0)} z {formatNumber(toBuy.length, 0)}
-          {done === toBuy.length && toBuy.length > 0 && ' — wszystko w koszyku.'}
+          Kupione {formatNumber(done, 0)} z {formatNumber(total, 0)}
+          {done === total && total > 0 && ' — wszystko w koszyku.'}
         </p>
         <div className="fd-prep-progress" aria-hidden>
-          <i style={{ width: `${toBuy.length ? (done / toBuy.length) * 100 : 0}%` }} />
+          <i style={{ width: `${total ? (done / total) * 100 : 0}%` }} />
         </div>
         <div className="fd-prep-actions">
           <button type="button" className="btn ghost sm" onClick={() => void share()}>

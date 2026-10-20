@@ -2,7 +2,7 @@ import { DIET_PROFILES, type MacroTargets } from '../diet/profiles';
 import type { Dictionaries } from '../lib/types';
 import { isOnlineShop, onlineShop } from '../online/shops';
 import { RECIPES, servingsOf, type Recipe } from '../recipes/catalog';
-import { INGREDIENTS } from '../recipes/ingredients';
+import { INGREDIENTS, type IngredientId } from '../recipes/ingredients';
 import type { Macros } from '../recipes/macros';
 import type { RecipeIndex } from '../recipes/resolve';
 import { cookingBlocks, planDates } from './blocks';
@@ -40,6 +40,11 @@ export interface GenerateInput {
   recipes?: readonly Recipe[];
   /** Given choices (a swap): the selection is skipped. */
   choices?: Choices;
+  /**
+   * A plan being changed (a swap, another plan): its days before `from` stay as they were - they
+   * are eaten - and so do the boxes of blocks cooked before `from`. Only what is still ahead changes.
+   */
+  keep?: { plan: PrepPlan; from: string };
   /** ISO time; now when absent. */
   createdAt?: string;
 }
@@ -118,10 +123,26 @@ export function generatePlan(input: GenerateInput): GenerateResult {
   const selection = input.choices ? { choices: input.choices, missing: [] as Role[] } : selectRecipes(ctx);
   if (selection.missing.length)
     return { ok: false, missing: selection.missing, message: missingMessage(selection.missing, input) };
-  const choices = selection.choices;
+  const basket = basketOf(settings);
+  const slots = ctx.slots;
+  const blocks = cookingBlocks(settings.start, settings.days);
+  const dates = planDates(settings.start, settings.days);
+  const blockOf = (date: string) => blocks.findIndex((b) => b.dates.includes(date));
+  // What is eaten or cooked already stays: the days before `from`, the blocks cooked before it.
+  const old = input.keep && input.keep.from > settings.start ? input.keep.plan : null;
+  const from = old ? input.keep!.from : null;
+  const cooked = (block: number) => from !== null && blocks[block]!.start < from;
+
+  // A cooked block keeps its dish in the choices too: the plan says what is in its boxes.
+  const choices: Choices = { ...selection.choices };
+  if (old)
+    for (const role of ['lunchBox', 'dinnerBox'] as const) {
+      const was = old.choices[role];
+      if (choices[role] && was) choices[role] = choices[role].map((id, b) => (cooked(b) ? (was[b] ?? id) : id));
+    }
   const byId = new Map(pool.map((r) => [r.recipe.id, r]));
-  const gone = Object.values(choices)
-    .flat()
+  const gone = Object.entries(choices)
+    .flatMap(([role, ids]) => ids.filter((_, i) => !(isBoxRole(role as Role) && cooked(i))))
     .filter((id) => !byId.has(id));
   if (gone.length)
     return {
@@ -129,12 +150,6 @@ export function generatePlan(input: GenerateInput): GenerateResult {
       missing: [],
       message: 'Któregoś przepisu z planu nie da się już kupić w tym koszyku — ułóż plan od nowa.',
     };
-
-  const basket = basketOf(settings);
-  const slots = ctx.slots;
-  const blocks = cookingBlocks(settings.start, settings.days);
-  const dates = planDates(settings.start, settings.days);
-  const blockOf = (date: string) => blocks.findIndex((b) => b.dates.includes(date));
   const sideCache = new Map<SideDef, ResolvedSide>();
   const resolved = (def: SideDef) => {
     let side = sideCache.get(def);
@@ -152,10 +167,20 @@ export function generatePlan(input: GenerateInput): GenerateResult {
     block: number;
   }
   const specs: Assigned[] = [];
+  const kept: PrepMeal[] = [];
+  const fixed = new Map<number, (Macros & { share: number })[]>();
   for (const [d, date] of dates.entries()) {
     let snack = 0;
     for (const [s, slot] of slots.entries()) {
       const block = blockOf(date);
+      const before = old?.meals.find((m) => m.date === date && m.slot === s);
+      if (from !== null && before && (date < from || (before.box !== null && cooked(block)))) {
+        kept.push(before);
+        // A cooked box still counts on its day: the rest of the day is fitted around it.
+        if (date >= from) fixed.set(d, [...(fixed.get(d) ?? []), { ...before.total, share: slot.share }]);
+        if (slot.kind === 'snack') snack++;
+        continue;
+      }
       let role: Role;
       let id: string | undefined;
       if (slot.kind === 'breakfast') [role, id] = ['breakfast', at(choices.breakfast, d)];
@@ -196,11 +221,20 @@ export function generatePlan(input: GenerateInput): GenerateResult {
   const amounts = fitPortions(
     specs,
     dates.map((date) => dayTargets.find((t) => t.date === date)!.targets),
+    fixed,
   );
 
+  // Batches cooked before `from` stay as they were, first; the meals that eat from them point at them.
   const batches: PrepBatch[] = [];
+  const keptBatch = new Map<number, number>();
+  for (const [i, b] of (old?.batches ?? []).entries())
+    if (from !== null && b.date < from) {
+      keptBatch.set(i, batches.length);
+      batches.push(b);
+    }
+  const keptMeals = kept.map((m) => ({ ...m, box: m.box === null ? null : (keptBatch.get(m.box) ?? null) }));
   const batchOf = new Map<string, number>();
-  const meals: PrepMeal[] = specs.map((spec) => {
+  const fresh: PrepMeal[] = specs.map((spec) => {
     const a = amounts.get(spec.key)!;
     const sides: PrepSide[] = spec.sides.flatMap((side, i) => {
       const steps = a.steps[i] ?? 0;
@@ -254,22 +288,33 @@ export function generatePlan(input: GenerateInput): GenerateResult {
       total: { kcal: round2(total.kcal), protein: round2(total.protein), carbs: round2(total.carbs), fat: round2(total.fat) },
     };
   });
-  for (const batch of batches) {
+  for (const batch of batches.slice(keptBatch.size)) {
     const recipe = byId.get(batch.recipeId)!.recipe;
     batch.factor = round2(batch.servings / servingsOf(recipe));
     batch.ingredients = recipe.items
       .filter((i) => i.ingredient !== 'water' && i.ingredient !== 'ice')
       .map((i) => ({ label: INGREDIENTS[i.ingredient].label, grams: round2(i.grams * batch.factor) }));
   }
+  const meals = [...keptMeals, ...fresh].sort((a, b) => a.date.localeCompare(b.date) || a.slot - b.slot);
 
+  // The list covers the whole plan, kept days included: what was bought for them is part of it.
+  const catalog = new Map((input.recipes ?? RECIPES).map((r) => [r.id, r]));
+  const recipeOf = (id: string) => byId.get(id)?.recipe ?? catalog.get(id);
   const uses: RecipeUse[] = [
-    ...batches.map((b) => ({ recipe: byId.get(b.recipeId)!.recipe, servings: b.servings, date: b.date })),
-    ...meals.filter((m) => m.box === null).map((m) => ({ recipe: byId.get(m.recipeId)!.recipe, servings: m.portion, date: m.date })),
+    ...batches.flatMap((b) => {
+      const recipe = recipeOf(b.recipeId);
+      return recipe ? [{ recipe, servings: b.servings, date: b.date }] : [];
+    }),
+    ...meals
+      .filter((m) => m.box === null)
+      .flatMap((m) => {
+        const recipe = recipeOf(m.recipeId);
+        return recipe ? [{ recipe, servings: m.portion, date: m.date }] : [];
+      }),
   ];
-  const sideUses: SideUse[] = specs.flatMap((spec) => {
-    const a = amounts.get(spec.key)!;
-    return spec.sides.map((side, i) => ({ def: side.def, steps: a.steps[i] ?? 0, date: spec.date }));
-  });
+  const sideUses: SideUse[] = meals.flatMap((m) =>
+    m.sides.map((side) => ({ ingredient: side.ingredient as IngredientId, grams: side.grams, date: m.date })),
+  );
   const shopping = shoppingList({
     uses,
     sides: sideUses,
@@ -310,8 +355,18 @@ function at(list: string[] | undefined, n: number): string | undefined {
   return list?.length ? list[n % list.length] : undefined;
 }
 
-/** The plan again with the same goal and targets: another seed ("Inny plan") or other choices. */
-function remake(plan: PrepPlan, input: RemakeInput, change: { settings?: PrepSettings; choices?: Choices }): GenerateResult {
+/**
+ * The plan again with the same goal and targets, from `from` on (another seed, or other choices):
+ * the days before it and the boxes cooked before it stay. A ticked line stays ticked while the
+ * plan needs no more of it than before - more means another pack to buy.
+ */
+function remake(
+  plan: PrepPlan,
+  input: RemakeInput,
+  from: string,
+  change: { settings?: PrepSettings; choices?: Choices },
+): GenerateResult {
+  if (from > planEnd(plan)) return { ok: false, missing: [], message: 'Ten plan już się skończył — ułóż następny.' };
   const result = generatePlan({
     ...input,
     settings: change.settings ?? plan.settings,
@@ -319,38 +374,64 @@ function remake(plan: PrepPlan, input: RemakeInput, change: { settings?: PrepSet
     goal: plan.goal,
     checkIn: plan.checkIn,
     choices: change.choices,
+    keep: { plan, from },
     createdAt: plan.createdAt,
   });
   if (!result.ok) return result;
-  const keys = new Set(result.plan.shopping.map((i) => i.key));
+  const before = new Map(plan.shopping.map((i) => [i.key, i.grams]));
+  const after = new Map(result.plan.shopping.map((i) => [i.key, i.grams]));
   return {
     ok: true,
     plan: {
       ...result.plan,
       ...(plan.id !== undefined && { id: plan.id }),
-      // What is in the trolley stays ticked while the plan still needs it.
-      bought: plan.bought.filter((k) => keys.has(k)),
+      bought: plan.bought.filter((k) => after.has(k) && after.get(k)! <= (before.get(k) ?? 0)),
     },
   };
 }
 
 export type RemakeInput = Pick<GenerateInput, 'index' | 'dict' | 'favorites' | 'recipes'>;
 
-/** Another plan of the same settings: a new seed. */
-export function rerollPlan(plan: PrepPlan, input: RemakeInput, seed: number): GenerateResult {
-  return remake(plan, input, { settings: { ...plan.settings, seed } });
+/** The plan's last day. */
+const planEnd = (plan: PrepPlan) => planDates(plan.settings.start, plan.settings.days).at(-1)!;
+
+/** Another plan of the same settings from `from` on (today): a new seed; what is eaten or cooked stays. */
+export function rerollPlan(plan: PrepPlan, input: RemakeInput, seed: number, from: string): GenerateResult {
+  return remake(plan, input, from, { settings: { ...plan.settings, seed } });
 }
 
 /**
- * One recipe of the plan replaced, everywhere it is used in this role, by the best one the plan does
- * not use yet; every other choice stays, portions and the list follow. The recipe swapped out does
- * not come back in this plan.
+ * Whether a recipe of the plan can still be swapped from `from` on: it is eaten on a day still ahead,
+ * and as a box only in a block not cooked yet.
  */
-export function swapRecipe(plan: PrepPlan, role: Role, out: string, input: RemakeInput): GenerateResult {
+export function canSwap(plan: PrepPlan, role: Role, recipeId: string, from: string): boolean {
+  return plan.meals.some(
+    (m) =>
+      m.role === role &&
+      m.recipeId === recipeId &&
+      m.date >= from &&
+      (m.box === null || (plan.batches[m.box]?.date ?? '') >= from),
+  );
+}
+
+/**
+ * One recipe of the plan replaced, from `from` on, everywhere it is used in this role, by the best one
+ * the plan does not use yet; every other choice stays, portions and the list follow. Boxes cooked
+ * before `from` keep their dish. The recipe swapped out does not come back in this plan.
+ */
+export function swapRecipe(plan: PrepPlan, role: Role, out: string, input: RemakeInput, from: string): GenerateResult {
+  if (!canSwap(plan, role, out, from))
+    return { ok: false, missing: [], message: 'To danie jest już zjedzone albo ugotowane — wymiana dotyczy dni, które są przed Tobą.' };
   const settings = { ...plan.settings, avoid: [...new Set([...plan.settings.avoid, out])] };
   const { ctx } = contextOf({ ...input, settings, dayTargets: plan.dayTargets, goal: plan.goal, checkIn: plan.checkIn });
   const next = swapCandidate(ctx, plan.choices, role, out);
   if (!next) return { ok: false, missing: [], message: `Nie ma innego przepisu na ${ROLE_WORDS[role]} w tym koszyku.` };
-  const choices = { ...plan.choices, [role]: (plan.choices[role] ?? []).map((id) => (id === out ? next.recipe.id : id)) };
-  return remake(plan, input, { settings, choices });
+  const blocks = cookingBlocks(plan.settings.start, plan.settings.days);
+  const choices = {
+    ...plan.choices,
+    [role]: (plan.choices[role] ?? []).map((id, i) =>
+      id === out && !(isBoxRole(role) && blocks[i]!.start < from) ? next.recipe.id : id,
+    ),
+  };
+  return remake(plan, input, from, { settings, choices });
 }

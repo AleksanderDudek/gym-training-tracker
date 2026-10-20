@@ -8,7 +8,6 @@ import type { IngredientId } from '../recipes/ingredients';
 import { resolveRecipe, type Basket, type Candidates, type ResolvedItem, type ResolvedRecipe } from '../recipes/resolve';
 import { AISLE, AISLE_LABELS, AISLE_ORDER } from './aisles';
 import { gramsLabel, rangeLabel } from './format';
-import { sideRecipe, type SideDef } from './sides';
 import type { PrepPlan, ShoppingGroup, ShoppingItem } from './types';
 
 /** A recipe eaten or cooked: `servings` of it on `date` (a cooking day for a batch). */
@@ -18,10 +17,16 @@ export interface RecipeUse {
   date: string;
 }
 
+/** A side next to a meal: so many grams of one staple or pantry ingredient on `date`. */
 export interface SideUse {
-  def: SideDef;
-  steps: number;
+  ingredient: IngredientId;
+  grams: number;
   date: string;
+}
+
+/** One ingredient as a recipe, so a side is bought by exactly the rules recipes are. */
+function itemRecipe(ingredient: IngredientId, grams: number): Recipe {
+  return { id: `side-${ingredient}`, name: ingredient, kind: 'mix', minutes: 0, tool: '', description: '', items: [{ ingredient, grams }], steps: [] };
 }
 
 /** Never bought. */
@@ -131,8 +136,8 @@ export function shoppingList({ uses, sides, basket, candidates, dict, start }: S
     for (const item of r.items) add(item, (item.grams * use.servings) / servingsOf(use.recipe), use.date);
   }
   for (const side of sides) {
-    if (!side.steps) continue;
-    const item = resolveRecipe(sideRecipe(side.def, side.def.step * side.steps), candidates, basket).items[0]!;
+    if (side.grams <= 0) continue;
+    const item = resolveRecipe(itemRecipe(side.ingredient, side.grams), candidates, basket).items[0]!;
     add(item, item.grams, side.date);
   }
 

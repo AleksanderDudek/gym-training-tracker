@@ -37,14 +37,33 @@ export function diaryFromParams(params: URLSearchParams): DiaryState {
  */
 export interface PlanPageState extends DiaryState {
   form: boolean;
+  /** Which plan with shopping is shown (`?plan=3`); `null`: the one running today. */
+  plan: number | null;
 }
 
 export function planPageToParams(state: PlanPageState): URLSearchParams {
   const params = diaryToParams(state);
   if (state.form) params.set('nowy', '1');
+  if (state.plan !== null) params.set('plan', String(state.plan));
   return params;
 }
 
 export function planPageFromParams(params: URLSearchParams): PlanPageState {
-  return { ...diaryFromParams(params), form: params.get('nowy') === '1' };
+  return { ...diaryFromParams(params), form: params.get('nowy') === '1', plan: planIdOf(params) };
+}
+
+/** The list of one plan (`#/jedzenie/zakupy?plan=3`); `null`: the plan running today. */
+export interface ShoppingState {
+  plan: number | null;
+}
+
+export const shoppingToParams = (state: ShoppingState): URLSearchParams =>
+  new URLSearchParams(state.plan === null ? '' : { plan: String(state.plan) });
+
+export const shoppingFromParams = (params: URLSearchParams): ShoppingState => ({ plan: planIdOf(params) });
+
+/** A plan id from the address: a positive whole number, or nothing. */
+function planIdOf(params: URLSearchParams): number | null {
+  const id = Number(params.get('plan'));
+  return Number.isInteger(id) && id > 0 ? id : null;
 }

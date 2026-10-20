@@ -198,7 +198,7 @@ describe('the same plan, another plan, one recipe swapped', () => {
 
   test('another seed, another plan with the same goal', () => {
     const p = { ...plan({ seed: 1 }), id: 3, bought: ['skyr', 'nope'] };
-    const other = rerollPlan(p, { index, dict: PREP_DICT }, 2);
+    const other = rerollPlan(p, { index, dict: PREP_DICT }, 2, '2026-10-20');
     expect(other.ok).toBe(true);
     if (!other.ok) return;
     expect(other.plan.id).toBe(3);
@@ -212,7 +212,7 @@ describe('the same plan, another plan, one recipe swapped', () => {
   test('a swap replaces one recipe everywhere in its role and keeps every other choice', () => {
     const p = plan();
     const out = p.choices.breakfast![0]!;
-    const swapped = swapRecipe(p, 'breakfast', out, { index, dict: PREP_DICT });
+    const swapped = swapRecipe(p, 'breakfast', out, { index, dict: PREP_DICT }, '2026-10-20');
     expect(swapped.ok).toBe(true);
     if (!swapped.ok) return;
     const next = swapped.plan;
@@ -229,10 +229,44 @@ describe('the same plan, another plan, one recipe swapped', () => {
     expect(Object.values(p.choices).flat()).not.toContain(newcomer.recipe.id);
   });
 
+  test('a change from day 3 keeps the days eaten and the boxes cooked; the rest of the plan follows', () => {
+    const p = { ...plan({ seed: 1 }), id: 7 };
+    const from = '2026-10-22';
+    const other = rerollPlan(p, { index, dict: PREP_DICT }, 2, from);
+    expect(other.ok).toBe(true);
+    if (!other.ok) return;
+    const q = other.plan;
+    // Days before `from` are exactly as they were.
+    expect(q.meals.filter((m) => m.date < from)).toEqual(p.meals.filter((m) => m.date < from));
+    // The first block (20–23 Oct) was cooked on the 20th: its boxes stay, the 22nd and 23rd too.
+    const firstBlock = (x: PrepPlan) =>
+      x.meals.filter((m) => m.box !== null && m.date <= '2026-10-23').map((m) => [m.date, m.recipeId, m.portion]);
+    expect(firstBlock(q)).toEqual(firstBlock(p));
+    expect(q.batches[0]).toEqual(p.batches[0]);
+    expect(q.choices.lunchBox![0]).toBe(p.choices.lunchBox![0]);
+    // Every day is still whole: four meals, each slot once.
+    for (const date of planDates('2026-10-20', 7)) expect(q.meals.filter((m) => m.date === date).map((m) => m.slot)).toEqual([0, 1, 2, 3]);
+    // A box cooked already cannot be swapped; one of the second block can.
+    expect(swapRecipe(p, 'lunchBox', p.choices.lunchBox![0]!, { index, dict: PREP_DICT }, from)).toMatchObject({ ok: false });
+    const second = swapRecipe(p, 'lunchBox', p.choices.lunchBox![1]!, { index, dict: PREP_DICT }, from);
+    expect(second.ok).toBe(true);
+    if (second.ok) expect(second.plan.choices.lunchBox).toEqual([p.choices.lunchBox![0], expect.not.stringMatching(`^${p.choices.lunchBox![1]}$`)]);
+  });
+
+  test('a tick stays only while the new plan needs no more of that line', () => {
+    const p = { ...plan({ seed: 1 }), id: 7 };
+    const keys = p.shopping.map((i) => i.key);
+    const other = rerollPlan({ ...p, bought: keys }, { index, dict: PREP_DICT }, 2, '2026-10-20');
+    if (!other.ok) throw new Error(other.message);
+    const was = new Map(p.shopping.map((i) => [i.key, i.grams]));
+    for (const item of other.plan.shopping)
+      expect(other.plan.bought.includes(item.key), item.key).toBe(was.has(item.key) && item.grams <= was.get(item.key)!);
+  });
+
   test('nothing left to swap to: the plan stays, with a reason', () => {
     const p = plan({}, 'keto');
     const out = p.choices.lunchBox![0]!;
-    const result = swapRecipe(p, 'lunchBox', out, { index, dict: PREP_DICT });
+    const result = swapRecipe(p, 'lunchBox', out, { index, dict: PREP_DICT }, '2026-10-20');
     // Keto has one box dish that fits fully: nothing else may take its place.
     expect(result).toEqual({ ok: false, missing: [], message: 'Nie ma innego przepisu na obiad w tym koszyku.' });
   });

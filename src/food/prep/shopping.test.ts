@@ -79,7 +79,7 @@ describe('the shopping list', () => {
     ]);
     const list = shoppingList({
       uses: [{ recipe: r, servings: 4, date: START }],
-      sides: [{ def: SIDES.roll, steps: 2, date: START }],
+      sides: [{ ingredient: 'roll', grams: 2 * SIDES.roll.step, date: START }],
       basket: ['biedronka'],
       candidates,
       dict: PREP_DICT,
@@ -157,7 +157,7 @@ describe('the shopping list', () => {
         { recipe: recipe('a', [{ ingredient: 'rice', grams: 100 }]), servings: 1, date: START },
         { recipe: recipe('b', [{ ingredient: 'rice', grams: 50 }]), servings: 1, date: START },
       ],
-      sides: [{ def: SIDES.rice, steps: 2, date: START }],
+      sides: [{ ingredient: 'rice', grams: 2 * SIDES.rice.step, date: START }],
       basket: ['biedronka'],
       candidates: own,
       dict: PREP_DICT,

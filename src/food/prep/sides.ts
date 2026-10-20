@@ -162,6 +162,3 @@ export function sideMacros(side: ResolvedSide, steps: number): Macros {
   const r = (n: number) => Math.round(n * steps * 100) / 100;
   return { kcal: r(m.kcal), protein: r(m.protein), carbs: r(m.carbs), fat: r(m.fat) };
 }
-
-/** The side recipe, for the shopping list: the same resolution as `resolveSide`. */
-export const sideRecipe = asRecipe;

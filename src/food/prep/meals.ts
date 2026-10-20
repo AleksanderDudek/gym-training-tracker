@@ -49,3 +49,12 @@ export function averageDay(plan: PrepPlan): DayTotals {
   const mean = (pick: (t: DayTotals) => number) => Math.round(days.reduce((s, d) => s + pick(d), 0) / Math.max(1, days.length));
   return { kcal: mean((d) => d.kcal), protein: mean((d) => d.protein), carbs: mean((d) => d.carbs), fat: mean((d) => d.fat), unknownMacros: 0 };
 }
+
+/**
+ * How far the shopping is: lines ticked of the lines to buy. Pantry goods („Sprawdź w domu”) are not
+ * shopping unless they run out, so they count on neither side.
+ */
+export function shoppingProgress(plan: Pick<PrepPlan, 'shopping'>, bought: ReadonlySet<string>): { done: number; total: number } {
+  const toBuy = plan.shopping.filter((i) => i.group !== 'home');
+  return { done: toBuy.filter((i) => bought.has(i.key)).length, total: toBuy.length };
+}

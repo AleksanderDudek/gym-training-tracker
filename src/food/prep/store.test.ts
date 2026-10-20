@@ -9,14 +9,15 @@ import { generatePlan } from './generate';
 import {
   KEEP_PLANS,
   clearBought,
-  currentPlan,
   deletePrepPlan,
   latestPlan,
   markBought,
+  openPlans,
   planCovering,
   planEnd,
   replacePrepPlan,
   savePrepPlan,
+  shownPlan,
 } from './store';
 import { planTargets } from './targets';
 import type { PrepPlan } from './types';
@@ -58,10 +59,22 @@ describe('which plan a day follows', () => {
     expect(planCovering([week], '2026-11-30')).toBeNull();
   });
 
-  test('the plan page shows the newest plan that has not ended; the newest of all starts the next one', () => {
-    expect(currentPlan([week, next], '2026-10-21')).toBe(next);
-    expect(currentPlan([week], '2026-10-27')).toBeNull();
+  test('open plans: the week running and the one planned ahead, in the order they run; a plan made again drops out', () => {
+    expect(openPlans([next, week], '2026-10-21')).toEqual([week, next]);
+    expect(openPlans([week], '2026-10-27')).toEqual([]);
+    // Made again for the rest of the week: the newer covers every day still ahead of the older.
+    const again = { ...makePlan('2026-10-21', 6, '2026-10-21T10:00:00.000Z'), id: 4 };
+    expect(openPlans([week, again], '2026-10-21')).toEqual([again]);
     expect(latestPlan([week, next, redo])).toBe(next);
+  });
+
+  test('the plan a screen shows: the one asked for, else the one running today, else the first ahead', () => {
+    expect(shownPlan([week, next], '2026-10-21', null)).toBe(week);
+    expect(shownPlan([week, next], '2026-10-21', 2)).toBe(next);
+    // An id that is not an open plan falls back to today's.
+    expect(shownPlan([week, next], '2026-10-21', 99)).toBe(week);
+    expect(shownPlan([next], '2026-10-21', null)).toBe(next);
+    expect(shownPlan([week], '2026-11-30', null)).toBeNull();
   });
 });
 
@@ -147,7 +160,18 @@ describe('a plan from a file', () => {
     expect(cleanPrepPlan({ ...plan, meals: [{ ...plan.meals[0], box: 99 }] })).toBeNull();
     expect(cleanPrepPlan({ ...plan, goal: { ...plan.goal, dietProfile: 'paleo' } })).toBeNull();
     expect(cleanPrepPlan({ ...plan, dayTargets: plan.dayTargets.slice(1) })).toBeNull();
+    // Targets for other dates than the plan's would leave a day without its targets.
+    expect(cleanPrepPlan({ ...plan, dayTargets: plan.dayTargets.map((d, i) => (i ? d : { ...d, date: '2026-01-01' })) })).toBeNull();
+    expect(cleanPrepPlan({ ...plan, meals: [{ ...plan.meals[0], slot: 0.5 }, ...plan.meals.slice(1)] })).toBeNull();
     expect(cleanPrepPlan('plan')).toBeNull();
+  });
+
+  test('a link that is not https is dropped, the line stays', () => {
+    const item = { ...plan.shopping[0]!, product: { code: '1', name: 'Skyr', brand: null, quantity: null, url: 'javascript:alert(1)' } };
+    const shop = { key: 'x', name: 'X', online: true, url: 'data:text/html,hi' };
+    const cleaned = cleanPrepPlan({ ...plan, shopping: [item, ...plan.shopping.slice(1)], shops: [...plan.shops, shop] });
+    expect(cleaned?.shopping[0]!.product?.url).toBeNull();
+    expect(cleaned?.shops.at(-1)!.url).toBeNull();
   });
 
   test('ticks that are not text are dropped, an unreadable check-in leaves the plan without one', () => {

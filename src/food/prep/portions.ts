@@ -92,7 +92,12 @@ function apply({ v, field, delta }: Move, sign: 1 | -1 = 1): void {
  * improves the plan, then the best pair of steps on one day (less dish, more rice) while that does.
  * Deterministic: the same meals give the same amounts.
  */
-export function fitPortions(meals: readonly MealSpec[], targets: readonly MacroTargets[]): Map<string, MealAmounts> {
+export function fitPortions(
+  meals: readonly MealSpec[],
+  targets: readonly MacroTargets[],
+  /** Meals of a day that cannot change (a box already cooked): they count, nothing moves them. */
+  fixed: ReadonlyMap<number, readonly (Macros & { share: number })[]> = new Map(),
+): Map<string, MealAmounts> {
   const vars = new Map<string, Var>();
   const sizes = new Map<string, number[]>();
   for (const m of meals) {
@@ -126,6 +131,13 @@ export function fitPortions(meals: readonly MealSpec[], targets: readonly MacroT
     const list = byDay.get(day) ?? [];
     const total: Macros = { kcal: 0, protein: 0, carbs: 0, fat: 0 };
     const kcals: { kcal: number; share: number }[] = [];
+    for (const f of fixed.get(day) ?? []) {
+      total.kcal += f.kcal;
+      total.protein += f.protein;
+      total.carbs += f.carbs;
+      total.fat += f.fat;
+      kcals.push({ kcal: f.kcal, share: f.share });
+    }
     for (const m of list) {
       const v = vars.get(m.key)!;
       const macros = mealMacros(m, { portion: PORTIONS[v.portion]!, steps: v.steps });

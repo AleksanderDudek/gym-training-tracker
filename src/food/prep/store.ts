@@ -1,5 +1,7 @@
 import { db, type DietDb } from '../diet/db';
 import { addDays } from '../diet/model';
+import { saveProfile } from '../diet/store';
+import type { Profile } from '../diet/types';
 import type { PrepPlan } from './types';
 
 /** Plans kept on the device: the newest twelve - three months of weekly shopping. */
@@ -24,9 +26,28 @@ export function planCovering(plans: readonly PrepPlan[], date: string): PrepPlan
   return [...plans].sort(byNewest).find((p) => coversDate(p, date)) ?? null;
 }
 
-/** The plan the plan page shows: the newest one made that has not ended yet. */
-export function currentPlan(plans: readonly PrepPlan[], today: string): PrepPlan | null {
-  return [...plans].sort(byNewest).find((p) => planEnd(p) >= today) ?? null;
+/**
+ * The plans still worth showing, in the order they run: each one the diary follows on at least one
+ * day from today on. A plan made again for the same week (the newer covers all of the older one's
+ * days) drops out; the week running now and the one planned ahead both stay.
+ */
+export function openPlans(plans: readonly PrepPlan[], today: string): PrepPlan[] {
+  return plans
+    .filter((p) => {
+      for (let d = p.settings.start < today ? today : p.settings.start; d <= planEnd(p); d = addDays(d, 1))
+        if (planCovering(plans, d) === p) return true;
+      return false;
+    })
+    .sort((a, b) => a.settings.start.localeCompare(b.settings.start) || byNewest(a, b));
+}
+
+/**
+ * The plan a screen shows: the one asked for (`?plan=`) while it is open, else the one running
+ * today, else the first one ahead. The plan page, the list and the diary then speak of one plan.
+ */
+export function shownPlan(plans: readonly PrepPlan[], today: string, wanted: number | null): PrepPlan | null {
+  const open = openPlans(plans, today);
+  return open.find((p) => p.id === wanted) ?? planCovering(open, today) ?? open[0] ?? null;
 }
 
 /** The newest plan made, ended or not: its settings start the next one. */
@@ -42,6 +63,18 @@ export async function savePrepPlan(plan: PrepPlan, database: DietDb = db): Promi
     const all = (await database.prep.toArray()).sort(byNewest);
     const extra = all.slice(KEEP_PLANS).map((p) => p.id!);
     if (extra.length) await database.prep.bulkDelete(extra);
+    return id;
+  });
+}
+
+/**
+ * A new plan and, when the check-in changed the goal, the profile with it: both or neither. A plan
+ * saved without its goal (or the goal without its plan) would make the diary and the plan disagree.
+ */
+export async function startPlan(plan: PrepPlan, profile: Profile | null, database: DietDb = db): Promise<number> {
+  return database.transaction('rw', database.prep, database.profile, async () => {
+    const id = await savePrepPlan(plan, database);
+    if (profile) await saveProfile(profile, database);
     return id;
   });
 }

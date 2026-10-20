@@ -100,7 +100,7 @@ describe('plan posiłków: plan z zakupami', () => {
     const [stored] = await db.prep.toArray();
     expect(stored).toMatchObject({ settings: { start: '2026-10-20', days: 7, meals: 4, store: 'biedronka', online: null } });
     expect(stored!.meals).toHaveLength(28);
-    expect(screen.getByRole('link', { name: /Lista zakupów/ })).toHaveAttribute('href', '#/jedzenie/zakupy');
+    expect(screen.getByRole('link', { name: /Lista zakupów/ })).toHaveAttribute('href', `#/jedzenie/zakupy?plan=${stored!.id}`);
     // Today's day is open; the cooking of today and of Saturday is listed.
     expect(screen.getByRole('heading', { name: 'Gotowanie na zapas' })).toBeInTheDocument();
     expect(screen.getAllByText(/^Dziś, wt\., 20 paź$/).length).toBeGreaterThan(0);
@@ -177,6 +177,27 @@ describe('plan posiłków: plan z zakupami', () => {
   }, 15_000);
 });
 
+describe('dwa plany: ten tydzień i następny', () => {
+  test('plan i lista pokazują plan, który trwa, a przełącznik prowadzi do następnego', async () => {
+    await saveProfile(prepProfile());
+    const now = await savePrepPlan(makePlan());
+    const next = await savePrepPlan({ ...makePlan({ start: '2026-10-27' }), createdAt: '2026-10-20T08:00:00.000Z' });
+    at('#/jedzenie/plan');
+    const view = renderWithBridge(<DietPlanPage />);
+    const tabs = await screen.findByRole('navigation', { name: 'Plany z zakupami' });
+    expect(within(tabs).getByRole('link', { name: 'Teraz · 20–26 paź' })).toHaveAttribute('aria-current', 'page');
+    expect(within(tabs).getByRole('link', { name: 'Następny · 27 paź – 2 lis' })).toHaveAttribute('href', `#/jedzenie/plan?plan=${next}`);
+    expect(screen.getByText(/^20–26 paź · zakupy: Biedronka/)).toBeInTheDocument();
+    view.unmount();
+
+    at(`#/jedzenie/zakupy?plan=${next}`);
+    renderWithBridge(<ShoppingPage />);
+    expect(await screen.findByRole('heading', { name: 'Zakupy na 27 paź – 2 lis' })).toBeInTheDocument();
+    const listTabs = screen.getByRole('navigation', { name: 'Plany z zakupami' });
+    expect(within(listTabs).getByRole('link', { name: 'Teraz · 20–26 paź' })).toHaveAttribute('href', `#/jedzenie/zakupy?plan=${now}`);
+  });
+});
+
 describe('lista zakupów', () => {
   test('bez planu — zaproszenie do planu', async () => {
     at('#/jedzenie/zakupy');
@@ -228,7 +249,11 @@ describe('dziennik: plan na ten dzień', () => {
     const card = await screen.findByRole('region', { name: /Plan na ten dzień/ });
     expect(within(card).getByText('· dzień 1 z 7')).toBeInTheDocument();
     expect(within(card).getByText('Dziś gotujesz')).toBeInTheDocument();
-    expect(within(card).getByRole('link', { name: /Lista zakupów/ })).toHaveAttribute('href', '#/jedzenie/zakupy');
+    expect(within(card).getByRole('link', { name: /Lista zakupów/ })).toHaveAttribute('href', expect.stringMatching(/^#\/jedzenie\/zakupy\?plan=\d+$/));
+    expect(within(card).getByRole('link', { name: 'Ilości i przepis w planie' })).toHaveAttribute(
+      'href',
+      expect.stringMatching(/^#\/jedzenie\/plan\?plan=\d+$/),
+    );
     // No "Propozycja dnia" on a planned day.
     expect(screen.queryByRole('heading', { name: 'Propozycja dnia' })).not.toBeInTheDocument();
 

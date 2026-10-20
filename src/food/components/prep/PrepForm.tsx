@@ -5,7 +5,6 @@ import { useBridge } from '../../bridge';
 import { paceKgPerWeek } from '../../diet/energy';
 import { addDays } from '../../diet/model';
 import { DIET_PROFILES } from '../../diet/profiles';
-import { saveProfile } from '../../diet/store';
 import type { Profile } from '../../diet/types';
 import { useDataset } from '../../hooks/useDataset';
 import { useClock, useFavorites, useMergedHistory, useNearbyChains } from '../../hooks/useDiet';
@@ -20,7 +19,7 @@ import { EXCLUSION_LABELS, planRecipes } from '../../prep/candidates';
 import { checkIn as runCheckIn, WINDOW_DAYS, type CheckIn } from '../../prep/checkin';
 import { goalName, shortDate } from '../../prep/format';
 import { generatePlan, newSeed } from '../../prep/generate';
-import { latestPlan, planEnd, savePrepPlan } from '../../prep/store';
+import { latestPlan, planEnd, startPlan } from '../../prep/store';
 import { planTargets } from '../../prep/targets';
 import { MAX_DAYS, MIN_DAYS, type Cooking, type Exclusion, type PrepPlan } from '../../prep/types';
 import { StatusScreen } from '../common/StatusScreen';
@@ -34,8 +33,8 @@ interface Props {
   profile: Profile;
   plans: PrepPlan[];
   today: string;
-  /** The plan the form follows (the next shopping starts after it). */
-  current: PrepPlan | null;
+  /** The last plan already made: the next one starts the day after it ends. */
+  after: PrepPlan | null;
   onDone: () => void;
   onCancel?: () => void;
 }
@@ -56,7 +55,7 @@ function Form({
   profile,
   plans,
   today,
-  current,
+  after,
   onDone,
   onCancel,
   products,
@@ -82,7 +81,7 @@ function Form({
     index.ranking[0] ??
     '';
   const startOptions = Array.from({ length: 15 }, (_, i) => addDays(today, i));
-  const nextDay = current ? addDays(planEnd(current), 1) : null;
+  const nextDay = after ? addDays(planEnd(after), 1) : null;
   const firstStart = nextDay && nextDay <= startOptions.at(-1)! ? nextDay : clock.hour < 12 ? today : addDays(today, 1);
 
   const [start, setStart] = useState(firstStart);
@@ -131,9 +130,14 @@ function Form({
       setBusy(false);
       return;
     }
-    // The adjusted goal is the profile's goal from now on: the diary and the plan say the same number.
-    if (source === 'checkin') await saveProfile(planned);
-    await savePrepPlan(result.plan);
+    try {
+      // The adjusted goal is the profile's goal from now on: the diary and the plan say the same number.
+      await startPlan(result.plan, source === 'checkin' ? planned : null);
+    } catch {
+      setError('Nie udało się zapisać planu na tym urządzeniu — spróbuj jeszcze raz.');
+      setBusy(false);
+      return;
+    }
     bridge.toast(
       source === 'checkin'
         ? `Plan na ${days} dni gotowy. Cel kalorii w profilu: ${formatNumber(kcal, 0)} kcal (było ${formatNumber(profile.dailyKcal, 0)}).`
@@ -148,7 +152,7 @@ function Form({
   return (
     <form className="grp fd-prep-form" onSubmit={(e) => void submit(e)} aria-labelledby="fd-prep-form-title" noValidate>
       <h2 id="fd-prep-form-title" className="today-name">
-        {current ? 'Następny plan z zakupami' : 'Plan z listą zakupów'}
+        {after ? 'Następny plan z zakupami' : 'Plan z listą zakupów'}
       </h2>
       <p>
         Jedzenie na kolejne dni dla jednej osoby, pod Twój cel i jeden sklep — z listą zakupów, obiadami gotowanymi na
