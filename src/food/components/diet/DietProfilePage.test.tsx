@@ -105,6 +105,20 @@ describe('Profil diety', () => {
     expect(screen.getByText('To deficyt kalorii – waga będzie spadać, a cel jest wyżej.')).toBeInTheDocument();
   });
 
+  test('cel ustawiony ręcznie zdejmuje korektę z check-inu; zapis bez zmiany celu ją zostawia', async () => {
+    await saveProfile(completeProfile({ dailyKcal: 1950, kcalCorrection: -250, startDate: '2026-10-01' }));
+    const user = userEvent.setup();
+    renderWithBridge(<DietProfilePage />);
+    await user.click(await screen.findByRole('button', { name: 'Zapisz profil' }));
+    await waitFor(async () => expect(await db.profile.get('me')).toMatchObject({ dailyKcal: 1950, kcalCorrection: -250 }));
+
+    const paces = screen.getByRole('group', { name: 'Cel według tempa' });
+    await user.click(within(paces).getByRole('button', { name: /^−0,5 kg\/tydz\./ }));
+    await user.click(screen.getByRole('button', { name: 'Zapisz profil' }));
+    await waitFor(async () => expect((await db.profile.get('me'))!.kcalCorrection).toBe(0));
+    expect((await db.profile.get('me'))!.dailyKcal).not.toBe(1950);
+  });
+
   test('utrzymanie: waga docelowa równa startowej, bez daty celu', async () => {
     await saveProfile(completeProfile({ startWeightKg: 80, targetWeightKg: 80, startDate: '2026-10-01' }));
     const user = userEvent.setup();

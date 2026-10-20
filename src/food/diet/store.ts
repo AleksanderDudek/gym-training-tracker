@@ -40,6 +40,7 @@ export function completeProfile(partial: Partial<Profile>): Profile {
     startDate: now().date,
     ...MODEL_DEFAULTS,
     dailyKcal: 2000,
+    kcalCorrection: 0,
     dietProfile: 'redukcja',
     adaptWeekly: true,
     preferredStore: null,

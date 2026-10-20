@@ -14,6 +14,7 @@ const P: Profile = {
   startDate: '2026-03-02',
   ...MODEL_DEFAULTS,
   dailyKcal: 1500,
+  kcalCorrection: 0,
   dietProfile: 'redukcja',
   adaptWeekly: true,
   preferredStore: null,

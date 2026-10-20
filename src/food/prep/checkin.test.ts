@@ -62,6 +62,23 @@ describe('check-in', () => {
     expect(r.reason).toContain(`Proponuję ${r.suggestedKcal} kcal zamiast 2200 kcal`);
   });
 
+  test('a second check-in on what the first one fixed changes nothing: the same error is never applied twice', () => {
+    // The model says ~2500 kcal; the scale on 2200 kcal says 2200 (weight stands still).
+    const first = history({ startKg: 82, perWeek: 0, kcal: 2200 });
+    const one = checkIn({ profile, days: first.days, eaten: first.eaten, today: TODAY });
+    expect(one).toMatchObject({ status: 'korekta', suggestedKcal: 1950, correction: -250, limited: 'cap' });
+
+    // Four weeks on the corrected goal: 250 kcal under the real expenditure, as planned.
+    const corrected = { ...profile, dailyKcal: 1950, kcalCorrection: one.correction };
+    const second = history({ startKg: 82, perWeek: -(250 * 7) / 7500, kcal: 1950 });
+    const two = checkIn({ profile: corrected, days: second.days, eaten: second.eaten, today: TODAY });
+    expect(two.status).toBe('zgodnie');
+    expect(two.suggestedKcal).toBe(1950);
+    expect(two.correction).toBe(-250);
+    // The pace aimed at is the model's at the goal without corrections: the same as at the first check-in.
+    expect(two.plannedPace).toBeCloseTo(one.plannedPace, 1);
+  });
+
   test('one check-in moves the goal at most 250 kcal', () => {
     // Weight stands still on 2200 kcal: expenditure is 2200, the model says far more.
     const { days, eaten } = history({ startKg: 82, perWeek: 0, kcal: 2200 });

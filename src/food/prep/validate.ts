@@ -107,6 +107,7 @@ function checkIn(v: unknown): CheckIn | null {
     modelTdee: v.modelTdee as number,
     profileKcal: v.profileKcal as number,
     suggestedKcal: v.suggestedKcal as number,
+    correction: finite(v.correction) ? v.correction : 0,
     limited: v.limited === 'floor' || v.limited === 'cap' ? v.limited : null,
     reason: v.reason,
   };

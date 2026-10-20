@@ -115,7 +115,8 @@ function Form({
     setBusy(true);
     setError(null);
     const source = adjusts && useCheckIn ? 'checkin' : 'profile';
-    const planned = { ...profile, dailyKcal: kcal };
+    // Accepted, the check-in's goal carries its correction, so the next check-in starts from the model's goal.
+    const planned = source === 'checkin' && check ? { ...profile, dailyKcal: kcal, kcalCorrection: check.correction } : profile;
     const result = generatePlan({
       settings: { start, days, meals, cooking, store, online, exclude, seed: newSeed(), avoid: [] },
       index,

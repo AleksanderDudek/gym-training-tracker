@@ -37,6 +37,7 @@ export const PROFILE_RANGES = {
   extraWeeklyKcal: [0, 20_000],
   kcalPerKg: [3000, 9000],
   dailyKcal: [800, 6000],
+  kcalCorrection: [-2000, 2000],
 } as const satisfies Partial<Record<keyof Profile, readonly [number, number]>>;
 
 /** A profile from anything: each field kept when it is valid, clamped when out of range, the default otherwise. */

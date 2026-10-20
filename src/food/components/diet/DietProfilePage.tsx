@@ -165,7 +165,8 @@ function ProfileForm({ profile, isNew, currentWeight, stores }: FormProps) {
   const storeKnown = !draft.preferredStore || stores.some((s) => s.key === draft.preferredStore);
 
   const submit = async () => {
-    await saveProfile(draft);
+    // A goal set here by hand or by a pace is the model's own: what check-ins added to the old one is gone.
+    await saveProfile(draft.dailyKcal === profile.dailyKcal ? draft : { ...draft, kcalCorrection: 0 });
     // Wzrost jest jeden: zapis profilu diety poprawia też wzrost w treningach.
     if (draft.heightCm !== bridge.heightCm) bridge.setHeight(draft.heightCm);
     markDiet(true);

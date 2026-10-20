@@ -34,6 +34,11 @@ export interface CheckIn {
   profileKcal: number;
   /** The goal for the next plan: the profile's when nothing needs to change. */
   suggestedKcal: number;
+  /**
+   * The model correction that goal carries (`Profile.kcalCorrection` once it is accepted): what it
+   * adds to the goal the model alone would set.
+   */
+  correction: number;
   /** Why the suggestion is not the full correction: the floor (BMR, a minimum) or the step cap. */
   limited: 'floor' | 'cap' | null;
   reason: string;
@@ -84,25 +89,32 @@ export function checkIn({ profile, days, eaten, today }: CheckInInput): CheckIn 
   const logged = span.filter((d) => eaten.has(d));
 
   const lastWeight = weighIns[weighIns.length - 1]?.weightKg ?? profile.startWeightKg;
-  const base = {
+  // The goal the model alone set: without what earlier check-ins added to it. Correcting the
+  // corrected goal again would apply the same error at every check-in, and the goal would run away.
+  const applied = profile.kcalCorrection ?? 0;
+  const modelGoal = profile.dailyKcal - applied;
+  const facts = {
     today,
     weighIns: weighIns.length,
     loggedDays: logged.length,
     spanDays,
     profileKcal: profile.dailyKcal,
   };
+  /** The pace the goal aims at: the model's, at the goal without corrections. */
+  const aimedPace = (modelTdee: number) => ((modelTdee - modelGoal) * 7) / profile.kcalPerKg;
 
   const notEnough = (why: string): CheckIn => {
     const modelTdee = tdee(profile, lastWeight);
     return {
-      ...base,
+      ...facts,
       status: 'za-malo-danych',
       trendKg: null,
       observedPace: null,
-      plannedPace: ((modelTdee - profile.dailyKcal) * 7) / profile.kcalPerKg,
+      plannedPace: aimedPace(modelTdee),
       observedTdee: null,
       modelTdee,
       suggestedKcal: profile.dailyKcal,
+      correction: applied,
       limited: null,
       reason: why,
     };
@@ -131,9 +143,9 @@ export function checkIn({ profile, days, eaten, today }: CheckInInput): CheckIn 
     );
 
   const observedPace = -line.slope * 7;
-  const plannedPace = ((modelTdee - profile.dailyKcal) * 7) / profile.kcalPerKg;
+  const plannedPace = aimedPace(modelTdee);
   const floor = Math.max(round10(resting), profile.sex === 'M' ? 1500 : 1200);
-  const common = { ...base, trendKg, observedPace, plannedPace, observedTdee, modelTdee };
+  const common = { ...facts, trendKg, observedPace, plannedPace, observedTdee, modelTdee };
   const tempo = `Przez ostatnie ${spanDays} dni waga szła w tempie ${paceText(observedPace)}, plan zakładał ${paceText(plannedPace)}.`;
 
   const direction = goalDirection(profile);
@@ -146,6 +158,8 @@ export function checkIn({ profile, days, eaten, today }: CheckInInput): CheckIn 
       ...common,
       status: 'cel',
       suggestedKcal: keep,
+      // Keeping weight is the model's maintenance plus what the scale showed it gets wrong.
+      correction: keep - round10(modelTdee),
       limited: keep > round10(observedTdee) ? 'floor' : null,
       reason:
         `Cel ${formatNumber(profile.targetWeightKg, 1)} kg osiągnięty (trend: ${formatNumber(trendKg, 1)} kg). ` +
@@ -153,19 +167,24 @@ export function checkIn({ profile, days, eaten, today }: CheckInInput): CheckIn 
     };
   }
 
+  // Where the goal should be: the model's goal moved by the model's error. What the goal already
+  // carries of it counts: a second check-in on the same data changes nothing.
   const error = observedTdee - modelTdee;
-  if (Math.abs(error) < TOLERANCE)
+  const wanted = modelGoal + error;
+  const gap = wanted - profile.dailyKcal;
+  if (Math.abs(gap) < TOLERANCE)
     return {
       ...common,
       status: 'zgodnie',
       suggestedKcal: profile.dailyKcal,
+      correction: applied,
       limited: null,
-      reason: `${tempo} To zgodnie z planem — cel zostaje: ${kcal(profile.dailyKcal)}.`,
+      reason: `${tempo} ${applied ? 'Cel już uwzględnia to, co pokazała waga' : 'To zgodnie z planem'} — zostaje: ${kcal(profile.dailyKcal)}.`,
     };
 
-  const step = Math.max(-STEP, Math.min(STEP, error));
+  const step = Math.max(-STEP, Math.min(STEP, gap));
   let suggested = round10(profile.dailyKcal + step);
-  let limited: CheckIn['limited'] = Math.abs(error) > STEP ? 'cap' : null;
+  let limited: CheckIn['limited'] = Math.abs(gap) > STEP ? 'cap' : null;
   if (suggested < floor && suggested < profile.dailyKcal) {
     suggested = Math.max(floor, Math.min(profile.dailyKcal, suggested));
     limited = 'floor';
@@ -176,6 +195,7 @@ export function checkIn({ profile, days, eaten, today }: CheckInInput): CheckIn 
       ...common,
       status: 'zgodnie',
       suggestedKcal: suggested,
+      correction: applied,
       limited,
       reason: `${tempo} ${burns} Niżej nie schodzę: ${kcal(profile.dailyKcal)} to już Twoja podstawowa przemiana materii albo minimum — dołóż kroków zamiast ucinać jedzenie.`,
     };
@@ -184,6 +204,6 @@ export function checkIn({ profile, days, eaten, today }: CheckInInput): CheckIn 
     (limited === 'cap' ? ` — o ${STEP} kcal naraz, resztę pokaże kolejne ważenie.` : '.') +
     (limited === 'floor' ? ' Niżej nie schodzę: to Twoja podstawowa przemiana materii.' : '') +
     // Losing faster than planned is not a bonus: it costs muscle and patience.
-    (direction === 'loss' && error > 0 ? ' Szybsze chudnięcie niż w planie kosztuje mięśnie.' : '');
-  return { ...common, status: 'korekta', suggestedKcal: suggested, limited, reason };
+    (direction === 'loss' && gap > 0 ? ' Szybsze chudnięcie niż w planie kosztuje mięśnie.' : '');
+  return { ...common, status: 'korekta', suggestedKcal: suggested, correction: suggested - modelGoal, limited, reason };
 }

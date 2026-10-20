@@ -25,6 +25,12 @@ export interface Profile {
   kcalPerKg: number;
   /** The daily calorie goal before any weekly adjustment. */
   dailyKcal: number;
+  /**
+   * The part of `dailyKcal` that check-ins added to the energy model's goal (kcal a day): the model's
+   * error, as the scale and the log showed it. 0 when the goal was set by hand or by a pace. The next
+   * check-in corrects from the goal without it, so the same error is never applied twice.
+   */
+  kcalCorrection: number;
   dietProfile: DietProfileId;
   /** Correct today's goal by this week's surplus or deficit. */
   adaptWeekly: boolean;
