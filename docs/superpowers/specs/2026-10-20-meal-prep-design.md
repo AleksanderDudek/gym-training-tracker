@@ -148,3 +148,19 @@ out and then finish on your own").
 - Plans for several people, a freezer inventory, leftovers tracking, live prices, delivery costs.
 - The forecast using the plan's calories (they follow the same goal, within a few percent).
 - Swapping a single meal on a single day (the diary's „Dodaj zjedzone” covers eating something else).
+
+## Implementation notes (decided while building)
+
+| Topic | Decision | Why |
+| --- | --- | --- |
+| Gotowce | Snacks only; breakfasts and suppers are recipes whose portion can change | With a fixed gotowiec at breakfast, snack and supper a day had one box left to adjust and missed its energy by 20 % |
+| Own starch | A dish with rice or potatoes of its own gets more of the same as its side (more rice in the curry's box); other starches (pasta, konjac, oats) get none | Protein recipes with a starch left a sport or balanced day without carbohydrates to add |
+| Walnuts | New staple ingredient `nuts` („Orzechy włoskie”, Polish walnut label: 665 kcal, B 15, W 7, T 65), the fat side of sweet meals and snacks, and of every savoury meal under a carb limit | Keto and low-carb energy cannot come from recipes that have more protein than fat; oil alone would mean eating it by the spoon |
+| Oil | One tablespoon at most per meal, two under a carb limit (`KETO_OIL`) | Two tablespoons in a reduction box is not a meal anyone recognises; on a keto day it is |
+| Carb limit | Under a limit only „pasuje” recipes fill the boxes, the other meals take „pasuje” first and „może być” only when nothing else is left; crossing the limit costs the day a fixed step in the score | Without it keto days ended 1–7 g over the limit, flagged „za dużo” in the diary. Real data now: no day over the limit |
+| Selection | Two passes: one recipe for every role first (lunch boxes, suppers, breakfasts, snacks), then the rest in turns; a recipe plays one role only. No batch dish → a quick fresh lunch | A style with few recipes (keto) otherwise gave all of them to the suppers and served the same eggs three times a day |
+| Repetition | The plan says so when a role has a single recipe for the whole plan, and suggests another shop or an online order | Keto in Biedronka is the same four dishes all week — correct, but worth a sentence |
+| Ticks | The list shows a tick at once (state in the page) and stores it idempotently (`markBought`) | A tick waited for IndexedDB and flickered back for a moment; two quick taps could end reversed |
+| Prices | The total per shop only when at least half of the lines have a price; per-line prices always | Real data: 1–6 of about 35 lines are priced, so a "total" was a few złoty |
+| Roll matcher | „Bułki do hamburgerów” are not a roll | Seen as the roll of a real shopping list |
+| Real data (`food:check-prep`, Biedronka, Lidl, Kaufland, Auchan, Biedronka + GuiltFree, five styles) | 25 plans, 20–130 ms each; every day at or above the protein minimum and within the carb limit; worst day −7.2 % (Biedronka, balanced), the rest within ±5.5 % | The plan the user follows has to meet the goal the diary judges |
