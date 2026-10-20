@@ -2,7 +2,6 @@ import { ChefHat, ListChecks, Repeat, Shuffle, Snowflake, Trash2 } from 'lucide-
 import { useState } from 'react';
 import { Modal, useModal } from '../../../components/ui';
 import { useBridge } from '../../bridge';
-import { macroStatus, type Status } from '../../diet/day';
 import { addDays } from '../../diet/model';
 import type { Profile } from '../../diet/types';
 import { useDataset } from '../../hooks/useDataset';
@@ -11,7 +10,7 @@ import { formatNumber, plural } from '../../lib/format';
 import { RECIPES } from '../../recipes/catalog';
 import { gramsLabel, longDate, portionLabel, rangeLabel, shortDate, weekdaySpan } from '../../prep/format';
 import { canSwap, newSeed, rerollPlan, swapRecipe, type GenerateResult } from '../../prep/generate';
-import { averageDay, dayPlanTotals, mealAmount, mealsOn, shoppingProgress } from '../../prep/meals';
+import { averageDay, dayCheck, dayPlanTotals, mealAmount, mealsOn, shoppingProgress } from '../../prep/meals';
 import { itemName } from '../../prep/shopping';
 import { deletePrepPlan, planEnd, replacePrepPlan } from '../../prep/store';
 import type { PrepBatch, PrepPlan, Role } from '../../prep/types';
@@ -30,8 +29,6 @@ const ROLE_TITLE: Record<Role, string> = {
   snack: 'Przekąski',
 };
 const ROLE_ORDER: Role[] = ['breakfast', 'lunchBox', 'lunch', 'snack', 'dinnerBox', 'dinner'];
-
-const STATUS_WORD: Record<Status, string> = { brak: 'za mało', ok: 'w normie', nadmiar: 'za dużo' };
 
 const kcal = (n: number) => `${formatNumber(Math.round(n), 0)} kcal`;
 const g = (n: number) => formatNumber(Math.round(n), 0);
@@ -123,6 +120,8 @@ export function PrepPlanView({ plan, profile, today, onNext }: Props) {
   };
 
   const roles = ROLE_ORDER.filter((r) => plan.choices[r]?.length);
+  // Days the basket and the style cannot close: said once, at the top, with what would help.
+  const short = plan.dayTargets.filter(({ date, targets }) => !dayCheck(dayPlanTotals(plan, date), targets).ok);
   // A rotation of one recipe for a week: the same breakfast every day.
   const repeats = (['breakfast', 'snack', 'dinner'] as const).some((r) => plan.choices[r]?.length === 1);
   const sessions = [...new Set(plan.batches.map((b) => b.date))];
@@ -149,6 +148,13 @@ export function PrepPlanView({ plan, profile, today, onNext }: Props) {
           <p className="tight fd-prep-warn">
             Od ułożenia planu zmienił się cel w profilu diety ({kcal(profile.dailyKcal)}, {profile.dietProfile === plan.goal.dietProfile ? 'ten sam styl' : 'inny styl'}).
             Kupione zostaje kupione — następny plan pójdzie za nowym celem.
+          </p>
+        )}
+        {short.length > 0 && (
+          <p className="tight fd-prep-warn">
+            {short.length === plan.dayTargets.length ? 'Żaden dzień' : `${short.length} z ${plan.dayTargets.length} dni`} nie
+            domyka celu z tego koszyka (szczegóły w „Dzień po dniu”). Więcej posiłków, inny sklep albo zamówienie przez
+            internet da planowi więcej możliwości.
           </p>
         )}
         {repeats && (
@@ -271,7 +277,7 @@ export function PrepPlanView({ plan, profile, today, onNext }: Props) {
         {plan.dayTargets.map(({ date, targets }) => {
           const meals = mealsOn(plan, date);
           const total = dayPlanTotals(plan, date);
-          const status = macroStatus(targets, total, true);
+          const check = dayCheck(total, targets);
           return (
             <details key={date} className="fd-prep-day" open={date === today}>
               <summary>
@@ -297,11 +303,11 @@ export function PrepPlanView({ plan, profile, today, onNext }: Props) {
                   </li>
                 ))}
               </ul>
-              <p className="tight fd-prep-nums">
-                Cel dnia {kcal(targets.kcal)}: kalorie {STATUS_WORD[status.kcal.status]}, białko {g(total.protein)}/{targets.protein.target} g (
-                {STATUS_WORD[status.protein.status]}), węglowodany {g(total.carbs)}
-                {targets.carbs.max !== null ? `/${targets.carbs.max} g limitu` : ' g'} ({STATUS_WORD[status.carbs.status]}), tłuszcz{' '}
-                {g(total.fat)} g ({STATUS_WORD[status.fat.status]}).
+              <p className={`tight fd-prep-nums${check.ok ? '' : ' fd-prep-warn'}`}>
+                Cel dnia {kcal(targets.kcal)}: kalorie {check.kcal}, białko {g(total.protein)}/{targets.protein.target} g (
+                {check.protein}), węglowodany {g(total.carbs)}
+                {targets.carbs.max !== null ? `/${targets.carbs.max} g limitu` : ' g'} ({check.carbs}), tłuszcz {g(total.fat)} g (
+                {check.fat}).
               </p>
             </details>
           );

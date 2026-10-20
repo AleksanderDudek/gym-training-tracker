@@ -68,12 +68,20 @@ const PIECE_GRAMS: Partial<Record<IngredientId, number>> = {
 export function packSize(quantity: string | null): number | null {
   if (!quantity) return null;
   const text = quantity.toLowerCase().replace(',', '.');
-  const multi = text.match(/(\d+)\s*[x×]\s*(\d+(?:\.\d+)?)\s*(kg|g|ml|l)\b/);
-  const single = text.match(/(\d+(?:\.\d+)?)\s*(kg|g|ml|l)\b/);
+  // "150 g", "150gr", "60 gram", "0,5 l", "4 x 125 g".
+  const units = '(kg|gr|gram\\w*|g|ml|l)';
+  const multi = text.match(new RegExp(`(\\d+)\\s*[x×]\\s*(\\d+(?:\\.\\d+)?)\\s*${units}\\b`));
+  const single = text.match(new RegExp(`(\\d+(?:\\.\\d+)?)\\s*${units}\\b`));
   const unit = (n: number, u: string) => n * (u === 'kg' || u === 'l' ? 1000 : 1);
   const grams = multi ? Number(multi[1]) * unit(Number(multi[2]), multi[3]!) : single ? unit(Number(single[1]), single[2]!) : null;
   return grams && grams >= 5 && grams <= 10_000 ? Math.round(grams) : null;
 }
+
+/**
+ * Cans whose recipe amount is the drained weight: a 170 g can of tuna gives about 120 g, a 400 g can
+ * of beans about 240 g. Their packs are counted from what is left after draining.
+ */
+const DRAINED: Partial<Record<IngredientId, number>> = { tuna: 0.7, beans: 0.6 };
 
 /** Packs to buy: a pack that covers all but 5 % still counts - nobody buys a second kilo for 30 g. */
 export function packsFor(grams: number, pack: number): number {
@@ -150,7 +158,8 @@ export function shoppingList({ uses, sides, basket, candidates, dict, start }: S
     const shop = item.shop ?? (role === 'pantry' ? null : physical);
     const group: ShoppingGroup = role === 'pantry' ? 'home' : shop && isOnlineShop(shop) ? 'order' : 'visit';
     const packG = product ? packSize(product.quantity) : null;
-    const packs = packG !== null ? packsFor(line.grams, packG) : null;
+    const drained = DRAINED[id as IngredientId];
+    const packs = packG !== null ? packsFor(line.grams, packG * (drained ?? 1)) : null;
     const piece = PIECE_GRAMS[id as IngredientId];
     // A "pack" of one roll is a piece: the list says "4 szt.", not "4 × 60 g".
     const single = piece !== undefined && packG !== null && packG < 2 * piece;
@@ -177,9 +186,11 @@ export function shoppingList({ uses, sides, basket, candidates, dict, start }: S
         : null,
       packs: single ? null : packs,
       packGrams: single ? null : packG,
-      pieces: (packs === null || single) && piece ? Math.max(1, Math.round(line.grams / piece)) : null,
+      // A piece short is a meal short: round up, unless a tenth of a piece is all that is missing.
+      pieces: (packs === null || single) && piece ? Math.max(1, Math.ceil(line.grams / piece - 0.1)) : null,
       price: product ? priceOf(product, shop, packs, packG, line.grams) : null,
       freeze: [...freeze].sort(([a], [b]) => a.localeCompare(b)).map(([date, grams]) => ({ date, grams: Math.round(grams) })),
+      ...(drained !== undefined && { drained: true as const }),
     });
   }
   return items.sort(
@@ -195,8 +206,10 @@ export function shoppingList({ uses, sides, basket, candidates, dict, start }: S
 export function amountText(item: ShoppingItem): string {
   if (item.packs !== null && item.packGrams !== null) {
     const size = item.product?.quantity?.trim() || gramsLabel(item.packGrams);
-    return item.packs === 1 ? `1 opak. · ${size}` : `${item.packs} opak. · po ${size}`;
+    const packs = item.packs === 1 ? `1 opak. · ${size}` : `${item.packs} opak. · po ${size}`;
+    return item.drained ? `${packs} (${gramsLabel(item.grams)} po odsączeniu)` : packs;
   }
+  if (item.drained) return `${gramsLabel(item.grams)} po odsączeniu`;
   if (item.pieces !== null) return `${item.pieces} szt.`;
   return gramsLabel(item.grams);
 }

@@ -5,7 +5,9 @@ import { BLOCK_DAYS, cookingBlocks, planDates } from './blocks';
 import { gramsLabel, mixed, portionLabel, rangeLabel, roundGrams, weekdaySpan } from './format';
 import { prepCandidates } from '../test/prep';
 import { SIDES, resolveSide, roomFor, sidesFor } from './sides';
+import { dayCheck } from './meals';
 import { MEAL_COUNTS, slotsFor } from './slots';
+import { DIET_PROFILES } from '../diet/profiles';
 
 describe('cooking blocks', () => {
   const sizes = (days: number) => cookingBlocks('2026-10-20', days).map((b) => b.dates.length);
@@ -158,5 +160,22 @@ describe('words for amounts and days', () => {
     expect(roundGrams(437)).toBe(440);
     expect(gramsLabel(437)).toBe('440 g');
     expect(gramsLabel(1250)).toBe('1,25 kg');
+  });
+});
+
+describe('a planned day against its targets', () => {
+  const t = DIET_PROFILES.keto.targets(2000, 75);
+  const day = (kcal: number, carbs: number, fat = 140) => ({ kcal, protein: 130, carbs, fat, unknownMacros: 0 });
+
+  test('5 % over is the diary\'s "ponad cel", 7 % under is the plan\'s own floor', () => {
+    expect(dayCheck(day(2100, 25), t)).toMatchObject({ kcal: 'w normie', ok: true });
+    expect(dayCheck(day(2110, 25), t).kcal).toBe('za dużo');
+    expect(dayCheck(day(1860, 25), t).kcal).toBe('w normie');
+    expect(dayCheck(day(1850, 25), t).kcal).toBe('za mało');
+  });
+
+  test('a carb limit is a limit; fat has its minimum', () => {
+    expect(dayCheck(day(2000, 30.1), t)).toMatchObject({ carbs: 'za dużo', ok: false });
+    expect(dayCheck(day(2000, 25, 10), t).fat).toBe('za mało');
   });
 });

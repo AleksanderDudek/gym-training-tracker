@@ -30,6 +30,9 @@ describe('pack sizes', () => {
     expect(packSize('0,5 l')).toBe(500);
     expect(packSize('4 x 125 g')).toBe(500);
     expect(packSize('2×500g')).toBe(1000);
+    expect(packSize('150gr')).toBe(150);
+    expect(packSize('60 gram')).toBe(60);
+    expect(packSize('0,9 L')).toBe(900);
     expect(packSize('opakowanie')).toBeNull();
     expect(packSize(null)).toBeNull();
   });
@@ -113,6 +116,35 @@ describe('the shopping list', () => {
     expect(konjac.product?.url).toBe('https://www.myprotein.pl/konjac');
     // The online offer's price, per pack.
     expect(konjac.price).toBeCloseTo(29.99, 2);
+  });
+
+  test('a piece short is a meal short: pieces round up', () => {
+    const r = recipe('zucchini', [{ ingredient: 'zucchini', grams: 413 }]);
+    const [zucchini] = shoppingList({
+      uses: [{ recipe: r, servings: 1, date: START }],
+      sides: [],
+      basket: ['biedronka'],
+      candidates,
+      dict: PREP_DICT,
+      start: START,
+    });
+    // 413 g of 300 g zucchini is two, not one.
+    expect(amountText(zucchini!)).toBe('2 szt.');
+  });
+
+  test('canned tuna is counted after draining: a 500 g can gives 350 g', () => {
+    const r = recipe('tuna', [{ ingredient: 'tuna', grams: 400 }]);
+    const [tuna] = shoppingList({
+      uses: [{ recipe: r, servings: 1, date: START }],
+      sides: [],
+      basket: ['biedronka'],
+      candidates,
+      dict: PREP_DICT,
+      start: START,
+    });
+    expect(tuna).toMatchObject({ packs: 2, drained: true });
+    // 400 g drained is more than one can's 350 g: two cans (as gross, one would be enough).
+    expect(amountText(tuna!)).toBe('2 opak. · po 500 g (400 g po odsączeniu)');
   });
 
   test('a price per kilogram is charged by weight', () => {

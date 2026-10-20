@@ -7,11 +7,11 @@ import { SIDES, type SideId } from './sides';
 import type { Exclusion } from './types';
 
 /**
- * What a person does not eat, by ingredient. Gelatine is made from animal skin, so a vegetarian
- * plan ("bez mięsa") leaves it out too.
+ * What a person does not eat, by ingredient. Gelatine is made from animal skin and parmesan with
+ * animal rennet, so a vegetarian plan ("bez mięsa") leaves them out too.
  */
 export const EXCLUDED: Record<Exclusion, ReadonlySet<IngredientId>> = {
-  meat: new Set<IngredientId>(['chicken', 'chickenFillet', 'turkeyMince', 'leanBeef', 'turkeyFillet', 'gelatin']),
+  meat: new Set<IngredientId>(['chicken', 'chickenFillet', 'turkeyMince', 'leanBeef', 'turkeyFillet', 'gelatin', 'parmesan']),
   fish: new Set<IngredientId>(['tuna', 'salmonFillet', 'whiteFish', 'shrimp', 'smokedSalmon', 'herring']),
   eggs: new Set<IngredientId>(['egg', 'eggWhites']),
 };

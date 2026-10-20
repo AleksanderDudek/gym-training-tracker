@@ -198,6 +198,14 @@ export function selectRecipes(ctx: SelectContext): Selection {
     }
   }
 
+  // Two snacks a day (five meals) from one recipe would be the same thing twice a day: under a
+  // carb limit the second may be one that only "może być".
+  const snacks = picks.get('snack');
+  if (snacks?.length === 1 && ctx.slots.filter((s) => s.kind === 'snack').length > 1) {
+    const second = take('snack', false);
+    if (second) snacks.push(second);
+  }
+
   const choices: Choices = {};
   for (const role of roles) choices[role] = isBoxRole(role) ? fillBlocks(picks.get(role)!, ctx.blocks) : picks.get(role)!;
   return { choices, missing };

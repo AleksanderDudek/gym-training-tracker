@@ -1,4 +1,5 @@
 import type { DayTotals } from '../diet/day';
+import type { MacroTargets } from '../diet/profiles';
 import type { Food } from '../diet/foods';
 import type { Macros } from '../recipes/macros';
 import { portionLabel } from './format';
@@ -57,4 +58,30 @@ export function averageDay(plan: PrepPlan): DayTotals {
 export function shoppingProgress(plan: Pick<PrepPlan, 'shopping'>, bought: ReadonlySet<string>): { done: number; total: number } {
   const toBuy = plan.shopping.filter((i) => i.group !== 'home');
   return { done: toBuy.filter((i) => bought.has(i.key)).length, total: toBuy.length };
+}
+
+export type PlanWord = 'za mało' | 'w normie' | 'za dużo';
+
+export interface DayCheck {
+  kcal: PlanWord;
+  protein: PlanWord;
+  carbs: PlanWord;
+  fat: PlanWord;
+  /** Every number within what the plan promises. */
+  ok: boolean;
+}
+
+/**
+ * How a planned day meets its targets, by the plan's own promise: energy at most 5 % over (the
+ * diary's "ponad cel") and 7 % under, protein at its minimum, carbohydrates within a limit (or not
+ * a quarter over the target), fat between its minimum and maximum.
+ */
+export function dayCheck(total: DayTotals, t: MacroTargets): DayCheck {
+  const energy = (total.kcal - t.kcal) / t.kcal;
+  const kcal: PlanWord = energy > 0.05 ? 'za dużo' : energy < -0.07 ? 'za mało' : 'w normie';
+  const protein: PlanWord = total.protein < t.protein.min ? 'za mało' : 'w normie';
+  const carbs: PlanWord = total.carbs > (t.carbs.max ?? t.carbs.target * 1.25) ? 'za dużo' : 'w normie';
+  const fat: PlanWord =
+    total.fat < t.fat.min ? 'za mało' : t.fat.max !== null && total.fat > t.fat.max ? 'za dużo' : 'w normie';
+  return { kcal, protein, carbs, fat, ok: [kcal, protein, carbs, fat].every((w) => w === 'w normie') };
 }

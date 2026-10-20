@@ -161,6 +161,8 @@ export interface ShoppingItem {
   price: number | null;
   /** Raw meat or fish needed from the third day: frozen after shopping. */
   freeze: { date: string; grams: number }[];
+  /** A can whose amount is weighed after draining (tuna, beans): packs count what is left. */
+  drained?: true;
 }
 
 export interface PrepPlan {

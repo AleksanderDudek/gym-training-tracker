@@ -201,6 +201,7 @@ function item(v: unknown): ShoppingItem | null {
     pieces: orNull(v.pieces, finite),
     price: orNull(v.price, finite),
     freeze,
+    ...(v.drained === true && { drained: true as const }),
   };
 }
 
