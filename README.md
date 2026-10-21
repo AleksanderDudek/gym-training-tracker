@@ -525,6 +525,7 @@ aplikacja zainstalowana na ekranie głównym. Akcelerometr strony działa tylko 
 ekranie i otwartej karcie, więc liczyłby wyłącznie spacer z telefonem w dłoni. Zamiast udawać
 pomiar, aplikacja przyjmuje liczby z urządzenia, które mierzy naprawdę, i liczy z nich kalorie.
 Z zegarka Garmin kroki i przejazdy rowerem przychodzą same — o tym niżej, w części o zegarku.
+Z Apple Zdrowie i Health Connect przychodzą przez małą aplikację na telefon — w części „Zdrowie z telefonu”.
 
 **Cztery rodzaje wpisu, jedna droga: rodzaj → liczby z wyświetlacza → zapis.**
 
@@ -769,7 +770,7 @@ dokłada), „Bez mięsa”, „Bez ryb i owoców morza”, „Bez jajek”.
   sklepach (i z zamówieniem) w każdym stylu.
 
 **Jedno ciało, jedno źródło.** Waga z dziennika jedzenia to ta sama waga co w profilu i na karcie
-ważenia — zapis z diety trafia do dziennika wagi. Kroki dieta bierze z wpisów i zegarka Garmin,
+ważenia — zapis z diety trafia do dziennika wagi. Kroki dieta bierze z wpisów, zegarka Garmin i telefonu,
 a wpis kroków z diety staje się zwykłym wpisem kroków (z doświadczeniem i odznakami jak każdy inny).
 Wzrost jest jeden. Dzień z treningiem i „Ruch dziś” (kalorie treningu i cardio) dieta czyta
 z dziennika treningów — **jako informację, nie dodatek do celu**: współczynnik aktywności w profilu
@@ -941,7 +942,7 @@ otwarciu i po powrocie na ekran.
 **Dlaczego własna aplikacja na zegarek.** Oficjalne API Garmina przyjmuje tylko firmy, a od
 wiosny 2026 roku nowych zgłoszeń nie przyjmuje wcale. Logowanie do Garmin Connect cudzym
 hasłem łamie regulamin i kazałoby serwerowi trzymać hasła. Apple Health i Health Connect są
-poza zasięgiem strony. Aplikacja Connect IQ czyta dane na zegarku i wysyła je przez aplikację
+poza zasięgiem strony — czyta je osobna aplikacja na telefon (niżej, „Zdrowie z telefonu”). Aplikacja Connect IQ czyta dane na zegarku i wysyła je przez aplikację
 Garmin Connect na telefonie — bez niczyjej zgody i bez haseł.
 
 **Serwer nie umie przeczytać ani jednej liczby.** W karcie „Zegarek Garmin” w ustawieniach
@@ -980,6 +981,59 @@ Paczka ma na niego miejsce, a ekran umie go pokazać, gdyby kiedyś przyszedł z
 
 Karta zegarka pojawia się, gdy build zna adres serwera i adres aplikacji w Connect IQ Store
 (zmienna `GARMIN_APP_URL` w GitHubie). Wdrożenie: `garmin/README.md` i `server/api/README.md`.
+
+## Zdrowie z telefonu
+
+Kroki, przejazdy rowerem, tętno, sen i waga z **Apple Zdrowie** (iPhone) i **Health Connect**
+(Android) przychodzą same — razem z tym, co zapisują tam zegarki i wagi innych firm: Garmin
+Connect, Fitbit, Samsung Health, Withings czy Oura piszą do tych dwóch miejsc, więc jedno
+połączenie z telefonem obejmuje większość urządzeń.
+
+**Dlaczego osobna aplikacja na telefon.** Żadna przeglądarka nie daje dostępu do Apple Zdrowie
+ani Health Connect, także strona dodana do ekranu początkowego. Czyta je tylko kod natywny.
+Zamiast przenosić całą aplikację do natywnej skorupy (dane w niej leżałyby osobno od tych w
+przeglądarce, a przypomnienia web push i service worker przestałyby działać), na telefonie
+działa mała aplikacja **GYM TRACKER Zdrowie** (`health/`): czyta dane, szyfruje je i wysyła.
+Strona zostaje jedynym miejscem, w którym dane żyją.
+
+**Ta sama droga co zegarek.** W karcie „Zdrowie z telefonu” w ustawieniach powstaje klucz —
+osobny od klucza zegarka, więc oba urządzenia mają własne skrzynki i odłącza się je osobno.
+Klucz kopiuje się do schowka i wkleja w aplikacji przyciskiem „Wklej klucz”. Link z kluczem
+otwierający aplikację byłby o stuknięcie szybszy, ale własny schemat adresu może zarejestrować
+każda inna aplikacja i dostałaby klucz do danych o zdrowiu. Aplikacja pieczętuje paczkę tą
+samą kopertą co zegarek (AES-256-CBC i HMAC-SHA256, `src/watchseal.ts`) i odkłada ją na tym
+samym serwerze, w tych samych skrzynkach (`/garmin/*` — nazwa historyczna, serwer nie wie, kto
+pisze). Wspólny wektor `health/vectors.json` sprawdzają testy strony, Androida i iPhone'a: jeśli
+któraś strona się rozjedzie, test przestanie przechodzić.
+
+**Co przychodzi.** Ostatnie dwa tygodnie, dzień po dniu według zegara telefonu: kroki, droga,
+piętra, minuty „Ćwiczenia” (tylko iPhone — Android takiej liczby nie ma), tętno spoczynkowe,
+tętno najniższe, średnie i najwyższe, sen z nocy, która skończyła się tego dnia (bez
+przebudzeń, noc z iPhone'a i zegarka liczona raz), ostatnie ważenie dnia i przejazdy rowerem
+z drogą. Innych treningów, surowych pomiarów ani położenia telefon nie wysyła — aplikacja ich
+nie używa. iPhone budzi aplikację przy nowych danych (kroki najwyżej co godzinę), Android
+sprawdza co godzinę; dane przychodzą też przy każdym otwarciu aplikacji na telefonie.
+
+**Jak to się liczy.**
+
+- **Kroki** — z trzech liczb na ten sam dzień, wpisanej, z zegarka i z telefonu, liczy się
+  **najwyższa**, nigdy suma: mierzą to samo chodzenie, a telefon często ma już w sobie kroki
+  zegarka. Przy remisie zostaje wpis ręczny, potem zegarek.
+- **Przejazdy rowerem** stają się wpisami „Rower”, chyba że zegarek przysłał przejazd, który
+  zaczął się w tych samych dziesięciu minutach — Garmin Connect kopiuje go do Apple Zdrowie.
+- **Tętno, sen i waga** tylko się pokazują, w sekcji „Z telefonu” na ekranie kroków i cardio,
+  bez punktów i bez oceny.
+- **Waga nie wchodzi do dziennika sama.** Gdy telefon ma ważenie nowsze niż ostatnie w
+  dzienniku (z ostatnich dwóch tygodni), karta „Waga i wzrost” proponuje „Wpisz do dziennika”
+  z dniem tego ważenia. Kalorie liczą się z wagi z dnia ruchu — ciche nadpisanie mogłoby
+  przykryć ważenie wpisane świadomie.
+
+Wpisy z telefonu, jak z zegarka, wyprowadza `cardioOf` z liczb w zapisie (`phone`), więc mają
+dopisek „z telefonu” i nie mają krzyżyka. „Usuń wszystkie dane” odłącza też telefon.
+
+Karta pojawia się, gdy build zna adres serwera i adres co najmniej jednej aplikacji (zmienne
+`HEALTH_IOS_URL` i `HEALTH_ANDROID_URL` w GitHubie). Pokazuje instrukcję dla telefonu, na
+którym ją otwarto, a na komputerze obie. Build, podpis i publikacja: `health/README.md`.
 
 ## Atlas i sprzęt
 
@@ -1209,6 +1263,8 @@ src/
     cardio.test.ts          32 testy wpisów, tańca, wagi w czasie, kalorii i minut ruchu według WHO
     watch.ts                dane z zegarka: paczka, scalanie po czasie, kroki i przejazdy jako wpisy w locie
     watch.test.ts           14 testów paczki, scalania, wyższej liczby kroków, przejazdów i importu
+    phone.ts                dane z telefonu: paczka, scalanie, kroki i przejazdy w locie, propozycja ważenia
+    phone.test.ts           16 testów paczki, wspólnego wektora, trzech źródeł kroków, tego samego przejazdu, importu i ważenia
     find.ts                 wyszukiwanie ćwiczenia: polski alfabet, ogonki opcjonalne, podświetlenie
     find.test.ts            9 testów kolejności, dopasowania i podświetlenia
     similar.ts              zamienniki ćwiczenia (wzorzec, mięśnie, sprzęt) i sprzęt treningu z jego ćwiczeń
@@ -1275,8 +1331,10 @@ src/
     VideoEmbed.tsx          odtwarzacz YouTube ładowany dopiero po kliknięciu
     Reminders.tsx           karta przypomnień w ustawieniach: zgoda, rano i wieczorem
     Structure.tsx           „przed treningiem”: przygotuj, rozgrzewka; nagłówki par i wskazówki serii
-    Health.tsx              zastrzeżenie zdrowotne: krótka wersja, pełna karta i uwaga do liczb z zegarka
+    Health.tsx              zastrzeżenie zdrowotne: krótka wersja, pełna karta i uwagi do liczb z zegarka i telefonu
     Garmin.tsx              karta zegarka w ustawieniach: klucz, kroki połączenia, stan, odłączenie
+    Phone.tsx               karta „Zdrowie z telefonu”: klucz, instrukcja dla iPhone'a albo Androida, stan, odłączenie
+    Phone.test.tsx          8 testów karty (adresy z buildu, Android, komputer, zły klucz, stan), wpisów i liczb „z telefonu” i propozycji ważenia
     Boost.tsx               „Na postęp w dzień wolny” na zakładce Plan i ekranie Dziś
     Feedback.tsx            okno „Napisz do autora”: e-mail, wiadomość, zrzut ekranu
     Contact.tsx             okno „Kontakt z autorem” i lista odnośników (Instagram, Discord w Polsce, kawa według kraju)
@@ -1327,8 +1385,11 @@ src/
   install.test.ts           2 testy miejsca: iPhone w karcie, w aplikacji z ikony, Android
   watchseal.ts              koperta zegarka: klucz, klucze pochodne, AES-256-CBC i HMAC-SHA256
   watchseal.test.ts         5 testów: wektor wspólny z zegarkiem, podróbki, czytanie klucza
-  garmin.ts                 zegarek w przeglądarce: klucz w pamięci strony, odbiór paczki, odłączenie
+  mailbox.ts                skrzynka na serwerze, wspólna dla zegarka i telefonu: klucz w pamięci strony, odbiór, odłączenie
+  garmin.ts                 zegarek w przeglądarce: klucz, odbiór paczki, odłączenie
   garmin.test.ts            3 testy odpowiedzi serwera i godziny ostatnich danych
+  phone.ts                  telefon w przeglądarce: klucz, adresy aplikacji z buildu, odbiór, rodzaj telefonu
+  phone.test.ts             3 testy wspólnego wektora, cudzej paczki w skrzynce i rozpoznania telefonu
   pwa.ts                    service worker od strony aplikacji: rejestracja, „nowa wersja czeka”, wpuszczenie poprawki z ekranu awarii
   pwa.test.ts               12 testów rejestracji, pytań o nową wersję i obu „Odśwież” — bez service workera
   sw.ts                     service worker (Workbox, injectManifest): powłoka offline, baza produktów, zdjęcia, kafelki mapy, Web Push
@@ -1350,6 +1411,10 @@ server/api/                 serwer aplikacji: przypomnienia, uwagi i skrzynki ze
   *.test.ts                 45 testów: wektor RFC, VAPID, harmonogram, API, cron, uwagi, podgląd, Discord i skrzynki
   README.md                 wdrożenie krok po kroku
 garmin/                     aplikacja na zegarek (Connect IQ, Monkey C) — opis i build w garmin/README.md
+health/                     GYM TRACKER Zdrowie — aplikacje na telefon, opis w health/README.md
+  vectors.json              wspólny wektor koperty dla strony, Androida i iPhone'a
+  android/                  Android: Health Connect, Kotlin, WorkManager (Gradle)
+  ios/                      iPhone: HealthKit, Swift, SwiftUI (XcodeGen)
 vite/                       wtyczki Vite
   csp.ts                    polityka bezpieczeństwa treści (`<meta>` w zbudowanej stronie) z jednej listy obcych adresów
   foodData.ts               baza produktów jako `data/products.<hasz>.json.gz` i moduł `virtual:food-data`; w trybie deweloperskim podaje ją serwer Vite
@@ -2135,6 +2200,10 @@ ostatniej przyjętej paczki i chwilę odbioru. To liczby z zegarka, a nie wpisy 
 wyprowadza z nich `cardioOf`. Przy wczytaniu i imporcie przechodzą te same zakresy co paczka
 z zegarka. Klucza do zegarka w zapisie nie ma: leży osobno w pamięci strony (`gt-garmin-key`),
 więc eksport nie otwiera danych o zdrowiu.
+
+Dane z telefonu mają pole `phone` tej samej budowy: system (`ios`/`android`), dni z krokami,
+tętnem, snem i wagą, przejazdy rowerem, czas paczki i chwila odbioru. Klucz telefonu leży
+w `gt-phone-key`, też poza eksportem.
 
 Trwająca sesja trzyma zegar (`session.clock`): start i części jako chwile, nie liczniki — tak jak
 koniec przerwy, więc odświeżenie strony i zgaszony ekran niczego nie gubią. Zamknięty trening
