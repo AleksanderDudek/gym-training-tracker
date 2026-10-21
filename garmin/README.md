@@ -90,8 +90,8 @@ Ustawień takiej aplikacji nie zmienisz w Garmin Connect, więc do testów lepsz
 
 Stan na 21.10.2026 — Connect IQ SDK 9.2.0 z urządzeniami z SDK Managera:
 
-- [x] **Kompilacja z urządzeniami z SDK Managera** — `./build.sh store`: 20 z 20 wariantów.
-- [x] **`SealTest` przechodzi** w symulatorze (fr265, fēnix 6): zegarek pieczętuje bajt w bajt
+- [x] **Kompilacja z urządzeniami z SDK Managera** — `./build.sh store`: 118 zegarków (195 z 195 wariantów).
+- [x] **`SealTest` przechodzi** w symulatorze (fr265, fēnix 6, vívoactive 3 Music z API 3.2.0, Instinct 2): zegarek pieczętuje bajt w bajt
       jak przeglądarka.
 - [x] **Paczka z danych symulatora otwiera się kodem strony** (`open` i `parsePayload`):
       dni, zdrowie i koperta z testowym kluczem. Przy tym wyszły i są poprawione dwa błędy:
