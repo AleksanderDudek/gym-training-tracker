@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Barwy z ikony GYM TRACKER (public/icons/favicon.svg). Pomarańcz przyciemniony, żeby biały
+         napis na przycisku był czytelny (kontrast ponad 4,5:1). -->
+    <color name="brand">#3C423D</color>
+    <color name="accent">#A4492C</color>
+    <color name="on_accent_base">#FFFFFF</color>
+    <color name="background">#FAFAF8</color>
+    <color name="text">#1F231F</color>
+    <color name="muted">#5D645E</color>
+    <color name="error">#B3261E</color>
+</resources>

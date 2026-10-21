@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:locale="pl">
+    <string name="app_name">GYM TRACKER Zdrowie</string>
+    <string name="intro">Wysyła kroki, tętno, sen, wagę i przejazdy rowerem z Health Connect do aplikacji GYM TRACKER — zaszyfrowane, raz na godzinę albo od razu przyciskiem.</string>
+
+    <string name="key_heading">Klucz</string>
+    <string name="key_missing">Brak klucza.</string>
+    <string name="key_set">Klucz zapisany: %1$s…</string>
+    <string name="key_how">W GYM TRACKER: Ustawienia → Zdrowie z telefonu → Kopiuj klucz</string>
+    <string name="key_paste">Wklej klucz</string>
+    <string name="key_invalid">Klucz to 64 znaki: cyfry i litery od a do f.</string>
+    <string name="key_clipboard_empty">Schowek jest pusty. Najpierw skopiuj klucz w GYM TRACKER.</string>
+    <string name="key_saved">Klucz zapisany, schowek wyczyszczony.</string>
+
+    <string name="hc_heading">Health Connect</string>
+    <string name="hc_needs_install">Health Connect trzeba zainstalować albo zaktualizować.</string>
+    <string name="hc_install">Otwórz Sklep Play</string>
+    <string name="hc_unsupported">Health Connect nie działa na tym telefonie albo w tym profilu.</string>
+    <string name="hc_access_none">Brak dostępu do danych.</string>
+    <string name="hc_access_some">Dostęp do %1$d z %2$d rodzajów danych.</string>
+    <string name="hc_access_all">Dostęp do wszystkich danych.</string>
+    <string name="hc_allow">Zezwól na dostęp</string>
+    <string name="hc_settings">Ustawienia Health Connect</string>
+    <string name="hc_error">Health Connect nie odpowiada. Spróbuj za chwilę.</string>
+    <string name="bg_on">Wysyłka w tle: co godzinę.</string>
+    <string name="bg_denied">Bez zgody na czytanie w tle dane idą tylko przy otwarciu aplikacji i przyciskiem.</string>
+    <string name="bg_unavailable">Ta wersja Health Connect nie czyta w tle — dane idą przy otwarciu aplikacji i przyciskiem.</string>
+
+    <string name="send_heading">Wysyłka</string>
+    <string name="send_now">Wyślij teraz</string>
+    <string name="sending">Wysyłam…</string>
+    <string name="send_never">Jeszcze nic nie wysłano.</string>
+    <string name="send_needs">Najpierw klucz i dostęp do danych.</string>
+    <string name="when_today">dziś %1$s</string>
+    <string name="when_yesterday">wczoraj %1$s</string>
+    <string name="result_line">%1$s — %2$s</string>
+    <plurals name="result_sent">
+        <item quantity="one">wysłane: %d dzień</item>
+        <item quantity="few">wysłane: %d dni</item>
+        <item quantity="many">wysłane: %d dni</item>
+        <item quantity="other">wysłane: %d dni</item>
+    </plurals>
+    <string name="result_too_often">Serwer: za często, spróbuj za minutę</string>
+    <string name="result_offline">Brak sieci albo serwer nie odpowiada</string>
+    <string name="result_rejected">Serwer odrzucił paczkę. Zaktualizuj aplikację.</string>
+    <string name="result_nothing">Health Connect nie ma danych z ostatnich 14 dni</string>
+    <string name="result_failed">Nie udało się odczytać danych z Health Connect</string>
+    <string name="result_previous">Ostatnio wysłane: %1$s</string>
+    <string name="result_kinds">Dane: %1$s</string>
+
+    <string name="kind_steps">kroki</string>
+    <string name="kind_distance">dystans</string>
+    <string name="kind_floors">piętra</string>
+    <string name="kind_resting_hr">tętno spoczynkowe</string>
+    <string name="kind_heart_rate">tętno</string>
+    <string name="kind_sleep">sen</string>
+    <string name="kind_weight">waga</string>
+    <string name="kind_rides">przejazdy rowerem</string>
+
+    <string name="disconnect">Odłącz</string>
+    <string name="disconnect_title">Odłączyć telefon?</string>
+    <string name="disconnect_message">Serwer usunie ostatnią paczkę, a ta aplikacja zapomni klucz i przestanie wysyłać. Dane, które już są w GYM TRACKER, tam zostaną.</string>
+    <string name="cancel">Anuluj</string>
+    <string name="disconnected">Odłączone.</string>
+    <string name="disconnected_offline">Odłączone. Serwer nie odpowiedział — paczka zniknie z niego sama najpóźniej po 7 dniach.</string>
+
+    <string name="privacy_heading">Prywatność</string>
+    <string name="privacy">Dane są szyfrowane na tym telefonie kluczem z GYM TRACKER. Serwer przechowuje tylko ostatnią zaszyfrowaną paczkę, najwyżej przez 7 dni, i nie zna klucza — nie może jej odczytać. Odczyta ją tylko GYM TRACKER w przeglądarce, w której powstał klucz.</string>
+    <string name="privacy_more">Polityka prywatności</string>
+
+    <string name="policy_title">Polityka prywatności</string>
+    <string name="policy"><![CDATA[
+<h2>GYM TRACKER Zdrowie — polityka prywatności</h2>
+<p>Ta aplikacja przenosi dane o ruchu i zdrowiu z Health Connect na tym telefonie do aplikacji GYM TRACKER. Nie ma kont, reklam ani analityki.</p>
+
+<h3>Co czyta i po co</h3>
+<p>Tylko to, na co zgodzisz się w Health Connect, i tylko z ostatnich 14 dni:</p>
+<ul>
+<li>kroki, dystans i piętra — GYM TRACKER liczy z nich ruch, kalorie i postępy;</li>
+<li>przejazdy rowerem z dystansem — stają się wpisami jazdy na rowerze;</li>
+<li>tętno (najniższe, średnie i najwyższe w ciągu dnia) i tętno spoczynkowe, czas snu, wagę — GYM TRACKER je tylko pokazuje, bez ocen; wagę do dziennika wpisujesz sam.</li>
+</ul>
+<p>Wysyłane są sumy i średnie dnia, nie pojedyncze pomiary. Aplikacja nie czyta lokalizacji, tras ani innych treningów i niczego nie zapisuje w Health Connect.</p>
+
+<h3>Dokąd trafiają</h3>
+<p>Dane są szyfrowane na tym telefonie (AES-256 i HMAC-SHA256) kluczem, który powstał w GYM TRACKER i który tu wklejasz. Zaszyfrowana paczka idzie na serwer GYM TRACKER (Cloudflare Workers), a stamtąd odbiera ją GYM TRACKER w Twojej przeglądarce i dopiero tam ją odszyfrowuje. Serwer nie zna klucza, więc nie może odczytać danych.</p>
+
+<h3>Jak długo</h3>
+<p>Serwer trzyma tylko ostatnią paczkę: każda nowa zastępuje poprzednią, a paczka bez następczyni znika po 7 dniach. „Odłącz” kasuje ją od razu. Na telefonie zostaje tylko klucz i czas ostatniej wysyłki — żadnych danych o zdrowiu.</p>
+
+<h3>Komu</h3>
+<p>Nikomu. Dane nie są sprzedawane, udostępniane ani używane do reklam. Kopia zapasowa aplikacji i przenoszenie na nowy telefon są wyłączone, więc klucz nie opuszcza tego telefonu.</p>
+
+<h3>Jak cofnąć zgodę</h3>
+<p>Ustawienia telefonu → Health Connect → Uprawnienia aplikacji → GYM TRACKER Zdrowie (albo przycisk „Ustawienia Health Connect” w aplikacji). „Odłącz” usuwa klucz z telefonu i paczkę z serwera. Odinstalowanie usuwa z telefonu wszystko, co aplikacja zapisała.</p>
+
+<h3>Kontakt</h3>
+<p>Pytania i uwagi: „Uwagi i błędy” w GYM TRACKER albo github.com/AleksanderDudek/gym-training-tracker.</p>
+]]></string>
+</resources>
