@@ -28,7 +28,14 @@ npm run build      # typecheck + produkcyjny build do dist/ z service workerem (
 npm run preview    # podgląd builda — tu działa też praca offline
 npm run typecheck  # tsc: aplikacja, testy, konfiguracja Vite i skrypty, service worker, filmy demo
 npm run lint       # oxlint
-npm test           # 1806 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, plan z zakupami, serwer… (vitest)
+npm test           # 1834 testy: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, plan z zakupami, serwer… (vitest)
+```
+
+Aplikacje na telefon (GYM TRACKER Zdrowie — `health/README.md`):
+
+```bash
+health/android/gradlew -p health/android testDebugUnitTest assembleDebug  # 30 testów JUnit i APK (Android SDK, JDK 17+)
+health/ios/check.sh         # 22 testy części bez HealthKit przez swiftc — bez Xcode; --app kompiluje całą aplikację
 ```
 
 Baza produktów i przepisy:
