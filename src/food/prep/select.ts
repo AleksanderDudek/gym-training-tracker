@@ -216,27 +216,43 @@ function fillBlocks(ids: string[], blocks: number): string[] {
   return Array.from({ length: blocks }, (_, b) => ids[b % ids.length]!);
 }
 
+/** A recipe that can replace one of the plan's, as the swap sheet lists it. */
+export interface SwapOption {
+  recipe: PlanRecipe;
+  score: number;
+  /** Swapped out of this plan before: „Inny plan” would not bring it back, the user still may. */
+  avoided: boolean;
+  /** Ingredients it shares with the rest of the plan: fewer lines on the list. */
+  shared: number;
+}
+
 /**
- * What replaces a recipe of the plan in a role: the best candidate the plan does not use yet,
- * judged against what the rest of the plan buys. Null when there is none.
+ * Every recipe that can replace one of the plan's in a role, best first: the rules of the
+ * selection (the role, not in the plan yet, a box under a carb limit only when it fits fully),
+ * judged against what the rest of the plan buys. Recipes swapped out before are listed too,
+ * marked - choosing one is the user's call.
  */
-export function swapCandidate(ctx: SelectContext, choices: Choices, role: Role, out: string): PlanRecipe | null {
+export function swapOptions(ctx: SelectContext, choices: Choices, role: Role, out: string): SwapOption[] {
   const inPlan = new Set(Object.values(choices).flat());
   const keep = ctx.pool.filter((r) => inPlan.has(r.recipe.id) && r.recipe.id !== out);
   const chosen = new Set(keep.flatMap((r) => r.bought));
   // A box under a carb limit takes only a dish that fits fully, as in the selection.
   const strict = ctx.carbLimited && isBoxRole(role);
-  const options = ctx.pool.filter(
-    (r) =>
-      fitsRole(r, role) &&
-      !inPlan.has(r.recipe.id) &&
-      !ctx.avoid.has(r.recipe.id) &&
-      r.recipe.id !== out &&
-      (!strict || r.fit.level === 'great'),
-  );
-  return (
-    options
-      .map((r) => ({ r, score: scoreFor(r, role, ctx, chosen) }))
-      .sort((a, b) => b.score - a.score || a.r.recipe.id.localeCompare(b.r.recipe.id))[0]?.r ?? null
-  );
+  return ctx.pool
+    .filter((r) => fitsRole(r, role) && !inPlan.has(r.recipe.id) && r.recipe.id !== out && (!strict || r.fit.level === 'great'))
+    .map((r) => ({
+      recipe: r,
+      score: scoreFor(r, role, ctx, chosen),
+      avoided: ctx.avoid.has(r.recipe.id),
+      shared: r.bought.filter((i) => chosen.has(i)).length,
+    }))
+    .sort((a, b) => b.score - a.score || a.recipe.recipe.id.localeCompare(b.recipe.recipe.id));
+}
+
+/**
+ * What replaces a recipe of the plan in a role when nobody chooses: the best candidate the plan
+ * does not use yet and has not swapped out before. Null when there is none.
+ */
+export function swapCandidate(ctx: SelectContext, choices: Choices, role: Role, out: string): PlanRecipe | null {
+  return swapOptions(ctx, choices, role, out).find((o) => !o.avoided)?.recipe ?? null;
 }

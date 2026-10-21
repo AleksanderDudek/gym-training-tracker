@@ -1,3 +1,5 @@
+import { Layers } from 'lucide-react';
+import { dietPath } from '../../../routing';
 import type { Profile } from '../../diet/types';
 import { openPlans, shownPlan } from '../../prep/store';
 import type { PrepPlan } from '../../prep/types';
@@ -26,23 +28,36 @@ interface Props {
 export function PrepSection({ profile, plans, today, wanted, formOpen, onOpenForm, onCloseForm }: Props) {
   const open = openPlans(plans, today);
   const shown = shownPlan(plans, today, wanted);
+  // Every plan on the device, ended and named ones too: one tap from where plans are made.
+  const all = plans.length > 0 && (
+    <p className="wrap fd-prep-all">
+      <a href={dietPath('plans')}>
+        <Layers size={18} strokeWidth={2} aria-hidden /> Moje plany ({plans.length})
+      </a>
+    </p>
+  );
   if (formOpen || !shown)
     return (
-      <PrepForm
-        profile={profile}
-        plans={plans}
-        today={today}
-        after={open.at(-1) ?? null}
-        onDone={onCloseForm}
-        onCancel={shown ? onCloseForm : undefined}
-      />
+      <>
+        {all}
+        <PrepForm
+          profile={profile}
+          plans={plans}
+          today={today}
+          after={open.at(-1) ?? null}
+          onDone={onCloseForm}
+          onCancel={shown ? onCloseForm : undefined}
+        />
+      </>
     );
   return (
     <>
+      {all}
       <PlanSwitch plans={open} shown={shown} today={today} href={planHref} />
       <PrepPlanView
         key={shown.id}
         plan={shown as PrepPlan & { id: number }}
+        plans={plans}
         profile={profile}
         today={today}
         onNext={onOpenForm}

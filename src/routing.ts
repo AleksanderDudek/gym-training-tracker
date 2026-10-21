@@ -94,7 +94,13 @@ const FOOD_BY_PATH = Object.fromEntries(
   Object.entries(FOOD_SECTION_PATH).map(([k, v]) => [v.slice(2), k as FoodSection]),
 ) as Record<string, FoodSection>;
 
-const DIET_SLUG: Record<DietPage, string> = { plan: 'plan', progress: 'postep', profile: 'profil', shopping: 'zakupy' };
+const DIET_SLUG: Record<DietPage, string> = {
+  plan: 'plan',
+  plans: 'plany',
+  progress: 'postep',
+  profile: 'profil',
+  shopping: 'zakupy',
+};
 
 const DIET_BY_SLUG = Object.fromEntries(Object.entries(DIET_SLUG).map(([k, v]) => [v, k as DietPage])) as Record<
   string,
@@ -112,6 +118,7 @@ const FOOD_TITLE: Record<FoodSection, string> = {
 
 const DIET_TITLE: Record<DietPage, string> = {
   plan: 'Plan posiłków',
+  plans: 'Moje plany',
   progress: 'Postęp',
   profile: 'Profil diety',
   shopping: 'Lista zakupów',
@@ -268,8 +275,11 @@ export function screenOf(route: Route): Screen {
     case 'food':
       return { title: FOOD_TITLE[route.section], parent: null };
     case 'diet':
-      // Lista zakupów należy do planu, z którego powstała: strzałka wraca do niego, nie do dziennika.
-      return { title: DIET_TITLE[route.page], parent: route.page === 'shopping' ? dietPath('plan') : FOOD_PATH };
+      // Lista zakupów i lista planów należą do planu posiłków: strzałka wraca do niego, nie do dziennika.
+      return {
+        title: DIET_TITLE[route.page],
+        parent: route.page === 'shopping' || route.page === 'plans' ? dietPath('plan') : FOOD_PATH,
+      };
     case 'restaurants':
       // Nazwa sieci stoi dużą czcionką w treści — w pasku, jak przy ćwiczeniu, rodzaj strony.
       return route.chain ? { title: 'Menu', parent: RESTAURANTS_PATH } : { title: 'Lokale', parent: PRODUCTS_PATH };

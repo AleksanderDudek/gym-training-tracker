@@ -169,6 +169,13 @@ export interface PrepPlan {
   id?: number;
   /** ISO time. */
   createdAt: string;
+  /** The user's name for the plan (at most `NAME_MAX`); without one it shows as „<style> · <shop>”. */
+  name?: string;
+  /**
+   * ISO time the plan was last chosen to be followed: made, moved to other dates, or „Ustaw
+   * w dzienniku”. Where plans overlap, the diary follows the one set last; absent: `createdAt`.
+   */
+  setAt?: string;
   settings: PrepSettings;
   /** The basket, the physical shop first. */
   shops: PrepShop[];
@@ -183,6 +190,12 @@ export interface PrepPlan {
   /** Keys of the shopping lines already bought. */
   bought: string[];
 }
+
+/** The longest plan name: a list row and a heading still fit it on a phone. */
+export const NAME_MAX = 60;
+
+/** A plan name as stored: single spaces, trimmed, at most `NAME_MAX`. Empty: no name of its own. */
+export const cleanName = (name: string): string => name.trim().replace(/\s+/g, ' ').slice(0, NAME_MAX).trim();
 
 export const MIN_DAYS = 5;
 export const MAX_DAYS = 14;

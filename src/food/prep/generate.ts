@@ -9,7 +9,7 @@ import { cookingBlocks, planDates } from './blocks';
 import type { CheckIn } from './checkin';
 import { planRecipes, type PlanRecipe } from './candidates';
 import { fitPortions, mealMacros, type MealSpec } from './portions';
-import { selectRecipes, swapCandidate, type SelectContext } from './select';
+import { selectRecipes, swapCandidate, swapOptions, type SelectContext, type SwapOption } from './select';
 import { resolveSide, roomFor, sideMacros, sidesFor, type ResolvedSide, type SideDef } from './sides';
 import { shoppingList, type RecipeUse, type SideUse } from './shopping';
 import { slotsFor } from './slots';
@@ -386,6 +386,9 @@ function remake(
     plan: {
       ...result.plan,
       ...(plan.id !== undefined && { id: plan.id }),
+      // The plan stays the user's: its name and when it was set to be followed.
+      ...(plan.name !== undefined && { name: plan.name }),
+      ...(plan.setAt !== undefined && { setAt: plan.setAt }),
       bought: plan.bought.filter((k) => after.has(k) && after.get(k)! <= (before.get(k) ?? 0)),
     },
   };
@@ -415,18 +418,58 @@ export function canSwap(plan: PrepPlan, role: Role, recipeId: string, from: stri
   );
 }
 
+/** Why there is nothing to swap to: the same hints the form gives. */
+export function noSwapMessage(plan: PrepPlan, role: Role): string {
+  const tips = [
+    'inny sklep',
+    plan.settings.online ? null : 'sklep internetowy',
+    plan.settings.exclude.length ? 'mniej wykluczeń' : null,
+  ].filter(Boolean);
+  return `Nie ma innego przepisu na ${ROLE_WORDS[role]} w tym koszyku. Więcej da ${tips.join(', ')} w następnym planie.`;
+}
+
 /**
- * One recipe of the plan replaced, from `from` on, everywhere it is used in this role, by the best one
- * the plan does not use yet; every other choice stays, portions and the list follow. Boxes cooked
- * before `from` keep their dish. The recipe swapped out does not come back in this plan.
+ * What can replace a recipe of the plan in a role, best first - the list „Wymień” shows. Empty
+ * when the recipe can no longer be swapped (eaten, cooked) or nothing else fits.
  */
-export function swapRecipe(plan: PrepPlan, role: Role, out: string, input: RemakeInput, from: string): GenerateResult {
+export function swapChoices(plan: PrepPlan, role: Role, out: string, input: RemakeInput, from: string): SwapOption[] {
+  if (!canSwap(plan, role, out, from)) return [];
+  const { ctx } = contextOf({ ...input, settings: plan.settings, dayTargets: plan.dayTargets, goal: plan.goal, checkIn: plan.checkIn });
+  return swapOptions(ctx, plan.choices, role, out);
+}
+
+/**
+ * One recipe of the plan replaced, from `from` on, everywhere it is used in this role - by `to`
+ * when the user chose one (it must be one of `swapChoices`), else by the best one the plan does not
+ * use yet. Every other choice stays, portions and the list follow. Boxes cooked before `from` keep
+ * their dish. The recipe swapped out does not come back by itself („Inny plan”); the one chosen
+ * leaves the avoid list.
+ */
+export function swapRecipe(
+  plan: PrepPlan,
+  role: Role,
+  out: string,
+  input: RemakeInput,
+  from: string,
+  to?: string,
+): GenerateResult {
   if (!canSwap(plan, role, out, from))
     return { ok: false, missing: [], message: 'To danie jest już zjedzone albo ugotowane — wymiana dotyczy dni, które są przed Tobą.' };
-  const settings = { ...plan.settings, avoid: [...new Set([...plan.settings.avoid, out])] };
+  const settings = {
+    ...plan.settings,
+    avoid: [...new Set([...plan.settings.avoid, out])].filter((id) => id !== to),
+  };
   const { ctx } = contextOf({ ...input, settings, dayTargets: plan.dayTargets, goal: plan.goal, checkIn: plan.checkIn });
-  const next = swapCandidate(ctx, plan.choices, role, out);
-  if (!next) return { ok: false, missing: [], message: `Nie ma innego przepisu na ${ROLE_WORDS[role]} w tym koszyku.` };
+  const next =
+    to === undefined
+      ? swapCandidate(ctx, plan.choices, role, out)
+      : (swapOptions(ctx, plan.choices, role, out).find((o) => o.recipe.recipe.id === to)?.recipe ?? null);
+  if (!next)
+    return {
+      ok: false,
+      missing: [],
+      message: to === undefined ? noSwapMessage(plan, role) : 'Ten przepis nie pasuje już do planu — wybierz inny.',
+    };
   const blocks = cookingBlocks(plan.settings.start, plan.settings.days);
   const choices = {
     ...plan.choices,

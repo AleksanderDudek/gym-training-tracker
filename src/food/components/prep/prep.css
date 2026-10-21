@@ -56,6 +56,10 @@
 .fd-prep-freeze b,.fd-prep-cooknote b{display:flex;align-items:center;gap:6px}
 .fd-prep-cooknote{margin:4px 0 10px}
 .fd-prep-cooknote a{display:inline-flex;align-items:center;min-height:44px;font-size:13.5px;font-weight:600;color:var(--steel)}
+/* Karta dnia w dzienniku: pod tytułem nazwa planu (odnośnik do niego) i który to dzień planu. */
+.fd-prep-daytitle{display:block;font-size:14px;font-weight:400}
+.fd-prep-daytitle a{display:inline-block;padding:4px 0;color:var(--steel);font-weight:600;text-decoration:underline;
+  text-underline-offset:2px;overflow-wrap:anywhere}
 
 /* Dzień po dniu: dzień zwinięty do jednej linijki z kaloriami, dziś rozwinięty. */
 .fd-prep-day{border-top:1px solid var(--surface-2)}
@@ -91,3 +95,29 @@
 .fd-prep-link:focus-visible{outline:2px solid var(--steel);outline-offset:-2px}
 p.fd-prep-foot{margin:10px auto 18px;font-size:12.5px;max-width:62ch}
 .fd-prep-listlink{margin-top:4px;gap:6px}
+
+/* ---------------- Moje plany i okna planu ---------------- */
+
+.fd-prep-all{margin:12px auto 0}
+.fd-prep-all a{display:inline-flex;align-items:center;gap:6px;min-height:44px;font-size:14px;font-weight:600;color:var(--steel)}
+.fd-prep-all + .fd-prep-switch{margin-top:4px}
+.fd-prep-sheet-form{display:grid;gap:10px}
+.fd-prep-sheet-form .fld input{width:100%}
+.fd-prep-sheet-form .check-row{margin:0}
+.fd-prep-sheet-form .btn:disabled{opacity:.45;cursor:default;transform:none}
+.fd-prep-search{display:block;margin:0 0 8px}
+.fd-prep-search input{width:100%}
+.fd-prep-fav{vertical-align:-2px;color:var(--c-gold-ink);fill:var(--c-gold)}
+.fd-prep-tags{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0 0}
+.fd-prep-tag{display:inline-block;padding:2px 8px;border-radius:999px;background:var(--surface-2);font-size:11.5px;font-weight:600;
+  color:var(--ink-soft);line-height:1.5}
+.fd-prep-tag.fd-prep-tag-best{background:var(--c-green-ink);color:#fff}
+.fd-prep-tag.fd-prep-tag-soft{background:none;border:1px solid var(--line);font-weight:500}
+.fd-prep-plans{list-style:none;padding:0;display:grid;gap:10px;margin-top:12px;margin-bottom:24px}
+.fd-prep-plan{background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+.fd-prep-plan.fd-prep-plan-ended{background:none}
+.fd-prep-plan-link{display:grid;gap:3px;justify-items:start;padding:12px 14px;min-height:44px;color:inherit;text-decoration:none}
+.fd-prep-plan-link:focus-visible{outline:2px solid var(--steel);outline-offset:-2px}
+.fd-prep-plan-link .fd-prep-tag{margin-top:4px}
+.fd-prep-plan-note{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 10px;padding:0 14px 12px}
+.fd-prep-plan-note .btn{gap:6px}

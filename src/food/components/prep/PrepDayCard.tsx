@@ -7,6 +7,7 @@ import { addDays, daysBetween } from '../../diet/model';
 import { gramsLabel, portionLabel, weekdaySpan } from '../../prep/format';
 import { dayPlanTotals, mealAmount, mealFood, mealsOn } from '../../prep/meals';
 import { itemName } from '../../prep/shopping';
+import { planName } from '../../prep/store';
 import type { PrepMeal, PrepPlan } from '../../prep/types';
 import { planHref, shoppingHref } from './links';
 import './prep.css';
@@ -26,7 +27,8 @@ interface Props {
 /**
  * Plan z zakupami w dzienniku: posiłki dnia do odhaczenia, w dniu gotowania — co ugotować, dzień
  * przed nim — co przełożyć z zamrażarki. Odhaczony posiłek to zwykły wpis (porcja z dodatkami),
- * więc liczy się w bilansie jak wszystko, co zjedzone.
+ * więc liczy się w bilansie jak wszystko, co zjedzone. W tytule nazwa planu z odnośnikiem do niego:
+ * planów bywa kilka, a po nazwie widać, który prowadzi ten dzień.
  */
 export function PrepDayCard({ plan, date, entries }: Props) {
   const bridge = useBridge();
@@ -47,9 +49,12 @@ export function PrepDayCard({ plan, date, entries }: Props) {
   return (
     <section className="grp" aria-labelledby="fd-prep-day-title">
       <h2 id="fd-prep-day-title">
-        Plan na ten dzień{' '}
-        <span className="fd-prep-soft">
-          · dzień {day} z {plan.settings.days}
+        Plan na ten dzień<span className="sr-only">:</span>{' '}
+        <span className="fd-prep-daytitle">
+          <a href={planHref(plan)}>{planName(plan)}</a>{' '}
+          <span className="fd-prep-soft">
+            · dzień {day} z {plan.settings.days}
+          </span>
         </span>
       </h2>
       {cooking.length > 0 && (

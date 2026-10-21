@@ -21,7 +21,7 @@ import { goalName, shortDate } from '../../prep/format';
 import { generatePlan, newSeed } from '../../prep/generate';
 import { latestPlan, planEnd, startPlan } from '../../prep/store';
 import { planTargets } from '../../prep/targets';
-import { MAX_DAYS, MIN_DAYS, type Cooking, type Exclusion, type PrepPlan } from '../../prep/types';
+import { MAX_DAYS, MIN_DAYS, NAME_MAX, cleanName, type Cooking, type Exclusion, type PrepPlan } from '../../prep/types';
 import { StatusScreen } from '../common/StatusScreen';
 import './prep.css';
 
@@ -92,6 +92,7 @@ function Form({
   const [online, setOnline] = useState<string | null>(last?.online && index.online.includes(last.online) ? last.online : null);
   const [exclude, setExclude] = useState<Exclusion[]>(last?.exclude ?? []);
   const [useCheckIn, setUseCheckIn] = useState(true);
+  const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -134,9 +135,10 @@ function Form({
       setBusy(false);
       return;
     }
+    const own = cleanName(name);
     try {
       // The adjusted goal is the profile's goal from now on: the diary and the plan say the same number.
-      await startPlan(result.plan, source === 'checkin' ? planned : null);
+      await startPlan(own ? { ...result.plan, name: own } : result.plan, source === 'checkin' ? planned : null);
     } catch {
       setError('Nie udało się zapisać planu na tym urządzeniu — spróbuj jeszcze raz.');
       setBusy(false);
@@ -149,6 +151,8 @@ function Form({
     );
     setBusy(false);
     onDone();
+    // The plan takes the form's place: its name and actions are at the top, not where „Ułóż plan” was.
+    document.scrollingElement?.scrollTo?.({ top: 0 });
   };
 
   const toggle = (x: Exclusion) => setExclude((list) => (list.includes(x) ? list.filter((y) => y !== x) : [...list, x]));
@@ -235,6 +239,18 @@ function Form({
           </select>
         </label>
       </div>
+
+      <label className="fld">
+        <span>Nazwa planu (nieobowiązkowa)</span>
+        <input
+          type="text"
+          value={name}
+          maxLength={NAME_MAX}
+          placeholder={`${style.label} · ${storeName(store)}`}
+          autoComplete="off"
+          onChange={(e) => setName(e.target.value)}
+        />
+      </label>
 
       <div className="chips" role="group" aria-label="Czego nie jesz">
         {EXCLUSIONS.map((x) => (

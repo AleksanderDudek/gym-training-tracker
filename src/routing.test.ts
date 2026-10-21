@@ -54,6 +54,7 @@ describe('zakładki i sekcje', () => {
     expect(parseHash('#/jedzenie/postep')).toEqual({ kind: 'diet', page: 'progress' });
     expect(parseHash('#/jedzenie/profil')).toEqual({ kind: 'diet', page: 'profile' });
     expect(parseHash('#/jedzenie/zakupy')).toEqual({ kind: 'diet', page: 'shopping' });
+    expect(parseHash('#/jedzenie/plany')).toEqual({ kind: 'diet', page: 'plans' });
     // Nieznana podstrona dziennika prowadzi do dziennika, a nie na ekran Dziś.
     expect(parseHash('#/jedzenie/cos')).toEqual({ kind: 'food', section: 'diary' });
   });
