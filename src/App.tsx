@@ -94,6 +94,8 @@ import type {
   Workout,
 } from './types';
 import { pushConfigured, syncReminders } from './push';
+import { currentInstallPlace } from './install';
+import { InstallSteps } from './components/Install';
 import { apiConfigured } from './api';
 import { forgetWatch, garminConfigured, garminKey, pullWatch } from './garmin';
 import type { PullResult } from './garmin';
@@ -157,6 +159,8 @@ function restoreExtras(next: AppState, saved: Partial<AppState>): void {
     : [];
   if (typeof saved.supportSnooze === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(saved.supportSnooze))
     next.supportSnooze = saved.supportSnooze;
+  if (typeof saved.installHidden === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(saved.installHidden))
+    next.installHidden = saved.installHidden;
   if (next.cfg.avatar !== undefined && next.cfg.avatar !== 'gustaw' && next.cfg.avatar !== 'gosia')
     delete next.cfg.avatar;
   // Zmiany dni w trakcie planu i przedłużenie: tylko poprawne daty, dni 1–7 i rozsądna liczba tygodni.
@@ -269,6 +273,8 @@ export default function App() {
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [saveBroken, setSaveBroken] = useState(false);
   const [replayIntro, setReplayIntro] = useState(false);
+  // iPhone poza aplikacją z ikony — to się nie zmienia, dopóki karta jest otwarta.
+  const [installPlace] = useState(currentInstallPlace);
   const medalBox = useRef<HTMLDivElement>(null);
   const { req, say, ask } = useModal();
   const booted = useRef(false);
@@ -331,9 +337,16 @@ export default function App() {
   // ponownie w dowolnym momencie.
   const showIntro =
     replayIntro || (!!state && !state.introSeen && !state.log.length && !state.session);
+  // Pasek „dodaj do ekranu początkowego” (iPhone w Safari): na tych samych zasadach co pasek
+  // wsparcia, ale przed nim — dane, które Safari może skasować po tygodniu, są ważniejsze niż kawa.
+  const installStrip = !!state && !!installPlace && !state.session && !showIntro && !state.installHidden;
   // Pasek wsparcia: nie w trakcie treningu, nie pod wprowadzeniem, nie w tygodniu po schowaniu.
   const strip =
-    !!state && !state.session && !showIntro && !supportSnoozed(state, dayKey(Date.now()));
+    !!state &&
+    !state.session &&
+    !showIntro &&
+    !installStrip &&
+    !supportSnoozed(state, dayKey(Date.now()));
   // Kolor paska systemowego idzie za tym, co stoi na samej górze: tło wprowadzenia albo jasny
   // pasek aplikacji — pasek wsparcia stoi pod nim, więc go nie zmienia. Przed wczytaniem zostaje
   // kolor z `index.html`, ten sam co paska aplikacji, żeby start nie mrugał.
@@ -1586,6 +1599,20 @@ export default function App() {
     setToastMsg('Pasek wsparcia wróci za tydzień. Kawę da się postawić też z Ustawień.');
   };
 
+  const showInstall = () =>
+    void say(
+      'Aplikacja na ekranie początkowym',
+      <InstallSteps place={installPlace ?? 'safari'} reminders={pushConfigured()} />,
+      { ok: 'Rozumiem' },
+    );
+
+  const hideInstall = () => {
+    const next = clone(state);
+    next.installHidden = today;
+    commit(next);
+    setToastMsg('Instrukcja zostaje w Ustawieniach.');
+  };
+
   return (
     <>
       <TopBar
@@ -1594,6 +1621,7 @@ export default function App() {
         parent={inSession ? null : screen.parent}
         strip={strip}
         onSnooze={snoozeSupport}
+        install={installStrip ? { onOpen: showInstall, onHide: hideInstall } : null}
         settings={!screen.parent && !inSession}
         onFeedback={apiConfigured() ? () => setFeedbackOpen(true) : undefined}
         onContact={inSession ? undefined : () => setContactOpen(true)}
@@ -1820,6 +1848,7 @@ export default function App() {
           onToast={setToastMsg}
           onClockPref={setClockPref}
           onIntro={() => setReplayIntro(true)}
+          onInstall={installPlace ? showInstall : undefined}
           onWeights={setWeights}
           onStartWeight={setStartWeight}
           onExport={exportData}

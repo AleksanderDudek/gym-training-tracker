@@ -202,6 +202,7 @@ export function SettingsView({
   onReset,
   onRecalibrate,
   onIntro,
+  onInstall,
   onReminders,
   onWatchSync,
   onToast,
@@ -222,6 +223,8 @@ export function SettingsView({
   onReset: () => void;
   onRecalibrate: () => void;
   onIntro: () => void;
+  /** Instrukcja „dodaj do ekranu początkowego” — tylko iPhone poza aplikacją z ikony. */
+  onInstall?: (() => void) | undefined;
 }) {
   const [text, setText] = useState(state.cfg.weights.join(', '));
   const groups = exercisesByGroup();
@@ -230,6 +233,18 @@ export function SettingsView({
     <>
       {/* Polecenie na samej górze: ustawienia odwiedza ten, kto już aplikację zna i lubi. */}
       <PromoCard />
+      {onInstall && (
+        <div className="grp">
+          <h2>Aplikacja na ekranie początkowym</h2>
+          <p className="tight">
+            Safari może skasować dane strony, której nie otwierasz przez tydzień. Aplikacja z ikony na ekranie
+            początkowym ich nie traci.
+          </p>
+          <button className="btn ghost sm" onClick={onInstall}>
+            Jak dodać
+          </button>
+        </div>
+      )}
       <RemindersCard state={state} onPrefs={onReminders} onToast={onToast} />
       <GarminCard state={state} onSync={onWatchSync} onToast={onToast} />
 

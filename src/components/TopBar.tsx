@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Icon } from './icons';
 import { SETTINGS_PATH, goBack } from '../routing';
 import { SupportStrip } from './Support';
+import { InstallStrip } from './Install';
 import { ClockPill } from './SessionClock';
 
 /**
@@ -50,6 +51,7 @@ export function TopBar({
   parent,
   strip,
   onSnooze,
+  install,
   settings,
   onFeedback,
   onContact,
@@ -62,6 +64,8 @@ export function TopBar({
   /** Czy pokazać pasek wsparcia. */
   strip: boolean;
   onSnooze: () => void;
+  /** Pasek „dodaj do ekranu początkowego” (iPhone w Safari) — zamiast paska wsparcia. */
+  install?: { onOpen: () => void; onHide: () => void } | null | undefined;
   /** Czy w pasku stoi wejście do ustawień — tylko na korzeniach zakładek. */
   settings: boolean;
   /** Okno „Napisz do autora” — na każdym ekranie, bo liczy się, z którego ktoś pisze. Brak — bez serwera. */
@@ -74,7 +78,7 @@ export function TopBar({
   const scrolled = useScrolled();
 
   return (
-    <div className={`topbar${scrolled ? ' scrolled' : ''}${strip ? ' with-strip' : ''}`}>
+    <div className={`topbar${scrolled ? ' scrolled' : ''}${strip || install ? ' with-strip' : ''}`}>
       <header className="appbar">
         {parent ? (
           <button className="appbar-btn back-btn" onClick={() => goBack(parent)} aria-label="Wstecz">
@@ -104,7 +108,7 @@ export function TopBar({
           </a>
         )}
       </header>
-      {strip && <SupportStrip onSnooze={onSnooze} />}
+      {install ? <InstallStrip {...install} /> : strip && <SupportStrip onSnooze={onSnooze} />}
     </div>
   );
 }

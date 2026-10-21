@@ -595,6 +595,8 @@ export interface AppState {
   introSeen?: string;
   /** Do którego dnia (`yyyy-mm-dd`, bez niego) schowany jest pasek wsparcia na górze. */
   supportSnooze?: string;
+  /** Dzień, w którym schowano pasek „dodaj do ekranu początkowego” (iPhone w Safari) — na stałe. */
+  installHidden?: string;
 }
 
 /** Przypomnienia: rano w dni treningu z planu, wieczorem o krokach i ruchu z dnia. */

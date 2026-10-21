@@ -18,6 +18,7 @@ export type IconName =
   | 'profile'
   | 'back'
   | 'feedback'
+  | 'share'
   | 'contact';
 
 const PATHS: Record<IconName, ReactNode> = {
@@ -98,6 +99,14 @@ const PATHS: Record<IconName, ReactNode> = {
     <>
       <path d="M5 4.5h14a1.5 1.5 0 0 1 1.5 1.5v9a1.5 1.5 0 0 1-1.5 1.5h-8.5L6 20v-3.5H5A1.5 1.5 0 0 1 3.5 15V6A1.5 1.5 0 0 1 5 4.5Z" />
       <path d="M7.5 9h9M7.5 12.5h6" />
+    </>
+  ),
+  // „Udostępnij” jak w iOS: pudełko otwarte u góry i strzałka w górę — ten sam znak, którego
+  // szuka się w Safari, żeby dodać aplikację do ekranu początkowego.
+  share: (
+    <>
+      <path d="M8.5 9.5H7A1.5 1.5 0 0 0 5.5 11v7.5A1.5 1.5 0 0 0 7 20h10a1.5 1.5 0 0 0 1.5-1.5V11A1.5 1.5 0 0 0 17 9.5h-1.5" />
+      <path d="M12 3.5V14M8.5 7 12 3.5 15.5 7" />
     </>
   ),
   // Małpa „@” — kontakt z autorem poza aplikacją.

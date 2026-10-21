@@ -51,12 +51,12 @@ export function pushStateOf(e: PushEnv): PushState {
   return e.subscribed && e.permission === 'granted' ? 'on' : 'off';
 }
 
-const isIos = (): boolean =>
+export const isIos = (): boolean =>
   /iPad|iPhone|iPod/.test(navigator.userAgent) ||
   // iPadOS przedstawia się jak Mac — zdradza go ekran dotykowy.
   (navigator.userAgent.includes('Macintosh') && navigator.maxTouchPoints > 1);
 
-const isStandalone = (): boolean =>
+export const isStandalone = (): boolean =>
   window.matchMedia?.('(display-mode: standalone)').matches ||
   (navigator as Navigator & { standalone?: boolean }).standalone === true;
 
