@@ -48,13 +48,24 @@ object Sync {
 
     /** Wysyłka z ekranu: biegnie dalej, nawet gdy ten, kto czeka na wynik, zniknie. */
     fun start(context: Context, force: Boolean): Deferred<Outcome> =
-        context.applicationContext.let { app -> scope.async { run(app, force) } }
+        context.applicationContext.let { app -> scope.async { orElse(Outcome.FAILED) { run(app, force) } } }
 
     /** Odłączenie z ekranu, tak samo odporne na zamknięcie ekranu jak [start]. */
     fun startDisconnect(context: Context): Deferred<Boolean> =
-        context.applicationContext.let { app -> scope.async { disconnect(app) } }
+        context.applicationContext.let { app -> scope.async { orElse(false) { disconnect(app) } } }
 
-    suspend fun run(context: Context, force: Boolean): Outcome = lock.withLock {
+    // Nieprzewidziany wyjątek z ustawień czy WorkManagera wyszedłby z `await()` na ekranie i zamknął aplikację.
+    private inline fun <T> orElse(fallback: T, block: () -> T): T =
+        try {
+            block()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            fallback
+        }
+
+    /** [background]: woła praca w tle — bez zgody na czytanie w tle odczyt by się nie udał. */
+    suspend fun run(context: Context, force: Boolean, background: Boolean = false): Outcome = lock.withLock {
         val app = context.applicationContext
         val now = System.currentTimeMillis()
         if (!force && !due(app, now)) return Outcome.SKIPPED
@@ -62,7 +73,13 @@ object Sync {
         if (HealthReader.status(app) != HealthReader.Status.AVAILABLE) return Outcome.NOT_READY
         val reader = HealthReader(app)
         val sealed = try {
-            val granted = reader.granted() intersect HealthReader.READ
+            val all = reader.granted()
+            if (background && HealthReader.BACKGROUND !in all) {
+                // Zgodę cofnięto w ustawieniach: praca w tle kończy się sama, ekran wysyła dalej przy otwarciu.
+                SyncWorker.cancel(app)
+                return Outcome.NOT_READY
+            }
+            val granted = all intersect HealthReader.READ
             if (granted.isEmpty()) return Outcome.NOT_READY
             val reading = reader.read(granted)
             if (reading.days.isEmpty() && reading.rides.isEmpty()) return save(app, now, Outcome.NOTHING)
@@ -114,6 +131,10 @@ object Sync {
     }
 
     private fun save(context: Context, now: Long, outcome: Outcome, sealed: Sealed? = null): Outcome {
+        // „Za często” tuż po udanej wysyłce (drugie stuknięcie, zgoda i powrót na ekran naraz) nie
+        // zasłania wyniku: paczka sprzed chwili leży na serwerze, nic nie przepadło.
+        val sentAt = prefs(context).getLong(SENT_AT, 0)
+        if (outcome == Outcome.TOO_OFTEN && now - sentAt in 0 until 90_000) return outcome
         prefs(context).edit {
             putLong(AT, now)
             putString(OUTCOME, outcome.name)

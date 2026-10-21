@@ -20,7 +20,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
     override suspend fun doWork(): Result {
         // Nieudana próba czeka na następną godzinę: dane i tak się nie zestarzeją, a powtórki
         // co kilka minut tylko zużywałyby baterię.
-        Sync.run(applicationContext, force = false)
+        Sync.run(applicationContext, force = false, background = true)
         return Result.success()
     }
 

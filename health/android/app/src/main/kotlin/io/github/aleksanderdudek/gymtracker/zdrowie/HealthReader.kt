@@ -15,6 +15,7 @@ import androidx.health.connect.client.records.RestingHeartRateRecord
 import androidx.health.connect.client.records.SleepSessionRecord
 import androidx.health.connect.client.records.StepsRecord
 import androidx.health.connect.client.records.WeightRecord
+import androidx.health.connect.client.records.metadata.DataOrigin
 import androidx.health.connect.client.request.AggregateGroupByPeriodRequest
 import androidx.health.connect.client.request.AggregateRequest
 import androidx.health.connect.client.request.ReadRecordsRequest
@@ -159,13 +160,18 @@ class HealthReader(private val context: Context) {
             .mapNotNull { s ->
                 val sec = Duration.between(s.startTime, s.endTime).seconds
                 if (sec < 60) return@mapNotNull null
-                val total = client.aggregate(
-                    AggregateRequest(setOf(DistanceRecord.DISTANCE_TOTAL), TimeRangeFilter.between(s.startTime, s.endTime)),
-                )
-                val m = total[DistanceRecord.DISTANCE_TOTAL]?.inMeters?.roundToInt() ?: 0
+                // Najpierw droga z aplikacji, która zapisała przejazd: krokomierz telefonu z wyższym
+                // priorytetem dałby inaczej kilkaset metrów „chodzenia” zamiast 25 km jazdy.
+                val m = distance(s, setOf(s.metadata.dataOrigin)).takeIf { it > 0 } ?: distance(s, emptySet())
                 if (m > 0) Ride(s.startTime.epochSecond, Payload.SPORT_CYCLING, sec.toIntClamped(), m) else null
             }
         return Payload.withoutDuplicateRides(rides)
+    }
+
+    private suspend fun distance(s: ExerciseSessionRecord, origins: Set<DataOrigin>): Int {
+        val filter = TimeRangeFilter.between(s.startTime, s.endTime)
+        val total = client.aggregate(AggregateRequest(setOf(DistanceRecord.DISTANCE_TOTAL), filter, origins))
+        return total[DistanceRecord.DISTANCE_TOTAL]?.inMeters?.roundToInt() ?: 0
     }
 
     /** Wszystkie strony odczytu — Health Connect oddaje najwyżej 1000 rekordów naraz. */
