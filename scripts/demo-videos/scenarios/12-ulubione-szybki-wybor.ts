@@ -13,10 +13,10 @@ export const scenario: Scenario = {
   persona: 'Creature of habit: same breakfast, same shake, same lunch spot.',
   problem: 'Logging food is the chore that kills diet tracking — especially typing the same five meals every day.',
   solution:
-    'Star anything — a product, a recipe, a restaurant item, your own set. Favourites sit in the diary with „+ Zjadłem” for one-tap logging, sorted by what you eat most, and come first in „Dodaj zjedzone”.',
+    'Star anything — a product, a recipe, a restaurant item, your own set. Favourites open from the diary („Ulubione (N)” next to „Dodaj zjedzone”) with „+ Zjadłem” for one-tap logging, sorted by what you eat most, and come first in „Dodaj zjedzone”.',
   keyMessagePl: 'To, co jesz najczęściej — jedno stuknięcie.',
   keyMessageEn: 'What you eat most — one tap.',
-  features: ['Dziennik: „Ulubione” quick pick', '„Dodaj zjedzone”: favourites first, star, quick add'],
+  features: ['Dziennik: „Ulubione” sheet', '„Dodaj zjedzone”: favourites first, star, quick add'],
   clock: '2026-10-15T13:10:00+02:00',
   seed: 'full',
   hookPl: 'Ten sam lunch co zawsze?',
@@ -26,18 +26,19 @@ export const scenario: Scenario = {
   music: 'Breezy, minimal pop around 110 BPM; a soft pop on each star.',
   async setup(page) {
     await open(page, '#/jedzenie');
-    await page.getByRole('region', { name: 'Ulubione' }).waitFor();
+    await page.getByRole('button', { name: /^Ulubione/ }).waitFor();
     // Baza produktów wczytuje się w tle; wyszukiwarka ma ją mieć, zanim ruszy kamera.
     await page.waitForTimeout(4000);
   },
   async run(s) {
     const { page } = s;
     s.beat('card');
-    await s.reveal(page.getByRole('heading', { name: 'Ulubione', exact: true }), { block: 'start' });
-    await s.pause(3300);
+    await s.tap(page.getByRole('button', { name: /^Ulubione/ }), 'Ulubione', { after: 3300 });
 
     s.beat('quick');
-    await s.tap(page.getByRole('button', { name: `Zjadłem z ulubionych: ${SUBWAY}` }), `Zjadłem: ${SUBWAY}`, { after: 1400 });
+    const favorites = page.getByRole('dialog', { name: 'Ulubione' });
+    await s.tap(favorites.getByRole('button', { name: `Zjadłem z ulubionych: ${SUBWAY}` }), `Zjadłem: ${SUBWAY}`, { after: 1400 });
+    await s.tap(favorites.getByRole('button', { name: 'Zamknij' }), 'Zamknij', { after: 600 });
     await s.reveal(page.getByRole('region', { name: 'Bilans dnia' }), { block: 'start', ms: 900 });
     await s.pause(2700);
 
@@ -51,8 +52,8 @@ export const scenario: Scenario = {
 
     s.beat('add');
     await s.tap(picker.getByRole('button', { name: `Dodaj od razu: ${KEFIR}` }), 'Dodaj od razu', { after: 1600 });
-    await s.reveal(page.getByRole('heading', { name: 'Ulubione', exact: true }), { block: 'start' });
-    await s.pause(2600);
+    await s.tap(page.getByRole('button', { name: /^Ulubione/ }), 'Ulubione', { after: 2600 });
+    await s.tap(page.getByRole('dialog', { name: 'Ulubione' }).getByRole('button', { name: 'Zamknij' }), 'Zamknij', { after: 600 });
 
     s.beat('counts');
     await s.tap(page.getByRole('navigation', { name: 'Dieta' }).getByRole('link', { name: 'Profil diety' }), 'Profil diety', {
@@ -63,7 +64,7 @@ export const scenario: Scenario = {
   },
   beats: {
     card: {
-      shows: 'Dziennik: the „Ulubione” card — five favourites sorted by how often they are eaten, each with „+ Zjadłem”.',
+      shows: 'Dziennik: „Ulubione (5)” next to „Dodaj zjedzone” opens a sheet — five favourites sorted by how often they are eaten, each with „+ Zjadłem”.',
       captionPl: 'Ulubione — najczęstsze na górze',
       captionEn: 'Favourites — most eaten first',
       voPl: 'Ulubione. Najczęściej jedzone same idą na górę.',
@@ -71,7 +72,7 @@ export const scenario: Scenario = {
       edit: 'Hook caption here.',
     },
     quick: {
-      shows: 'Tap „Zjadłem” on the Subway sandwich — logged at once; the day’s bars at the top move.',
+      shows: 'Tap „Zjadłem” on the Subway sandwich — logged at once (the sheet says so and stays open); closed, the day’s bars at the top have moved.',
       captionPl: 'Lunch zapisany jednym stuknięciem',
       captionEn: 'Lunch logged in one tap',
       voPl: 'Lunch jak zwykle — jedno stuknięcie i zapisane.',
@@ -94,7 +95,7 @@ export const scenario: Scenario = {
       edit: 'Highlight the row jumping to the favourites group.',
     },
     add: {
-      shows: 'Tap „+” (Dodaj od razu) — logged without opening; back in the diary the new favourite is on the card.',
+      shows: 'Tap „+” (Dodaj od razu) — logged without opening; back in the diary the new favourite is in the „Ulubione” sheet.',
       captionPl: 'Zjedzone, bez wpisywania',
       captionEn: 'Logged, no typing',
       voPl: 'I zapisane — bez wpisywania ani jednej liczby.',
