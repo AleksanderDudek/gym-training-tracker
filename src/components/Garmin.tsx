@@ -201,7 +201,11 @@ export function GarminCard({
         Zegarek szyfruje dane tym kluczem, zanim wyjdą z telefonu. Serwer przechowuje tylko ostatnią
         zaszyfrowaną paczkę, najwyżej przez tydzień, i nie zna klucza — otworzy ją wyłącznie
         przeglądarka, w której klucz jest zapisany. Klucz nie trafia do eksportu danych; na drugim
-        urządzeniu wklej go przez „Mam już klucz”.
+        urządzeniu wklej go przez „Mam już klucz”.{' '}
+        <a href="privacy.html" target="_blank" rel="noopener">
+          Polityka prywatności
+        </a>
+        .
       </p>
     </div>
   );

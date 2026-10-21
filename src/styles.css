@@ -975,6 +975,7 @@
   .watch-steps li{margin:0 0 10px}
   .watch-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
   .watch-src{color:var(--ink-soft);font-weight:400}
+  .grp .hint a,.watch-steps a{color:var(--steel);text-decoration:underline}
   .phone-weight{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:10px}
   .phone-weight p.tight{margin:0}
   .body-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;margin:10px 0}

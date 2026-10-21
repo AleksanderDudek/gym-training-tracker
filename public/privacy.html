@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GYM TRACKER — Privacy Policy</title>
+<meta name="description" content="Privacy policy of GYM TRACKER, the GYM TRACKER watch app for Garmin and the GYM TRACKER Health phone app.">
+<style>
+  :root { --bg: #f7f6f2; --ink: #1d1f1c; --soft: #555a52; --line: #d9d6cc; --link: #2d5a3d; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #161815; --ink: #ecebe6; --soft: #b3b6ad; --line: #383b35; --link: #9ccbaa; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 1.9rem; line-height: 1.2; margin: 0 0 4px; }
+  h2 { font-size: 1.25rem; margin: 2.2em 0 .4em; padding-top: .6em; border-top: 1px solid var(--line); }
+  h3 { font-size: 1.05rem; margin: 1.4em 0 .3em; }
+  p, li { color: var(--ink); }
+  .meta { color: var(--soft); margin: 0 0 1.5em; }
+  .lang { display: flex; gap: 16px; margin: 0 0 1.5em; }
+  a { color: var(--link); }
+  ul { padding-left: 1.2em; }
+  li { margin: .25em 0; }
+  .box { border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px; }
+</style>
+</head>
+<body>
+<main>
+
+<section id="en" lang="en">
+<h1>GYM TRACKER — Privacy Policy</h1>
+<p class="meta">Last updated: 21 October 2026 · Covers the GYM TRACKER web app, the GYM TRACKER watch app for Garmin and the GYM TRACKER Health phone app.</p>
+<p class="lang"><a href="#pl">Polska wersja</a></p>
+
+<div class="box">
+<p><b>In short:</b> there are no accounts, ads, analytics or tracking, and nothing is sold. What you log stays in your browser.
+Data from your watch or phone travels to our server only end-to-end encrypted, with a key the server never sees,
+and only your browser can read it.</p>
+</div>
+
+<h2>Who is responsible</h2>
+<p>GYM TRACKER is made by Aleksander Dudek, an individual developer, who is the data controller for the server features below.
+Contact: the “Napisz do autora” (Write to the author) form in the app, or
+<a href="https://github.com/AleksanderDudek/gym-training-tracker/issues">GitHub issues</a>.</p>
+
+<h2>What stays on your device</h2>
+<p>Everything you log — workouts, snacks, steps and cardio, weight and height, the food diary, plans and settings — is stored
+in your browser’s storage on your device. It is not sent to us. A backup file you export is saved on your device.
+“Usuń wszystkie dane” (Delete all data) in Settings erases it.</p>
+
+<h2>Optional features that use our server</h2>
+<p>The server is a Cloudflare Worker with a Cloudflare D1 database.</p>
+
+<h3>Reminders (web push)</h3>
+<p>If you turn reminders on, the server stores your browser’s push subscription address, your time zone and the reminder
+texts and times for the next 21 days. It deletes the subscription 45 days after you last opened the app, or as soon as the push
+service reports it no longer exists. Turning reminders off in Settings stops them. Notifications are delivered by your browser’s
+push service (Google, Apple, Mozilla or Microsoft).</p>
+
+<h3>Feedback</h3>
+<p>If you send a message with “Napisz do autora”, the server stores your message, the e-mail address if you give one,
+an optional screenshot, and a short record of the visit: screens visited, taps (with numbers masked), app errors, browser and
+screen size. A salted hash of your IP address is kept to limit abuse; the address itself is not stored. A copy goes to the
+author’s private Discord channel. Messages are kept as long as needed to handle them; ask to have yours deleted at any time.</p>
+
+<h3>Encrypted mailboxes for watch and phone data</h3>
+<p>The Garmin watch app and the GYM TRACKER Health phone app place an encrypted package in a mailbox on the server, and your
+browser collects it. The server stores only the encrypted package, the time it was last written and a salted hash of the IP
+address that created the mailbox. It cannot decrypt the package: the key (32 random bytes) is created in your browser and
+pasted into the watch or phone app by you. A mailbox is deleted when you disconnect the device, or 7 days after the last package.</p>
+
+<h2>GYM TRACKER watch app for Garmin</h2>
+<p>When you paste a key into its settings, the watch app reads from your watch: steps, distance, floors climbed and intensity
+minutes per day; activities (start time, type, duration, distance); heart rate, stress, Body Battery and average resting heart
+rate. About every 30 minutes it encrypts the last week of these numbers (AES-256-CBC with HMAC-SHA256) and sends them through
+the Garmin Connect app on your phone to the mailbox described above. The transfer through Garmin Connect is covered by
+Garmin’s own privacy policy. Without a key the app sends nothing.</p>
+
+<h2>GYM TRACKER Health phone app (Android)</h2>
+<p>With your permission in Health Connect, the app reads the last 14 days of: steps, distance, floors, heart rate, resting heart
+rate, sleep, weight and cycling workouts (start, duration, distance). It sends daily totals, never raw samples or location,
+encrypted with the same method to the mailbox described above. The key is kept in the app’s private storage and excluded from
+backups. You can withdraw access at any time in Health Connect, and “Odłącz” (Disconnect) in the app deletes the key and the
+mailbox. The app does not write to Health Connect.</p>
+
+<h2>Health data</h2>
+<p>Heart rate, stress, sleep and weight are health data (GDPR Article 9). We process them on the server only in encrypted form
+that we cannot read; they are decrypted only in your browser. The legal basis is your explicit consent, given by connecting a
+device and granting permissions; you can withdraw it at any time by disconnecting. The numbers are shown without medical
+interpretation and are not medical advice.</p>
+
+<h2>Other services used by specific features</h2>
+<ul>
+  <li><b>GitHub Pages</b> hosts the web app and may log your IP address as described in GitHub’s privacy statement.</li>
+  <li><b>Cloudflare</b> runs the server and processes IP addresses to deliver requests.</li>
+  <li><b>YouTube</b> exercise videos load only after you tap them (privacy-enhanced youtube-nocookie.com player).</li>
+  <li><b>OpenStreetMap</b> map tiles and the <b>Overpass API</b> are used by “W pobliżu” (Nearby shops); the area you search is sent to them. Location is used only if you allow it.</li>
+  <li><b>Open Food Facts</b> provides product photos in the food section.</li>
+  <li><b>Discord</b> receives a copy of feedback messages (see Feedback).</li>
+</ul>
+
+<h2>Your rights</h2>
+<p>Under the GDPR you can access, correct and delete your data, restrict or object to processing, withdraw consent and receive
+your data. Most of it is already in your hands: export or delete it in Settings, and disconnect devices to delete their
+mailboxes. For feedback messages, contact the author as above. You may also complain to a data protection authority; in Poland
+this is the President of the Personal Data Protection Office (UODO).</p>
+
+<h2>Children</h2>
+<p>GYM TRACKER is not directed to children under 16.</p>
+
+<h2>Changes</h2>
+<p>If this policy changes, the new version is published on this page with a new date.</p>
+</section>
+
+<section id="pl" lang="pl">
+<h2 style="border-top-width:3px">GYM TRACKER — polityka prywatności (wersja polska)</h2>
+<p class="meta">Aktualizacja: 21 października 2026 · Dotyczy aplikacji GYM TRACKER w przeglądarce, aplikacji GYM TRACKER na zegarek Garmin i aplikacji GYM TRACKER Zdrowie na telefon.</p>
+<p class="lang"><a href="#en">English version</a></p>
+
+<div class="box">
+<p><b>W skrócie:</b> nie ma kont, reklam, analityki ani śledzenia, nic nie jest sprzedawane. To, co zapisujesz, zostaje
+w twojej przeglądarce. Dane z zegarka albo telefonu trafiają na nasz serwer wyłącznie zaszyfrowane kluczem, którego serwer
+nie zna — odczyta je tylko twoja przeglądarka.</p>
+</div>
+
+<h3>Kto odpowiada</h3>
+<p>GYM TRACKER tworzy Aleksander Dudek, osoba prywatna, administrator danych dla opisanych niżej funkcji serwera. Kontakt:
+formularz „Napisz do autora” w aplikacji albo
+<a href="https://github.com/AleksanderDudek/gym-training-tracker/issues">zgłoszenia na GitHubie</a>.</p>
+
+<h3>Co zostaje na twoim urządzeniu</h3>
+<p>Wszystko, co zapisujesz — treningi, przekąski, kroki i cardio, waga i wzrost, dziennik jedzenia, plany i ustawienia — leży
+w pamięci przeglądarki na twoim urządzeniu i nie jest do nas wysyłane. Eksport danych zapisuje plik na twoim urządzeniu.
+„Usuń wszystkie dane” w Ustawieniach je kasuje.</p>
+
+<h3>Funkcje, które korzystają z serwera (opcjonalne)</h3>
+<ul>
+  <li><b>Przypomnienia:</b> adres subskrypcji powiadomień przeglądarki, strefa czasowa oraz teksty i godziny przypomnień na
+  21 dni. Subskrypcja znika 45 dni po ostatnim otwarciu aplikacji albo od razu, gdy usługa powiadomień zgłosi, że już nie
+  istnieje. Powiadomienia dostarcza usługa przeglądarki (Google, Apple, Mozilla albo Microsoft).</li>
+  <li><b>Uwagi („Napisz do autora”):</b> treść, e-mail (jeśli go podasz), opcjonalny zrzut ekranu i krótki ślad wizyty
+  (ekrany, stuknięcia z ukrytymi liczbami, błędy aplikacji, przeglądarka i rozmiar ekranu). Do ochrony przed nadużyciami
+  zapisuje się skrót adresu IP z solą — sam adres nie. Kopia trafia na prywatny kanał Discord autora. Wiadomość jest
+  przechowywana, dopóki jest potrzebna; na prośbę usuwamy ją od razu.</li>
+  <li><b>Zaszyfrowane skrzynki zegarka i telefonu:</b> serwer przechowuje tylko zaszyfrowaną paczkę, czas jej zapisu i skrót
+  IP (z solą) urządzenia, które założyło skrzynkę. Klucza nie zna i paczki nie odczyta. Skrzynka znika po odłączeniu
+  urządzenia albo 7 dni po ostatniej paczce.</li>
+</ul>
+
+<h3>Aplikacja GYM TRACKER na zegarek Garmin</h3>
+<p>Po wklejeniu klucza czyta z zegarka: kroki, drogę, piętra i minuty intensywności z każdego dnia; aktywności (start,
+rodzaj, czas, droga); tętno, stres, Body Battery i średnie tętno spoczynkowe. Mniej więcej co 30 minut szyfruje ostatni
+tydzień (AES-256-CBC i HMAC-SHA256) i wysyła go przez aplikację Garmin Connect do skrzynki opisanej wyżej. Przesyłanie przez
+Garmin Connect podlega polityce prywatności Garmina. Bez klucza aplikacja niczego nie wysyła.</p>
+
+<h3>Aplikacja GYM TRACKER Zdrowie na telefon (Android)</h3>
+<p>Za twoją zgodą w Health Connect czyta ostatnie 14 dni: kroki, drogę, piętra, tętno, tętno spoczynkowe, sen, wagę
+i przejazdy rowerem (start, czas, droga). Wysyła sumy dnia — nigdy surowych pomiarów ani położenia — zaszyfrowane tak samo,
+do skrzynki opisanej wyżej. Klucz leży w prywatnej pamięci aplikacji, bez kopii zapasowych. Zgodę cofniesz w Health Connect,
+a „Odłącz” w aplikacji kasuje klucz i skrzynkę. Aplikacja nic nie zapisuje w Health Connect.</p>
+
+<h3>Dane o zdrowiu</h3>
+<p>Tętno, stres, sen i waga to dane o zdrowiu (art. 9 RODO). Na serwerze przetwarzamy je wyłącznie w postaci zaszyfrowanej,
+której nie umiemy odczytać; odszyfrowuje je tylko twoja przeglądarka. Podstawą jest twoja wyraźna zgoda, wyrażona przez
+połączenie urządzenia i nadanie uprawnień; cofniesz ją w każdej chwili, odłączając urządzenie. Liczby są pokazywane bez
+oceny medycznej i nie są poradą lekarską.</p>
+
+<h3>Inne usługi przy konkretnych funkcjach</h3>
+<ul>
+  <li><b>GitHub Pages</b> — hosting aplikacji; może zapisywać adres IP według polityki GitHuba.</li>
+  <li><b>Cloudflare</b> — serwer; przetwarza adresy IP, żeby obsłużyć zapytania.</li>
+  <li><b>YouTube</b> — filmy z ćwiczeniami ładują się dopiero po stuknięciu (odtwarzacz youtube-nocookie.com).</li>
+  <li><b>OpenStreetMap</b> i <b>Overpass API</b> — mapa i sklepy w „W pobliżu”; wysyłany jest obszar wyszukiwania. Położenie tylko za twoją zgodą.</li>
+  <li><b>Open Food Facts</b> — zdjęcia produktów w części o jedzeniu.</li>
+  <li><b>Discord</b> — kopia wiadomości z uwagami.</li>
+</ul>
+
+<h3>Twoje prawa</h3>
+<p>Według RODO masz prawo dostępu do danych, ich sprostowania i usunięcia, ograniczenia przetwarzania, sprzeciwu, cofnięcia
+zgody i przeniesienia danych. Większość danych i tak masz w swoich rękach: eksport i usuwanie w Ustawieniach, odłączanie
+urządzeń kasuje ich skrzynki. W sprawie wiadomości z uwagami napisz do autora. Możesz też złożyć skargę do Prezesa Urzędu
+Ochrony Danych Osobowych (UODO).</p>
+
+<h3>Dzieci</h3>
+<p>GYM TRACKER nie jest przeznaczony dla dzieci poniżej 16 lat.</p>
+
+<h3>Zmiany</h3>
+<p>Nowa wersja polityki pojawi się na tej stronie z nową datą.</p>
+</section>
+
+</main>
+</body>
+</html>

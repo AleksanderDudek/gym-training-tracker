@@ -104,6 +104,7 @@ describe('karta „Zdrowie z telefonu”', () => {
     await user.click(screen.getByRole('button', { name: 'Sprawdź teraz' }));
     expect(onSync).toHaveBeenCalledOnce();
     expect(onToast).toHaveBeenCalledWith(expect.stringContaining('Telefon jeszcze nic nie przysłał'));
+    expect(screen.getByRole('link', { name: 'Polityka prywatności' })).toHaveAttribute('href', 'privacy.html');
     await user.click(screen.getByRole('button', { name: 'Pokaż klucz' }));
     expect(screen.getByLabelText('Klucz do aplikacji na telefonie')).toBeInTheDocument();
   });

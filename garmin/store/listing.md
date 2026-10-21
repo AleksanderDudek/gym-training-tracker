@@ -1,78 +1,89 @@
-# Opis w Connect IQ Store
+# Connect IQ Store listing — GYM TRACKER
 
-Teksty do wklejenia w Developer Dashboard po wgraniu `bin/gymtracker.iq`. Aplikacja jest
-bezpłatna i nic nie sprzedaje, więc weryfikacja „tradera” (DSA) jej nie dotyczy. Dlatego
-w opisie nie ma linku do wsparcia ani do espresso — prośba o wpłatę zrobiłaby z aplikacji
-płatną w rozumieniu sklepu.
+Text for every field of the store form at https://apps-developer.garmin.com, after the package
+(`bin/gymtracker.iq`) is validated. English is the main listing; a Polish description for the
+Polish store locale is at the end.
 
-- **Typ:** Device App · **Kategoria:** Health & Fitness
-- **Cena:** bezpłatna, bez zakupów w aplikacji
-- **Strona aplikacji (website):** https://aleksanderdudek.github.io/gym-training-tracker/
-- **Zrzuty ekranu:** z symulatora (`./build.sh run fr265`, potem File → Save Screenshot) —
-  ekran aplikacji ze stanem „Wysłane 14:32” i podgląd (glance).
+| Field | Value |
+| --- | --- |
+| App type | Device App (watch app) |
+| App title | `GYM TRACKER` — if the store reports the name as taken: `GYM TRACKER Sync` |
+| Category | Health & Fitness (or the closest one the form offers, e.g. Fitness) |
+| Price | Free, no in-app purchases |
+| Trader status (EU DSA) | Not a trader: free, non-commercial app with no payments or donations |
+| Website | https://aleksanderdudek.github.io/gym-training-tracker/ |
+| Privacy policy | https://aleksanderdudek.github.io/gym-training-tracker/privacy.html |
+| Support | https://github.com/AleksanderDudek/gym-training-tracker/issues |
+| Languages | English, Polish |
+| Screenshots | `screenshots/` (see `screenshots/README.md`) |
+| Hero image | `hero/hero-en.png` (Polish locale: `hero/hero-pl.png`) |
 
-## Polski
+## Short description
 
-**Nazwa:** GYM TRACKER
+Your watch’s steps, rides, heart rate, stress and Body Battery — sent to the GYM TRACKER training app, end-to-end encrypted.
 
-**Krótki opis:**
-Kroki, rowery, tętno, stres i Body Battery z zegarka — prosto do aplikacji GYM TRACKER, zaszyfrowane.
+## Description
+
+GYM TRACKER brings the numbers from your Garmin watch into GYM TRACKER, a free training app that runs in your browser (https://aleksanderdudek.github.io/gym-training-tracker/ — the app interface is in Polish). No retyping, no account.
+
+WHAT IT SENDS
+About every 30 minutes, while your phone is nearby, the watch sends the last 7 days of:
+• steps, distance, floors climbed and intensity minutes
+• bike rides (start, duration, distance)
+• heart rate (min, average, max), stress, Body Battery and average resting heart rate
+
+In GYM TRACKER, steps and rides count straight away towards calories, activity minutes, XP and badges. Heart rate, stress and Body Battery are shown as they are, without medical interpretation.
+
+HOW TO CONNECT
+1. Open GYM TRACKER in your browser: Ustawienia (Settings) → Zegarek Garmin (Garmin watch) → Połącz zegarek (Connect watch), then Kopiuj klucz (Copy key).
+2. Paste the key into this app’s settings: Garmin Connect → your watch → Activities & Apps → GYM TRACKER → Settings.
+3. Open GYM TRACKER on the watch once. The first data arrives within minutes. Press START (or tap the screen) to send right away.
+
+PRIVACY
+The watch encrypts the data (AES-256 and HMAC-SHA256) with your key before it leaves the watch. The key is created in your browser and the server never sees it: it keeps only the latest encrypted package, for at most 7 days, and cannot read it. No accounts, no ads, no analytics. Without a key the app sends nothing.
+Privacy policy: https://aleksanderdudek.github.io/gym-training-tracker/privacy.html
+
+PERMISSIONS
+• Background — sends about every 30 minutes without opening the app.
+• Communications — sends the encrypted package through Garmin Connect on your phone to the GYM TRACKER server.
+• Sensor history — heart rate, stress and Body Battery.
+• User profile — activity history (bike rides) and average resting heart rate.
+
+GYM TRACKER helps you plan and log training. It is not a medical device and does not replace a doctor, physiotherapist or dietitian.
+
+## What’s new (1.0)
+
+First release: steps, distance, floors, intensity minutes, bike rides, heart rate, stress, Body Battery and resting heart rate, end-to-end encrypted, every 30 minutes. English and Polish.
+
+## Polish description (Polish store locale)
+
+**Krótki opis:** Kroki, przejazdy rowerem, tętno, stres i Body Battery z zegarka — prosto do aplikacji GYM TRACKER, zaszyfrowane.
 
 **Opis:**
-GYM TRACKER na zegarku wysyła co pół godziny ostatni tydzień danych do aplikacji treningowej
-GYM TRACKER (https://aleksanderdudek.github.io/gym-training-tracker/): kroki, drogę, piętra,
-minuty intensywności, przejazdy rowerem, tętno, stres, Body Battery i średnie tętno spoczynkowe.
-Kroki i przejazdy liczą się tam od razu do kalorii, minut ruchu, doświadczenia i odznak —
-bez przepisywania z zegarka.
 
-Jak połączyć:
-1. W aplikacji GYM TRACKER otwórz Ustawienia → Zegarek Garmin → Połącz zegarek i skopiuj klucz.
-2. Wklej klucz w ustawieniach tej aplikacji w Garmin Connect (zegarek → Aktywności i aplikacje →
-   GYM TRACKER → Ustawienia).
-3. Otwórz raz GYM TRACKER na zegarku. Pierwsze dane przyjdą po chwili, potem co pół godziny,
-   gdy telefon jest w pobliżu. Przycisk START (albo stuknięcie) wysyła od razu.
+GYM TRACKER przenosi liczby z zegarka Garmin do GYM TRACKER — bezpłatnej aplikacji treningowej w przeglądarce (https://aleksanderdudek.github.io/gym-training-tracker/). Bez przepisywania i bez zakładania konta.
 
-Prywatność: zegarek szyfruje dane (AES-256, HMAC-SHA256) kluczem, który znają tylko zegarek
-i twoja przeglądarka. Serwer przechowuje wyłącznie ostatnią zaszyfrowaną paczkę, najwyżej
-przez tydzień, i nie może jej odczytać. Brak kont, brak reklam, brak analityki.
+CO WYSYŁA
+Mniej więcej co 30 minut, gdy telefon jest w pobliżu, zegarek wysyła ostatnie 7 dni:
+• kroki, drogę, piętra i minuty intensywności
+• przejazdy rowerem (start, czas, droga)
+• tętno (najniższe, średnie, najwyższe), stres, Body Battery i średnie tętno spoczynkowe
 
-Liczby z czujników zegarka pokazywane są bez oceny medycznej. Aplikacja nie zastępuje lekarza.
+W GYM TRACKER kroki i przejazdy od razu liczą się do kalorii, minut ruchu, doświadczenia i odznak. Tętno, stres i Body Battery są pokazywane bez oceny medycznej.
 
-**Uprawnienia (wyjaśnienie dla recenzenta i użytkownika):**
-- Background — wysyłka co 30 minut bez otwierania aplikacji.
-- Communications — wysyłka zaszyfrowanej paczki przez telefon do serwera GYM TRACKER.
-- SensorHistory — tętno, stres i Body Battery z historii czujników.
-- UserProfile — historia aktywności (przejazdy) i średnie tętno spoczynkowe.
+JAK POŁĄCZYĆ
+1. W GYM TRACKER: Ustawienia → Zegarek Garmin → Połącz zegarek → Kopiuj klucz.
+2. Wklej klucz w ustawieniach tej aplikacji: Garmin Connect → zegarek → Aktywności i aplikacje → GYM TRACKER → Ustawienia.
+3. Otwórz raz GYM TRACKER na zegarku. Pierwsze dane przyjdą po chwili; START (albo stuknięcie) wysyła od razu.
 
-## English
+PRYWATNOŚĆ
+Zegarek szyfruje dane (AES-256 i HMAC-SHA256) twoim kluczem, zanim opuszczą zegarek. Klucz powstaje w przeglądarce i serwer go nie zna: przechowuje tylko ostatnią zaszyfrowaną paczkę, najwyżej 7 dni, i nie umie jej odczytać. Bez kont, reklam i analityki. Bez klucza aplikacja niczego nie wysyła.
+Polityka prywatności: https://aleksanderdudek.github.io/gym-training-tracker/privacy.html#pl
 
-**Name:** GYM TRACKER
+UPRAWNIENIA
+• Praca w tle — wysyłka co ok. 30 minut bez otwierania aplikacji.
+• Komunikacja — wysyłka zaszyfrowanej paczki przez Garmin Connect do serwera GYM TRACKER.
+• Historia czujników — tętno, stres i Body Battery.
+• Profil użytkownika — historia aktywności (przejazdy) i średnie tętno spoczynkowe.
 
-**Short description:**
-Steps, rides, heart rate, stress and Body Battery from your watch — sent to the GYM TRACKER app, encrypted.
-
-**Description:**
-Every 30 minutes, GYM TRACKER sends the last week of watch data to the GYM TRACKER training app
-(https://aleksanderdudek.github.io/gym-training-tracker/, Polish interface): steps, distance,
-floors, intensity minutes, bike rides, heart rate, stress, Body Battery and average resting heart
-rate. Steps and rides count straight away towards calories, activity minutes, XP and badges — no
-more copying numbers from the watch.
-
-How to connect:
-1. In GYM TRACKER open Ustawienia → Zegarek Garmin → Połącz zegarek and copy the key.
-2. Paste the key into this app's settings in Garmin Connect (watch → Activities & Apps →
-   GYM TRACKER → Settings).
-3. Open GYM TRACKER on the watch once. The first data arrives within minutes, then every
-   30 minutes while your phone is nearby. START (or a tap) sends immediately.
-
-Privacy: the watch encrypts the data (AES-256, HMAC-SHA256) with a key known only to the watch and
-your browser. The server keeps only the latest encrypted package, for at most a week, and cannot
-read it. No accounts, no ads, no analytics.
-
-Sensor numbers are shown without medical interpretation. This app is not a substitute for a doctor.
-
-**Permissions:**
-- Background — sends every 30 minutes without opening the app.
-- Communications — sends the encrypted package through your phone to the GYM TRACKER server.
-- SensorHistory — heart rate, stress and Body Battery from sensor history.
-- UserProfile — activity history (rides) and average resting heart rate.
+GYM TRACKER pomaga planować i zapisywać trening. Nie jest wyrobem medycznym i nie zastępuje lekarza, fizjoterapeuty ani dietetyka.

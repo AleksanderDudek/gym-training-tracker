@@ -1,5 +1,6 @@
+<!-- Angielski — domyślny dla każdego języka zegarka i telefonu poza polskim (resources-pol). -->
 <strings>
     <string id="AppName">GYM TRACKER</string>
-    <string id="KeyTitle">Klucz z aplikacji GYM TRACKER</string>
-    <string id="KeyPrompt">Ustawienia → Zegarek Garmin → Kopiuj klucz</string>
+    <string id="KeyTitle">Key from the GYM TRACKER app</string>
+    <string id="KeyPrompt">GYM TRACKER: Ustawienia (Settings) → Zegarek Garmin → Kopiuj klucz</string>
 </strings>

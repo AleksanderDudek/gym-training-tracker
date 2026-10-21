@@ -10,6 +10,7 @@ server/api/.wrangler
 # Aplikacja na zegarek: klucz dewelopera i wyniki buildu Connect IQ
 garmin/developer_key.*
 garmin/bin
+garmin/manifest-beta.xml
 
 # Baza produktów: surowe pliki Open Food Facts i Open Prices (duże) zostają poza gitem;
 # w repozytorium jest tylko gotowy data/food/products.json.gz z `npm run food:data`.

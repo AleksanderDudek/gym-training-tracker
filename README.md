@@ -1427,6 +1427,8 @@ server/api/                 serwer aplikacji: przypomnienia, uwagi i skrzynki ze
   *.test.ts                 45 testów: wektor RFC, VAPID, harmonogram, API, cron, uwagi, podgląd, Discord i skrzynki
   README.md                 wdrożenie krok po kroku
 garmin/                     aplikacja na zegarek (Connect IQ, Monkey C) — opis i build w garmin/README.md
+  store/                    publikacja w Connect IQ Store po angielsku: teksty, notatka dla recenzentów, hero, zrzuty
+public/privacy.html         polityka prywatności (EN i PL) — strona, aplikacja na zegarek i GYM TRACKER Zdrowie
 health/                     GYM TRACKER Zdrowie — aplikacje na telefon, opis w health/README.md
   vectors.json              wspólny wektor koperty dla strony, Androida i iPhone'a
   android/                  Android: Health Connect, Kotlin, WorkManager (Gradle)

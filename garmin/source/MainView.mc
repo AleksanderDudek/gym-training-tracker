@@ -17,9 +17,9 @@ class MainView extends WatchUi.View {
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_BLACK);
         dc.clear();
         dc.drawText(w / 2, h * 3 / 10, Graphics.FONT_SMALL, "GYM TRACKER", center);
-        dc.drawText(w / 2, h / 2, Graphics.FONT_XTINY, busy ? "Wysyłam..." : Status.text(), center);
+        dc.drawText(w / 2, h / 2, Graphics.FONT_XTINY, busy ? Status.say("Wysyłam...", "Sending...") : Status.text(), center);
         dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(w / 2, h * 7 / 10, Graphics.FONT_XTINY, "Wyślij teraz: START", center);
+        dc.drawText(w / 2, h * 7 / 10, Graphics.FONT_XTINY, Status.say("Wyślij teraz: START", "Send now: START"), center);
     }
 
     function send() {
