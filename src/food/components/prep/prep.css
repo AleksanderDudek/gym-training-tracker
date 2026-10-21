@@ -100,6 +100,7 @@ p.fd-prep-foot{margin:10px auto 18px;font-size:12.5px;max-width:62ch}
 .fd-prep-sheet-form{display:grid;gap:10px}
 .fd-prep-sheet-form .fld input{width:100%}
 .fd-prep-sheet-form .check-row{margin:0}
+.fd-prep-sheet-form .btn:disabled{opacity:.45;cursor:default;transform:none}
 .fd-prep-search{display:block;margin:0 0 8px}
 .fd-prep-search input{width:100%}
 .fd-prep-fav{vertical-align:-2px;color:var(--c-gold-ink);fill:var(--c-gold)}

@@ -151,6 +151,8 @@ function Form({
     );
     setBusy(false);
     onDone();
+    // The plan takes the form's place: its name and actions are at the top, not where „Ułóż plan” was.
+    document.scrollingElement?.scrollTo?.({ top: 0 });
   };
 
   const toggle = (x: Exclusion) => setExclude((list) => (list.includes(x) ? list.filter((y) => y !== x) : [...list, x]));
