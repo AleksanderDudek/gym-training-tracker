@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="brand">#C9CEC8</color>
+    <color name="accent">#E9A58C</color>
+    <color name="on_accent_base">#1F231F</color>
+    <color name="background">#171A18</color>
+    <color name="text">#ECEEEA</color>
+    <color name="muted">#A7ADA6</color>
+    <color name="error">#F2B8B5</color>
+</resources>
