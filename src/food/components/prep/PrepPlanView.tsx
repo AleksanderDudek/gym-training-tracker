@@ -1,5 +1,5 @@
-import { ChefHat, ListChecks, Repeat, Shuffle, Snowflake, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { CalendarRange, ChefHat, ListChecks, NotebookPen, Pencil, Repeat, Shuffle, Snowflake, Trash2 } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import { Modal, useModal } from '../../../components/ui';
 import { useBridge } from '../../bridge';
 import { addDays } from '../../diet/model';
@@ -9,13 +9,14 @@ import { useFavorites } from '../../hooks/useDiet';
 import { formatNumber, plural } from '../../lib/format';
 import { RECIPES } from '../../recipes/catalog';
 import { gramsLabel, longDate, portionAfterPo, portionLabel, rangeLabel, shortDate, weekdaySpan } from '../../prep/format';
-import { canSwap, newSeed, rerollPlan, swapRecipe, type GenerateResult } from '../../prep/generate';
+import { canSwap, newSeed, noSwapMessage, rerollPlan, swapChoices, swapRecipe, type GenerateResult } from '../../prep/generate';
 import { averageDay, dayCheck, dayPlanTotals, mealAmount, mealsOn, shoppingProgress } from '../../prep/meals';
 import { itemName } from '../../prep/shopping';
-import { deletePrepPlan, planEnd, replacePrepPlan } from '../../prep/store';
+import { deletePrepPlan, hiddenDays, movePlan, planCovering, planEnd, planName, renamePlan, replacePrepPlan, setInDiary } from '../../prep/store';
 import type { PrepBatch, PrepPlan, Role } from '../../prep/types';
 import { recipeIndex } from '../../recipes/resolve';
-import { shoppingHref } from './links';
+import { planHref, shoppingHref } from './links';
+import { DatesSheet, RenameSheet, SwapSheet } from './PlanSheets';
 import './prep.css';
 
 const ICON = { size: 20, strokeWidth: 2, 'aria-hidden': true } as const;
@@ -35,6 +36,8 @@ const g = (n: number) => formatNumber(Math.round(n), 0);
 
 interface Props {
   plan: PrepPlan & { id: number };
+  /** Every plan on the device: which of them the diary follows on this plan's days. */
+  plans: PrepPlan[];
   profile: Profile;
   today: string;
   onNext: () => void;
@@ -44,14 +47,20 @@ interface Props {
  * Plan z zakupami: co, kiedy gotować i co jeść którego dnia. Przepis da się wymienić, a cały plan
  * ułożyć jeszcze raz — do tego potrzebna jest baza produktów; sam plan i lista działają bez niej.
  */
-export function PrepPlanView({ plan, profile, today, onNext }: Props) {
+export function PrepPlanView({ plan, plans, profile, today, onNext }: Props) {
   const bridge = useBridge();
   const data = useDataset();
   const favorites = useFavorites();
   const { req, ask } = useModal();
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
+  const [sheet, setSheet] = useState<'name' | 'dates' | null>(null);
+  const [swapping, setSwapping] = useState<{ role: Role; id: string; name: string } | null>(null);
   const end = planEnd(plan);
+  const ended = end < today;
+  // Days on which another plan, set later, owns the diary: one line and „Ustaw w dzienniku”.
+  const hidden = ended ? [] : hiddenDays(plans, plan).filter((d) => d >= today);
+  const owner = hidden.length ? planCovering(plans, hidden[0]!) : null;
   const average = averageDay(plan);
   const physical = plan.shops.find((s) => !s.online);
   const order = plan.shops.find((s) => s.online);
@@ -59,14 +68,17 @@ export function PrepPlanView({ plan, profile, today, onNext }: Props) {
   const stale = plan.goal.kcal !== profile.dailyKcal || plan.goal.dietProfile !== profile.dietProfile;
   // A change touches only what is ahead: from today (or the plan's first day, when it starts later).
   const from = plan.settings.start > today ? plan.settings.start : today;
-  const ready =
-    data.status === 'ready'
-      ? {
-          index: recipeIndex(data.products),
-          dict: data.dataset.dictionaries,
-          favorites: new Set((favorites ?? []).filter((f) => f.key.startsWith('recipe:')).map((f) => f.key.slice(7))),
-        }
-      : null;
+  const ready = useMemo(
+    () =>
+      data.status === 'ready'
+        ? {
+            index: recipeIndex(data.products),
+            dict: data.dataset.dictionaries,
+            favorites: new Set((favorites ?? []).filter((f) => f.key.startsWith('recipe:')).map((f) => f.key.slice(7))),
+          }
+        : null,
+    [data, favorites],
+  );
 
   const save = async (make: () => GenerateResult, done: string) => {
     setBusy(true);
@@ -104,9 +116,27 @@ export function PrepPlanView({ plan, profile, today, onNext }: Props) {
     await save(() => rerollPlan(plan, ready, newSeed(), from), 'Nowy zestaw przepisów — lista zakupów też.');
   };
 
-  const swap = async (role: Role, recipeId: string) => {
+  const swap = async (role: Role, recipeId: string, to: string) => {
     if (!ready || busy) return;
-    await save(() => swapRecipe(plan, role, recipeId, ready, from), 'Przepis wymieniony — porcje i lista zakupów poszły za nim.');
+    setSwapping(null);
+    await save(() => swapRecipe(plan, role, recipeId, ready, from, to), 'Przepis wymieniony — porcje i lista zakupów poszły za nim.');
+  };
+  // Ranked once per opening, not on every render.
+  const options = useMemo(
+    () => (swapping && ready ? swapChoices(plan, swapping.role, swapping.id, ready, from) : []),
+    [swapping, plan, ready, from],
+  );
+
+  /** A change of the stored plan outside a remake: the name, the dates, the diary. */
+  const change = async (run: () => Promise<void>, done: string) => {
+    setSheet(null);
+    try {
+      await run();
+      setNote(null);
+      bridge.toast(done);
+    } catch {
+      setNote('Nie udało się zapisać zmiany na tym urządzeniu — spróbuj jeszcze raz.');
+    }
   };
 
   const remove = async () => {
@@ -130,8 +160,9 @@ export function PrepPlanView({ plan, profile, today, onNext }: Props) {
   return (
     <>
       <section className="grp fd-prep-head" aria-labelledby="fd-prep-title">
+        <div className="today-tag light">Plan na {plan.settings.days} dni</div>
         <h2 id="fd-prep-title" className="today-name">
-          Plan na {plan.settings.days} dni
+          {planName(plan)}
         </h2>
         <p className="tight">
           {rangeLabel(plan.settings.start, end)} · zakupy: {physical?.name}
@@ -144,6 +175,18 @@ export function PrepPlanView({ plan, profile, today, onNext }: Props) {
           {g(average.protein)} · W {g(average.carbs)} · T {g(average.fat)} g.
         </p>
         {plan.settings.start > today && <p className="tight">Plan zaczyna się {longDate(plan.settings.start)} — do tego dnia dziennik idzie po staremu.</p>}
+        {ended && (
+          <p className="tight">
+            Ten plan się skończył. Chcesz go powtórzyć? „Zmień daty” przeniesie go na nowe dni — z tymi samymi przepisami
+            i listą.
+          </p>
+        )}
+        {owner && (
+          <p className="tight fd-prep-warn">
+            {hidden.length === plan.settings.days ? 'W dni tego planu' : `W ${hidden.length} z ${plan.settings.days} dni tego planu`}{' '}
+            dziennik pokazuje plan <a href={planHref(owner)}>„{planName(owner)}”</a>.
+          </p>
+        )}
         {stale && (
           <p className="tight fd-prep-warn">
             Od ułożenia planu zmienił się cel w profilu diety ({kcal(profile.dailyKcal)}, {profile.dietProfile === plan.goal.dietProfile ? 'ten sam styl' : 'inny styl'}).
@@ -176,9 +219,26 @@ export function PrepPlanView({ plan, profile, today, onNext }: Props) {
             <ListChecks {...ICON} /> Lista zakupów
             {progress.done > 0 && ` (${progress.done}/${progress.total})`}
           </a>
-          <button type="button" className="btn ghost sm" onClick={() => void reroll()} disabled={!ready || busy}>
-            <Shuffle {...ICON} /> Inny plan
+          {owner && (
+            <button
+              type="button"
+              className="btn sm"
+              onClick={() => void change(() => setInDiary(plan.id), `Dziennik idzie za planem „${planName(plan)}” w jego dni.`)}
+            >
+              <NotebookPen {...ICON} /> Ustaw w dzienniku
+            </button>
+          )}
+          <button type="button" className="btn ghost sm" onClick={() => setSheet('name')}>
+            <Pencil {...ICON} /> Zmień nazwę
           </button>
+          <button type="button" className="btn ghost sm" onClick={() => setSheet('dates')}>
+            <CalendarRange {...ICON} /> Zmień daty
+          </button>
+          {!ended && (
+            <button type="button" className="btn ghost sm" onClick={() => void reroll()} disabled={!ready || busy}>
+              <Shuffle {...ICON} /> Inny plan
+            </button>
+          )}
           <button type="button" className="btn ghost sm" onClick={onNext}>
             Następny plan
           </button>
@@ -199,7 +259,10 @@ export function PrepPlanView({ plan, profile, today, onNext }: Props) {
 
       <section className="grp" aria-labelledby="fd-prep-recipes-title">
         <h2 id="fd-prep-recipes-title">Przepisy w planie</h2>
-        <p className="tight">Coś Ci nie pasuje? „Wymień” podmienia przepis w całym planie — porcje i lista zakupów idą za nim.</p>
+        <p className="tight">
+          Coś Ci nie pasuje? „Wymień” pokazuje przepisy, które mogą zająć to miejsce — wybrany wchodzi do całego planu, a porcje
+          i lista zakupów idą za nim.
+        </p>
         {roles.map((role) => (
           <div key={role} className="fd-prep-role">
             <h3>{ROLE_TITLE[role]}</h3>
@@ -221,7 +284,7 @@ export function PrepPlanView({ plan, profile, today, onNext }: Props) {
                         type="button"
                         className="btn ghost sm"
                         disabled={!ready || busy}
-                        onClick={() => void swap(role, id)}
+                        onClick={() => setSwapping({ role, id, name })}
                         aria-label={`Wymień: ${name}`}
                       >
                         <Repeat {...ICON} /> Wymień
@@ -313,6 +376,32 @@ export function PrepPlanView({ plan, profile, today, onNext }: Props) {
           );
         })}
       </section>
+      <RenameSheet
+        plan={sheet === 'name' ? plan : null}
+        onSave={(name) =>
+          void change(() => renamePlan(plan.id, name), name ? `Plan nazywa się teraz „${name}”.` : 'Plan wrócił do swojej nazwy.')
+        }
+        onClose={() => setSheet(null)}
+      />
+      <DatesSheet
+        plan={sheet === 'dates' ? plan : null}
+        today={today}
+        onSave={(start, clearTicks) =>
+          void change(
+            () => movePlan(plan.id, start, clearTicks),
+            `Plan przesunięty: ${rangeLabel(start, addDays(start, plan.settings.days - 1))}.`,
+          )
+        }
+        onClose={() => setSheet(null)}
+      />
+      <SwapSheet
+        name={swapping?.name ?? null}
+        options={options}
+        favorites={ready?.favorites ?? new Set()}
+        empty={swapping ? noSwapMessage(plan, swapping.role) : ''}
+        onPick={(to) => swapping && void swap(swapping.role, swapping.id, to)}
+        onClose={() => setSwapping(null)}
+      />
       <Modal req={req} />
     </>
   );

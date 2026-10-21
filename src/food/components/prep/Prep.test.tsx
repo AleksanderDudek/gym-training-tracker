@@ -40,6 +40,8 @@ vi.mock('../../recipes/resolve', async (importOriginal) => {
 // Tuesday morning: the form starts the plan today.
 const TUESDAY = new Date('2026-10-20T09:00:00');
 const at = (hash: string) => window.history.replaceState(null, '', `/${hash}`);
+/** A plan without a name of its own: the style and the shop. */
+const TITLE = `${DIET_PROFILES.redukcja.label} · Biedronka`;
 
 beforeEach(async () => {
   vi.useFakeTimers({ toFake: ['Date'] });
@@ -95,7 +97,7 @@ describe('plan posiłków: plan z zakupami', () => {
     expect(await within(form).findByText(/^Do dopasowania celu potrzebuję/)).toBeInTheDocument();
 
     await user.click(within(form).getByRole('button', { name: 'Ułóż plan' }));
-    expect(await screen.findByRole('heading', { name: 'Plan na 7 dni' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: TITLE })).toBeInTheDocument();
     expect(bridge.toast).toHaveBeenCalledWith('Plan na 7 dni gotowy — lista zakupów czeka.');
     const [stored] = await db.prep.toArray();
     expect(stored).toMatchObject({ settings: { start: '2026-10-20', days: 7, meals: 4, store: 'biedronka', online: null } });
@@ -116,7 +118,7 @@ describe('plan posiłków: plan z zakupami', () => {
     await user.selectOptions(within(form).getByLabelText('Zamówienie przez internet'), 'myprotein');
     expect(within(form).getByLabelText('Zamówienie przez internet')).toHaveDisplayValue(/^Myprotein · \+\d+ przepisów$/);
     await user.click(within(form).getByRole('button', { name: 'Ułóż plan' }));
-    await screen.findByRole('heading', { name: 'Plan na 7 dni' });
+    await screen.findByRole('heading', { name: TITLE });
     const [stored] = await db.prep.toArray();
     expect(stored!.settings).toMatchObject({ exclude: ['meat'], online: 'myprotein' });
     expect(stored!.shops.map((s) => s.name)).toEqual(['Biedronka', 'Myprotein']);
@@ -137,7 +139,7 @@ describe('plan posiłków: plan z zakupami', () => {
     const kcal = Number(adjusted.closest('label')!.textContent!.match(/(\d[\d\s ]*) kcal/)![1]!.replace(/\D/g, ''));
     expect(kcal).toBeLessThan(2200);
     await user.click(within(form).getByRole('button', { name: 'Ułóż plan' }));
-    await screen.findByRole('heading', { name: 'Plan na 7 dni' });
+    await screen.findByRole('heading', { name: TITLE });
     expect((await db.profile.get('me'))!.dailyKcal).toBe(kcal);
     expect(bridge.toast).toHaveBeenCalledWith(expect.stringContaining(`Cel kalorii w profilu: ${kcal} kcal (było 2200)`));
     expect((await db.prep.toArray())[0]!.goal).toMatchObject({ kcal, source: 'checkin' });
@@ -153,8 +155,17 @@ describe('plan posiłków: plan z zakupami', () => {
     const user = userEvent.setup();
     renderWithBridge(<DietPlanPage />);
     await user.click(await screen.findByRole('button', { name: `Wymień: ${name}` }));
+    // A list of what fits, the best for the plan first; the chosen one takes the place.
+    const sheet = await screen.findByRole('dialog', { name: `Wymień: ${name}` });
+    expect(within(sheet).getAllByText('najlepiej pasuje')).toHaveLength(1);
+    const picks = within(sheet).getAllByRole('button', { name: /^Wybierz: / });
+    expect(picks.length).toBeGreaterThan(1);
+    const chosen = picks.at(-1)!.getAttribute('aria-label')!.replace('Wybierz: ', '');
+    await user.click(picks.at(-1)!);
     await waitFor(async () => expect((await db.prep.get(id))!.choices.breakfast).not.toContain(out));
-    expect((await db.prep.get(id))!.settings.avoid).toEqual([out]);
+    const after = (await db.prep.get(id))!;
+    expect(after.settings.avoid).toEqual([out]);
+    expect(after.meals.some((m) => m.name === chosen)).toBe(true);
 
     await user.click(screen.getAllByRole('button', { name: /Usuń plan/ })[0]!);
     await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Usuń plan' }));
@@ -173,7 +184,7 @@ describe('plan posiłków: plan z zakupami', () => {
     expect(within(form).getByLabelText('Od kiedy')).toHaveDisplayValue('wt., 27 paź');
     expect(window.location.hash).toBe('#/jedzenie/plan?nowy=1');
     await user.click(within(form).getByRole('button', { name: 'Anuluj' }));
-    expect(await screen.findByRole('heading', { name: 'Plan na 7 dni' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: TITLE })).toBeInTheDocument();
   }, 15_000);
 });
 

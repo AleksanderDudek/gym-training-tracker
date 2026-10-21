@@ -12,7 +12,7 @@ import { AISLE_LABELS } from '../../prep/aisles';
 import { gramsLabel, rangeLabel, shortDate } from '../../prep/format';
 import { shoppingProgress } from '../../prep/meals';
 import { amountText, itemName, priceSum, pricedEnough, shoppingText } from '../../prep/shopping';
-import { clearBought, markBought, openPlans, planEnd, shownPlan } from '../../prep/store';
+import { clearBought, markBought, openPlans, planEnd, planName, shownPlan } from '../../prep/store';
 import type { PrepPlan, PrepShop, ShoppingItem } from '../../prep/types';
 import { Loading } from '../diet/Onboarding';
 import { shoppingHref } from './links';
@@ -102,6 +102,7 @@ function ShoppingList({ plan }: { plan: PrepPlan & { id: number } }) {
   return (
     <>
       <div className="grp fd-prep-head">
+        <div className="today-tag light">{planName(plan)}</div>
         <h2 className="today-name">Zakupy na {rangeLabel(plan.settings.start, planEnd(plan))}</h2>
         <p className="tight" aria-live="polite">
           Kupione {formatNumber(done, 0)} z {formatNumber(total, 0)}
