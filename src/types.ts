@@ -237,8 +237,8 @@ export type Cardio = CardioInput & {
   day: string;
   /** Chwila zapisu, ISO — do kolejności na liście. */
   at: string;
-  /** Wpis wyprowadzony z danych zegarka — nie leży w zapisie i nie da się go usunąć. */
-  src?: 'watch';
+  /** Wpis wyprowadzony z danych zegarka albo telefonu — nie leży w zapisie i nie da się go usunąć. */
+  src?: 'watch' | 'phone';
 };
 
 /** Masa ciała z jednego dnia. Kalorie liczą się z wagi, która obowiązywała w dniu ruchu. */
@@ -295,6 +295,41 @@ export interface WatchData {
   days: WatchDay[];
   acts: WatchActivity[];
   health: WatchHealth[];
+}
+
+/**
+ * Dzień z Apple Zdrowie albo Health Connect, przysłany przez aplikację GYM TRACKER Zdrowie.
+ * `null` — telefon tego nie wie albo nie dostał zgody na ten rodzaj danych.
+ */
+export interface PhoneDay {
+  /** `yyyy-mm-dd` według zegara telefonu. */
+  day: string;
+  steps: number | null;
+  /** Droga pieszo w metrach. */
+  m: number | null;
+  floors: number | null;
+  /** Minuty „Ćwiczenia” z Apple Zdrowie. Health Connect takiej liczby nie ma. */
+  active: number | null;
+  /** Tętno spoczynkowe dnia. */
+  rhr: number | null;
+  hrMin: number | null;
+  hrAvg: number | null;
+  hrMax: number | null;
+  /** Minuty snu w nocy, która skończyła się tego dnia — bez przebudzeń. */
+  sleep: number | null;
+  /** Ostatnie ważenie dnia, kg z jedną cyfrą po przecinku. */
+  kg: number | null;
+}
+
+export interface PhoneData {
+  /** Czas wysłania ostatniej przyjętej paczki, s od 1970. Starsza paczka nic nie zmienia. */
+  t: number;
+  /** Kiedy ta przeglądarka ją odebrała, ISO. */
+  got: string;
+  os: 'ios' | 'android';
+  days: PhoneDay[];
+  /** Tylko przejazdy rowerem z drogą — inne treningi telefon zostawia u siebie. */
+  acts: WatchActivity[];
 }
 
 /**
@@ -586,6 +621,8 @@ export interface AppState {
   body: BodyWeight[];
   /** Dane z zegarka Garmin: liczby, nie wpisy — wpisy ruchu wyprowadza z nich `cardioOf`. */
   watch?: WatchData;
+  /** Dane z telefonu (Apple Zdrowie, Health Connect): liczby, nie wpisy — jak `watch`. */
+  phone?: PhoneData;
   plan: ActivePlan | null;
   notice: Notice | null;
   /** Dziennik zdarzeń, których nie da się odtworzyć z kalendarza. */
