@@ -143,3 +143,23 @@ model, the server and every downstream rule already exist and are tested.
 - HealthKit cannot be read while the iPhone is locked; a background wake then waits for the next one.
 - HRV, SpO₂, blood pressure and energy burned are not imported: different devices report them
   differently (HRV as SDNN on iOS, RMSSD on Android) and the app computes its own calories.
+
+## Decisions made during implementation
+
+| Topic | Decision | Why |
+| --- | --- | --- |
+| Restoring `watch`/`phone` from a save or import | The payload time is bounded by now + 1 day and workout starts by that time, for the watch too | A hand-edited file with a time far in the future would block every later payload (older ones change nothing), and a start outside the calendar made `toISOString` throw on every screen with movement (found in review; the watch had the same gap) |
+| Local phone day vs UTC `today` | „Z telefonu" and the weight offer accept the phone's day up to one day after the UTC `today` | After Polish midnight the phone is already a day ahead; the morning weigh-in would otherwise be hidden until 01:00–02:00 |
+| Export | The numbers that already arrived (`watch`, `phone`) stay in the export, as before for the watch; the keys never do | They are part of the person's history, like steps typed by hand; the key is what opens new data |
+| Weight offer after deleting the weighing it created | The offer comes back | The phone still has a newer weighing; dismissing it would need more state for little gain |
+| Android: ride distance | Taken from the app that recorded the ride first; from all sources only if that is zero. Two copies of one ride (starts within 10 min) → the longer one is sent | Otherwise a higher-priority phone pedometer could report a few hundred metres of „walking" instead of the ride |
+| Android: clipboard | Cleared after a valid key is pasted | The key should not linger for other apps |
+| Android: throttle and retries | 15 minutes from the last *successful* send; a failure retries on the next open; the hourly job cancels itself when background permission is revoked | Failures should not wait a quarter of an hour; no work without permission |
+| Android: release build | Not shrunk (no R8), ~11 MB | Health Connect keep rules could not be verified without a device |
+| iOS: language mode | Swift 5 with complete concurrency checking; code also compiles clean in Swift 6 | A future SDK annotation change gives a warning, not a broken build |
+| iOS: sleep | Union of asleep intervals minus union of awake intervals; a night belongs to the local day it ends; same-day naps add to it | iPhone and Apple Watch both write the same night |
+| iOS: cycling distance | `statistics(for: .distanceCycling)`, falling back to `totalDistance` | Some apps still write workouts the old way |
+| iOS: read errors | A failed query for one type leaves that field empty; only a locked phone (`errorDatabaseInaccessible`) stops the send; nothing at all → nothing sent, „Zdrowie nie oddało żadnych danych — sprawdź dostęp" | HealthKit never says whether read access was denied |
+| iOS: day keys | Always Gregorian `yyyy-mm-dd`, whatever calendar the phone uses | The PWA expects Gregorian dates |
+| iOS: device | iPhone only, `UIRequiredDeviceCapabilities: healthkit`, Polish system buttons (`CFBundleLocalizations: pl`) | iPad has no Health data for most people; „Wklej" should read in Polish |
+| No emulator run | Not attempted | No Android system image installed and 20 GiB free on a 96 % full disk; an image with an AVD takes ~8 GB |
