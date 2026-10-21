@@ -68,6 +68,13 @@ describe('kontrast tokenów', () => {
     expect(ratio(token('c-gold-ink'), token('surface'))).toBeGreaterThanOrEqual(3);
   });
 
+  it('pasek „dodaj do ekranu początkowego” na niebieskim tle jest czytelny', () => {
+    expect(ratio(token('ink'), token('c-blue-bg'))).toBeGreaterThanOrEqual(4.5);
+    expect(ratio(token('c-blue-ink'), token('c-blue-bg'))).toBeGreaterThanOrEqual(4.5);
+    expect(ratio('#ffffff', token('c-blue-ink'))).toBeGreaterThanOrEqual(4.5);
+    expect(ratio(token('c-blue-ink'), token('surface'))).toBeGreaterThanOrEqual(3);
+  });
+
   it('tekst drugiego planu i stany czytają się na każdym tle', () => {
     // Te trzy tusze wygaszają treść: podpisy, „zrobione” i ostrzeżenia. Wygaszony
     // nie znaczy nieczytelny — 4,5:1 obowiązuje je tak samo jak zwykły tekst.

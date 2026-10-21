@@ -28,7 +28,7 @@ npm run build      # typecheck + produkcyjny build do dist/ z service workerem (
 npm run preview    # podgląd builda — tu działa też praca offline
 npm run typecheck  # tsc: aplikacja, testy, konfiguracja Vite i skrypty, service worker, filmy demo
 npm run lint       # oxlint
-npm test           # 1773 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, plan z zakupami, serwer… (vitest)
+npm test           # 1780 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, plan z zakupami, serwer… (vitest)
 ```
 
 Baza produktów i przepisy:
@@ -1244,6 +1244,8 @@ src/
     Support.test.ts         4 testy chowania paska, długości i głosu jego tekstów
     Support.links.test.tsx  2 testy kawy według kraju w pasku i banerze
     TopBar.tsx              przyklejony pasek aplikacji: tytuł, wstecz, ustawienia, zegar sesji, pasek wsparcia
+    Install.tsx             iPhone w Safari: niebieski pasek „dodaj do ekranu początkowego” i instrukcja w oknie
+    Install.test.tsx        4 testy paska w miejscu paska wsparcia i kroków instrukcji
     Gorilla.tsx             obsada: Gustaw, Gosia i Trener Siwy, siedemnaście min
     cast.test.ts            18 testów obsady, pasm, blankietu, miny postaci i rady dnia
     Achievements.tsx        zakładka osiągnięć: dorobek w liczbach i odznaki z progami
@@ -1298,6 +1300,8 @@ src/
   contact.ts                kontakt z autorem: Instagram, Discord (Polska), kawa według kraju, „Polska” z języka i strefy czasowej
   contact.test.ts           7 testów kraju, kawy, adresów i kolejności odnośników
   push.test.ts              5 testów stanu przypomnień na telefonie i klucza serwera
+  install.ts                czy i skąd podpowiadać dodanie do ekranu: Safari, inna przeglądarka, przeglądarka w Instagramie
+  install.test.ts           2 testy miejsca: iPhone w karcie, w aplikacji z ikony, Android
   watchseal.ts              koperta zegarka: klucz, klucze pochodne, AES-256-CBC i HMAC-SHA256
   watchseal.test.ts         5 testów: wektor wspólny z zegarkiem, podróbki, czytanie klucza
   garmin.ts                 zegarek w przeglądarce: klucz w pamięci strony, odbiór paczki, odłączenie
@@ -1307,7 +1311,7 @@ src/
   sw.ts                     service worker (Workbox, injectManifest): powłoka offline, baza produktów, zdjęcia, kafelki mapy, Web Push
   csp.test.ts               5 testów polityki bezpieczeństwa: każdy obcy adres z kodu przepuszczony, serwer aplikacji, miejsce znacznika
   styles.css                arkusz stylów
-  styles.contrast.test.ts   8 testów kontrastu tokenów, liczonych wprost z arkusza
+  styles.contrast.test.ts   9 testów kontrastu tokenów, liczonych wprost z arkusza
   vite-env.d.ts             typy modułu `virtual:food-data`
   test/setup.ts             przygotowanie testów: IndexedDB w pamięci, jest-dom i sprzątanie pod jsdom
   App.tsx                   spina stan i widoki
@@ -2003,6 +2007,16 @@ GYM TRACKER instaluje się na ekranie głównym telefonu i działa bez sieci od 
   aplikacji (`VITE_API_URL`), ramki z YouTube'a. Test przegląda kod i pilnuje, żeby każdy adres
   `https://`, z którym aplikacja rozmawia, był w polityce.
 - **Ikony** w `public/icons/`: zwykła 192 i 512 px, maskowalna 512 px, 180 px dla iOS i wektorowa.
+- **iPhone instaluje ręcznie.** Android sam proponuje instalację, iOS nie zrobi tego nigdy — nie ma
+  ani okna, ani zdarzenia dla strony. Dlatego na iPhonie i iPadzie poza aplikacją z ikony
+  (`src/install.ts`) pod paskiem aplikacji stoi niebieski pasek „Dodaj do ekranu początkowego”,
+  w miejscu paska wsparcia i na tych samych zasadach: nie w trakcie treningu, nie pod wprowadzeniem.
+  Otwiera instrukcję w trzech krokach — inny pierwszy krok w Safari, w innej przeglądarce
+  i w przeglądarce wbudowanej w Instagram czy Facebooka, skąd najpierw trzeba przejść do Safari.
+  Powód jest ważniejszy niż wygoda: Safari kasuje dane strony nieotwieranej przez tydzień, a tu
+  w przeglądarce leży cała historia; aplikacja z ikony tego limitu nie ma. Ma za to własne miejsce
+  na dane, więc instrukcja mówi, jak przenieść zapisy kopią. × chowa pasek na stałe, instrukcja
+  zostaje w Ustawieniach.
   **iOS**: `apple-touch-icon`, tryb pełnoekranowy, tytuł pod ikoną; pasek u góry i dolna nawigacja
   mają marginesy na wycięcie ekranu (`safe-area-inset`).
 - **Tryb deweloperski bez service workera** — trzymałby stare pliki i każda zmiana wymagałaby

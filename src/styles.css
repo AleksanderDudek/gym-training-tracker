@@ -26,7 +26,7 @@
      * wersje „ink” trzymają się powyżej 4,5:1 na wszystkich trzech tłach aplikacji.
      */
     --c-orange:#d97757; --c-orange-ink:#94452c; --c-orange-bg:#f7e8e0;
-    --c-blue:#6a9bcc;   --c-blue-ink:#385e84;
+    --c-blue:#6a9bcc;   --c-blue-ink:#385e84; --c-blue-bg:#e8eff6;
     --c-green:#788c5d;  --c-green-ink:#54633f;
     --c-dark:#141413;   --c-light:#faf9f5;
     --c-mid:#b0aea5;    --c-sand:#e8e6dc;
@@ -137,6 +137,22 @@
     .cta-short{display:inline}
   }
   @media (max-width:359px){.strip-face{display:none}}
+  /*
+   * Pasek „dodaj do ekranu początkowego” (iPhone w Safari): ten sam kształt co pasek wsparcia,
+   * ale niebieski — to informacja o danych, nie prośba. Cały jest przyciskiem otwierającym
+   * instrukcję; w miejscu twarzy trenera stoi znak „Udostępnij”, którego szuka się w Safari.
+   */
+  .strip.install{background:var(--c-blue-bg);border-color:var(--c-blue-ink);box-shadow:inset 5px 0 0 var(--c-blue)}
+  .strip.install .strip-link{border:0;background:none;font:inherit;text-align:left;cursor:pointer}
+  .strip.install .strip-face{color:var(--c-blue-ink);margin:0}
+  .strip.install .strip-cta{background:var(--c-blue-ink)}
+  .strip.install .strip-cta::after{content:none}
+  @media (hover:hover){.strip.install .strip-link:hover .strip-cta{background:var(--ink)}}
+  .strip.install .strip-close{color:var(--c-blue-ink)}
+  .strip.install .strip-close:active{background:rgba(56,94,132,.1)}
+  .install-steps ol{margin:0 0 12px;padding-left:22px;display:grid;gap:8px}
+  .install-steps p{margin:0 0 10px}
+  .install-share{display:inline-flex;vertical-align:-4px;margin-right:4px;color:var(--c-blue-ink)}
 
   /* Treść pod paskiem aplikacji: nowy ekran wjeżdża krótko od dołu, jak w natywnych aplikacjach. */
   .page{padding-top:14px;max-width:640px;margin:0 auto}
