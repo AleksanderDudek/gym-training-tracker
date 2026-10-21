@@ -1,0 +1,10 @@
+# Tworzy `xcodegen generate` z project.yml — źródłem prawdy jest project.yml.
+GymTrackerZdrowie.xcodeproj/
+GymTrackerZdrowie/Info.plist
+GymTrackerZdrowie/GymTrackerZdrowie.entitlements
+
+# Wyniki buildu Xcode
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
