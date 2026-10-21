@@ -1,22 +1,30 @@
 import Dexie from 'dexie';
 import { beforeEach, describe, expect, test } from 'vitest';
 import { DietDb } from '../diet/db';
+import { addDays } from '../diet/model';
 import { DIET_PROFILES } from '../diet/profiles';
 import { clearAll, exportAll, restoreAll } from '../diet/store';
 import { PREP_DICT, prepIndex, prepProfile } from '../test/prep';
 import { planDates } from './blocks';
 import { generatePlan } from './generate';
+import { moveRange, shiftPlan } from './dates';
 import {
   KEEP_PLANS,
   clearBought,
   deletePrepPlan,
+  hiddenDays,
   latestPlan,
   markBought,
+  movePlan,
+  nextPlanAfter,
   openPlans,
   planCovering,
   planEnd,
+  planName,
+  renamePlan,
   replacePrepPlan,
   savePrepPlan,
+  setInDiary,
   shownPlan,
 } from './store';
 import { planTargets } from './targets';
@@ -71,10 +79,76 @@ describe('which plan a day follows', () => {
   test('the plan a screen shows: the one asked for, else the one running today, else the first ahead', () => {
     expect(shownPlan([week, next], '2026-10-21', null)).toBe(week);
     expect(shownPlan([week, next], '2026-10-21', 2)).toBe(next);
-    // An id that is not an open plan falls back to today's.
+    // An id that is not on the device falls back to today's.
     expect(shownPlan([week, next], '2026-10-21', 99)).toBe(week);
     expect(shownPlan([next], '2026-10-21', null)).toBe(next);
     expect(shownPlan([week], '2026-11-30', null)).toBeNull();
+    // An ended plan opens when asked for by its id (from „Moje plany”).
+    expect(shownPlan([week], '2026-11-30', 1)).toBe(week);
+  });
+
+  test('the plan set last wins where plans overlap: made, moved or „Ustaw w dzienniku”', () => {
+    // `redo` was made later and wins the 23rd…; setting `week` again takes those days back.
+    const chosen = { ...week, setAt: '2026-10-23T07:00:00.000Z' };
+    expect(planCovering([chosen, redo], '2026-10-24')).toBe(chosen);
+    expect(hiddenDays([week, redo], week)).toEqual(['2026-10-23', '2026-10-24', '2026-10-25', '2026-10-26']);
+    expect(hiddenDays([chosen, redo], chosen)).toEqual([]);
+    // `redo` runs a day longer: the 27th is still its own.
+    expect(hiddenDays([chosen, redo], redo)).toEqual(planDates('2026-10-23', 4));
+  });
+
+  test('the next plan after a day without one', () => {
+    expect(nextPlanAfter([week, next], '2026-10-21')).toBe(next);
+    expect(nextPlanAfter([next], '2026-10-19')).toBe(next);
+    expect(nextPlanAfter([week], '2026-10-21')).toBeNull();
+  });
+});
+
+describe('a plan’s name and dates', () => {
+  test('the name: the user’s, else the style and the shop', () => {
+    const plan = makePlan();
+    expect(planName(plan)).toBe(`${DIET_PROFILES.redukcja.label} · ${plan.shops[0]!.name}`);
+    expect(planName({ ...plan, name: '  Keto do pracy ' })).toBe('Keto do pracy');
+    expect(planName({ ...plan, name: '   ' })).toBe(planName(plan));
+  });
+
+  test('moving a plan moves every date in it by the same days; the plan stays valid', () => {
+    const plan = makePlan('2026-10-20', 7);
+    const moved = shiftPlan(plan, '2026-11-03');
+    expect(moved.settings.start).toBe('2026-11-03');
+    expect(moved.dayTargets.map((d) => d.date)).toEqual(planDates('2026-11-03', 7));
+    expect(moved.meals.map((m) => m.date)).toEqual(plan.meals.map((m) => addDays(m.date, 14)));
+    expect(moved.batches.map((b) => b.date)).toEqual(['2026-11-03', '2026-11-07']);
+    expect(moved.batches.flatMap((b) => b.boxes.map((x) => x.date)).every((d) => d >= '2026-11-03' && d <= '2026-11-09')).toBe(true);
+    for (const item of moved.shopping) for (const f of item.freeze) expect(f.date >= '2026-11-05').toBe(true);
+    // Recipes, portions and the list are the same plan.
+    expect(moved.choices).toEqual(plan.choices);
+    expect(moved.shopping.map((i) => [i.key, i.grams])).toEqual(plan.shopping.map((i) => [i.key, i.grams]));
+    expect(cleanPrepPlan(JSON.parse(JSON.stringify(moved)))).toEqual(moved);
+    expect(shiftPlan(plan, plan.settings.start)).toBe(plan);
+    expect(moveRange('2026-10-21')).toEqual({ min: '2026-10-08', max: '2027-01-19' });
+  });
+
+  test('renamed, moved (ticks kept or cleared) and set in the diary on the device', async () => {
+    const id = await savePrepPlan({ ...makePlan(), bought: ['skyr'] }, db);
+    await renamePlan(id, '  Tydzień   na masę ', db);
+    expect((await db.prep.get(id))!.name).toBe('Tydzień na masę');
+    await renamePlan(id, 'x'.repeat(80), db);
+    expect((await db.prep.get(id))!.name).toHaveLength(60);
+    await renamePlan(id, '  ', db);
+    expect((await db.prep.get(id))!).not.toHaveProperty('name');
+
+    await movePlan(id, '2026-10-22', false, db, '2026-10-21T10:00:00.000Z');
+    let stored = (await db.prep.get(id))!;
+    expect(stored).toMatchObject({ id, bought: ['skyr'], setAt: '2026-10-21T10:00:00.000Z' });
+    expect(stored.settings.start).toBe('2026-10-22');
+    await movePlan(id, '2026-12-01', true, db, '2026-10-21T11:00:00.000Z');
+    stored = (await db.prep.get(id))!;
+    expect(stored.bought).toEqual([]);
+    expect(stored.dayTargets[0]!.date).toBe('2026-12-01');
+
+    await setInDiary(id, db, '2026-10-21T12:00:00.000Z');
+    expect((await db.prep.get(id))!.setAt).toBe('2026-10-21T12:00:00.000Z');
   });
 });
 
@@ -96,13 +170,15 @@ describe('plans on the device', () => {
     expect(await db.prep.count()).toBe(0);
   });
 
-  test(`the newest ${KEEP_PLANS} are kept`, async () => {
+  test(`the newest ${KEEP_PLANS} unnamed are kept; a named plan stays until deleted`, async () => {
     const plan = makePlan();
+    await savePrepPlan({ ...plan, name: 'Klasyk', createdAt: '2026-09-01T08:00:00.000Z' }, db);
     for (let i = 0; i < KEEP_PLANS + 2; i++)
       await savePrepPlan({ ...plan, createdAt: `2026-10-${String(i + 1).padStart(2, '0')}T08:00:00.000Z` }, db);
     const kept = await db.prep.toArray();
-    expect(kept).toHaveLength(KEEP_PLANS);
-    expect(kept.map((p) => p.createdAt).sort()[0]).toBe('2026-10-03T08:00:00.000Z');
+    expect(kept).toHaveLength(KEEP_PLANS + 1);
+    expect(kept.filter((p) => !p.name).map((p) => p.createdAt).sort()[0]).toBe('2026-10-03T08:00:00.000Z');
+    expect(kept.find((p) => p.name === 'Klasyk')).toBeDefined();
   });
 
   test('a version-3 database opens with its favourites and an empty plan table', async () => {

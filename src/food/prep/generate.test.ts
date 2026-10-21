@@ -6,7 +6,7 @@ import { INGREDIENTS } from '../recipes/ingredients';
 import { ONLINE_ONLY, PREP_DICT, prepIndex, prepProfile } from '../test/prep';
 import { planDates } from './blocks';
 import { planRecipes } from './candidates';
-import { generatePlan, rerollPlan, swapRecipe, type GenerateInput } from './generate';
+import { generatePlan, noSwapMessage, rerollPlan, swapChoices, swapRecipe, type GenerateInput } from './generate';
 import { fitsRole } from './select';
 import { planTargets } from './targets';
 import type { Cooking, Exclusion, PrepPlan, PrepSettings } from './types';
@@ -301,6 +301,65 @@ describe('the same plan, another plan, one recipe swapped', () => {
     const out = p.choices.lunchBox![0]!;
     const result = swapRecipe(p, 'lunchBox', out, { index, dict: PREP_DICT }, '2026-10-20');
     // Keto has one box dish that fits fully: nothing else may take its place.
-    expect(result).toEqual({ ok: false, missing: [], message: 'Nie ma innego przepisu na obiad w tym koszyku.' });
+    expect(result).toEqual({ ok: false, missing: [], message: noSwapMessage(p, 'lunchBox') });
+    expect(noSwapMessage(p, 'lunchBox')).toMatch(/^Nie ma innego przepisu na obiad w tym koszyku\. Więcej da inny sklep, sklep internetowy/);
+    expect(swapChoices(p, 'lunchBox', out, { index, dict: PREP_DICT }, '2026-10-20')).toEqual([]);
+  });
+});
+
+describe('swapping from a list', () => {
+  const input = { index, dict: PREP_DICT };
+
+  test('the list: every recipe that can play the role and is not in the plan, best first — the automatic swap takes the first', () => {
+    const p = plan();
+    const out = p.choices.breakfast![0]!;
+    const options = swapChoices(p, 'breakfast', out, input, '2026-10-20');
+    expect(options.length).toBeGreaterThan(1);
+    const inPlan = new Set(Object.values(p.choices).flat());
+    for (const o of options) {
+      expect(fitsRole(o.recipe, 'breakfast')).toBe(true);
+      expect(inPlan.has(o.recipe.recipe.id)).toBe(false);
+    }
+    const scores = options.map((o) => o.score);
+    expect(scores).toEqual([...scores].sort((a, b) => b - a));
+    const auto = swapRecipe(p, 'breakfast', out, input, '2026-10-20');
+    if (!auto.ok) throw new Error(auto.message);
+    expect(auto.plan.choices.breakfast![0]).toBe(options[0]!.recipe.recipe.id);
+  });
+
+  test('a chosen recipe takes the place; the one swapped out stays listed, marked, and can be chosen back', () => {
+    const p = plan();
+    const out = p.choices.breakfast![0]!;
+    const options = swapChoices(p, 'breakfast', out, input, '2026-10-20');
+    const pick = options.at(-1)!.recipe.recipe.id;
+    const swapped = swapRecipe(p, 'breakfast', out, input, '2026-10-20', pick);
+    if (!swapped.ok) throw new Error(swapped.message);
+    expect(swapped.plan.choices.breakfast![0]).toBe(pick);
+    expect(swapped.plan.meals.some((m) => m.recipeId === pick)).toBe(true);
+    expect(swapped.plan.settings.avoid).toEqual([out]);
+    // Back again: the old breakfast is on the list, marked as swapped out, and leaves the avoid list when chosen.
+    const back = swapChoices(swapped.plan, 'breakfast', pick, input, '2026-10-20').find((o) => o.recipe.recipe.id === out);
+    expect(back?.avoided).toBe(true);
+    const again = swapRecipe(swapped.plan, 'breakfast', pick, input, '2026-10-20', out);
+    if (!again.ok) throw new Error(again.message);
+    expect(again.plan.choices.breakfast![0]).toBe(out);
+    expect(again.plan.settings.avoid).toEqual([pick]);
+  });
+
+  test('a recipe that cannot play the role (or is in the plan already) is refused', () => {
+    const p = plan();
+    const out = p.choices.breakfast![0]!;
+    const result = swapRecipe(p, 'breakfast', out, input, '2026-10-20', p.choices.lunchBox![0]!);
+    expect(result).toEqual({ ok: false, missing: [], message: 'Ten przepis nie pasuje już do planu — wybierz inny.' });
+  });
+
+  test('the name and the moment the plan was set survive a swap and another plan', () => {
+    const p = { ...plan(), id: 4, name: 'Tydzień na masę', setAt: '2026-10-21T09:00:00.000Z' };
+    const swapped = swapRecipe(p, 'breakfast', p.choices.breakfast![0]!, input, '2026-10-20');
+    const other = rerollPlan(p, input, 7, '2026-10-20');
+    for (const r of [swapped, other]) {
+      if (!r.ok) throw new Error(r.message);
+      expect(r.plan).toMatchObject({ id: 4, name: 'Tydzień na masę', setAt: '2026-10-21T09:00:00.000Z' });
+    }
   });
 });
