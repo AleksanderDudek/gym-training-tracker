@@ -28,6 +28,7 @@ const SECTION_PAGE: Record<FoodSection, LazyPage> = {
 
 const DIET_PAGE: Record<DietPage, LazyPage> = {
   plan: lazy(() => import('./components/diet/DietPlanPage')),
+  plans: lazy(() => import('./components/prep/PlansPage')),
   progress: lazy(() => import('./components/diet/DietProgressPage')),
   profile: lazy(() => import('./components/diet/DietProfilePage')),
   shopping: lazy(() => import('./components/prep/ShoppingPage')),
