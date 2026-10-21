@@ -386,6 +386,9 @@ function remake(
     plan: {
       ...result.plan,
       ...(plan.id !== undefined && { id: plan.id }),
+      // The plan stays the user's: its name and when it was set to be followed.
+      ...(plan.name !== undefined && { name: plan.name }),
+      ...(plan.setAt !== undefined && { setAt: plan.setAt }),
       bought: plan.bought.filter((k) => after.has(k) && after.get(k)! <= (before.get(k) ?? 0)),
     },
   };

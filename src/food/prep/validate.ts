@@ -5,7 +5,7 @@ import type { DietProfileId } from '../diet/types';
 import type { Macros } from '../recipes/macros';
 import { planDates } from './blocks';
 import type { CheckIn, CheckInStatus } from './checkin';
-import { MAX_DAYS, MIN_DAYS } from './types';
+import { MAX_DAYS, MIN_DAYS, cleanName } from './types';
 import type {
   Aisle,
   BoxRole,
@@ -240,9 +240,12 @@ export function cleanPrepPlan(raw: unknown): PrepPlan | null {
   if (meals.some((m) => (m.box !== null && m.box >= batches.length) || m.slot >= slots.length)) return null;
   const dates = planDates(s.start, s.days);
   if (dayTargets.length !== dates.length || dayTargets.some((d, i) => d.date !== dates[i])) return null;
+  const name = text(raw.name) ? cleanName(raw.name) : '';
   return {
     ...(finite(raw.id) && { id: raw.id }),
     createdAt: raw.createdAt,
+    ...(name && { name }),
+    ...(text(raw.setAt) && { setAt: raw.setAt }),
     settings: s,
     shops,
     goal: {

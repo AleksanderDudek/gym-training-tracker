@@ -2,10 +2,21 @@ import { db, type DietDb } from '../diet/db';
 import { addDays } from '../diet/model';
 import { saveProfile } from '../diet/store';
 import type { Profile } from '../diet/types';
-import type { PrepPlan } from './types';
+import { shiftPlan } from './dates';
+import { cleanName, type PrepPlan } from './types';
 
-/** Plans kept on the device: the newest twelve - three months of weekly shopping. */
+/**
+ * Unnamed plans kept on the device: the newest twelve - three months of weekly shopping. A plan
+ * with a name is kept until the user deletes it: naming it is saying „this one stays”.
+ */
 export const KEEP_PLANS = 12;
+
+/** The plan's name: the user's, or the style and the shop („Sportowy · Biedronka”). Dates are shown next to it. */
+export function planName(plan: Pick<PrepPlan, 'name' | 'goal' | 'shops'>): string {
+  const own = plan.name?.trim();
+  if (own) return own;
+  return [plan.goal.styleLabel, plan.shops.find((s) => !s.online)?.name].filter(Boolean).join(' · ');
+}
 
 /** The plan's last day. */
 export const planEnd = (plan: Pick<PrepPlan, 'settings'>): string => addDays(plan.settings.start, plan.settings.days - 1);
@@ -18,12 +29,26 @@ export function byNewest(a: PrepPlan, b: PrepPlan): number {
   return b.createdAt.localeCompare(a.createdAt) || (b.id ?? 0) - (a.id ?? 0);
 }
 
+/** The plan set last first (made, moved or „Ustaw w dzienniku”), then by when it was made. */
+export function bySet(a: PrepPlan, b: PrepPlan): number {
+  return (b.setAt ?? b.createdAt).localeCompare(a.setAt ?? a.createdAt) || byNewest(a, b);
+}
+
 /**
- * The plan a date follows: the newest one made whose days include it. A plan made later is the
- * newer decision; one made for next week ahead does not cut the current week short.
+ * The plan a date follows: of the plans whose days include it, the one set last. Making a plan,
+ * moving it or choosing it („Ustaw w dzienniku”) is the newest decision; a plan made for next
+ * week ahead does not cut the current week short.
  */
 export function planCovering(plans: readonly PrepPlan[], date: string): PrepPlan | null {
-  return [...plans].sort(byNewest).find((p) => coversDate(p, date)) ?? null;
+  return [...plans].sort(bySet).find((p) => coversDate(p, date)) ?? null;
+}
+
+/** The days of a plan on which the diary follows another plan. */
+export function hiddenDays(plans: readonly PrepPlan[], plan: PrepPlan): string[] {
+  const out: string[] = [];
+  for (let d = plan.settings.start; d <= planEnd(plan); d = addDays(d, 1))
+    if (planCovering(plans, d) !== plan) out.push(d);
+  return out;
 }
 
 /**
@@ -42,12 +67,19 @@ export function openPlans(plans: readonly PrepPlan[], today: string): PrepPlan[]
 }
 
 /**
- * The plan a screen shows: the one asked for (`?plan=`) while it is open, else the one running
- * today, else the first one ahead. The plan page, the list and the diary then speak of one plan.
+ * The plan a screen shows: the one asked for (`?plan=`, any plan on the device, ended ones too -
+ * they are opened from „Moje plany”), else the one running today, else the first one ahead. The
+ * plan page, the list and the diary then speak of one plan. Null: nothing running or ahead - the
+ * page offers the next plan.
  */
 export function shownPlan(plans: readonly PrepPlan[], today: string, wanted: number | null): PrepPlan | null {
   const open = openPlans(plans, today);
-  return open.find((p) => p.id === wanted) ?? planCovering(open, today) ?? open[0] ?? null;
+  return plans.find((p) => p.id === wanted) ?? planCovering(open, today) ?? open[0] ?? null;
+}
+
+/** The first plan the diary follows after `date`: „Plan … zaczyna się …” on a day without one. */
+export function nextPlanAfter(plans: readonly PrepPlan[], date: string): PrepPlan | null {
+  return openPlans(plans, date).find((p) => p.settings.start > date) ?? null;
 }
 
 /** The newest plan made, ended or not: its settings start the next one. */
@@ -55,13 +87,13 @@ export function latestPlan(plans: readonly PrepPlan[]): PrepPlan | null {
   return [...plans].sort(byNewest)[0] ?? null;
 }
 
-/** Stores a new plan and forgets the oldest beyond `KEEP_PLANS`. Returns its id. */
+/** Stores a new plan and forgets the oldest unnamed ones beyond `KEEP_PLANS`. Returns its id. */
 export async function savePrepPlan(plan: PrepPlan, database: DietDb = db): Promise<number> {
   return database.transaction('rw', database.prep, async () => {
     const { id: _old, ...fresh } = plan;
     const id = await database.prep.add(fresh as PrepPlan);
-    const all = (await database.prep.toArray()).sort(byNewest);
-    const extra = all.slice(KEEP_PLANS).map((p) => p.id!);
+    const unnamed = (await database.prep.toArray()).filter((p) => !p.name).sort(byNewest);
+    const extra = unnamed.slice(KEEP_PLANS).map((p) => p.id!);
     if (extra.length) await database.prep.bulkDelete(extra);
     return id;
   });
@@ -86,6 +118,36 @@ export async function replacePrepPlan(plan: PrepPlan & { id: number }, database:
 
 export async function deletePrepPlan(id: number, database: DietDb = db): Promise<void> {
   await database.prep.delete(id);
+}
+
+/** A name of the user's; an empty one brings back the generated name. */
+export async function renamePlan(id: number, name: string, database: DietDb = db): Promise<void> {
+  const clean = cleanName(name);
+  // `undefined` in a Dexie update removes the field: the plan goes back to its generated name.
+  await database.prep.update(id, { name: clean || undefined });
+}
+
+/**
+ * The plan moved to start on `start` (`shiftPlan`) and set to be followed on its new days. Ticks
+ * stay unless `clearTicks` - a plan reused for a later week needs its shopping done again.
+ */
+export async function movePlan(
+  id: number,
+  start: string,
+  clearTicks: boolean,
+  database: DietDb = db,
+  now = new Date().toISOString(),
+): Promise<void> {
+  await database.transaction('rw', database.prep, async () => {
+    const plan = await database.prep.get(id);
+    if (!plan) return;
+    await database.prep.put({ ...shiftPlan(plan, start), setAt: now, ...(clearTicks && { bought: [] }), id });
+  });
+}
+
+/** „Ustaw w dzienniku”: the diary follows this plan on all its days, over any plan made earlier. */
+export async function setInDiary(id: number, database: DietDb = db, now = new Date().toISOString()): Promise<void> {
+  await database.prep.update(id, { setAt: now });
 }
 
 /**
