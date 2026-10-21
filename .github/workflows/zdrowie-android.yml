@@ -120,7 +120,9 @@ jobs:
           ./gradlew assembleRelease --no-daemon -Pzdrowie.version="$VERSION"
           mkdir -p dist
           if [ -f app/build/outputs/apk/release/app-release.apk ]; then
-            cp app/build/outputs/apk/release/app-release.apk "dist/gym-tracker-zdrowie-$VERSION.apk"
+            # Stała nazwa: link …/releases/latest/download/gym-tracker-zdrowie.apk w karcie aplikacji
+            # zawsze pobiera najnowszą wersję, a numer wersji stoi w tytule wydania.
+            cp app/build/outputs/apk/release/app-release.apk dist/gym-tracker-zdrowie.apk
           else
             cp app/build/outputs/apk/release/app-release-unsigned.apk "dist/gym-tracker-zdrowie-$VERSION-unsigned.apk"
           fi
@@ -131,7 +133,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           name: GYM TRACKER Zdrowie ${{ steps.version.outputs.version }} (Android)
-          files: health/android/dist/gym-tracker-zdrowie-${{ steps.version.outputs.version }}.apk
+          files: health/android/dist/gym-tracker-zdrowie.apk
           body: |
             Aplikacja towarzysząca GYM TRACKER: wysyła kroki, tętno, sen, wagę i przejazdy rowerem
             z Health Connect, zaszyfrowane kluczem z GYM TRACKER. Instalacja: pobierz APK na telefonie

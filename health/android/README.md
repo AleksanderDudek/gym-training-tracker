@@ -54,7 +54,7 @@ gh secret set ANDROID_KEY_PASSWORD
 ```
 
 Potem tag uruchamia workflow `Zdrowie Android` (`.github/workflows/zdrowie-android.yml`): testy,
-podpisany `gym-tracker-zdrowie-1.0.0.apk` i wydanie na GitHubie z tym plikiem. Wersja aplikacji
+podpisany `gym-tracker-zdrowie.apk` (zawsze ta sama nazwa, więc link `…/releases/latest/download/gym-tracker-zdrowie.apk` pobiera najnowszą wersję) i wydanie na GitHubie z tym plikiem. Wersja aplikacji
 pochodzi z tagu (`1.2.3` → versionCode `10203`).
 
 ```bash

@@ -89,7 +89,7 @@ najmniej jednej aplikacji. Zmienne repozytorium (Settings → Secrets and variab
 Variables), potem nowe wdrożenie strony:
 
 ```bash
-gh variable set HEALTH_ANDROID_URL --body "https://github.com/AleksanderDudek/gym-training-tracker/releases/latest"
+gh variable set HEALTH_ANDROID_URL --body "https://github.com/AleksanderDudek/gym-training-tracker/releases/latest/download/gym-tracker-zdrowie.apk"
 gh variable set HEALTH_IOS_URL --body "https://testflight.apple.com/join/<kod>"   # albo adres w App Store
 gh workflow run Deploy
 ```

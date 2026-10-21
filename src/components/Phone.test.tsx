@@ -61,7 +61,7 @@ describe('karta „Zdrowie z telefonu”', () => {
     expect(key).toMatch(/^([0-9a-f]{8} ){7}[0-9a-f]{8}$/);
     expect(localStorage.getItem('gt-phone-key')).toBe(key.replace(/ /g, ''));
     const steps = screen.getByRole('list');
-    expect(within(steps).getByRole('link', { name: 'tej strony' })).toHaveAttribute('href', 'https://example.org/zdrowie.apk');
+    expect(within(steps).getByRole('link', { name: 'pliku APK' })).toHaveAttribute('href', 'https://example.org/zdrowie.apk');
     expect(within(steps).queryByText(/iPhone/)).not.toBeInTheDocument();
     // Garmin najprościej przez telefon: Garmin Connect pisze do Health Connect.
     expect(within(steps).getByText(/Masz zegarek Garmin\? W aplikacji Garmin Connect/)).toHaveTextContent(
@@ -80,7 +80,7 @@ describe('karta „Zdrowie z telefonu”', () => {
     await user.click(screen.getByRole('button', { name: 'Połącz telefon' }));
     expect(screen.getByText(/iPhone: aplikacji jeszcze nie ma/)).toBeInTheDocument();
     expect(screen.getByText(/Masz zegarek Garmin\? W aplikacji/)).toHaveTextContent('Apple Zdrowie albo Health Connect');
-    expect(screen.getByRole('link', { name: 'tej strony' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'pliku APK' })).toBeInTheDocument();
   });
 
   it('zły klucz z innego urządzenia nie przechodzi', async () => {

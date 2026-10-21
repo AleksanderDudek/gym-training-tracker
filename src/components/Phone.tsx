@@ -26,7 +26,7 @@ const SAID: Partial<Record<PhonePull['kind'], string>> = {
 
 const STORE = {
   ios: { url: HEALTH_IOS_URL, phone: 'iPhone', data: 'Zdrowie', where: 'App Store', garmin: 'Apple Zdrowie' },
-  android: { url: HEALTH_ANDROID_URL, phone: 'Android', data: 'Health Connect', where: 'tej strony', garmin: 'Health Connect' },
+  android: { url: HEALTH_ANDROID_URL, phone: 'Android', data: 'Health Connect', where: 'pliku APK', garmin: 'Health Connect' },
 } as const;
 
 /**
