@@ -46,7 +46,9 @@ Adres serwera (`api` w `resources/settings/properties.xml`) jest już wpisany.
 cd garmin
 ./build.sh test fr265     # testy w symulatorze: wektor koperty i czytanie klucza
 ./build.sh run fr265      # aplikacja w symulatorze (ustawienia: File → Edit Persistent Storage)
-./build.sh store          # bin/gymtracker.iq — wszystkie zegarki z manifestu
+./build.sh store          # bin/gymtracker.iq — publikacja w sklepie (wszystkie zegarki z manifestu)
+./build.sh beta           # bin/gymtracker-beta.iq — ta sama paczka z identyfikatorem bety
+./build.sh shots fr265    # symulator z jednorazowym kluczem — zrzuty do sklepu
 ./build.sh prg fr265      # bin/gymtracker-fr265.prg — do wgrania przez USB
 ```
 
@@ -58,8 +60,9 @@ tym samym kluczem, inaczej to będzie nowa aplikacja.
 **apps-developer.garmin.com**, a instaluje wyłącznie przez aplikację **Connect IQ Store** na
 telefonie — strona sklepu już nie instaluje.
 
-1. [apps-developer.garmin.com](https://apps-developer.garmin.com) (konto Garmin, to samo co
-   w Garmin Connect) → wgraj `bin/gymtracker.iq`, zaznacz **Beta App**. Beta widzisz tylko ty
+1. `./build.sh beta`, potem [apps-developer.garmin.com](https://apps-developer.garmin.com)
+   (konto Garmin, to samo co w Garmin Connect) → wgraj `bin/gymtracker-beta.iq`, zaznacz
+   **Beta App** (kolejna wersja: nowa wersja tej samej bety). Beta widzisz tylko ty
    i nie przechodzi recenzji. Na liście „Uploaded Apps” bety stoją na samym dole.
 2. Skopiuj identyfikator aplikacji z panelu i otwórz na telefonie
    `https://apps.garmin.com/apps/<identyfikator>` — link otworzy aplikację Connect IQ Store
@@ -78,10 +81,11 @@ telefonie — strona sklepu już nie instaluje.
    Ustawienia). Po publikacji są także w Garmin Connect.
 5. Otwórz GYM TRACKER na zegarku, START („Wyślij teraz”), a w karcie „Sprawdź teraz” — dane
    powinny przyjść.
-6. Na koniec ta sama paczka jako zwykła aplikacja: opis i uprawnienia w `store/listing.md`,
-   zrzuty z symulatora. W czasie recenzji aplikację da się pobrać do testów, w sklepie pojawia
-   się po akceptacji. Aplikacja jest bezpłatna i nie prosi o wpłaty, więc weryfikacja
-   „tradera” (DSA) jej nie dotyczy.
+6. Publikacja dla wszystkich: przewodnik po angielsku w `store/README.md` — teksty do formularza,
+   notatka dla recenzentów, obraz hero, zrzuty, lista kontrolna. Wersja publiczna ma **inny
+   identyfikator** niż beta (Garmin nie zamienia bety w aplikację publiczną): `./build.sh store`
+   bierze go z `manifest.xml`, `./build.sh beta` podmienia na identyfikator bety. Po akceptacji
+   `GARMIN_APP_URL` trzeba przestawić na adres wersji publicznej.
 
 Bez sklepu, tylko na swój zegarek: `./build.sh prg <zegarek>` i plik do `GARMIN/APPS/` przez USB.
 Ustawień takiej aplikacji nie zmienisz w Garmin Connect, więc do testów lepsza jest beta.

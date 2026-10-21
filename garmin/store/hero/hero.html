@@ -1,0 +1,70 @@
+<!doctype html>
+<!--
+  Obraz hero do Connect IQ Store: nazwa, hasło i ekran aplikacji na zegarku. 1440×720, po angielsku,
+  a z #pl w adresie po polsku. Render (z katalogu repozytorium):
+    npx playwright screenshot --viewport-size=1440,720 "file://$PWD/garmin/store/hero/hero.html" garmin/store/hero/hero-en.png
+    npx playwright screenshot --viewport-size=1440,720 "file://$PWD/garmin/store/hero/hero.html#pl" garmin/store/hero/hero-pl.png
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>GYM TRACKER hero</title>
+<style>
+  @font-face { font-family: Oswald; font-weight: 600; src: url(../../../node_modules/@fontsource/oswald/files/oswald-latin-600-normal.woff2) format("woff2"); }
+  @font-face { font-family: Oswald; font-weight: 700; src: url(../../../node_modules/@fontsource/oswald/files/oswald-latin-700-normal.woff2) format("woff2"); }
+  @font-face { font-family: Plex; font-weight: 400; unicode-range: U+0000-00FF, U+2000-206F; src: url(../../../node_modules/@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-400-normal.woff2) format("woff2"); }
+  @font-face { font-family: Plex; font-weight: 600; unicode-range: U+0000-00FF, U+2000-206F; src: url(../../../node_modules/@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-600-normal.woff2) format("woff2"); }
+  @font-face { font-family: Plex; font-weight: 400; unicode-range: U+0100-024F; src: url(../../../node_modules/@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-ext-400-normal.woff2) format("woff2"); }
+  @font-face { font-family: Plex; font-weight: 600; unicode-range: U+0100-024F; src: url(../../../node_modules/@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-ext-600-normal.woff2) format("woff2"); }
+  :root { --dark: #141413; --light: #faf9f5; --orange: #d97757; --mid: #b0aea5; --green: #788c5d; }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1440px; height: 720px; background: var(--dark); overflow: hidden; }
+  body { display: grid; grid-template-columns: 1fr 560px; align-items: center; padding: 0 96px 0 112px; font-family: Plex, sans-serif; color: var(--light); }
+  .kicker { font: 600 26px/1 Plex, sans-serif; color: var(--orange); letter-spacing: .02em; margin-bottom: 26px; }
+  h1 { font: 700 132px/0.95 Oswald, sans-serif; letter-spacing: .01em; }
+  .tag { font: 400 38px/1.3 Plex, sans-serif; color: var(--light); margin-top: 30px; max-width: 640px; }
+  .chips { display: flex; gap: 14px; margin-top: 40px; flex-wrap: wrap; }
+  .chip { font: 600 22px/1 Plex, sans-serif; color: var(--dark); background: var(--mid); padding: 12px 18px; border-radius: 999px; }
+  .chip.lock { background: var(--orange); }
+  .watch { position: relative; width: 470px; height: 470px; justify-self: center; }
+  .band { position: absolute; left: 135px; width: 200px; height: 140px; background: #2a2a28; }
+  .band.top { top: -110px; border-radius: 28px 28px 0 0; }
+  .band.bottom { bottom: -110px; border-radius: 0 0 28px 28px; }
+  .bezel { position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #4a4a46, #1e1e1c 70%); box-shadow: 0 30px 80px rgba(0,0,0,.55); }
+  .button { position: absolute; right: -14px; width: 22px; height: 64px; border-radius: 8px; background: #3a3a37; }
+  .button.b1 { top: 120px; } .button.b2 { top: 290px; }
+  .screen { position: absolute; inset: 34px; border-radius: 50%; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 30px; text-align: center; }
+  .screen .name { font: 600 40px/1 Plex, sans-serif; color: #fff; letter-spacing: .02em; }
+  .screen .state { font: 400 30px/1 Plex, sans-serif; color: #fff; }
+  .screen .hint { font: 400 26px/1 Plex, sans-serif; color: #aaa; }
+  .dot { display: inline-block; width: 14px; height: 14px; border-radius: 50%; background: var(--green); margin-right: 10px; vertical-align: 2px; }
+</style>
+</head>
+<body>
+  <div>
+    <div class="kicker" data-en="Connect IQ app for GYM TRACKER" data-pl="Aplikacja Connect IQ do GYM TRACKER"></div>
+    <h1>GYM TRACKER</h1>
+    <p class="tag" data-en="Steps, rides, heart rate, stress and Body Battery — straight into your training app." data-pl="Kroki, rower, tętno, stres i Body Battery — prosto do aplikacji treningowej."></p>
+    <div class="chips">
+      <span class="chip lock" data-en="End-to-end encrypted" data-pl="Szyfrowane od końca do końca"></span>
+      <span class="chip" data-en="No account" data-pl="Bez konta"></span>
+      <span class="chip" data-en="Free" data-pl="Bezpłatna"></span>
+    </div>
+  </div>
+  <div class="watch" aria-hidden="true">
+    <div class="band top"></div><div class="band bottom"></div>
+    <div class="bezel"></div>
+    <div class="button b1"></div><div class="button b2"></div>
+    <div class="screen">
+      <div class="name">GYM TRACKER</div>
+      <div class="state"><span class="dot"></span><span data-en="Sent 14:32" data-pl="Wysłane 14:32"></span></div>
+      <div class="hint" data-en="Send now: START" data-pl="Wyślij teraz: START"></div>
+    </div>
+  </div>
+<script>
+  const lang = location.hash === '#pl' ? 'pl' : 'en';
+  document.documentElement.lang = lang;
+  document.querySelectorAll('[data-en]').forEach((el) => { el.textContent = el.dataset[lang]; });
+</script>
+</body>
+</html>

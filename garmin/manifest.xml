@@ -4,7 +4,7 @@
      wszystkie zegarki z SDK Managera, które mają aplikacje, przebieg w tle i API 3.2 albo nowsze
      (21.10.2026: 118 modeli) — sklep pokazuje „niekompatybilne” każdemu zegarkowi spoza listy. -->
 <iq:manifest version="3" xmlns:iq="http://www.garmin.com/xml/connectiq">
-    <iq:application id="be917461ce72434087a9d8225b2948c4" type="watch-app" name="@Strings.AppName"
+    <iq:application id="23e4c6b5e09245379ec788ddc26b4c2a" type="watch-app" name="@Strings.AppName"
         entry="GymTrackerApp" launcherIcon="@Drawables.LauncherIcon" minApiLevel="3.2.0">
         <iq:products>
             <iq:product id="approachs50"/>

@@ -1,0 +1,6 @@
+<!-- Polski — Garmin Connect i Connect IQ Store pokazują go, gdy telefon jest ustawiony na polski. -->
+<strings>
+    <string id="AppName">GYM TRACKER</string>
+    <string id="KeyTitle">Klucz z aplikacji GYM TRACKER</string>
+    <string id="KeyPrompt">GYM TRACKER: Ustawienia → Zegarek Garmin → Kopiuj klucz</string>
+</strings>

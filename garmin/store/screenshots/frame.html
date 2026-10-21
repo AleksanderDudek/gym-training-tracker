@@ -1,0 +1,63 @@
+<!doctype html>
+<!--
+  Kwadratowy obraz do sklepu: podpis i zrzut ekranu w ramce telefonu. Parametry w adresie:
+  img (ścieżka względem tego pliku), lang (en/pl), shot (web-1 albo web-2 — teksty niżej).
+  Render 1000×1000 (z katalogu repozytorium), np.:
+    npx playwright screenshot --viewport-size=1000,1000 "file://$PWD/garmin/store/screenshots/frame.html?shot=web-1&lang=en" garmin/store/screenshots/web-1-en.png
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>GYM TRACKER store image</title>
+<style>
+  @font-face { font-family: Oswald; font-weight: 700; unicode-range: U+0000-00FF, U+2000-206F; src: url(../../../node_modules/@fontsource/oswald/files/oswald-latin-700-normal.woff2) format("woff2"); }
+  @font-face { font-family: Oswald; font-weight: 700; unicode-range: U+0100-024F; src: url(../../../node_modules/@fontsource/oswald/files/oswald-latin-ext-700-normal.woff2) format("woff2"); }
+  @font-face { font-family: Plex; font-weight: 400; unicode-range: U+0000-00FF, U+2000-206F; src: url(../../../node_modules/@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-400-normal.woff2) format("woff2"); }
+  @font-face { font-family: Plex; font-weight: 600; unicode-range: U+0000-00FF, U+2000-206F; src: url(../../../node_modules/@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-600-normal.woff2) format("woff2"); }
+  @font-face { font-family: Plex; font-weight: 400; unicode-range: U+0100-024F; src: url(../../../node_modules/@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-ext-400-normal.woff2) format("woff2"); }
+  @font-face { font-family: Plex; font-weight: 600; unicode-range: U+0100-024F; src: url(../../../node_modules/@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-ext-600-normal.woff2) format("woff2"); }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1000px; height: 1000px; overflow: hidden; background: #141413; }
+  body { display: grid; grid-template-columns: 470px 1fr; align-items: center; gap: 40px; padding: 0 56px 0 64px; color: #faf9f5; font-family: Plex, sans-serif; }
+  .kicker { font: 600 22px/1.2 Plex, sans-serif; color: #d97757; margin-bottom: 18px; }
+  h1 { font: 700 64px/1.02 Oswald, sans-serif; }
+  p { font: 400 26px/1.4 Plex, sans-serif; margin-top: 24px; color: #e8e6dc; }
+  .note { font-size: 18px; color: #b0aea5; margin-top: 28px; }
+  .phone { justify-self: end; width: 404px; height: 874px; border-radius: 52px; background: #2a2a28; padding: 14px; box-shadow: 0 30px 80px rgba(0,0,0,.6); }
+  .phone img { width: 376px; height: 846px; object-fit: cover; object-position: top; border-radius: 40px; display: block; }
+</style>
+</head>
+<body>
+  <div>
+    <div class="kicker" id="kicker"></div>
+    <h1 id="title"></h1>
+    <p id="sub"></p>
+    <p class="note" id="note"></p>
+  </div>
+  <div class="phone"><img id="img" alt=""></div>
+<script>
+  const TEXT = {
+    'web-1': {
+      img: 'raw/web-today.png',
+      en: ['GYM TRACKER web app', 'Your watch data, counted for you', 'Steps and rides count towards calories, activity minutes and badges. Heart rate, stress and Body Battery are shown as they are.', 'The GYM TRACKER app interface is in Polish.'],
+      pl: ['Aplikacja GYM TRACKER', 'Dane z zegarka liczą się same', 'Kroki i przejazdy liczą się do kalorii, minut ruchu i odznak. Tętno, stres i Body Battery widać bez oceny.', ''],
+    },
+    'web-2': {
+      img: 'raw/web-garmin.png',
+      en: ['Settings → Garmin watch', 'Connect once with a key', 'The watch encrypts your data before it leaves. The server keeps only a package it cannot read — no account, no ads.', 'The GYM TRACKER app interface is in Polish.'],
+      pl: ['Ustawienia → Zegarek Garmin', 'Połącz raz, jednym kluczem', 'Zegarek szyfruje dane, zanim wyjdą. Serwer trzyma tylko paczkę, której nie umie odczytać — bez konta i reklam.', ''],
+    },
+  };
+  const q = new URLSearchParams(location.search);
+  const shot = TEXT[q.get('shot')] ?? TEXT['web-1'];
+  const lang = q.get('lang') === 'pl' ? 'pl' : 'en';
+  document.documentElement.lang = lang;
+  const [kicker, title, sub, note] = shot[lang];
+  document.getElementById('kicker').textContent = kicker;
+  document.getElementById('title').textContent = title;
+  document.getElementById('sub').textContent = sub;
+  document.getElementById('note').textContent = note;
+  document.getElementById('img').src = q.get('img') ?? shot.img;
+</script>
+</body>
+</html>

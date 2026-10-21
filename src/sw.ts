@@ -17,7 +17,8 @@ declare const self: ServiceWorkerGlobalScope;
  * - Powłoka (skrypty, style, strona, ikony, manifest, kroje pisma) — zapisana w całości przy
  *   instalacji, z listy, którą wpisuje build (`self.__WB_MANIFEST`, vite-plugin-pwa). Offline
  *   działa więc już po pierwszej wizycie, a kopie poprzedniej wersji znikają po aktywacji nowej.
- * - Strona (nawigacja) — zawsze `index.html` z tej listy. Nowa wersja nie wchodzi sama: czeka, aż
+ * - Strona (nawigacja) — zawsze `index.html` z tej listy, poza polityką prywatności
+ *   (`privacy.html`), która ma się otwierać jako ona sama. Nowa wersja nie wchodzi sama: czeka, aż
  *   ktoś stuknie „Odśwież” na pasku (`UpdateBar`) albo na ekranie awarii (`RootBoundary`), a do tego
  *   czasu stare pliki zostają ważne.
  * - Baza produktów — najpierw kopia. Nazwa pliku ma hasz, więc nowa baza to nowy adres; trzymamy
@@ -37,7 +38,7 @@ cleanupOutdatedCaches();
 // wcześniej. Przy aktualizacji niczego to nie przyspiesza: nowa wersja i tak czeka na zgodę.
 clientsClaim();
 
-registerRoute(new NavigationRoute(createHandlerBoundToURL('index.html')));
+registerRoute(new NavigationRoute(createHandlerBoundToURL('index.html'), { denylist: [/\/privacy\.html$/] }));
 
 registerRoute(
   ({ url, sameOrigin }) =>
