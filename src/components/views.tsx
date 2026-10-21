@@ -18,8 +18,10 @@ import { altsFor } from '../engine/structure';
 import { HealthCard } from './Health';
 import { ON_OFF, RemindersCard } from './Reminders';
 import { GarminCard } from './Garmin';
+import { PhoneCard } from './Phone';
 import { PromoCard } from './Promo';
 import type { PullResult } from '../garmin';
+import type { PhonePull } from '../phone';
 import { SupportLine } from './Support';
 import { ContactLinks } from './Contact';
 import { Segmented } from './ui';
@@ -205,6 +207,7 @@ export function SettingsView({
   onInstall,
   onReminders,
   onWatchSync,
+  onPhoneSync,
   onToast,
   onFeedback,
   onClockPref,
@@ -215,6 +218,7 @@ export function SettingsView({
   onClockPref: (on: boolean) => void;
   onReminders: (p: ReminderPrefs) => void;
   onWatchSync: () => Promise<PullResult>;
+  onPhoneSync: () => Promise<PhonePull>;
   onToast: (m: string) => void;
   onWeights: (list: number[]) => void;
   onStartWeight: (id: ExerciseId, w: number) => void;
@@ -247,6 +251,7 @@ export function SettingsView({
       )}
       <RemindersCard state={state} onPrefs={onReminders} onToast={onToast} />
       <GarminCard state={state} onSync={onWatchSync} onToast={onToast} />
+      <PhoneCard state={state} onSync={onPhoneSync} onToast={onToast} />
 
       <div className="grp">
         <h2>Czas treningu w pasku</h2>

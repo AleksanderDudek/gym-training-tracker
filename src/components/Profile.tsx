@@ -125,7 +125,7 @@ export function ProfileView({
 }: {
   state: AppState;
   onAvatar: (a: Avatar) => void;
-  onWeight: (kg: number) => void;
+  onWeight: (kg: number, day?: string) => void;
   onHeight: (cm: number | null) => void;
   onDeleteWeight: (day: string) => void;
   onToast: (m: string) => void;

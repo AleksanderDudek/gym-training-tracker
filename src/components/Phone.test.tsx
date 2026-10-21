@@ -1,0 +1,148 @@
+// @vitest-environment jsdom
+import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { freshState } from '../engine/plan';
+import { mergePhone, parsePhonePayload } from '../engine/phone';
+import { addDays, dayKey } from '../engine/schedule';
+import { BodyCard, CardioPage } from './Cardio';
+import type { AppState } from '../types';
+
+/**
+ * Zdrowie z telefonu na ekranach: karta w ustawieniach (adresy z buildu, więc moduły wczytywane
+ * na nowo po podmianie zmiennych), wpisy „z telefonu”, liczby zdrowia i propozycja ważenia.
+ */
+
+const today = dayKey(Date.now());
+
+const withPhone = (days: Record<string, unknown>[], os: 'ios' | 'android' = 'ios'): AppState => {
+  const s = freshState();
+  mergePhone(s, parsePhonePayload({ v: 1, k: 'phone', os, t: Math.floor(Date.now() / 1000) - 60, d: days, a: [] })!);
+  return s;
+};
+
+describe('karta „Zdrowie z telefonu”', () => {
+  const ua = Object.getOwnPropertyDescriptor(window.navigator, 'userAgent');
+  const asPhone = (s: string) => Object.defineProperty(window.navigator, 'userAgent', { value: s, configurable: true });
+
+  beforeEach(() => {
+    vi.resetModules();
+    localStorage.clear();
+    vi.stubEnv('VITE_API_URL', 'https://api.example');
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    if (ua) Object.defineProperty(window.navigator, 'userAgent', ua);
+    else delete (window.navigator as { userAgent?: string }).userAgent;
+  });
+
+  const card = async (state: AppState = freshState()) => {
+    const { PhoneCard } = await import('./Phone');
+    const onToast = vi.fn();
+    const onSync = vi.fn().mockResolvedValue({ kind: 'empty' });
+    render(<PhoneCard state={state} onSync={onSync} onToast={onToast} />);
+    return { onToast, onSync };
+  };
+
+  it('bez adresu żadnej aplikacji karty nie ma', async () => {
+    await card();
+    expect(screen.queryByRole('heading', { name: 'Zdrowie z telefonu' })).not.toBeInTheDocument();
+  });
+
+  it('na Androidzie: połączenie daje klucz, instrukcję dla Androida i kopiowanie', async () => {
+    vi.stubEnv('VITE_HEALTH_ANDROID_URL', 'https://example.org/zdrowie.apk');
+    vi.stubEnv('VITE_HEALTH_IOS_URL', 'https://apps.apple.com/app/id1');
+    asPhone('Mozilla/5.0 (Linux; Android 15; Pixel 9)');
+    // user-event podstawia własny schowek — z niego czytamy, co skopiowano.
+    const user = userEvent.setup();
+    const { onToast } = await card();
+    await user.click(screen.getByRole('button', { name: 'Połącz telefon' }));
+    const key = (screen.getByLabelText('Klucz do aplikacji na telefonie') as HTMLTextAreaElement).value;
+    expect(key).toMatch(/^([0-9a-f]{8} ){7}[0-9a-f]{8}$/);
+    expect(localStorage.getItem('gt-phone-key')).toBe(key.replace(/ /g, ''));
+    const steps = screen.getByRole('list');
+    expect(within(steps).getByRole('link', { name: 'tej strony' })).toHaveAttribute('href', 'https://example.org/zdrowie.apk');
+    expect(within(steps).queryByText(/iPhone/)).not.toBeInTheDocument();
+    expect(within(steps).getByText(/Health Connect/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Kopiuj klucz' }));
+    expect(await navigator.clipboard.readText()).toBe(key.replace(/ /g, ''));
+    expect(onToast).toHaveBeenCalledWith('Klucz skopiowany — wklej go w aplikacji GYM TRACKER Zdrowie.');
+  });
+
+  it('na komputerze obie instrukcje; brakująca aplikacja mówi, że jej jeszcze nie ma', async () => {
+    vi.stubEnv('VITE_HEALTH_ANDROID_URL', 'https://example.org/zdrowie.apk');
+    asPhone('Mozilla/5.0 (Windows NT 10.0; Win64; x64)');
+    const user = userEvent.setup();
+    await card();
+    await user.click(screen.getByRole('button', { name: 'Połącz telefon' }));
+    expect(screen.getByText(/iPhone: aplikacji jeszcze nie ma/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'tej strony' })).toBeInTheDocument();
+  });
+
+  it('zły klucz z innego urządzenia nie przechodzi', async () => {
+    vi.stubEnv('VITE_HEALTH_IOS_URL', 'https://apps.apple.com/app/id1');
+    const user = userEvent.setup();
+    const { onToast } = await card();
+    await user.click(screen.getByRole('button', { name: 'Mam już klucz z innego urządzenia' }));
+    await user.type(screen.getByRole('textbox'), 'abc');
+    await user.click(screen.getByRole('button', { name: 'Zapisz klucz' }));
+    expect(onToast).toHaveBeenCalledWith('Klucz to 64 znaki: cyfry i litery od a do f.');
+    expect(localStorage.getItem('gt-phone-key')).toBeNull();
+  });
+
+  it('po pierwszych danych: skąd i kiedy przyszły, klucz schowany, „Sprawdź teraz” pyta serwer', async () => {
+    vi.stubEnv('VITE_HEALTH_IOS_URL', 'https://apps.apple.com/app/id1');
+    localStorage.setItem('gt-phone-key', 'ab'.repeat(32));
+    const user = userEvent.setup();
+    const { onSync, onToast } = await card(withPhone([{ day: today, steps: 5000 }]));
+    expect(screen.getByText(/Ostatnie dane z telefonu \(Zdrowie\): dziś/)).toBeInTheDocument();
+    expect(screen.queryByLabelText('Klucz do aplikacji na telefonie')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Sprawdź teraz' }));
+    expect(onSync).toHaveBeenCalledOnce();
+    expect(onToast).toHaveBeenCalledWith(expect.stringContaining('Telefon jeszcze nic nie przysłał'));
+    await user.click(screen.getByRole('button', { name: 'Pokaż klucz' }));
+    expect(screen.getByLabelText('Klucz do aplikacji na telefonie')).toBeInTheDocument();
+  });
+});
+
+describe('ekran kroków i cardio z telefonem', () => {
+  it('kroki z telefonu bez krzyżyka i z dopiskiem; zdrowie z telefonu bez oceny', () => {
+    const s = withPhone([
+      { day: today, steps: 9120, rhr: 52, hrMin: 48, hrAvg: 71, hrMax: 142, sleep: 432, kg: 82.4 },
+      { day: addDays(today, -1), sleep: 45 },
+    ]);
+    render(<CardioPage state={s} onDelete={vi.fn()} />);
+    expect(screen.getByText('· z telefonu')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Usuń wpis/ })).not.toBeInTheDocument();
+    expect(screen.getByText('Z telefonu')).toBeInTheDocument();
+    expect(
+      screen.getByText('tętno spoczynkowe 52 · tętno 48–142, średnio 71 · sen 7 h 12 min · waga 82,4 kg'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('sen 45 min')).toBeInTheDocument();
+    expect(screen.getByText(/Liczby z Apple Zdrowie albo Health Connect/)).toBeInTheDocument();
+  });
+});
+
+describe('ważenie z telefonu', () => {
+  const body = (state: AppState) => {
+    const onWeight = vi.fn();
+    render(<BodyCard state={state} onWeight={onWeight} onHeight={vi.fn()} onDeleteWeight={vi.fn()} onToast={vi.fn()} />);
+    return onWeight;
+  };
+
+  it('nowsze ważenie z telefonu wchodzi do dziennika jednym przyciskiem, z jego dniem', async () => {
+    const day = addDays(today, -1);
+    const user = userEvent.setup();
+    const onWeight = body(withPhone([{ day, kg: 82.4 }]));
+    expect(screen.getByText(/Telefon ma nowsze ważenie: 82,4 kg/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Wpisz do dziennika' }));
+    expect(onWeight).toHaveBeenCalledWith(82.4, day);
+  });
+
+  it('bez nowszego ważenia nic nie proponuje', () => {
+    const s = withPhone([{ day: addDays(today, -2), kg: 82.4 }]);
+    s.body = [{ day: addDays(today, -1), kg: 82 }];
+    body(s);
+    expect(screen.queryByRole('button', { name: 'Wpisz do dziennika' })).not.toBeInTheDocument();
+  });
+});
