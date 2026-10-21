@@ -83,6 +83,11 @@ describe('paczka z telefonu', () => {
     expect(p.acts).toEqual([]);
   });
 
+  it('dzień późniejszy niż jutro według czasu paczki odpada', () => {
+    const p = parsePhonePayload(payload({ d: [{ day: '2046-10-19', steps: 1 }, { day: '2026-10-21', steps: 2 }, { day: '2026-10-22', steps: 3 }] }), NOW)!;
+    expect(p.days.map((d) => d.day)).toEqual(['2026-10-21']);
+  });
+
   it('nie przyjmuje paczki zegarka, obcej wersji, systemu ani czasu z przyszłości', () => {
     expect(parsePhonePayload(payload({ k: undefined }), NOW)).toBeNull();
     expect(parsePhonePayload(payload({ v: 2 }), NOW)).toBeNull();

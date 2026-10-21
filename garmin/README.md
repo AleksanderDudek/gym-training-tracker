@@ -79,24 +79,25 @@ Ustawień takiej aplikacji nie zmienisz w Garmin Connect, więc do testów lepsz
 
 ## Do sprawdzenia przy pierwszym buildzie
 
-Kod skompilował się kompilatorem z Connect IQ SDK 9.2.0 na wszystkie 11 urządzeń z manifestu
-(domyślny poziom sprawdzania typów), razem z buildem testów i paczką do sklepu (`-e -r`).
-Definicje urządzeń pochodziły jednak spoza SDK Managera, a symulatora nie dało się uruchomić —
-testy nie były puszczone. Przed publikacją:
+Stan na 21.10.2026 — Connect IQ SDK 9.2.0 z urządzeniami z SDK Managera:
 
-- [ ] **Kompilacja z urządzeniami z SDK Managera** — tymi właściwymi, nie zastępczymi.
-- [ ] **`SealTest` przechodzi.** To jedyny dowód, że zegarek pieczętuje jak przeglądarka:
-      wielkość liter hex, base64 bez łamania linii, dopełnienie PKCS#7.
-- [ ] **Przebieg w tle ma dostęp do `ActivityMonitor`, `SensorHistory` i `UserProfile`.**
-      W symulatorze: Simulation → Background Events → Temporal Event, potem log serwera.
-- [ ] **`UserActivity.startTime`.** Część oprogramowania podaje go od epoki FIT (1989), nie od 1970
-      (błąd zgłoszony Garminowi); `Collect.acts` przelicza czas sprzed 2000 roku. Sprawdź, czy
-      przejazd z dziś ma w aplikacji dzisiejszą datę.
-- [ ] **Pamięć w tle na fēnix 6** (32 kB): paczka, AES, HMAC i base64 mieszczą się z zapasem
-      według obliczeń, ale sprawdź w widoku pamięci symulatora.
-- [ ] **Polskie znaki na ekranie zegarka.** Czcionki systemowe zwykle je mają, ale nie wszędzie.
-- [ ] **Odpowiedź serwera.** Serwer odpowiada JSON-em także przy błędach (`429 {"error":…}`),
-      bo inną treść Connect IQ zgłasza jako −400. Status na zegarku: „Wysłane HH:MM”.
+- [x] **Kompilacja z urządzeniami z SDK Managera** — `./build.sh store`: 20 z 20 wariantów.
+- [x] **`SealTest` przechodzi** w symulatorze (fr265, fēnix 6): zegarek pieczętuje bajt w bajt
+      jak przeglądarka.
+- [x] **Paczka z danych symulatora otwiera się kodem strony** (`open` i `parsePayload`):
+      dni, zdrowie i koperta z testowym kluczem. Przy tym wyszły i są poprawione dwa błędy:
+  - dni z historii (`ActivityMonitor.getHistory`) miały **rok 2046**: zegarek dolicza epokę FIT
+    do początku dnia drugi raz, a sekundy roku 2046 nie mieszczą się w 32-bitowym `Number`
+    (`Collect.days` liczy to na `Long`). Strona i tak odrzuca dni późniejsze niż jutro;
+  - `getStressHistory` z okresem krótszym niż ok. 2 minuty kończył przebieg błędem „Invalid
+    Value”, którego `try/catch` nie łapie — np. „Wyślij teraz” tuż po wysyłce w tle. Okres
+    zapytania ma teraz co najmniej 10 minut.
+- [ ] **Przebieg w tle na zegarku** (`ActivityMonitor`, `SensorHistory`, `UserProfile` w tle,
+      pamięć 32 kB na fēnix 6). Symulator odpala go z menu Simulation → Background Events →
+      Temporal Event — z terminala się nie da, więc to sprawdzi wersja beta na zegarku.
+- [ ] **`UserActivity.startTime`** z prawdziwą aktywnością (symulator nie ma aktywności):
+      przejazd z dziś ma mieć w aplikacji dzisiejszą datę.
+- [ ] **Polskie znaki na ekranie zegarka** i **odpowiedź serwera** („Wysłane HH:MM”) — na zegarku.
 
 ## Pliki
 

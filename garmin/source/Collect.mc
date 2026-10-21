@@ -23,6 +23,8 @@ module Collect {
     const SEEN = "seen";
     // Pierwszy przebieg: tyle wstecz, ile zegarek zwykle pamięta.
     const FIRST = 7200;
+    // Najkrótszy okres zapytania o historię czujników (s) — patrz `health`.
+    const MIN_PERIOD = 600;
     // Próbek na przebieg — tło ma limit czasu, a 30 minut to kilkadziesiąt próbek.
     const MAX_SAMPLES = 600;
     // Dziś i siedem poprzednich dni.
@@ -52,13 +54,26 @@ module Collect {
     function days() {
         var rows = [];
         var hist = ActivityMonitor.getHistory();
+        var later = Time.now().value() + 86400;
         if (hist != null) {
             for (var i = 0; i < hist.size(); i++) {
                 var h = hist[i];
                 if (h != null && h.startOfDay != null) {
+                    // Ten sam błąd epoki co przy aktywnościach, w drugą stronę: część oprogramowania
+                    // (i symulator SDK 9.2) dolicza epokę FIT do początku dnia drugi raz, więc dzień
+                    // wypada 20 lat w przyszłości. Liczone na Long: sekundy roku 2046 nie mieszczą
+                    // się w 32-bitowym Number i `value()` wychodzi ujemne.
+                    var v = h.startOfDay.value().toLong();
+                    if (v < 0) {
+                        v += 4294967296l;
+                    }
+                    if (v > later) {
+                        v -= FIT_EPOCH;
+                    }
+                    var start = new Time.Moment(v.toNumber());
                     // Południe zamiast początku dnia: dzień wychodzi ten sam, czy zegarek podaje
                     // północ lokalną, czy UTC.
-                    rows.add(day(dayOf(h.startOfDay.add(new Time.Duration(43200))), h.steps, h.distance,
+                    rows.add(day(dayOf(start.add(new Time.Duration(43200))), h.steps, h.distance,
                         (h has :floorsClimbed) ? h.floorsClimbed : null,
                         (h has :activeMinutes) ? h.activeMinutes : null));
                 }
@@ -126,7 +141,11 @@ module Collect {
         if (now - from > 86400) {
             from = now - 86400;
         }
-        var opts = { :period => new Time.Duration(now - from), :order => SensorHistory.ORDER_OLDEST_FIRST };
+        // Okres zapytania co najmniej 10 minut: krótszy (np. „Wyślij teraz” chwilę po przebiegu w tle)
+        // kończy getStressHistory błędem „Invalid Value”, którego try/catch nie łapie — w symulatorze
+        // przy 87 s. Próbki sprzed `from` i tak odcina `fold`, więc nic nie liczy się dwa razy.
+        var period = now - from < MIN_PERIOD ? MIN_PERIOD : now - from;
+        var opts = { :period => new Time.Duration(period), :order => SensorHistory.ORDER_OLDEST_FIRST };
         if (SensorHistory has :getHeartRateHistory) {
             fold(store, SensorHistory.getHeartRateHistory(opts), from, 0);
         }

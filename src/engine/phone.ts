@@ -1,7 +1,7 @@
 import type { AppState, Cardio, PhoneData, PhoneDay, WatchActivity } from '../types';
 import { bodyOf, validWeight } from './body';
 import { addDays } from './schedule';
-import { DAY, EPOCH_MIN, SPORT_CYCLING, WATCH_LIMITS, actRow, byDay, localDayOf, merged, num, rows } from './watch';
+import { DAY, EPOCH_MIN, SPORT_CYCLING, WATCH_LIMITS, actRow, byDay, localDayOf, merged, notAfter, num, rows } from './watch';
 
 /**
  * Dane z telefonu: Apple Zdrowie na iPhonie, Health Connect na Androidzie. Strona nie ma do nich
@@ -86,7 +86,7 @@ export function parsePhonePayload(v: unknown, nowMs: number = Date.now()): Phone
   return {
     t,
     os: p.os as PhoneData['os'],
-    days: merged([], rows(p.d, MAX_DAYS, dayOf), (d) => d.day, byDay),
+    days: merged([], rows(p.d, MAX_DAYS, dayOf).filter(notAfter(t)), (d) => d.day, byDay),
     acts: merged([], rows(p.a, MAX_ACTS, (x) => actOf(x, t)), (a) => a.start, (a, b) => a.start - b.start),
   };
 }
