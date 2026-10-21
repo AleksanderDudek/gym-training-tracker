@@ -79,6 +79,6 @@ case "$cmd" in
     ;;
   store)
     mc -o bin/gymtracker.iq -e -r
-    echo "Gotowe: bin/gymtracker.iq — wgraj w https://apps.garmin.com/developer/ (najpierw jako beta)."
+    echo "Gotowe: bin/gymtracker.iq — wgraj w https://apps-developer.garmin.com (najpierw jako beta)."
     ;;
 esac

@@ -54,25 +54,34 @@ Przy pierwszym buildzie skrypt tworzy klucz dewelopera w `~/.garmin/developer_ke
 bierze ten z `CIQ_KEY`). **Zrób jego kopię** — każdą kolejną wersję w sklepie trzeba podpisać
 tym samym kluczem, inaczej to będzie nowa aplikacja.
 
-**Najpierw beta, potem sklep.**
+**Najpierw beta, potem sklep.** Od 2026 roku wgrywa się na nowym panelu
+**apps-developer.garmin.com**, a instaluje wyłącznie przez aplikację **Connect IQ Store** na
+telefonie — strona sklepu już nie instaluje.
 
-1. [Developer Dashboard](https://apps.garmin.com/developer/) → Upload an App → `bin/gymtracker.iq`,
-   zaznacz **Beta App**. Beta widzisz tylko ty i nie przechodzi recenzji.
-2. Zainstaluj ją ze strony apps.garmin.com w przeglądarce (zalogowany tym samym kontem).
-3. Klucz wklej w ustawieniach aplikacji. Uwaga: ustawień bety **nie ma w Garmin Connect** na
-   telefonie — są w **Garmin Express** na komputerze i w aplikacji **Connect IQ** na telefonie.
-   Po publikacji ustawienia są także w Garmin Connect.
-4. Otwórz GYM TRACKER na zegarku, w aplikacji „Sprawdź teraz” — dane powinny przyjść.
-5. Wgraj tę samą paczkę jako zwykłą aplikację: opis i uprawnienia w `store/listing.md`,
-   zrzuty z symulatora. Aplikacja jest bezpłatna i nie prosi o wpłaty, więc weryfikacja
-   „tradera” (DSA) jej nie dotyczy.
-6. Po akceptacji ustaw adres ze sklepu w GitHubie i wdroż stronę jeszcze raz — dopiero wtedy
-   aplikacja pokaże kartę „Zegarek Garmin”:
+1. [apps-developer.garmin.com](https://apps-developer.garmin.com) (konto Garmin, to samo co
+   w Garmin Connect) → wgraj `bin/gymtracker.iq`, zaznacz **Beta App**. Beta widzisz tylko ty
+   i nie przechodzi recenzji. Na liście „Uploaded Apps” bety stoją na samym dole.
+2. Skopiuj identyfikator aplikacji z panelu i otwórz na telefonie
+   `https://apps.garmin.com/apps/<identyfikator>` — link otworzy aplikację Connect IQ Store
+   z przyciskiem instalacji. (Linki z nowego panelu jeszcze jej nie otwierają — błąd zgłoszony
+   Garminowi, CIQQA-3722.)
+3. Ustaw ten adres w GitHubie i wdroż stronę — dopiero wtedy GYM TRACKER pokaże kartę
+   „Zegarek Garmin”, w której powstaje klucz:
 
    ```bash
-   gh variable set GARMIN_APP_URL --body "https://apps.garmin.com/apps/<id>"
+   gh variable set GARMIN_APP_URL --body "https://apps.garmin.com/apps/<identyfikator>"
    gh workflow run Deploy
    ```
+
+4. Klucz z karty wklej w ustawieniach aplikacji na zegarku. Ustawień bety **nie ma w Garmin
+   Connect** — są w aplikacji **Connect IQ Store** na telefonie (urządzenie → GYM TRACKER →
+   Ustawienia). Po publikacji są także w Garmin Connect.
+5. Otwórz GYM TRACKER na zegarku, START („Wyślij teraz”), a w karcie „Sprawdź teraz” — dane
+   powinny przyjść.
+6. Na koniec ta sama paczka jako zwykła aplikacja: opis i uprawnienia w `store/listing.md`,
+   zrzuty z symulatora. W czasie recenzji aplikację da się pobrać do testów, w sklepie pojawia
+   się po akceptacji. Aplikacja jest bezpłatna i nie prosi o wpłaty, więc weryfikacja
+   „tradera” (DSA) jej nie dotyczy.
 
 Bez sklepu, tylko na swój zegarek: `./build.sh prg <zegarek>` i plik do `GARMIN/APPS/` przez USB.
 Ustawień takiej aplikacji nie zmienisz w Garmin Connect, więc do testów lepsza jest beta.
