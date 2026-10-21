@@ -68,6 +68,15 @@ describe('paczka z zegarka', () => {
     expect(p.health).toEqual([]);
   });
 
+  it('dzień 20 lat do przodu (epoka pomylona przez zegarek) odpada, reszta zostaje', () => {
+    const p = parsePayload(
+      payload({ d: [['2046-10-07', 5000], ['2026-10-08', 9120]], h: [['2046-10-07', 52, null, null, null, null, null, null, null]] }),
+      NOW,
+    )!;
+    expect(p.days.map((d) => d.day)).toEqual(['2026-10-08']);
+    expect(p.health).toEqual([]);
+  });
+
   it('nie przyjmuje obcej wersji ani czasu z przyszłości', () => {
     expect(parsePayload(payload({ v: 2 }), NOW)).toBeNull();
     expect(parsePayload(payload({ t: NOW / 1000 + 2 * 86_400 }), NOW)).toBeNull();

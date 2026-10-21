@@ -28,7 +28,7 @@ npm run build      # typecheck + produkcyjny build do dist/ z service workerem (
 npm run preview    # podgląd builda — tu działa też praca offline
 npm run typecheck  # tsc: aplikacja, testy, konfiguracja Vite i skrypty, service worker, filmy demo
 npm run lint       # oxlint
-npm test           # 1834 testy: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, plan z zakupami, serwer… (vitest)
+npm test           # 1836 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, plan z zakupami, serwer… (vitest)
 ```
 
 Aplikacje na telefon (GYM TRACKER Zdrowie — `health/README.md`):
@@ -1278,9 +1278,9 @@ src/
     burn.ts                 kalorie z zapisów: wpis, trening, ćwiczenie, przekąska, cały dzień
     cardio.test.ts          32 testy wpisów, tańca, wagi w czasie, kalorii i minut ruchu według WHO
     watch.ts                dane z zegarka: paczka, scalanie po czasie, kroki i przejazdy jako wpisy w locie
-    watch.test.ts           14 testów paczki, scalania, wyższej liczby kroków, przejazdów i importu
+    watch.test.ts           15 testów paczki, scalania, wyższej liczby kroków, przejazdów i importu
     phone.ts                dane z telefonu: paczka, scalanie, kroki i przejazdy w locie, propozycja ważenia
-    phone.test.ts           17 testów paczki, wspólnego wektora, trzech źródeł kroków, tego samego przejazdu, importu i ważenia
+    phone.test.ts           18 testów paczki, wspólnego wektora, trzech źródeł kroków, tego samego przejazdu, importu i ważenia
     find.ts                 wyszukiwanie ćwiczenia: polski alfabet, ogonki opcjonalne, podświetlenie
     find.test.ts            9 testów kolejności, dopasowania i podświetlenia
     similar.ts              zamienniki ćwiczenia (wzorzec, mięśnie, sprzęt) i sprzęt treningu z jego ćwiczeń

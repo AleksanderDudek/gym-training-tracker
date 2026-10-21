@@ -99,13 +99,23 @@ export function parsePayload(v: unknown, nowMs: number = Date.now()): WatchPaylo
   // Paczka z polem `k` to paczka innego urządzenia (telefon ma `k: 'phone'`) — klucz z jednej
   // karty wklejony w drugie urządzenie nie może podać zegarkowi cudzych liczb.
   if (p.v !== 1 || t === null || p.k !== undefined) return null;
+  const notLater = notAfter(t);
   return {
     t,
-    days: rows(p.d, 31, dayRow),
+    days: rows(p.d, 31, dayRow).filter(notLater),
     acts: rows(p.a, 50, (r) => actRow(r, t)),
-    health: rows(p.h, 31, healthRow),
+    health: rows(p.h, 31, healthRow).filter(notLater),
   };
 }
+
+/**
+ * Dzień nie późniejszy niż dzień wysłania paczki plus jeden (strefy czasowe). Późniejszy to
+ * zegar albo epoka pomylone przez urządzenie — zegarek potrafi podać dzień 20 lat do przodu.
+ */
+export const notAfter =
+  (t: number) =>
+  (x: { day: string }): boolean =>
+    x.day <= new Date((t + 86_400) * 1000).toISOString().slice(0, 10);
 
 export const merged = <T, K>(old: T[], fresh: T[], key: (x: T) => K, order: (a: T, b: T) => number): T[] => {
   const m = new Map<K, T>();
