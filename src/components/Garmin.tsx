@@ -101,6 +101,10 @@ export function GarminCard({
             przepisywania. Potrzebna jest mała aplikacja GYM TRACKER na zegarku i jeden klucz wklejony
             w jej ustawienia.
           </p>
+          <p className="tight">
+            Prościej przez telefon: karta „Zdrowie z telefonu” bierze dane, które Garmin Connect zapisuje
+            w Apple Zdrowie albo Health Connect — razem ze snem i wagą. Ta karta dokłada stres i Body Battery.
+          </p>
           {paste === null ? (
             <div className="watch-actions">
               <button className="btn" onClick={() => connect(newKey())}>

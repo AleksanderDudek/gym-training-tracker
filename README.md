@@ -996,6 +996,15 @@ Kroki, przejazdy rowerem, tętno, sen i waga z **Apple Zdrowie** (iPhone) i **He
 Connect, Fitbit, Samsung Health, Withings czy Oura piszą do tych dwóch miejsc, więc jedno
 połączenie z telefonem obejmuje większość urządzeń.
 
+**Zegarek Garmin — najprostsza droga.** Kto ma Garmina, ma też na telefonie Garmin Connect.
+Wystarczy w nim włączyć udostępnianie do Apple Zdrowie albo Health Connect (Ustawienia →
+Połączone aplikacje), a dalej wszystko idzie tą drogą: kroki, sen, tętno, waga i treningi
+z zegarka. Karta mówi o tym w pierwszym kroku, a aplikacja na telefonie przypomina, gdy nie
+dostaje żadnych danych. Przycisku „Zaloguj przez Garmin” nie ma i na razie nie będzie: oficjalne
+API Garmina przyjmuje tylko firmy, a od wiosny 2026 roku nowych zgłoszeń nie przyjmuje wcale.
+Własna aplikacja na zegarek (część „Zegarek Garmin”) dokłada tylko stres i Body Battery — tych
+dwóch liczb Garmin Connect do Zdrowia ani Health Connect nie przekazuje.
+
 **Dlaczego osobna aplikacja na telefon.** Żadna przeglądarka nie daje dostępu do Apple Zdrowie
 ani Health Connect, także strona dodana do ekranu początkowego. Czyta je tylko kod natywny.
 Zamiast przenosić całą aplikację do natywnej skorupy (dane w niej leżałyby osobno od tych w
