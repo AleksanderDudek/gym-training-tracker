@@ -1,13 +1,24 @@
-import { CalendarDays, ChevronLeft, ChevronRight, MapPin, Plus, Star, TrendingDown, Trash2, UserRound } from 'lucide-react';
+import {
+  CalendarClock,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  ClipboardList,
+  MapPin,
+  Plus,
+  Star,
+  TrendingDown,
+  Trash2,
+  UserRound,
+} from 'lucide-react';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { WEIGHT_RANGE, validWeight } from '../../../engine/body';
 import { NEARBY_PATH, dietPath } from '../../../routing';
 import { useBridge } from '../../bridge';
 import { MISSING_DATA_MESSAGE } from '../../data';
 import { hashWith } from '../../hash';
 import { macroStatus, totals } from '../../diet/day';
 import { db, type DayRow, type Entry } from '../../diet/db';
-import { entryFood, favoriteFood } from '../../diet/favorites';
+import { entryFood } from '../../diet/favorites';
 import { planFood, type Food } from '../../diet/foods';
 import { addDays, dayGoal, dayLabel, longDay, mealsLeftAt, mondayOf, remainingOf } from '../../diet/model';
 import { plannedDay, plannedKcal, type Plan, type PlannedItem, type PlanItem } from '../../diet/plan';
@@ -30,28 +41,35 @@ import { useUrlState } from '../../hooks/useUrlState';
 import { formatNumber } from '../../lib/format';
 import type { Dictionaries } from '../../lib/types';
 import { formatDistance } from '../../nearby/geo';
+import { weekday } from '../../prep/format';
 import { dayPlanTotals } from '../../prep/meals';
-import { planCovering } from '../../prep/store';
+import { nextPlanAfter, planCovering, planName } from '../../prep/store';
+import type { PrepPlan } from '../../prep/types';
+import { planHref } from '../prep/links';
 import { PrepDayCard } from '../prep/PrepDayCard';
 import { AutoDayCard } from './AutoDayCard';
+import { FavoritesSheet } from './FavoritesSheet';
 import { FoodPicker } from './FoodPicker';
 import { StarButton } from '../common/StarButton';
 import { MacroBars } from './MacroBars';
 import { Loading, Onboarding } from './Onboarding';
 import { PlanDayCard } from './PlanDayCard';
-import { MacroLine, SuggestionList } from './SuggestionList';
+import { SuggestionList } from './SuggestionList';
 import { SwapDialog } from './SwapDialog';
 import { useDietBase, useFoodPool, type FoodPool } from './useDietPage';
+import { WeighCard } from './WeighCard';
 import './diet.css';
 
 const ICON = { size: 20, strokeWidth: 2, 'aria-hidden': true } as const;
 
 /**
- * Dziennik — korzeń zakładki Jedzenie (w Produktach PL widok „Dziś” zakładki Dieta): bilans dnia,
- * plan albo propozycja dnia, „Co teraz?” i „Dodaj zjedzone”. Pod bilansem wejścia do planu
- * posiłków, postępu i profilu diety — podstron ze strzałką wstecz zamiast drugiego rzędu zakładek.
- * Oglądany dzień siedzi w adresie (`?dzien=`), a `?dodaj=1` z karty na ekranie Dziś otwiera
- * „Dodaj zjedzone” i znika z adresu.
+ * Dziennik — korzeń zakładki Jedzenie (w Produktach PL widok „Dziś” zakładki Dieta). Od góry: dzień,
+ * pytanie o wagę (rano, raz dziennie), bilans z „Dodaj zjedzone” i „Ulubione”, zaraz pod nim to,
+ * co zjedzone — dopisane pojawia się tam, gdzie się stuknęło — potem plan dnia (z zakupami, z arkusza
+ * albo propozycja), „Co teraz?”, kroki i ruch, a na dole wejścia do podstron (plan posiłków, moje
+ * plany, postęp, profil diety) ze strzałką wstecz zamiast drugiego rzędu zakładek. Oglądany dzień
+ * siedzi w adresie (`?dzien=`), a `?dodaj=1` z karty na ekranie Dziś otwiera „Dodaj zjedzone”
+ * i znika z adresu.
  */
 export default function DiaryPage() {
   const [state, update] = useUrlState(diaryFromParams, diaryToParams);
@@ -125,6 +143,12 @@ function TodayView({ profile, plan, date, today, hour, nowMs, history, pickerOpe
   // Plan z zakupami ma pierwszeństwo w swoje dni: to nowsza decyzja niż plan z arkusza.
   const prepPlans = usePrepPlans();
   const prep = prepPlans ? planCovering(prepPlans, date) : null;
+  // Dzień bez planu z zakupami, a plan zaczyna się później: zapowiedź w miejscu planu dnia. Tylko
+  // plan, który jeszcze się nie zaczął — o tym, który już trwa albo minął, zdanie „zaczyna się” kłamie.
+  const ahead = prepPlans && !prep ? nextPlanAfter(prepPlans, date) : null;
+  const upcoming = ahead && ahead.settings.start > today ? ahead : null;
+  const favorites = useFavorites();
+  const [favoritesOpen, setFavoritesOpen] = useState(false);
   const [swapping, setSwapping] = useState<PlannedItem | null>(null);
 
   const eaten = useMemo(() => totals(entries ?? []), [entries]);
@@ -163,12 +187,17 @@ function TodayView({ profile, plan, date, today, hour, nowMs, history, pickerOpe
 
   if (!entries || !day || !body || !prepPlans) return <Loading />;
 
-  const log = (f: Food) =>
-    void logFood(date, f).then(() => bridge.toast(`Zapisane: ${f.name} · ${formatNumber(f.nutrients.kcal, 0)} kcal.`));
+  const save = (f: Food) =>
+    logFood(date, f).then(() => bridge.toast(`Zapisane: ${f.name} · ${formatNumber(f.nutrients.kcal, 0)} kcal.`));
+  const log = (f: Food) => void save(f);
+  const starred = favorites?.length ?? 0;
 
   return (
     <>
       <DayNav date={date} today={today} onDate={onDate} />
+
+      {/* Kluczem dzień: pole i „Zmień” zaczynają od nowa na każdym dniu. */}
+      <WeighCard key={date} date={date} today={today} weightKg={body.weightKg ?? null} />
 
       <MacroBars
         targets={targets}
@@ -177,33 +206,37 @@ function TodayView({ profile, plan, date, today, hour, nowMs, history, pickerOpe
         adjustment={goal.adjustment}
         plannedKcal={prep ? dayPlanTotals(prep, date).kcal : plannedKcal(planned)}
       >
-        <div className="actions">
-          <button type="button" className="btn wide" onClick={() => onPicker(true)}>
+        <div className="actions fd-diet-dayacts">
+          <button type="button" className="btn" onClick={() => onPicker(true)}>
             <Plus {...ICON} /> Dodaj zjedzone
+          </button>
+          <button type="button" className="btn ghost" onClick={() => setFavoritesOpen(true)}>
+            <Star {...ICON} className="fd-diet-fav-ico" /> Ulubione{starred > 0 && ` (${starred})`}
           </button>
         </div>
       </MacroBars>
 
-      <FavoritesCard date={date} today={today} onLog={log} />
-
-      <DietLinks date={date} today={today} />
+      <EatenCard entries={entries} kcal={eaten.kcal} />
 
       {prep ? (
         <PrepDayCard plan={prep} date={date} entries={entries} />
-      ) : planned && plan ? (
-        <PlanDayCard plan={plan} planned={planned} date={date} entries={entries} onSwap={setSwapping} />
       ) : (
-        <AutoDayCard
-          meals={auto ?? []}
-          entries={entries}
-          hasPlan={plan !== null}
-          loading={food.data.status === 'loading'}
-          onLog={log}
-          onReroll={() => void updateDay(date, { autoSeed: (autoSeed + 1) >>> 0 })}
-        />
+        <>
+          {upcoming && <NextPlanLine plan={upcoming} today={today} />}
+          {planned && plan ? (
+            <PlanDayCard plan={plan} planned={planned} date={date} entries={entries} onSwap={setSwapping} />
+          ) : (
+            <AutoDayCard
+              meals={auto ?? []}
+              entries={entries}
+              hasPlan={plan !== null}
+              loading={food.data.status === 'loading'}
+              onLog={log}
+              onReroll={() => void updateDay(date, { autoSeed: (autoSeed + 1) >>> 0 })}
+            />
+          )}
+        </>
       )}
-
-      <EatenCard entries={entries} kcal={eaten.kcal} />
 
       <section className="grp" aria-labelledby="fd-diet-next-title">
         <h2 id="fd-diet-next-title">Co teraz?</h2>
@@ -218,7 +251,9 @@ function TodayView({ profile, plan, date, today, hour, nowMs, history, pickerOpe
         <SuggestionList suggestions={suggestions} actionLabel="Zjadłem" onPick={log} />
       </section>
 
-      <BodyCard key={`${date}:${body.weightKg ?? ''}:${body.steps ?? ''}`} date={date} today={today} body={body} />
+      <MoveCard key={`${date}:${body.steps ?? ''}`} date={date} today={today} body={body} />
+
+      <DietLinks date={date} today={today} />
 
       <FoodPicker
         open={pickerOpen}
@@ -229,6 +264,14 @@ function TodayView({ profile, plan, date, today, hour, nowMs, history, pickerOpe
         productsLoading={food.data.status === 'loading'}
         onClose={() => onPicker(false)}
         onLogged={bridge.toast}
+      />
+      <FavoritesSheet
+        open={favoritesOpen}
+        date={date}
+        today={today}
+        favorites={favorites ?? []}
+        onLog={save}
+        onClose={() => setFavoritesOpen(false)}
       />
       <SwapDialog
         item={swapping ? planFood(swapping) : null}
@@ -279,9 +322,11 @@ function DayNav({ date, today, onDate }: { date: string; today: string; onDate: 
 }
 
 /**
- * Wejścia do podstron dziennika: trzy kafelki pod bilansem, każdy prowadzi w głąb (strzałka wstecz
- * wraca). Plan posiłków dostaje oglądany dzień (`?dzien=`, ten sam zapis co w dzienniku), więc
- * otwiera się na jego tygodniu — jak w Produktach PL, gdzie zmiana widoku zostawiała dzień.
+ * Wejścia do podstron dziennika: cztery kafelki na dole, każdy prowadzi w głąb (strzałka wstecz
+ * wraca). Góra dziennika należy do liczb dnia, a dwa najczęstsze cele mają odnośniki na miejscu:
+ * karta wagi — do postępu, plan dnia — do swojego planu. Plan posiłków dostaje oglądany dzień
+ * (`?dzien=`, ten sam zapis co w dzienniku), więc otwiera się na jego tygodniu — jak w Produktach
+ * PL, gdzie zmiana widoku zostawiała dzień.
  */
 function DietLinks({ date, today }: { date: string; today: string }) {
   const plan = hashWith(dietPath('plan'), diaryToParams({ date: date === today ? null : date, add: false }));
@@ -290,6 +335,10 @@ function DietLinks({ date, today }: { date: string; today: string }) {
       <a href={plan}>
         <CalendarDays {...ICON} />
         <span>Plan posiłków</span>
+      </a>
+      <a href={dietPath('plans')}>
+        <ClipboardList {...ICON} />
+        <span>Moje plany</span>
       </a>
       <a href={dietPath('progress')}>
         <TrendingDown {...ICON} />
@@ -303,66 +352,30 @@ function DietLinks({ date, today }: { date: string; today: string }) {
   );
 }
 
-/** Ile ulubionych widać od razu — reszta pod „Pokaż wszystkie”. */
-const FAVORITES_SHOWN = 8;
+const DAY_MONTH = new Intl.DateTimeFormat('pl-PL', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+
+/** „jutro”, „w pon. 27 paź”, „we wt. 28 paź” — kiedy zaczyna się plan, do wstawienia w zdanie. */
+function startsOn(start: string, today: string): string {
+  if (start === addDays(today, 1)) return 'jutro';
+  const day = weekday(start);
+  return `${day.startsWith('wt') ? 'we' : 'w'} ${day} ${DAY_MONTH.format(new Date(`${start}T12:00:00Z`))}`;
+}
 
 /**
- * Lista szybkiego wyboru: ulubione z „+ Zjadłem” — zapis jednym stuknięciem, w ilości z gwiazdki,
- * na oglądany dzień. Najczęściej jedzone na górze (każdy zapis takiego jedzenia liczy się do
- * kolejności). Bez ulubionych — jedno zdanie, jak je dodać.
+ * Miejsce planu w dniu, którego żaden plan z zakupami nie obejmuje, gdy jakiś zaczyna się później:
+ * jedno zdanie z odnośnikiem do niego. Do tego dnia dziennik idzie po staremu — plan z arkusza albo
+ * propozycja dnia stoją zaraz pod spodem.
  */
-function FavoritesCard({ date, today, onLog }: { date: string; today: string; onLog: (food: Food) => void }) {
-  const favorites = useFavorites();
-  const [all, setAll] = useState(false);
-  if (!favorites) return null;
-  const shown = all ? favorites : favorites.slice(0, FAVORITES_SHOWN);
-  const future = date > today;
+function NextPlanLine({ plan, today }: { plan: PrepPlan; today: string }) {
   return (
-    <section className="grp" aria-labelledby="fd-diet-fav-title">
-      <h2 id="fd-diet-fav-title">
-        <Star {...ICON} className="fd-diet-fav-ico" /> Ulubione
-      </h2>
-      {favorites.length === 0 ? (
-        <p className="tight">
-          To, co jesz najczęściej, oznacz gwiazdką — w „Dodaj zjedzone”, w produktach, w lokalach albo przy tym, co już
-          zjedzone. Pojawi się tutaj do dodania jednym stuknięciem.
-        </p>
-      ) : (
-        <>
-          <ul className="fd-diet-list">
-            {shown.map((f) => {
-              const food = favoriteFood(f);
-              return (
-                <li key={f.key} className="fd-diet-sug">
-                  <div className="fd-diet-row">
-                    <div className="fd-diet-row-main">
-                      <p className="fd-diet-name">{food.name}</p>
-                      <p className="fd-diet-meta">
-                        <MacroLine food={food} /> · {food.amountLabel || 'porcja'}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      className="btn ghost sm fd-diet-act"
-                      onClick={() => onLog(food)}
-                      disabled={future}
-                      aria-label={`Zjadłem z ulubionych: ${food.name}`}
-                    >
-                      <Plus size={20} strokeWidth={2} aria-hidden /> Zjadłem
-                    </button>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-          {favorites.length > FAVORITES_SHOWN && (
-            <button type="button" className="fd-diet-link" onClick={() => setAll(!all)} aria-expanded={all}>
-              {all ? 'Pokaż mniej' : `Pokaż wszystkie (${favorites.length})`}
-            </button>
-          )}
-        </>
-      )}
-    </section>
+    <div className="grp fd-diet-nextplan">
+      <p className="fd-diet-line">
+        <CalendarClock {...ICON} />
+        <span>
+          Plan „<a href={planHref(plan)}>{planName(plan)}</a>” zaczyna się {startsOn(plan.settings.start, today)}.
+        </span>
+      </p>
+    </div>
   );
 }
 
@@ -472,20 +485,16 @@ function numberOrNull(text: string): number | null {
 }
 
 /**
- * Waga, kroki i ruch dnia — z danych treningowych, jedno źródło. Pola zapisują przez most: waga
- * trafia do dziennika wagi (ta sama, co na ekranie Dziś i w profilu), kroki — jako zwykły wpis
- * kroków, więc liczą się do odznak i kalorii jak każdy inny. Trening i jego kalorie tylko się
- * czyta: dziennik treningów jest jeden.
+ * Kroki i ruch dnia — z danych treningowych, jedno źródło. Kroki zapisują przez most jako zwykły
+ * wpis kroków, więc liczą się do odznak i kalorii jak każdy inny. Trening i jego kalorie tylko się
+ * czyta: dziennik treningów jest jeden. Waga ma własne pytanie na górze dziennika (`WeighCard`):
+ * waży się rano, a kroki wpisuje się wieczorem albo przychodzą z zegarka.
  */
-function BodyCard({ date, today, body }: { date: string; today: string; body: DayRow }) {
+function MoveCard({ date, today, body }: { date: string; today: string; body: DayRow }) {
   const bridge = useBridge();
   const move = bridge.moveOn(date);
-  const [weight, setWeight] = useState(body.weightKg != null ? String(body.weightKg).replace('.', ',') : '');
   const [steps, setSteps] = useState(body.steps != null ? String(body.steps) : '');
-  const kg = numberOrNull(weight);
   const walked = numberOrNull(steps);
-  const weightBad = weight.trim() !== '' && !validWeight(kg);
-  const newWeight = kg !== null && validWeight(kg) && kg !== (body.weightKg ?? null);
   const newSteps = walked !== null && Math.round(walked) !== (body.steps ?? null);
   const future = date > today;
   const isToday = date === today;
@@ -493,7 +502,6 @@ function BodyCard({ date, today, body }: { date: string; today: string; body: Da
   const save = (e: FormEvent) => {
     e.preventDefault();
     // Dzień z dziennika (data lokalna), nie „dziś” treningów — patrz `dayKey` w treningach (UTC).
-    if (newWeight && kg !== null) bridge.setWeight(kg, date);
     if (newSteps && walked !== null) bridge.setSteps(date, Math.round(walked));
   };
 
@@ -507,24 +515,11 @@ function BodyCard({ date, today, body }: { date: string; today: string; body: Da
 
   return (
     <section className="grp" aria-labelledby="fd-diet-body-title">
-      <h2 id="fd-diet-body-title">Waga, kroki i ruch</h2>
+      <h2 id="fd-diet-body-title">Kroki i ruch</h2>
       {future ? (
-        <p className="tight">Wagę i kroki wpiszesz tego dnia.</p>
+        <p className="tight">Kroki wpiszesz tego dnia.</p>
       ) : (
         <form className="fd-diet-body" onSubmit={save} noValidate>
-          <label className="fld">
-            <span>Waga, kg</span>
-            <input
-              type="text"
-              className="num"
-              inputMode="decimal"
-              autoComplete="off"
-              value={weight}
-              onChange={(e) => setWeight(e.target.value)}
-              aria-invalid={weightBad || undefined}
-              aria-describedby="fd-diet-body-hint"
-            />
-          </label>
           <label className="fld">
             <span>Kroki</span>
             <input
@@ -532,20 +527,20 @@ function BodyCard({ date, today, body }: { date: string; today: string; body: Da
               className="num"
               inputMode="numeric"
               autoComplete="off"
+              enterKeyHint="done"
               value={steps}
               onChange={(e) => setSteps(e.target.value)}
+              aria-describedby="fd-diet-body-hint"
             />
           </label>
-          <button type="submit" className="btn sm" disabled={!newWeight && !newSteps}>
+          <button type="submit" className="btn sm" disabled={!newSteps} aria-label="Zapisz kroki">
             Zapisz
           </button>
         </form>
       )}
       {!future && (
-        <p className={`tight${weightBad ? ' fd-diet-warn' : ''}`} id="fd-diet-body-hint">
-          {weightBad
-            ? `Waga od ${WEIGHT_RANGE.min} do ${WEIGHT_RANGE.max} kg.`
-            : 'Waga trafia do dziennika wagi, a kroki do kroków w treningach — wpisane tu czy tam, to te same liczby.'}
+        <p className="tight" id="fd-diet-body-hint">
+          Kroki trafiają do kroków w treningach — wpisane tu czy tam, to te same liczby.
         </p>
       )}
       <p className="tight">
