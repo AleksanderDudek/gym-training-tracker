@@ -60,7 +60,7 @@ enum Payload {
     /// Lokalna data, `2026-10-20`.
     static func dayKey(_ date: Date, _ cal: Calendar) -> String {
         let d = cal.dateComponents([.year, .month, .day], from: date)
-        return String(format: "%04d-%02d-%02d", d.year ?? 0, d.month ?? 0, d.day ?? 0)
+        return String(format: "%04ld-%02ld-%02ld", d.year ?? 0, d.month ?? 0, d.day ?? 0)
     }
 
     /// Klucze w stałej kolejności (`v,k,os,t,d,a`) — tak samo pisze Android i wektor testowy,
