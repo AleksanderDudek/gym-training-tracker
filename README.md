@@ -28,7 +28,7 @@ npm run build      # typecheck + produkcyjny build do dist/ z service workerem (
 npm run preview    # podgląd builda — tu działa też praca offline
 npm run typecheck  # tsc: aplikacja, testy, konfiguracja Vite i skrypty, service worker, filmy demo
 npm run lint       # oxlint
-npm test           # 1780 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, plan z zakupami, serwer… (vitest)
+npm test           # 1806 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, plan z zakupami, serwer… (vitest)
 ```
 
 Baza produktów i przepisy:
@@ -319,7 +319,7 @@ i drugi, obok wyniku sesji, po każdym zamkniętym treningu.
 | --- | --- | --- |
 | Dziś | `#/sesja` | Co masz dziś do zrobienia według planu, ważenie, karta jedzenia (kalorie i białko dnia — gdy prowadzisz dietę), pasek postaci, przekąska ruchowa i rada dnia; w trakcie — bieżąca sesja. |
 | Trening | `#/plan`, `#/treningi`, `#/cwiczenia` | Trzy sekcje. **Plan**: uruchomiony plan — kalendarz terminów, punkty, stopień, dziennik; bez planu — katalog: plany z celem, własne i klasyczny. **Treningi**: 38 gotowych treningów (całe ciało, push/pull/nogi, góra/dół, partie), 32 z profilem i własne, z filtrem sprzętu i rodzaju. **Ćwiczenia**: atlas 114 ćwiczeń. |
-| Jedzenie | `#/jedzenie`, `#/przepisy`, `#/produkty`, `#/w-poblizu` | Cztery sekcje. **Dziennik**: bilans dnia, plan posiłków albo propozycja dnia, „Co teraz?”, „Dodaj zjedzone”. **Przepisy**: białkowe, z produktów jednego sklepu. **Produkty**: 29 tys. produktów z filtrami. **W pobliżu**: sklepy na mapie i przepisy z nich. |
+| Jedzenie | `#/jedzenie`, `#/przepisy`, `#/produkty`, `#/w-poblizu` | Cztery sekcje. **Dziennik**: pytanie o wagę, bilans dnia z „Dodaj zjedzone” i „Ulubione”, zjedzone, plan posiłków albo propozycja dnia, „Co teraz?”. **Przepisy**: białkowe, z produktów jednego sklepu. **Produkty**: 29 tys. produktów z filtrami. **W pobliżu**: sklepy na mapie i przepisy z nich. |
 | Osiągnięcia | `#/osiagniecia` | Dorobek w liczbach, progi najbliższe zdobycia, 73 rodziny odznak — także czasu na treningu — i odznaki każdego zrobionego ćwiczenia. |
 | Profil | `#/profil` | Postać i doświadczenie, twoje liczby, waga i wzrost, obciążenie, przekąski, kroki i cardio, lista zrobionych ćwiczeń i historia treningów z kaloriami. |
 
@@ -661,7 +661,12 @@ aplikacji. Dane produktów: [Open Food Facts](https://world.openfoodfacts.org), 
   „nie pasuje”, zawsze z powodem).
 - **Plan z Excela**: „Wczytaj plan z Excela” czyta arkusz w przeglądarce — dni wzorcowe, warianty,
   potrawy z kaloriami i makro, parametry. Plik nigdzie nie trafia.
-- **Dziś**: bilans dnia z paskami kalorii, białka, węglowodanów i tłuszczu. Pozycje planu można
+- **Dziś**, od góry: **pytanie o wagę** („Ile dziś ważysz?” z ostatnim ważeniem i radą „rano, po
+  toalecie, przed jedzeniem”; po zapisie jedna linijka „Waga: 82,4 kg” ze „Zmień”), bilans dnia
+  z „Dodaj zjedzone” i „Ulubione (N)”, **zjedzone** zaraz pod nimi, plan dnia (z nazwą planu
+  z zakupami, a gdy plan zaczyna się później — „Plan „…” zaczyna się …”), „Co teraz?”, kroki i ruch,
+  na końcu wejścia do Planu posiłków, Moich planów, Postępu i Profilu diety. Bilans dnia z paskami
+  kalorii, białka, węglowodanów i tłuszczu. Pozycje planu można
   odhaczyć, pominąć albo zamienić na coś o podobnej kaloryczności (±12%); bez planu „Propozycja
   dnia” układa posiłki z tego, co w pobliżu i w domu. „Dodaj zjedzone” szuka we własnych
   zestawach i jedzeniu, planie, przepisach, menu lokali („big mac”, „latte grande”) i produktach —
@@ -672,8 +677,10 @@ aplikacji. Dane produktów: [Open Food Facts](https://world.openfoodfacts.org), 
   w Profilu diety → Twoje dane. Zestaw trzyma kopie części, jak wpisy dziennika, więc nowa baza
   produktów nie zmienia tego samego śniadania. **Ulubione**: gwiazdką oznacza się dowolne jedzenie —
   w „Dodaj zjedzone”, w szczegółach produktu, w karcie pozycji lokalu i przy tym, co już zjedzone.
-  Pod bilansem dnia stoi lista szybkiego wyboru z „+ Zjadłem” (zapis jednym stuknięciem, w ilości
-  z gwiazdki), najczęściej jedzone na górze — każdy zapis takiego jedzenia liczy się do kolejności.
+  „Ulubione (N)” pod bilansem otwiera arkusz z pełną listą i „+ Zjadłem” (zapis jednym stuknięciem,
+  w ilości z gwiazdki; arkusz zostaje otwarty, a jego pasek potwierdza zapis), najczęściej jedzone na
+  górze — każdy zapis takiego jedzenia liczy się do kolejności, ale w otwartym arkuszu wiersze stoją
+  w miejscu; od dziewięciu ulubionych — z szukaniem.
   W „Dodaj zjedzone” ulubione stoją pierwsze, z „+” do zapisu bez otwierania, a w „Co teraz?” dostają
   niewielką premię („Twoje ulubione”). Ulubione to migawki jak zestawy: działają bez bazy produktów
   i offline; listę widać i czyści się w Profilu diety → Twoje dane. Cel dnia koryguje się według
@@ -1295,17 +1302,17 @@ src/
     chains/                 sieci z własnymi danymi (Selgros): rejestr, dane (`data/*.json`), scalanie po EAN bez oferty online, kontrola liczb — 10 testów
     nearby/                 w pobliżu: odległości, zapytanie do Overpass (z halami Selgros i Makro) z zapasowym serwerem, kopia na dobę, promień — 33 testy
     diet/                   dieta: baza Dexie (`produkty-pl-dieta`, wersja 4 z zestawami, ulubionymi i planami z zakupami), model energii z kierunkiem celu, sposoby odżywiania, dzień, plan z Excela, zestawy, ulubione, wyszukiwanie, podpowiedzi — 137 testów
-    prep/                   plan z zakupami (meal prep): bloki gotowania, przepisy z koszyka, wybór ról i lista zamienników, porcje i dodatki, cele dni, check-in, lista zakupów, nazwa, przesuwanie dat, pierwszeństwo w dzienniku, migawka w bazie, odczyt z kopii — 119 testów
+    prep/                   plan z zakupami (meal prep): bloki gotowania, przepisy z koszyka, wybór ról i lista zamienników, porcje i dodatki, cele dni, check-in, lista zakupów, nazwa, przesuwanie dat, pierwszeństwo w dzienniku, migawka w bazie, odczyt z kopii — 120 testów
     restaurants/            lokale: dane sieci (`data/*.json`), kontrola liczb, wyszukiwanie, kolejność, „Najwięcej białka”, stan w adresie — 101 testów
     hooks/                  baza produktów, menu lokali, dieta na żywo i scalona z treningiem, stan w adresie, lokalizacja, sklepy w pobliżu — 22 testy
     components/common/      karta i szczegóły produktu, zdjęcie, oceny, cena, arkusz od dołu, ekrany stanu
     components/products/    przeglądarka produktów: pasek narzędzi, filtry w arkuszu, fasety, aktywne filtry, tabela, strony
     components/recipes/     przepisy: lista z filtrami, karta ze sklepem, zamiana składnika, gotowe produkty
     components/nearby/      „W pobliżu”: mapa Leaflet, promień, sklepy i przepisy z nich
-    components/diet/        dziennik, plan posiłków, postęp, profil diety, pierwsze kroki, wybór jedzenia i zestawy, import z Excela
+    components/diet/        dziennik (pytanie o wagę, arkusz ulubionych), plan posiłków, postęp, profil diety, pierwsze kroki, wybór jedzenia i zestawy, import z Excela
     components/prep/        plan z zakupami: formularz z check-inem, plan (przepisy, gotowanie, dzień po dniu), okna nazwy, dat i wymiany przepisu, „Moje plany”, lista zakupów, plan dnia w dzienniku
     components/restaurants/ Lokale: lista sieci z wyszukiwaniem, menu sieci, karta pozycji z dodaniem do dziennika
-    components/**/*.test.tsx 140 testów stron pod jsdom — przez role i etykiety, nie znaczniki
+    components/**/*.test.tsx 156 testów stron pod jsdom — przez role i etykiety, nie znaczniki
     test/                   dane do testów: produkty, most do treningu, arkusz Excela
   api.ts                    adres serwera aplikacji z buildu (`VITE_API_URL`)
   push.ts                   przypomnienia w przeglądarce: zgoda, subskrypcja Web Push, wysyłka listy
