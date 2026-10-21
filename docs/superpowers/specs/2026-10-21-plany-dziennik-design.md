@@ -106,3 +106,14 @@ New order, top to bottom:
 | Pure logic | `prep/dates.ts` (`shiftPlan`), `prep/store.ts` (`planName`, precedence by `setAt`, `renamePlan`, `movePlan`, `setInDiary`, pruning that spares named plans), `prep/select.ts` + `prep/generate.ts` (`swapOptions`, `swapRecipe(…, to)`) | Tested without the UI |
 | Screens | `components/prep/PlansPage.tsx` (list), the three sheets in `components/prep/PlanSheets.tsx` (`RenameSheet`, `DatesSheet`, `SwapSheet`), diary pieces in `components/diet/` (`WeighCard`, `FavoritesSheet`) | The existing areas and CSS prefixes (`fd-prep-`, `fd-diet-`) |
 | Route | `DietPage` gains `plans` → `#/jedzenie/plany`, title „Moje plany”, parent Plan posiłków | Same pattern as „Lista zakupów” |
+
+### 7. Decided during implementation
+
+| Topic | Decision | Why |
+| --- | --- | --- |
+| Confirmation in the favourites sheet | The sheet's footer says what was just logged („Zapisane na dziś: … · 650 kcal (2×).”, a status region); the app toast still fires | The toast renders under a modal `<dialog>`, so with the sheet open nobody would see it |
+| Rows in the open sheet | The order is taken when the sheet opens and stays until it closes | Each log raises a favourite's count; a live sort would move rows under the finger |
+| „zaczyna się” note | Only for a plan that starts after today | On a past day „zaczyna się” about a plan already running would be wrong |
+| Weight card buttons | „Zapisz wagę” / „Zmień wagę” as accessible names (the screen still says „Zapisz” / „Zmień”), „Anuluj” after „Zmień”, focus back to „Zmień” after saving | Two identical „Zapisz” buttons on one page are ambiguous for screen readers; a mistaken „Zmień” must be undoable |
+| Class modifiers | `fd-prep-tag-best`, `fd-prep-tag-soft`, `fd-prep-plan-ended` | Food CSS stays loaded across areas; every class carries its area prefix (`css.test.ts`) |
+| Demo video 12 | The scenario opens the „Ulubione” sheet before logging (not re-recorded) | The inline card it filmed no longer exists |
