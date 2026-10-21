@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Jeden ekran: klucz, Health Connect, wysyłka, prywatność. fitsSystemWindows odsuwa treść od pasków
+     systemu — od Androida 15 aplikacja rysuje się pod nimi. -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:accessibilityHeading="true"
+            android:text="@string/app_name"
+            android:textAppearance="@style/Zdrowie.Title" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/intro"
+            android:textAppearance="@style/Zdrowie.Note" />
+
+        <!-- Klucz -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:accessibilityHeading="true"
+            android:text="@string/key_heading"
+            android:textAppearance="@style/Zdrowie.Heading" />
+
+        <TextView
+            android:id="@+id/keyStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textAppearance="@style/Zdrowie.Body"
+            tools:text="@string/key_missing" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="@string/key_how"
+            android:textAppearance="@style/Zdrowie.Note" />
+
+        <Button
+            android:id="@+id/keyPaste"
+            style="@style/Zdrowie.Button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/key_paste" />
+
+        <TextView
+            android:id="@+id/keyMessage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:accessibilityLiveRegion="polite"
+            android:textAppearance="@style/Zdrowie.Body"
+            android:visibility="gone"
+            tools:text="@string/key_invalid"
+            tools:visibility="visible" />
+
+        <!-- Health Connect -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:accessibilityHeading="true"
+            android:text="@string/hc_heading"
+            android:textAppearance="@style/Zdrowie.Heading" />
+
+        <TextView
+            android:id="@+id/hcStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textAppearance="@style/Zdrowie.Body"
+            tools:text="@string/hc_access_none" />
+
+        <Button
+            android:id="@+id/hcInstall"
+            style="@style/Zdrowie.Button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/hc_install"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/hcAllow"
+            style="@style/Zdrowie.Button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/hc_allow"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/hcSettings"
+            style="@style/Zdrowie.Button.Plain"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/hc_settings"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/bgStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textAppearance="@style/Zdrowie.Note"
+            android:visibility="gone"
+            tools:text="@string/bg_on"
+            tools:visibility="visible" />
+
+        <!-- Wysyłka -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:accessibilityHeading="true"
+            android:text="@string/send_heading"
+            android:textAppearance="@style/Zdrowie.Heading" />
+
+        <TextView
+            android:id="@+id/sendStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:accessibilityLiveRegion="polite"
+            android:textAppearance="@style/Zdrowie.Body"
+            tools:text="@string/send_never" />
+
+        <Button
+            android:id="@+id/sendNow"
+            style="@style/Zdrowie.Button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/send_now" />
+
+        <Button
+            android:id="@+id/disconnect"
+            style="@style/Zdrowie.Button.Plain"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/disconnect"
+            android:visibility="gone" />
+
+        <!-- Prywatność -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:accessibilityHeading="true"
+            android:text="@string/privacy_heading"
+            android:textAppearance="@style/Zdrowie.Heading" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/privacy"
+            android:textAppearance="@style/Zdrowie.Note" />
+
+        <Button
+            android:id="@+id/privacyMore"
+            style="@style/Zdrowie.Button.Plain"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/privacy_more" />
+    </LinearLayout>
+</ScrollView>

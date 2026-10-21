@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Osobno od @color/brand: tło ikony nie ma się zmieniać w trybie ciemnym. -->
+    <color name="ic_launcher_background">#3C423D</color>
+</resources>

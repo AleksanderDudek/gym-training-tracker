@@ -20,6 +20,10 @@ export const HEALTH_SHORT =
 export const WATCH_NOTE =
   'Liczby z czujników zegarka, pokazane bez oceny: tętno spoczynkowe to średnia z ostatnich 7 dni, stres i Body Battery w skali 0–100. Pomiar na nadgarstku bywa niedokładny. Jeśli coś cię niepokoi, porozmawiaj z lekarzem.';
 
+/** Pod liczbami z telefonu — ta sama zasada co przy zegarku, inne źródła liczb. */
+export const PHONE_NOTE =
+  'Liczby z Apple Zdrowie albo Health Connect, pokazane bez oceny: tętno spoczynkowe dnia, sen z nocy, która skończyła się tego dnia, i ostatnie ważenie dnia. Ich dokładność zależy od urządzenia, które je zapisało. Jeśli coś cię niepokoi, porozmawiaj z lekarzem.';
+
 export function HealthNote({ style }: { style?: CSSProperties }) {
   return (
     <p className="hint health-note" style={style}>

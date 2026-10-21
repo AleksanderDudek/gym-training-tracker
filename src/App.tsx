@@ -50,8 +50,10 @@ import { XP, cardioXp, levelFor, xpSummary } from './engine/xp';
 import type { LevelState } from './engine/xp';
 import { SnackEntry, SnacksPage, snackLabel } from './components/Snacks';
 import { CardioEntry, CardioPage, cardioLabel, kcalText } from './components/Cardio';
-import { addCardio, minutesByDay, removeCardio, stepsOn, typedStepsOn, validCardio } from './engine/cardio';
-import { mergeWatch, restoreWatch, watchStepsOn } from './engine/watch';
+import { addCardio, deviceStepsOn, minutesByDay, removeCardio, stepsOn, typedStepsOn, validCardio } from './engine/cardio';
+import { mergeWatch, restoreWatch } from './engine/watch';
+import { mergePhone, restorePhone } from './engine/phone';
+import type { PhonePayload } from './engine/phone';
 import { addSet, answerEffort, extendRest, forgetAsk, settleOpen, skipRest, startRest, undoSet } from './engine/session';
 import type { RestPlan } from './engine/rests';
 import { cursorOf, sessionSteps } from './engine/steps';
@@ -99,6 +101,8 @@ import { InstallSteps } from './components/Install';
 import { apiConfigured } from './api';
 import { forgetWatch, garminConfigured, garminKey, pullWatch } from './garmin';
 import type { PullResult } from './garmin';
+import { forgetPhone, phoneConfigured, phoneKey, pullPhone } from './phone';
+import type { PhonePull } from './phone';
 import { attachTrail, trail } from './trail';
 import { FeedbackDialog } from './components/Feedback';
 import { ContactDialog } from './components/Contact';
@@ -143,6 +147,8 @@ function restoreExtras(next: AppState, saved: Partial<AppState>): void {
   // Dane z zegarka: przesiane jak paczka — zepsuty dzień odpada, reszta zostaje.
   const watch = restoreWatch(saved.watch);
   if (watch) next.watch = watch;
+  const phone = restorePhone(saved.phone);
+  if (phone) next.phone = phone;
   if (next.cfg.height !== undefined && !validHeight(next.cfg.height)) delete next.cfg.height;
   // Plany własne: tylko te, które da się rozpisać na kalendarz — bez tego plan z zepsutym
   // zapisem wywróciłby ekran planu, a nie tylko zniknął z listy.
@@ -457,18 +463,26 @@ export default function App() {
     };
   }, [state]);
 
-  // Dane z zegarka: przy otwarciu i po powrocie do aplikacji, nie częściej niż raz na minutę
-  // (pilnuje tego `pullWatch`). Nigdy w trakcie treningu — nowe odznaki i awans wyskakują
+  // Dane z zegarka i telefonu: przy otwarciu i po powrocie do aplikacji, nie częściej niż raz
+  // na minutę (pilnuje tego skrzynka). Nigdy w trakcie treningu — nowe odznaki i awans wyskakują
   // w oknie, a okno w środku serii to ostatnie, czego ktoś potrzebuje.
   const onWatch = useRef<(p: WatchPayload) => void>(() => undefined);
+  const onPhone = useRef<(p: PhonePayload) => void>(() => undefined);
   const ready = !!state;
   const training = !!state?.session;
   useEffect(() => {
-    if (!ready || training || !garminConfigured()) return;
+    if (!ready || training || !(garminConfigured() || phoneConfigured())) return;
+    // Jedno po drugim: obie paczki zaczynają od `live.current`, ale okna z odznakami
+    // z dwóch źródeł naraz nachodziłyby na siebie.
     const pull = () =>
-      void pullWatch().then((r) => {
-        if (r.kind === 'ok') onWatch.current(r.payload);
-      });
+      void pullWatch()
+        .then((r) => {
+          if (r.kind === 'ok') onWatch.current(r.payload);
+        })
+        .then(() => pullPhone())
+        .then((r) => {
+          if (r.kind === 'ok') onPhone.current(r.payload);
+        });
     const t = window.setTimeout(pull, 1500);
     const back = () => {
       if (document.visibilityState === 'visible') pull();
@@ -775,6 +789,7 @@ export default function App() {
     const fresh = syncBadges(next, badgeCtx(next));
     commit(next);
     const b = cardioBurn(next, entry);
+    const device = deviceStepsOn(next, day);
     const dayXp = (s: AppState): number => cardioXp(minutesByDay(s)[day] ?? 0);
     const gained = dayXp(next) - dayXp(from);
     setToastMsg(
@@ -782,8 +797,8 @@ export default function App() {
         (gained > 0 ? ` · +${gained} XP` : dayXp(next) >= XP.cardioCap ? ' · bez XP, limit dnia' : '') +
         '.' +
         (replaced ? ' Poprzednia liczba kroków z tego dnia zastąpiona.' : '') +
-        (entry.kind === 'steps' && (watchStepsOn(next, day) ?? 0) > entry.steps
-          ? ` Zegarek podał więcej (${watchStepsOn(next, day)!.toLocaleString('pl-PL')}) — liczy się jego liczba.`
+        (entry.kind === 'steps' && device && device.steps > entry.steps
+          ? ` ${device.src === 'phone' ? 'Telefon' : 'Zegarek'} podał więcej (${device.steps.toLocaleString('pl-PL')}) — liczy się jego liczba.`
           : '') +
         (revoked ? ` Cofnięte progi, których nowa liczba nie uzasadnia: ${revoked}.` : '') +
         (b ? '' : ' Kalorie pokażą się po wpisaniu wagi.'),
@@ -799,26 +814,36 @@ export default function App() {
    * doświadczenie i odznaki. Nowa paczka może też obniżyć kroki dnia (zegarek poprawił
    * licznik), więc progi, których historia już nie uzasadnia, wracają — jak przy poprawce wpisu.
    */
-  const applyWatch = (payload: WatchPayload) => {
+  const applyDevice = (merge: (s: AppState) => boolean, from: string) => {
+    // Zaczyna od `live.current`: paczki zegarka i telefonu przychodzą jedna po drugiej, zanim
+    // React przerysuje, a druga z wersji sprzed pierwszej skasowałaby pierwszą.
+    const base = live.current ?? state;
     // Paczka, która była w drodze, gdy ruszał trening, poczeka: następne sprawdzenie po
     // treningu przyniesie ją jeszcze raz, a okno z odznaką nie wskoczy w środek serii.
-    if (state.session) return;
-    const before = levelNow(state);
-    const next = clone(state);
-    if (!mergeWatch(next, payload)) return;
+    if (base.session) return;
+    const before = levelNow(base);
+    const next = clone(base);
+    if (!merge(next)) return;
     revokeUnmet(next, badgeCtx(next), (d) => d.group === 'cardio');
     const fresh = syncBadges(next, badgeCtx(next));
     commit(next);
     void (async () => {
-      if (fresh.length) await sayBadges(fresh, metrics(next), 'Z danymi z zegarka');
+      if (fresh.length) await sayBadges(fresh, metrics(next), from);
       await sayLevel(before, next);
     })();
   };
-  onWatch.current = applyWatch;
+  onWatch.current = (p) => applyDevice((s) => mergeWatch(s, p), 'Z danymi z zegarka');
+  onPhone.current = (p) => applyDevice((s) => mergePhone(s, p), 'Z danymi z telefonu');
 
   const checkWatch = async (): Promise<PullResult> => {
     const r = await pullWatch(true);
     if (r.kind === 'ok') onWatch.current(r.payload);
+    return r;
+  };
+
+  const checkPhone = async (): Promise<PhonePull> => {
+    const r = await pullPhone(true);
+    if (r.kind === 'ok') onPhone.current(r.payload);
     return r;
   };
 
@@ -1504,6 +1529,7 @@ export default function App() {
 
   const resetAll = async () => {
     const watch = !!garminKey();
+    const phone = !!phoneKey();
     // Pytanie wymienia dziennik jedzenia, gdy baza naprawdę coś ma — znacznik diety nie widzi
     // dziennika bez profilu. Gdy bazy nie da się odczytać, nie ma czego wymieniać.
     const food = await import('./food/backup').then((m) => m.hasFoodData()).catch(() => false);
@@ -1513,6 +1539,7 @@ export default function App() {
         Historia, poziomy ćwiczeń i własne treningi znikną bezpowrotnie
         {food ? ' — razem z dziennikiem jedzenia i profilem diety' : ''}.
         {watch && ' Zegarek Garmin zostanie odłączony — inaczej przysłałby ostatni tydzień z powrotem.'}
+        {phone && ' Telefon zostanie odłączony — inaczej przysłałby ostatnie dwa tygodnie z powrotem.'}
       </p>,
       'Usuń wszystko',
       { who: 'siwy', mood: 'wise' },
@@ -1520,6 +1547,7 @@ export default function App() {
     if (!ok) return;
     await store.clear();
     if (watch) await forgetWatch();
+    if (phone) await forgetPhone();
     // Jedzenie też: inaczej stare ważenia z diety wróciłyby do dziennika wagi przy następnym wejściu.
     await import('./food/backup').then((m) => m.clearFood()).catch(() => undefined);
     forgetSections();
@@ -1796,7 +1824,7 @@ export default function App() {
         <ProfileView
           state={state}
           onAvatar={setAvatar}
-          onWeight={(kg) => setWeight(kg)}
+          onWeight={(kg, day) => setWeight(kg, day)}
           onHeight={(cm) => setHeight(cm)}
           onDeleteWeight={deleteWeight}
           onToast={setToastMsg}
@@ -1845,6 +1873,7 @@ export default function App() {
           onFeedback={apiConfigured() ? () => setFeedbackOpen(true) : undefined}
           onReminders={setReminders}
           onWatchSync={checkWatch}
+          onPhoneSync={checkPhone}
           onToast={setToastMsg}
           onClockPref={setClockPref}
           onIntro={() => setReplayIntro(true)}

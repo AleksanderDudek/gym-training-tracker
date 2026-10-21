@@ -149,6 +149,11 @@ describe('zapis i import', () => {
     const twice = restoreWatch({ ...s.watch, days: [...s.watch!.days, { ...s.watch!.days[0], steps: 1 }] });
     expect(twice!.days).toHaveLength(s.watch!.days.length);
     expect(restoreWatch({ t: 'x' })).toBeUndefined();
+    // Czas z przyszłości zablokowałby każdą następną paczkę, a start poza kalendarzem wywróciłby ekran.
+    expect(restoreWatch({ ...s.watch, t: 9e15 }, NOW)).toBeUndefined();
+    const far = restoreWatch({ ...s.watch, acts: [...s.watch!.acts, { start: 9e12, sport: 2, sec: 3600, m: 9000 }] }, NOW)!;
+    expect(far.acts).toEqual(s.watch!.acts);
+    expect(() => watchEntries(far)).not.toThrow();
     expect(restoreWatch(undefined)).toBeUndefined();
   });
 });

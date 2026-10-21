@@ -36,12 +36,16 @@ jobs:
       # Serwer aplikacji (server/api — przypomnienia i uwagi): adres i klucz publiczny VAPID ze
       # zmiennych repozytorium (Settings → Secrets and variables → Actions → Variables).
       # Puste — aplikacja bez przypomnień i bez formularza uwag. Adres aplikacji na zegarek
-      # w Connect IQ Store włącza kartę „Zegarek Garmin” (garmin/README.md).
+      # w Connect IQ Store włącza kartę „Zegarek Garmin” (garmin/README.md), a adresy aplikacji
+      # GYM TRACKER Zdrowie (App Store/TestFlight, APK albo Google Play) — kartę „Zdrowie
+      # z telefonu” (health/README.md).
       - run: npm run build
         env:
           VITE_API_URL: ${{ vars.API_URL }}
           VITE_VAPID_PUBLIC_KEY: ${{ vars.VAPID_PUBLIC_KEY }}
           VITE_GARMIN_APP_URL: ${{ vars.GARMIN_APP_URL }}
+          VITE_HEALTH_IOS_URL: ${{ vars.HEALTH_IOS_URL }}
+          VITE_HEALTH_ANDROID_URL: ${{ vars.HEALTH_ANDROID_URL }}
 
       - uses: actions/configure-pages@v5
 

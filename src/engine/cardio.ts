@@ -2,7 +2,8 @@ import type { AppState, Cardio, CardioInput, CardioSport } from '../types';
 import { heightOf, weightOn } from './body';
 import { DANCE_MET, DANCE_SHARE, STEP_CADENCE, cardioEnergy } from './energy';
 import { daysBetween, mondayOf } from './schedule';
-import { watchEntries } from './watch';
+import { phoneEntries } from './phone';
+import { watchEntries, watchStepsOn } from './watch';
 
 /**
  * Kroki, bieżnia, rower i taniec wpisane ręcznie.
@@ -101,32 +102,58 @@ export function normalize(c: CardioInput): CardioInput {
 /** Wpisy wpisane ręcznie — tylko te da się usunąć. Zapisy starsze niż lista wczytują się jako pusta. */
 export const manualOf = (state: AppState): Cardio[] => state.cardio ?? [];
 
+/** Przejazd z telefonu w tych minutach co przejazd z zegarka to ten sam przejazd, skopiowany przez Garmin Connect. */
+export const SAME_RIDE_SEC = 600;
+
 /**
  * Cały ruch, z którego liczą się kalorie, minuty ruchu, doświadczenie i odznaki: wpisy ręczne
- * i to, co podał zegarek. Kroki mają jeden wpis na dzień, więc z dwóch liczb — wpisanej
- * i z zegarka — zostaje wyższa. Niższa nie przepada: czeka w zapisie i wraca, gdyby druga
- * zniknęła. Przy remisie zostaje wpis ręczny, bo ten da się usunąć.
+ * i to, co podały zegarek i telefon. Kroki mają jeden wpis na dzień, więc z trzech liczb —
+ * wpisanej, z zegarka i z telefonu — zostaje najwyższa: mierzą to samo chodzenie, a telefon
+ * często ma już w sobie kroki zegarka. Niższe nie przepadają: czekają w zapisie i wracają,
+ * gdyby wyższa zniknęła. Przy remisie zostaje wpis ręczny, bo ten da się usunąć, potem zegarek.
+ * Przejazd z telefonu ustępuje przejazdowi z zegarka, który zaczął się w tych samych minutach.
  */
 export function cardioOf(state: AppState): Cardio[] {
   const manual = manualOf(state);
   const watch = watchEntries(state.watch).filter((c) => inputProblem(c) === null);
-  if (!watch.length) return manual;
-  const watchSteps = new Map<string, number>();
-  watch.forEach((c) => {
-    if (c.kind === 'steps') watchSteps.set(c.day, c.steps);
+  const watchRides = watch.filter((c) => c.kind === 'bike').map((c) => Date.parse(c.at));
+  const phone = phoneEntries(state.phone).filter(
+    (c) =>
+      inputProblem(c) === null &&
+      (c.kind !== 'bike' || !watchRides.some((at) => Math.abs(at - Date.parse(c.at)) <= SAME_RIDE_SEC * 1000)),
+  );
+  const device = [...watch, ...phone];
+  if (!device.length) return manual;
+  // Najwyższa liczba z urządzeń na dzień; przy remisie zostaje pierwsza — zegarek przed telefonem.
+  const best = new Map<string, Extract<Cardio, { kind: 'steps' }>>();
+  device.forEach((c) => {
+    if (c.kind !== 'steps') return;
+    const b = best.get(c.day);
+    if (!b || c.steps > b.steps) best.set(c.day, c);
   });
   const typedWins = new Set<string>();
   const out = manual.filter((c) => {
     if (c.kind !== 'steps') return true;
-    const w = watchSteps.get(c.day);
-    if (w !== undefined && w > c.steps) return false;
+    const d = best.get(c.day);
+    if (d && d.steps > c.steps) return false;
     typedWins.add(c.day);
     return true;
   });
-  watch.forEach((c) => {
-    if (c.kind !== 'steps' || !typedWins.has(c.day)) out.push(c);
+  device.forEach((c) => {
+    if (c.kind !== 'steps' || (best.get(c.day) === c && !typedWins.has(c.day))) out.push(c);
   });
   return out;
+}
+
+/**
+ * Kroki z urządzeń na dzień: wyższa liczba z zegarka i telefonu i to, skąd przyszła — do
+ * formularza kroków i komunikatu po zapisie. `null`, gdy żadne urządzenie o tym dniu nic nie mówi.
+ */
+export function deviceStepsOn(state: AppState, day: string): { steps: number; src: 'watch' | 'phone' } | null {
+  const w = watchStepsOn(state, day) ?? 0;
+  const p = state.phone?.days.find((d) => d.day === day)?.steps ?? 0;
+  if (!w && !p) return null;
+  return p > w ? { steps: p, src: 'phone' } : { steps: w, src: 'watch' };
 }
 
 /** Czy zapisany wpis da się bezpiecznie wczytać — po imporcie pliku albo ze starego zapisu. */

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Manifest prywatności. Bez śledzenia i bez danych „zbieranych” w rozumieniu Apple: dane o zdrowiu
+  opuszczają telefon tylko zaszyfrowane kluczem, którego serwer nie zna, więc ani autor, ani nikt
+  inny nie może ich odczytać. Uzasadnienie i ostrożniejsza wersja deklaracji: README.md.
+  UserDefaults (CA92.1): ostatni wynik wysyłki, czytany tylko przez tę aplikację.
+-->
+<plist version="1.0">
+<dict>
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array>
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>CA92.1</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>

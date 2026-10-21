@@ -18,6 +18,7 @@ import {
   activeMinutes,
   cardioOf,
   cardioOn,
+  deviceStepsOn,
   inputProblem,
   lastOf,
   minutesByDay,
@@ -27,8 +28,8 @@ import {
   typedStepsOn,
   weekMinutes,
 } from '../engine/cardio';
-import { watchStepsOn } from '../engine/watch';
-import { WATCH_NOTE } from './Health';
+import { phoneWeightOffer, recentPhoneDays } from '../engine/phone';
+import { PHONE_NOTE, WATCH_NOTE } from './Health';
 import { XP, cardioXp } from '../engine/xp';
 import {
   DANCE_SHARE,
@@ -59,6 +60,9 @@ const pl = (n: number, digits = 0): string =>
 
 /** Liczba z wyświetlacza: jedna cyfra po przecinku tylko wtedy, gdy jest. */
 const decimal = (v: number): string => pl(v, Number.isInteger(v) ? 0 : 1);
+
+/** Skąd liczba kroków albo przejazd, kiedy nie z wpisu. */
+const SOURCE = { watch: 'Zegarek', phone: 'Telefon' } as const;
 
 /** „≈ 245 kcal”. Tylda zostaje zawsze — to szacunek, a nie pomiar. */
 export const kcalText = (kcal: number): string => `≈ ${roundKcal(kcal).toLocaleString('pl-PL')} kcal`;
@@ -347,10 +351,10 @@ export function CardioEntry({
   const problem = clean ? inputProblem(clean) : null;
   // Droga i czas nie zależą od wagi, więc bez niej liczymy je dla dowolnej — kalorii wtedy nie pokazujemy.
   const preview = clean && !problem ? cardioEnergy(clean, kg ?? 70, heightOf(state)) : null;
-  // Wpis ręczny zastępuje się nowym; liczba z zegarka zostaje i wygrywa, jeśli jest wyższa.
+  // Wpis ręczny zastępuje się nowym; liczba z zegarka albo telefonu zostaje i wygrywa, jeśli jest wyższa.
   const prevSteps = kind === 'steps' && dayOk ? typedStepsOn(state, day) : 0;
-  const watchSteps = kind === 'steps' && dayOk ? watchStepsOn(state, day) : null;
-  const watchRides = kind === 'bike' && dayOk ? cardioOn(state, day).filter((c) => c.src === 'watch' && sportOf(c) === 'bike') : [];
+  const device = kind === 'steps' && dayOk ? deviceStepsOn(state, day) : null;
+  const deviceRides = kind === 'bike' && dayOk ? cardioOn(state, day).filter((c) => c.src && sportOf(c) === 'bike') : [];
   const mins =
     clean && !problem ? Math.floor(activeMinutes(state, { ...clean, key: '', day, at: '' })) : 0;
   const minsText =
@@ -570,16 +574,16 @@ export function CardioEntry({
             z całego dnia.
           </p>
         )}
-        {watchSteps !== null && watchSteps > 0 && (
+        {device && (
           <p className="tight cardio-note">
-            Zegarek podał na ten dzień {stepsText(watchSteps)}. Liczy się wyższa z dwóch liczb, więc
+            {SOURCE[device.src]} podał na ten dzień {stepsText(device.steps)}. Liczy się wyższa liczba, więc
             niższy wpis niczego nie zmieni.
           </p>
         )}
-        {watchRides.length > 0 && (
+        {deviceRides.length > 0 && (
           <p className="tight cardio-note">
-            Zegarek podał już przejazd z tego dnia: {watchRides.map((c) => cardioLabel(c)).join(', ')}.
-            Wpisz tylko inny — ten sam policzyłby się dwa razy.
+            {deviceRides.some((c) => c.src === 'watch') ? 'Zegarek' : 'Telefon'} podał już przejazd z tego dnia:{' '}
+            {deviceRides.map((c) => cardioLabel(c)).join(', ')}. Wpisz tylko inny — ten sam policzyłby się dwa razy.
           </p>
         )}
 
@@ -640,18 +644,17 @@ function CardioItem({ state, c, onDelete }: { state: AppState; c: Cardio; onDele
   const b = cardioBurn(state, c);
   // Droga nie zależy od wagi, więc stoi na liście także przed pierwszym ważeniem.
   const km = cardioEnergy(c, 70, heightOf(state)).km;
-  // Wpis z zegarka nie ma krzyżyka: nie leży w zapisie, a zegarek przyśle go znowu.
-  const watch = c.src === 'watch';
+  // Wpis z zegarka albo telefonu nie ma krzyżyka: nie leży w zapisie, a urządzenie przyśle go znowu.
   return (
     <div className="cardio-item">
       <span className="cardio-name">
         {cardioLabel(c)}
-        {watch && <small className="watch-src"> · z zegarka</small>}
+        {c.src && <small className="watch-src"> · {c.src === 'phone' ? 'z telefonu' : 'z zegarka'}</small>}
       </span>
       <span className="snack-amt">
         {[km !== null ? kmText(km) : null, b ? kcalText(b.active) : null].filter(Boolean).join(' · ')}
       </span>
-      {watch ? (
+      {c.src ? (
         <span aria-hidden="true" />
       ) : (
         <button className="snack-del" onClick={() => onDelete(c.key)} aria-label={`Usuń wpis: ${cardioLabel(c)}`}>
@@ -695,6 +698,51 @@ function WatchHealthDays({ state, today }: { state: AppState; today: string }) {
       <div className="wrap">
         <p className="hint" style={{ marginTop: 8 }}>
           {WATCH_NOTE}
+        </p>
+      </div>
+    </>
+  );
+}
+
+/** „7 h 12 min” — sen w minutach. */
+export const sleepText = (min: number): string => {
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return h ? `${h} h${m ? ` ${m} min` : ''}` : `${m} min`;
+};
+
+/** Zdrowie z telefonu: siedem dni, najnowszy na górze. Same liczby, bez oceny — jak z zegarka. */
+function PhoneHealthDays({ state, today }: { state: AppState; today: string }) {
+  const rows = recentPhoneDays(state, today, 7)
+    .slice(0, 7)
+    .map((h) => ({
+      day: h.day,
+      text: [
+        h.rhr !== null ? `tętno spoczynkowe ${h.rhr}` : null,
+        h.hrMin !== null || h.hrMax !== null
+          ? `tętno ${h.hrMin === null || h.hrMax === null ? (h.hrMin ?? h.hrMax) : h.hrMin === h.hrMax ? h.hrMin : `${h.hrMin}–${h.hrMax}`}${h.hrAvg !== null ? `, średnio ${h.hrAvg}` : ''}`
+          : null,
+        h.sleep !== null && h.sleep > 0 ? `sen ${sleepText(h.sleep)}` : null,
+        h.kg !== null ? `waga ${decimal(h.kg)} kg` : null,
+      ]
+        .filter(Boolean)
+        .join(' · '),
+    }))
+    .filter((r) => r.text);
+  if (!rows.length) return null;
+  return (
+    <>
+      <div className="sect-label">Z telefonu</div>
+      {rows.map((r) => (
+        <div className="h-item" key={r.day}>
+          <div className="h-date">{dm(r.day)}</div>
+          <div className="h-detail">{r.text}</div>
+          <div className="streak" />
+        </div>
+      ))}
+      <div className="wrap">
+        <p className="hint" style={{ marginTop: 8 }}>
+          {PHONE_NOTE}
         </p>
       </div>
     </>
@@ -809,6 +857,7 @@ export function CardioPage({
       </div>
 
       <WatchHealthDays state={state} today={today} />
+      <PhoneHealthDays state={state} today={today} />
 
       {past.length > 0 && (
         <>
@@ -899,7 +948,8 @@ export function BodyCard({
   onToast,
 }: {
   state: AppState;
-  onWeight: (kg: number) => void;
+  /** Ważenie z karty jest dzisiejsze; ważenie z telefonu ma swój dzień. */
+  onWeight: (kg: number, day?: string) => void;
   onHeight: (cm: number | null) => void;
   onDeleteWeight: (day: string) => void;
   onToast: (m: string) => void;
@@ -910,7 +960,9 @@ export function BodyCard({
   const recent = bodyOf(state).slice(-5).reverse();
   // Wykres z ostatnich 30 ważeń i średnia z tygodnia — dzień do dnia waga skacze z wodą.
   const weights = bodyOf(state).slice(-30).map((b) => b.kg);
-  const trend = weightTrend(state, dayKey(Date.now()));
+  const today = dayKey(Date.now());
+  const trend = weightTrend(state, today);
+  const offer = phoneWeightOffer(state, today);
 
   const saveKg = (e: FormEvent) => {
     e.preventDefault();
@@ -945,6 +997,16 @@ export function BodyCard({
           ? `Ostatnie ważenie: ${decimal(latest.kg)} kg, ${dm(latest.day)}.${trend.avg !== null ? ` Średnia z 7 dni: ${decimal(trend.avg)} kg.` : ''} Kalorie liczą się z wagi z dnia ruchu, więc nowe ważenie nie zmienia historii.`
           : 'Z wagi liczą się kalorie kroków, bieżni, roweru, tańca i treningów. Najlepiej ważyć się rano, codziennie albo kilka razy w tygodniu — ekran Dziś o to zapyta.'}
       </p>
+      {offer && (
+        <div className="cardio-note phone-weight">
+          <p className="tight">
+            Telefon ma nowsze ważenie: {decimal(offer.kg)} kg, {dm(offer.day)}.
+          </p>
+          <button className="btn sm ghost" onClick={() => onWeight(offer.kg, offer.day)}>
+            Wpisz do dziennika
+          </button>
+        </div>
+      )}
       {weights.length >= 3 && (
         <Trendline values={weights} label={`Waga z ${weights.length} ostatnich ważeń, kg`} noun="ważeń" fmt={(v) => decimal(v)} />
       )}

@@ -6,7 +6,8 @@ Cloudflare Worker z trzema zadaniami:
   o czasie lokalnym telefonu, na Androidzie i iPhonie;
 - **uwagi od użytkowników** — wiadomość z formularza w aplikacji (e-mail, treść, zrzut ekranu,
   ślad wizyty) i lista dla autora za hasłem;
-- **skrzynki zegarka Garmin** — zaszyfrowana paczka z zegarka czeka, aż odbierze ją aplikacja.
+- **skrzynki zegarka Garmin i telefonu** — zaszyfrowana paczka z zegarka albo z aplikacji GYM TRACKER
+  Zdrowie czeka, aż odbierze ją aplikacja.
   Klucza serwer nie ma.
 
 ## Dlaczego serwer
@@ -65,6 +66,7 @@ Potem w GitHubie: **Settings → Secrets and variables → Actions → Variables
 | `API_URL` | adres Workera z `wrangler deploy` (bez ukośnika na końcu) |
 | `VAPID_PUBLIC_KEY` | klucz publiczny wypisany przez `node keys.mjs` |
 | `GARMIN_APP_URL` | adres aplikacji GYM TRACKER w Connect IQ Store — włącza kartę zegarka (`garmin/README.md`) |
+| `HEALTH_IOS_URL`, `HEALTH_ANDROID_URL` | adresy aplikacji GYM TRACKER Zdrowie (App Store/TestFlight, APK albo Google Play) — włączają kartę „Zdrowie z telefonu” (`health/README.md`) |
 
 Następne wdrożenie strony (push na `main`) zbuduje aplikację z kartą „Przypomnienia”
 w Ustawieniach i dymkiem „Napisz do autora” w pasku. Bez tych zmiennych nie ma ani jednego,
@@ -138,6 +140,11 @@ w postaci, której nie umie odczytać. `box` to 32 znaki hex wyprowadzone z kluc
 może paczkę nadpisać albo skasować, ale nie odczytać ani podrobić — aplikacja odrzuci kopertę
 bez poprawnego podpisu. W bazie leży szyfrogram, czas zapisu i skrót adresu IP, z którego
 skrzynkę założono.
+
+**Telefon używa tych samych skrzynek.** Aplikacja GYM TRACKER Zdrowie (`health/`) pieczętuje dane
+z Apple Zdrowie albo Health Connect tą samą kopertą, własnym kluczem, i wysyła je na
+`/garmin/push`. Serwer nie odróżnia telefonu od zegarka i nie musi: przechowuje szyfrogram, nic
+więcej. Nazwa ścieżki jest historyczna; zmiana nie wymaga nowego wdrożenia serwera.
 
 **Limity.** Jedna paczka na minutę na skrzynkę, 20 nowych skrzynek na godzinę z jednego adresu,
 koperta do 12 000 znaków. Skrzynka bez zapisu przez 7 dni znika przy przebiegu crona — tyle

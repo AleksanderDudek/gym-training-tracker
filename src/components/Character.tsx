@@ -29,10 +29,10 @@ export function lastActiveDay(state: AppState): string | null {
     ...state.log.map((e) => dayKey(e.date)),
     ...snacksOf(state).map((s) => dayKey(s.at)),
     // Dzień wpisu, nie chwila zapisu — kroki z wczoraj wpisane dziś rano to ruch wczoraj.
-    // Zegarek liczy kroki każdego dnia, także po mieszkaniu, więc jego dzień jest ruchem
-    // dopiero z minutami ruchu — inaczej postać nigdy by nie zatęskniła.
+    // Zegarek i telefon liczą kroki każdego dnia, także po mieszkaniu, więc ich dzień jest
+    // ruchem dopiero z minutami ruchu — inaczej postać nigdy by nie zatęskniła.
     ...cardioOf(state)
-      .filter((c) => c.src !== 'watch' || activeMinutes(state, c) > 0)
+      .filter((c) => !c.src || activeMinutes(state, c) > 0)
       .map((c) => c.day),
   ];
   return days.length ? days.reduce((a, b) => (a > b ? a : b)) : null;

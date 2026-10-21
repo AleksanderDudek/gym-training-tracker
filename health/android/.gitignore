@@ -1,0 +1,16 @@
+# Wyniki buildu i pamięć podręczna Gradle
+build/
+.gradle/
+.kotlin/
+
+# Ścieżka do Android SDK na tym komputerze
+local.properties
+
+# Klucze podpisu wydania leżą tylko w sekretach GitHuba albo u autora, nigdy w repozytorium
+*.keystore
+*.jks
+
+# Android Studio
+.idea/
+*.iml
+captures/

@@ -17,9 +17,9 @@ import type { AppState, Cardio, WatchActivity, WatchData, WatchDay, WatchHealth 
 /** `Activity.SPORT_CYCLING` w Connect IQ — numeracja sportów z protokołu FIT. */
 export const SPORT_CYCLING = 2;
 
-const DAY = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
+export const DAY = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
 /** Wcześniejszy czas to nie dawna aktywność, tylko zegar liczony od innej epoki. */
-const EPOCH_MIN = Date.parse('2015-01-01T00:00:00Z') / 1000;
+export const EPOCH_MIN = Date.parse('2015-01-01T00:00:00Z') / 1000;
 
 /**
  * Zakresy liczb z zegarka. Poza nimi to błąd czujnika albo zepsuty zapis, a nie wynik:
@@ -39,7 +39,7 @@ export const WATCH_LIMITS = {
 
 const L = WATCH_LIMITS;
 
-const num = (v: unknown, min: number, max: number): number | null =>
+export const num = (v: unknown, min: number, max: number): number | null =>
   typeof v === 'number' && Number.isFinite(v) && v >= min && v <= max ? Math.round(v) : null;
 
 const lim = (v: unknown, [min, max]: readonly [number, number]): number | null => num(v, min, max);
@@ -58,7 +58,7 @@ function dayRow(r: unknown): WatchDay | null {
   return { day: r[0], steps, m: lim(r[2], L.meters), floors: lim(r[3], L.floors), active: lim(r[4], L.active) };
 }
 
-function actRow(r: unknown, t: number): WatchActivity | null {
+export function actRow(r: unknown, t: number): WatchActivity | null {
   if (!Array.isArray(r)) return null;
   const start = num(r[0], EPOCH_MIN, t + 86_400);
   const sport = lim(r[1], L.sport);
@@ -84,7 +84,7 @@ function healthRow(r: unknown): WatchHealth | null {
   return Object.entries(h).some(([k, v]) => k !== 'day' && v !== null) ? h : null;
 }
 
-const rows = <T>(v: unknown, max: number, f: (r: unknown) => T | null): T[] =>
+export const rows = <T>(v: unknown, max: number, f: (r: unknown) => T | null): T[] =>
   (Array.isArray(v) ? v.slice(0, max) : []).map(f).filter((x): x is T => x !== null);
 
 /**
@@ -96,7 +96,9 @@ export function parsePayload(v: unknown, nowMs: number = Date.now()): WatchPaylo
   if (!v || typeof v !== 'object') return null;
   const p = v as Record<string, unknown>;
   const t = num(p.t, EPOCH_MIN, nowMs / 1000 + 86_400);
-  if (p.v !== 1 || t === null) return null;
+  // Paczka z polem `k` to paczka innego urządzenia (telefon ma `k: 'phone'`) — klucz z jednej
+  // karty wklejony w drugie urządzenie nie może podać zegarkowi cudzych liczb.
+  if (p.v !== 1 || t === null || p.k !== undefined) return null;
   return {
     t,
     days: rows(p.d, 31, dayRow),
@@ -105,13 +107,13 @@ export function parsePayload(v: unknown, nowMs: number = Date.now()): WatchPaylo
   };
 }
 
-const merged = <T, K>(old: T[], fresh: T[], key: (x: T) => K, order: (a: T, b: T) => number): T[] => {
+export const merged = <T, K>(old: T[], fresh: T[], key: (x: T) => K, order: (a: T, b: T) => number): T[] => {
   const m = new Map<K, T>();
   [...old, ...fresh].forEach((x) => m.set(key(x), x));
   return [...m.values()].sort(order);
 };
 
-const byDay = (a: { day: string }, b: { day: string }) => a.day.localeCompare(b.day);
+export const byDay = (a: { day: string }, b: { day: string }) => a.day.localeCompare(b.day);
 
 /**
  * Dokłada paczkę do zapisu i mówi, czy coś się zmieniło. Starsza albo ta sama paczka nic nie
@@ -133,7 +135,7 @@ export function mergeWatch(state: AppState, p: WatchPayload, got: Date = new Dat
 }
 
 /** Dzień lokalny, jak na zegarku: przejazd o 23:30 należy do dnia, w którym się zaczął. */
-const localDayOf = (d: Date): string =>
+export const localDayOf = (d: Date): string =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 /**
@@ -177,11 +179,15 @@ export const watchStepsOn = (state: AppState, day: string): number | null =>
 
 const obj = (x: unknown): Record<string, unknown> => (x && typeof x === 'object' ? (x as Record<string, unknown>) : {});
 
-/** Dane z zegarka z zapisu albo importu — przesiane tymi samymi zakresami co paczka. */
-export function restoreWatch(v: unknown): WatchData | undefined {
+/**
+ * Dane z zegarka z zapisu albo importu — przesiane tymi samymi zakresami co paczka, także czas:
+ * paczka „z przyszłości” zablokowałaby każdą następną (starsza nic nie zmienia), a aktywność
+ * z datą poza kalendarzem wywróciłaby `toISOString` na każdym ekranie z ruchem.
+ */
+export function restoreWatch(v: unknown, nowMs: number = Date.now()): WatchData | undefined {
   if (!v || typeof v !== 'object') return undefined;
   const w = v as Record<string, unknown>;
-  const t = num(w.t, EPOCH_MIN, Number.MAX_SAFE_INTEGER);
+  const t = num(w.t, EPOCH_MIN, nowMs / 1000 + 86_400);
   if (t === null || typeof w.got !== 'string' || Number.isNaN(Date.parse(w.got))) return undefined;
   const all = Number.MAX_SAFE_INTEGER;
   // Przez `merged`, jak paczka: poprawiony ręcznie plik z dwoma takimi samymi dniami dałby
@@ -202,7 +208,7 @@ export function restoreWatch(v: unknown): WatchData | undefined {
       [],
       rows(w.acts, all, (x) => {
         const a = obj(x);
-        return actRow([a.start, a.sport, a.sec, a.m], all);
+        return actRow([a.start, a.sport, a.sec, a.m], t);
       }),
       (a) => a.start,
       (a, b) => a.start - b.start,
