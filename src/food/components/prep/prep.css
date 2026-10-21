@@ -56,6 +56,10 @@
 .fd-prep-freeze b,.fd-prep-cooknote b{display:flex;align-items:center;gap:6px}
 .fd-prep-cooknote{margin:4px 0 10px}
 .fd-prep-cooknote a{display:inline-flex;align-items:center;min-height:44px;font-size:13.5px;font-weight:600;color:var(--steel)}
+/* Karta dnia w dzienniku: pod tytułem nazwa planu (odnośnik do niego) i który to dzień planu. */
+.fd-prep-daytitle{display:block;font-size:14px;font-weight:400}
+.fd-prep-daytitle a{display:inline-block;padding:4px 0;color:var(--steel);font-weight:600;text-decoration:underline;
+  text-underline-offset:2px;overflow-wrap:anywhere}
 
 /* Dzień po dniu: dzień zwinięty do jednej linijki z kaloriami, dziś rozwinięty. */
 .fd-prep-day{border-top:1px solid var(--surface-2)}

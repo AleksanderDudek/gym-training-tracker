@@ -82,10 +82,15 @@
 .fd-diet-macro-head span:last-child{font-family:var(--display);color:var(--ink-soft)}
 .fd-diet-macro .fd-diet-note{display:block;font-weight:500;font-size:12.5px}
 .fd-diet-balance .actions{margin:14px 0 2px}
+/* „Dodaj zjedzone” i „Ulubione” obok siebie, póki się mieszczą; na najwęższych — jeden pod drugim. */
+.fd-diet-balance .fd-diet-dayacts{display:flex;flex-wrap:wrap;gap:8px}
+.fd-diet-dayacts .btn{flex:1 1 auto;padding-inline:14px}
 .fd-diet-macros + p.tight{margin-top:8px}
 
-/* Wejścia do podstron: trzy kafelki w rzędzie, jak kafelki liczb w profilu, ale klikalne. */
-.fd-diet-subnav{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px auto}
+/* Wejścia do podstron: cztery kafelki, jak kafelki liczb w profilu, ale klikalne — na telefonie
+   dwa na dwa (cztery w rzędzie łamały „Plan posiłków” na trzy linijki), od 480 px w jednym rzędzie. */
+.fd-diet-subnav{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:12px auto}
+@media (min-width:480px){.fd-diet-subnav{grid-template-columns:repeat(4,1fr)}}
 .fd-diet-subnav a{display:grid;justify-items:center;align-content:center;gap:4px;min-height:64px;padding:8px 4px;
   background:var(--surface);border:1px solid var(--line);border-radius:var(--r);color:var(--ink);
   text-decoration:none;font-size:13px;font-weight:600;line-height:1.2;text-align:center;
@@ -143,15 +148,28 @@
 
 .grp p.fd-diet-line,.fd-diet-line{display:flex;gap:6px;align-items:flex-start;margin:0 0 8px;font-size:13px;color:var(--ink-soft)}
 .fd-diet-line svg{flex:none;margin-top:1px}
+/* „Plan … zaczyna się …”: jedno zdanie w miejscu planu dnia. */
+.grp.fd-diet-nextplan{padding-block:10px}
+.fd-diet-nextplan p.fd-diet-line{margin:0;font-size:13.5px;color:var(--ink)}
+.fd-diet-nextplan svg{color:var(--steel)}
 
-/* ---------------- Waga, kroki i ruch ---------------- */
+/* ---------------- Waga na górze, kroki i ruch niżej ---------------- */
 
-.fd-diet-body{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;margin:8px 0}
+/* Jedno pole i przycisk (albo dwa: „Zapisz” i „Anuluj”) w rzędzie — pole nie szersze niż liczba. */
+.fd-diet-body{display:grid;grid-auto-flow:column;grid-template-columns:minmax(0,170px);justify-content:start;gap:10px;
+  align-items:end;margin:8px 0}
 .fd-diet-body .btn{min-height:48px}
 /* Przycisk bez czego zapisać wygląda na nieczynny — w treningach `.btn` nie ma stanu wyłączonego. */
 .fd-diet-body .btn:disabled,.fd-diet-quick .btn:disabled,.fd-diet-chosen .btn:disabled{opacity:.45;cursor:default;transform:none}
 .fd-diet-num input[aria-invalid=true],.fd-diet-body input[aria-invalid=true]{border-color:var(--warn);box-shadow:inset 0 0 0 1px var(--warn)}
-@media (max-width:359px){.fd-diet-body{grid-template-columns:1fr 1fr}.fd-diet-body .btn{grid-column:1 / -1}}
+
+/* Pytanie o wagę: tytuł z „Postęp” po prawej; po ważeniu ta sama linijka z wagą i „Zmień”. */
+.fd-diet-weigh-head{display:flex;align-items:center;gap:4px 8px;min-height:44px}
+.fd-diet-weigh-head h2{flex:1;min-width:0;margin:0}
+.fd-diet-weigh-link{display:inline-flex;align-items:center;gap:4px;min-height:44px;padding:0 2px;font-size:13.5px;
+  font-weight:600;color:var(--steel);text-decoration:underline;text-underline-offset:2px}
+.fd-diet-weigh-link:focus-visible{outline:2px solid var(--steel);outline-offset:2px}
+.fd-diet-weigh .fd-diet-body{margin-top:4px}
 
 /* ---------------- Pierwsze wejście ---------------- */
 
@@ -201,6 +219,10 @@
 .fd-diet-quick .fd-diet-hint{margin:2px 0 -4px}
 .fd-diet-grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .fd-diet-quick .check-row{margin:0}
+
+/* „Ulubione”: potwierdzenie zapisu w pasku arkusza — komunikat aplikacji stoi pod arkuszem. */
+p.fd-diet-favstatus{margin:0;font-size:13px;color:var(--ink-soft)}
+p.fd-diet-favstatus.fd-diet-ok{color:var(--ok);font-weight:600}
 
 /* ---------------- Plan posiłków ---------------- */
 
