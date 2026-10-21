@@ -78,13 +78,13 @@ function PlanRow({ plan, plans, today }: { plan: PrepPlan & { id: number }; plan
     );
 
   return (
-    <li className={`fd-prep-plan${ended ? ' ended' : ''}`}>
+    <li className={`fd-prep-plan${ended ? ' fd-prep-plan-ended' : ''}`}>
       <a className="fd-prep-plan-link" href={planHref(plan)}>
         <span className="fd-prep-name">{name}</span>
         <span className="fd-prep-meta">
           {rangeLabel(plan.settings.start, end)} · {plan.settings.days} dni · {shops}
         </span>
-        <span className={`fd-prep-tag${ended ? ' soft' : ' best'}`}>{status}</span>
+        <span className={`fd-prep-tag ${ended ? 'fd-prep-tag-soft' : 'fd-prep-tag-best'}`}>{status}</span>
       </a>
       {owner && (
         <div className="fd-prep-plan-note">

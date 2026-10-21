@@ -203,10 +203,10 @@ function SwapList({ options, favorites, empty, onPick }: Omit<SwapProps, 'name' 
                   <Clock3 size={14} strokeWidth={2} aria-hidden /> {r.recipe.minutes} min
                 </p>
                 <p className="fd-prep-tags">
-                  {id === best && <span className="fd-prep-tag best">najlepiej pasuje</span>}
+                  {id === best && <span className="fd-prep-tag fd-prep-tag-best">najlepiej pasuje</span>}
                   {r.fit.level === 'great' && <span className="fd-prep-tag">pasuje do stylu</span>}
                   {o.shared > 0 && <span className="fd-prep-tag">wspólne zakupy</span>}
-                  {o.avoided && <span className="fd-prep-tag soft">wcześniej wymieniony</span>}
+                  {o.avoided && <span className="fd-prep-tag fd-prep-tag-soft">wcześniej wymieniony</span>}
                 </p>
               </div>
               <button type="button" className="btn ghost sm" onClick={() => onPick(id)} aria-label={`Wybierz: ${r.recipe.name}`}>
