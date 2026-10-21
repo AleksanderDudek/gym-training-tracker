@@ -181,6 +181,20 @@ describe('Moje plany', () => {
     expect(bridge.toast).toHaveBeenCalledWith('Dziennik idzie za planem „Tydzień” w jego dni.');
   });
 
+  test('na stronie planu: w których dniach dziennik idzie za innym planem i „Ustaw w dzienniku”', async () => {
+    await saveProfile(prepProfile());
+    const week = await savePrepPlan({ ...makePlan({}, '2026-10-20T05:00:00.000Z'), name: 'Tydzień' });
+    await savePrepPlan({ ...makePlan({ start: '2026-10-23', days: 5 }, '2026-10-20T06:00:00.000Z'), name: 'Od piątku' });
+    at(`#/jedzenie/plan?plan=${week}`);
+    const user = userEvent.setup();
+    renderWithBridge(<DietPlanPage />);
+    expect(await screen.findByText(/^W 4 z 7 dni tego planu dziennik pokazuje plan/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '„Od piątku”' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Ustaw w dzienniku' }));
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Ustaw w dzienniku' })).not.toBeInTheDocument());
+    expect(planCovering(await db.prep.toArray(), '2026-10-25')?.id).toBe(week);
+  }, 15_000);
+
   test('plan zakończony otwarty z listy mówi, jak go powtórzyć; na stronie planu jest wejście do listy', async () => {
     await saveProfile(prepProfile());
     const old = await savePrepPlan(makePlan({ start: '2026-10-06' }, '2026-10-05T07:00:00.000Z'));
