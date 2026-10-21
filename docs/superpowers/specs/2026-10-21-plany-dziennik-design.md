@@ -104,5 +104,5 @@ New order, top to bottom:
 | --- | --- | --- |
 | Data | `name?` and `setAt?` on `PrepPlan` (no DB version change: no index); `cleanPrepPlan` keeps them when valid; backups carry them | Optional fields keep old plans and old backups valid |
 | Pure logic | `prep/dates.ts` (`shiftPlan`), `prep/store.ts` (`planName`, precedence by `setAt`, `renamePlan`, `movePlan`, `setInDiary`, pruning that spares named plans), `prep/select.ts` + `prep/generate.ts` (`swapOptions`, `swapRecipe(…, to)`) | Tested without the UI |
-| Screens | `components/prep/PlansPage.tsx` (list), sheets in `components/prep/` (`RenameSheet`, `DatesSheet`, `SwapSheet`), diary pieces in `components/diet/` (`WeighCard`, `FavoritesSheet`) | The existing areas and CSS prefixes (`fd-prep-`, `fd-diet-`) |
+| Screens | `components/prep/PlansPage.tsx` (list), the three sheets in `components/prep/PlanSheets.tsx` (`RenameSheet`, `DatesSheet`, `SwapSheet`), diary pieces in `components/diet/` (`WeighCard`, `FavoritesSheet`) | The existing areas and CSS prefixes (`fd-prep-`, `fd-diet-`) |
 | Route | `DietPage` gains `plans` → `#/jedzenie/plany`, title „Moje plany”, parent Plan posiłków | Same pattern as „Lista zakupów” |

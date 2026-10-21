@@ -712,7 +712,12 @@ dokłada), „Bez mięsa”, „Bez ryb i owoców morza”, „Bez jajek”.
   zwykle ±2%), białko i tłuszcz nie spadają poniżej minimum; dzień, którego koszyk nie domyka, plan
   pokazuje i mówi, co pomoże. Ulubione przepisy mają pierwszeństwo, wspólne składniki też (jedno
   opakowanie skyru na dwa przepisy). „Inny plan” i „Wymień” zmieniają plan od dziś: zjedzone dni
-  i ugotowane pudełka zostają.
+  i ugotowane pudełka zostają. **„Wymień” otwiera listę przepisów, które mogą zająć to miejsce** —
+  według tych samych zasad co plan (rola, koszyk, styl, przy limicie węglowodanów w pudełkach tylko
+  „pasuje”), najlepszy dla planu na górze („najlepiej pasuje”), z kaloriami i makro na porcję,
+  czasem, „pasuje do stylu”, „wspólne zakupy” i gwiazdką ulubionych; od dziewięciu — z szukaniem.
+  Wybrany wchodzi do całego planu, a porcje i lista idą za nim. Wymieniony wcześniej też jest na
+  liście („wcześniej wymieniony”): „Inny plan” go nie przywróci, ale można go wybrać samemu.
 - **Plan idzie za postępami (check-in)**: przed każdym planem 28 ostatnich dni — trend z ważeń
   i średnia z zapisów jedzenia — mówi, ile naprawdę spalasz (zjedzone minus zmiana wagi razy energia
   w kilogramie). Różnicę wobec wzoru check-in przyjmuje tylko w części pewnej (ponad dwa błędy
@@ -735,12 +740,23 @@ dokłada), „Bez mięsa”, „Bez ryb i owoców morza”, „Bez jajek”.
   i ryba potrzebne od trzeciego dnia: „zamroź po zakupach”, a dzień przed gotowaniem dziennik
   przypomina, co przełożyć do lodówki. Odhaczenia zostają przy planie i działają bez zasięgu i bez
   bazy produktów; „Udostępnij listę” wysyła ją jako tekst.
-- **W dzienniku**: w dni planu „Plan na ten dzień” — posiłki z porcją i dodatkami do odhaczenia
-  („Zjadłem” zapisuje je jak każde jedzenie), w dniu gotowania „Dziś gotujesz”. Plan z zakupami ma
-  w swoje dni pierwszeństwo przed planem z arkusza i „Propozycją dnia”; z kilku planów obowiązuje
-  najnowszy, więc następny tydzień można ułożyć zawczasu — plan i lista pokazują wtedy bieżący,
-  a ułożony na kolejne dni jest pod przełącznikiem („Teraz” · „Następny”, adres `?plan=`).
-- Plan to migawka w bazie diety (tabela `prep`, 12 najnowszych): przepisy, porcje, gotowanie
+- **W dzienniku**: w dni planu „Plan na ten dzień” z nazwą planu — posiłki z porcją i dodatkami do
+  odhaczenia („Zjadłem” zapisuje je jak każde jedzenie), w dniu gotowania „Dziś gotujesz”. Plan
+  z zakupami ma w swoje dni pierwszeństwo przed planem z arkusza i „Propozycją dnia”; gdzie plany
+  się nakładają, obowiązuje **ten ustawiony ostatnio** (ułożony, przesunięty albo wybrany przez
+  „Ustaw w dzienniku”), więc następny tydzień można ułożyć zawczasu — plan i lista pokazują wtedy
+  bieżący, a ułożony na kolejne dni jest pod przełącznikiem („Teraz” · „Następny”, adres `?plan=`).
+- **Moje plany** (`#/jedzenie/plany`, „Moje plany (N)” nad planem): każdy plan na urządzeniu,
+  najpóźniej zaczynające się na górze, z nazwą, datami, sklepami i stanem (trwa — dzień n z N,
+  od…, zakończony). Plan ma **własną nazwę** (pole w formularzu albo „Zmień nazwę”); bez niej
+  nazywa się stylem i sklepem („Sportowa · Biedronka”) — daty stoją obok, nie w nazwie.
+  **„Zmień daty”** przesuwa cały plan na nowy pierwszy dzień (13 dni wstecz do 90 naprzód): te same
+  przepisy, porcje, pudełka i lista, przesunięte gotowanie i rozmrażanie; odhaczone zostają, chyba że
+  plan zaczyna się po swoim dawnym końcu — wtedy lista startuje czysta (do zmiany jednym polem).
+  Zakończony plan otwiera się z listy i tak się go powtarza. Gdy w część dni plan zasłania inny,
+  plan i lista mówią to wprost, z „Ustaw w dzienniku”.
+- Plan to migawka w bazie diety (tabela `prep`; bez nazwy — 12 najnowszych, z nazwą — dopóki się go
+  nie usunie): przepisy, porcje, gotowanie
   i lista nie zmieniają się z nową bazą produktów. Jest w kopii zapasowej i znika z „Usuń wszystkie
   dane”. `npm run food:check-prep` układa tydzień na prawdziwych danych w czterech najlepszych
   sklepach (i z zamówieniem) w każdym stylu.
@@ -1279,7 +1295,7 @@ src/
     chains/                 sieci z własnymi danymi (Selgros): rejestr, dane (`data/*.json`), scalanie po EAN bez oferty online, kontrola liczb — 10 testów
     nearby/                 w pobliżu: odległości, zapytanie do Overpass (z halami Selgros i Makro) z zapasowym serwerem, kopia na dobę, promień — 33 testy
     diet/                   dieta: baza Dexie (`produkty-pl-dieta`, wersja 4 z zestawami, ulubionymi i planami z zakupami), model energii z kierunkiem celu, sposoby odżywiania, dzień, plan z Excela, zestawy, ulubione, wyszukiwanie, podpowiedzi — 137 testów
-    prep/                   plan z zakupami (meal prep): bloki gotowania, przepisy z koszyka, wybór ról, porcje i dodatki, cele dni, check-in, lista zakupów, migawka w bazie, odczyt z kopii — 110 testów
+    prep/                   plan z zakupami (meal prep): bloki gotowania, przepisy z koszyka, wybór ról i lista zamienników, porcje i dodatki, cele dni, check-in, lista zakupów, nazwa, przesuwanie dat, pierwszeństwo w dzienniku, migawka w bazie, odczyt z kopii — 119 testów
     restaurants/            lokale: dane sieci (`data/*.json`), kontrola liczb, wyszukiwanie, kolejność, „Najwięcej białka”, stan w adresie — 101 testów
     hooks/                  baza produktów, menu lokali, dieta na żywo i scalona z treningiem, stan w adresie, lokalizacja, sklepy w pobliżu — 22 testy
     components/common/      karta i szczegóły produktu, zdjęcie, oceny, cena, arkusz od dołu, ekrany stanu
@@ -1287,7 +1303,7 @@ src/
     components/recipes/     przepisy: lista z filtrami, karta ze sklepem, zamiana składnika, gotowe produkty
     components/nearby/      „W pobliżu”: mapa Leaflet, promień, sklepy i przepisy z nich
     components/diet/        dziennik, plan posiłków, postęp, profil diety, pierwsze kroki, wybór jedzenia i zestawy, import z Excela
-    components/prep/        plan z zakupami: formularz z check-inem, plan (przepisy, gotowanie, dzień po dniu), lista zakupów, plan dnia w dzienniku
+    components/prep/        plan z zakupami: formularz z check-inem, plan (przepisy, gotowanie, dzień po dniu), okna nazwy, dat i wymiany przepisu, „Moje plany”, lista zakupów, plan dnia w dzienniku
     components/restaurants/ Lokale: lista sieci z wyszukiwaniem, menu sieci, karta pozycji z dodaniem do dziennika
     components/**/*.test.tsx 140 testów stron pod jsdom — przez role i etykiety, nie znaczniki
     test/                   dane do testów: produkty, most do treningu, arkusz Excela
