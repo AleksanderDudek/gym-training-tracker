@@ -3,8 +3,8 @@
 #
 #   ./check.sh         testy części bez HealthKit i UI: koperta (wspólny wektor ../vectors.json),
 #                      paczka i sen — te same pliki XCTest co w Xcode, z atrapą XCTest
-#   ./check.sh --app   do tego sprawdzenie typów całej aplikacji: jako Mac Catalyst z API iOS 17
-#                      (UIKit, BackgroundTasks, HealthKit, SwiftUI) i jako macOS 14
+#   ./check.sh --app   do tego kompilacja całej aplikacji w trybie Swift 6: jako Mac Catalyst
+#                      z API iOS 17 (UIKit, BackgroundTasks, HealthKit, SwiftUI) i jako macOS 14
 #
 # Kończy się kodem różnym od zera przy każdym błędzie.
 set -euo pipefail
@@ -39,13 +39,22 @@ xcrun swiftc -swift-version 5 -D GT_CHECK -sdk "$sdk" ${flags[@]+"${flags[@]}"} 
 [[ "${1:-}" == "--app" ]] || exit 0
 
 app=("$here"/GymTrackerZdrowie/*.swift)
-# Najpierw tryb Swift 6: kod ma być gotowy na ścisłą współbieżność, choć projekt jest w trybie 5.
-echo "Typy całej aplikacji — Mac Catalyst, iOS 17, Swift 6:"
 catalyst="$sdk/System/iOSSupport"
-xcrun swiftc -typecheck -parse-as-library -swift-version 6 -sdk "$sdk" -target arm64-apple-ios17.0-macabi \
-  -Fsystem "$catalyst/System/Library/Frameworks" -I "$catalyst/usr/lib/swift" ${flags[@]+"${flags[@]}"} "${app[@]}"
-echo "  ok"
-echo "Typy całej aplikacji — macOS 14, Swift 6 (gałęzie bez UIKit):"
-xcrun swiftc -typecheck -parse-as-library -swift-version 6 -sdk "$sdk" -target arm64-apple-macos14.0 \
-  ${flags[@]+"${flags[@]}"} "${app[@]}"
-echo "  ok"
+ios=(-target arm64-apple-ios17.0-macabi -Fsystem "$catalyst/System/Library/Frameworks"
+  -I "$catalyst/usr/lib/swift" -L "$catalyst/usr/lib/swift")
+
+# Pełna kompilacja z linkowaniem, nie samo `-typecheck`: błędy współbieżności (regiony, `sending`)
+# wychodzą dopiero przy generowaniu kodu. Ostrzeżenia to błędy. Pliku nie da się uruchomić —
+# liczy się, że powstał. Mac Catalyst to iOS na Macu: ten sam UIKit, HealthKit i BackgroundTasks.
+build() {
+  local name=$1
+  shift
+  echo "Cała aplikacja — $name:"
+  xcrun swiftc -parse-as-library -wmo -warnings-as-errors -sdk "$sdk" ${flags[@]+"${flags[@]}"} \
+    -emit-executable -o "$out/app" "$@" "${app[@]}"
+  echo "  ok"
+}
+build "Mac Catalyst z API iOS 17, Swift 5 + pełne sprawdzanie współbieżności (jak w projekcie)" \
+  -swift-version 5 -strict-concurrency=complete "${ios[@]}"
+build "Mac Catalyst z API iOS 17, Swift 6" -swift-version 6 "${ios[@]}"
+build "macOS 14, Swift 6 (gałęzie bez UIKit)" -swift-version 6 -target arm64-apple-macos14.0
