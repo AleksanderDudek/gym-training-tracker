@@ -179,11 +179,15 @@ export const watchStepsOn = (state: AppState, day: string): number | null =>
 
 const obj = (x: unknown): Record<string, unknown> => (x && typeof x === 'object' ? (x as Record<string, unknown>) : {});
 
-/** Dane z zegarka z zapisu albo importu — przesiane tymi samymi zakresami co paczka. */
-export function restoreWatch(v: unknown): WatchData | undefined {
+/**
+ * Dane z zegarka z zapisu albo importu — przesiane tymi samymi zakresami co paczka, także czas:
+ * paczka „z przyszłości” zablokowałaby każdą następną (starsza nic nie zmienia), a aktywność
+ * z datą poza kalendarzem wywróciłaby `toISOString` na każdym ekranie z ruchem.
+ */
+export function restoreWatch(v: unknown, nowMs: number = Date.now()): WatchData | undefined {
   if (!v || typeof v !== 'object') return undefined;
   const w = v as Record<string, unknown>;
-  const t = num(w.t, EPOCH_MIN, Number.MAX_SAFE_INTEGER);
+  const t = num(w.t, EPOCH_MIN, nowMs / 1000 + 86_400);
   if (t === null || typeof w.got !== 'string' || Number.isNaN(Date.parse(w.got))) return undefined;
   const all = Number.MAX_SAFE_INTEGER;
   // Przez `merged`, jak paczka: poprawiony ręcznie plik z dwoma takimi samymi dniami dałby
@@ -204,7 +208,7 @@ export function restoreWatch(v: unknown): WatchData | undefined {
       [],
       rows(w.acts, all, (x) => {
         const a = obj(x);
-        return actRow([a.start, a.sport, a.sec, a.m], all);
+        return actRow([a.start, a.sport, a.sec, a.m], t);
       }),
       (a) => a.start,
       (a, b) => a.start - b.start,

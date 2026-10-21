@@ -1264,7 +1264,7 @@ src/
     watch.ts                dane z zegarka: paczka, scalanie po czasie, kroki i przejazdy jako wpisy w locie
     watch.test.ts           14 testów paczki, scalania, wyższej liczby kroków, przejazdów i importu
     phone.ts                dane z telefonu: paczka, scalanie, kroki i przejazdy w locie, propozycja ważenia
-    phone.test.ts           16 testów paczki, wspólnego wektora, trzech źródeł kroków, tego samego przejazdu, importu i ważenia
+    phone.test.ts           17 testów paczki, wspólnego wektora, trzech źródeł kroków, tego samego przejazdu, importu i ważenia
     find.ts                 wyszukiwanie ćwiczenia: polski alfabet, ogonki opcjonalne, podświetlenie
     find.test.ts            9 testów kolejności, dopasowania i podświetlenia
     similar.ts              zamienniki ćwiczenia (wzorzec, mięśnie, sprzęt) i sprzęt treningu z jego ćwiczeń
@@ -2199,7 +2199,7 @@ Dane z zegarka mają osobne pole `watch`: dni kroków, aktywności i zdrowie po 
 ostatniej przyjętej paczki i chwilę odbioru. To liczby z zegarka, a nie wpisy — wpisy ruchu
 wyprowadza z nich `cardioOf`. Przy wczytaniu i imporcie przechodzą te same zakresy co paczka
 z zegarka. Klucza do zegarka w zapisie nie ma: leży osobno w pamięci strony (`gt-garmin-key`),
-więc eksport nie otwiera danych o zdrowiu.
+więc eksport niesie liczby, które już przyszły, ale nie otwiera skrzynki z nowymi.
 
 Dane z telefonu mają pole `phone` tej samej budowy: system (`ios`/`android`), dni z krokami,
 tętnem, snem i wagą, przejazdy rowerem, czas paczki i chwila odbioru. Klucz telefonu leży

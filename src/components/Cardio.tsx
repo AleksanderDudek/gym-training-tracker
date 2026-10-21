@@ -28,7 +28,7 @@ import {
   typedStepsOn,
   weekMinutes,
 } from '../engine/cardio';
-import { phoneWeightOffer } from '../engine/phone';
+import { phoneWeightOffer, recentPhoneDays } from '../engine/phone';
 import { PHONE_NOTE, WATCH_NOTE } from './Health';
 import { XP, cardioXp } from '../engine/xp';
 import {
@@ -43,7 +43,7 @@ import { CARDIO_EMPTY, daySeed, pick, plural } from '../engine/quips';
 import { addDays, dayKey, weekdayOf } from '../engine/schedule';
 import { cardioAddPath, cardioPath, go, goBack } from '../routing';
 import { Segmented, Trendline } from './ui';
-import type { AppState, Cardio, CardioInput, CardioSport, DanceMix, DanceStyle, PhoneDay, WatchHealth } from '../types';
+import type { AppState, Cardio, CardioInput, CardioSport, DanceMix, DanceStyle, WatchHealth } from '../types';
 
 /**
  * Kroki, bieżnia, rower i taniec — ruch mierzony gdzie indziej, wpisywany tutaj.
@@ -713,9 +713,8 @@ export const sleepText = (min: number): string => {
 
 /** Zdrowie z telefonu: siedem dni, najnowszy na górze. Same liczby, bez oceny — jak z zegarka. */
 function PhoneHealthDays({ state, today }: { state: AppState; today: string }) {
-  const rows = Array.from({ length: 7 }, (_, i) => addDays(today, -i))
-    .map((d) => state.phone?.days.find((h) => h.day === d))
-    .filter((h): h is PhoneDay => !!h)
+  const rows = recentPhoneDays(state, today, 7)
+    .slice(0, 7)
     .map((h) => ({
       day: h.day,
       text: [

@@ -140,11 +140,11 @@ export function phoneEntries(p: PhoneData | undefined): Cardio[] {
   return [...steps, ...rides];
 }
 
-/** Dane z telefonu z zapisu albo importu — przesiane tymi samymi zakresami co paczka. */
-export function restorePhone(v: unknown): PhoneData | undefined {
+/** Dane z telefonu z zapisu albo importu — przesiane tymi samymi zakresami co paczka, czas też (jak `restoreWatch`). */
+export function restorePhone(v: unknown, nowMs: number = Date.now()): PhoneData | undefined {
   if (!v || typeof v !== 'object') return undefined;
   const p = v as Record<string, unknown>;
-  const t = num(p.t, EPOCH_MIN, Number.MAX_SAFE_INTEGER);
+  const t = num(p.t, EPOCH_MIN, nowMs / 1000 + 86_400);
   if (t === null || typeof p.got !== 'string' || Number.isNaN(Date.parse(p.got)) || !OS.has(p.os)) return undefined;
   const all = Number.MAX_SAFE_INTEGER;
   return {
@@ -152,12 +152,23 @@ export function restorePhone(v: unknown): PhoneData | undefined {
     got: p.got,
     os: p.os as PhoneData['os'],
     days: merged([], rows(p.days, all, dayOf), (d) => d.day, byDay),
-    acts: merged([], rows(p.acts, all, (x) => actOf(x, all)), (a) => a.start, (a, b) => a.start - b.start),
+    acts: merged([], rows(p.acts, all, (x) => actOf(x, t)), (a) => a.start, (a, b) => a.start - b.start),
   };
 }
 
 /** Ważenie sprzed tylu dni jeszcze się proponuje — starsze to już nie „nowe ważenie”. */
 export const WEIGHT_OFFER_DAYS = 14;
+
+/**
+ * Dni telefonu od najnowszego, nie dalej niż `days` wstecz. Telefon liczy dzień lokalnie, a
+ * `today` aplikacji to dzień UTC (`dayKey`) — po polskiej północy telefon jest już dzień dalej,
+ * więc jego „jutro” według UTC to zwykle poranne ważenie, a nie błąd.
+ */
+export function recentPhoneDays(state: AppState, today: string, days: number): PhoneDay[] {
+  const to = addDays(today, 1);
+  const from = addDays(today, -days);
+  return [...(state.phone?.days ?? [])].reverse().filter((d) => d.day <= to && d.day > from);
+}
 
 /**
  * Najnowsze ważenie z telefonu, jeśli jest nowsze niż ostatni wpis w dzienniku wagi i nie
@@ -166,9 +177,6 @@ export const WEIGHT_OFFER_DAYS = 14;
  */
 export function phoneWeightOffer(state: AppState, today: string): { day: string; kg: number } | null {
   const last = bodyOf(state).at(-1)?.day ?? '';
-  const from = addDays(today, -WEIGHT_OFFER_DAYS);
-  const d = [...(state.phone?.days ?? [])]
-    .reverse()
-    .find((x) => x.kg !== null && x.day <= today && x.day >= from);
+  const d = recentPhoneDays(state, today, WEIGHT_OFFER_DAYS + 1).find((x) => x.kg !== null);
   return d && d.day > last ? { day: d.day, kg: d.kg! } : null;
 }

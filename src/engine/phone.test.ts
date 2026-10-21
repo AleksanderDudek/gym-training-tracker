@@ -207,6 +207,11 @@ describe('zapis i import', () => {
     const twice = restorePhone({ ...s.phone, days: [...s.phone!.days, { ...s.phone!.days[0], steps: 1 }] });
     expect(twice!.days).toHaveLength(s.phone!.days.length);
     expect(restorePhone({ ...s.phone, os: 'symbian' })).toBeUndefined();
+    // Czas z przyszłości zablokowałby każdą następną paczkę, a start poza kalendarzem wywróciłby ekran.
+    expect(restorePhone({ ...s.phone, t: 9e15 }, NOW)).toBeUndefined();
+    const far = restorePhone({ ...s.phone, acts: [...s.phone!.acts, { start: 9e12, sport: 2, sec: 3600, m: 9000 }] }, NOW)!;
+    expect(far.acts).toEqual(s.phone!.acts);
+    expect(() => phoneEntries(far)).not.toThrow();
     expect(restorePhone({ t: 'x' })).toBeUndefined();
     expect(restorePhone(undefined)).toBeUndefined();
   });
@@ -227,6 +232,11 @@ describe('ważenie z telefonu', () => {
     expect(phoneWeightOffer(s, '2026-10-20')).toEqual({ day: '2026-10-20', kg: 82.4 });
     setBodyWeight(s, 82, '2026-10-19');
     expect(phoneWeightOffer(s, '2026-10-20')).toEqual({ day: '2026-10-20', kg: 82.4 });
+  });
+
+  it('poranne ważenie po polskiej północy — dzień telefonu jest już o jeden dalej niż UTC', () => {
+    const s = withKg([{ day: '2026-10-21', kg: 82.1 }]);
+    expect(phoneWeightOffer(s, '2026-10-20')).toEqual({ day: '2026-10-21', kg: 82.1 });
   });
 
   it('nic, gdy dziennik ma ten sam albo późniejszy dzień, a ważenie jest stare', () => {

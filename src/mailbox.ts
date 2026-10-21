@@ -9,7 +9,8 @@ import type { WatchKeys } from './watchseal';
  * telefon korzysta z tych samych ścieżek co zegarek (`/garmin/*` — nazwa historyczna).
  *
  * Każde urządzenie ma własny klucz w pamięci strony, nigdy w eksporcie danych: plik z kopią
- * treningów nie ma otwierać danych o zdrowiu.
+ * treningów niesie liczby, które już przyszły (to część historii), ale nie otwiera skrzynki
+ * z nowymi.
  */
 
 /**
