@@ -37,8 +37,11 @@ projektu na GitHub Pages go nie ma.
 **Kiedy wysyła.** iPhone: HealthKit budzi aplikację przy nowych danych (kroki najwyżej co
 godzinę; treningi, sen i waga od razu), do tego odświeżanie w tle i każde otwarcie. Android:
 co godzinę przez WorkManager, jeśli Health Connect pozwala czytać w tle (zgoda „dostęp w tle”),
-a zawsze przy otwarciu i przyciskiem „Wyślij teraz”. Częściej niż raz na kwadrans aplikacja
-sama nie wysyła.
+a zawsze przy otwarciu i przyciskiem „Wyślij teraz”. Same kroki wychodzą najwyżej raz na
+kwadrans; trening, sen i waga na iPhonie nie czekają na kwadrans, tylko na minutowy limit
+serwera. Gdy wysyłka w tle się nie uda (zablokowany iPhone, brak sieci) albo zostanie
+wstrzymana limitem, iPhone zamawia następną próbę za kwadrans — HealthKit o tych samych
+danych drugi raz nie budzi.
 
 ## Paczka (wersja 1)
 

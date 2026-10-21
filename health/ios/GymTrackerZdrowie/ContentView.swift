@@ -128,6 +128,8 @@ struct ContentView: View {
         keyError = nil
         note = nil
         key = clean
+        Background.startObservers()
+        Background.scheduleRefresh()
         Task { await send(force: true) }
     }
 
@@ -161,6 +163,7 @@ struct ContentView: View {
         // Najpierw klucz, potem czekanie na wysyłkę w toku — inaczej mogłaby założyć skrzynkę na nowo.
         KeyStore.delete()
         self.key = nil
+        Background.stopObservers()
         await Sync.shared.idle()
         let forgotten = await Sender.shared.forget(box: keys.box)
         Sync.reset()

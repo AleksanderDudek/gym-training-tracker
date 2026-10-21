@@ -22,6 +22,12 @@ actor Sync {
     static let shared = Sync()
     /// Kroki przybywają co chwilę; częstsza wysyłka nic nie da, a zużywa baterię i limit serwera.
     static let minGap: TimeInterval = 15 * 60
+    /// Trening, sen i waga przychodzą rzadko i często tuż po krokach — czekają tylko na limit
+    /// serwera (minuta na skrzynkę) z zapasem, a nie na kwadrans.
+    static let burstGap: TimeInterval = 75
+    /// Po nieudanej albo wstrzymanej wysyłce: najwcześniej po tylu sekundach odświeżanie w tle
+    /// spróbuje znowu. Obserwator HealthKit drugi raz o tych samych danych nie zawoła.
+    static let retryAfter: TimeInterval = 15 * 60
     /// Wysyłka w tle też zmienia stan — ekran, jeśli jest otwarty, odświeża się na ten sygnał.
     static let changed = Notification.Name("io.github.aleksanderdudek.gymtracker.zdrowie.sync")
 
@@ -29,16 +35,16 @@ actor Sync {
 
     private var running: Task<SyncOutcome?, Never>?
 
-    /// Wynik albo `nil`, gdy wysyłka była niepotrzebna (ostatnia udana mniej niż 15 minut temu).
+    /// Wynik albo `nil`, gdy wysyłka była niepotrzebna (ostatnia udana mniej niż `gap` temu).
     /// `force` — przycisk „Wyślij teraz” i świeżo wklejony klucz.
     @discardableResult
-    func run(force: Bool = false) async -> SyncOutcome? {
+    func run(force: Bool = false, gap: TimeInterval = Sync.minGap) async -> SyncOutcome? {
         if let current = running {
             let r = await current.value
             // Ta sama paczka właśnie poszła; druga zaraz po niej dostałaby od serwera „za często”.
             if r != nil || !force { return r }
         }
-        let task = Task { await perform(force: force) }
+        let task = Task { await perform(force: force, gap: gap) }
         running = task
         let r = await withTaskCancellationHandler { await task.value } onCancel: { task.cancel() }
         if running == task { running = nil }
@@ -50,11 +56,11 @@ actor Sync {
         if let running { _ = await running.value }
     }
 
-    private func perform(force: Bool) async -> SyncOutcome? {
+    private func perform(force: Bool, gap: TimeInterval) async -> SyncOutcome? {
         guard let key = KeyStore.load(), let keys = Seal.deriveKeys(key) else { return record(.noKey) }
         let now = Date()
         let status = Self.status()
-        if !force, let sent = status?.sentAt, now.timeIntervalSince(sent) < Self.minGap { return nil }
+        if !force, let sent = status?.sentAt, now.timeIntervalSince(sent) < gap { return nil }
         guard HealthReader.available else { return record(.noHealth) }
 
         let data: HealthData
@@ -99,6 +105,15 @@ actor Sync {
     nonisolated static func status() -> SyncStatus? {
         guard let data = UserDefaults.standard.data(forKey: statusKey) else { return nil }
         return try? JSONDecoder().decode(SyncStatus.self, from: data)
+    }
+
+    /// Czy po tym wyniku przebudzenia w tle trzeba spróbować jeszcze raz: wysyłka wstrzymana
+    /// limitem (`nil`) albo nieudana z powodu, który mija sam — blokada, sieć, serwer.
+    nonisolated static func needsRetry(_ outcome: SyncOutcome?) -> Bool {
+        switch outcome {
+        case nil, .locked?, .offline?, .tooOften?, .failed?: true
+        case .sent?, .rejected?, .empty?, .noKey?, .noHealth?: false
+        }
     }
 
     nonisolated static func reset() {

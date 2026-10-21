@@ -20,7 +20,10 @@ i format paczki: `docs/superpowers/specs/2026-10-21-zdrowie-telefon-design.md`.
    brak zgody wygląda jak brak danych i pole po prostu nie trafia do paczki.
 4. Wysyłka: przy każdym otwarciu, przyciskiem „Wyślij teraz” i w tle — obserwatory HealthKit
    budzą aplikację po nowych krokach (najwyżej co godzinę), treningu, śnie i ważeniu, a zadanie
-   odświeżania w tle jest zapasem. Bez przycisku najwyżej raz na 15 minut.
+   odświeżania w tle jest zapasem. Bez przycisku kroki najwyżej raz na 15 minut; trening, sen
+   i waga po 75 sekundach od poprzedniej wysyłki (limit serwera to minuta). Po nieudanej albo
+   wstrzymanej wysyłce w tle zadanie odświeżania wraca za kwadrans, nie za godzinę. Odłączenie
+   wyłącza obserwatory i dostarczanie w tle.
 5. Paczka „phone v1” (`Payload.swift`) ma ostatnie 14 lokalnych dni; gdyby koperta przekroczyła
    11 000 znaków, odpadają najstarsze. Koperta (`Seal.swift`) jest bajt w bajt ta sama co
    zegarka i Androida: AES-256-CBC + HMAC-SHA256, klucze pochodne z etykiet `gt-box`, `gt-enc`,
