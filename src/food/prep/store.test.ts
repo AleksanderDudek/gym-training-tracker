@@ -227,6 +227,15 @@ describe('a plan from a file', () => {
 
   test('a stored plan reads back as it was', () => {
     expect(cleanPrepPlan(plan)).toEqual(plan);
+    const named = { ...plan, name: 'Masa', setAt: '2026-10-21T09:00:00.000Z' };
+    expect(cleanPrepPlan(named)).toEqual(named);
+  });
+
+  test('a name is tidied and cut; a blank or odd one is dropped, the plan stays', () => {
+    expect(cleanPrepPlan({ ...plan, name: '  Keto   w pracy ' })?.name).toBe('Keto w pracy');
+    expect(cleanPrepPlan({ ...plan, name: 'x'.repeat(200) })?.name).toHaveLength(60);
+    expect(cleanPrepPlan({ ...plan, name: '   ' })).not.toHaveProperty('name');
+    expect(cleanPrepPlan({ ...plan, name: 42, setAt: 7 })).toEqual(plan);
   });
 
   test('kept whole or not at all', () => {
