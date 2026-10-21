@@ -63,7 +63,10 @@ describe('karta „Zdrowie z telefonu”', () => {
     const steps = screen.getByRole('list');
     expect(within(steps).getByRole('link', { name: 'tej strony' })).toHaveAttribute('href', 'https://example.org/zdrowie.apk');
     expect(within(steps).queryByText(/iPhone/)).not.toBeInTheDocument();
-    expect(within(steps).getByText(/Health Connect/)).toBeInTheDocument();
+    // Garmin najprościej przez telefon: Garmin Connect pisze do Health Connect.
+    expect(within(steps).getByText(/Masz zegarek Garmin\? W aplikacji Garmin Connect/)).toHaveTextContent(
+      'udostępnianie do Health Connect',
+    );
     await user.click(screen.getByRole('button', { name: 'Kopiuj klucz' }));
     expect(await navigator.clipboard.readText()).toBe(key.replace(/ /g, ''));
     expect(onToast).toHaveBeenCalledWith('Klucz skopiowany — wklej go w aplikacji GYM TRACKER Zdrowie.');
@@ -76,6 +79,7 @@ describe('karta „Zdrowie z telefonu”', () => {
     await card();
     await user.click(screen.getByRole('button', { name: 'Połącz telefon' }));
     expect(screen.getByText(/iPhone: aplikacji jeszcze nie ma/)).toBeInTheDocument();
+    expect(screen.getByText(/Masz zegarek Garmin\? W aplikacji/)).toHaveTextContent('Apple Zdrowie albo Health Connect');
     expect(screen.getByRole('link', { name: 'tej strony' })).toBeInTheDocument();
   });
 

@@ -141,7 +141,7 @@ extension SyncStatus {
         case .rejected: "Serwer odrzucił paczkę"
         case .offline: "Brak sieci albo serwer nie odpowiada"
         case .locked: "Telefon zablokowany — spróbuję później"
-        case .empty: "Zdrowie nie oddało żadnych danych — sprawdź dostęp"
+        case .empty: "Zdrowie nie oddało żadnych danych — sprawdź dostęp. Masz Garmina? W Garmin Connect włącz udostępnianie do Apple Zdrowie"
         case .noKey: "Brak klucza — wklej go z GYM TRACKER"
         case .noHealth: "To urządzenie nie ma aplikacji Zdrowie"
         case .failed: "Nie udało się odczytać Zdrowia — spróbuję później"

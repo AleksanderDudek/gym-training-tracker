@@ -15,6 +15,15 @@ się jak wpisy, tętno, sen i waga stoją w sekcji „Z telefonu” na ekranie k
 - **Jedno połączenie, wiele urządzeń.** Garmin Connect, Fitbit, Samsung Health, Withings, Oura
   i inne zapisują dane w Apple Zdrowie i Health Connect, więc telefon przynosi też ich liczby.
 
+## Zegarek Garmin
+
+Najprostsza droga dla Garmina prowadzi przez telefon. Garmin Connect zapisuje kroki, sen, tętno,
+wagę i treningi w Apple Zdrowie albo Health Connect, jeśli włączy się to w jego ustawieniach
+(Ustawienia → Połączone aplikacje → Apple Zdrowie / Health Connect). GYM TRACKER Zdrowie czyta
+je stamtąd jak wszystko inne. Stresu i Body Battery Garmin tam nie przekazuje — te dwie liczby
+daje tylko własna aplikacja na zegarek (`garmin/`). „Zaloguj przez Garmin” (oficjalne API) jest
+zamknięte dla nowych zgłoszeń od wiosny 2026 roku.
+
 ## Jak to działa
 
 1. W GYM TRACKER (Ustawienia → **Zdrowie z telefonu**) powstaje klucz: 32 losowe bajty, 64 znaki

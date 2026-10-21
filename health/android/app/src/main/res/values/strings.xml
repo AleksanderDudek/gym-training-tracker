@@ -43,7 +43,7 @@
     <string name="result_too_often">Serwer: za często, spróbuj za minutę</string>
     <string name="result_offline">Brak sieci albo serwer nie odpowiada</string>
     <string name="result_rejected">Serwer odrzucił paczkę. Zaktualizuj aplikację.</string>
-    <string name="result_nothing">Health Connect nie ma danych z ostatnich 14 dni</string>
+    <string name="result_nothing">Health Connect nie ma danych z ostatnich 14 dni. Masz Garmina? W Garmin Connect włącz udostępnianie do Health Connect.</string>
     <string name="result_failed">Nie udało się odczytać danych z Health Connect</string>
     <string name="result_previous">Ostatnio wysłane: %1$s</string>
     <string name="result_kinds">Dane: %1$s</string>

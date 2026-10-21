@@ -25,9 +25,25 @@ const SAID: Partial<Record<PhonePull['kind'], string>> = {
 };
 
 const STORE = {
-  ios: { url: HEALTH_IOS_URL, phone: 'iPhone', data: 'Zdrowie', where: 'App Store' },
-  android: { url: HEALTH_ANDROID_URL, phone: 'Android', data: 'Health Connect', where: 'tej strony' },
+  ios: { url: HEALTH_IOS_URL, phone: 'iPhone', data: 'Zdrowie', where: 'App Store', garmin: 'Apple Zdrowie' },
+  android: { url: HEALTH_ANDROID_URL, phone: 'Android', data: 'Health Connect', where: 'tej strony', garmin: 'Health Connect' },
 } as const;
+
+/**
+ * Najprostsza droga dla zegarka Garmin: aplikacja Garmin Connect, którą i tak ma na telefonie,
+ * zapisuje kroki, sen, tętno, wagę i treningi w Apple Zdrowie albo Health Connect — wystarczy
+ * jej na to pozwolić. Własna aplikacja na zegarek (karta „Zegarek Garmin”) dokłada tylko stres
+ * i Body Battery, a oficjalne API Garmina („Zaloguj przez Garmin”) jest zamknięte dla nowych.
+ */
+function GarminStep({ systems }: { systems: ('ios' | 'android')[] }) {
+  return (
+    <li>
+      Masz zegarek Garmin? W aplikacji Garmin Connect na telefonie włącz udostępnianie do{' '}
+      {systems.map((os) => STORE[os].garmin).join(' albo ')} (Ustawienia → Połączone aplikacje). Garmin
+      Connect przekaże tam kroki, sen, tętno, wagę i treningi z zegarka.
+    </li>
+  );
+}
 
 function Install({ os }: { os: 'ios' | 'android' }) {
   const s = STORE[os];
@@ -127,8 +143,9 @@ export function PhoneCard({
         <>
           <p className="tight">
             Kroki, przejazdy rowerem, tętno, sen i waga z Apple Zdrowie (iPhone) albo Health Connect (Android)
-            przyjdą same — razem z tym, co zapisują tam zegarki i wagi innych firm. Strona nie ma dostępu do tych
-            danych, więc czyta je mała aplikacja GYM TRACKER Zdrowie na telefonie.
+            przyjdą same — razem z tym, co zapisują tam zegarki i wagi innych firm.{' '}
+            <b>Masz zegarek Garmin? To najprostsza droga:</b> aplikacja Garmin Connect przekaże jego dane przez
+            telefon. Strona nie ma dostępu do tych danych, więc czyta je mała aplikacja GYM TRACKER Zdrowie.
           </p>
           {paste === null ? (
             <div className="watch-actions">
@@ -178,6 +195,7 @@ export function PhoneCard({
           {kind === 'bad' && <p className="tight cardio-note warn">{SAID.bad}</p>}
           {(!got || showKey) && (
             <ol className="watch-steps">
+              <GarminStep systems={systems} />
               {systems.map((os) => (
                 <Install key={os} os={os} />
               ))}
