@@ -1,5 +1,6 @@
 import { Plus } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { text } from '../../../i18n';
 import type { Favorite } from '../../diet/db';
 import { favoriteFood } from '../../diet/favorites';
 import type { Food } from '../../diet/foods';
@@ -7,7 +8,47 @@ import { addDays, shortDay } from '../../diet/model';
 import { formatNumber } from '../../lib/format';
 import { normalizeForSearch, tokenize } from '../../lib/text';
 import { Sheet } from '../common/Sheet';
+import { DT } from './dietText';
 import { MacroLine } from './SuggestionList';
+
+const T = text({
+  pl: {
+    today: 'na dziś',
+    yesterday: 'na wczoraj',
+    tomorrow: 'na jutro',
+    on: (day: string) => `na ${day}`,
+    future: 'Ten dzień jeszcze nie nadszedł — zjedzone zapiszesz tego dnia.',
+    saved: (day: string, name: string, kcal: string, times: number) =>
+      `Zapisane ${day}: ${name} · ${kcal} kcal${times > 1 ? ` (${times}×)` : ''}.`,
+    hint: (day: string) => `„Zjadłem” zapisuje od razu ${day}, w ilości z gwiazdki.`,
+    top: 'Najczęściej jedzone na górze',
+    empty:
+      'To, co jesz najczęściej, oznacz gwiazdką — w „Dodaj zjedzone”, w produktach, w lokalach albo przy tym, co już zjedzone. Pojawi się tutaj do dodania jednym stuknięciem.',
+    searchPlaceholder: 'Szukaj w ulubionych…',
+    search: 'Szukaj w ulubionych',
+    serving: 'porcja',
+    ateFav: (name: string) => `Zjadłem z ulubionych: ${name}`,
+    noMatch: (query: string) => `Nic z ulubionych nie pasuje do „${query}”.`,
+  },
+  en: {
+    today: 'for today',
+    yesterday: 'for yesterday',
+    tomorrow: 'for tomorrow',
+    on: (day: string) => `for ${day}`,
+    future: 'This day hasn’t come yet — you’ll log what you eat on the day.',
+    saved: (day: string, name: string, kcal: string, times: number) =>
+      `Saved ${day}: ${name} · ${kcal} kcal${times > 1 ? ` (${times}×)` : ''}.`,
+    hint: (day: string) => `“Eaten” logs it straight away ${day}, in the amount you starred.`,
+    top: 'Most eaten at the top',
+    empty:
+      'Star what you eat most often — in “Add food”, in products, in restaurants or next to what you’ve already eaten. It shows up here, ready to add with one tap.',
+    searchPlaceholder: 'Search favourites…',
+    search: 'Search favourites',
+    serving: 'serving',
+    ateFav: (name: string) => `Eaten from favourites: ${name}`,
+    noMatch: (query: string) => `No favourites match “${query}”.`,
+  },
+});
 
 /** Od ilu ulubionych arkusz dostaje pole do zawężania listy (do ośmiu widać je wszystkie naraz). */
 const FILTER_FROM = 9;
@@ -31,10 +72,10 @@ interface Done {
 
 /** „na dziś”, „na wczoraj”, „na śr., 14.10” — na jaki dzień idzie zapis. */
 function forDay(date: string, today: string): string {
-  if (date === today) return 'na dziś';
-  if (date === addDays(today, -1)) return 'na wczoraj';
-  if (date === addDays(today, 1)) return 'na jutro';
-  return `na ${shortDay(date)}`;
+  if (date === today) return T.today;
+  if (date === addDays(today, -1)) return T.yesterday;
+  if (date === addDays(today, 1)) return T.tomorrow;
+  return T.on(shortDay(date));
 }
 
 /**
@@ -62,18 +103,18 @@ export function FavoritesSheet({ open, date, today, favorites, onLog, onClose }:
   const status = favorites.length > 0 && (
     <p className={`fd-diet-favstatus${done ? ' fd-diet-ok' : ''}`} role="status">
       {future
-        ? 'Ten dzień jeszcze nie nadszedł — zjedzone zapiszesz tego dnia.'
+        ? T.future
         : done
-          ? `Zapisane ${forDay(date, today)}: ${done.food.name} · ${formatNumber(done.food.nutrients.kcal, 0)} kcal${done.times > 1 ? ` (${done.times}×)` : ''}.`
-          : `„Zjadłem” zapisuje od razu ${forDay(date, today)}, w ilości z gwiazdki.`}
+          ? T.saved(forDay(date, today), done.food.name, formatNumber(done.food.nutrients.kcal, 0), done.times)
+          : T.hint(forDay(date, today))}
     </p>
   );
 
   return (
     <Sheet
       open={open}
-      title="Ulubione"
-      subtitle={favorites.length > 0 ? 'Najczęściej jedzone na górze' : undefined}
+      title={DT.favorites}
+      subtitle={favorites.length > 0 ? T.top : undefined}
       footer={status || undefined}
       onClose={onClose}
       className="fd-diet-sheet"
@@ -103,10 +144,7 @@ function FavoritesList({
 
   if (favorites.length === 0)
     return (
-      <p className="tight">
-        To, co jesz najczęściej, oznacz gwiazdką — w „Dodaj zjedzone”, w produktach, w lokalach albo przy tym, co już
-        zjedzone. Pojawi się tutaj do dodania jednym stuknięciem.
-      </p>
+      <p className="tight">{T.empty}</p>
     );
 
   const words = tokenize(query);
@@ -124,8 +162,8 @@ function FavoritesList({
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Szukaj w ulubionych…"
-          aria-label="Szukaj w ulubionych"
+          placeholder={T.searchPlaceholder}
+          aria-label={T.search}
           enterKeyHint="search"
           autoComplete="off"
         />
@@ -139,7 +177,7 @@ function FavoritesList({
                 <div className="fd-diet-row-main">
                   <p className="fd-diet-name">{food.name}</p>
                   <p className="fd-diet-meta">
-                    <MacroLine food={food} /> · {food.amountLabel || 'porcja'}
+                    <MacroLine food={food} /> · {food.amountLabel || T.serving}
                   </p>
                 </div>
                 <button
@@ -147,15 +185,15 @@ function FavoritesList({
                   className="btn ghost sm fd-diet-act"
                   onClick={() => onLog(food)}
                   disabled={future}
-                  aria-label={`Zjadłem z ulubionych: ${food.name}`}
+                  aria-label={T.ateFav(food.name)}
                 >
-                  <Plus size={20} strokeWidth={2} aria-hidden /> Zjadłem
+                  <Plus size={20} strokeWidth={2} aria-hidden /> {DT.ate}
                 </button>
               </div>
             </li>
           );
         })}
-        {shown.length === 0 && <li className="fd-diet-empty">Nic z ulubionych nie pasuje do „{query.trim()}”.</li>}
+        {shown.length === 0 && <li className="fd-diet-empty">{T.noMatch(query.trim())}</li>}
       </ul>
     </div>
   );

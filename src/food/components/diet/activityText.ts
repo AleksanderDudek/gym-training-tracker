@@ -1,3 +1,4 @@
+import { text } from '../../../i18n';
 import type { Activity } from '../../diet/activity';
 import { formatNumber } from '../../lib/format';
 
@@ -9,7 +10,55 @@ import { formatNumber } from '../../lib/format';
 export const signedKcal = (n: number) =>
   `${n > 0 ? '+' : n < 0 ? '−' : ''}${formatNumber(Math.abs(Math.round(n)), 0)} kcal`;
 const num = (n: number) => formatNumber(Math.round(n), 0);
-const sessionName = (a: Activity) => (a.training.plannedName ? `„${a.training.plannedName}”` : 'trening');
+
+const T = text({
+  pl: {
+    session: 'trening',
+    quoted: (name: string) => `„${name}”`,
+    worth: (worth: string) => `; w rachunku jak ${worth} — rozpis w „Kroki i cardio”`,
+    steps: (kcal: string, actual: string, planned: string, worth: string) =>
+      `${kcal} za kroki (${actual} zamiast ${planned}${worth})`,
+    planDone: (kcal: string, session: string, done: string, planned: string) =>
+      `${kcal}: ${session} zrobiony (${done} kcal, plan zakładał ${planned})`,
+    profileDone: (kcal: string, done: string, planned: string) =>
+      `${kcal} za trening (${done} kcal; profil zakłada średnio ${planned} kcal dziennie)`,
+    offPlan: (kcal: string) => `${kcal} za trening spoza planu`,
+    extra: (kcal: string) => `${kcal}: dodatkowy trening`,
+    planSkipped: (kcal: string, session: string) => `${kcal}: ${session} z planu bez wykonania`,
+    profileSkipped: (kcal: string, planned: string) =>
+      `${kcal}: bez treningu (profil zakłada średnio ${planned} kcal dziennie)`,
+    other: (kcal: string) => `${kcal} za cardio i przekąski ruchowe`,
+    stepsToGo: (steps: string, kcal: string) => `${steps} kroków do celu (${kcal})`,
+    sessionAhead: (session: string, kcal: string) => `${session} z planu jeszcze przed tobą (${kcal})`,
+    head: (kcal: string, parts: string) => `Ruch: ${kcal} do celu — ${parts}.`,
+    tail: (kcal: string, parts: string) =>
+      `Jeśli do wieczora tego nie będzie, cel spadnie najwyżej o ${kcal} kcal: ${parts}.`,
+  },
+  en: {
+    session: 'workout',
+    quoted: (name: string) => `“${name}”`,
+    worth: (worth: string) => `; counted as ${worth} — breakdown in “Steps & cardio”`,
+    steps: (kcal: string, actual: string, planned: string, worth: string) =>
+      `${kcal} for steps (${actual} instead of ${planned}${worth})`,
+    planDone: (kcal: string, session: string, done: string, planned: string) =>
+      `${kcal}: ${session} done (${done} kcal, the plan assumed ${planned})`,
+    profileDone: (kcal: string, done: string, planned: string) =>
+      `${kcal} for a workout (${done} kcal; your profile assumes ${planned} kcal a day on average)`,
+    offPlan: (kcal: string) => `${kcal} for an unplanned workout`,
+    extra: (kcal: string) => `${kcal}: an extra workout`,
+    planSkipped: (kcal: string, session: string) => `${kcal}: planned ${session} not done`,
+    profileSkipped: (kcal: string, planned: string) =>
+      `${kcal}: no workout (your profile assumes ${planned} kcal a day on average)`,
+    other: (kcal: string) => `${kcal} for cardio and exercise snacks`,
+    stepsToGo: (steps: string, kcal: string) => `${steps} steps to go (${kcal})`,
+    sessionAhead: (session: string, kcal: string) => `planned ${session} still ahead (${kcal})`,
+    head: (kcal: string, parts: string) => `Activity: ${kcal} to the goal — ${parts}.`,
+    tail: (kcal: string, parts: string) =>
+      `If that doesn’t happen by tonight, the goal drops by at most ${kcal} kcal: ${parts}.`,
+  },
+});
+
+const sessionName = (a: Activity) => (a.training.plannedName ? T.quoted(a.training.plannedName) : T.session);
 
 /**
  * The steps' worth when it differs from the count by 3 %+: a run, the measured distance or floors
@@ -19,28 +68,25 @@ const sessionName = (a: Activity) => (a.training.plannedName ? `„${a.training.
 const worthNote = (a: Activity): string => {
   const { actual, worth } = a.steps;
   if (actual === null || worth === null || Math.abs(worth - actual) < 0.03 * Math.max(actual, 1)) return '';
-  return `; w rachunku jak ${num(worth)} — rozpis w „Kroki i cardio”`;
+  return T.worth(num(worth));
 };
 
 /** What already changed the goal: „+60 kcal za kroki (12 000 zamiast 10 000)” … */
 export function activityParts(a: Activity): string[] {
   const parts: string[] = [];
   if (a.steps.kcal !== 0)
-    parts.push(
-      `${signedKcal(a.steps.kcal)} za kroki (${num(a.steps.actual ?? 0)} zamiast ${num(a.steps.planned)}${worthNote(a)})`,
-    );
+    parts.push(T.steps(signedKcal(a.steps.kcal), num(a.steps.actual ?? 0), num(a.steps.planned), worthNote(a)));
   const t = a.training;
   if (t.kcal !== 0) {
     if (t.trained && t.source === 'plan' && t.planned > 0)
-      parts.push(`${signedKcal(t.kcal)}: ${sessionName(a)} zrobiony (${num(t.done)} kcal, plan zakładał ${num(t.planned)})`);
-    else if (t.trained && t.source === 'profile')
-      parts.push(`${signedKcal(t.kcal)} za trening (${num(t.done)} kcal; profil zakłada średnio ${num(t.planned)} kcal dziennie)`);
-    else if (t.trained) parts.push(`${signedKcal(t.kcal)} za trening spoza planu`);
-    else if (t.kcal > 0) parts.push(`${signedKcal(t.kcal)}: dodatkowy trening`);
-    else if (t.source === 'plan') parts.push(`${signedKcal(t.kcal)}: ${sessionName(a)} z planu bez wykonania`);
-    else parts.push(`${signedKcal(t.kcal)}: bez treningu (profil zakłada średnio ${num(t.planned)} kcal dziennie)`);
+      parts.push(T.planDone(signedKcal(t.kcal), sessionName(a), num(t.done), num(t.planned)));
+    else if (t.trained && t.source === 'profile') parts.push(T.profileDone(signedKcal(t.kcal), num(t.done), num(t.planned)));
+    else if (t.trained) parts.push(T.offPlan(signedKcal(t.kcal)));
+    else if (t.kcal > 0) parts.push(T.extra(signedKcal(t.kcal)));
+    else if (t.source === 'plan') parts.push(T.planSkipped(signedKcal(t.kcal), sessionName(a)));
+    else parts.push(T.profileSkipped(signedKcal(t.kcal), num(t.planned)));
   }
-  if (a.other > 0) parts.push(`${signedKcal(a.other)} za cardio i przekąski ruchowe`);
+  if (a.other > 0) parts.push(T.other(signedKcal(a.other)));
   return parts;
 }
 
@@ -49,9 +95,9 @@ export function pendingParts(a: Activity): string[] {
   const parts: string[] = [];
   if (a.steps.pending < 0)
     parts.push(
-      `${num(Math.max(0, a.steps.planned - (a.steps.worth ?? a.steps.actual ?? 0)))} kroków do celu (${signedKcal(a.steps.pending)})`,
+      T.stepsToGo(num(Math.max(0, a.steps.planned - (a.steps.worth ?? a.steps.actual ?? 0))), signedKcal(a.steps.pending)),
     );
-  if (a.training.pending < 0) parts.push(`${sessionName(a)} z planu jeszcze przed tobą (${signedKcal(a.training.pending)})`);
+  if (a.training.pending < 0) parts.push(T.sessionAhead(sessionName(a), signedKcal(a.training.pending)));
   return parts;
 }
 
@@ -59,9 +105,7 @@ export function pendingParts(a: Activity): string[] {
 export function activityLine(a: Activity): string | null {
   const parts = activityParts(a);
   const pending = pendingParts(a);
-  const head = parts.length ? `Ruch: ${signedKcal(a.kcal)} do celu — ${parts.join(' · ')}.` : null;
-  const tail = pending.length
-    ? `Jeśli do wieczora tego nie będzie, cel spadnie najwyżej o ${num(-a.pending)} kcal: ${pending.join(' · ')}.`
-    : null;
+  const head = parts.length ? T.head(signedKcal(a.kcal), parts.join(' · ')) : null;
+  const tail = pending.length ? T.tail(num(-a.pending), pending.join(' · ')) : null;
   return [head, tail].filter(Boolean).join(' ') || null;
 }

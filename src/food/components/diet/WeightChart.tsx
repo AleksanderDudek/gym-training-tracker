@@ -1,5 +1,25 @@
+import { pluralEn, text } from '../../../i18n';
 import { daysBetween, shortDay } from '../../diet/model';
 import { formatNumber } from '../../lib/format';
+
+const T = text({
+  pl: {
+    label: (from: string, to: string, count: number, last: string | null, target: string) =>
+      `Wykres wagi od ${from} do ${to}: plan, ${count} pomiarów${last ? ` (ostatni ${last} kg)` : ''}, prognoza i cel ${target} kg.`,
+    measured: 'pomiary',
+    plan: 'plan',
+    projection: 'prognoza od ostatniego ważenia',
+    goal: (kg: string) => `cel ${kg} kg`,
+  },
+  en: {
+    label: (from: string, to: string, count: number, last: string | null, target: string) =>
+      `Weight chart from ${from} to ${to}: plan, ${count} ${pluralEn(count, 'weigh-in', 'weigh-ins')}${last ? ` (last ${last} kg)` : ''}, forecast and goal ${target} kg.`,
+    measured: 'weigh-ins',
+    plan: 'plan',
+    projection: 'forecast from the last weigh-in',
+    goal: (kg: string) => `goal ${kg} kg`,
+  },
+});
 
 export interface ChartPoint {
   date: string;
@@ -58,9 +78,13 @@ export function WeightChart({ start, today, points, measured, target }: Props) {
       <svg
         viewBox={`0 0 ${W} ${H}`}
         role="img"
-        aria-label={`Wykres wagi od ${shortDay(start)} do ${shortDay(end)}: plan, ${visibleMeasured.length} pomiarów${
-          lastMeasured ? ` (ostatni ${formatNumber(lastMeasured.kg, 1)} kg)` : ''
-        }, prognoza i cel ${formatNumber(target, 1)} kg.`}
+        aria-label={T.label(
+          shortDay(start),
+          shortDay(end),
+          visibleMeasured.length,
+          lastMeasured ? formatNumber(lastMeasured.kg, 1) : null,
+          formatNumber(target, 1),
+        )}
       >
         {ticks.map((kg) => (
           <g key={kg}>
@@ -93,16 +117,16 @@ export function WeightChart({ start, today, points, measured, target }: Props) {
       </svg>
       <figcaption className="fd-diet-legend">
         <span>
-          <i className="fd-diet-real" aria-hidden /> pomiary
+          <i className="fd-diet-real" aria-hidden /> {T.measured}
         </span>
         <span>
-          <i className="fd-diet-plan" aria-hidden /> plan
+          <i className="fd-diet-plan" aria-hidden /> {T.plan}
         </span>
         <span>
-          <i className="fd-diet-proj" aria-hidden /> prognoza od ostatniego ważenia
+          <i className="fd-diet-proj" aria-hidden /> {T.projection}
         </span>
         <span>
-          <i className="fd-diet-goal" aria-hidden /> cel {formatNumber(target, 1)} kg
+          <i className="fd-diet-goal" aria-hidden /> {T.goal(formatNumber(target, 1))}
         </span>
       </figcaption>
     </figure>

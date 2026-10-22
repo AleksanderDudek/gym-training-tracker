@@ -1,3 +1,4 @@
+import { say } from '../../i18n';
 import { db, type DietDb, type Entry, type Favorite } from './db';
 import type { Macros } from '../recipes/macros';
 import type { Food, MealRole } from './foods';
@@ -18,7 +19,7 @@ export function entryFood(e: Entry): Food {
   return {
     key: e.key ?? `quick:${e.name}`,
     name: e.name,
-    detail: 'z dziennika',
+    detail: say('z dziennika', 'from the diary'),
     source: e.source === 'quick' ? 'custom' : e.source,
     amountLabel: e.amountLabel,
     nutrients: { kcal: e.kcal, protein: e.protein, carbs: e.carbs, fat: e.fat },

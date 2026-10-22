@@ -1,7 +1,30 @@
 import type { ReactNode } from 'react';
+import { text } from '../../../i18n';
 import type { Adjustment, DayStatus, DayTotals, Status } from '../../diet/day';
 import type { MacroTargets } from '../../diet/profiles';
 import { formatNumber } from '../../lib/format';
+import { DT } from './dietText';
+
+const T = text({
+  pl: {
+    of: (value: string, target: string) => `${value} z ${target}`,
+    balance: 'Bilans dnia',
+    kcal: 'Kalorie',
+    goalMoved: (up: boolean, kcal: string) => `Cel na dziś ${up ? 'podniesiony' : 'obniżony'} o ${kcal} kcal.`,
+    plan: (kcal: string) => `Plan na dziś: ${kcal} kcal.`,
+    unknown: (n: number) =>
+      `${n} ${n === 1 ? 'wpis ma' : 'wpisy mają'} tylko kalorie – sumy makroskładników są zaniżone.`,
+  },
+  en: {
+    of: (value: string, target: string) => `${value} of ${target}`,
+    balance: 'Day balance',
+    kcal: 'Calories',
+    goalMoved: (up: boolean, kcal: string) => `Today’s goal ${up ? 'raised' : 'lowered'} by ${kcal} kcal.`,
+    plan: (kcal: string) => `Plan for today: ${kcal} kcal.`,
+    unknown: (n: number) =>
+      `${n} ${n === 1 ? 'entry has' : 'entries have'} calories only – the macro totals are understated.`,
+  },
+});
 
 /**
  * Pasek postępu dnia. Kolor idzie za stanem (brak — złoto, w normie — zieleń, nadmiar —
@@ -27,7 +50,7 @@ export function Bar({
       aria-valuemin={0}
       aria-valuemax={Math.round(target)}
       aria-valuenow={Math.round(Math.min(value, target))}
-      aria-valuetext={`${formatNumber(value, 0)} z ${formatNumber(target, 0)}`}
+      aria-valuetext={T.of(formatNumber(value, 0), formatNumber(target, 0))}
     >
       <i style={{ width: `${share * 100}%` }} />
     </div>
@@ -49,32 +72,31 @@ interface Props {
 /** Dzień wobec celu dnia: najpierw kalorie, potem trzy makroskładniki i co znaczy każdy stan. */
 export function MacroBars({ targets, eaten, status, adjustment, activity, plannedKcal, children }: Props) {
   const rows = [
-    { key: 'protein' as const, label: 'Białko', value: eaten.protein, target: targets.protein.target },
+    { key: 'protein' as const, label: DT.protein, value: eaten.protein, target: targets.protein.target },
     {
       key: 'carbs' as const,
-      label: 'Węglowodany',
+      label: DT.carbs,
       value: eaten.carbs,
       target: targets.carbs.max ?? targets.carbs.target,
     },
-    { key: 'fat' as const, label: 'Tłuszcz', value: eaten.fat, target: targets.fat.target },
+    { key: 'fat' as const, label: DT.fat, value: eaten.fat, target: targets.fat.target },
   ];
   return (
-    <section className="grp fd-diet-balance" aria-label="Bilans dnia">
+    <section className="grp fd-diet-balance" aria-label={T.balance}>
       <div className="fd-diet-balance-top">
         <p className="fd-diet-kcal">
           {formatNumber(eaten.kcal, 0)} <small>/ {formatNumber(targets.kcal, 0)} kcal</small>
         </p>
         <p className={`fd-diet-note fd-diet-${status.kcal.status}`}>{status.kcal.note}</p>
       </div>
-      <Bar value={eaten.kcal} target={targets.kcal} status={status.kcal.status} label="Kalorie" />
+      <Bar value={eaten.kcal} target={targets.kcal} status={status.kcal.status} label={T.kcal} />
       {adjustment && adjustment.delta !== 0 && (
         <p className="tight">
-          Cel na dziś {adjustment.delta > 0 ? 'podniesiony' : 'obniżony'} o{' '}
-          {formatNumber(Math.abs(adjustment.delta), 0)} kcal. {adjustment.explanation}
+          {T.goalMoved(adjustment.delta > 0, formatNumber(Math.abs(adjustment.delta), 0))} {adjustment.explanation}
         </p>
       )}
       {activity && <p className="tight">{activity}</p>}
-      {plannedKcal !== null && <p className="tight">Plan na dziś: {formatNumber(plannedKcal, 0)} kcal.</p>}
+      {plannedKcal !== null && <p className="tight">{T.plan(formatNumber(plannedKcal, 0))}</p>}
       <div className="fd-diet-macros">
         {rows.map((row) => (
           <div key={row.key} className="fd-diet-macro">
@@ -90,10 +112,7 @@ export function MacroBars({ targets, eaten, status, adjustment, activity, planne
         ))}
       </div>
       {eaten.unknownMacros > 0 && (
-        <p className="tight">
-          {eaten.unknownMacros} {eaten.unknownMacros === 1 ? 'wpis ma' : 'wpisy mają'} tylko kalorie – sumy
-          makroskładników są zaniżone.
-        </p>
+        <p className="tight">{T.unknown(eaten.unknownMacros)}</p>
       )}
       {children}
     </section>

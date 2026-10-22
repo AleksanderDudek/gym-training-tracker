@@ -1,5 +1,49 @@
+import { text } from '../../i18n';
 import type { Food } from './foods';
 import type { DietProfile, Fit, MacroTargets } from './profiles';
+
+const T = text({
+  pl: {
+    yourSet: 'Twój zestaw',
+    atHome: 'masz w domu',
+    everywhere: 'w każdym większym sklepie',
+    macrosUnknown: 'makroskładniki nieznane',
+    overBudget: (kcal: number) => `przekracza budżet o ${kcal} kcal`,
+    carbsOverLimit: (carbs: string, max: number) => `${carbs} węglowodanów przy limicie ${max} g`,
+    muchFat: (fat: string) => `dużo tłuszczu (${fat})`,
+    fillsProtein: (protein: string, missing: string) => `uzupełnia białko: ${protein} z brakujących ${missing}`,
+    kcalLeft: (kcal: number, left: number) => `${kcal} z ${left} kcal, które zostały`,
+    favorite: 'Twoje ulubione',
+    pair: 'zestaw dwóch pozycji',
+    instead: (kcal: number, was: number) => `${kcal} kcal zamiast ${was}`,
+    proteinDelta: (sign: string, g: number) => `${sign}${g} g białka`,
+  },
+  en: {
+    yourSet: 'your set',
+    atHome: 'you have it at home',
+    everywhere: 'in any bigger shop',
+    macrosUnknown: 'macros unknown',
+    overBudget: (kcal: number) => `${kcal} kcal over budget`,
+    carbsOverLimit: (carbs: string, max: number) => `${carbs} carbs with a ${max} g limit`,
+    muchFat: (fat: string) => `a lot of fat (${fat})`,
+    fillsProtein: (protein: string, missing: string) => `fills the protein gap: ${protein} of the missing ${missing}`,
+    kcalLeft: (kcal: number, left: number) => `${kcal} of the ${left} kcal left`,
+    favorite: 'one of your favourites',
+    pair: 'two items together',
+    instead: (kcal: number, was: number) => `${kcal} kcal instead of ${was}`,
+    proteinDelta: (sign: string, g: number) => `${sign}${g} g protein`,
+  },
+});
+
+/**
+ * Meal slots: the name is a key (tests and `restOfDay` compare it), the label is what a person reads.
+ */
+const SLOT_LABELS = text({
+  pl: { Śniadanie: 'Śniadanie', Obiad: 'Obiad', Kolacja: 'Kolacja', Przekąska: 'Przekąska', Dodatkowo: 'Dodatkowo' },
+  en: { Śniadanie: 'Breakfast', Obiad: 'Lunch', Kolacja: 'Dinner', Przekąska: 'Snack', Dodatkowo: 'Extra' },
+});
+
+export const slotLabel = (slot: string): string => SLOT_LABELS[slot as keyof typeof SLOT_LABELS] ?? slot;
 
 /**
  * "What should I eat now?" as a transparent score, and the reasons it gives.
@@ -43,9 +87,9 @@ const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
 
 function availability(food: Food, ctx: Context): { score: number; where: string | null } {
   // A set is a habit of the user's own: as much at hand as food at home, wherever its parts come from.
-  if (food.source === 'set') return { score: 0.3, where: 'Twój zestaw' };
-  if (food.atHome) return { score: 0.3, where: 'masz w domu' };
-  if (food.everywhere) return { score: 0.25, where: 'w każdym większym sklepie' };
+  if (food.source === 'set') return { score: 0.3, where: T.yourSet };
+  if (food.atHome) return { score: 0.3, where: T.atHome };
+  if (food.everywhere) return { score: 0.25, where: T.everywhere };
   const nearIndex = ctx.nearby.findIndex((chain) => food.stores.includes(chain));
   const chain = ctx.nearby[nearIndex];
   if (chain !== undefined) {
@@ -57,6 +101,9 @@ function availability(food: Food, ctx: Context): { score: number; where: string 
 }
 
 const g = (n: number) => `${Math.round(n)} g`;
+
+/** „640 z 900 kcal, które zostały”: a swap drops it, the kcal line of a swap says more. */
+const kcalLeftReason = (kcal: number, ctx: Context) => T.kcalLeft(kcal, Math.round(Math.max(0, ctx.remaining.kcal)));
 
 function evaluate(food: Food, ctx: Context): Omit<Suggestion, 'best'> {
   const n = food.nutrients;
@@ -70,7 +117,7 @@ function evaluate(food: Food, ctx: Context): Omit<Suggestion, 'best'> {
   const proteinFit = ctx.remaining.protein > 0 ? clamp01(protein / mealProtein) : 0.5;
   const fit =
     n.protein === null
-      ? { level: 'ok' as const, reason: 'makroskładniki nieznane' }
+      ? { level: 'ok' as const, reason: T.macrosUnknown }
       : ctx.profile.fit({ kcal: n.kcal, protein, carbs, fat });
   const fitScore = fit.level === 'great' ? 1 : fit.level === 'ok' ? 0.4 : -1;
 
@@ -78,27 +125,26 @@ function evaluate(food: Food, ctx: Context): Omit<Suggestion, 'best'> {
   const reasons: string[] = [];
   if (n.kcal > ctx.remaining.kcal + 100) {
     penalty -= 1.5;
-    reasons.push(`przekracza budżet o ${Math.round(n.kcal - ctx.remaining.kcal)} kcal`);
+    reasons.push(T.overBudget(Math.round(n.kcal - ctx.remaining.kcal)));
   }
   if (ctx.targets.carbs.max !== null && carbs > Math.max(0, ctx.remaining.carbs) + 5) {
     penalty -= 1;
-    reasons.push(`${g(carbs)} węglowodanów przy limicie ${ctx.targets.carbs.max} g`);
+    reasons.push(T.carbsOverLimit(g(carbs), ctx.targets.carbs.max));
   }
   if (fat > Math.max(0, ctx.remaining.fat) + 10) {
     penalty -= 0.5;
-    reasons.push(`dużo tłuszczu (${g(fat)})`);
+    reasons.push(T.muchFat(g(fat)));
   }
 
   const { score: availabilityScore, where } = availability(food, ctx);
   if (protein >= 15 && ctx.remaining.protein > 0)
-    reasons.unshift(`uzupełnia białko: ${g(protein)} z brakujących ${g(ctx.remaining.protein)}`);
-  if (n.kcal <= ctx.remaining.kcal)
-    reasons.push(`${n.kcal} z ${Math.round(Math.max(0, ctx.remaining.kcal))} kcal, które zostały`);
+    reasons.unshift(T.fillsProtein(g(protein), g(ctx.remaining.protein)));
+  if (n.kcal <= ctx.remaining.kcal) reasons.push(kcalLeftReason(n.kcal, ctx));
   reasons.push(fit.reason);
 
   // What this person stars is what they eat: a nudge, not a trump card.
   const favoriteBonus = food.favorite ? 0.3 : 0;
-  if (food.favorite) reasons.unshift('Twoje ulubione');
+  if (food.favorite) reasons.unshift(T.favorite);
   const score = 2 * kcalFit + 2 * proteinFit + fitScore + availabilityScore + favoriteBonus + penalty;
   return { food, score: Math.round(score * 100) / 100, fit, reasons, where };
 }
@@ -142,7 +188,7 @@ export function combine(first: Food, second: Food): Food {
   return {
     key: `combo:${a.key}|${b.key}`,
     name: `${a.name} + ${b.name}`,
-    detail: 'zestaw dwóch pozycji',
+    detail: T.pair,
     source: a.source,
     amountLabel: `${a.amountLabel} + ${b.amountLabel}`,
     nutrients: {
@@ -216,13 +262,10 @@ export function swaps(item: Food, foods: Food[], ctx: Context, limit = 10): Sugg
       .map((f) => {
         const e = evaluate(f, ctx);
         const distance = macroDistance(item, f);
-        const reasons = [
-          `${f.nutrients.kcal} kcal zamiast ${item.nutrients.kcal}`,
-          ...e.reasons.filter((r) => !r.includes('kcal, które')),
-        ];
+        const left = kcalLeftReason(f.nutrients.kcal, ctx);
+        const reasons = [T.instead(f.nutrients.kcal, item.nutrients.kcal), ...e.reasons.filter((r) => r !== left)];
         const delta = (f.nutrients.protein ?? 0) - (item.nutrients.protein ?? 0);
-        if (Math.abs(delta) >= 5)
-          reasons.unshift(delta > 0 ? `+${Math.round(delta)} g białka` : `${Math.round(delta)} g białka`);
+        if (Math.abs(delta) >= 5) reasons.unshift(T.proteinDelta(delta > 0 ? '+' : '', Math.round(delta)));
         const fitScore = e.fit.level === 'great' ? 1 : e.fit.level === 'ok' ? 0.4 : -1;
         return {
           ...e,
@@ -249,10 +292,13 @@ export interface Slot {
   roles: Food['role'][];
 }
 
+// i18n-ignore: slot names are keys; `slotLabel` shows them
 export const DAY_SLOTS: Slot[] = [
+  // i18n-ignore: slot key
   { name: 'Śniadanie', share: 0.25, roles: ['light'] },
   { name: 'Obiad', share: 0.35, roles: ['main'] },
   { name: 'Kolacja', share: 0.3, roles: ['main', 'light'] },
+  // i18n-ignore: slot key
   { name: 'Przekąska', share: 0.1, roles: ['light'] },
 ];
 

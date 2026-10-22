@@ -5,8 +5,41 @@ import { searchFoods } from '../../diet/search';
 import { useRestaurants } from '../../hooks/useRestaurants';
 import type { Dictionaries, IndexedProduct } from '../../lib/types';
 import type { Chain } from '../../restaurants/types';
+import { text } from '../../../i18n';
 import { StarButton } from '../common/StarButton';
+import { DT } from './dietText';
 import { MacroLine } from './SuggestionList';
+
+const T = text({
+  pl: {
+    addNow: 'Dodaj od razu',
+    addNowFood: (name: string) => `Dodaj od razu: ${name}`,
+    others: 'Pozostałe',
+    results: (n: number) => `Wyników: ${n}`,
+    noResults: 'Brak wyników',
+    nothing: 'Nic nie pasuje – dodaj samo „Tylko kalorie”.',
+    grams: 'Gramy',
+    gramsOf: (name: string) => `Ile gramów: ${name}`,
+    badGrams: 'Wpisz gramy przy każdej rzeczy — więcej niż 0.',
+    total: 'Razem:',
+    searchPlaceholder: 'Dodaj: produkt, przepis, lokal…',
+    loading: 'Wczytuję bazę produktów — na razie szukam w przepisach, lokalach i Twoim jedzeniu.',
+  },
+  en: {
+    addNow: 'Add now',
+    addNowFood: (name: string) => `Add now: ${name}`,
+    others: 'Others',
+    results: (n: number) => `Results: ${n}`,
+    noResults: 'No results',
+    nothing: 'Nothing matches – add it as “Calories only”.',
+    grams: 'Grams',
+    gramsOf: (name: string) => `Grams: ${name}`,
+    badGrams: 'Enter the grams for each thing — more than 0.',
+    total: 'Total:',
+    searchPlaceholder: 'Add: product, recipe, restaurant…',
+    loading: 'Loading the product database — for now I’m searching recipes, restaurants and your food.',
+  },
+});
 
 /**
  * Szukanie jedzenia i składanie z niego kilku części — wspólne dla „Zestawu” w „Dodaj zjedzone”
@@ -64,8 +97,8 @@ export function FoodResults({ results, onPick, onQuickAdd }: ResultsProps) {
           type="button"
           className="fd-diet-icon-btn"
           onClick={() => onQuickAdd(food)}
-          aria-label={`Dodaj od razu: ${food.name}`}
-          title="Dodaj od razu"
+          aria-label={T.addNowFood(food.name)}
+          title={T.addNow}
         >
           <Plus size={20} strokeWidth={2} aria-hidden />
         </button>
@@ -81,16 +114,16 @@ export function FoodResults({ results, onPick, onQuickAdd }: ResultsProps) {
   // Jedna lista z kluczami, nagłówki grup w niej: wiersz, któremu stuknięto gwiazdkę, przechodzi do
   // drugiej grupy jako ten sam element — React go przesuwa i fokus zostaje na gwiazdce.
   const rows = favorites.length
-    ? [heading('Ulubione'), ...favorites.map(row), ...(rest.length ? [heading('Pozostałe')] : []), ...rest.map(row)]
+    ? [heading(DT.favorites), ...favorites.map(row), ...(rest.length ? [heading(T.others)] : []), ...rest.map(row)]
     : rest.map(row);
   return (
     <>
       <p className="sr-only" aria-live="polite">
-        {results.length ? `Wyników: ${results.length}` : 'Brak wyników'}
+        {results.length ? T.results(results.length) : T.noResults}
       </p>
       <ul className="fd-diet-results">
         {rows}
-        {results.length === 0 && <li className="fd-diet-empty">Nic nie pasuje – dodaj samo „Tylko kalorie”.</li>}
+        {results.length === 0 && <li className="fd-diet-empty">{T.nothing}</li>}
       </ul>
     </>
   );
@@ -186,7 +219,7 @@ export function PartsPicker({
                 </div>
                 {p.food.per100 && (
                   <label className="fld fd-diet-part-grams">
-                    <span>Gramy</span>
+                    <span>{T.grams}</span>
                     <input
                       type="text"
                       className="num"
@@ -196,7 +229,7 @@ export function PartsPicker({
                       onChange={(e) =>
                         onParts((list) => list.map((x) => (x.row === p.row ? { ...x, grams: e.target.value } : x)))
                       }
-                      aria-label={`Ile gramów: ${p.food.name}`}
+                      aria-label={T.gramsOf(p.food.name)}
                       aria-invalid={badGrams(p) || undefined}
                     />
                   </label>
@@ -214,10 +247,10 @@ export function PartsPicker({
           })}
         </ul>
       )}
-      {anyBad && <p className="fd-diet-hint fd-diet-warn">Wpisz gramy przy każdej rzeczy — więcej niż 0.</p>}
+      {anyBad && <p className="fd-diet-hint fd-diet-warn">{T.badGrams}</p>}
       {parts.length > 0 && (
         <p className="fd-diet-total" aria-live="polite">
-          Razem: <MacroLine food={setFood({ name: totalName, parts: chosen })} />
+          {T.total} <MacroLine food={setFood({ name: totalName, parts: chosen })} />
         </p>
       )}
 
@@ -226,14 +259,12 @@ export function PartsPicker({
         data-autofocus
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="Dodaj: produkt, przepis, lokal…"
+        placeholder={T.searchPlaceholder}
         aria-label={searchLabel}
         enterKeyHint="search"
         autoComplete="off"
       />
-      {productsLoading && typed && (
-        <p className="fd-diet-hint">Wczytuję bazę produktów — na razie szukam w przepisach, lokalach i Twoim jedzeniu.</p>
-      )}
+      {productsLoading && typed && <p className="fd-diet-hint">{T.loading}</p>}
       {(typed || (showOwnWhenEmpty && results.length > 0)) && <FoodResults results={results} onPick={addPart} />}
     </>
   );

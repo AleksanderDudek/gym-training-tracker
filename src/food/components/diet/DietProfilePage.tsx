@@ -1,5 +1,6 @@
 import { Check } from 'lucide-react';
 import { useState } from 'react';
+import { text } from '../../../i18n';
 import { FOOD_PATH, go } from '../../../routing';
 import { useBridge } from '../../bridge';
 import { markDiet } from '../../dietFlag';
@@ -16,6 +17,166 @@ import { NumberField } from './NumberField';
 import { Loading } from './Onboarding';
 import { useDietBase, useStoreList } from './useDietPage';
 import './diet.css';
+
+const T = text({
+  pl: {
+    levels: {
+      sedentary: 'Siedzący tryb, bez treningów',
+      desk: 'Praca przy biurku + 2 treningi w tygodniu',
+      light: 'Lekko aktywny: 1–3 treningi w tygodniu',
+      active: 'Aktywny: 3–5 treningów w tygodniu',
+      veryActive: 'Bardzo aktywny: codzienny wysiłek',
+    },
+    belowBmr: (goal: number, base: number) =>
+      `Cel ${goal} kcal jest poniżej podstawowej przemiany materii (${base} kcal) – trudny do utrzymania i grozi utratą mięśni.`,
+    tooFew: 'Bardzo mało kalorii – trudno wtedy dostarczyć wszystkie składniki odżywcze.',
+    tooFast: (pace: string) =>
+      `Tempo ${pace} kg/tydz. to ponad 1% masy ciała – zwykle za szybko, by utrzymać mięśnie i wytrwać.`,
+    gainTooFast: (pace: string) =>
+      `Przybieranie ${pace} kg/tydz. to ponad 0,5% masy ciała – zwykle więcej tłuszczu niż mięśni.`,
+    surplus: 'To nadwyżka kalorii – waga będzie rosła.',
+    deficit: 'To deficyt kalorii – waga będzie spadać, a cel jest wyżej.',
+    keepMoves: (pace: string) =>
+      `Waga docelowa to waga startowa, a ten cel zmienia ją o ${pace} – wybierz utrzymanie albo ustaw wagę docelową.`,
+    lead: 'Z tych danych liczę Twoje spalanie i dzienny cel. Wszystko zostaje na tym urządzeniu. Masz arkusz z planem? Wczytaj go – parametry z panelu i plan posiłków przyjdą razem.',
+    importExcel: 'Wczytaj z Excela',
+    startTitle: 'Zacznij od profilu',
+    you: 'Ty',
+    sex: 'Płeć',
+    male: 'mężczyzna',
+    female: 'kobieta',
+    age: 'Wiek',
+    years: 'lat',
+    height: 'Wzrost',
+    startWeight: 'Waga na starcie',
+    targetWeight: 'Waga docelowa',
+    start: 'Start',
+    heightShared: 'Wzrost to ten sam, co w profilu treningowym — zapis zmienia go w obu miejscach.',
+    activity: 'Aktywność (bez liczenia kroków)',
+    customFactor: (m: number) => `Własny współczynnik × ${m}`,
+    targetSteps: 'Kroki dziennie (plan)',
+    advanced: 'Zaawansowane (wartości z arkusza)',
+    baseSteps: 'Kroki już w aktywności',
+    kcalPerSteps: 'kcal na 1000 kroków na kg',
+    extra: 'Dodatkowy wysiłek',
+    perWeek: 'kcal/tydz.',
+    kcalPerKg: 'Energia w 1 kg masy',
+    correction: 'Korekta spalania z check-inów',
+    perDay: 'kcal/dzień',
+    correctionHint:
+      'Korektę ustawia check-in przed planem z zakupami: o tyle Twoje spalanie różni się od wzoru według wagi i zapisów. Wpisz 0, żeby liczyć samym wzorem.',
+    goalTitle: 'Cel kalorii',
+    bmr: 'Podstawowe spalanie (BMR)',
+    tdee: 'Spalanie dzienne (z krokami)',
+    deficitTile: 'Deficyt',
+    surplusTile: 'Nadwyżka',
+    pace: 'Tempo',
+    reachOn: (date: string) => `cel ok. ${date}`,
+    keeping: 'utrzymanie wagi',
+    outOfReach: 'cel poza zasięgiem',
+    countedFor: (kg: string, last: boolean, correction: string | null) =>
+      `Liczone dla wagi ${kg} kg${last ? ' (ostatnie ważenie)' : ''}${correction ? `, z korektą spalania z check-inów: ${correction}` : ''}.`,
+    daily: 'Dziennie',
+    byPace: 'Cel według tempa',
+    maintain: 'utrzymanie',
+    warning: 'Uwaga',
+    adaptWeekly:
+      'Dopasowuj cel do tygodnia: nadwyżka z wcześniejszych dni jest rozkładana na kolejne (najwyżej 10% celu dziennie), niedojedzone kalorie wracają.',
+    adaptActivity:
+      'Dopasowuj cel do ruchu: więcej kroków niż w celu albo trening spoza planu dodaje kalorie, mniej kroków albo opuszczony trening z planu — odejmuje. Liczy się tylko różnica wobec planu, nie wszystkie spalone kalorie.',
+    dietType: 'Sposób odżywiania',
+    yes: 'Tak:',
+    avoid: 'Unikaj:',
+    upTo: (n: number) => `do ${n}`,
+    dailyMacros: (p: number, c: string | number, f: number) => `Dziennie: B ${p} g · W ${c} g · T ${f} g`,
+    store: 'Sklep',
+    planFor: 'Gdy nie znam sklepów w pobliżu, planuj pod:',
+    anyStore: 'dowolny sklep',
+    nearbyFirst:
+      'Sklepy w pobliżu z sekcji „W pobliżu” mają pierwszeństwo – odczytuję je z tego urządzenia, bez nowego wyszukiwania.',
+    saveStart: 'Zapisz i zacznij',
+    saveProfile: 'Zapisz profil',
+    saved: 'Zapisano',
+  },
+  en: {
+    levels: {
+      sedentary: 'Sedentary, no workouts',
+      desk: 'Desk job + 2 workouts a week',
+      light: 'Lightly active: 1–3 workouts a week',
+      active: 'Active: 3–5 workouts a week',
+      veryActive: 'Very active: exercise every day',
+    },
+    belowBmr: (goal: number, base: number) =>
+      `A goal of ${goal} kcal is below your basal metabolic rate (${base} kcal) – hard to keep up, and you risk losing muscle.`,
+    tooFew: 'Very few calories – it’s hard to get all the nutrients you need.',
+    tooFast: (pace: string) =>
+      `A pace of ${pace} kg/wk is over 1% of your body weight – usually too fast to keep your muscle and stick with it.`,
+    gainTooFast: (pace: string) =>
+      `Gaining ${pace} kg/wk is over 0.5% of your body weight – usually more fat than muscle.`,
+    surplus: 'That’s a calorie surplus – your weight will go up.',
+    deficit: 'That’s a calorie deficit – your weight will go down, but your target is higher.',
+    keepMoves: (pace: string) =>
+      `Your target weight is your starting weight, but this goal changes it by ${pace} – pick maintenance or set a target weight.`,
+    lead: 'From this I work out how much you burn and your daily goal. Everything stays on this device. Got a workbook with a plan? Import it – the panel settings and the meal plan come along.',
+    importExcel: 'Import from Excel',
+    startTitle: 'Start with your profile',
+    you: 'You',
+    sex: 'Sex',
+    male: 'Male',
+    female: 'Female',
+    age: 'Age',
+    years: 'years',
+    height: 'Height',
+    startWeight: 'Starting weight',
+    targetWeight: 'Target weight',
+    start: 'Start date',
+    heightShared: 'Height is the same as in your training profile — saving changes it in both places.',
+    activity: 'Activity (not counting steps)',
+    customFactor: (m: number) => `Custom factor × ${m}`,
+    targetSteps: 'Steps a day (plan)',
+    advanced: 'Advanced (workbook values)',
+    baseSteps: 'Steps already in the activity',
+    kcalPerSteps: 'kcal per 1000 steps per kg',
+    extra: 'Extra exercise',
+    perWeek: 'kcal/wk',
+    kcalPerKg: 'Energy in 1 kg of body mass',
+    correction: 'Burn correction from check-ins',
+    perDay: 'kcal/day',
+    correctionHint:
+      'The check-in before a plan & shopping sets the correction: how far your burn differs from the formula, going by your weight and logs. Enter 0 to use the formula alone.',
+    goalTitle: 'Calorie goal',
+    bmr: 'Basal burn (BMR)',
+    tdee: 'Daily burn (with steps)',
+    deficitTile: 'Deficit',
+    surplusTile: 'Surplus',
+    pace: 'Pace',
+    reachOn: (date: string) => `goal around ${date}`,
+    keeping: 'keeping your weight',
+    outOfReach: 'goal out of reach',
+    countedFor: (kg: string, last: boolean, correction: string | null) =>
+      `Worked out for ${kg} kg${last ? ' (last weigh-in)' : ''}${correction ? `, with the burn correction from check-ins: ${correction}` : ''}.`,
+    daily: 'Daily',
+    byPace: 'Goal by pace',
+    maintain: 'maintenance',
+    warning: 'Watch out',
+    adaptWeekly:
+      'Match the goal to the week: a surplus from earlier days is spread over the next ones (at most 10% of the goal a day), and calories you didn’t eat come back.',
+    adaptActivity:
+      'Match the goal to activity: more steps than planned or an unplanned workout adds calories, fewer steps or a skipped planned workout takes them off. Only the difference from the plan counts, not every calorie burned.',
+    dietType: 'Diet type',
+    yes: 'Yes:',
+    avoid: 'Avoid:',
+    upTo: (n: number) => `up to ${n}`,
+    dailyMacros: (p: number, c: string | number, f: number) => `Daily: P ${p} g · C ${c} g · F ${f} g`,
+    store: 'Shop',
+    planFor: 'When I don’t know the shops nearby, plan for:',
+    anyStore: 'any shop',
+    nearbyFirst: 'Shops from the “Nearby” section come first – I read them from this device, without a new search.',
+    saveStart: 'Save and start',
+    saveProfile: 'Save profile',
+    saved: 'Saved',
+  },
+});
 
 /**
  * Profil diety — podstrona dziennika: dane do modelu energii, cel kalorii, sposób odżywiania,
@@ -61,11 +222,11 @@ export default function DietProfilePage() {
 }
 
 const ACTIVITY: { value: number; label: string }[] = [
-  { value: 1.2, label: 'Siedzący tryb, bez treningów' },
-  { value: 1.28, label: 'Praca przy biurku + 2 treningi w tygodniu' },
-  { value: 1.375, label: 'Lekko aktywny: 1–3 treningi w tygodniu' },
-  { value: 1.55, label: 'Aktywny: 3–5 treningów w tygodniu' },
-  { value: 1.725, label: 'Bardzo aktywny: codzienny wysiłek' },
+  { value: 1.2, label: T.levels.sedentary },
+  { value: 1.28, label: T.levels.desk },
+  { value: 1.375, label: T.levels.light },
+  { value: 1.55, label: T.levels.active },
+  { value: 1.725, label: T.levels.veryActive },
 ];
 
 /** Kilogramy na tydzień: chudnięcie (dodatnie), utrzymanie i spokojne przybieranie (ujemne). */
@@ -85,27 +246,19 @@ function warningsOf(p: Profile, weight: number): string[] {
   const base = bmr(p, weight);
   const pace = paceKgPerWeek(p, weight, p.dailyKcal);
   if (p.dailyKcal < base)
-    out.push(
-      `Cel ${p.dailyKcal} kcal jest poniżej podstawowej przemiany materii (${Math.round(base)} kcal) – trudny do utrzymania i grozi utratą mięśni.`,
-    );
+    out.push(T.belowBmr(p.dailyKcal, Math.round(base)));
   if (p.dailyKcal < (p.sex === 'M' ? 1500 : 1200))
-    out.push('Bardzo mało kalorii – trudno wtedy dostarczyć wszystkie składniki odżywcze.');
+    out.push(T.tooFew);
   if (pace > weight * 0.01)
-    out.push(
-      `Tempo ${formatNumber(pace, 2)} kg/tydz. to ponad 1% masy ciała – zwykle za szybko, by utrzymać mięśnie i wytrwać.`,
-    );
+    out.push(T.tooFast(formatNumber(pace, 2)));
   // Przy treningu siłowym 0,25–0,5% masy ciała na tydzień to tempo, przy którym rosną mięśnie, a nie sam tłuszcz.
   if (-pace > weight * 0.005)
-    out.push(
-      `Przybieranie ${formatNumber(-pace, 2)} kg/tydz. to ponad 0,5% masy ciała – zwykle więcej tłuszczu niż mięśni.`,
-    );
+    out.push(T.gainTooFast(formatNumber(-pace, 2)));
   const direction = goalDirection(p);
-  if (pace < -STILL && direction !== 'gain') out.push('To nadwyżka kalorii – waga będzie rosła.');
-  if (pace > STILL && direction === 'gain') out.push('To deficyt kalorii – waga będzie spadać, a cel jest wyżej.');
+  if (pace < -STILL && direction !== 'gain') out.push(T.surplus);
+  if (pace > STILL && direction === 'gain') out.push(T.deficit);
   if (direction === 'keep' && Math.abs(pace) >= 2 * STILL)
-    out.push(
-      `Waga docelowa to waga startowa, a ten cel zmienia ją o ${paceText(pace)} – wybierz utrzymanie albo ustaw wagę docelową.`,
-    );
+    out.push(T.keepMoves(paceText(pace)));
   return out;
 }
 
@@ -178,12 +331,9 @@ function ProfileForm({ profile, isNew, currentWeight, stores }: FormProps) {
     <>
       {isNew && (
         <div className="wrap">
-          <p className="lead">
-            Z tych danych liczę Twoje spalanie i dzienny cel. Wszystko zostaje na tym urządzeniu. Masz arkusz z planem?
-            Wczytaj go – parametry z panelu i plan posiłków przyjdą razem.
-          </p>
+          <p className="lead">{T.lead}</p>
           <ImportWorkbook
-            label="Wczytaj z Excela"
+            label={T.importExcel}
             // Arkusz tworzy profil, więc ten formularz zaraz zniknie razem z wynikiem importu —
             // jak w Produktach PL od razu do dziennika, a co wczytano, mówi wiadomość na dole.
             onImported={(summary) => {
@@ -210,26 +360,26 @@ function ProfileForm({ profile, isNew, currentWeight, stores }: FormProps) {
         }}
       >
         <section className="grp" aria-labelledby="fd-diet-you-title">
-          <h2 id="fd-diet-you-title">{isNew ? 'Zacznij od profilu' : 'Ty'}</h2>
+          <h2 id="fd-diet-you-title">{isNew ? T.startTitle : T.you}</h2>
           <div className="fd-diet-grid2">
             <label className="fld">
-              <span>Płeć</span>
+              <span>{T.sex}</span>
               <select value={draft.sex} onChange={(e) => set({ sex: e.target.value as Profile['sex'] })}>
-                <option value="M">mężczyzna</option>
-                <option value="K">kobieta</option>
+                <option value="M">{T.male}</option>
+                <option value="K">{T.female}</option>
               </select>
             </label>
             <NumberField
-              label="Wiek"
+              label={T.age}
               value={draft.age}
               onChange={(age) => set({ age })}
               integer
               min={14}
               max={100}
-              suffix="lat"
+              suffix={T.years}
             />
             <NumberField
-              label="Wzrost"
+              label={T.height}
               value={draft.heightCm}
               onChange={(heightCm) => set({ heightCm })}
               integer
@@ -238,7 +388,7 @@ function ProfileForm({ profile, isNew, currentWeight, stores }: FormProps) {
               suffix="cm"
             />
             <NumberField
-              label="Waga na starcie"
+              label={T.startWeight}
               value={draft.startWeightKg}
               onChange={(startWeightKg) => set({ startWeightKg })}
               min={30}
@@ -246,7 +396,7 @@ function ProfileForm({ profile, isNew, currentWeight, stores }: FormProps) {
               suffix="kg"
             />
             <NumberField
-              label="Waga docelowa"
+              label={T.targetWeight}
               value={draft.targetWeightKg}
               onChange={(targetWeightKg) => set({ targetWeightKg })}
               min={30}
@@ -254,7 +404,7 @@ function ProfileForm({ profile, isNew, currentWeight, stores }: FormProps) {
               suffix="kg"
             />
             <label className="fld">
-              <span>Start</span>
+              <span>{T.start}</span>
               <input
                 type="date"
                 value={draft.startDate}
@@ -262,17 +412,15 @@ function ProfileForm({ profile, isNew, currentWeight, stores }: FormProps) {
               />
             </label>
           </div>
-          <p className="tight fd-diet-soft">
-            Wzrost to ten sam, co w profilu treningowym — zapis zmienia go w obu miejscach.
-          </p>
+          <p className="tight fd-diet-soft">{T.heightShared}</p>
           <label className="fld fd-diet-field">
-            <span>Aktywność (bez liczenia kroków)</span>
+            <span>{T.activity}</span>
             <select
               value={draft.activityMultiplier}
               onChange={(e) => set({ activityMultiplier: Number(e.target.value) })}
             >
               {!activityKnown && (
-                <option value={draft.activityMultiplier}>Własny współczynnik × {draft.activityMultiplier}</option>
+                <option value={draft.activityMultiplier}>{T.customFactor(draft.activityMultiplier)}</option>
               )}
               {ACTIVITY.map((a) => (
                 <option key={a.value} value={a.value}>
@@ -283,7 +431,7 @@ function ProfileForm({ profile, isNew, currentWeight, stores }: FormProps) {
           </label>
           <div className="fd-diet-field">
             <NumberField
-              label="Kroki dziennie (plan)"
+              label={T.targetSteps}
               value={draft.targetSteps}
               onChange={(targetSteps) => set({ targetSteps })}
               integer
@@ -292,10 +440,10 @@ function ProfileForm({ profile, isNew, currentWeight, stores }: FormProps) {
             />
           </div>
           <details className="why fd-diet-advanced">
-            <summary>Zaawansowane (wartości z arkusza)</summary>
+            <summary>{T.advanced}</summary>
             <div className="fd-diet-grid2">
               <NumberField
-                label="Kroki już w aktywności"
+                label={T.baseSteps}
                 value={draft.baseSteps}
                 onChange={(baseSteps) => set({ baseSteps })}
                 integer
@@ -303,23 +451,23 @@ function ProfileForm({ profile, isNew, currentWeight, stores }: FormProps) {
                 max={30000}
               />
               <NumberField
-                label="kcal na 1000 kroków na kg"
+                label={T.kcalPerSteps}
                 value={draft.kcalPer1000StepsPerKg}
                 onChange={(kcalPer1000StepsPerKg) => set({ kcalPer1000StepsPerKg })}
                 min={0}
                 max={2}
               />
               <NumberField
-                label="Dodatkowy wysiłek"
+                label={T.extra}
                 value={draft.extraWeeklyKcal}
                 onChange={(extraWeeklyKcal) => set({ extraWeeklyKcal })}
                 integer
                 min={0}
                 max={20000}
-                suffix="kcal/tydz."
+                suffix={T.perWeek}
               />
               <NumberField
-                label="Energia w 1 kg masy"
+                label={T.kcalPerKg}
                 value={draft.kcalPerKg}
                 onChange={(kcalPerKg) => set({ kcalPerKg })}
                 integer
@@ -328,54 +476,56 @@ function ProfileForm({ profile, isNew, currentWeight, stores }: FormProps) {
                 suffix="kcal"
               />
               <NumberField
-                label="Korekta spalania z check-inów"
+                label={T.correction}
                 value={draft.kcalCorrection}
                 onChange={(kcalCorrection) => set({ kcalCorrection })}
                 integer
                 min={-2000}
                 max={2000}
-                suffix="kcal/dzień"
+                suffix={T.perDay}
               />
             </div>
-            <p className="tight fd-diet-soft">
-              Korektę ustawia check-in przed planem z zakupami: o tyle Twoje spalanie różni się od wzoru według wagi
-              i zapisów. Wpisz 0, żeby liczyć samym wzorem.
-            </p>
+            <p className="tight fd-diet-soft">{T.correctionHint}</p>
           </details>
         </section>
 
         <section className="grp" aria-labelledby="fd-diet-goal-title">
-          <h2 id="fd-diet-goal-title">Cel kalorii</h2>
+          <h2 id="fd-diet-goal-title">{T.goalTitle}</h2>
           <dl className="tiles fd-diet-energy">
             <div className="tile">
-              <dt>Podstawowe spalanie (BMR)</dt>
+              <dt>{T.bmr}</dt>
               <dd>{formatNumber(base, 0)} kcal</dd>
             </div>
             <div className="tile">
-              <dt>Spalanie dzienne (z krokami)</dt>
+              <dt>{T.tdee}</dt>
               <dd>{formatNumber(expenditure, 0)} kcal</dd>
             </div>
             <div className="tile">
-              <dt>{expenditure >= draft.dailyKcal ? 'Deficyt' : 'Nadwyżka'}</dt>
-              <dd>{formatNumber(Math.abs(expenditure - draft.dailyKcal), 0)} kcal/dzień</dd>
+              <dt>{expenditure >= draft.dailyKcal ? T.deficitTile : T.surplusTile}</dt>
+              <dd>
+                {formatNumber(Math.abs(expenditure - draft.dailyKcal), 0)} {T.perDay}
+              </dd>
             </div>
             <div className="tile">
-              <dt>Tempo</dt>
+              <dt>{T.pace}</dt>
               <dd>{paceText(pace)}</dd>
               <dd className="fd-diet-soft">
-                {reach ? `cel ok. ${formatDate(reach)}` : direction === 'keep' ? 'utrzymanie wagi' : 'cel poza zasięgiem'}
+                {reach ? T.reachOn(formatDate(reach)) : direction === 'keep' ? T.keeping : T.outOfReach}
               </dd>
             </div>
           </dl>
           <p className="tight">
-            Liczone dla wagi {formatNumber(weight, 1)} kg{isNew ? '' : ' (ostatnie ważenie)'}
-            {draft.kcalCorrection !== 0 &&
-              `, z korektą spalania z check-inów: ${draft.kcalCorrection > 0 ? '+' : '−'}${formatNumber(Math.abs(draft.kcalCorrection), 0)} kcal`}
-            .
+            {T.countedFor(
+              formatNumber(weight, 1),
+              !isNew,
+              draft.kcalCorrection !== 0
+                ? `${draft.kcalCorrection > 0 ? '+' : '−'}${formatNumber(Math.abs(draft.kcalCorrection), 0)} kcal`
+                : null,
+            )}
           </p>
           <div className="fd-diet-kcal-goal">
             <NumberField
-              label="Dziennie"
+              label={T.daily}
               value={draft.dailyKcal}
               onChange={(dailyKcal) => set({ dailyKcal })}
               integer
@@ -384,7 +534,7 @@ function ProfileForm({ profile, isNew, currentWeight, stores }: FormProps) {
               suffix="kcal"
             />
           </div>
-          <div className="chips" role="group" aria-label="Cel według tempa">
+          <div className="chips" role="group" aria-label={T.byPace}>
             {PACES.map((p) => {
               const kcal = Math.round(suggestedKcal(draft, weight, p) / 10) * 10;
               return (
@@ -394,14 +544,14 @@ function ProfileForm({ profile, isNew, currentWeight, stores }: FormProps) {
                   aria-pressed={draft.dailyKcal === kcal}
                   onClick={() => set({ dailyKcal: kcal })}
                 >
-                  {p === 0 ? 'utrzymanie' : paceText(p)} · {formatNumber(kcal, 0)} kcal
+                  {p === 0 ? T.maintain : paceText(p)} · {formatNumber(kcal, 0)} kcal
                 </button>
               );
             })}
           </div>
           {warnings.length > 0 && (
             <div className="dnote warn fd-diet-warnings">
-              <b>Uwaga</b>
+              <b>{T.warning}</b>
               <ul className="fd-diet-bullets">
                 {warnings.map((w) => (
                   <li key={w}>{w}</li>
@@ -415,10 +565,7 @@ function ProfileForm({ profile, isNew, currentWeight, stores }: FormProps) {
               checked={draft.adaptWeekly}
               onChange={(e) => set({ adaptWeekly: e.target.checked })}
             />
-            <span>
-              Dopasowuj cel do tygodnia: nadwyżka z wcześniejszych dni jest rozkładana na kolejne (najwyżej 10% celu
-              dziennie), niedojedzone kalorie wracają.
-            </span>
+            <span>{T.adaptWeekly}</span>
           </label>
           <label className="check-row fd-diet-check">
             <input
@@ -426,16 +573,12 @@ function ProfileForm({ profile, isNew, currentWeight, stores }: FormProps) {
               checked={draft.adaptActivity !== false}
               onChange={(e) => set({ adaptActivity: e.target.checked })}
             />
-            <span>
-              Dopasowuj cel do ruchu: więcej kroków niż w celu albo trening spoza planu dodaje kalorie, mniej kroków
-              albo opuszczony trening z planu — odejmuje. Liczy się tylko różnica wobec planu, nie wszystkie spalone
-              kalorie.
-            </span>
+            <span>{T.adaptActivity}</span>
           </label>
         </section>
 
         <fieldset className="grp fd-diet-styles">
-          <legend>Sposób odżywiania</legend>
+          <legend>{T.dietType}</legend>
           {DIET_PROFILE_IDS.map((id) => {
             const p = DIET_PROFILES[id];
             const t = p.targets(draft.dailyKcal, draft.targetWeightKg);
@@ -452,14 +595,17 @@ function ProfileForm({ profile, isNew, currentWeight, stores }: FormProps) {
                 </span>
                 <span>{p.description}</span>
                 <span className="fd-diet-meta">
-                  <b className="fd-diet-yes">Tak:</b> {p.allows}
+                  <b className="fd-diet-yes">{T.yes}</b> {p.allows}
                 </span>
                 <span className="fd-diet-meta">
-                  <b className="fd-diet-no">Unikaj:</b> {p.avoids}
+                  <b className="fd-diet-no">{T.avoid}</b> {p.avoids}
                 </span>
                 <span className="fd-diet-meta fd-diet-nums">
-                  Dziennie: B {t.protein.target} g · W {t.carbs.max !== null ? `do ${t.carbs.max}` : t.carbs.target} g ·
-                  T {t.fat.target} g
+                  {T.dailyMacros(
+                    t.protein.target,
+                    t.carbs.max !== null ? T.upTo(t.carbs.max) : t.carbs.target,
+                    t.fat.target,
+                  )}
                 </span>
               </label>
             );
@@ -467,14 +613,14 @@ function ProfileForm({ profile, isNew, currentWeight, stores }: FormProps) {
         </fieldset>
 
         <section className="grp" aria-labelledby="fd-diet-store-title">
-          <h2 id="fd-diet-store-title">Sklep</h2>
+          <h2 id="fd-diet-store-title">{T.store}</h2>
           <label className="fld fd-diet-field">
-            <span>Gdy nie znam sklepów w pobliżu, planuj pod:</span>
+            <span>{T.planFor}</span>
             <select
               value={draft.preferredStore ?? ''}
               onChange={(e) => set({ preferredStore: e.target.value || null })}
             >
-              <option value="">dowolny sklep</option>
+              <option value="">{T.anyStore}</option>
               {!storeKnown && draft.preferredStore && (
                 <option value={draft.preferredStore}>{draft.preferredStore}</option>
               )}
@@ -485,20 +631,17 @@ function ProfileForm({ profile, isNew, currentWeight, stores }: FormProps) {
               ))}
             </select>
           </label>
-          <p className="tight">
-            Sklepy w pobliżu z sekcji „W pobliżu” mają pierwszeństwo – odczytuję je z tego urządzenia, bez nowego
-            wyszukiwania.
-          </p>
+          <p className="tight">{T.nearbyFirst}</p>
         </section>
 
         <div className="fd-diet-savebar">
           <button type="submit" className="btn">
-            {isNew ? 'Zapisz i zacznij' : 'Zapisz profil'}
+            {isNew ? T.saveStart : T.saveProfile}
           </button>
           <span role="status" className="fd-diet-saved">
             {saved && (
               <>
-                <Check size={20} strokeWidth={2} aria-hidden /> Zapisano
+                <Check size={20} strokeWidth={2} aria-hidden /> {T.saved}
               </>
             )}
           </span>

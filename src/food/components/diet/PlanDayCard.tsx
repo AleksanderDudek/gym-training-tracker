@@ -1,10 +1,55 @@
 import { Check, Repeat, SkipForward, Undo2 } from 'lucide-react';
+import { text } from '../../../i18n';
 import { db, type Entry } from '../../diet/db';
 import { planFood } from '../../diet/foods';
 import { plannedKcal, type Plan, type PlannedDay, type PlannedItem } from '../../diet/plan';
 import { logPlanItem, updateChoices } from '../../diet/store';
 import { formatNumber } from '../../lib/format';
+import { DT } from './dietText';
 import { MacroLine } from './SuggestionList';
+
+const T = text({
+  pl: {
+    title: 'Plan na ten dzień',
+    day: (template: string) => `· dzień ${template}`,
+    variant: 'Wariant',
+    eaten: 'zjedzone: ',
+    skipped: 'pominięte: ',
+    instead: (text: string) => ` · zamiast: ${text}`,
+    undo: 'Cofnij',
+    undoItem: (text: string) => `Cofnij: ${text}`,
+    restore: 'Przywróć',
+    restoreItem: (text: string) => `Przywróć: ${text}`,
+    swap: 'Zamień',
+    swapItem: (text: string) => `Zamień: ${text}`,
+    original: 'Oryginał',
+    originalItem: (text: string) => `Oryginał: ${text}`,
+    skip: 'Pomiń',
+    skipItem: (text: string) => `Pomiń: ${text}`,
+    total: (kcal: string) => `Plan: ${kcal} kcal`,
+    left: (kcal: string) => ` · do zjedzenia z planu jeszcze ${kcal} kcal`,
+  },
+  en: {
+    title: 'Plan for this day',
+    day: (template: string) => `· day ${template}`,
+    variant: 'Option',
+    eaten: 'eaten: ',
+    skipped: 'skipped: ',
+    instead: (text: string) => ` · instead of: ${text}`,
+    undo: 'Undo',
+    undoItem: (text: string) => `Undo: ${text}`,
+    restore: 'Restore',
+    restoreItem: (text: string) => `Restore: ${text}`,
+    swap: 'Swap',
+    swapItem: (text: string) => `Swap: ${text}`,
+    original: 'Original',
+    originalItem: (text: string) => `Original: ${text}`,
+    skip: 'Skip',
+    skipItem: (text: string) => `Skip: ${text}`,
+    total: (kcal: string) => `Plan: ${kcal} kcal`,
+    left: (kcal: string) => ` · still to eat from the plan: ${kcal} kcal`,
+  },
+});
 
 interface Props {
   plan: Plan;
@@ -34,10 +79,10 @@ export function PlanDayCard({ plan, planned, date, entries, onSwap }: Props) {
   return (
     <section className="grp" aria-labelledby="fd-diet-plan-day-title">
       <h2 id="fd-diet-plan-day-title">
-        Plan na ten dzień <span className="fd-diet-h-meta">· dzień {planned.template}</span>
+        {T.title} <span className="fd-diet-h-meta">{T.day(planned.template)}</span>
       </h2>
       <label className="fld fd-diet-variant">
-        <span>Wariant</span>
+        <span>{T.variant}</span>
         <select
           value={planned.variant}
           // Inny wariant ma inne linie: jego zamiany i pominięcia wskazywałyby nie te pozycje.
@@ -45,7 +90,7 @@ export function PlanDayCard({ plan, planned, date, entries, onSwap }: Props) {
         >
           {variants.map((v) => (
             <option key={v.index} value={v.index}>
-              {v.index} · {formatNumber(v.totals.kcal, 0)} kcal · B {formatNumber(v.totals.protein ?? 0, 0)} g
+              {v.index} · {formatNumber(v.totals.kcal, 0)} kcal · {DT.p} {formatNumber(v.totals.protein ?? 0, 0)} g
             </option>
           ))}
         </select>
@@ -60,31 +105,31 @@ export function PlanDayCard({ plan, planned, date, entries, onSwap }: Props) {
                 {entry && (
                   <span className="fd-diet-tick">
                     <Check {...ICON} />
-                    <span className="sr-only">zjedzone: </span>
+                    <span className="sr-only">{T.eaten}</span>
                   </span>
                 )}
-                {item.skipped && <span className="sr-only">pominięte: </span>}
+                {item.skipped && <span className="sr-only">{T.skipped}</span>}
                 {item.text}
               </p>
               <p className="fd-diet-meta">
                 <MacroLine food={planFood(item)} />
-                {item.replaced && <> · zamiast: {item.replaced.text}</>}
+                {item.replaced && T.instead(item.replaced.text)}
               </p>
               <div className="fd-diet-acts">
                 {entry ? (
                   <button
                     type="button"
                     className="btn ghost sm"
-                    aria-label={`Cofnij: ${item.text}`}
+                    aria-label={T.undoItem(item.text)}
                     onClick={() => entry.id && void db.entries.delete(entry.id)}
                   >
-                    <Undo2 {...ICON} /> Cofnij
+                    <Undo2 {...ICON} /> {T.undo}
                   </button>
                 ) : item.skipped ? (
                   <button
                     type="button"
                     className="btn ghost sm"
-                    aria-label={`Przywróć: ${item.text}`}
+                    aria-label={T.restoreItem(item.text)}
                     onClick={() =>
                       void updateChoices(date, (c) => ({
                         ...c,
@@ -92,31 +137,31 @@ export function PlanDayCard({ plan, planned, date, entries, onSwap }: Props) {
                       }))
                     }
                   >
-                    <Undo2 {...ICON} /> Przywróć
+                    <Undo2 {...ICON} /> {T.restore}
                   </button>
                 ) : (
                   <>
                     <button
                       type="button"
                       className="btn sm"
-                      aria-label={`Zjadłem: ${item.text}`}
+                      aria-label={DT.ateFood(item.text)}
                       onClick={() => void logPlanItem(date, item.index, item)}
                     >
-                      <Check {...ICON} /> Zjadłem
+                      <Check {...ICON} /> {DT.ate}
                     </button>
                     <button
                       type="button"
                       className="btn ghost sm"
-                      aria-label={`Zamień: ${item.text}`}
+                      aria-label={T.swapItem(item.text)}
                       onClick={() => onSwap(item)}
                     >
-                      <Repeat {...ICON} /> Zamień
+                      <Repeat {...ICON} /> {T.swap}
                     </button>
                     {item.replaced ? (
                       <button
                         type="button"
                         className="btn ghost sm"
-                        aria-label={`Oryginał: ${item.replaced.text}`}
+                        aria-label={T.originalItem(item.replaced.text)}
                         onClick={() =>
                           void updateChoices(date, (c) => {
                             const swaps = { ...c.swaps };
@@ -125,18 +170,18 @@ export function PlanDayCard({ plan, planned, date, entries, onSwap }: Props) {
                           })
                         }
                       >
-                        <Undo2 {...ICON} /> Oryginał
+                        <Undo2 {...ICON} /> {T.original}
                       </button>
                     ) : (
                       <button
                         type="button"
                         className="btn ghost sm"
-                        aria-label={`Pomiń: ${item.text}`}
+                        aria-label={T.skipItem(item.text)}
                         onClick={() =>
                           void updateChoices(date, (c) => ({ ...c, skipped: [...(c.skipped ?? []), item.index] }))
                         }
                       >
-                        <SkipForward {...ICON} /> Pomiń
+                        <SkipForward {...ICON} /> {T.skip}
                       </button>
                     )}
                   </>
@@ -147,8 +192,8 @@ export function PlanDayCard({ plan, planned, date, entries, onSwap }: Props) {
         })}
       </ul>
       <p className="tight">
-        Plan: {formatNumber(plannedKcal(planned) ?? 0, 0)} kcal
-        {left.length > 0 && <> · do zjedzenia z planu jeszcze {formatNumber(leftKcal, 0)} kcal</>}
+        {T.total(formatNumber(plannedKcal(planned) ?? 0, 0))}
+        {left.length > 0 && T.left(formatNumber(leftKcal, 0))}
       </p>
     </section>
   );
