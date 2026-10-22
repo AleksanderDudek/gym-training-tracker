@@ -7,6 +7,7 @@ import { DIET_PROFILES } from './diet/profiles';
 import { diaryToParams } from './diet/url';
 import { FOOD_CARD_HEIGHT, FoodCardPlaceholder } from './FoodCardPlaceholder';
 import { hashWith } from './hash';
+import { activityKcalOf, useActivity } from './hooks/useActivity';
 import { useClock, useEntries, useHistory, useProfile } from './hooks/useDiet';
 import { formatNumber } from './lib/format';
 import './components/diet/diet.css';
@@ -33,13 +34,14 @@ export default function TodayFoodCard() {
   // Tydzień do korekty celu: nadwyżka z poniedziałku obniża dzisiejszy cel tak samo jak w dzienniku.
   const history = useHistory(profile ? mondayOf(today) : null);
   const eaten = useMemo(() => totals(entries ?? []), [entries]);
+  const activity = useActivity(profile, today);
 
   // Bez profilu (np. dane diety wyczyszczone na innej karcie) karty nie ma — nie ma celu, do którego liczyć.
   if (profile === null) return null;
   // IndexedDB jeszcze odpowiada: miejsce karty stoi zajęte, żeby ekran pod nią nie skakał.
   if (!profile || !entries || !history) return <FoodCardPlaceholder />;
 
-  const goal = dayGoal(profile, history.eaten, today, today);
+  const goal = dayGoal(profile, history.eaten, today, today, activityKcalOf(activity));
   const targets = DIET_PROFILES[profile.dietProfile].targets(goal.kcal, profile.targetWeightKg);
   const status = macroStatus(targets, eaten, hour >= 21);
   const leftKcal = targets.kcal - eaten.kcal;

@@ -11,6 +11,9 @@ import {
   logQuick,
   restoreAll,
   saveProfile,
+  dropCheat,
+  eatCheat,
+  planCheat,
   updateChoices,
   updateDay,
 } from './store';
@@ -40,6 +43,34 @@ describe('store', () => {
   test('quick kcal without macros keeps them unknown, not zero', async () => {
     const id = await logQuick('2026-10-11', 'Obiad u rodziców', 650, {}, db);
     expect(await db.entries.get(id)).toMatchObject({ kcal: 650, protein: null, source: 'quick' });
+  });
+
+  test('a planned cheat meal sits on its day; eaten, it becomes one entry and leaves the plan', async () => {
+    await updateDay('2026-10-17', { note: 'urodziny' }, db);
+    const cheat = { name: 'Pizza ze znajomymi', kcal: 1200, protein: 45, carbs: null, fat: 50 };
+    await planCheat('2026-10-17', cheat, db);
+    expect((await db.days.get('2026-10-17'))?.cheat).toEqual(cheat);
+    const id = await eatCheat('2026-10-17', cheat, { planned: true }, db);
+    expect(await db.entries.get(id!)).toMatchObject({ name: 'Pizza ze znajomymi', kcal: 1200, protein: 45, carbs: null, source: 'quick' });
+    const day = await db.days.get('2026-10-17');
+    expect(day).not.toHaveProperty('cheat');
+    expect(day?.note).toBe('urodziny');
+  });
+
+  test('a planned cheat meal eaten twice (double tap, second tab) is logged once', async () => {
+    const cheat = { name: 'Burger', kcal: 950, protein: null, carbs: null, fat: null };
+    await planCheat('2026-10-17', cheat, db);
+    const [a, b] = await Promise.all([
+      eatCheat('2026-10-17', cheat, { planned: true }, db),
+      eatCheat('2026-10-17', cheat, { planned: true }, db),
+    ]);
+    expect([a, b].filter((x) => x !== null)).toHaveLength(1);
+    expect(await db.entries.where('date').equals('2026-10-17').count()).toBe(1);
+  });
+
+  test('dropping a cheat meal from a day without one changes nothing', async () => {
+    await dropCheat('2026-10-18', db);
+    expect(await db.days.get('2026-10-18')).toBeUndefined();
   });
 
   test('ticking a plan line links the entry to the line', async () => {

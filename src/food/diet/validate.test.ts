@@ -75,4 +75,17 @@ describe('validate', () => {
       choices: { variant: 2, skipped: [1], swaps: {} },
     });
   });
+
+  test('a planned cheat meal survives a backup with its macros; one without calories does not', () => {
+    const day = cleanDay({ date: '2026-10-11', cheat: { name: 'Pizza', kcal: 1200, protein: 45, carbs: 'dużo', fat: 50 } });
+    expect(day?.cheat).toEqual({ name: 'Pizza', kcal: 1200, protein: 45, carbs: null, fat: 50 });
+    expect(cleanDay({ date: '2026-10-11', cheat: { name: 'Nic', kcal: 0 } })).not.toHaveProperty('cheat');
+    expect(cleanDay({ date: '2026-10-11', cheat: 'pizza' })).not.toHaveProperty('cheat');
+  });
+
+  test('the activity switch is kept only as a yes or no', () => {
+    const defaults = completeProfile({});
+    expect(cleanProfile({ adaptActivity: false }, defaults).adaptActivity).toBe(false);
+    expect(cleanProfile({ adaptActivity: 'tak' }, defaults).adaptActivity).toBeUndefined();
+  });
 });

@@ -4,6 +4,7 @@ import { withGymSteps } from '../../diet/body';
 import { macroStatus, totals, type DayTotals, type Status } from '../../diet/day';
 import { dayReaching, forecast, goalDirection } from '../../diet/energy';
 import { addDays, dayGoal, forecastInputs, lastWeighing, projectFromWeighing, shortDay } from '../../diet/model';
+import { activityKcalOf, useActivity } from '../../hooks/useActivity';
 import type { Plan } from '../../diet/plan';
 import { DIET_PROFILES } from '../../diet/profiles';
 import type { Profile } from '../../diet/types';
@@ -56,6 +57,7 @@ function ProgressView({
     [profile, bridge.heightCm],
   );
   const { stepsOn } = bridge;
+  const activity = useActivity(profile, today);
   const model = useMemo(() => {
     // Kroki z treningów także w dniach bez wiersza diety — inaczej prognoza przyjęłaby tam plan kroków.
     const inputs = withGymSteps(forecastInputs(body, plan, history, today, HORIZON), stepsOn);
@@ -98,7 +100,7 @@ function ProgressView({
   const fortnight = Array.from({ length: 14 }, (_, i) => addDays(today, i - 13)).map((date) => ({
     date,
     eaten: history.eaten.get(date) ?? null,
-    goal: dayGoal(body, history.eaten, date, today).kcal,
+    goal: dayGoal(body, history.eaten, date, today, activityKcalOf(activity)).kcal,
   }));
   const maxKcal = Math.max(...fortnight.map((d) => Math.max(d.eaten ?? 0, d.goal))) * 1.1;
 

@@ -84,24 +84,33 @@ export function remainingOf(targets: MacroTargets, eaten: DayTotals): Remaining 
 
 /**
  * The day's calorie goal: the profile's, corrected by this week's balance
- * when the user wants that. Only days that are OVER count (before `today`,
- * the real one): looking at tomorrow must not read this morning's breakfast
- * as a whole day eaten and raise tomorrow's goal to make up for it.
+ * when the user wants that, and by the day's activity against the plan
+ * (`activityKcal`, from `diet/activity.ts`, when the user wants that). Only
+ * days that are OVER count in the balance (before `today`, the real one):
+ * looking at tomorrow must not read this morning's breakfast as a whole day
+ * eaten and raise tomorrow's goal to make up for it. Each of those days is
+ * judged against its own goal after its activity.
  */
 export function dayGoal(
   profile: Profile,
   eatenByDate: Map<string, number>,
   date: string,
   today: string,
-): { kcal: number; adjustment: Adjustment | null } {
-  if (!profile.adaptWeekly) return { kcal: profile.dailyKcal, adjustment: null };
+  activityKcal?: (date: string) => number,
+): { kcal: number; adjustment: Adjustment | null; activity: number } {
+  const activity = activityKcal?.(date) ?? 0;
+  if (!profile.adaptWeekly) return { kcal: profile.dailyKcal + activity, adjustment: null, activity };
   // Days eaten to an older goal are no surplus over this one: the balance starts when the goal did.
   const since = profile.goalSince ?? '';
   const history = [...eatenByDate]
     .filter(([d]) => d < today && d >= since)
-    .map(([d, kcal]) => ({ date: d, eatenKcal: kcal }));
+    .map(([d, kcal]) => ({
+      date: d,
+      eatenKcal: kcal,
+      ...(activityKcal && { goalKcal: profile.dailyKcal + activityKcal(d) }),
+    }));
   const adjustment = weeklyAdjustment(profile.dailyKcal, history, date);
-  return { kcal: adjustment.adjusted, adjustment };
+  return { kcal: adjustment.adjusted + activity, adjustment, activity };
 }
 
 /** The plan's calories for a date, or the profile's goal when there is no plan for it. */

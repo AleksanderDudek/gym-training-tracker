@@ -4,6 +4,7 @@ import { FOOD_PATH } from '../../../routing';
 import { hashWith } from '../../hash';
 import { db } from '../../diet/db';
 import { addDays, dayGoal, mondayOf, shortDay } from '../../diet/model';
+import { activityKcalOf, useActivity } from '../../hooks/useActivity';
 import { plannedDay, plannedKcal, type Plan } from '../../diet/plan';
 import { ACTIVE_PLAN } from '../../diet/store';
 import type { Profile } from '../../diet/types';
@@ -95,6 +96,7 @@ interface Props {
 /** Plan jako tydzień: czym każdy dzień miał być, czym był, i wejście w każdy z nich. */
 function PlanView({ profile, plan, date, today, history, onDate }: Props) {
   const { req, ask } = useModal();
+  const activity = useActivity(profile, today);
   const monday = mondayOf(date);
   const week = Array.from({ length: 7 }, (_, i) => addDays(monday, i));
   const end = addDays(plan.startDate, plan.days.length - 1);
@@ -163,7 +165,7 @@ function PlanView({ profile, plan, date, today, history, onDate }: Props) {
                 const choices = history.days.get(d)?.choices;
                 const planned = plannedDay(plan, d, choices);
                 const eaten = history.eaten.get(d);
-                const goal = dayGoal(profile, history.eaten, d, today).kcal;
+                const goal = dayGoal(profile, history.eaten, d, today, activityKcalOf(activity)).kcal;
                 const over = eaten !== undefined && eaten > goal * 1.05;
                 return (
                   <tr

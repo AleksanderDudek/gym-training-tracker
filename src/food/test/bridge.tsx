@@ -12,7 +12,15 @@ export function testBridge(over: Partial<GymBridge> = {}): GymBridge {
     setHeight: vi.fn(),
     stepsOn: () => null,
     setSteps: vi.fn(),
-    moveOn: () => ({ trained: false, workoutKcal: null, cardioKcal: null }),
+    moveOn: () => ({
+      trained: false,
+      workoutKcal: null,
+      cardioKcal: null,
+      otherKcal: null,
+      planned: null,
+      planActive: false,
+      typicalWorkoutKcal: null,
+    }),
     toast: vi.fn(),
     ...over,
   };

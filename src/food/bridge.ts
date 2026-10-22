@@ -24,13 +24,30 @@ export interface GymBridge {
   /** Kroki dnia jako zwykły wpis kroków — liczy się do odznak, doświadczenia i kalorii jak każdy inny. */
   setSteps(day: string, steps: number): void;
   /**
-   * Ruch dnia: czy był trening siłowy i ile kalorii spaliły treningi i cardio. Kalorie są `null`,
-   * dopóki nie ma żadnego ważenia — bez wagi aplikacja ich nie liczy. To informacja, nie dodatek
-   * do celu kalorii: mnożnik aktywności w profilu diety już zakłada treningi.
+   * Ruch dnia z treningów. Kalorie są `null`, dopóki nie ma żadnego ważenia — bez wagi aplikacja
+   * ich nie liczy. Cel diety zakłada ruch z planu, więc dieta dolicza tylko różnicę między ruchem
+   * zaplanowanym a zrobionym (`diet/activity.ts`) — nigdy całych spalonych kalorii.
    */
-  moveOn(day: string): { trained: boolean; workoutKcal: number | null; cardioKcal: number | null };
+  moveOn(day: string): MoveDay;
   /** Krótka wiadomość na dole ekranu — ta sama, co po zapisie w treningach. */
   toast(message: string): void;
+}
+
+export interface MoveDay {
+  /** Był trening siłowy (wpis w dzienniku treningów). */
+  trained: boolean;
+  /** Aktywne kalorie treningów siłowych tego dnia. */
+  workoutKcal: number | null;
+  /** Aktywne kalorie kroków i cardio razem — do zdania „Ruch dziś”. */
+  cardioKcal: number | null;
+  /** Ruch poza krokami: bieżnia, rower, taniec i przekąski ruchowe. Kroki dieta liczy sama. */
+  otherKcal: number | null;
+  /** Trening, który plan treningowy wyznaczył na ten dzień, i jego szacunek; `null` — bez treningu w planie. */
+  planned: { name: string; kcal: number | null } | null;
+  /** Czy jest aktywny plan treningowy. Bez niego dieta porównuje z założeniem profilu. */
+  planActive: boolean;
+  /** Typowy trening tej osoby (średnia z ostatnich), kcal; `null` bez historii albo ważenia. */
+  typicalWorkoutKcal: number | null;
 }
 
 export const BridgeContext = createContext<GymBridge | null>(null);

@@ -1,5 +1,5 @@
 import { cleanPrepPlan } from '../prep/validate';
-import { db, type DayRow, type DietDb, type Entry } from './db';
+import { db, type DayRow, type DietDb, type Entry, type PlannedCheat } from './db';
 import { bumpFavorite } from './favorites';
 import type { Food } from './foods';
 import type { DayChoices, Plan, PlanItem } from './plan';
@@ -97,6 +97,39 @@ export async function logQuick(
     carbs: macros.carbs ?? null,
     fat: macros.fat ?? null,
     source: 'quick',
+  });
+}
+
+/** A cheat meal planned for a day: the rest of the day is planned around it. */
+export async function planCheat(date: string, cheat: PlannedCheat, database: DietDb = db): Promise<void> {
+  await updateDay(date, { cheat }, database);
+}
+
+/** The planned cheat meal off the day, the rest of the day row untouched. */
+export async function dropCheat(date: string, database: DietDb = db): Promise<void> {
+  await database.transaction('rw', database.days, async () => {
+    const current = await database.days.get(date);
+    if (!current?.cheat) return;
+    const { cheat: _dropped, ...rest } = current;
+    await database.days.put(rest);
+  });
+}
+
+/**
+ * The cheat meal eaten: one entry in „Zjedzone”, and the plan gone - in one transaction. With
+ * `planned`, only while the day still has it: a double tap or a second tab logs it once (`null`).
+ */
+export async function eatCheat(
+  date: string,
+  cheat: PlannedCheat,
+  { planned = false }: { planned?: boolean } = {},
+  database: DietDb = db,
+): Promise<number | null> {
+  return database.transaction('rw', database.entries, database.days, async () => {
+    if (planned && !(await database.days.get(date))?.cheat) return null;
+    const id = await logQuick(date, cheat.name.trim() || 'Cheat meal', cheat.kcal, cheat, database);
+    await dropCheat(date, database);
+    return id;
   });
 }
 

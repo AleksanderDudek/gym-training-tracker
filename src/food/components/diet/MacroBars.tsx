@@ -39,13 +39,15 @@ interface Props {
   eaten: DayTotals;
   status: DayStatus;
   adjustment: Adjustment | null;
+  /** Zdanie o ruchu wobec planu (`activityLine`): co zmienił w celu i co może jeszcze ubyć. */
+  activity?: string | null;
   plannedKcal: number | null;
   /** Główna akcja dnia pod liczbami — „Dodaj zjedzone”. */
   children?: ReactNode;
 }
 
 /** Dzień wobec celu dnia: najpierw kalorie, potem trzy makroskładniki i co znaczy każdy stan. */
-export function MacroBars({ targets, eaten, status, adjustment, plannedKcal, children }: Props) {
+export function MacroBars({ targets, eaten, status, adjustment, activity, plannedKcal, children }: Props) {
   const rows = [
     { key: 'protein' as const, label: 'Białko', value: eaten.protein, target: targets.protein.target },
     {
@@ -71,6 +73,7 @@ export function MacroBars({ targets, eaten, status, adjustment, plannedKcal, chi
           {formatNumber(Math.abs(adjustment.delta), 0)} kcal. {adjustment.explanation}
         </p>
       )}
+      {activity && <p className="tight">{activity}</p>}
       {plannedKcal !== null && <p className="tight">Plan na dziś: {formatNumber(plannedKcal, 0)} kcal.</p>}
       <div className="fd-diet-macros">
         {rows.map((row) => (

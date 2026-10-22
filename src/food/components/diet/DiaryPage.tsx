@@ -5,6 +5,7 @@ import {
   ChevronRight,
   ClipboardList,
   MapPin,
+  Pizza,
   Plus,
   Star,
   TrendingDown,
@@ -16,14 +17,16 @@ import { NEARBY_PATH, dietPath } from '../../../routing';
 import { useBridge } from '../../bridge';
 import { MISSING_DATA_MESSAGE } from '../../data';
 import { hashWith } from '../../hash';
-import { macroStatus, totals } from '../../diet/day';
-import { db, type DayRow, type Entry } from '../../diet/db';
+import type { Activity } from '../../diet/activity';
+import { simulateCheat } from '../../diet/cheat';
+import { macroStatus, totals, type DayTotals } from '../../diet/day';
+import { db, type DayRow, type Entry, type PlannedCheat } from '../../diet/db';
 import { entryFood } from '../../diet/favorites';
 import { planFood, type Food } from '../../diet/foods';
 import { addDays, dayGoal, dayLabel, longDay, mealsLeftAt, mondayOf, remainingOf } from '../../diet/model';
 import { plannedDay, plannedKcal, type Plan, type PlannedItem, type PlanItem } from '../../diet/plan';
 import { DIET_PROFILES } from '../../diet/profiles';
-import { logFood, updateChoices, updateDay } from '../../diet/store';
+import { dropCheat, eatCheat, logFood, updateChoices, updateDay } from '../../diet/store';
 import { autoDay, seedOf, suggest, swaps, type Context } from '../../diet/suggest';
 import type { Profile } from '../../diet/types';
 import { diaryFromParams, diaryToParams } from '../../diet/url';
@@ -36,6 +39,7 @@ import {
   type History,
   type NearbyChains,
 } from '../../hooks/useDiet';
+import { activityKcalOf, useActivity, weightFrom } from '../../hooks/useActivity';
 import { usePrepPlans } from '../../hooks/usePrep';
 import { useUrlState } from '../../hooks/useUrlState';
 import { formatNumber } from '../../lib/format';
@@ -47,7 +51,10 @@ import { nextPlanAfter, planCovering, planName } from '../../prep/store';
 import type { PrepPlan } from '../../prep/types';
 import { planHref } from '../prep/links';
 import { PrepDayCard } from '../prep/PrepDayCard';
+import { activityLine, activityParts, pendingParts } from './activityText';
 import { AutoDayCard } from './AutoDayCard';
+import { CheatMealSheet } from './CheatMealSheet';
+import { verdictText } from './cheatText';
 import { FavoritesSheet } from './FavoritesSheet';
 import { FoodPicker } from './FoodPicker';
 import { StarButton } from '../common/StarButton';
@@ -149,10 +156,19 @@ function TodayView({ profile, plan, date, today, hour, nowMs, history, pickerOpe
   const upcoming = ahead && ahead.settings.start > today ? ahead : null;
   const favorites = useFavorites();
   const [favoritesOpen, setFavoritesOpen] = useState(false);
+  const [cheatOpen, setCheatOpen] = useState(false);
   const [swapping, setSwapping] = useState<PlannedItem | null>(null);
+  const activity = useActivity(profile, today);
 
   const eaten = useMemo(() => totals(entries ?? []), [entries]);
-  const goal = dayGoal(profile, history.eaten, date, today);
+  // Cel po tygodniu i po ruchu wobec planu (kroki, treningi) — ten sam w każdym miejscu diety.
+  const goal = dayGoal(profile, history.eaten, date, today, activityKcalOf(activity));
+  const moved = activity ? activity(date) : null;
+  // Zaplanowany cheat meal rezerwuje swoje kalorie i jeden posiłek: reszta dnia liczy się już z nim.
+  const cheat = day?.cheat ?? null;
+  const reserved = cheat ? withCheat(eaten, cheat) : eaten;
+  const mealsAhead = date === today ? mealsLeftAt(hour) : date < today ? 1 : 4;
+  const restMeals = cheat ? Math.max(0, mealsAhead - 1) : mealsAhead;
   const dietProfile = DIET_PROFILES[profile.dietProfile];
   const targets = dietProfile.targets(goal.kcal, profile.targetWeightKg);
   const dayDone = date < today || (date === today && hour >= 21);
@@ -176,8 +192,8 @@ function TodayView({ profile, plan, date, today, hour, nowMs, history, pickerOpe
   };
   const ctx: Context = {
     ...base,
-    remaining: remainingOf(targets, eaten),
-    mealsLeft: date === today ? mealsLeftAt(hour) : date < today ? 1 : 4,
+    remaining: remainingOf(targets, reserved),
+    mealsLeft: Math.max(1, restMeals),
   };
   const suggestions = suggest(pool, ctx, 8);
   const autoSeed = day?.autoSeed ?? seedOf(date);
@@ -191,6 +207,7 @@ function TodayView({ profile, plan, date, today, hour, nowMs, history, pickerOpe
     logFood(date, f).then(() => bridge.toast(`Zapisane: ${f.name} · ${formatNumber(f.nutrients.kcal, 0)} kcal.`));
   const log = (f: Food) => void save(f);
   const starred = favorites?.length ?? 0;
+  const dayPlanKcal = prep ? dayPlanTotals(prep, date).kcal : plannedKcal(planned);
 
   return (
     <>
@@ -204,7 +221,8 @@ function TodayView({ profile, plan, date, today, hour, nowMs, history, pickerOpe
         eaten={eaten}
         status={status}
         adjustment={goal.adjustment}
-        plannedKcal={prep ? dayPlanTotals(prep, date).kcal : plannedKcal(planned)}
+        activity={moved && date <= today ? activityLine(moved) : null}
+        plannedKcal={dayPlanKcal}
       >
         <div className="actions fd-diet-dayacts">
           <button type="button" className="btn" onClick={() => onPicker(true)}>
@@ -213,8 +231,40 @@ function TodayView({ profile, plan, date, today, hour, nowMs, history, pickerOpe
           <button type="button" className="btn ghost" onClick={() => setFavoritesOpen(true)}>
             <Star {...ICON} className="fd-diet-fav-ico" /> Ulubione{starred > 0 && ` (${starred})`}
           </button>
+          <button type="button" className="btn ghost" onClick={() => setCheatOpen(true)}>
+            <Pizza {...ICON} /> Cheat meal
+          </button>
         </div>
       </MacroBars>
+
+      {cheat && (
+        <CheatCard
+          cheat={cheat}
+          date={date}
+          today={today}
+          verdict={verdictText(
+            simulateCheat({
+              cheat,
+              targets,
+              eaten,
+              mealsLeft: mealsAhead,
+              profile,
+              kg: weightFrom(bridge.weights, date) ?? profile.startWeightKg,
+              date,
+              eatenByDate: new Map(),
+              plannedLeftKcal: null,
+              typicalWorkoutKcal: 0,
+            }),
+          )}
+          onEdit={() => setCheatOpen(true)}
+          onEaten={() =>
+            void eatCheat(date, cheat, { planned: true }).then(
+              (id) => id !== null && bridge.toast(`Zapisane: ${cheat.name || 'Cheat meal'} · ${formatNumber(cheat.kcal, 0)} kcal.`),
+            )
+          }
+          onDrop={() => void dropCheat(date).then(() => bridge.toast('Cheat meal usunięty z planu dnia.'))}
+        />
+      )}
 
       <EatenCard entries={entries} kcal={eaten.kcal} />
 
@@ -241,9 +291,13 @@ function TodayView({ profile, plan, date, today, hour, nowMs, history, pickerOpe
       <section className="grp" aria-labelledby="fd-diet-next-title">
         <h2 id="fd-diet-next-title">Co teraz?</h2>
         <p className="tight">
-          {ctx.remaining.kcal > 50
-            ? `Zostało ${formatNumber(ctx.remaining.kcal, 0)} kcal i ${formatNumber(Math.max(0, ctx.remaining.protein), 0)} g białka na ${ctx.mealsLeft} ${ctx.mealsLeft === 1 ? 'posiłek' : 'posiłki'}. Najlepsze oznaczone gwiazdką.`
-            : 'Kalorie na dziś wykorzystane – jeśli jesteś głodny, wybierz coś lekkiego i białkowego.'}{' '}
+          {cheat && restMeals === 0
+            ? 'Na resztę dnia zostaje zaplanowany cheat meal.'
+            : ctx.remaining.kcal > 50
+              ? `Zostało ${formatNumber(ctx.remaining.kcal, 0)} kcal i ${formatNumber(Math.max(0, ctx.remaining.protein), 0)} g białka na ${ctx.mealsLeft} ${ctx.mealsLeft === 1 ? 'posiłek' : 'posiłki'}${cheat ? ' — po odjęciu zaplanowanego cheat mealu' : ''}. Najlepsze oznaczone gwiazdką.`
+              : cheat
+                ? 'Z zaplanowanym cheat mealem kalorie na dziś są wykorzystane – reszta dnia lekko i białkowo.'
+                : 'Kalorie na dziś wykorzystane – jeśli jesteś głodny, wybierz coś lekkiego i białkowego.'}{' '}
           Profil: {dietProfile.label}.
         </p>
         <NearbyLine nearby={nearby} preferred={profile.preferredStore} dict={dict} />
@@ -251,7 +305,13 @@ function TodayView({ profile, plan, date, today, hour, nowMs, history, pickerOpe
         <SuggestionList suggestions={suggestions} actionLabel="Zjadłem" onPick={log} />
       </section>
 
-      <MoveCard key={`${date}:${body.steps ?? ''}`} date={date} today={today} body={body} />
+      <MoveCard
+        key={`${date}:${body.steps ?? ''}`}
+        date={date}
+        today={today}
+        body={body}
+        activity={moved}
+      />
 
       <DietLinks date={date} today={today} />
 
@@ -264,6 +324,24 @@ function TodayView({ profile, plan, date, today, hour, nowMs, history, pickerOpe
         productsLoading={food.data.status === 'loading'}
         onClose={() => onPicker(false)}
         onLogged={bridge.toast}
+      />
+      <CheatMealSheet
+        open={cheatOpen}
+        date={date}
+        today={today}
+        hour={hour}
+        profile={profile}
+        eaten={eaten}
+        eatenByDate={history.eaten}
+        activity={activity}
+        plannedKcal={dayPlanKcal}
+        planned={cheat}
+        suggestFor={(remaining, mealsLeft) => suggest(pool, { ...base, remaining, mealsLeft }, 3)}
+        onClose={() => setCheatOpen(false)}
+        onSaved={(message) => {
+          setCheatOpen(false);
+          bridge.toast(message);
+        }}
       />
       <FavoritesSheet
         open={favoritesOpen}
@@ -379,6 +457,64 @@ function NextPlanLine({ plan, today }: { plan: PrepPlan; today: string }) {
   );
 }
 
+/** What is eaten plus the planned cheat meal: the rest of the day is planned around it. */
+function withCheat(eaten: DayTotals, cheat: PlannedCheat): DayTotals {
+  return {
+    kcal: eaten.kcal + cheat.kcal,
+    protein: eaten.protein + (cheat.protein ?? 0),
+    carbs: eaten.carbs + (cheat.carbs ?? 0),
+    fat: eaten.fat + (cheat.fat ?? 0),
+    unknownMacros: eaten.unknownMacros + (cheat.protein === null || cheat.carbs === null || cheat.fat === null ? 1 : 0),
+  };
+}
+
+/**
+ * Zaplanowany cheat meal na górze dnia: co to i ile, czy dzień się z nim mieści, i trzy ruchy —
+ * „Zjedzone” (wpis w „Zjedzone”, plan znika), „Zmień” (arkusz z jego liczbami), „Usuń”.
+ */
+function CheatCard({
+  cheat,
+  date,
+  today,
+  verdict,
+  onEdit,
+  onEaten,
+  onDrop,
+}: {
+  cheat: PlannedCheat;
+  date: string;
+  today: string;
+  verdict: string;
+  onEdit: () => void;
+  onEaten: () => void;
+  onDrop: () => void;
+}) {
+  const g = (v: number | null) => (v === null ? '?' : formatNumber(v, 0));
+  return (
+    <section className="grp fd-diet-cheat" aria-labelledby="fd-diet-cheat-title">
+      <h2 id="fd-diet-cheat-title">
+        <Pizza {...ICON} /> Zaplanowany cheat meal
+      </h2>
+      <p className="fd-diet-name">{cheat.name || 'Cheat meal'}</p>
+      <p className="fd-diet-meta fd-diet-nums">
+        {formatNumber(cheat.kcal, 0)} kcal · B {g(cheat.protein)} · W {g(cheat.carbs)} · T {g(cheat.fat)}
+      </p>
+      <p className="tight">{verdict}</p>
+      <div className="actions fd-diet-cheatacts">
+        <button type="button" className="btn sm" onClick={onEaten} disabled={date > today}>
+          Zjedzone
+        </button>
+        <button type="button" className="btn ghost sm" onClick={onEdit}>
+          Zmień
+        </button>
+        <button type="button" className="btn ghost sm" onClick={onDrop}>
+          Usuń
+        </button>
+      </div>
+    </section>
+  );
+}
+
 function EatenCard({ entries, kcal }: { entries: Entry[]; kcal: number }) {
   return (
     <section className="grp" aria-labelledby="fd-diet-eaten-title">
@@ -490,7 +626,18 @@ function numberOrNull(text: string): number | null {
  * czyta: dziennik treningów jest jeden. Waga ma własne pytanie na górze dziennika (`WeighCard`):
  * waży się rano, a kroki wpisuje się wieczorem albo przychodzą z zegarka.
  */
-function MoveCard({ date, today, body }: { date: string; today: string; body: DayRow }) {
+function MoveCard({
+  date,
+  today,
+  body,
+  activity,
+}: {
+  date: string;
+  today: string;
+  body: DayRow;
+  /** Ruch wobec planu; `null`, gdy cel w profilu nie idzie za ruchem. */
+  activity: Activity | null;
+}) {
   const bridge = useBridge();
   const move = bridge.moveOn(date);
   const [steps, setSteps] = useState(body.steps != null ? String(body.steps) : '');
@@ -553,10 +700,36 @@ function MoveCard({ date, today, body }: { date: string; today: string; body: Da
             ? `${parts.join(' · ')}.`
             : 'bez treningu i cardio.'}
       </p>
-      <p className="tight fd-diet-soft">
-        To tylko informacja — nie dodaję tego do celu kalorii: współczynnik aktywności w profilu diety już zakłada
-        treningi.
-      </p>
+      {activity === null ? (
+        <p className="tight fd-diet-soft">
+          Cel kalorii nie idzie za ruchem — włączysz to w profilu diety („Dopasowuj cel do ruchu”).
+        </p>
+      ) : future ? (
+        <p className="tight fd-diet-soft">Cel tego dnia zakłada ruch z planu — zmieni się, gdy dzień przyjdzie.</p>
+      ) : (
+        <>
+          <p className="tight">
+            <b>Cel a ruch:</b>{' '}
+            {activityParts(activity).length
+              ? `${activityParts(activity).join(' · ')}.`
+              : isToday
+                ? 'na razie bez zmian wobec planu.'
+                : 'ruch zgodny z planem — cel bez zmian.'}
+            {pendingParts(activity).length > 0 && ` Do wieczora może jeszcze ubyć: ${pendingParts(activity).join(' · ')}.`}
+          </p>
+          <p className="tight fd-diet-soft">
+            Cel zakłada {formatNumber(activity.steps.planned, 0)} kroków
+            {activity.training.source === 'plan'
+              ? activity.training.planned > 0
+                ? ` i trening z planu (${activity.training.plannedName ? `„${activity.training.plannedName}”, ` : ''}ok. ${kcalText(activity.training.planned)})`
+                : ', bez treningu w planie'
+              : activity.training.source === 'profile'
+                ? ` i treningi z profilu (średnio ${kcalText(activity.training.planned)} dziennie)`
+                : ''}
+            . Liczę tylko różnicę między tym a ruchem zrobionym — całe spalone kalorie liczyłyby treningi dwa razy.
+          </p>
+        </>
+      )}
     </section>
   );
 }

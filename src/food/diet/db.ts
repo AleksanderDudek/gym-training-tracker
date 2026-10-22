@@ -24,6 +24,17 @@ export interface DayRow {
   /** Which "Ułóż dzień" set is shown on a day without a plan (another click, another set). */
   autoSeed?: number;
   note?: string;
+  /** A cheat meal planned for this day: the rest of the day is planned around it until it is eaten. */
+  cheat?: PlannedCheat;
+}
+
+/** A planned cheat meal: calories always, macros when known (unknown is not zero). */
+export interface PlannedCheat {
+  name: string;
+  kcal: number;
+  protein: number | null;
+  carbs: number | null;
+  fat: number | null;
 }
 
 /** What was eaten: a snapshot, so history never changes when a product's data does. */

@@ -40,6 +40,11 @@ export interface Profile {
   dietProfile: DietProfileId;
   /** Correct today's goal by this week's surplus or deficit. */
   adaptWeekly: boolean;
+  /**
+   * Move the day's goal by the activity against the plan: more steps or an extra training add,
+   * fewer steps or a skipped planned training take off (`diet/activity.ts`). Absent means on.
+   */
+  adaptActivity?: boolean;
   /** Chain key to plan around when nothing nearby is known (null: any). */
   preferredStore: string | null;
 }

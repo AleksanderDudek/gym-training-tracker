@@ -28,7 +28,7 @@ npm run build      # typecheck + produkcyjny build do dist/ z service workerem (
 npm run preview    # podgląd builda — tu działa też praca offline
 npm run typecheck  # tsc: aplikacja, testy, konfiguracja Vite i skrypty, service worker, filmy demo
 npm run lint       # oxlint
-npm test           # 1836 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, plan z zakupami, serwer… (vitest)
+npm test           # 1878 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, plan z zakupami, serwer… (vitest)
 ```
 
 Aplikacje na telefon (GYM TRACKER Zdrowie — `health/README.md`):
@@ -693,8 +693,30 @@ aplikacji. Dane produktów: [Open Food Facts](https://world.openfoodfacts.org), 
   niewielką premię („Twoje ulubione”). Ulubione to migawki jak zestawy: działają bez bazy produktów
   i offline; listę widać i czyści się w Profilu diety → Twoje dane. Cel dnia koryguje się według
   tygodnia — nadwyżka rozkłada się na kolejne dni (najwyżej 10% celu dziennie), niedojedzone kalorie
-  wracają. „Co teraz?” podpowiada resztę dnia z gwiazdką
+  wracają — i według ruchu (niżej). „Co teraz?” podpowiada resztę dnia z gwiazdką
   przy najlepszych i powodem.
+- **Cheat meal** — trzeci przycisk pod bilansem. Wpisuje się kalorie (i makro, jeśli znane), a pod
+  polami od razu widać skutki: cel dnia po ruchu, zjedzone, razem z cheat mealem — i czy dzień się
+  mieści („zostaje 900 kcal na 2 posiłki — po ok. 450 kcal i 47 g białka”), czy wychodzi ponad cel
+  („o 600 kcal, 26%”). Do tego białko, które jeszcze trzeba zjeść, węglowodany i tłuszcz ponad limity
+  sposobu odżywiania, ile z planu dnia jeszcze się zmieści, trzy propozycje na resztę dnia, a ponad
+  celem: o ile obniży się cel na kolejne dni tygodnia (ta sama korekta tygodniowa), ile to w prognozie
+  wagi i ile kroków albo treningów by to odrobiło. Na dziś arkusz pyta o ruch do końca dnia — kroki
+  (do celu, jak teraz, własna liczba) i trening z planu (będzie, nie będzie, dodatkowy) — bo od tego
+  zależy, ile naprawdę można zjeść. „Zaplanuj” zostawia cheat meal na ten dzień (także przyszły —
+  sobotnią pizzę planuje się w środę): karta pod bilansem z „Zjedzone”, „Zmień” i „Usuń”, a „Co
+  teraz?” rezerwuje jego kalorie i jeden posiłek. „Zjedzone teraz” zapisuje go od razu.
+- **Cel dopasowany do ruchu** (przełącznik w Profilu diety, domyślnie włączony). Cel kalorii zakłada
+  ruch z planu: kroki z profilu i treningi — te z planu treningowego, a bez planu tyle, ile zakłada
+  współczynnik aktywności (np. 2 w tygodniu przy 1,28). Cel zmienia się tylko o **różnicę** między
+  tym a ruchem zrobionym: kroki ponad cel i trening spoza planu dodają, mniej kroków i opuszczony
+  trening z planu odejmują, bieżnia, rower, taniec i przekąski ruchowe dodają w całości. Doliczanie
+  wszystkich spalonych kalorii liczyłoby treningi dwa razy, bo współczynnik już je zawiera. Dziś liczy
+  się od razu to, co się wydarzyło na plus, a braki (kroki do celu, trening jeszcze przed tobą) —
+  dopiero po dniu albo w symulacji cheat mealu; bilans pisze, o ile cel może jeszcze spaść. Zamknięte
+  dni tygodnia korekta tygodniowa ocenia wobec ich celu po ruchu. Kto nie zapisuje treningów
+  w aplikacji (i nie ma planu treningowego), nie traci kalorii za dni bez wpisu treningu — brak wpisu
+  to nie brak treningu.
 - **Postęp** (podstrona): wykres wagi z planem, prognozą od ostatniego ważenia i celem, kalorie
   z 14 dni i średnie makro z tygodnia.
 
@@ -779,10 +801,10 @@ dokłada), „Bez mięsa”, „Bez ryb i owoców morza”, „Bez jajek”.
 **Jedno ciało, jedno źródło.** Waga z dziennika jedzenia to ta sama waga co w profilu i na karcie
 ważenia — zapis z diety trafia do dziennika wagi. Kroki dieta bierze z wpisów, zegarka Garmin i telefonu,
 a wpis kroków z diety staje się zwykłym wpisem kroków (z doświadczeniem i odznakami jak każdy inny).
-Wzrost jest jeden. Dzień z treningiem i „Ruch dziś” (kalorie treningu i cardio) dieta czyta
-z dziennika treningów — **jako informację, nie dodatek do celu**: współczynnik aktywności w profilu
-już zakłada treningi, a doliczanie spalonych kalorii liczyłoby je dwa razy. Prognoza wagi liczy
-kroki z każdego dnia, także z dni bez wpisu w diecie.
+Wzrost jest jeden. Treningi, cardio i plan treningowy dieta czyta z treningów i dolicza do celu
+**tylko różnicę wobec planu** (cel dopasowany do ruchu, wyżej) — nigdy wszystkich spalonych kalorii,
+bo współczynnik aktywności już zakłada treningi. Prognoza wagi liczy kroki z każdego dnia, także
+z dni bez wpisu w diecie.
 
 **Przepisy** (`#/przepisy`): zawsze więcej białka niż węglowodanów i więcej białka niż tłuszczu —
 na porcję, z prawdziwych produktów. Na początku listy **gotowce** (rodzaj „Gotowiec”): 11 zestawów
@@ -1276,7 +1298,7 @@ src/
     body.test.ts            3 testy średniej z tygodnia i zmiany tydzień do tygodnia
     cardio.ts               kroki, bieżnia, rower i taniec: zapis, zakresy, minuty ruchu WHO, statystyki
     burn.ts                 kalorie z zapisów: wpis, trening, ćwiczenie, przekąska, cały dzień
-    cardio.test.ts          32 testy wpisów, tańca, wagi w czasie, kalorii i minut ruchu według WHO
+    cardio.test.ts          34 testy wpisów, tańca, wagi w czasie, kalorii, minut ruchu według WHO, ruchu poza krokami i typowego treningu
     watch.ts                dane z zegarka: paczka, scalanie po czasie, kroki i przejazdy jako wpisy w locie
     watch.test.ts           15 testów paczki, scalania, wyższej liczby kroków, przejazdów i importu
     phone.ts                dane z telefonu: paczka, scalanie, kroki i przejazdy w locie, propozycja ważenia
@@ -1375,7 +1397,7 @@ src/
     online/                 sklepy internetowe: rejestr, dane sklepów (`data/*.json`), scalanie z bazą po EAN, kontrola liczb — 36 testów
     chains/                 sieci z własnymi danymi (Selgros): rejestr, dane (`data/*.json`), scalanie po EAN bez oferty online, kontrola liczb — 10 testów
     nearby/                 w pobliżu: odległości, zapytanie do Overpass (z halami Selgros i Makro) z zapasowym serwerem, kopia na dobę, promień — 33 testy
-    diet/                   dieta: baza Dexie (`produkty-pl-dieta`, wersja 4 z zestawami, ulubionymi i planami z zakupami), model energii z kierunkiem celu, sposoby odżywiania, dzień, plan z Excela, zestawy, ulubione, wyszukiwanie, podpowiedzi — 137 testów
+    diet/                   dieta: baza Dexie (`produkty-pl-dieta`, wersja 4 z zestawami, ulubionymi i planami z zakupami), model energii z kierunkiem celu, sposoby odżywiania, dzień, plan z Excela, zestawy, ulubione, wyszukiwanie, podpowiedzi, cel dopasowany do ruchu wobec planu (`activity.ts`), symulacja cheat mealu (`cheat.ts`) — 170 testów
     prep/                   plan z zakupami (meal prep): bloki gotowania, przepisy z koszyka, wybór ról i lista zamienników, porcje i dodatki, cele dni, check-in, lista zakupów, nazwa, przesuwanie dat, pierwszeństwo w dzienniku, migawka w bazie, odczyt z kopii — 120 testów
     restaurants/            lokale: dane sieci (`data/*.json`), kontrola liczb, wyszukiwanie, kolejność, „Najwięcej białka”, stan w adresie — 101 testów
     hooks/                  baza produktów, menu lokali, dieta na żywo i scalona z treningiem, stan w adresie, lokalizacja, sklepy w pobliżu — 22 testy
@@ -1386,7 +1408,7 @@ src/
     components/diet/        dziennik (pytanie o wagę, arkusz ulubionych), plan posiłków, postęp, profil diety, pierwsze kroki, wybór jedzenia i zestawy, import z Excela
     components/prep/        plan z zakupami: formularz z check-inem, plan (przepisy, gotowanie, dzień po dniu), okna nazwy, dat i wymiany przepisu, „Moje plany”, lista zakupów, plan dnia w dzienniku
     components/restaurants/ Lokale: lista sieci z wyszukiwaniem, menu sieci, karta pozycji z dodaniem do dziennika
-    components/**/*.test.tsx 156 testów stron pod jsdom — przez role i etykiety, nie znaczniki
+    components/**/*.test.tsx 163 testy stron pod jsdom — przez role i etykiety, nie znaczniki
     test/                   dane do testów: produkty, most do treningu, arkusz Excela
   api.ts                    adres serwera aplikacji z buildu (`VITE_API_URL`)
   push.ts                   przypomnienia w przeglądarce: zgoda, subskrypcja Web Push, wysyłka listy

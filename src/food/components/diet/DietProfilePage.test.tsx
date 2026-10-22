@@ -126,6 +126,17 @@ describe('Profil diety', () => {
     await waitFor(async () => expect((await db.profile.get('me'))!.kcalCorrection).toBe(0));
   });
 
+  test('cel dopasowany do ruchu: włączony domyślnie, wyłączenie zostaje w profilu', async () => {
+    await saveProfile(completeProfile({ startDate: '2026-10-01' }));
+    const user = userEvent.setup();
+    renderWithBridge(<DietProfilePage />);
+    const box = await screen.findByRole('checkbox', { name: /Dopasowuj cel do ruchu/ });
+    expect(box).toBeChecked();
+    await user.click(box);
+    await user.click(screen.getByRole('button', { name: 'Zapisz profil' }));
+    await waitFor(async () => expect((await db.profile.get('me'))!.adaptActivity).toBe(false));
+  });
+
   test('utrzymanie: waga docelowa równa startowej, bez daty celu', async () => {
     await saveProfile(completeProfile({ startWeightKg: 80, targetWeightKg: 80, startDate: '2026-10-01' }));
     const user = userEvent.setup();

@@ -75,7 +75,7 @@ import { GuidedSession } from './components/Guided';
 import { PromoPage } from './components/Promo';
 import type { WatchPayload } from './engine/watch';
 import { HEIGHT_RANGE, WEIGHT_RANGE, bodyOf, removeBodyWeight, setBodyWeight, validBody, validHeight, validWeight } from './engine/body';
-import { cardioBurn, dayBurn, workoutBurn } from './engine/burn';
+import { beyondStepsBurn, cardioBurn, dayBurn, plannedBurn, typicalWorkoutBurn, workoutBurn } from './engine/burn';
 import { LevelUp, avatarOf } from './components/Character';
 import type { Avatar } from './components/Character';
 import type {
@@ -376,6 +376,10 @@ export default function App() {
   const bridgeWrites = useRef<BridgeWrites | null>(null);
   const bridge = useMemo<GymBridge | null>(() => {
     if (!state) return null;
+    // Kalendarz planu treningowego i typowy trening liczone raz na stan, nie przy każdym dniu.
+    const snap = snapshot(state);
+    const typical = typicalWorkoutBurn(state);
+    const workouts = [...BUILTIN, ...state.workouts];
     return {
       weights: bodyOf(state),
       setWeight: (kg, day) => bridgeWrites.current?.setWeight(kg, day),
@@ -386,11 +390,17 @@ export default function App() {
       setSteps: (day, steps) => bridgeWrites.current?.setSteps(day, steps),
       moveOn: (day) => {
         const burn = dayBurn(state, day);
+        const slot = snap?.schedule.days.find((d) => d.date === day);
+        const workout = slot ? workouts.find((w) => w.id === slot.workout) : undefined;
         return {
           // Ten sam dzień co w kaloriach dnia (`dayBurn`) i w kalendarzu planu.
           trained: state.log.some((e) => dayKey(e.date) === day),
           workoutKcal: burn ? burn.workouts : null,
           cardioKcal: burn ? burn.cardio : null,
+          otherKcal: beyondStepsBurn(state, day),
+          planned: workout ? { name: workout.name, kcal: plannedBurn(state, workout)?.active ?? null } : null,
+          planActive: snap !== null,
+          typicalWorkoutKcal: typical,
         };
       },
       toast: setToastMsg,

@@ -59,7 +59,26 @@ describe('model', () => {
     expect(dayGoal({ ...profile, adaptWeekly: false }, eaten, '2026-10-06', '2026-10-06')).toEqual({
       kcal: 2000,
       adjustment: null,
+      activity: 0,
     });
+  });
+
+  test('the day’s activity against the plan moves the goal, with or without the weekly balance', () => {
+    const activity = (d: string) => (d === '2026-10-06' ? 150 : 0);
+    expect(dayGoal(profile, new Map(), '2026-10-06', '2026-10-06', activity)).toMatchObject({ kcal: 2150, activity: 150 });
+    expect(dayGoal({ ...profile, adaptWeekly: false }, new Map(), '2026-10-06', '2026-10-06', activity).kcal).toBe(2150);
+  });
+
+  test('the week judges a closed day against its own goal after activity', () => {
+    // Monday: 2300 eaten. Planned activity it was a 300 kcal surplus; with a 300 kcal training on
+    // top of the plan, it was exactly to goal - nothing to pay back on Tuesday.
+    const eaten = new Map([['2026-10-05', 2300]]);
+    expect(dayGoal(profile, eaten, '2026-10-06', '2026-10-06').kcal).toBe(1950);
+    const trained = (d: string) => (d === '2026-10-05' ? 300 : 0);
+    expect(dayGoal(profile, eaten, '2026-10-06', '2026-10-06', trained).kcal).toBe(2000);
+    // A lazy Monday (−200 kcal of activity) eaten to the base goal is a surplus.
+    const lazy = (d: string) => (d === '2026-10-05' ? -200 : 0);
+    expect(dayGoal(profile, new Map([['2026-10-05', 2000]]), '2026-10-06', '2026-10-06', lazy).kcal).toBe(1970);
   });
 
   test('a goal changed mid-week starts its own balance: days eaten to the old goal are no surplus', () => {
