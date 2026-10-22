@@ -45,11 +45,13 @@ import {
   roundKcal,
   stepsEnergy,
 } from '../engine/energy';
-import { CARDIO_EMPTY, daySeed, pick, plural } from '../engine/quips';
+import { CARDIO_EMPTY, daySeed, pick } from '../engine/quips';
+import { LOCALE } from '../i18n';
 import { addDays, dayKey, weekdayOf } from '../engine/schedule';
 import { cardioAddPath, cardioPath, go, goBack } from '../routing';
 import { Segmented, Trendline } from './ui';
 import type { AppState, Cardio, CardioInput, CardioSport, DanceMix, DanceStyle, WatchHealth } from '../types';
+import { T } from './Cardio.text';
 
 /**
  * Kroki, bieżnia, rower i taniec — ruch mierzony gdzie indziej, wpisywany tutaj.
@@ -62,16 +64,13 @@ import type { AppState, Cardio, CardioInput, CardioSport, DanceMix, DanceStyle, 
 export type LogCardio = (input: CardioInput, day: string, kg: number | null) => void;
 
 const pl = (n: number, digits = 0): string =>
-  n.toLocaleString('pl-PL', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+  n.toLocaleString(LOCALE, { minimumFractionDigits: digits, maximumFractionDigits: digits });
 
 /** Liczba z wyświetlacza: jedna cyfra po przecinku tylko wtedy, gdy jest. */
 const decimal = (v: number): string => pl(v, Number.isInteger(v) ? 0 : 1);
 
-/** Skąd liczba kroków albo przejazd, kiedy nie z wpisu. */
-const SOURCE = { watch: 'Zegarek', phone: 'Telefon' } as const;
-
 /** „≈ 245 kcal”. Tylda zostaje zawsze — to szacunek, a nie pomiar. */
-export const kcalText = (kcal: number): string => `≈ ${roundKcal(kcal).toLocaleString('pl-PL')} kcal`;
+export const kcalText = (kcal: number): string => `≈ ${roundKcal(kcal).toLocaleString(LOCALE)} kcal`;
 
 export const kmText = (km: number): string => `${pl(km, 1)} km`;
 
@@ -81,16 +80,13 @@ export const durText = (secs: number): string => {
   return `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ''}`;
 };
 
-const STEP_FORMS = ['krok', 'kroki', 'kroków'] as const;
-export const stepsText = (n: number): string => `${n.toLocaleString('pl-PL')} ${plural(n, STEP_FORMS)}`;
+export const stepsText = (n: number): string => T.steps(n);
 
-const DANCE_NAME: Record<DanceStyle, string> = { pair: 'Taniec w parze', solo: 'Taniec solo' };
-
-const FLOOR_FORMS = ['piętro', 'piętra', 'pięter'] as const;
+const DANCE_NAME: Record<DanceStyle, string> = T.danceName;
 
 /** Odcinek z zegarka słowem, po prędkości: od środka przejścia marsz–bieg to już bieg. */
 const partWord = (kmh: number): string =>
-  kmh >= (WALK_MAX_KMH + RUN_MIN_KMH) / 2 ? 'bieg' : kmh > WALK_MAX_KMH ? 'szybki marsz' : 'marsz';
+  kmh >= (WALK_MAX_KMH + RUN_MIN_KMH) / 2 ? T.run : kmh > WALK_MAX_KMH ? T.brisk : T.walk;
 
 /**
  * Skąd kalorie kroków dnia, gdy urządzenie wiedziało więcej niż samą liczbę: „droga z zegarka
@@ -104,10 +100,10 @@ export function stepsDetail(state: AppState, c: Cardio): string | null {
   const b = stepsEnergy(d, 70, heightOf(state));
   const floors = Math.round(b.climbM / 3);
   const parts = [
-    b.distance === 'device' && d.m !== null ? `droga ${c.src === 'phone' ? 'z telefonu' : 'z zegarka'} ${kmText(d.m / 1000)}` : null,
-    ...b.parts.map((p) => `${partWord(p.kmh)} ${kmText(p.km)} w ${durText(p.secs)} (${pl(p.kmh, 1)}\u00a0km/h)`),
-    floors > 0 ? `${floors} ${plural(floors, FLOOR_FORMS)}` : null,
-    b.elsewhereKm > 0 ? `bez ${kmText(b.elsewhereKm)} bieżni — liczy się osobno` : null,
+    b.distance === 'device' && d.m !== null ? T.deviceDistance(c.src === 'phone' ? 'phone' : 'watch', kmText(d.m / 1000)) : null,
+    ...b.parts.map((p) => T.part(partWord(p.kmh), kmText(p.km), durText(p.secs), pl(p.kmh, 1))),
+    floors > 0 ? T.floors(floors) : null,
+    b.elsewhereKm > 0 ? T.elsewhere(kmText(b.elsewhereKm)) : null,
   ].filter(Boolean);
   return parts.length ? parts.join(' · ') : null;
 }
@@ -116,11 +112,7 @@ export function stepsDetail(state: AppState, c: Cardio): string | null {
  * Podział zajęć słowami użytkownika. Przedziały zamiast jednej liczby, bo tak się to pamięta;
  * w rachunku stoją ich środki (`DANCE_SHARE`).
  */
-const MIX: Record<DanceMix, { name: string; share: string; short: string }> = {
-  full: { name: 'Cały czas taniec', share: '80–90% tańca', short: 'cały czas taniec' },
-  half: { name: 'Pół na pół', share: 'połowa tańca', short: 'pół na pół z tłumaczeniem' },
-  talk: { name: 'Dużo tłumaczenia', share: '20–30% tańca', short: 'dużo tłumaczenia' },
-};
+const MIX: Record<DanceMix, { name: string; share: string; short: string }> = T.mix;
 
 /** „Bieżnia 6 km/h · 30 min · 3%”, „Rower 140 W · 45 min”, „8 421 kroków”, „Taniec w parze · 60 min · pół na pół”. */
 export function cardioLabel(c: CardioInput): string {
@@ -128,18 +120,18 @@ export function cardioLabel(c: CardioInput): string {
     case 'steps':
       return stepsText(c.steps);
     case 'treadmill':
-      return `Bieżnia ${decimal(c.kmh)} km/h · ${c.min} min${c.grade ? ` · ${decimal(c.grade)}%` : ''}`;
+      return T.treadmillLabel(decimal(c.kmh), c.min, c.grade ? decimal(c.grade) : null);
     case 'bike':
-      return `Rower ${decimal(c.kmh)} km/h · ${c.min} min`;
+      return T.bikeLabel(decimal(c.kmh), c.min);
     case 'ergo':
-      return `Rower ${c.watts} W · ${c.min} min`;
+      return T.ergoLabel(c.watts, c.min);
     case 'dance':
       return `${DANCE_NAME[c.style]} · ${c.min} min · ${MIX[c.mix].short}`;
   }
 }
 
 const paceWord = (kmh: number): string =>
-  kmh < WALK_MAX_KMH ? 'marsz' : kmh < RUN_MIN_KMH ? 'szybki marsz albo trucht' : 'bieg';
+  kmh < WALK_MAX_KMH ? T.walk : kmh < RUN_MIN_KMH ? T.briskOrJog : T.run;
 
 /** Liczba z pola: przecinek albo kropka, bo polska klawiatura daje przecinek. Puste — NaN. */
 const num = (s: string): number => {
@@ -149,12 +141,12 @@ const num = (s: string): number => {
 
 const dm = (key: string): string => {
   const [, mm, dd] = key.split('-');
-  return `${dd}.${mm}`;
+  return T.dm(dd!, mm!);
 };
 
-const WEEKDAY = ['', 'pn', 'wt', 'śr', 'cz', 'pt', 'sb', 'nd'];
+const WEEKDAY = T.weekday;
 
-const baseSteps = BASE_STEPS.toLocaleString('pl-PL');
+const baseSteps = BASE_STEPS.toLocaleString(LOCALE);
 
 /**
  * Minuty ruchu dnia i doświadczenie z nich. Przy suficie zdanie mówi wprost, że kolejny wpis
@@ -162,9 +154,9 @@ const baseSteps = BASE_STEPS.toLocaleString('pl-PL');
  */
 function moveLine(state: AppState, day: string): string {
   const m = Math.floor(minutesByDay(state)[day] ?? 0);
-  if (!m) return `Minut ruchu jeszcze nie ma — z kroków liczy się to, co ponad ${baseSteps}.`;
+  if (!m) return T.noMinutes(baseSteps);
   const xp = cardioXp(m);
-  return `Minuty ruchu: ${m} · +${xp} XP${xp >= XP.cardioCap ? ' — limit dnia, dalej rosną już tylko odznaki' : ''}.`;
+  return T.minutes(m, xp, xp >= XP.cardioCap);
 }
 
 /**
@@ -179,7 +171,7 @@ function WhoWeek({ state, today }: { state: AppState; today: string }) {
       <div
         className="rank-bar"
         role="progressbar"
-        aria-label="Minuty ruchu w tym tygodniu na tle zalecenia WHO"
+        aria-label={T.whoAria}
         aria-valuemin={0}
         aria-valuemax={WHO_WEEK_MIN}
         aria-valuenow={Math.min(m, WHO_WEEK_MIN)}
@@ -187,9 +179,7 @@ function WhoWeek({ state, today }: { state: AppState; today: string }) {
         <i style={{ width: `${Math.max(2, Math.min(100, Math.round((m / WHO_WEEK_MIN) * 100)))}%` }} />
       </div>
       <p className="tight" style={{ marginBottom: 12 }}>
-        {done
-          ? `Ten tydzień: ${m} minut ruchu — zalecenie WHO (${WHO_WEEK_MIN}) spełnione.`
-          : `Ten tydzień: ${m} z ${WHO_WEEK_MIN} minut ruchu zalecanych przez WHO. Minuta intensywna liczy się podwójnie.`}
+        {done ? T.whoDone(m, WHO_WEEK_MIN) : T.whoLeft(m, WHO_WEEK_MIN)}
       </p>
     </>
   );
@@ -197,12 +187,9 @@ function WhoWeek({ state, today }: { state: AppState; today: string }) {
 
 /* ---------------- Skróty ---------------- */
 
-const SHORTCUTS: { sport: CardioSport; name: string; sub: string }[] = [
-  { sport: 'steps', name: 'Kroki z telefonu', sub: 'liczba z całego dnia' },
-  { sport: 'treadmill', name: 'Bieżnia', sub: 'prędkość, czas i nachylenie' },
-  { sport: 'bike', name: 'Rower', sub: 'prędkość albo moc i czas' },
-  { sport: 'dance', name: 'Taniec', sub: 'zajęcia w parze albo solo' },
-];
+const SHORTCUTS: { sport: CardioSport; name: string; sub: string }[] = (
+  ['steps', 'treadmill', 'bike', 'dance'] as const
+).map((sport) => ({ sport, ...T.shortcuts[sport] }));
 
 /** Wejścia do formularza, po jednym na rodzaj. Po zapisie przycisk mówi, co już dziś jest. */
 function CardioShortcuts({ state, today }: { state: AppState; today: string }) {
@@ -213,15 +200,15 @@ function CardioShortcuts({ state, today }: { state: AppState; today: string }) {
         const mine = todays.filter((c) => sportOf(c) === s.sport);
         const now = mine.length
           ? s.sport === 'steps'
-            ? `dziś ${stepsText(stepsOn(state, today))}`
-            : `dziś ${mine.length}×`
+            ? T.today(stepsText(stepsOn(state, today)))
+            : T.today(`${mine.length}×`)
           : null;
         return (
           <button
             key={s.sport}
             className={`snack-ex${now ? ' on' : ''}`}
             onClick={() => go(cardioAddPath(s.sport))}
-            aria-label={`${s.name}${now ? `, ${now}` : ''}. Wpisz.`}
+            aria-label={T.shortcutAria(s.name, now)}
           >
             <span className="snack-ex-name">{s.name}</span>
             <span className={now ? 'snack-ex-now' : 'snack-ex-sub'}>{now ?? s.sub}</span>
@@ -251,37 +238,30 @@ export function CardioCard({ state }: { state: AppState }) {
 
   return (
     <div className="grp snackcard">
-      <div className="today-tag light">Kroki i cardio</div>
+      <div className="today-tag light">{T.tag}</div>
       {n ? (
         <>
           <h2 className="today-name">
             {steps
-              ? `Dziś ${stepsText(steps)}${d ? ` · ${kcalText(d.cardio)}` : ''}`
+              ? T.cardSteps(stepsText(steps), d ? kcalText(d.cardio) : null)
               : d
-                ? `Dziś ${kcalText(d.cardio)} z cardio`
-                : `Dziś ${n} ${plural(n, ['wpis', 'wpisy', 'wpisów'])} cardio`}
+                ? T.cardKcal(kcalText(d.cardio))
+                : T.cardEntries(n)}
           </h2>
-          <p className="tight">
-            {d
-              ? `Kalorie ponad spoczynek${d.workouts ? `; z treningu dochodzi ${kcalText(d.workouts)}` : ''}.`
-              : 'Kalorie policzę, gdy podasz wagę — zapyta o nią formularz.'}
-          </p>
+          <p className="tight">{d ? T.cardBurn(d.workouts ? kcalText(d.workouts) : null) : T.cardNoKg}</p>
           <p className="tight">{moveLine(state, today)}</p>
         </>
       ) : (
         <>
-          <h2 className="today-name">Kroki, bieżnia, rower, taniec</h2>
-          <p className="tight">
-            Przepisz liczby z telefonu, bieżni albo licznika roweru, a po zajęciach tańca — ich czas.
-            Kalorie policzę z twojej wagi, a minuty ruchu dadzą doświadczenie postaci i odznaki.
-          </p>
+          <h2 className="today-name">{T.cardEmpty}</h2>
+          <p className="tight">{T.cardEmptyText}</p>
         </>
       )}
       <LateNotes state={state} now={now} />
       <CardioShortcuts state={state} today={today} />
       {cardioOf(state).length > 0 && (
         <a className="vidlink" href={cardioPath()}>
-          Kroki i cardio — dziś, tydzień i historia →
+          {T.cardLink}
         </a>
       )}
     </div>
@@ -290,27 +270,16 @@ export function CardioCard({ state }: { state: AppState }) {
 
 /* ---------------- Formularz ---------------- */
 
-const SPORTS: { key: CardioSport; label: string }[] = [
-  { key: 'steps', label: 'Kroki' },
-  { key: 'treadmill', label: 'Bieżnia' },
-  { key: 'bike', label: 'Rower' },
-  { key: 'dance', label: 'Taniec' },
-];
+const SPORTS: { key: CardioSport; label: string }[] = (['steps', 'treadmill', 'bike', 'dance'] as const).map(
+  (key) => ({ key, label: T.sports[key] }),
+);
 
-const LEAD: Record<CardioSport, string> = {
-  steps:
-    'Przepisz kroki z telefonu albo zegarka — liczbę z całego dnia. Kolejny wpis na ten sam dzień zastąpi poprzedni, więc wieczorem wystarczy wpisać stan licznika.',
-  treadmill:
-    'Średnia prędkość i czas z wyświetlacza bieżni. Nachylenie w procentach — puste znaczy płasko.',
-  bike: 'Na zewnątrz — średnia prędkość z licznika. Na rowerze stacjonarnym wybierz moc: prędkość na jego wyświetlaczu to umowna liczba, a waty mówią, ile naprawdę pracy poszło.',
-  dance:
-    'Czas całych zajęć i to, ile z nich naprawdę tańczysz. Kiedy instruktor tłumaczy i pokazuje, stoisz — dlatego kalorie liczą się z obu części, a minuty ruchu tylko z tańca.',
-};
+const LEAD: Record<CardioSport, string> = T.lead;
 
-const DANCE_STYLES: { key: DanceStyle; label: string }[] = [
-  { key: 'pair', label: 'W parze' },
-  { key: 'solo', label: 'Solo' },
-];
+const DANCE_STYLES: { key: DanceStyle; label: string }[] = (['pair', 'solo'] as const).map((key) => ({
+  key,
+  label: T.danceStyles[key],
+}));
 
 const MIX_OPTIONS = (Object.keys(MIX) as DanceMix[]).map((key) => ({
   key,
@@ -397,39 +366,39 @@ export function CardioEntry({
       ? null
       : clean.kind === 'steps'
         ? mins
-          ? `${mins} min ruchu z nadwyżki ponad ${baseSteps} kroków`
-          : `do minut ruchu liczy się to, co ponad ${baseSteps} kroków`
+          ? T.minsSteps(mins, baseSteps)
+          : T.minsStepsNone(baseSteps)
         : clean.kind === 'dance'
           ? mins
-            ? `${mins} min ruchu — liczy się sam taniec, bez tłumaczenia`
-            : 'za mało tańca na pełną minutę ruchu'
+            ? T.minsDance(mins)
+            : T.minsDanceNone
           : !mins
-            ? 'za lekko na minuty ruchu — to mniej niż 3 MET'
+            ? T.minsLight
             : mins > clean.min
-              ? `${mins} min ruchu — intensywnie, więc minuty liczą się podwójnie`
-              : `${mins} min ruchu`;
+              ? T.minsVigorous(mins)
+              : T.mins(mins);
 
   const lastSteps = lastOf(state, 'steps');
   const lastRun = lastOf(state, 'treadmill');
-  const hintOf = (v: number | undefined): string => (v === undefined ? '' : `ostatnio ${decimal(v)}`);
+  const hintOf = (v: number | undefined): string => (v === undefined ? '' : T.last(decimal(v)));
   const lastTimed =
     kind === 'dance' ? lastDance : kind === 'treadmill' ? lastRun : bikeMode === 'kmh' ? lastBike : lastErgo;
 
   const save = (e: FormEvent) => {
     e.preventDefault();
     if (!dayOk) {
-      onToast('Wybierz dzień — nie później niż dziś.');
+      onToast(T.pickDay);
       return;
     }
     if (!clean) {
       onToast(
         kind === 'steps'
-          ? 'Wpisz liczbę kroków.'
+          ? T.enterSteps
           : kind === 'dance'
-            ? 'Wpisz czas zajęć.'
+            ? T.enterDance
             : bikeMode === 'watts' && kind === 'bike'
-              ? 'Wpisz moc i czas.'
-              : 'Wpisz prędkość i czas.',
+              ? T.enterWatts
+              : T.enterKmh,
       );
       return;
     }
@@ -438,7 +407,7 @@ export function CardioEntry({
       return;
     }
     if (known === null && filled(f.kg) && !validWeight(typedKg)) {
-      onToast(`Waga od ${WEIGHT_RANGE.min} do ${WEIGHT_RANGE.max} kg — sprawdź liczbę.`);
+      onToast(T.kgCheck(WEIGHT_RANGE.min, WEIGHT_RANGE.max));
       return;
     }
     onLog(clean, day, known === null && validWeight(typedKg) ? typedKg : null);
@@ -452,13 +421,13 @@ export function CardioEntry({
       </div>
 
       <form className="grp cardio-entry" onSubmit={save} noValidate>
-        <Segmented label="Rodzaj ruchu" options={SPORTS} value={kind} onChange={setKind} />
+        <Segmented label={T.kindLabel} options={SPORTS} value={kind} onChange={setKind} />
         {kind === 'bike' && (
           <Segmented
-            label="Co pokazuje licznik"
+            label={T.bikeShows}
             options={[
-              { key: 'kmh', label: 'Prędkość, km/h' },
-              { key: 'watts', label: 'Moc, W' },
+              { key: 'kmh', label: T.speedKmh },
+              { key: 'watts', label: T.powerW },
             ]}
             value={bikeMode}
             onChange={setBikeMode}
@@ -466,12 +435,12 @@ export function CardioEntry({
         )}
         {kind === 'dance' && (
           <>
-            <Segmented label="Taniec" options={DANCE_STYLES} value={danceStyle} onChange={setDanceStyle} />
+            <Segmented label={T.dance} options={DANCE_STYLES} value={danceStyle} onChange={setDanceStyle} />
             <span className="seg-label" aria-hidden="true">
-              ile z zajęć to taniec
+              {T.mixSeg}
             </span>
             <Segmented
-              label="Ile z zajęć to taniec, a ile tłumaczenie"
+              label={T.mixLabel}
               options={MIX_OPTIONS}
               value={danceMix}
               onChange={setDanceMix}
@@ -479,35 +448,35 @@ export function CardioEntry({
           </>
         )}
         <span className="seg-label" aria-hidden="true">
-          kiedy
+          {T.when}
         </span>
         <Segmented
-          label="Dzień"
+          label={T.dayLabel}
           options={[
-            { key: 'today', label: 'Dziś' },
-            { key: 'yesterday', label: 'Wczoraj' },
-            { key: 'other', label: 'Inny dzień' },
+            { key: 'today', label: T.todayOpt },
+            { key: 'yesterday', label: T.yesterdayOpt },
+            { key: 'other', label: T.otherOpt },
           ]}
           value={when}
           onChange={setWhen}
         />
         {when === 'other' && (
           <label className="fld">
-            <span>dzień</span>
+            <span>{T.dayField}</span>
             <input type="date" max={today} value={other} onChange={(e) => setOther(e.target.value)} />
           </label>
         )}
 
         {kind === 'steps' && (
           <label className="fld cardio-main">
-            <span>kroki z całego dnia</span>
+            <span>{T.stepsField}</span>
             <input
               type="number"
               inputMode="numeric"
               enterKeyHint="done"
               min={1}
               autoFocus
-              placeholder={lastSteps ? `ostatnio ${lastSteps.steps.toLocaleString('pl-PL')}` : ''}
+              placeholder={lastSteps ? T.last(lastSteps.steps.toLocaleString(LOCALE)) : ''}
               value={f.steps}
               onChange={set('steps')}
             />
@@ -516,7 +485,7 @@ export function CardioEntry({
 
         {kind === 'dance' && (
           <label className="fld cardio-main">
-            <span>czas całych zajęć, min</span>
+            <span>{T.danceField}</span>
             <input
               type="number"
               inputMode="numeric"
@@ -534,7 +503,7 @@ export function CardioEntry({
           <div className="snack-row">
             {kind === 'bike' && bikeMode === 'watts' ? (
               <label className="fld">
-                <span>średnia moc, W</span>
+                <span>{T.wattsField}</span>
                 <input
                   type="number"
                   inputMode="numeric"
@@ -547,7 +516,7 @@ export function CardioEntry({
               </label>
             ) : (
               <label className="fld">
-                <span>średnia prędkość, km/h</span>
+                <span>{T.kmhField}</span>
                 <input
                   type="text"
                   inputMode="decimal"
@@ -561,7 +530,7 @@ export function CardioEntry({
               </label>
             )}
             <label className="fld">
-              <span>czas, min</span>
+              <span>{T.minField}</span>
               <input
                 type="number"
                 inputMode="numeric"
@@ -576,13 +545,13 @@ export function CardioEntry({
 
         {kind === 'treadmill' && (
           <label className="fld">
-            <span>nachylenie, % (puste — płasko)</span>
+            <span>{T.gradeField}</span>
             <input
               type="text"
               inputMode="decimal"
               className="num"
               autoComplete="off"
-              placeholder={lastRun?.grade ? `ostatnio ${decimal(lastRun.grade)}` : ''}
+              placeholder={lastRun?.grade ? T.last(decimal(lastRun.grade)) : ''}
               value={f.grade}
               onChange={set('grade')}
             />
@@ -591,7 +560,7 @@ export function CardioEntry({
 
         {known === null && (
           <label className="fld cardio-kg">
-            <span>twoja waga, kg — z niej liczą się kalorie</span>
+            <span>{T.kgField}</span>
             <input
               type="text"
               inputMode="decimal"
@@ -604,21 +573,17 @@ export function CardioEntry({
         )}
 
         {prevSteps > 0 && (
-          <p className="tight cardio-note">
-            Ten dzień ma już wpis: {stepsText(prevSteps)}. Nowa liczba go zastąpi — wpisz stan licznika
-            z całego dnia.
-          </p>
+          <p className="tight cardio-note">{T.prevSteps(stepsText(prevSteps))}</p>
         )}
         {device && (
-          <p className="tight cardio-note">
-            {SOURCE[device.src]} podał na ten dzień {stepsText(device.steps)}. Liczy się wyższa liczba, więc
-            niższy wpis niczego nie zmieni.
-          </p>
+          <p className="tight cardio-note">{T.deviceSteps(device.src, stepsText(device.steps))}</p>
         )}
         {deviceRides.length > 0 && (
           <p className="tight cardio-note">
-            {deviceRides.some((c) => c.src === 'watch') ? 'Zegarek' : 'Telefon'} podał już przejazd z tego dnia:{' '}
-            {deviceRides.map((c) => cardioLabel(c)).join(', ')}. Wpisz tylko inny — ten sam policzyłby się dwa razy.
+            {T.deviceRides(
+              deviceRides.some((c) => c.src === 'watch') ? 'watch' : 'phone',
+              deviceRides.map((c) => cardioLabel(c)).join(', '),
+            )}
           </p>
         )}
 
@@ -628,20 +593,20 @@ export function CardioEntry({
               <>
                 <div className="snack-today-num">{kcalText(preview.active)}</div>
                 <p className="tight">
-                  ponad spoczynek
+                  {T.aboveRest}
                   {clean.kind !== 'steps' &&
                     clean.kind !== 'dance' &&
-                    ` · razem ze spoczynkiem ${kcalText(preview.total)} — tę liczbę zwykle pokazuje ${clean.kind === 'treadmill' ? 'bieżnia' : 'rower'}`}
+                    T.withRest(kcalText(preview.total), clean.kind === 'treadmill' ? 'treadmill' : 'bike')}
                 </p>
               </>
             ) : (
-              <p className="tight">Kalorie pokażę, gdy wpiszesz wagę. Ruch zapiszę i bez niej.</p>
+              <p className="tight">{T.noKgPreview}</p>
             )}
             <p className="tight">
               {clean.kind === 'steps'
-                ? `ok. ${kmText(preview.km ?? 0)} · ok. ${durText(preview.secs)} marszu przy ${STEP_CADENCE} krokach na minutę`
+                ? T.stepsPreview(kmText(preview.km ?? 0), durText(preview.secs), STEP_CADENCE)
                 : clean.kind === 'dance'
-                  ? `ok. ${Math.round(clean.min * DANCE_SHARE[clean.mix])} min tańca, reszta to słuchanie · średnio ${pl(preview.met, 1)} MET`
+                  ? T.dancePreview(Math.round(clean.min * DANCE_SHARE[clean.mix]), pl(preview.met, 1))
                   : [
                     preview.km !== null ? kmText(preview.km) : null,
                     clean.kind === 'treadmill' ? paceWord(clean.kmh) : null,
@@ -656,19 +621,19 @@ export function CardioEntry({
         {problem && <p className="tight cardio-note warn">{problem}</p>}
 
         <button className="btn wide" type="submit">
-          Zapisz
+          {T.save}
         </button>
       </form>
 
       <div className="wrap">
         <p className="hint cardio-foot">
           {kind === 'steps'
-            ? 'Spacer na bieżni z telefonem w kieszeni jest już w krokach. Wpisz jedno albo drugie — inaczej ten sam marsz policzy się dwa razy.'
+            ? T.footSteps
             : kind === 'dance'
-              ? 'Telefon w kieszeni liczy też kroki taneczne. Jeśli był przy tobie na zajęciach, kroki z tego dnia mają już kawałek tańca — kalorie wyjdą wtedy trochę za wysoko.'
+              ? T.footDance
               : kind === 'treadmill'
-                ? 'Kroki z zegarka i telefonu z tego dnia nie policzą tej drogi drugi raz — odejmę ją od nich. Kroki wpisane ręcznie: wpisz jedno albo drugie.'
-                : 'Jeśli telefon był przy tobie, jego kroki mogą już zawierać ten ruch. Wpisz jedno albo drugie — inaczej policzy się dwa razy.'}
+                ? T.footTreadmill
+                : T.footBike}
         </p>
       </div>
     </>
@@ -687,7 +652,7 @@ function CardioItem({ state, c, onDelete }: { state: AppState; c: Cardio; onDele
     <div className="cardio-item">
       <span className="cardio-name">
         {cardioLabel(c)}
-        {c.src && <small className="watch-src"> · {c.src === 'phone' ? 'z telefonu' : 'z zegarka'}</small>}
+        {c.src && <small className="watch-src"> · {T.fromSrc[c.src]}</small>}
         {detail && <small className="cardio-detail">{detail}</small>}
       </span>
       <span className="snack-amt">
@@ -696,7 +661,7 @@ function CardioItem({ state, c, onDelete }: { state: AppState; c: Cardio; onDele
       {c.src ? (
         <span aria-hidden="true" />
       ) : (
-        <button className="snack-del" onClick={() => onDelete(c.key)} aria-label={`Usuń wpis: ${cardioLabel(c)}`}>
+        <button className="snack-del" onClick={() => onDelete(c.key)} aria-label={T.deleteEntry(cardioLabel(c))}>
           ×
         </button>
       )}
@@ -719,7 +684,7 @@ function WatchHealthDays({ state, today, now }: { state: AppState; today: string
     a === null || b === null ? String(a ?? b) : a === b ? String(a) : `${a}–${b}`;
   return (
     <>
-      <div className="sect-label">Z zegarka</div>
+      <div className="sect-label">{T.fromWatch}</div>
       {linked && (
         <div className="wrap">
           <DeviceLine device="watch" status={watchStatus(state, now)} now={now} />
@@ -730,13 +695,11 @@ function WatchHealthDays({ state, today, now }: { state: AppState; today: string
           <div className="h-date">{dm(h.day)}</div>
           <div className="h-detail">
             {[
-              h.rhr !== null ? `tętno spoczynkowe ${h.rhr}` : null,
-              h.hrMin !== null || h.hrMax !== null
-                ? `tętno ${range(h.hrMin, h.hrMax)}${h.hrAvg !== null ? `, średnio ${h.hrAvg}` : ''}`
-                : null,
-              h.stress !== null ? `stres ${h.stress}` : null,
+              h.rhr !== null ? T.rhr(h.rhr) : null,
+              h.hrMin !== null || h.hrMax !== null ? T.hr(range(h.hrMin, h.hrMax), h.hrAvg) : null,
+              h.stress !== null ? T.stress(h.stress) : null,
               h.bbMin !== null || h.bbMax !== null ? `Body Battery ${range(h.bbMin, h.bbMax)}` : null,
-              h.sleep !== null ? `sen ${h.sleep}/100` : null,
+              h.sleep !== null ? T.sleepScore(h.sleep) : null,
             ]
               .filter(Boolean)
               .join(' · ')}
@@ -769,12 +732,15 @@ function PhoneHealthDays({ state, today, now }: { state: AppState; today: string
     .map((h) => ({
       day: h.day,
       text: [
-        h.rhr !== null ? `tętno spoczynkowe ${h.rhr}` : null,
+        h.rhr !== null ? T.rhr(h.rhr) : null,
         h.hrMin !== null || h.hrMax !== null
-          ? `tętno ${h.hrMin === null || h.hrMax === null ? (h.hrMin ?? h.hrMax) : h.hrMin === h.hrMax ? h.hrMin : `${h.hrMin}–${h.hrMax}`}${h.hrAvg !== null ? `, średnio ${h.hrAvg}` : ''}`
+          ? T.hr(
+              `${h.hrMin === null || h.hrMax === null ? (h.hrMin ?? h.hrMax) : h.hrMin === h.hrMax ? h.hrMin : `${h.hrMin}–${h.hrMax}`}`,
+              h.hrAvg,
+            )
           : null,
-        h.sleep !== null && h.sleep > 0 ? `sen ${sleepText(h.sleep)}` : null,
-        h.kg !== null ? `waga ${decimal(h.kg)} kg` : null,
+        h.sleep !== null && h.sleep > 0 ? T.sleep(sleepText(h.sleep)) : null,
+        h.kg !== null ? T.weight(decimal(h.kg)) : null,
       ]
         .filter(Boolean)
         .join(' · '),
@@ -784,7 +750,7 @@ function PhoneHealthDays({ state, today, now }: { state: AppState; today: string
   if (!rows.length && !linked) return null;
   return (
     <>
-      <div className="sect-label">Z telefonu</div>
+      <div className="sect-label">{T.fromPhone}</div>
       {linked && (
         <div className="wrap">
           <DeviceLine device="phone" status={phoneStatus(state, now)} now={now} />
@@ -812,7 +778,7 @@ function PhoneHealthDays({ state, today, now }: { state: AppState; today: string
 function KcalWeek({ state, today }: { state: AppState; today: string }) {
   const days = Array.from({ length: 7 }, (_, i) => addDays(today, i - 6));
   return (
-    <div className="snack-week" role="list" aria-label="Kalorie z ruchu w ostatnich siedmiu dniach">
+    <div className="snack-week" role="list" aria-label={T.kcalWeekAria}>
       {days.map((d) => {
         const b = dayBurn(state, d);
         const kcal = b ? roundKcal(b.total) : 0;
@@ -821,7 +787,7 @@ function KcalWeek({ state, today }: { state: AppState; today: string }) {
             key={d}
             role="listitem"
             className={`sw-day${kcal ? ' on' : ''}${d === today ? ' now' : ''}`}
-            aria-label={`${WEEKDAY[weekdayOf(d)]} ${dm(d)}: ${kcal ? kcalText(b!.total) : 'bez ruchu'}`}
+            aria-label={`${WEEKDAY[weekdayOf(d)]} ${dm(d)}: ${kcal ? kcalText(b!.total) : T.noMove}`}
           >
             <b>{kcal || '·'}</b>
             <span>{WEEKDAY[weekdayOf(d)]}</span>
@@ -859,36 +825,30 @@ export function CardioPage({
   return (
     <>
       <div className="wrap">
-        <p className="lead">
-          Ruch zmierzony telefonem, zegarkiem, bieżnią albo rowerem i zajęcia tańca — przepisane tutaj.
-          Kalorie liczą się z twojej wagi i są szacunkiem: aktywne, czyli ponad to, co ciało spaliłoby
-          w tym czasie w spoczynku.
-        </p>
+        <p className="lead">{T.pageLead}</p>
       </div>
 
       <div className="grp">
-        <h2>Wpisz</h2>
-        <p className="tight">Wybierz, skąd są liczby — resztę wpiszesz na następnym ekranie.</p>
+        <h2>{T.log}</h2>
+        <p className="tight">{T.logHint}</p>
         <CardioShortcuts state={state} today={today} />
         <p className="tight" style={{ marginTop: 8 }}>
-          {latest
-            ? `Kalorie liczone dla ${decimal(latest.kg)} kg (ważenie ${dm(latest.day)}). Wagę zmienisz w profilu.`
-            : 'Bez wagi zapiszę drogę i czas, a kalorie policzę, gdy tylko ją podasz — także dla wcześniejszych wpisów.'}
+          {latest ? T.kgFor(decimal(latest.kg), dm(latest.day)) : T.noKg}
         </p>
         <a className="vidlink" href="#/profil">
-          {latest ? 'Waga i wzrost w profilu →' : 'Wpisz wagę w profilu →'}
+          {latest ? T.kgLink : T.noKgLink}
         </a>
       </div>
 
-      <div className="sect-label">Dziś</div>
+      <div className="sect-label">{T.todayLabel}</div>
       <div className="grp">
         {!todays.length && <p className="tight joke">{pick(CARDIO_EMPTY, daySeed())}</p>}
         <p className="tight">
           {todays.length
-            ? `${stepsOn(state, today) ? `${stepsText(stepsOn(state, today))}. ` : ''}${d ? `Z kroków i cardio ${kcalText(d.cardio)}.` : ''}`
-            : 'Dziś jeszcze bez wpisu. '}
+            ? `${stepsOn(state, today) ? T.todaySteps(stepsText(stepsOn(state, today))) : ''}${d ? T.todayKcal(kcalText(d.cardio)) : ''}`
+            : T.todayNone}
           {d && (d.workouts || d.snacks)
-            ? ` Z treningu ${kcalText(d.workouts)}${d.snacks ? `, z przekąsek ${kcalText(d.snacks)}` : ''}. Razem ${kcalText(d.total)} ponad spoczynek.`
+            ? T.todayRest(kcalText(d.workouts), d.snacks ? kcalText(d.snacks) : null, kcalText(d.total))
             : ''}
         </p>
         {todays.length > 0 && <p className="tight">{moveLine(state, today)}</p>}
@@ -897,19 +857,19 @@ export function CardioPage({
         ))}
       </div>
 
-      <div className="sect-label">Ostatnie siedem dni</div>
+      <div className="sect-label">{T.week}</div>
       <div className="grp">
         <WhoWeek state={state} today={today} />
         {latest ? (
           <KcalWeek state={state} today={today} />
         ) : (
-          <p className="tight">Pasek kalorii pojawi się po pierwszym ważeniu.</p>
+          <p className="tight">{T.weekNoKg}</p>
         )}
         <p className="tight" style={{ marginTop: 10 }}>
-          {weekSteps ? `${stepsText(weekSteps)}, średnio ${stepsText(Math.round(weekSteps / 7))} dziennie. ` : ''}
-          {latest ? `Z kroków i cardio ${kcalText(weekCardio)}` : ''}
+          {weekSteps ? T.weekSteps(stepsText(weekSteps), stepsText(Math.round(weekSteps / 7))) : ''}
+          {latest ? T.weekKcal(kcalText(weekCardio)) : ''}
           {latest && roundKcal(weekTotal) > roundKcal(weekCardio)
-            ? `, razem z treningami i przekąskami ${kcalText(weekTotal)}.`
+            ? T.weekTotal(kcalText(weekTotal))
             : latest
               ? '.'
               : ''}
@@ -921,7 +881,7 @@ export function CardioPage({
 
       {past.length > 0 && (
         <>
-          <div className="sect-label">Wcześniej</div>
+          <div className="sect-label">{T.earlier}</div>
           {shown.map((x) => {
             const list = cardioOn(state, x);
             const kcal = list.reduce((s, c) => s + (cardioBurn(state, c)?.active ?? 0), 0);
@@ -936,7 +896,7 @@ export function CardioPage({
           {past.length > shown.length && (
             <div className="wrap">
               <button className="btn ghost sm" style={{ marginTop: 10 }} onClick={() => setAllHistory(true)}>
-                Pokaż wszystkie dni ({past.length})
+                {T.showAll(past.length)}
               </button>
             </div>
           )}
@@ -944,57 +904,8 @@ export function CardioPage({
       )}
 
       <div className="grp" style={{ marginTop: 14 }}>
-        <h2>Jak liczymy kalorie i minuty ruchu</h2>
-        <p>
-          <b>Kalorie aktywne.</b> Liczba mówi, ile ruch spalił ponad spoczynek — tak ACSM liczy wydatek
-          przy planowaniu ruchu i tak zegarki podają „energię aktywną”. Bieżnia i rower zwykle pokazują
-          sumę razem ze spoczynkiem, dlatego formularz podaje obie.
-        </p>
-        <p>
-          <b>Kroki.</b> Droga — ta, którą zmierzył zegarek albo telefon (długość kroku kalibrują
-          u siebie biegi z GPS); bez niej kroki razy długość kroku: 41% wzrostu, a bez wzrostu
-          w profilu 70 cm. Koszt marszu idzie z równania ACSM: ponad spoczynek 0,1 ml tlenu na
-          kilogram na każdy metr, więc przy zwykłym tempie liczy się droga, a nie czas. Bieg kosztuje
-          na kilometr mniej więcej dwa razy tyle (0,2 ml/kg/m), a marsz szybszy niż 6 km/h też
-          więcej — dlatego biegi, marsze i wędrówki zapisane na zegarku liczą się swoją prędkością
-          przez swój czas, a reszta dnia jako zwykły marsz. Piętra dokładają wznoszenie: 3 m na
-          piętro, 1,8 ml tlenu na kilogram na metr w górę. Waga — z dnia ruchu. Bieżnia wpisana
-          ręcznie schodzi z kroków zegarka i telefonu, bo one policzyły ją same.
-        </p>
-        <p>
-          <b>Bieżnia.</b> Równania ACSM na marsz i bieg, z nachyleniem — tymi samymi wzorami liczą
-          kalorie bieżnie. Między 6 a 8 km/h wynik przechodzi płynnie od marszu do biegu.
-        </p>
-        <p>
-          <b>Rower.</b> Prędkość — tabela Compendium of Physical Activities 2024 (kody 01018–01060),
-          połączona liniowo między przedziałami. Moc w watach — równanie ACSM dla cykloergometru;
-          dokładniejsze, bo waty to praca, a prędkość zależy od wiatru, opon i roweru.
-        </p>
-        <p>
-          <b>Taniec.</b> Compendium 2024 daje tańcowi z partnerem 4,8 MET (salsa, kod 03090), a solo
-          — balet, nowoczesny, jazz na zajęciach — 5,0 (kod 03010). Część zajęć to słuchanie
-          instruktora: stanie z przestępowaniem z nogi na nogę, 1,5 MET (kod 07041). „Cały czas
-          taniec” liczy się jako 85% tańca, „pół na pół” — 50%, „dużo tłumaczenia” — 25%. Kalorie idą
-          z obu części, minuty ruchu — tylko z tańca.
-        </p>
-        <p>
-          <b>Trening siłowy.</b> Każde ćwiczenie ma wartość MET z Compendium dla swojego rodzaju pracy —
-          od 2,8 dla deski do 9,8 dla swingów — a czas liczy się z serii, tempa i typowych przerw, nie
-          z zegara sesji. Zegar mierzy też telefon odłożony na godzinę; serie mierzą pracę.
-        </p>
-        <p>
-          <b>Minuty ruchu, doświadczenie i odznaki.</b> WHO zaleca 150–300 minut ruchu umiarkowanego
-          tygodniowo, a minutę intensywną liczy za dwie. Tu tak samo: bieżnia i rower od 3 MET to
-          minuty umiarkowane, od 6 MET — podwójne. Z kroków liczy się nadwyżka ponad {baseSteps}{' '}
-          (tyle robi się bez wychodzenia z domu), po 100 na minutę, a z zajęć tańca — sam taniec,
-          bez tłumaczenia. Minuta to {XP.cardioPerMin} XP,
-          do {XP.cardioCap} dziennie — połowa treningu, bo spacer ma dokładać, a nie zastępować.
-          Odznaki liczą kroki, kilometry, zajęcia i minuty, nigdy kalorie: te rosną razem z wagą.
-        </p>
-        <p className="tight">
-          To szacunek. Pomiar tlenu u konkretnej osoby potrafi odbiec o 20–30% — w obie strony.
-          Kalorie nie są zaleceniem żywieniowym — ile i co jeść, ustala się z dietetykiem.
-        </p>
+        <h2>{T.howTitle}</h2>
+        {T.how(baseSteps, XP.cardioPerMin, XP.cardioCap)}
       </div>
     </>
   );
@@ -1034,7 +945,7 @@ export function BodyCard({
     e.preventDefault();
     const v = num(kg);
     if (!validWeight(v)) {
-      onToast(`Waga od ${WEIGHT_RANGE.min} do ${WEIGHT_RANGE.max} kg.`);
+      onToast(T.kgRange(WEIGHT_RANGE.min, WEIGHT_RANGE.max));
       return;
     }
     onWeight(v);
@@ -1049,7 +960,7 @@ export function BodyCard({
     }
     const v = num(cm);
     if (!validHeight(v)) {
-      onToast(`Wzrost od ${HEIGHT_RANGE.min} do ${HEIGHT_RANGE.max} cm.`);
+      onToast(T.cmRange(HEIGHT_RANGE.min, HEIGHT_RANGE.max));
       return;
     }
     onHeight(Math.round(v));
@@ -1057,28 +968,26 @@ export function BodyCard({
 
   return (
     <div className="grp">
-      <h2>Waga i wzrost</h2>
+      <h2>{T.body}</h2>
       <p className="tight">
         {latest
-          ? `Ostatnie ważenie: ${decimal(latest.kg)} kg, ${dm(latest.day)}.${trend.avg !== null ? ` Średnia z 7 dni: ${decimal(trend.avg)} kg.` : ''} Kalorie liczą się z wagi z dnia ruchu, więc nowe ważenie nie zmienia historii.`
-          : 'Z wagi liczą się kalorie kroków, bieżni, roweru, tańca i treningów. Najlepiej ważyć się rano, codziennie albo kilka razy w tygodniu — ekran Dziś o to zapyta.'}
+          ? T.bodyLast(decimal(latest.kg), dm(latest.day), trend.avg !== null ? decimal(trend.avg) : null)
+          : T.bodyNone}
       </p>
       {offer && (
         <div className="cardio-note phone-weight">
-          <p className="tight">
-            Telefon ma nowsze ważenie: {decimal(offer.kg)} kg, {dm(offer.day)}.
-          </p>
+          <p className="tight">{T.phoneOffer(decimal(offer.kg), dm(offer.day))}</p>
           <button className="btn sm ghost" onClick={() => onWeight(offer.kg, offer.day)}>
-            Wpisz do dziennika
+            {T.phoneOfferBtn}
           </button>
         </div>
       )}
       {weights.length >= 3 && (
-        <Trendline values={weights} label={`Waga z ${weights.length} ostatnich ważeń, kg`} noun="ważeń" fmt={(v) => decimal(v)} />
+        <Trendline values={weights} label={T.trend(weights.length)} noun={T.trendNoun} fmt={(v) => decimal(v)} />
       )}
       <form className="body-row" onSubmit={saveKg} noValidate>
         <label className="fld">
-          <span>waga dziś, kg</span>
+          <span>{T.kgToday}</span>
           <input
             type="text"
             inputMode="decimal"
@@ -1090,12 +999,12 @@ export function BodyCard({
           />
         </label>
         <button className="btn sm" type="submit">
-          Zapisz wagę
+          {T.saveKg}
         </button>
       </form>
       <form className="body-row" onSubmit={saveCm} noValidate>
         <label className="fld">
-          <span>wzrost, cm — do długości kroku (można pominąć)</span>
+          <span>{T.cmField}</span>
           <input
             type="number"
             inputMode="numeric"
@@ -1105,11 +1014,11 @@ export function BodyCard({
           />
         </label>
         <button className="btn sm ghost" type="submit">
-          Zapisz wzrost
+          {T.saveCm}
         </button>
       </form>
       {recent.length > 1 && (
-        <div className="body-list" aria-label="Ostatnie ważenia">
+        <div className="body-list" aria-label={T.recentAria}>
           {recent.map((b) => (
             <div className="cardio-item" key={b.day}>
               <span className="cardio-name">{dm(b.day)}</span>
@@ -1117,7 +1026,7 @@ export function BodyCard({
               <button
                 className="snack-del"
                 onClick={() => onDeleteWeight(b.day)}
-                aria-label={`Usuń ważenie z ${dm(b.day)}`}
+                aria-label={T.deleteWeight(dm(b.day))}
               >
                 ×
               </button>
@@ -1139,15 +1048,21 @@ export function CardioSummary({ state }: { state: AppState }) {
 
   return (
     <div className="grp">
-      <h2>Kroki i cardio</h2>
+      <h2>{T.tag}</h2>
       <p className="tight">
         {count
-          ? `Ostatnie 7 dni: ${stepsText(steps)}${kcal !== null ? `, ${kcalText(kcal)} z kroków, bieżni, roweru i tańca` : ''}. W tym tygodniu ${Math.floor(weekMinutes(state, today))} z ${WHO_WEEK_MIN} minut ruchu zalecanych przez WHO. Wpisów od początku: ${count}.`
-          : 'Jeszcze bez wpisów. Przepisz kroki z telefonu, wynik z bieżni i roweru albo czas zajęć tańca — kalorie policzą się z twojej wagi.'}
+          ? T.summary(
+              stepsText(steps),
+              kcal !== null ? kcalText(kcal) : null,
+              Math.floor(weekMinutes(state, today)),
+              WHO_WEEK_MIN,
+              count,
+            )
+          : T.summaryNone}
       </p>
       <div style={{ marginTop: 10 }}>
         <button className="btn ghost sm" onClick={() => go(count ? cardioPath() : cardioAddPath())}>
-          {count ? 'Kroki i cardio — dziś i historia' : 'Wpisz pierwsze kroki'}
+          {count ? T.summaryBtn : T.summaryFirst}
         </button>
       </div>
     </div>

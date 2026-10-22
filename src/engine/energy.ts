@@ -1,5 +1,6 @@
 import { EX } from '../data/exercises';
 import { ISOLATION } from '../data/muscles';
+import { say } from '../i18n';
 import type { CardioInput, DanceMix, DanceStyle, ExerciseId } from '../types';
 
 /**
@@ -344,14 +345,14 @@ export interface EnergyProfile {
 /** Oddech po interwale: między staniem w spokoju (1,3) a lekką krzątaniną (2,5). */
 const RECOVERY_MET = 2;
 
-const KB_BALLISTIC: EnergyProfile = { met: 9.8, tempo: 1.5, rest: 45, code: '02058', label: 'swingi kettlebell' };
-const BALLISTIC: EnergyProfile = { met: 7.5, tempo: 2.5, rest: 60, code: '02020', label: 'ruch wybuchowy, intensywnie' };
-const HEAVY: EnergyProfile = { met: 5.0, tempo: 3, rest: 120, code: '02052', label: 'przysiady i martwe ciągi' };
-const RESISTANCE: EnergyProfile = { met: 3.5, tempo: 3, rest: 75, code: '02054', label: 'trening oporowy, wiele ćwiczeń' };
-const CALISTHENICS: EnergyProfile = { met: 3.8, tempo: 2.5, rest: 75, code: '02022', label: 'ćwiczenia z masą ciała' };
-const LIGHT: EnergyProfile = { met: 2.8, tempo: 2.5, rest: 45, code: '02024', label: 'brzuch, deska, łydki' };
+const KB_BALLISTIC: EnergyProfile = { met: 9.8, tempo: 1.5, rest: 45, code: '02058', label: say('swingi kettlebell', 'kettlebell swings') };
+const BALLISTIC: EnergyProfile = { met: 7.5, tempo: 2.5, rest: 60, code: '02020', label: say('ruch wybuchowy, intensywnie', 'explosive work, vigorous') };
+const HEAVY: EnergyProfile = { met: 5.0, tempo: 3, rest: 120, code: '02052', label: say('przysiady i martwe ciągi', 'squats and deadlifts') };
+const RESISTANCE: EnergyProfile = { met: 3.5, tempo: 3, rest: 75, code: '02054', label: say('trening oporowy, wiele ćwiczeń', 'resistance training, multiple exercises') };
+const CALISTHENICS: EnergyProfile = { met: 3.8, tempo: 2.5, rest: 75, code: '02022', label: say('ćwiczenia z masą ciała', 'bodyweight exercises') };
+const LIGHT: EnergyProfile = { met: 2.8, tempo: 2.5, rest: 45, code: '02024', label: say('brzuch, deska, łydki', 'abs, plank, calves') };
 /** Compendium nie ma spaceru farmera; najbliżej jest noszenie ładunku 7–11 kg. */
-const CARRY: EnergyProfile = { met: 6.0, tempo: 1, rest: 60, code: '17027', label: 'noszenie ciężaru' };
+const CARRY: EnergyProfile = { met: 6.0, tempo: 1, rest: 60, code: '17027', label: say('noszenie ciężaru', 'carrying a load') };
 
 const continuous = (met: number, code: string, label: string): EnergyProfile => ({
   met,
@@ -364,12 +365,12 @@ const continuous = (met: number, code: string, label: string): EnergyProfile => 
 
 /** Ruch ciągły: MET samej pracy. Sanie nie mają własnego kodu — idą jak liny, intensywna kalistenika. */
 const CONTINUOUS: Record<ExerciseId, EnergyProfile> = {
-  rower: continuous(7.3, '02070', 'ergometr wioślarski'),
-  bike: continuous(8.0, '01228', 'rower stacjonarny, 126–150 W'),
-  jumprope: continuous(11.0, '02068', 'skakanka'),
-  ropes: continuous(7.5, '02020', 'liny bojowe'),
-  sled: continuous(7.5, '02020', 'sanie'),
-  sled_drag: continuous(7.5, '02020', 'sanie'),
+  rower: continuous(7.3, '02070', say('ergometr wioślarski', 'rowing ergometer')),
+  bike: continuous(8.0, '01228', say('rower stacjonarny, 126–150 W', 'stationary bike, 126–150 W')),
+  jumprope: continuous(11.0, '02068', say('skakanka', 'skipping rope')),
+  ropes: continuous(7.5, '02020', say('liny bojowe', 'battle ropes')),
+  sled: continuous(7.5, '02020', say('sanie', 'sled')),
+  sled_drag: continuous(7.5, '02020', say('sanie', 'sled')),
 };
 
 const KB_BALLISTIC_IDS = new Set<ExerciseId>(['swing2', 'swing1', 'clean_kb', 'snatch_kb']);
@@ -394,6 +395,7 @@ const LIGHT_IDS = new Set<ExerciseId>([
 ]);
 
 /** Grupy, w których grind to ciężki wielostawowy ruch nóg albo całego ciała. */
+// i18n-ignore: nazwy grup z biblioteki ćwiczeń — klucze, nie tekst
 const HEAVY_GROUPS = new Set(['Zawias biodrowy', 'Przysiad', 'Całe ciało']);
 
 /** Wyjątki w tych grupach: izolacja na maszynie albo wyciągu. */

@@ -1,6 +1,12 @@
+import { text } from '../i18n';
 import type { AppState, BodyWeight } from '../types';
 import { round1 } from './math';
 import { addDays } from './schedule';
+
+const T = text({
+  pl: { outOfRange: (min: number, max: number) => `Waga poza zakresem ${min}–${max} kg.` },
+  en: { outOfRange: (min: number, max: number) => `Weight out of range: ${min}–${max} kg.` },
+});
 
 /**
  * Waga ciała w czasie.
@@ -33,7 +39,7 @@ export const validBody = (b: Partial<BodyWeight> | null | undefined): b is BodyW
  */
 export function setBodyWeight(state: AppState, kg: number, day: string): BodyWeight {
   if (!validWeight(kg))
-    throw new Error(`Waga poza zakresem ${WEIGHT_RANGE.min}–${WEIGHT_RANGE.max} kg.`);
+    throw new Error(T.outOfRange(WEIGHT_RANGE.min, WEIGHT_RANGE.max));
   const entry: BodyWeight = { day, kg: Math.round(kg * 10) / 10 };
   state.body = [...bodyOf(state).filter((b) => b.day !== day), entry].sort((a, b) =>
     a.day.localeCompare(b.day),

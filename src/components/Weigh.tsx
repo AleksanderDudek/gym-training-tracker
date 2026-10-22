@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { WEIGHT_RANGE, latestWeight, validWeight, weightTrend } from '../engine/body';
+import { num, text } from '../i18n';
 import type { AppState } from '../types';
 
 /**
@@ -13,10 +14,41 @@ import type { AppState } from '../types';
  * lekarzem, a nie z aplikacją.
  */
 
-const pl1 = (v: number): string => v.toLocaleString('pl-PL', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const pl1 = (v: number): string => num(v, 1);
+
+const T = text({
+  pl: {
+    same: 'bez zmian',
+    tag: 'Ważenie',
+    ask: 'Waga z dziś',
+    how: 'Najlepiej rano: po toalecie, przed jedzeniem i piciem, na tej samej wadze. Z dnia na dzień waga skacze o kilogram czy dwa — o kierunku mówi średnia z tygodnia.',
+    field: 'waga, kg',
+    save: 'Zapisz',
+    range: (min: number, max: number) => `Od ${min} do ${max} kg, z jedną cyfrą po przecinku.`,
+    skip: 'Nie dziś',
+    today: (kg: string) => `Dziś ${kg} kg`,
+    avg: (kg: string) => `Średnia z 7 dni: ${kg} kg`,
+    prev: (kg: string, change: string) => ` · tydzień wcześniej ${kg} kg (${change}).`,
+    noPrev: ' · zmiana tydzień do tygodnia pokaże się po drugim tygodniu ważeń.',
+  },
+  en: {
+    same: 'no change',
+    tag: 'Weigh-in',
+    ask: 'Today’s weight',
+    how: 'Ideally in the morning: after the loo, before eating or drinking, on the same scales. Your weight jumps a kilo or two from day to day — the weekly average shows the direction.',
+    field: 'weight, kg',
+    save: 'Save',
+    range: (min: number, max: number) => `From ${min} to ${max} kg, to one decimal place.`,
+    skip: 'Not today',
+    today: (kg: string) => `Today ${kg} kg`,
+    avg: (kg: string) => `7-day average: ${kg} kg`,
+    prev: (kg: string, change: string) => ` · a week earlier ${kg} kg (${change}).`,
+    noPrev: ' · the week-to-week change appears after your second week of weigh-ins.',
+  },
+});
 
 /** „−0,8 kg”, „+0,3 kg”, „bez zmian”. Minus typograficzny, a nie łącznik. */
-const change = (d: number): string => (d === 0 ? 'bez zmian' : `${d > 0 ? '+' : '−'}${pl1(Math.abs(d))} kg`);
+const change = (d: number): string => (d === 0 ? T.same : `${d > 0 ? '+' : '−'}${pl1(Math.abs(d))} kg`);
 
 export function WeighCard({
   state,
@@ -44,17 +76,14 @@ export function WeighCard({
 
   return (
     <div className="grp snackcard weighcard">
-      <div className="today-tag light">Ważenie</div>
+      <div className="today-tag light">{T.tag}</div>
       {t.today === null ? (
         <>
-          <h2 className="today-name">Waga z dziś</h2>
-          <p className="tight">
-            Najlepiej rano: po toalecie, przed jedzeniem i piciem, na tej samej wadze. Z dnia na dzień
-            waga skacze o kilogram czy dwa — o kierunku mówi średnia z tygodnia.
-          </p>
+          <h2 className="today-name">{T.ask}</h2>
+          <p className="tight">{T.how}</p>
           <form className="body-row" onSubmit={save} noValidate>
             <label className="fld">
-              <span>waga, kg</span>
+              <span>{T.field}</span>
               <input
                 type="text"
                 inputMode="decimal"
@@ -67,24 +96,22 @@ export function WeighCard({
               />
             </label>
             <button className="btn sm" type="submit" disabled={!validWeight(Number(kg.trim().replace(',', '.')))}>
-              Zapisz
+              {T.save}
             </button>
           </form>
           <p className="hint" id="weigh-range">
-            Od {WEIGHT_RANGE.min} do {WEIGHT_RANGE.max} kg, z jedną cyfrą po przecinku.
+            {T.range(WEIGHT_RANGE.min, WEIGHT_RANGE.max)}
           </p>
           <button type="button" className="btn ghost sm" onClick={onSkip}>
-            Nie dziś
+            {T.skip}
           </button>
         </>
       ) : (
         <>
-          <h2 className="today-name">Dziś {pl1(t.today)} kg</h2>
+          <h2 className="today-name">{T.today(pl1(t.today))}</h2>
           <p className="tight">
-            {t.avg !== null && `Średnia z 7 dni: ${pl1(t.avg)} kg`}
-            {t.delta !== null && t.prevAvg !== null
-              ? ` · tydzień wcześniej ${pl1(t.prevAvg)} kg (${change(t.delta)}).`
-              : ' · zmiana tydzień do tygodnia pokaże się po drugim tygodniu ważeń.'}
+            {t.avg !== null && T.avg(pl1(t.avg))}
+            {t.delta !== null && t.prevAvg !== null ? T.prev(pl1(t.prevAvg), change(t.delta)) : T.noPrev}
           </p>
         </>
       )}

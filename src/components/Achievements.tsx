@@ -25,14 +25,84 @@ import { progressSubject } from '../engine/share';
 import { rankFor } from '../engine/score';
 import { ShareButton } from './Share';
 import { dayKey } from '../engine/schedule';
+import { LOCALE, text } from '../i18n';
 import type { AppState } from '../types';
+
+const T = text({
+  pl: {
+    dm: (dd: string, mm: string) => `${dd}.${mm}`,
+    earned: (at: string) => `zdobyta${at ? ` ${at}` : ''}`,
+    notYet: 'jeszcze nie',
+    complete: (tier: string) => `komplet · ${tier}`,
+    of: (value: string, tier: string) => `${value} z ${tier}`,
+    lastTier: (at: string) => ` · ostatni próg ${at}`,
+    medal: (name: string, tier: number, total: number) => `${name} — ${tier} z ${total}`,
+    workouts: 'treningów',
+    reps: 'powtórzeń',
+    sets: 'serii',
+    tonnage: 'tonaż',
+    inNumbers: 'W liczbach',
+    totalsLine: (exercises: string, distinct: number, time: string) =>
+      `Wykonane ćwiczenia: ${exercises} · różne ruchy: ${distinct} · czas pod obciążeniem: ${time}`,
+    massJoke: (joke: string) => `Tonaż to mniej więcej ${joke}. `,
+    repsJoke: (joke: string) => `Powtórzenia: ${joke}. `,
+    timeJoke: (joke: string) => `Czas pod obciążeniem: ${joke}.`,
+    shelf: 'Półka',
+    shelfEmpty: 'Pierwszy zapisany trening zdejmuje kłódkę — dalej odznaki rosną same.',
+    shelfLead: 'Najmocniejsze tworzywa na przodzie.',
+    closest: 'Najbliżej zdobycia',
+    closestLead:
+      'Pięć progów, do których brakuje najmniej. Rekordy dnia i tygodnia liczą się od początku bieżącego okresu — przekąska jeszcze dziś może któryś domknąć.',
+    left: (v: string) => `brakuje ${v}`,
+    lead: 'Każda rodzina odznak ma kilka progów, więc zdobyta odznaka nie kończy tematu, tylko pokazuje następny krok. Nic tu nie zależy od tego, jak ciężko trenujesz — liczy się to, ile i jak regularnie.',
+    brag: 'Pochwal się',
+    bragLead: 'Cały dorobek na jednej karcie: stopień, liczby i porównanie, którego nikt nie prosił.',
+    share: 'Udostępnij dorobek',
+    badges: (have: number, total: number) => `Odznaki ${have}/${total}`,
+    exEmpty: 'Pojawią się po pierwszym treningu albo pierwszej przekąsce — każdy zrobiony ruch dostaje swoje cztery.',
+    history: 'Historia ćwiczenia →',
+  },
+  en: {
+    dm: (dd: string, mm: string) => `${dd}/${mm}`,
+    earned: (at: string) => `earned${at ? ` ${at}` : ''}`,
+    notYet: 'not yet',
+    complete: (tier: string) => `complete · ${tier}`,
+    of: (value: string, tier: string) => `${value} of ${tier}`,
+    lastTier: (at: string) => ` · last tier ${at}`,
+    medal: (name: string, tier: number, total: number) => `${name} — ${tier} of ${total}`,
+    workouts: 'workouts',
+    reps: 'reps',
+    sets: 'sets',
+    tonnage: 'tonnage',
+    inNumbers: 'In numbers',
+    totalsLine: (exercises: string, distinct: number, time: string) =>
+      `Exercises done: ${exercises} · different moves: ${distinct} · time under load: ${time}`,
+    massJoke: (joke: string) => `Your tonnage is roughly ${joke}. `,
+    repsJoke: (joke: string) => `Reps: ${joke}. `,
+    timeJoke: (joke: string) => `Time under load: ${joke}.`,
+    shelf: 'Shelf',
+    shelfEmpty: 'Your first logged workout takes the padlock off — after that, badges grow on their own.',
+    shelfLead: 'The finest materials up front.',
+    closest: 'Closest to earning',
+    closestLead:
+      'The five tiers you’re closest to. Day and week records count from the start of the current period — a snack today could still close one.',
+    left: (v: string) => `${v} to go`,
+    lead: 'Every badge family has several tiers, so earning a badge doesn’t end the story — it shows the next step. Nothing here depends on how heavy you train — what counts is how much and how regularly.',
+    brag: 'Show it off',
+    bragLead: 'Everything you’ve achieved on one card: your rank, the numbers and a comparison nobody asked for.',
+    share: 'Share your progress',
+    badges: (have: number, total: number) => `Badges ${have}/${total}`,
+    exEmpty: 'They appear after your first workout or exercise snack — every move you do gets its own four.',
+    history: 'Exercise history →',
+  },
+});
 
 const shortDate = (key: string): string => {
   const [, mm, dd] = key.split('-');
-  return `${dd}.${mm}`;
+  return T.dm(dd!, mm!);
 };
 
-const num = (n: number): string => Math.round(n).toLocaleString('pl-PL');
+const num = (n: number): string => Math.round(n).toLocaleString(LOCALE);
 
 /** Ile progów zdobytych w całej aplikacji — jedna liczba na nagłówek. */
 export function achievementCount(state: AppState): { have: number; total: number } {
@@ -58,10 +128,10 @@ function Row({ r }: { r: AchProgress }) {
 
   const meta = single
     ? done
-      ? `zdobyta${r.at ? ` ${shortDate(r.at)}` : ''}`
-      : 'jeszcze nie'
-    : `${done ? `komplet · ${formatTier(r.ach, r.value)}` : `${formatValue(r.ach, r.value)} z ${formatTier(r.ach, r.next!)}`}${
-        r.at ? ` · ostatni próg ${shortDate(r.at)}` : ''
+      ? T.earned(r.at ? shortDate(r.at) : '')
+      : T.notYet
+    : `${done ? T.complete(formatTier(r.ach, r.value)) : T.of(formatValue(r.ach, r.value), formatTier(r.ach, r.next!))}${
+        r.at ? T.lastTier(shortDate(r.at)) : ''
       }`;
 
   return (
@@ -70,7 +140,7 @@ function Row({ r }: { r: AchProgress }) {
         art={r.ach.art}
         mark={r.ach.mark}
         band={bandFor(r.tier, r.ach.tiers.length)}
-        title={`${r.ach.name} — ${r.tier} z ${r.ach.tiers.length}`}
+        title={T.medal(r.ach.name, r.tier, r.ach.tiers.length)}
       />
       <div className="ach-body">
         <div className="ach-head">
@@ -102,20 +172,20 @@ function Row({ r }: { r: AchProgress }) {
  */
 function Totals({ m }: { m: Metrics }) {
   const tiles: [string, string][] = [
-    [num(m.workouts), 'treningów'],
-    [num(m.reps), 'powtórzeń'],
-    [num(m.sets), 'serii'],
+    [num(m.workouts), T.workouts],
+    [num(m.reps), T.reps],
+    [num(m.sets), T.sets],
     [
       m.tonnage >= 1000
-        ? `${(Math.round(m.tonnage / 100) / 10).toLocaleString('pl-PL', { maximumFractionDigits: 1 })} t`
+        ? `${(Math.round(m.tonnage / 100) / 10).toLocaleString(LOCALE, { maximumFractionDigits: 1 })} t`
         : `${num(m.tonnage)} kg`,
-      'tonaż',
+      T.tonnage,
     ],
   ];
 
   return (
     <div className="grp">
-      <h2>W liczbach</h2>
+      <h2>{T.inNumbers}</h2>
       <div className="tiles">
         {tiles.map(([v, l]) => (
           <div className="tile" key={l}>
@@ -125,14 +195,13 @@ function Totals({ m }: { m: Metrics }) {
         ))}
       </div>
       <p className="tight" style={{ marginTop: 10 }}>
-        Wykonane ćwiczenia: {num(m.exercises)} · różne ruchy: {m.distinct} · czas pod obciążeniem:{' '}
-        {m.secs >= 120 ? `${Math.round(m.secs / 60)} min` : `${m.secs} s`}
+        {T.totalsLine(num(m.exercises), m.distinct, m.secs >= 120 ? `${Math.round(m.secs / 60)} min` : `${m.secs} s`)}
       </p>
       {(massJoke(m.tonnage) || repsJoke(m.reps)) && (
         <p className="tight joke">
-          {massJoke(m.tonnage) && <>Tonaż to mniej więcej {massJoke(m.tonnage)}. </>}
-          {repsJoke(m.reps) && <>Powtórzenia: {repsJoke(m.reps)}. </>}
-          {timeJoke(m.secs) && <>Czas pod obciążeniem: {timeJoke(m.secs)}.</>}
+          {massJoke(m.tonnage) && T.massJoke(massJoke(m.tonnage)!)}
+          {repsJoke(m.reps) && T.repsJoke(repsJoke(m.reps)!)}
+          {timeJoke(m.secs) && T.timeJoke(timeJoke(m.secs)!)}
         </p>
       )}
     </div>
@@ -153,18 +222,17 @@ function Shelf({ rows }: { rows: AchProgress[] }) {
   if (!owned.length)
     return (
       <div className="grp">
-        <h2>Półka</h2>
+        <h2>{T.shelf}</h2>
         <p className="tight">
-          {pick(EMPTY_SHELF, daySeed())} Pierwszy zapisany trening zdejmuje kłódkę — dalej
-          odznaki rosną same.
+          {pick(EMPTY_SHELF, daySeed())} {T.shelfEmpty}
         </p>
       </div>
     );
 
   return (
     <div className="grp">
-      <h2>Półka</h2>
-      <p className="tight">Najmocniejsze tworzywa na przodzie.</p>
+      <h2>{T.shelf}</h2>
+      <p className="tight">{T.shelfLead}</p>
       <div className="shelf">
         {owned.map(({ r, band }) => (
           <div className="shelf-item" key={r.ach.id}>
@@ -195,7 +263,7 @@ const nowOf = (r: AchProgress): number => r.current ?? r.value;
 const nearMeta = (r: AchProgress): string => {
   const k = (r.ach as Partial<ExFamily>).kind;
   const lead = r.current !== null && k && k !== 'lacznie' ? `${KIND_NOW[k]} ` : '';
-  return `${lead}${formatValue(r.ach, nowOf(r))} z ${formatTier(r.ach, r.next!)}`;
+  return `${lead}${T.of(formatValue(r.ach, nowOf(r)), formatTier(r.ach, r.next!))}`;
 };
 
 function Closest({ rows }: { rows: AchProgress[] }) {
@@ -208,18 +276,13 @@ function Closest({ rows }: { rows: AchProgress[] }) {
 
   return (
     <div className="grp">
-      <h2>Najbliżej zdobycia</h2>
-      <p className="tight">
-        Pięć progów, do których brakuje najmniej. Rekordy dnia i tygodnia liczą się od początku
-        bieżącego okresu — przekąska jeszcze dziś może któryś domknąć.
-      </p>
+      <h2>{T.closest}</h2>
+      <p className="tight">{T.closestLead}</p>
       <div className="near">
         {near.map((r) => (
           <div className="near-row" key={r.ach.id}>
             <span className="near-name">{r.ach.name}</span>
-            <span className="near-left">
-              brakuje {formatValue(r.ach, Math.max(0, r.next! - nowOf(r)))}
-            </span>
+            <span className="near-left">{T.left(formatValue(r.ach, Math.max(0, r.next! - nowOf(r))))}</span>
             <span className="near-bar">
               <i style={{ width: `${Math.max(3, Math.round(r.progress * 100))}%` }} />
             </span>
@@ -248,21 +311,15 @@ export function Achievements({ state }: { state: AppState }) {
   return (
     <>
       <div className="wrap">
-        <p className="lead">
-          Każda rodzina odznak ma kilka progów, więc zdobyta odznaka nie kończy tematu, tylko
-          pokazuje następny krok. Nic tu nie zależy od tego, jak ciężko trenujesz —
-          liczy się to, ile i jak regularnie.
-        </p>
+        <p className="lead">{T.lead}</p>
       </div>
 
       <Shelf rows={[...rows, ...exAll]} />
       <Totals m={ctx.metrics} />
 
       <div className="grp">
-        <h2>Pochwal się</h2>
-        <p className="tight">
-          Cały dorobek na jednej karcie: stopień, liczby i porównanie, którego nikt nie prosił.
-        </p>
+        <h2>{T.brag}</h2>
+        <p className="tight">{T.bragLead}</p>
         <div style={{ marginTop: 10 }}>
           <ShareButton
             subject={progressSubject(
@@ -270,15 +327,13 @@ export function Achievements({ state }: { state: AppState }) {
               rankFor((state.award.banked ?? 0) + (snap?.score.points ?? 0)).rank.name,
               ctx.metrics.workouts,
             )}
-            label="Udostępnij dorobek"
+            label={T.share}
           />
         </div>
       </div>
       <Closest rows={[...rows, ...exAll]} />
 
-      <div className="sect-label">
-        Odznaki {have}/{total}
-      </div>
+      <div className="sect-label">{T.badges(have, total)}</div>
 
       {GROUPS.map((g) => {
         const list = rows.filter((r) => r.ach.group === g);
@@ -321,10 +376,7 @@ export function Achievements({ state }: { state: AppState }) {
           <div className="wk-body">
             <p className="ach-note">{GROUP_NOTE.cwiczenia}</p>
             {!touched.length && (
-              <p className="ach-note">
-                Pojawią się po pierwszym treningu albo pierwszej przekąsce — każdy zrobiony ruch
-                dostaje swoje cztery.
-              </p>
+              <p className="ach-note">{T.exEmpty}</p>
             )}
             {touched.map((id) => (
               <details className="gsel exbadges" key={id}>
@@ -335,7 +387,7 @@ export function Achievements({ state }: { state: AppState }) {
                   <ExerciseBadgeRow key={r.ach.id} r={r} />
                 ))}
                 <button className="vidlink exbadges-link" onClick={() => go(statsPath(id))}>
-                  Historia ćwiczenia →
+                  {T.history}
                 </button>
               </details>
             ))}

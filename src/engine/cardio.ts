@@ -1,3 +1,4 @@
+import { LOCALE, text } from '../i18n';
 import type { AppState, Cardio, CardioInput, CardioSport } from '../types';
 import { heightOf, weightOn } from './body';
 import { DANCE_MET, DANCE_SHARE, STEP_CADENCE, cardioEnergy, stepsEnergy } from './energy';
@@ -47,7 +48,34 @@ const oneOf = (v: unknown, table: object): boolean => typeof v === 'string' && O
 /** Rower stacjonarny z mocą to wciąż rower — w nawigacji i na liście stoją razem. */
 export const sportOf = (c: Pick<CardioInput, 'kind'>): CardioSport => (c.kind === 'ergo' ? 'bike' : c.kind);
 
-const pl = (n: number): string => n.toLocaleString('pl-PL');
+const pl = (n: number): string => n.toLocaleString(LOCALE);
+
+const T = text({
+  pl: {
+    minutes: (min: number, max: number) => `Czas od ${min} do ${max} minut.`,
+    steps: (min: number, max: string) => `Kroki od ${min} do ${max}.`,
+    treadmillKmh: (min: number, max: number) => `Prędkość bieżni od ${min} do ${max} km/h.`,
+    grade: (min: number, max: number) => `Nachylenie od ${min} do ${max}%.`,
+    bikeKmh: (min: number, max: number) => `Prędkość roweru od ${min} do ${max} km/h.`,
+    watts: (min: number, max: number) => `Moc od ${min} do ${max} W.`,
+    danceStyle: 'Wybierz taniec: w parze albo solo.',
+    danceMix: 'Wybierz, ile było tańca, a ile tłumaczenia.',
+    unknownKind: 'Nieznany rodzaj ruchu.',
+    badDay: (day: string) => `Zły dzień: ${day}`,
+  },
+  en: {
+    minutes: (min: number, max: number) => `Time from ${min} to ${max} minutes.`,
+    steps: (min: number, max: string) => `Steps from ${min} to ${max}.`,
+    treadmillKmh: (min: number, max: number) => `Treadmill speed from ${min} to ${max} km/h.`,
+    grade: (min: number, max: number) => `Incline from ${min} to ${max}%.`,
+    bikeKmh: (min: number, max: number) => `Bike speed from ${min} to ${max} km/h.`,
+    watts: (min: number, max: number) => `Power from ${min} to ${max} W.`,
+    danceStyle: 'Pick a dance: partner or solo.',
+    danceMix: 'Pick how much was dancing and how much was instruction.',
+    unknownKind: 'Unknown kind of movement.',
+    badDay: (day: string) => `Invalid day: ${day}`,
+  },
+});
 
 /**
  * Co jest nie tak z wpisem — zdaniem, do pokazania pod formularzem. `null` znaczy, że wpis
@@ -56,27 +84,27 @@ const pl = (n: number): string => n.toLocaleString('pl-PL');
 export function inputProblem(c: CardioInput): string | null {
   const L = CARDIO_LIMITS;
   const minutes = (): string | null =>
-    within((c as { min?: unknown }).min, L.min) ? null : `Czas od ${L.min.min} do ${L.min.max} minut.`;
+    within((c as { min?: unknown }).min, L.min) ? null : T.minutes(L.min.min, L.min.max);
   switch (c.kind) {
     case 'steps':
-      return within(c.steps, L.steps) ? null : `Kroki od ${L.steps.min} do ${pl(L.steps.max)}.`;
+      return within(c.steps, L.steps) ? null : T.steps(L.steps.min, pl(L.steps.max));
     case 'treadmill':
       if (!within(c.kmh, L.treadmillKmh))
-        return `Prędkość bieżni od ${L.treadmillKmh.min} do ${L.treadmillKmh.max} km/h.`;
-      if (!within(c.grade, L.grade)) return `Nachylenie od ${L.grade.min} do ${L.grade.max}%.`;
+        return T.treadmillKmh(L.treadmillKmh.min, L.treadmillKmh.max);
+      if (!within(c.grade, L.grade)) return T.grade(L.grade.min, L.grade.max);
       return minutes();
     case 'bike':
-      if (!within(c.kmh, L.bikeKmh)) return `Prędkość roweru od ${L.bikeKmh.min} do ${L.bikeKmh.max} km/h.`;
+      if (!within(c.kmh, L.bikeKmh)) return T.bikeKmh(L.bikeKmh.min, L.bikeKmh.max);
       return minutes();
     case 'ergo':
-      if (!within(c.watts, L.watts)) return `Moc od ${L.watts.min} do ${L.watts.max} W.`;
+      if (!within(c.watts, L.watts)) return T.watts(L.watts.min, L.watts.max);
       return minutes();
     case 'dance':
-      if (!oneOf(c.style, DANCE_MET)) return 'Wybierz taniec: w parze albo solo.';
-      if (!oneOf(c.mix, DANCE_SHARE)) return 'Wybierz, ile było tańca, a ile tłumaczenia.';
+      if (!oneOf(c.style, DANCE_MET)) return T.danceStyle;
+      if (!oneOf(c.mix, DANCE_SHARE)) return T.danceMix;
       return minutes();
     default:
-      return 'Nieznany rodzaj ruchu.';
+      return T.unknownKind;
   }
 }
 
@@ -271,7 +299,7 @@ export function addCardio(
   day: string,
   now: number = Date.now(),
 ): { entry: Cardio; replaced: Cardio | null } {
-  if (!DAY.test(day)) throw new Error(`Zły dzień: ${day}`);
+  if (!DAY.test(day)) throw new Error(T.badDay(day));
   const clean = normalize(input);
   const problem = inputProblem(clean);
   if (problem) throw new Error(problem);
