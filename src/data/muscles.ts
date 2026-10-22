@@ -1,4 +1,5 @@
 import type { ExerciseId } from '../types';
+import { say } from '../i18n';
 
 /**
  * Mięśnie, które pracują w ćwiczeniach.
@@ -51,42 +52,42 @@ export const MUSCLES: MuscleId[] = [
 
 /** Nazwa w mianowniku — na etykiety pasków. */
 export const MUSCLE_NAME: Record<MuscleId, string> = {
-  klatka: 'Klatka piersiowa',
-  najszersze: 'Plecy — najszersze',
-  'plecy-gora': 'Plecy — środek i kaptury',
-  'bark-przod': 'Barki — przód',
-  'bark-bok': 'Barki — bok',
-  'bark-tyl': 'Barki — tył',
+  klatka: say('Klatka piersiowa', 'Chest'),
+  najszersze: say('Plecy — najszersze', 'Back — lats'),
+  'plecy-gora': say('Plecy — środek i kaptury', 'Back — mid back and traps'),
+  'bark-przod': say('Barki — przód', 'Shoulders — front'),
+  'bark-bok': say('Barki — bok', 'Shoulders — side'),
+  'bark-tyl': say('Barki — tył', 'Shoulders — rear'),
   biceps: 'Biceps',
   triceps: 'Triceps',
-  przedramiona: 'Przedramiona i chwyt',
-  brzuch: 'Brzuch i core',
-  prostowniki: 'Prostowniki grzbietu',
-  posladki: 'Pośladki',
-  czworoglowe: 'Czworogłowe uda',
-  dwuglowe: 'Tył uda',
-  przywodziciele: 'Przywodziciele',
-  lydki: 'Łydki i podudzie',
+  przedramiona: say('Przedramiona i chwyt', 'Forearms and grip'),
+  brzuch: say('Brzuch i core', 'Abs and core'),
+  prostowniki: say('Prostowniki grzbietu', 'Spinal erectors'),
+  posladki: say('Pośladki', 'Glutes'),
+  czworoglowe: say('Czworogłowe uda', 'Quads'),
+  dwuglowe: say('Tył uda', 'Hamstrings'),
+  przywodziciele: say('Przywodziciele', 'Adductors'),
+  lydki: say('Łydki i podudzie', 'Calves and shins'),
 };
 
 /** Ta sama partia w zdaniu, po „na” — „za dużo serii na pośladki”. */
 export const MUSCLE_ACC: Record<MuscleId, string> = {
-  klatka: 'klatkę',
-  najszersze: 'najszersze grzbietu',
-  'plecy-gora': 'środek pleców',
-  'bark-przod': 'przód barków',
-  'bark-bok': 'boczne aktony barków',
-  'bark-tyl': 'tył barków',
+  klatka: say('klatkę', 'chest'),
+  najszersze: say('najszersze grzbietu', 'lats'),
+  'plecy-gora': say('środek pleców', 'mid back'),
+  'bark-przod': say('przód barków', 'front delts'),
+  'bark-bok': say('boczne aktony barków', 'side delts'),
+  'bark-tyl': say('tył barków', 'rear delts'),
   biceps: 'biceps',
   triceps: 'triceps',
-  przedramiona: 'przedramiona',
-  brzuch: 'brzuch',
-  prostowniki: 'prostowniki grzbietu',
-  posladki: 'pośladki',
-  czworoglowe: 'czworogłowe',
-  dwuglowe: 'tył uda',
-  przywodziciele: 'przywodziciele',
-  lydki: 'łydki',
+  przedramiona: say('przedramiona', 'forearms'),
+  brzuch: say('brzuch', 'abs'),
+  prostowniki: say('prostowniki grzbietu', 'spinal erectors'),
+  posladki: say('pośladki', 'glutes'),
+  czworoglowe: say('czworogłowe', 'quads'),
+  dwuglowe: say('tył uda', 'hamstrings'),
+  przywodziciele: say('przywodziciele', 'adductors'),
+  lydki: say('łydki', 'calves'),
 };
 
 /** Główne mięśnie ruchu i pomocnicze. Seria liczy się głównym w całości, pomocniczym w połowie. */
