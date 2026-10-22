@@ -1,4 +1,5 @@
 import type { ExerciseId, WorkoutGear } from '../types';
+import { say } from '../i18n';
 
 /**
  * Stanowisko ćwiczenia: co przygotować, zanim padnie pierwsza seria.
@@ -42,30 +43,30 @@ export type Equip =
 
 export const EQUIP_LABEL: Record<Equip, string> = {
   kb: 'kettlebell',
-  kb2: 'dwa kettlebelle',
-  barbell: 'sztanga i talerze',
-  rack: 'stojak (klatka) z asekuracją ustawioną tuż pod najniższym punktem ruchu',
-  benchpress: 'ławka do wyciskania ze stojakami',
-  benchpress_incline: 'ławka skośna ze stojakami',
-  bench: 'ławka płaska',
-  dumbbells: 'hantle',
-  bar: 'drążek do podciągania',
-  dipbars: 'poręcze (w domu: dwa stabilne krzesła oparte o ścianę)',
-  cable: 'wyciąg z regulowaną wysokością linki',
-  box: 'skrzynia albo stabilny stopień',
-  chair: 'stabilne krzesło, oparciem do ściany',
-  support: 'oparcie na wysokości kolan: ławka, krzesło albo brzeg kanapy',
-  table: 'solidny stół, który uniesie twój ciężar',
-  wall: 'kawałek wolnej ściany',
-  step: 'stopień albo krawędź schodka',
-  anchor: 'coś, pod czym zaczepisz stopy: kanapa, łóżko albo druga osoba',
-  mat: 'mata albo miękki dywan',
-  space: 'kilka metrów wolnej drogi do chodzenia z ciężarem',
-  rope: 'skakanka i trochę miejsca nad głową',
-  abwheel: 'kółko do brzucha',
-  roman: 'ławka do wyprostów (rzymska)',
-  medball: 'piłka lekarska',
-  ropes: 'liny bojowe',
+  kb2: say('dwa kettlebelle', 'two kettlebells'),
+  barbell: say('sztanga i talerze', 'barbell and plates'),
+  rack: say('stojak (klatka) z asekuracją ustawioną tuż pod najniższym punktem ruchu', 'rack (cage) with the safeties set just below the lowest point of the movement'),
+  benchpress: say('ławka do wyciskania ze stojakami', 'bench press bench with uprights'),
+  benchpress_incline: say('ławka skośna ze stojakami', 'incline bench with uprights'),
+  bench: say('ławka płaska', 'flat bench'),
+  dumbbells: say('hantle', 'dumbbells'),
+  bar: say('drążek do podciągania', 'pull-up bar'),
+  dipbars: say('poręcze (w domu: dwa stabilne krzesła oparte o ścianę)', 'dip bars (at home: two sturdy chairs against a wall)'),
+  cable: say('wyciąg z regulowaną wysokością linki', 'cable machine with adjustable height'),
+  box: say('skrzynia albo stabilny stopień', 'box or sturdy step'),
+  chair: say('stabilne krzesło, oparciem do ściany', 'sturdy chair, backrest against a wall'),
+  support: say('oparcie na wysokości kolan: ławka, krzesło albo brzeg kanapy', 'knee-height support: a bench, a chair or the edge of a sofa'),
+  table: say('solidny stół, który uniesie twój ciężar', 'sturdy table that can take your weight'),
+  wall: say('kawałek wolnej ściany', 'a clear bit of wall'),
+  step: say('stopień albo krawędź schodka', 'step or the edge of a stair'),
+  anchor: say('coś, pod czym zaczepisz stopy: kanapa, łóżko albo druga osoba', 'something to hook your feet under: a sofa, a bed or another person'),
+  mat: say('mata albo miękki dywan', 'mat or soft rug'),
+  space: say('kilka metrów wolnej drogi do chodzenia z ciężarem', 'a few metres of clear floor to walk with a weight'),
+  rope: say('skakanka i trochę miejsca nad głową', 'skipping rope and some headroom'),
+  abwheel: say('kółko do brzucha', 'ab wheel'),
+  roman: say('ławka do wyprostów (rzymska)', 'back extension bench (Roman chair)'),
+  medball: say('piłka lekarska', 'medicine ball'),
+  ropes: say('liny bojowe', 'battle ropes'),
 };
 
 /**
@@ -128,15 +129,15 @@ export const STATIONS: Record<ExerciseId, Station> = {
   goodmorning: s(['barbell', 'rack']),
   hyper: s(['mat']),
   nordic: s(['anchor', 'mat']),
-  legcurl: s([], 'maszyna do uginania nóg', ['nordic', 'rdl_db']),
+  legcurl: s([], say('maszyna do uginania nóg', 'leg curl machine'), ['nordic', 'rdl_db']),
   pullthrough: s(['cable'], undefined, ['rdl_db']),
 
   // Przysiad
   squat_back: s(['barbell', 'rack']),
   squat_front: s(['barbell', 'rack']),
   squat_box: s(['barbell', 'rack', 'box']),
-  hacksquat: s([], 'hack maszyna', ['legpress', 'bulgarian']),
-  legpress: s([], 'suwnica', ['hacksquat', 'bulgarian']),
+  hacksquat: s([], say('hack maszyna', 'hack squat machine'), ['legpress', 'bulgarian']),
+  legpress: s([], say('suwnica', 'leg press'), ['hacksquat', 'bulgarian']),
   bulgarian: s(['dumbbells', 'bench']),
   stepup: s(['dumbbells', 'box']),
   lunge_walk: s(['dumbbells', 'space']),
@@ -146,15 +147,15 @@ export const STATIONS: Record<ExerciseId, Station> = {
   lunge_bw: s([]),
   split_bw: s(['chair']),
   sissy: s(['wall']),
-  legext: s([], 'maszyna do prostowania nóg', ['sissy', 'bulgarian']),
+  legext: s([], say('maszyna do prostowania nóg', 'leg extension machine'), ['sissy', 'bulgarian']),
 
   // Ciągnięcie
   row_bb: s(['barbell']),
   row_db: s(['dumbbells', 'bench']),
-  row_tbar: s([], 'wiosłowanie T-bar', ['row_db', 'row_bb']),
-  row_cable: s([], 'wyciąg dolny do wiosłowania siedząc', ['row_db']),
+  row_tbar: s([], say('wiosłowanie T-bar', 'T-bar row'), ['row_db', 'row_bb']),
+  row_cable: s([], say('wyciąg dolny do wiosłowania siedząc', 'low cable for seated rows'), ['row_db']),
   row_inverted: s(['table']),
-  latpulldown: s([], 'wyciąg górny', ['chinup', 'pullup']),
+  latpulldown: s([], say('wyciąg górny', 'lat pulldown machine'), ['chinup', 'pullup']),
   chinup: s(['bar']),
   dead_hang: s(['bar']),
   facepull: s(['cable'], undefined, ['y_raise']),
@@ -164,15 +165,15 @@ export const STATIONS: Record<ExerciseId, Station> = {
   curl_bb: s(['barbell']),
   curl_db: s(['dumbbells']),
   curl_hammer: s(['dumbbells']),
-  curl_preacher: s([], 'modlitewnik', ['curl_db']),
+  curl_preacher: s([], say('modlitewnik', 'preacher bench'), ['curl_db']),
 
   // Pchanie
   bench: s(['barbell', 'benchpress']),
   bench_incline: s(['barbell', 'benchpress_incline']),
   bench_db: s(['dumbbells', 'bench']),
   bench_close: s(['barbell', 'benchpress']),
-  chestpress: s([], 'maszyna do wyciskania', ['bench_db', 'pushup']),
-  pecdeck: s([], 'maszyna do rozpiętek', ['fly_cable', 'bench_db']),
+  chestpress: s([], say('maszyna do wyciskania', 'chest press machine'), ['bench_db', 'pushup']),
+  pecdeck: s([], say('maszyna do rozpiętek', 'pec deck'), ['fly_cable', 'bench_db']),
   fly_cable: s(['cable'], undefined, ['pecdeck', 'bench_db']),
   ohp_bb: s(['barbell', 'rack']),
   ohp_db: s(['dumbbells']),
@@ -192,12 +193,12 @@ export const STATIONS: Record<ExerciseId, Station> = {
   burpee: s([]),
   wallball: s(['medball', 'wall']),
   boxjump: s(['box']),
-  rower: s([], 'ergometr wioślarski', ['bike', 'jumprope']),
-  bike: s([], 'rower powietrzny', ['rower', 'jumprope']),
+  rower: s([], say('ergometr wioślarski', 'rowing machine'), ['bike', 'jumprope']),
+  bike: s([], say('rower powietrzny', 'air bike'), ['rower', 'jumprope']),
   jumprope: s(['rope']),
   ropes: s(['ropes']),
-  sled: s([], 'sanie', ['lunge_walk']),
-  sled_drag: s([], 'sanie', ['lunge_walk']),
+  sled: s([], say('sanie', 'sled'), ['lunge_walk']),
+  sled_drag: s([], say('sanie', 'sled'), ['lunge_walk']),
 
   // Core
   plank: s(['mat']),
@@ -213,11 +214,11 @@ export const STATIONS: Record<ExerciseId, Station> = {
   pallof: s(['cable'], undefined, ['plank_side']),
 
   // Nogi — dodatkowe
-  calf_seated: s([], 'maszyna do łydek siedząc', ['calf1']),
-  calf_press: s([], 'suwnica', ['calf_seated', 'calf1']),
+  calf_seated: s([], say('maszyna do łydek siedząc', 'seated calf machine'), ['calf1']),
+  calf_press: s([], say('suwnica', 'leg press'), ['calf_seated', 'calf1']),
   tibialis: s(['wall']),
-  abduction: s([], 'maszyna do odwodzenia nóg', ['glutebridge1', 'plank_side']),
-  adduction: s([], 'maszyna do przywodzenia nóg', ['copenhagen']),
+  abduction: s([], say('maszyna do odwodzenia nóg', 'hip abduction machine'), ['glutebridge1', 'plank_side']),
+  adduction: s([], say('maszyna do przywodzenia nóg', 'hip adduction machine'), ['copenhagen']),
   copenhagen: s(['support', 'mat']),
 };
 
@@ -230,7 +231,7 @@ export function stationFor(id: ExerciseId, gear: WorkoutGear | undefined): Stati
   if (gear !== 'gym') return base;
   switch (id) {
     case 'hyper':
-      return s([], 'ławka do wyprostów (rzymska)', ['glutebridge']);
+      return s([], say('ławka do wyprostów (rzymska)', 'back extension bench (Roman chair)'), ['glutebridge']);
     case 'row_inverted':
       return s(['rack'], undefined, ['row_db']);
     case 'dip_bench':

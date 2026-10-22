@@ -1,4 +1,5 @@
 import type { Keyframe } from '../engine/pose';
+import { say } from '../i18n';
 
 /**
  * Wzorce ruchu dla manekina. Jeden wzorzec obsługuje całą rodzinę ćwiczeń — przysiad ze
@@ -54,7 +55,7 @@ export const MOVES: Record<MoveName, Move> = {
   hinge: {
     secs: 3,
     prop: 'hands',
-    alt: 'Biodra jadą do tyłu, plecy zostają proste, ciężar sunie blisko nóg.',
+    alt: say('Biodra jadą do tyłu, plecy zostają proste, ciężar sunie blisko nóg.', 'Hips travel back, the back stays straight, the weight slides close to the legs.'),
     frames: [
       { at: 0, pose: { torso: 4, armA: 178, armB: 178, legA: 180, legB: 180 } },
       {
@@ -68,7 +69,7 @@ export const MOVES: Record<MoveName, Move> = {
   swing: {
     secs: 1.6,
     prop: 'hands',
-    alt: 'Zamach z bioder: ciężar leci między nogami, potem wyrzut do poziomu.',
+    alt: say('Zamach z bioder: ciężar leci między nogami, potem wyrzut do poziomu.', 'A swing from the hips: the weight passes between the legs, then is driven out to horizontal.'),
     frames: [
       { at: 0, pose: { torso: 66, head: 50, armA: 150, armB: 150, legA: 186, legB: 174, rootX: 84 } },
       { at: 0.4, pose: { torso: -4, armA: 96, armB: 96, legA: 180, legB: 180 } },
@@ -79,7 +80,7 @@ export const MOVES: Record<MoveName, Move> = {
   squat: {
     secs: 3,
     prop: 'rack',
-    alt: 'Biodra i kolana zginają się razem, tułów zostaje wysoko, pięty na ziemi.',
+    alt: say('Biodra i kolana zginają się razem, tułów zostaje wysoko, pięty na ziemi.', 'Hips and knees bend together, the chest stays up, heels on the ground.'),
     frames: [
       { at: 0, pose: { torso: 3, legA: 180, legB: 180, armA: 205, armB: 335, farArmA: 212, farArmB: 342 } },
       {
@@ -93,7 +94,7 @@ export const MOVES: Record<MoveName, Move> = {
   lunge: {
     secs: 3,
     prop: 'rack',
-    alt: 'Krok w przód, kolano tylnej nogi schodzi nisko, tułów pionowo.',
+    alt: say('Krok w przód, kolano tylnej nogi schodzi nisko, tułów pionowo.', 'A step forward, the back knee drops low, the torso stays upright.'),
     frames: [
       { at: 0, pose: { torso: 2, legA: 180, legB: 180, farLegA: 180, farLegB: 180, armA: 205, armB: 335, farArmA: 212, farArmB: 342 } },
       {
@@ -121,7 +122,7 @@ export const MOVES: Record<MoveName, Move> = {
     secs: 3,
     prop: 'hands',
     key: 0.2,
-    alt: 'Z pozycji przy barkach ciężar idzie pionowo nad głowę, żebra w dole.',
+    alt: say('Z pozycji przy barkach ciężar idzie pionowo nad głowę, żebra w dole.', 'From the shoulders the weight goes straight up overhead, ribs down.'),
     frames: [
       { at: 0, pose: { torso: 0, armA: 146, armB: 28, farArmA: 214, farArmB: 332 } },
       { at: 0.45, pose: { torso: -3, armA: 18, armB: 6, farArmA: 342, farArmB: 354 } },
@@ -133,7 +134,7 @@ export const MOVES: Record<MoveName, Move> = {
     secs: 3,
     prop: 'hands',
     scene: 'bench',
-    alt: 'Leżąc na ławce: ciężar schodzi do klatki i wraca na wyprost ramion.',
+    alt: say('Leżąc na ławce: ciężar schodzi do klatki i wraca na wyprost ramion.', 'Lying on a bench: the weight comes down to the chest and back up to straight arms.'),
     frames: [
       {
         at: 0,
@@ -153,7 +154,7 @@ export const MOVES: Record<MoveName, Move> = {
   row: {
     secs: 2.6,
     prop: 'hands',
-    alt: 'Tułów blisko poziomu i nieruchomy, łokieć jedzie wzdłuż tułowia do biodra.',
+    alt: say('Tułów blisko poziomu i nieruchomy, łokieć jedzie wzdłuż tułowia do biodra.', 'The torso near horizontal and still, the elbow travels along the body to the hip.'),
     frames: [
       { at: 0, pose: { torso: 74, head: 58, armA: 176, armB: 176, legA: 186, legB: 172, rootX: 82 } },
       { at: 0.45, pose: { torso: 74, head: 58, armA: 214, armB: 150, legA: 186, legB: 172, rootX: 82 } },
@@ -165,7 +166,7 @@ export const MOVES: Record<MoveName, Move> = {
     secs: 3,
     prop: 'none',
     scene: 'bar',
-    alt: 'Pełny zwis na dole, ruch zaczyna się z łopatek, klatka jedzie do drążka.',
+    alt: say('Pełny zwis na dole, ruch zaczyna się z łopatek, klatka jedzie do drążka.', 'Full hang at the bottom, the pull starts from the shoulder blades, the chest rises to the bar.'),
     frames: [
       // Dłonie zostają na drążku, więc w górnej pozycji łokcie muszą wyjść w bok —
       // inaczej łańcuch ramienia wypchnąłby nadgarstki poza kadr.
@@ -187,7 +188,7 @@ export const MOVES: Record<MoveName, Move> = {
   pushup: {
     secs: 2.6,
     prop: 'none',
-    alt: 'Ciało w jednej linii od pięt po kark, łokcie pod kątem do tułowia.',
+    alt: say('Ciało w jednej linii od pięt po kark, łokcie pod kątem do tułowia.', 'The body in one line from heels to neck, elbows angled away from the torso.'),
     frames: [
       {
         at: 0,
@@ -207,7 +208,7 @@ export const MOVES: Record<MoveName, Move> = {
   dip: {
     secs: 2.8,
     prop: 'none',
-    alt: 'Ciało pionowo między poręczami, łokcie zginają się do kąta prostego.',
+    alt: say('Ciało pionowo między poręczami, łokcie zginają się do kąta prostego.', 'The body upright between the bars, elbows bend to a right angle.'),
     frames: [
       {
         at: 0,
@@ -227,7 +228,7 @@ export const MOVES: Record<MoveName, Move> = {
   curl: {
     secs: 2.6,
     prop: 'hands',
-    alt: 'Łokcie przy tułowiu, ruch wychodzi tylko z przedramion.',
+    alt: say('Łokcie przy tułowiu, ruch wychodzi tylko z przedramion.', 'Elbows at the sides, only the forearms move.'),
     frames: [
       { at: 0, pose: { armA: 178, armB: 178, farArmA: 184, farArmB: 184 } },
       { at: 0.45, pose: { armA: 174, armB: 46, farArmA: 180, farArmB: 52 } },
@@ -238,7 +239,7 @@ export const MOVES: Record<MoveName, Move> = {
   lateral: {
     secs: 2.6,
     prop: 'hands',
-    alt: 'Ramiona idą bokiem do linii barków, bez bujania tułowiem.',
+    alt: say('Ramiona idą bokiem do linii barków, bez bujania tułowiem.', 'Arms rise out to the sides to shoulder height, without swinging.'),
     frames: [
       { at: 0, pose: { armA: 172, armB: 172, farArmA: 188, farArmB: 188 } },
       { at: 0.45, pose: { armA: 96, armB: 92, farArmA: 264, farArmB: 268 } },
@@ -249,7 +250,7 @@ export const MOVES: Record<MoveName, Move> = {
   carry: {
     secs: 1.5,
     prop: 'hands',
-    alt: 'Tułów pionowo, żebra w dole, krótkie kroki z napiętym brzuchem.',
+    alt: say('Tułów pionowo, żebra w dole, krótkie kroki z napiętym brzuchem.', 'The torso upright, ribs down, short steps with a braced core.'),
     frames: [
       { at: 0, pose: { torso: 1, armA: 178, armB: 178, legA: 164, legB: 190, farLegA: 196, farLegB: 172, farFoot: 78 } },
       { at: 0.5, pose: { torso: 1, armA: 178, armB: 178, legA: 196, legB: 172, foot: 78, farLegA: 164, farLegB: 190, farFoot: 92 } },
@@ -260,7 +261,7 @@ export const MOVES: Record<MoveName, Move> = {
   plank: {
     secs: 4,
     prop: 'none',
-    alt: 'Przedramiona na podłodze, pośladki napięte, ciało w jednej linii.',
+    alt: say('Przedramiona na podłodze, pośladki napięte, ciało w jednej linii.', 'Forearms on the floor, glutes tight, the body in one line.'),
     frames: [
       {
         at: 0,
@@ -280,7 +281,7 @@ export const MOVES: Record<MoveName, Move> = {
   crunch: {
     secs: 2.6,
     prop: 'none',
-    alt: 'Lędźwie dociśnięte do podłogi, zwija się kręgosłup, nie biodra.',
+    alt: say('Lędźwie dociśnięte do podłogi, zwija się kręgosłup, nie biodra.', 'The lower back pressed to the floor, the spine curls, not the hips.'),
     frames: [
       {
         at: 0,
@@ -300,7 +301,7 @@ export const MOVES: Record<MoveName, Move> = {
   calf: {
     secs: 2,
     prop: 'rack',
-    alt: 'Pełne opuszczenie pięty, pauza w górze na palcach.',
+    alt: say('Pełne opuszczenie pięty, pauza w górze na palcach.', 'Heels all the way down, then a pause up on the toes.'),
     frames: [
       { at: 0, pose: { legA: 180, legB: 180, foot: 92, armA: 205, armB: 335, farArmA: 212, farArmB: 342 } },
       { at: 0.45, pose: { legA: 180, legB: 180, foot: 128, armA: 205, armB: 335, farArmA: 212, farArmB: 342 } },
@@ -311,7 +312,7 @@ export const MOVES: Record<MoveName, Move> = {
   legCurl: {
     secs: 2.6,
     prop: 'none',
-    alt: 'Biodra dociśnięte do oparcia, pięta jedzie do pośladka.',
+    alt: say('Biodra dociśnięte do oparcia, pięta jedzie do pośladka.', 'Hips pressed into the pad, the heel travels towards the glutes.'),
     frames: [
       {
         at: 0,
@@ -331,7 +332,7 @@ export const MOVES: Record<MoveName, Move> = {
   legExtension: {
     secs: 2.6,
     prop: 'none',
-    alt: 'Siedząc: kolano prostuje się do końca, pauza na szczycie.',
+    alt: say('Siedząc: kolano prostuje się do końca, pauza na szczycie.', 'Seated: the knee straightens fully, with a pause at the top.'),
     frames: [
       {
         at: 0,
