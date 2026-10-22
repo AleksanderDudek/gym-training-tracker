@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { EX, GEAR_LABEL, STAGES, ex, gearOf, NO_EQUIPMENT } from '../data/exercises';
+import { EX, GEAR_LABEL, STAGES, ex, gearOf, groupLabel, NO_EQUIPMENT } from '../data/exercises';
 import { VIDEOS } from '../data/videos';
 import { ANIM } from '../data/anim';
 import { EX_JOKES } from '../data/exjokes';
@@ -15,7 +15,7 @@ import { SectionSwitch } from './Design';
 import { profileOf } from '../engine/energy';
 import { exercisePlannedBurn } from '../engine/burn';
 import type { AppState, ExerciseId, Gear } from '../types';
-import { LOCALE, pluralEn, text } from '../i18n';
+import { LANG, LOCALE, pluralEn, text } from '../i18n';
 
 const T = text({
   pl: {
@@ -125,6 +125,13 @@ const GEAR_FILTERS: AtlasFilter[] = [
   'bodyweight',
 ];
 
+/** Po angielsku polskie filmy schodzą z listy — chyba że innych do tego ćwiczenia nie ma. */
+const forLang = <V extends { lang: string }>(list: V[]): V[] => {
+  if (LANG === 'pl') return list;
+  const rest = list.filter((v) => v.lang !== 'pl');
+  return rest.length ? rest : list;
+};
+
 export function AtlasView({ state }: { state: AppState }) {
   const groups = exercisesByGroup();
   const [gear, setGear] = useState<AtlasFilter>('all');
@@ -153,7 +160,7 @@ export function AtlasView({ state }: { state: AppState }) {
       </div>
       {shown.map(([g, ids]) => (
         <div key={g}>
-          <div className="sect-label">{g}</div>
+          <div className="sect-label">{groupLabel(g)}</div>
           {ids.map((id) => {
             const v = VIDEOS[id];
             const count = (v?.main.length ?? 0) + (v?.kb.length ?? 0);
@@ -224,7 +231,8 @@ export function ExercisePage({ state, id }: { state: AppState; id: ExerciseId })
 
   const p = P(state, id);
   const move = ANIM[id];
-  const videos = VIDEOS[id] ?? { main: [], kb: [] };
+  const all = VIDEOS[id] ?? { main: [], kb: [] };
+  const videos = { main: forLang(all.main), kb: forLang(all.kb) };
   const stages = m.stages ? STAGES[m.stages] : null;
 
   return (
@@ -234,7 +242,7 @@ export function ExercisePage({ state, id }: { state: AppState; id: ExerciseId })
           <Chip state={state} id={id} />
           <div>
             <div className="ex-group">
-              {m.group} · {GEAR_LABEL[gearOf(id)]}
+              {groupLabel(m.group)} · {GEAR_LABEL[gearOf(id)]}
             </div>
             <h2 className="ex-h">{m.name}</h2>
             <div className="ex-target">{planLabel(state, id)}</div>

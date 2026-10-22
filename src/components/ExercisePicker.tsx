@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
-import { EX, GEAR_LABEL, gearOf } from '../data/exercises';
+import { EX, GEAR_LABEL, gearOf, groupLabel } from '../data/exercises';
 import { ALPHABETICAL, findExercises, splitHits } from '../engine/find';
 import { plural } from '../engine/quips';
 import type { ExerciseId } from '../types';
@@ -180,7 +180,7 @@ export function ExercisePicker({
                     {f.id === value && <span className="picker-now">{T.chosen}</span>}
                   </span>
                   <span className="picker-sub">
-                    {EX[f.id]!.group} · {GEAR_LABEL[gearOf(f.id)]}
+                    {groupLabel(EX[f.id]!.group)} · {GEAR_LABEL[gearOf(f.id)]}
                   </span>
                 </li>
               );
