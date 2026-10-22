@@ -18,6 +18,7 @@ export interface OnlineShop {
 
 export const ONLINE_SHOPS: readonly OnlineShop[] = [
   { id: 'beketo', name: 'BeKeto', url: 'https://beketo.pl', kind: 'sklep' },
+  // i18n-ignore: shop name
   { id: 'bezmiesny', name: 'Bezmięsny Mięsny', url: 'https://bezmiesnymiesny.pl', kind: 'sklep' },
   { id: 'cocoa', name: 'Cocoa', url: 'https://cocoa.pl', kind: 'sklep' },
   { id: 'cocofarm', name: 'CocoFarm', url: 'https://cocofarm.pl', kind: 'producent' },

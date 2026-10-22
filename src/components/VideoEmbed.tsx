@@ -1,5 +1,17 @@
 import { useState } from 'react';
 import type { VideoRef } from '../types';
+import { text } from '../i18n';
+
+const T = text({
+  pl: {
+    play: (title: string) => `Odtwórz: ${title}`,
+    open: 'otwórz w YouTube',
+  },
+  en: {
+    play: (title: string) => `Play: ${title}`,
+    open: 'watch on YouTube',
+  },
+});
 
 const mmss = (secs: number): string => {
   const m = Math.floor(secs / 60);
@@ -32,7 +44,7 @@ export function VideoEmbed({ video }: { video: VideoRef }) {
             referrerPolicy="strict-origin-when-cross-origin"
           />
         ) : (
-          <button className="vid-play" onClick={() => setPlaying(true)} aria-label={`Odtwórz: ${video.title}`}>
+          <button className="vid-play" onClick={() => setPlaying(true)} aria-label={T.play(video.title)}>
             <img
               src={`https://i.ytimg.com/vi/${video.id}/hqdefault.jpg`}
               alt=""
@@ -59,7 +71,7 @@ export function VideoEmbed({ video }: { video: VideoRef }) {
           </span>
           <span>{video.channel}</span>
           <a href={watchUrl(video.id)} target="_blank" rel="noopener noreferrer">
-            otwórz w YouTube
+            {T.open}
           </a>
         </div>
       </div>

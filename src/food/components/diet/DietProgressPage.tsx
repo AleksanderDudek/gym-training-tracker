@@ -1,4 +1,5 @@
-import { useMemo } from 'react';
+import { useMemo, type ReactNode } from 'react';
+import { pluralEn, text } from '../../../i18n';
 import { useBridge } from '../../bridge';
 import { withGymSteps } from '../../diet/body';
 import { macroStatus, totals, type DayTotals, type Status } from '../../diet/day';
@@ -15,7 +16,75 @@ import { Loading, Onboarding } from './Onboarding';
 import { useDietBase } from './useDietPage';
 import { WeekTable } from './WeekTable';
 import { WeightChart, type ChartPoint } from './WeightChart';
+import { DT } from './dietText';
 import './diet.css';
+
+const T = text({
+  pl: {
+    progress: 'Postęp',
+    status: { brak: 'za mało', ok: 'w normie', nadmiar: 'za dużo' } as Record<Status, string>,
+    now: 'Teraz',
+    weighedOn: (day: string) => `ważenie ${day}`,
+    noWeighing: 'brak ważenia',
+    less: 'Mniej o',
+    more: 'Więcej o',
+    keeping: 'utrzymanie',
+    reached: 'cel osiągnięty',
+    toGo: (goal: string) => `Do celu · cel ${goal}`,
+    weight: 'Waga',
+    keepLine: 'Cel to utrzymanie wagi – linia planu pokazuje, dokąd prowadzi cel kalorii.',
+    planReach: (date: ReactNode): ReactNode => <>Według planu cel {date}.</>,
+    planNever: 'Według planu cel nie zostanie osiągnięty w ciągu dwóch lat.',
+    fromWeighing: (date: ReactNode): ReactNode => <>Od ostatniego ważenia, jedząc według planu: {date}.</>,
+    fromWeighingNever:
+      'Od ostatniego ważenia, jedząc według planu: cel poza zasięgiem dwóch lat – sprawdź cel kalorii w profilu diety.',
+    model: (model: string, scale: string) =>
+      `Z zapisów jedzenia wynikałoby dziś ${model}; waga pokazuje ${scale}. Woda i jelita potrafią przesunąć wynik o 1–2 kg – patrz na trend, nie na jeden dzień.`,
+    kcalTitle: 'Kalorie – ostatnie 14 dni',
+    kcalList: 'Zjedzone kalorie dzień po dniu',
+    dayKcal: (day: string, eaten: string | null, goal: string, over: boolean) =>
+      `${day}: ${eaten === null ? 'brak zapisów' : `${eaten} kcal`}, cel ${goal}${over ? ' – ponad cel' : ''}`,
+    kcalLegend: 'Kreska przerywana: cel dnia · pomarańczowy słupek: ponad cel.',
+    macroTitle: 'Makroskładniki – średnia z ostatniego tygodnia',
+    macroLead: (days: number, complete: number, label: string) =>
+      `Kalorie z ${days} ${days === 1 ? 'dnia' : 'dni'} z zapisami, makroskładniki z ${complete} ${complete === 1 ? 'dnia' : 'dni'} z pełnymi danymi – wobec celów profilu „${label}”.`,
+    kcal: 'Kalorie',
+    noMacros: 'brak danych – wpisy mają tylko kalorie',
+    noWeek: 'Brak zapisów z ostatniego tygodnia.',
+  },
+  en: {
+    progress: 'Progress',
+    status: { brak: 'too little', ok: 'on target', nadmiar: 'too much' } as Record<Status, string>,
+    now: 'Now',
+    weighedOn: (day: string) => `weigh-in ${day}`,
+    noWeighing: 'no weigh-in yet',
+    less: 'Down by',
+    more: 'Up by',
+    keeping: 'maintenance',
+    reached: 'goal reached',
+    toGo: (goal: string) => `To go · goal ${goal}`,
+    weight: 'Weight',
+    keepLine: 'Your goal is to keep your weight – the plan line shows where your calorie goal leads.',
+    planReach: (date: ReactNode): ReactNode => <>On plan, you reach your goal on {date}.</>,
+    planNever: 'On plan, you won’t reach your goal within two years.',
+    fromWeighing: (date: ReactNode): ReactNode => <>From your last weigh-in, eating to plan: {date}.</>,
+    fromWeighingNever:
+      'From your last weigh-in, eating to plan: the goal is more than two years away – check the calorie goal in your diet profile.',
+    model: (model: string, scale: string) =>
+      `Your food log points to ${model} today; the scale shows ${scale}. Water and digestion can shift it by 1–2 kg – watch the trend, not a single day.`,
+    kcalTitle: 'Calories – last 14 days',
+    kcalList: 'Calories eaten day by day',
+    dayKcal: (day: string, eaten: string | null, goal: string, over: boolean) =>
+      `${day}: ${eaten === null ? 'nothing logged' : `${eaten} kcal`}, goal ${goal}${over ? ' – over the goal' : ''}`,
+    kcalLegend: 'Dashed line: the day’s goal · orange bar: over the goal.',
+    macroTitle: 'Macros – average of the last week',
+    macroLead: (days: number, complete: number, label: string) =>
+      `Calories from ${days} logged ${pluralEn(days, 'day', 'days')}, macros from ${complete} ${pluralEn(complete, 'day', 'days')} with full data – against the targets of “${label}”.`,
+    kcal: 'Calories',
+    noMacros: 'no data – the entries have calories only',
+    noWeek: 'Nothing logged in the last week.',
+  },
+});
 
 /** Dwa lata to najdalej, jak sięga prognoza: dalej model nie mówi nic użytecznego. */
 const HORIZON = 730;
@@ -37,12 +106,12 @@ export default function DietProgressPage() {
   const history = useMergedHistory(from);
 
   if (profile === undefined || plan === undefined) return <Loading />;
-  if (!profile) return <Onboarding what="Postęp" />;
+  if (!profile) return <Onboarding what={T.progress} />;
   if (!history) return <Loading />;
   return <ProgressView profile={profile} plan={plan} today={today} history={history} />;
 }
 
-const STATUS_WORD: Record<Status, string> = { brak: 'za mało', ok: 'w normie', nadmiar: 'za dużo' };
+const STATUS_WORD: Record<Status, string> = T.status;
 
 function ProgressView({
   profile,
@@ -166,21 +235,23 @@ function ProgressView({
           </div>
           <div className="tile">
             <b>{kg(current)}</b>
-            <span>Teraz · {model.weighing ? `ważenie ${shortDay(model.weighing.date)}` : 'brak ważenia'}</span>
+            <span>
+              {T.now} · {model.weighing ? T.weighedOn(shortDay(model.weighing.date)) : T.noWeighing}
+            </span>
           </div>
           <div className="tile">
             <b>{kg(Math.abs(lost))}</b>
-            <span>{lost >= 0 ? 'Mniej o' : 'Więcej o'}</span>
+            <span>{lost >= 0 ? T.less : T.more}</span>
           </div>
           <div className="tile">
-            <b>{direction === 'keep' ? 'utrzymanie' : toGo > 0 ? kg(toGo) : 'cel osiągnięty'}</b>
-            <span>Do celu · cel {kg(profile.targetWeightKg)}</span>
+            <b>{direction === 'keep' ? T.keeping : toGo > 0 ? kg(toGo) : T.reached}</b>
+            <span>{T.toGo(kg(profile.targetWeightKg))}</span>
           </div>
         </div>
       </div>
 
       <section className="grp" aria-labelledby="fd-diet-chart-title">
-        <h2 id="fd-diet-chart-title">Waga</h2>
+        <h2 id="fd-diet-chart-title">{T.weight}</h2>
         <WeightChart
           start={profile.startDate}
           today={today}
@@ -190,35 +261,22 @@ function ProgressView({
         />
         <ul className="fd-diet-bullets">
           {direction === 'keep' ? (
-            <li>Cel to utrzymanie wagi – linia planu pokazuje, dokąd prowadzi cel kalorii.</li>
+            <li>{T.keepLine}</li>
           ) : (
             <li>
-              Według planu cel{' '}
-              {model.planReach ? (
-                <strong>{formatDate(model.planReach)}</strong>
-              ) : (
-                'nie zostanie osiągnięty w ciągu dwóch lat'
-              )}
-              .
+              {model.planReach ? T.planReach(<strong>{formatDate(model.planReach)}</strong>) : T.planNever}
             </li>
           )}
           {model.weighing && direction !== 'keep' && (
             <li>
-              Od ostatniego ważenia, jedząc według planu:{' '}
-              {model.projectedReach ? (
-                <strong>{formatDate(model.projectedReach)}</strong>
-              ) : (
-                'cel poza zasięgiem dwóch lat – sprawdź cel kalorii w profilu diety'
-              )}
-              .
+              {model.projectedReach
+                ? T.fromWeighing(<strong>{formatDate(model.projectedReach)}</strong>)
+                : T.fromWeighingNever}
             </li>
           )}
         </ul>
         {modelToday !== undefined && model.weighing && (
-          <p className="tight">
-            Z zapisów jedzenia wynikałoby dziś {kg(modelToday)}; waga pokazuje {kg(current)}. Woda i jelita potrafią
-            przesunąć wynik o 1–2 kg – patrz na trend, nie na jeden dzień.
-          </p>
+          <p className="tight">{T.model(kg(modelToday), kg(current))}</p>
         )}
       </section>
 
@@ -232,11 +290,16 @@ function ProgressView({
       />
 
       <section className="grp" aria-labelledby="fd-diet-kcal-title">
-        <h2 id="fd-diet-kcal-title">Kalorie – ostatnie 14 dni</h2>
-        <ol className="fd-diet-fortnight" aria-label="Zjedzone kalorie dzień po dniu">
+        <h2 id="fd-diet-kcal-title">{T.kcalTitle}</h2>
+        <ol className="fd-diet-fortnight" aria-label={T.kcalList}>
           {fortnight.map((d) => {
             const over = d.eaten !== null && d.eaten > d.goal * 1.05;
-            const text = `${shortDay(d.date)}: ${d.eaten === null ? 'brak zapisów' : `${formatNumber(d.eaten, 0)} kcal`}, cel ${formatNumber(d.goal, 0)}${over ? ' – ponad cel' : ''}`;
+            const text = T.dayKcal(
+              shortDay(d.date),
+              d.eaten === null ? null : formatNumber(d.eaten, 0),
+              formatNumber(d.goal, 0),
+              over,
+            );
             return (
               <li key={d.date} title={text}>
                 <i className="fd-diet-goal" style={{ bottom: `${(d.goal / maxKcal) * 100}%` }} aria-hidden />
@@ -258,31 +321,27 @@ function ProgressView({
           <span>{shortDay(firstDay.date)}</span>
           <span>{shortDay(today)}</span>
         </div>
-        <p className="tight fd-diet-soft">Kreska przerywana: cel dnia · pomarańczowy słupek: ponad cel.</p>
+        <p className="tight fd-diet-soft">{T.kcalLegend}</p>
       </section>
 
       <section className="grp" aria-labelledby="fd-diet-macro-title">
-        <h2 id="fd-diet-macro-title">Makroskładniki – średnia z ostatniego tygodnia</h2>
+        <h2 id="fd-diet-macro-title">{T.macroTitle}</h2>
         {average && weekStatus ? (
           <>
-            <p className="tight">
-              Kalorie z {week.length} {week.length === 1 ? 'dnia' : 'dni'} z zapisami, makroskładniki z{' '}
-              {complete.length} {complete.length === 1 ? 'dnia' : 'dni'} z pełnymi danymi – wobec celów profilu „
-              {dietProfile.label}”.
-            </p>
+            <p className="tight">{T.macroLead(week.length, complete.length, dietProfile.label)}</p>
             <dl className="fd-diet-avg">
               {(
                 [
-                  ['kcal', 'Kalorie', `${average.kcal} / ${targets.kcal}`],
-                  ['protein', 'Białko', `${average.protein} / ${targets.protein.target} g`],
-                  ['carbs', 'Węglowodany', `${average.carbs} / ${targets.carbs.max ?? targets.carbs.target} g`],
-                  ['fat', 'Tłuszcz', `${average.fat} / ${targets.fat.target} g`],
+                  ['kcal', T.kcal, `${average.kcal} / ${targets.kcal}`],
+                  ['protein', DT.protein, `${average.protein} / ${targets.protein.target} g`],
+                  ['carbs', DT.carbs, `${average.carbs} / ${targets.carbs.max ?? targets.carbs.target} g`],
+                  ['fat', DT.fat, `${average.fat} / ${targets.fat.target} g`],
                 ] as const
               ).map(([key, label, value]) =>
                 key !== 'kcal' && complete.length === 0 ? (
                   <div key={key}>
                     <dt>{label}</dt>
-                    <dd className="fd-diet-soft">brak danych – wpisy mają tylko kalorie</dd>
+                    <dd className="fd-diet-soft">{T.noMacros}</dd>
                   </div>
                 ) : (
                   <div key={key}>
@@ -298,7 +357,7 @@ function ProgressView({
             </dl>
           </>
         ) : (
-          <p className="tight">Brak zapisów z ostatniego tygodnia.</p>
+          <p className="tight">{T.noWeek}</p>
         )}
       </section>
     </>

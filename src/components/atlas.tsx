@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { EX, GEAR_LABEL, STAGES, ex, gearOf, NO_EQUIPMENT } from '../data/exercises';
+import { useState, type ReactNode } from 'react';
+import { EX, GEAR_LABEL, STAGES, ex, gearOf, groupLabel, NO_EQUIPMENT } from '../data/exercises';
 import { VIDEOS } from '../data/videos';
 import { ANIM } from '../data/anim';
 import { EX_JOKES } from '../data/exjokes';
@@ -15,6 +15,97 @@ import { SectionSwitch } from './Design';
 import { profileOf } from '../engine/energy';
 import { exercisePlannedBurn } from '../engine/burn';
 import type { AppState, ExerciseId, Gear } from '../types';
+import { LANG, LOCALE, pluralEn, text } from '../i18n';
+
+const T = text({
+  pl: {
+    lead: 'Każde ćwiczenie ma własną podstronę z opisem techniki, a te z pierwszej biblioteki także z filmami. Adres podstrony da się wysłać albo zapisać w zakładkach.',
+    all: 'wszystko',
+    none: 'bez sprzętu',
+    count: (shown: number, total: number) => `${shown} z ${total} ćwiczeń.`,
+    videos: (n: number) => ` · ${n} ${n === 1 ? 'film' : n < 5 ? 'filmy' : 'filmów'}`,
+    energy: (label: string, met: string, code: string) => `Wydatek energii: ${label}, ${met} MET (Compendium ${code}).`,
+    energyAt: (dose: string, min: number, kcal: string) =>
+      ` Na twoim poziomie (${dose}) to ok. ${min} min z przerwami i ${kcal} ponad spoczynek.`,
+    energyNoWeight: ' Po wpisaniu wagi w profilu policzę tu kalorie jednej sesji.',
+    noExTitle: 'Nie ma takiego ćwiczenia',
+    noExText: (id: string) => `Identyfikator „${id}” do niczego nie pasuje. Wróć do spisu i wybierz ruch z listy.`,
+    watch: 'Na co uważać',
+    mode: (mode: string, side: boolean) =>
+      `Typ progresji: ${mode}${side ? '. Powtórzenia liczone osobno na każdą stronę' : ''}.`,
+    unit: (secs: boolean, gear: string): ReactNode => (
+      <>
+        Jednostka: <b>{secs ? 'sekundy' : 'powtórzenia'}</b>
+        {secs && ' — w sesji dostajesz stoper albo odliczanie'}. Sprzęt: <b>{gear}</b>.
+      </>
+    ),
+    snack: 'Zapisz jako przekąskę ruchową',
+    stages: 'Etapy trudności',
+    here: 'tutaj jesteś',
+    path: 'Tor ruchu',
+    pathText:
+      'Sylwetka rysowana w aplikacji z kątów stawów — bez nagrań, bez reklam i bez zapytań na zewnątrz. Pokazuje tor ruchu i tempo, nie zastępuje instruktażu.',
+    video: 'Jak to trenować — wideo',
+    videoText:
+      'Najpopularniejsze nagrania techniki z YouTube, wybrane po liczbie wyświetleń i trafności. Odtwarzacz ładuje się dopiero po kliknięciu w miniaturę.',
+    noVideo:
+      'Dla tego ćwiczenia nie ma jeszcze wybranych filmów. Tor ruchu wyżej i opis techniki wystarczą, żeby je poprawnie zaplanować.',
+    kb: 'To samo ćwiczenie z kettlebell',
+    kbText: 'Nagrania pokazujące wariant z odważnikiem kulowym — chwyt, ustawienie ciężaru i różnice względem wersji podstawowej.',
+    disclaimer:
+      'Filmy pochodzą od zewnętrznych autorów i nie są częścią tej aplikacji. Przy bólu lub kontuzji skonsultuj technikę ze specjalistą.',
+    add: 'Dodaj do treningu',
+    yourWorkout: 'twój trening',
+    already: 'To ćwiczenie już jest w tym treningu.',
+    addOpen: 'Dodaj i otwórz trening',
+    newWith: 'Nowy trening z tym ćwiczeniem',
+    noOwn:
+      'Własnych treningów jeszcze nie ma. Zacznij nowy od tego ćwiczenia — albo skopiuj gotowy trening w sekcji Treningi i dopisz je tam.',
+  },
+  en: {
+    lead: 'Every exercise has its own page with a technique description, and the ones from the original library have videos too. You can share a page’s address or bookmark it.',
+    all: 'all',
+    none: 'no equipment',
+    count: (shown: number, total: number) => `${shown} of ${total} exercises.`,
+    videos: (n: number) => ` · ${n} ${pluralEn(n, 'video', 'videos')}`,
+    energy: (label: string, met: string, code: string) => `Energy use: ${label}, ${met} MET (Compendium ${code}).`,
+    energyAt: (dose: string, min: number, kcal: string) =>
+      ` At your level (${dose}) that’s about ${min} min with rests and ${kcal} above resting.`,
+    energyNoWeight: ' Enter your weight in your profile and I’ll work out the calories for one session here.',
+    noExTitle: 'No such exercise',
+    noExText: (id: string) => `The ID “${id}” doesn’t match anything. Go back to the list and pick a movement.`,
+    watch: 'What to watch out for',
+    mode: (mode: string, side: boolean) => `Progression type: ${mode}${side ? '. Reps are counted separately for each side' : ''}.`,
+    unit: (secs: boolean, gear: string): ReactNode => (
+      <>
+        Unit: <b>{secs ? 'seconds' : 'reps'}</b>
+        {secs && ' — in the session you get a stopwatch or a countdown'}. Equipment: <b>{gear}</b>.
+      </>
+    ),
+    snack: 'Save as an exercise snack',
+    stages: 'Difficulty stages',
+    here: 'you are here',
+    path: 'Movement path',
+    pathText:
+      'The figure is drawn in the app from joint angles — no recordings, no ads and no outside requests. It shows the movement path and tempo; it doesn’t replace coaching.',
+    video: 'How to train it — videos',
+    videoText:
+      'The most popular technique videos on YouTube, picked by views and relevance. The player only loads when you tap the thumbnail.',
+    noVideo:
+      'No videos have been picked for this exercise yet. The movement path above and the technique description are enough to plan it properly.',
+    kb: 'The same exercise with a kettlebell',
+    kbText: 'Videos showing the kettlebell variation — grip, where the weight sits and how it differs from the basic version.',
+    disclaimer:
+      'The videos come from outside creators and aren’t part of this app. If you have pain or an injury, check your technique with a specialist.',
+    add: 'Add to a workout',
+    yourWorkout: 'your workout',
+    already: 'This exercise is already in that workout.',
+    addOpen: 'Add and open the workout',
+    newWith: 'New workout with this exercise',
+    noOwn:
+      'You don’t have any workouts of your own yet. Start a new one with this exercise — or copy a ready-made workout in the Workouts section and add it there.',
+  },
+});
 
 /* ---------------- Spis ćwiczeń ---------------- */
 
@@ -34,6 +125,13 @@ const GEAR_FILTERS: AtlasFilter[] = [
   'bodyweight',
 ];
 
+/** Po angielsku polskie filmy schodzą z listy — chyba że innych do tego ćwiczenia nie ma. */
+const forLang = <V extends { lang: string }>(list: V[]): V[] => {
+  if (LANG === 'pl') return list;
+  const rest = list.filter((v) => v.lang !== 'pl');
+  return rest.length ? rest : list;
+};
+
 export function AtlasView({ state }: { state: AppState }) {
   const groups = exercisesByGroup();
   const [gear, setGear] = useState<AtlasFilter>('all');
@@ -48,24 +146,21 @@ export function AtlasView({ state }: { state: AppState }) {
     <>
       <div className="wrap">
         <SectionSwitch on="atlas" />
-        <p className="lead">
-          Każde ćwiczenie ma własną podstronę z opisem techniki, a te z pierwszej biblioteki także
-          z filmami. Adres podstrony da się wysłać albo zapisać w zakładkach.
-        </p>
+        <p className="lead">{T.lead}</p>
         <div className="gearfilter">
           {GEAR_FILTERS.map((g) => (
             <button key={g} aria-pressed={gear === g} onClick={() => setGear(g)}>
-              {g === 'all' ? 'wszystko' : g === 'none' ? 'bez sprzętu' : GEAR_LABEL[g]}
+              {g === 'all' ? T.all : g === 'none' ? T.none : GEAR_LABEL[g]}
             </button>
           ))}
         </div>
         <p className="tight" style={{ marginTop: 8 }}>
-          {total} z {Object.values(groups).reduce((n, ids) => n + ids.length, 0)} ćwiczeń.
+          {T.count(total, Object.values(groups).reduce((n, ids) => n + ids.length, 0))}
         </p>
       </div>
       {shown.map(([g, ids]) => (
         <div key={g}>
-          <div className="sect-label">{g}</div>
+          <div className="sect-label">{groupLabel(g)}</div>
           {ids.map((id) => {
             const v = VIDEOS[id];
             const count = (v?.main.length ?? 0) + (v?.kb.length ?? 0);
@@ -78,7 +173,7 @@ export function AtlasView({ state }: { state: AppState }) {
                     {GEAR_LABEL[gearOf(id)]}
                     {' · '}
                     {levelLabel(state, id)}
-                    {count > 0 && ` · ${count} ${count === 1 ? 'film' : count < 5 ? 'filmy' : 'filmów'}`}
+                    {count > 0 && T.videos(count)}
                   </div>
                 </div>
                 <div className="go">→</div>
@@ -106,10 +201,14 @@ function ExerciseEnergy({ state, id }: { state: AppState; id: ExerciseId }) {
   const p = P(state, id);
   return (
     <p className="tight">
-      Wydatek energii: {prof.label}, {prof.met.toLocaleString('pl-PL')} MET (Compendium {prof.code}).
+      {T.energy(prof.label, prof.met.toLocaleString(LOCALE), prof.code)}
       {b
-        ? ` Na twoim poziomie (${p.sets} × ${p.target}${ex(id).unit === 'secs' ? ' s' : ''}) to ok. ${Math.max(1, Math.round(b.secs / 60))} min z przerwami i ${kcalText(b.active)} ponad spoczynek.`
-        : ' Po wpisaniu wagi w profilu policzę tu kalorie jednej sesji.'}
+        ? T.energyAt(
+            `${p.sets} × ${p.target}${ex(id).unit === 'secs' ? ' s' : ''}`,
+            Math.max(1, Math.round(b.secs / 60)),
+            kcalText(b.active),
+          )
+        : T.energyNoWeight}
     </p>
   );
 }
@@ -122,8 +221,8 @@ export function ExercisePage({ state, id }: { state: AppState; id: ExerciseId })
     return (
       <div className="wrap">
         <EmptyState
-          title="Nie ma takiego ćwiczenia"
-          text={`Identyfikator „${id}” do niczego nie pasuje. Wróć do spisu i wybierz ruch z listy.`}
+          title={T.noExTitle}
+          text={T.noExText(id)}
           cast={{ who: 'siwy', mood: 'wise' }}
         />
       </div>
@@ -132,7 +231,8 @@ export function ExercisePage({ state, id }: { state: AppState; id: ExerciseId })
 
   const p = P(state, id);
   const move = ANIM[id];
-  const videos = VIDEOS[id] ?? { main: [], kb: [] };
+  const all = VIDEOS[id] ?? { main: [], kb: [] };
+  const videos = { main: forLang(all.main), kb: forLang(all.kb) };
   const stages = m.stages ? STAGES[m.stages] : null;
 
   return (
@@ -142,7 +242,7 @@ export function ExercisePage({ state, id }: { state: AppState; id: ExerciseId })
           <Chip state={state} id={id} />
           <div>
             <div className="ex-group">
-              {m.group} · {GEAR_LABEL[gearOf(id)]}
+              {groupLabel(m.group)} · {GEAR_LABEL[gearOf(id)]}
             </div>
             <h2 className="ex-h">{m.name}</h2>
             <div className="ex-target">{planLabel(state, id)}</div>
@@ -151,23 +251,16 @@ export function ExercisePage({ state, id }: { state: AppState; id: ExerciseId })
       </div>
 
       <div className="grp">
-        <h2>Na co uważać</h2>
+        <h2>{T.watch}</h2>
         <p>{m.hint}</p>
         {EX_JOKES[id] && <p className="exjoke">{EX_JOKES[id]}</p>}
-        <p className="tight">
-          Typ progresji: {MODE_NAMES[m.mode]}
-          {m.side ? '. Powtórzenia liczone osobno na każdą stronę' : ''}.
-        </p>
-        <p className="tight">
-          Jednostka: <b>{m.unit === 'secs' ? 'sekundy' : 'powtórzenia'}</b>
-          {m.unit === 'secs' && ' — w sesji dostajesz stoper albo odliczanie'}. Sprzęt:{' '}
-          <b>{GEAR_LABEL[gearOf(id)]}</b>.
-        </p>
+        <p className="tight">{T.mode(MODE_NAMES[m.mode] ?? '', !!m.side)}</p>
+        <p className="tight">{T.unit(m.unit === 'secs', GEAR_LABEL[gearOf(id)])}</p>
         <ExerciseEnergy state={state} id={id} />
         {/* Krótka seria tego ruchu poza treningiem — prosto z miejsca, w którym ktoś go ogląda. */}
         <div style={{ marginTop: 10 }}>
           <button className="btn ghost sm" onClick={() => go(snackAddPath(id))}>
-            Zapisz jako przekąskę ruchową
+            {T.snack}
           </button>
         </div>
       </div>
@@ -176,12 +269,12 @@ export function ExercisePage({ state, id }: { state: AppState; id: ExerciseId })
 
       {stages && (
         <div className="grp">
-          <h2>Etapy trudności</h2>
+          <h2>{T.stages}</h2>
           <ol className="stages">
             {stages.map((s, i) => (
               <li key={s} className={i === (p.stage ?? 0) ? 'now' : i < (p.stage ?? 0) ? 'past' : ''}>
                 {s}
-                {i === (p.stage ?? 0) && <span className="badge">tutaj jesteś</span>}
+                {i === (p.stage ?? 0) && <span className="badge">{T.here}</span>}
               </li>
             ))}
           </ol>
@@ -190,25 +283,21 @@ export function ExercisePage({ state, id }: { state: AppState; id: ExerciseId })
 
       {move && (
         <>
-          <div className="sect-label">Tor ruchu</div>
+          <div className="sect-label">{T.path}</div>
           <div className="grp">
             <AnimatedMannequin move={move} gear={gearOf(id)} />
             <p className="tight" style={{ marginTop: 10 }}>
-              Sylwetka rysowana w aplikacji z kątów stawów — bez nagrań, bez reklam i bez
-              zapytań na zewnątrz. Pokazuje tor ruchu i tempo, nie zastępuje instruktażu.
+              {T.pathText}
             </p>
           </div>
         </>
       )}
 
-      <div className="sect-label">Jak to trenować — wideo</div>
+      <div className="sect-label">{T.video}</div>
       <div className="grp">
         {videos.main.length ? (
           <>
-            <p className="tight">
-              Najpopularniejsze nagrania techniki z YouTube, wybrane po liczbie wyświetleń i
-              trafności. Odtwarzacz ładuje się dopiero po kliknięciu w miniaturę.
-            </p>
+            <p className="tight">{T.videoText}</p>
             <div className="vids">
               {videos.main.map((v) => (
                 <VideoEmbed key={v.id} video={v} />
@@ -216,21 +305,15 @@ export function ExercisePage({ state, id }: { state: AppState; id: ExerciseId })
             </div>
           </>
         ) : (
-          <p>
-            Dla tego ćwiczenia nie ma jeszcze wybranych filmów. Tor ruchu wyżej i opis techniki
-            wystarczą, żeby je poprawnie zaplanować.
-          </p>
+          <p>{T.noVideo}</p>
         )}
       </div>
 
       {videos.kb.length > 0 && (
         <>
-          <div className="sect-label">To samo ćwiczenie z kettlebell</div>
+          <div className="sect-label">{T.kb}</div>
           <div className="grp">
-            <p className="tight">
-              Nagrania pokazujące wariant z odważnikiem kulowym — chwyt, ustawienie ciężaru i
-              różnice względem wersji podstawowej.
-            </p>
+            <p className="tight">{T.kbText}</p>
             <div className="vids">
               {videos.kb.map((v) => (
                 <VideoEmbed key={v.id} video={v} />
@@ -241,10 +324,7 @@ export function ExercisePage({ state, id }: { state: AppState; id: ExerciseId })
       )}
 
       <div className="wrap">
-        <p className="disclaimer">
-          Filmy pochodzą od zewnętrznych autorów i nie są częścią tej aplikacji. Przy bólu lub kontuzji
-          skonsultuj technikę ze specjalistą.
-        </p>
+        <p className="disclaimer">{T.disclaimer}</p>
       </div>
     </>
   );
@@ -261,11 +341,11 @@ function AddToWorkout({ state, id }: { state: AppState; id: ExerciseId }) {
   const already = own.find((w) => w.id === target)?.items.some((i) => i.ex === id) ?? false;
   return (
     <div className="grp">
-      <h2>Dodaj do treningu</h2>
+      <h2>{T.add}</h2>
       {own.length ? (
         <>
           <label className="fld">
-            <span>twój trening</span>
+            <span>{T.yourWorkout}</span>
             <select value={target} onChange={(e) => setTarget(e.target.value)}>
               {own.map((w) => (
                 <option key={w.id} value={w.id}>
@@ -274,24 +354,21 @@ function AddToWorkout({ state, id }: { state: AppState; id: ExerciseId }) {
               ))}
             </select>
           </label>
-          {already && <p className="tight">To ćwiczenie już jest w tym treningu.</p>}
+          {already && <p className="tight">{T.already}</p>}
           <div className="btnrow" style={{ marginTop: 8 }}>
             <button className="btn sm" disabled={already} onClick={() => go(workoutEditPath(target, id))}>
-              Dodaj i otwórz trening
+              {T.addOpen}
             </button>
             <button className="btn ghost sm" onClick={() => go(workoutNewPath(undefined, id))}>
-              Nowy trening z tym ćwiczeniem
+              {T.newWith}
             </button>
           </div>
         </>
       ) : (
         <>
-          <p className="tight">
-            Własnych treningów jeszcze nie ma. Zacznij nowy od tego ćwiczenia — albo skopiuj gotowy trening
-            w sekcji Treningi i dopisz je tam.
-          </p>
+          <p className="tight">{T.noOwn}</p>
           <button className="btn sm" style={{ marginTop: 8 }} onClick={() => go(workoutNewPath(undefined, id))}>
-            Nowy trening z tym ćwiczeniem
+            {T.newWith}
           </button>
         </>
       )}

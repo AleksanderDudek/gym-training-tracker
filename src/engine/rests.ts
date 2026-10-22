@@ -1,6 +1,24 @@
 import { profileOf } from './energy';
 import type { Step } from './steps';
 import type { AppState, ExerciseId, Workout } from '../types';
+import { LOCALE, text } from '../i18n';
+
+const T = text({
+  pl: {
+    shorter: (s: number) =>
+      `O ${s} s krócej niż na starcie: ostatnie obwody szły równo, a ta sama praca w krótszym czasie to lepsza kondycja.`,
+    longer: (s: number) => `O ${s} s dłużej niż na starcie: w ostatnich obwodach późniejsze rundy wyraźnie słabły.`,
+    bump: (s: number, base: string) =>
+      `O ${s} s dłużej niż zwykle: ostatnio ostatnia seria wyraźnie odstawała od pierwszej. Wróci do ${base}, gdy serie pójdą równo.`,
+  },
+  en: {
+    shorter: (s: number) =>
+      `${s} s shorter than at the start: your recent circuits went evenly, and the same work in less time means better fitness.`,
+    longer: (s: number) => `${s} s longer than at the start: in your recent circuits the later rounds clearly faded.`,
+    bump: (s: number, base: string) =>
+      `${s} s longer than usual: lately your last set has fallen well short of your first. It goes back to ${base} once your sets even out.`,
+  },
+});
 
 /**
  * Przerwy w sesji: ile trwają i kiedy się zmieniają.
@@ -46,7 +64,7 @@ export const baseRest = (w: Workout, id: ExerciseId): number => w.rest ?? restSe
 export function restLabel(secs: number): string {
   if (secs < 90) return `${secs} s`;
   const min = Math.round((secs / 60) * 2) / 2;
-  return `${String(min).replace('.', ',')} min`;
+  return `${min.toLocaleString(LOCALE, { maximumFractionDigits: 1 })} min`;
 }
 
 /**
@@ -96,9 +114,9 @@ export function roundRestOf(state: AppState, w: Workout): { secs: number; why: s
     });
   const why =
     secs < base
-      ? `O ${base - secs} s krócej niż na starcie: ostatnie obwody szły równo, a ta sama praca w krótszym czasie to lepsza kondycja.`
+      ? T.shorter(base - secs)
       : secs > base
-        ? `O ${secs - base} s dłużej niż na starcie: w ostatnich obwodach późniejsze rundy wyraźnie słabły.`
+        ? T.longer(secs - base)
         : null;
   return { secs, why };
 }
@@ -126,9 +144,7 @@ export function restBetween(state: AppState, w: Workout, a: Step, b: Step | null
   const bump = restBump(state, a.ex);
   return {
     secs: base + bump,
-    why: bump
-      ? `O ${bump} s dłużej niż zwykle: ostatnio ostatnia seria wyraźnie odstawała od pierwszej. Wróci do ${restLabel(base)}, gdy serie pójdą równo.`
-      : null,
+    why: bump ? T.bump(bump, restLabel(base)) : null,
     kind: 'set',
   };
 }

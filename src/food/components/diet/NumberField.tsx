@@ -1,4 +1,16 @@
 import { useId, useState } from 'react';
+import { LANG, text } from '../../../i18n';
+
+const T = text({
+  pl: {
+    range: (min: number, max: number) => `Wpisz liczbę od ${min} do ${max}.`,
+    number: 'Wpisz liczbę.',
+  },
+  en: {
+    range: (min: number, max: number) => `Enter a number from ${min} to ${max}.`,
+    number: 'Enter a number.',
+  },
+});
 
 interface Props {
   label: string;
@@ -19,7 +31,7 @@ function parse(text: string, integer: boolean): number | null {
 }
 
 /** Liczba tak, jak się ją pisze po polsku: 105,5. */
-const shown = (value: number): string => String(value).replace('.', ',');
+const shown = (value: number): string => (LANG === 'pl' ? String(value).replace('.', ',') : String(value));
 
 /**
  * Liczba wpisywana po polsku („105,5”) bez walki pola z pisaniem: pole trzyma własny tekst
@@ -37,7 +49,7 @@ export function NumberField({ label, value, onChange, suffix, min, max, integer 
   }
   const parsed = parse(text, integer);
   const invalid = parsed === null || (min !== undefined && parsed < min) || (max !== undefined && parsed > max);
-  const hint = min !== undefined && max !== undefined ? `Wpisz liczbę od ${min} do ${max}.` : 'Wpisz liczbę.';
+  const hint = min !== undefined && max !== undefined ? T.range(min, max) : T.number;
   const described = [suffix ? `${id}-unit` : null, invalid ? `${id}-error` : null].filter(Boolean).join(' ');
 
   return (

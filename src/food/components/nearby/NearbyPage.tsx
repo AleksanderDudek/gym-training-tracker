@@ -1,6 +1,7 @@
 import 'leaflet/dist/leaflet.css';
 import { Crosshair, LoaderCircle, LocateFixed, RefreshCw } from 'lucide-react';
 import { useCallback, useId, useMemo, useRef } from 'react';
+import { pluralEn, text } from '../../../i18n';
 import { useDataset } from '../../hooks/useDataset';
 import { useGeolocation, type GeoState } from '../../hooks/useGeolocation';
 import { useNearbyShops, type ShopsState } from '../../hooks/useNearbyShops';
@@ -24,7 +25,83 @@ import { ReadyProducts } from '../recipes/ReadyProducts';
 import { RecipeCard } from '../recipes/RecipeCard';
 import { RadiusSlider } from './RadiusSlider';
 import { StoreMap } from './StoreMap';
+import { COMMON } from '../common/text';
 import './nearby.css';
+
+const T = text({
+  pl: {
+    savedLocating: 'Pokazuję ostatnio zapisane miejsce, szukam aktualnej lokalizacji…',
+    savedDenied: 'Pokazuję ostatnio zapisane miejsce – brak zgody na lokalizację.',
+    savedFailed: 'Pokazuję ostatnio zapisane miejsce – nie udało się ustalić aktualnej lokalizacji.',
+    partial: (n: number, radius: string) => ` (na razie: ${n} ${plural(n, 'sklep', 'sklepy', 'sklepów')} w promieniu ${radius})`,
+    locating: 'Szukam Twojej lokalizacji…',
+    denied: 'Brak zgody na lokalizację. Kliknij na mapie miejsce, w którym jesteś.',
+    failed: 'Nie udało się ustalić lokalizacji. Kliknij na mapie miejsce, w którym jesteś.',
+    loading: (radius: string, partial: string) => `Szukam sklepów w promieniu ${radius}…${partial}`,
+    fetchFailed: 'Nie udało się pobrać sklepów.',
+    noneKnown: (radius: string, other: number) =>
+      `W promieniu ${radius} nie ma sklepów, z których da się coś ułożyć${
+        other ? ` (${plural(other, 'jest 1 inny', `są ${other} inne`, `jest ${other} innych`)})` : ''
+      }. Zwiększ promień.`,
+    found: (radius: string, known: number, other: number) =>
+      `W promieniu ${radius}: ${known} ${plural(known, 'sklep', 'sklepy', 'sklepów')} z danymi o produktach${
+        other ? ` i ${other} ${plural(other, 'inny', 'inne', 'innych')}` : ''
+      }.`,
+    map: 'Mapa',
+    searching: 'Szukam sklepów…',
+    legend: 'Legenda mapy',
+    you: 'Ty',
+    keyRecipes: 'sklep z kompletem na przepis',
+    keyReady: 'tylko gotowe produkty',
+    myLocation: 'Moja lokalizacja',
+    useCentre: 'Ustaw środek mapy jako moją lokalizację',
+    help: 'Albo przytrzymaj palec na mapie (prawy klik na komputerze). Na telefonie mapę przesuwasz dwoma palcami, z klawiatury strzałkami, a przybliżasz klawiszami + i −.',
+    privacy:
+      'Twoja pozycja, zaokrąglona do ok. 100 m, trafia do serwera Overpass z danymi OpenStreetMap (overpass-api.de, zapasowo overpass.private.coffee), a oglądany fragment mapy do tile.openstreetmap.org. Pozycji nie ma w adresie strony, a ostatnie miejsce zostaje tylko na tym urządzeniu.',
+    chains: 'Sieci w pobliżu',
+    all: 'Wszystkie',
+    recipes: 'Przepisy z najbliższych sklepów',
+    emptyHere: 'Tu jeszcze nic – poczekaj na sklepy albo zwiększ promień.',
+    emptyNoPlace: 'Najpierw ustal, gdzie jesteś.',
+    ready: 'Gotowe produkty białkowe w tych sklepach',
+  },
+  en: {
+    savedLocating: 'Showing the last saved place while I look for your current location…',
+    savedDenied: 'Showing the last saved place – no permission to use your location.',
+    savedFailed: 'Showing the last saved place – couldn’t find your current location.',
+    partial: (n: number, radius: string) => ` (so far: ${n} ${pluralEn(n, 'shop', 'shops')} within ${radius})`,
+    locating: 'Looking for your location…',
+    denied: 'No permission to use your location. Click the place on the map where you are.',
+    failed: 'Couldn’t find your location. Click the place on the map where you are.',
+    loading: (radius: string, partial: string) => `Looking for shops within ${radius}…${partial}`,
+    fetchFailed: 'Couldn’t fetch the shops.',
+    noneKnown: (radius: string, other: number) =>
+      `Within ${radius} there are no shops to make anything from${
+        other ? ` (${other === 1 ? 'there’s 1 other' : `there are ${other} others`})` : ''
+      }. Widen the radius.`,
+    found: (radius: string, known: number, other: number) =>
+      `Within ${radius}: ${known} ${pluralEn(known, 'shop', 'shops')} with product data${
+        other ? ` and ${other} ${pluralEn(other, 'other', 'others')}` : ''
+      }.`,
+    map: 'Map',
+    searching: 'Looking for shops…',
+    legend: 'Map legend',
+    you: 'You',
+    keyRecipes: 'shop with everything for a recipe',
+    keyReady: 'ready products only',
+    myLocation: 'My location',
+    useCentre: 'Use the map centre as my location',
+    help: 'Or press and hold on the map (right-click on a computer). On a phone you move the map with two fingers, from the keyboard with the arrow keys, and zoom with the + and − keys.',
+    privacy:
+      'Your position, rounded to about 100 m, goes to the Overpass server with OpenStreetMap data (overpass-api.de, with overpass.private.coffee as a backup), and the part of the map you’re viewing goes to tile.openstreetmap.org. Your position isn’t in the page address, and the last place stays only on this device.',
+    chains: 'Chains nearby',
+    all: 'All',
+    recipes: 'Recipes from the nearest shops',
+    emptyHere: 'Nothing here yet – wait for the shops or widen the radius.',
+    emptyNoPlace: 'First set where you are.',
+    ready: 'Ready protein products in these shops',
+  },
+});
 
 const RADIUS_KEY = 'produkty-pl:radius';
 
@@ -47,32 +124,26 @@ function rememberRadius(radius: number): void {
 /** Skąd jest pozycja, gdy to nie świeża odpowiedź: stare miejsce nigdy nie udaje bieżącego. */
 function placeNote(geo: GeoState): string | null {
   if (geo.source !== 'saved' || geo.status === 'ready') return null;
-  if (geo.status === 'locating') return 'Pokazuję ostatnio zapisane miejsce, szukam aktualnej lokalizacji…';
-  if (geo.status === 'denied') return 'Pokazuję ostatnio zapisane miejsce – brak zgody na lokalizację.';
-  return 'Pokazuję ostatnio zapisane miejsce – nie udało się ustalić aktualnej lokalizacji.';
+  if (geo.status === 'locating') return T.savedLocating;
+  if (geo.status === 'denied') return T.savedDenied;
+  return T.savedFailed;
 }
 
 /** Jedno zdanie o tym, co się dzieje, w kolejności, w jakiej użytkownik by o to pytał. */
 function statusLine(geo: GeoState, shops: ShopsState, radius: number, knownCount: number, otherCount: number): string {
   const partial =
     shops.completeWithin > 0 && shops.completeWithin < radius
-      ? ` (na razie: ${knownCount} ${plural(knownCount, 'sklep', 'sklepy', 'sklepów')} w promieniu ${radiusLabel(Math.round(shops.completeWithin / 100) * 100)})`
+      ? T.partial(knownCount, radiusLabel(Math.round(shops.completeWithin / 100) * 100))
       : '';
   if (!geo.position) {
-    if (geo.status === 'locating') return 'Szukam Twojej lokalizacji…';
-    if (geo.status === 'denied') return 'Brak zgody na lokalizację. Kliknij na mapie miejsce, w którym jesteś.';
-    return 'Nie udało się ustalić lokalizacji. Kliknij na mapie miejsce, w którym jesteś.';
+    if (geo.status === 'locating') return T.locating;
+    if (geo.status === 'denied') return T.denied;
+    return T.failed;
   }
-  if (shops.status === 'loading' || shops.status === 'idle') return `Szukam sklepów w promieniu ${radiusLabel(radius)}…${partial}`;
-  if (shops.status === 'error') return `${shops.error ?? 'Nie udało się pobrać sklepów.'}${partial}`;
-  if (knownCount === 0) {
-    return `W promieniu ${radiusLabel(radius)} nie ma sklepów, z których da się coś ułożyć${
-      otherCount ? ` (${plural(otherCount, 'jest 1 inny', `są ${otherCount} inne`, `jest ${otherCount} innych`)})` : ''
-    }. Zwiększ promień.`;
-  }
-  return `W promieniu ${radiusLabel(radius)}: ${knownCount} ${plural(knownCount, 'sklep', 'sklepy', 'sklepów')} z danymi o produktach${
-    otherCount ? ` i ${otherCount} ${plural(otherCount, 'inny', 'inne', 'innych')}` : ''
-  }.`;
+  if (shops.status === 'loading' || shops.status === 'idle') return T.loading(radiusLabel(radius), partial);
+  if (shops.status === 'error') return `${shops.error ?? T.fetchFailed}${partial}`;
+  if (knownCount === 0) return T.noneKnown(radiusLabel(radius), otherCount);
+  return T.found(radiusLabel(radius), knownCount, otherCount);
 }
 
 /**
@@ -173,7 +244,7 @@ function Nearby({ dataset, products }: { dataset: Dataset; products: IndexedProd
 
   return (
     <>
-      <section className="fd-near-mapsec" aria-label="Mapa">
+      <section className="fd-near-mapsec" aria-label={T.map}>
         <div className="grp fd-near-controls">
           <RadiusSlider radius={state.radius} onChange={setRadius} />
           {note && <p className="fd-near-place-note">{note}</p>}
@@ -184,7 +255,7 @@ function Nearby({ dataset, products }: { dataset: Dataset; products: IndexedProd
             {shopsState.status === 'error' && (
               <button type="button" className="btn sm ghost" onClick={retry}>
                 <RefreshCw size={16} strokeWidth={2} aria-hidden />
-                Spróbuj ponownie
+                {COMMON.retry}
               </button>
             )}
           </div>
@@ -195,7 +266,7 @@ function Nearby({ dataset, products }: { dataset: Dataset; products: IndexedProd
             {geo.position && shopsState.status === 'loading' && (
               <p className="fd-near-map-busy" aria-hidden="true">
                 <LoaderCircle className="fd-spin" size={16} strokeWidth={2} aria-hidden />
-                Szukam sklepów…
+                {T.searching}
               </p>
             )}
             <StoreMap
@@ -212,16 +283,16 @@ function Nearby({ dataset, products }: { dataset: Dataset; products: IndexedProd
               describedBy={mapHelpId}
             />
           </div>
-          <ul className="fd-near-map-legend" aria-label="Legenda mapy">
-            <li className="fd-near-key-you">Ty</li>
-            <li className="fd-near-key-recipes">sklep z kompletem na przepis</li>
-            <li className="fd-near-key-ready">tylko gotowe produkty</li>
+          <ul className="fd-near-map-legend" aria-label={T.legend}>
+            <li className="fd-near-key-you">{T.you}</li>
+            <li className="fd-near-key-recipes">{T.keyRecipes}</li>
+            <li className="fd-near-key-ready">{T.keyReady}</li>
           </ul>
 
           <div className="btnrow fd-near-map-actions">
             <button type="button" className="btn sm ghost" onClick={locate}>
               <LocateFixed size={20} strokeWidth={2} aria-hidden />
-              Moja lokalizacja
+              {T.myLocation}
             </button>
             <button
               type="button"
@@ -229,29 +300,24 @@ function Nearby({ dataset, products }: { dataset: Dataset; products: IndexedProd
               onClick={() => mapCenter.current && setManual(mapCenter.current)}
             >
               <Crosshair size={20} strokeWidth={2} aria-hidden />
-              Ustaw środek mapy jako moją lokalizację
+              {T.useCentre}
             </button>
           </div>
           <p className="hint fd-near-map-help" id={mapHelpId}>
-            Albo przytrzymaj palec na mapie (prawy klik na komputerze). Na telefonie mapę przesuwasz dwoma palcami,
-            z klawiatury strzałkami, a przybliżasz klawiszami + i −.
+            {T.help}
           </p>
-          <p className="fd-near-privacy">
-            Twoja pozycja, zaokrąglona do ok. 100 m, trafia do serwera Overpass z danymi OpenStreetMap (overpass-api.de,
-            zapasowo overpass.private.coffee), a oglądany fragment mapy do tile.openstreetmap.org. Pozycji nie ma
-            w adresie strony, a ostatnie miejsce zostaje tylko na tym urządzeniu.
-          </p>
+          <p className="fd-near-privacy">{T.privacy}</p>
         </div>
       </section>
 
       {chains.length > 0 && (
         <div className="wrap fd-near-chains">
           <ChipRow<string>
-            label="Sieci w pobliżu"
+            label={T.chains}
             value={store}
             onChange={(chain) => update({ store: chain })}
             options={[
-              { key: null, label: 'Wszystkie' },
+              { key: null, label: T.all },
               ...chains.map((c) => ({
                 key: c.chain,
                 label: (
@@ -269,14 +335,14 @@ function Nearby({ dataset, products }: { dataset: Dataset; products: IndexedProd
       <section className="fd-near-recipes" aria-labelledby="fd-near-recipes-heading">
         <div className="wrap fd-rec-head">
           <h2 id="fd-near-recipes-heading" ref={recipesHeading} tabIndex={-1}>
-            Przepisy z najbliższych sklepów
+            {T.recipes}
             {recipes.length > 0 && <span className="fd-rec-count"> ({formatNumber(recipes.length, 0)})</span>}
           </h2>
         </div>
         {recipes.length === 0 ? (
           <div className="wrap">
             <p className="empty fd-near-empty">
-              {geo.position ? 'Tu jeszcze nic – poczekaj na sklepy albo zwiększ promień.' : 'Najpierw ustal, gdzie jesteś.'}
+              {geo.position ? T.emptyHere : T.emptyNoPlace}
             </p>
           </div>
         ) : (
@@ -301,7 +367,7 @@ function Nearby({ dataset, products }: { dataset: Dataset; products: IndexedProd
 
       {ready.length > 0 && (
         <section className="wrap fd-rec-ready" aria-labelledby="fd-near-ready-heading">
-          <h2 id="fd-near-ready-heading">Gotowe produkty białkowe w tych sklepach</h2>
+          <h2 id="fd-near-ready-heading">{T.ready}</h2>
           <ReadyProducts groups={ready} dict={dict} onOpen={open} />
         </section>
       )}

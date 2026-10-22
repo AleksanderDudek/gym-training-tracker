@@ -1,9 +1,27 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
-import { EX, GEAR_LABEL, gearOf } from '../data/exercises';
+import { EX, GEAR_LABEL, gearOf, groupLabel } from '../data/exercises';
 import { ALPHABETICAL, findExercises, splitHits } from '../engine/find';
 import { plural } from '../engine/quips';
 import type { ExerciseId } from '../types';
+import { pluralEn, text } from '../i18n';
+
+const T = text({
+  pl: {
+    narrow: (current: string) => `${current} — wpisz, żeby zawęzić`,
+    type: 'Wpisz nazwę ćwiczenia',
+    chosen: ' · wybrane',
+    none: (q: string) => `Nic nie pasuje do „${q}”. Spróbuj początku nazwy, np. „pomp” albo „przys”.`,
+    count: (n: number) => `${n} ${plural(n, ['ćwiczenie', 'ćwiczenia', 'ćwiczeń'])}`,
+  },
+  en: {
+    narrow: (current: string) => `${current} — type to narrow it down`,
+    type: 'Type an exercise name',
+    chosen: ' · selected',
+    none: (q: string) => `Nothing matches “${q}”. Try the start of a name, e.g. “push” or “squ”.`,
+    count: (n: number) => `${n} ${pluralEn(n, 'exercise', 'exercises')}`,
+  },
+});
 
 /**
  * Wybór ćwiczenia z podpowiedziami.
@@ -116,7 +134,7 @@ export function ExercisePicker({
           // Po wejściu pole jest puste, a obecne ćwiczenie stoi w podpowiedzi — pisze się od razu,
           // bez kasowania nazwy literka po literce.
           placeholder={
-            open && current ? `${current} — wpisz, żeby zawęzić` : 'Wpisz nazwę ćwiczenia'
+            open && current ? T.narrow(current) : T.type
           }
           autoFocus={autoFocus}
           value={open ? query : current}
@@ -159,24 +177,24 @@ export function ExercisePicker({
                     {splitHits(name, f.hits).map((p, k) =>
                       p.on ? <mark key={k}>{p.text}</mark> : <span key={k}>{p.text}</span>,
                     )}
-                    {f.id === value && <span className="picker-now"> · wybrane</span>}
+                    {f.id === value && <span className="picker-now">{T.chosen}</span>}
                   </span>
                   <span className="picker-sub">
-                    {EX[f.id]!.group} · {GEAR_LABEL[gearOf(f.id)]}
+                    {groupLabel(EX[f.id]!.group)} · {GEAR_LABEL[gearOf(f.id)]}
                   </span>
                 </li>
               );
             })
           ) : (
             <li className="picker-empty" role="option" aria-selected={false} aria-disabled="true">
-              Nic nie pasuje do „{query.trim()}”. Spróbuj początku nazwy, np. „pomp” albo „przys”.
+              {T.none(query.trim())}
             </li>
           )}
         </ul>
       )}
 
       <span className="sr-only" aria-live="polite">
-        {open ? `${found.length} ${plural(found.length, ['ćwiczenie', 'ćwiczenia', 'ćwiczeń'])}` : ''}
+        {open ? T.count(found.length) : ''}
       </span>
     </div>
   );

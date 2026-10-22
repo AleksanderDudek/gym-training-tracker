@@ -3,6 +3,22 @@ import { BAND_NAME, BadgeMedal, bandFor } from './BadgeArt';
 import { formatTier } from '../engine/badges';
 import { CHEERS, pick } from '../engine/quips';
 import type { AchievementHit } from '../types';
+import { text } from '../i18n';
+
+const T = text({
+  pl: {
+    tier: (n: number, of: number) => `próg ${n} z ${of}`,
+    oneOff: 'odznaka jednorazowa',
+    sameSession: 'W tej samej sesji',
+    more: (n: number) => `…i jeszcze ${n}. Cała półka jest w zakładce Osiągnięcia.`,
+  },
+  en: {
+    tier: (n: number, of: number) => `tier ${n} of ${of}`,
+    oneOff: 'one-off badge',
+    sameSession: 'In the same session',
+    more: (n: number) => `…and ${n} more. The whole shelf is in the Achievements tab.`,
+  },
+});
 
 /**
  * Moment odblokowania. Lista punktowana odnotowuje fakt; medal, który wjeżdża z promieniami
@@ -18,11 +34,11 @@ const CONFETTI = 18;
 const COLORS = ['#D97757', '#6A9BCC', '#788C5D', '#D9A157', '#B0AEA5', '#94452C'];
 
 const tierLabel = (h: AchievementHit): string =>
-  h.ach.tiers.length > 1 ? `próg ${h.tier} z ${h.ach.tiers.length}` : 'odznaka jednorazowa';
+  h.ach.tiers.length > 1 ? T.tier(h.tier, h.ach.tiers.length) : T.oneOff;
 
 export function Celebrate({
   hits,
-  context = 'W tej samej sesji',
+  context = T.sameSession,
 }: {
   hits: AchievementHit[];
   /** Podpis nad resztą medali — po przekąsce to nie była sesja. */
@@ -105,9 +121,7 @@ export function Celebrate({
             ))}
           </div>
           {hits.length > rest.length + 1 && (
-            <p className="cel-rest">
-              …i jeszcze {hits.length - rest.length - 1}. Cała półka jest w zakładce Osiągnięcia.
-            </p>
+            <p className="cel-rest">{T.more(hits.length - rest.length - 1)}</p>
           )}
         </div>
       )}

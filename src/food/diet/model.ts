@@ -1,3 +1,4 @@
+import { LOCALE, text } from '../../i18n';
 import { weeklyAdjustment, type Adjustment, type DayTotals } from './day';
 import type { DayRow } from './db';
 import { tdee, type ForecastInput } from './energy';
@@ -30,15 +31,20 @@ export function mondayOf(date: string): string {
   return addDays(date, -((at(date).getUTCDay() + 6) % 7));
 }
 
-const LONG = new Intl.DateTimeFormat('pl-PL', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
-const SHORT = new Intl.DateTimeFormat('pl-PL', { weekday: 'short', day: 'numeric', month: 'numeric', timeZone: 'UTC' });
+const LONG = new Intl.DateTimeFormat(LOCALE, { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
+const SHORT = new Intl.DateTimeFormat(LOCALE, { weekday: 'short', day: 'numeric', month: 'numeric', timeZone: 'UTC' });
+
+const T = text({
+  pl: { today: 'Dziś', yesterday: 'Wczoraj', tomorrow: 'Jutro', perWeek: 'kg/tydz.' },
+  en: { today: 'Today', yesterday: 'Yesterday', tomorrow: 'Tomorrow', perWeek: 'kg/wk' },
+});
 
 /** "Dziś", "Wczoraj", "Jutro", otherwise "poniedziałek, 12 października". */
 export function dayLabel(date: string, today: string): string {
   const offset = daysBetween(today, date);
-  if (offset === 0) return 'Dziś';
-  if (offset === -1) return 'Wczoraj';
-  if (offset === 1) return 'Jutro';
+  if (offset === 0) return T.today;
+  if (offset === -1) return T.yesterday;
+  if (offset === 1) return T.tomorrow;
   return LONG.format(at(date));
 }
 
@@ -50,7 +56,7 @@ export const shortDay = (date: string) => SHORT.format(at(date));
  */
 export function paceText(pace: number): string {
   const sign = pace >= 0.005 ? '−' : pace <= -0.005 ? '+' : '';
-  return `${sign}${formatNumber(Math.abs(pace), 2)} kg/tydz.`;
+  return `${sign}${formatNumber(Math.abs(pace), 2)} ${T.perWeek}`;
 }
 export const longDay = (date: string) => LONG.format(at(date));
 

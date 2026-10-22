@@ -1,4 +1,5 @@
-import { Fragment, useCallback, useMemo } from 'react';
+import { Fragment, useCallback, useMemo, type ReactNode } from 'react';
+import { pluralEn, text } from '../../../i18n';
 import { EmptyState, Segmented } from '../../../components/ui';
 import { useDataset } from '../../hooks/useDataset';
 import { useUrlState } from '../../hooks/useUrlState';
@@ -20,6 +21,90 @@ import { ReadyProducts } from './ReadyProducts';
 import { OnlineShopLink, RecipeCard } from './RecipeCard';
 import { TierIcon } from './TierBadge';
 import './recipes.css';
+
+const T = text({
+  pl: {
+    oneOrder: 'jedno zamówienie przez internet',
+    oneVisit: 'jedna wizyta w sklepie',
+    twoOrders: 'dwa zamówienia przez internet',
+    visitAndOrder: 'wizyta w sklepie i zamówienie przez internet',
+    withStaples: (trips: string) => `${trips} + podstawy z dowolnego sklepu`,
+    byTime: 'Według czasu',
+    byShop: 'Według sklepów',
+    lead: (min: number): ReactNode => (
+      <>
+        Zasada: w każdej porcji jest <strong>więcej białka niż węglowodanów i więcej białka niż tłuszczu</strong>.
+        Liczę ją z prawdziwych produktów ze sklepu, który widzisz na karcie. Na początku gotowce: kupujesz i jesz bez
+        gotowania i bez naczyń, a ich zasada to <strong>co najmniej {min} g białka w zestawie</strong>. Dalej szybkie
+        (do 7 minut, z błyskawicą), potem dania na chwilę dłużej i obiady do zrobienia w domu, często na kilka porcji.
+      </>
+    ),
+    leadOnline: (shop: string) => ` Poniżej przepisy z zamówieniem w ${shop} — samym albo razem z jednym sklepem.`,
+    leadStore: (shop: string) => ` Poniżej to, co kupisz w sklepie ${shop} — samym albo z jednym zamówieniem przez internet.`,
+    leadAll:
+      ' Każdy przepis pokazuje, gdzie kupisz wszystko naraz: w jednym sklepie, a gdy trzeba — w sklepie' +
+      ' i sklepie internetowym. „Według sklepów” zbiera przepisy w jak najmniej zakupów.',
+    time: 'Czas',
+    kind: 'Rodzaj',
+    shop: 'Sklep',
+    all: 'Wszystkie',
+    layout: 'Układ listy',
+    gotowceTitle: 'Gotowce bez naczyń',
+    title: 'Przepisy białkowe',
+    gotowce: (n: number) => plural(n, 'gotowiec', 'gotowce', 'gotowców'),
+    recipes: (n: number) => plural(n, 'przepis', 'przepisy', 'przepisów'),
+    plans: (n: number) => plural(n, 'plan zakupów', 'plany zakupów', 'planów zakupów'),
+    quickFirst: ', najpierw szybkie',
+    none: 'Brak przepisów',
+    emptyTitle: 'Brak przepisów z tymi filtrami w tym sklepie.',
+    emptyText: 'Zmień czas, rodzaj albo sklep.',
+    clear: 'Wyczyść filtry',
+    everywhere: 'Składniki w każdym sklepie',
+    ready: 'Gotowe produkty białkowe',
+    readyHint: 'Bez przygotowania: produkty, które same spełniają zasadę (na 100 g), od najwięcej białka na kalorię.',
+  },
+  en: {
+    oneOrder: 'one online order',
+    oneVisit: 'one shop visit',
+    twoOrders: 'two online orders',
+    visitAndOrder: 'a shop visit and an online order',
+    withStaples: (trips: string) => `${trips} + basics from any shop`,
+    byTime: 'By time',
+    byShop: 'By shop',
+    lead: (min: number): ReactNode => (
+      <>
+        The rule: every serving has <strong>more protein than carbs and more protein than fat</strong>. I check it
+        with real products from the shop you see on the card. First come grab-and-go sets: you buy them and eat with no
+        cooking and no dishes, and their rule is <strong>at least {min} g of protein per set</strong>. Then the quick
+        ones (up to 7 minutes, with a lightning bolt), then dishes that take a little longer and lunches to make at
+        home, often for several servings.
+      </>
+    ),
+    leadOnline: (shop: string) => ` Below are recipes with an order from ${shop} — on its own or together with one shop.`,
+    leadStore: (shop: string) => ` Below is what you can buy at ${shop} — on its own or with one online order.`,
+    leadAll:
+      ' Every recipe shows where you can buy everything at once: in one shop or, when needed, in a shop and an online' +
+      ' shop. “By shop” groups the recipes into as few shopping trips as possible.',
+    time: 'Time',
+    kind: 'Type',
+    shop: 'Shop',
+    all: 'All',
+    layout: 'List layout',
+    gotowceTitle: 'Grab-and-go, no dishes',
+    title: 'Protein recipes',
+    gotowce: (n: number) => pluralEn(n, 'grab-and-go set', 'grab-and-go sets'),
+    recipes: (n: number) => pluralEn(n, 'recipe', 'recipes'),
+    plans: (n: number) => pluralEn(n, 'shopping plan', 'shopping plans'),
+    quickFirst: ', quick ones first',
+    none: 'No recipes',
+    emptyTitle: 'No recipes with these filters in this shop.',
+    emptyText: 'Change the time, type or shop.',
+    clear: 'Clear filters',
+    everywhere: 'Ingredients in every shop',
+    ready: 'Ready protein products',
+    readyHint: 'No preparation: products that meet the rule on their own (per 100 g), most protein per calorie first.',
+  },
+});
 
 /**
  * Sklep dostaje własny żeton, gdy da się w nim kupić w całości co najmniej tyle przepisów, które
@@ -53,21 +138,14 @@ function shownIn(recipe: Recipe, index: RecipeIndex, store: string | null): bool
  */
 function tripsLine(basket: readonly string[], recipes: Recipe[]): string {
   const online = basket.filter(isOnlineShop).length;
-  const trips =
-    basket.length === 1
-      ? online
-        ? 'jedno zamówienie przez internet'
-        : 'jedna wizyta w sklepie'
-      : online === 2
-        ? 'dwa zamówienia przez internet'
-        : 'wizyta w sklepie i zamówienie przez internet';
+  const trips = basket.length === 1 ? (online ? T.oneOrder : T.oneVisit) : online === 2 ? T.twoOrders : T.visitAndOrder;
   const staples = recipes.some((r) => r.items.some((i) => INGREDIENTS[i.ingredient].role === 'staple'));
-  return online === basket.length && staples ? `${trips} + podstawy z dowolnego sklepu` : trips;
+  return online === basket.length && staples ? T.withStaples(trips) : trips;
 }
 
 const LAYOUTS: { key: RecipesLayout; label: string }[] = [
-  { key: 'czas', label: 'Według czasu' },
-  { key: 'sklepy', label: 'Według sklepów' },
+  { key: 'czas', label: T.byTime },
+  { key: 'sklepy', label: T.byShop },
 ];
 
 const TIERS = Object.keys(TIER_LABELS) as TimeTier[];
@@ -136,27 +214,18 @@ function Recipes({ dataset, products }: { dataset: Dataset; products: IndexedPro
     <>
       <div className="wrap">
         <p className="lead">
-          Zasada: w każdej porcji jest <strong>więcej białka niż węglowodanów i więcej białka niż tłuszczu</strong>.
-          Liczę ją z prawdziwych produktów ze sklepu, który widzisz na karcie. Na początku gotowce: kupujesz i jesz bez
-          gotowania i bez naczyń, a ich zasada to <strong>co najmniej {GOTOWIEC_MIN_PROTEIN} g białka w zestawie</strong>.
-          Dalej szybkie (do 7 minut, z błyskawicą), potem dania na chwilę dłużej i obiady do zrobienia w domu, często
-          na kilka porcji.
-          {store
-            ? isOnlineShop(store)
-              ? ` Poniżej przepisy z zamówieniem w ${storeName(store)} — samym albo razem z jednym sklepem.`
-              : ` Poniżej to, co kupisz w sklepie ${storeName(store)} — samym albo z jednym zamówieniem przez internet.`
-            : ' Każdy przepis pokazuje, gdzie kupisz wszystko naraz: w jednym sklepie, a gdy trzeba — w sklepie' +
-              ' i sklepie internetowym. „Według sklepów” zbiera przepisy w jak najmniej zakupów.'}
+          {T.lead(GOTOWIEC_MIN_PROTEIN)}
+          {store ? (isOnlineShop(store) ? T.leadOnline(storeName(store)) : T.leadStore(storeName(store))) : T.leadAll}
         </p>
       </div>
 
       <div className="grp fd-rec-filters">
         <ChipRow<TimeTier>
-          label="Czas"
+          label={T.time}
           value={state.tier}
           onChange={(tier) => update({ tier })}
           options={[
-            { key: null, label: 'Wszystkie' },
+            { key: null, label: T.all },
             ...TIERS.map((tier) => ({
               key: tier,
               label: (
@@ -169,17 +238,17 @@ function Recipes({ dataset, products }: { dataset: Dataset; products: IndexedPro
           ]}
         />
         <ChipRow<RecipeKind>
-          label="Rodzaj"
+          label={T.kind}
           value={state.kind}
           onChange={(kind) => update({ kind })}
-          options={[{ key: null, label: 'Wszystkie' }, ...KINDS.map((kind) => ({ key: kind, label: KIND_LABELS[kind] }))]}
+          options={[{ key: null, label: T.all }, ...KINDS.map((kind) => ({ key: kind, label: KIND_LABELS[kind] }))]}
         />
         <ChipRow<string>
-          label="Sklep"
+          label={T.shop}
           value={store}
           onChange={(next) => update({ store: next })}
           options={[
-            { key: null, label: 'Wszystkie' },
+            { key: null, label: T.all },
             ...storeChips.map((s) => ({
               key: s.store,
               label: (
@@ -195,10 +264,10 @@ function Recipes({ dataset, products }: { dataset: Dataset; products: IndexedPro
 
       <div className="wrap fd-rec-layout">
         <span className="seg-label" id="fd-rec-layout-label">
-          Układ listy
+          {T.layout}
         </span>
         <Segmented<RecipesLayout>
-          label="Układ listy"
+          label={T.layout}
           value={state.layout}
           onChange={(layout) => update({ layout })}
           options={LAYOUTS}
@@ -207,33 +276,28 @@ function Recipes({ dataset, products }: { dataset: Dataset; products: IndexedPro
 
       <section className="fd-rec-section" aria-labelledby="fd-rec-title">
         <div className="wrap fd-rec-head">
-          <h2 id="fd-rec-title">{onlyGotowce ? 'Gotowce bez naczyń' : 'Przepisy białkowe'}</h2>
+          <h2 id="fd-rec-title">{onlyGotowce ? T.gotowceTitle : T.title}</h2>
           <p className="fd-rec-count" aria-live="polite">
             {recipes.length > 0
-              ? `${formatNumber(recipes.length, 0)} ${
-                  onlyGotowce
-                    ? plural(recipes.length, 'gotowiec', 'gotowce', 'gotowców')
-                    : plural(recipes.length, 'przepis', 'przepisy', 'przepisów')
-                }${
+              ? `${formatNumber(recipes.length, 0)} ${onlyGotowce ? T.gotowce(recipes.length) : T.recipes(recipes.length)}${
                   groups
-                    ? `, ${formatNumber(groups.length, 0)} ` +
-                      plural(groups.length, 'plan zakupów', 'plany zakupów', 'planów zakupów')
+                    ? `, ${formatNumber(groups.length, 0)} ` + T.plans(groups.length)
                     : state.tier || onlyGotowce
                       ? ''
-                      : ', najpierw szybkie'
+                      : T.quickFirst
                 }`
-              : 'Brak przepisów'}
+              : T.none}
           </p>
         </div>
         {recipes.length === 0 ? (
           <div className="wrap">
             <EmptyState
-              title="Brak przepisów z tymi filtrami w tym sklepie."
-              text="Zmień czas, rodzaj albo sklep."
+              title={T.emptyTitle}
+              text={T.emptyText}
               action={
                 filtered && (
                   <button type="button" className="btn sm" onClick={() => update({ kind: null, tier: null, store: null })}>
-                    Wyczyść filtry
+                    {T.clear}
                   </button>
                 )
               }
@@ -254,12 +318,11 @@ function Recipes({ dataset, products }: { dataset: Dataset; products: IndexedPro
                         </Fragment>
                       ))
                     ) : (
-                      'Składniki w każdym sklepie'
+                      T.everywhere
                     )}
                   </h3>
                   <p className="fd-rec-count">
-                    {formatNumber(group.items.length, 0)}{' '}
-                    {plural(group.items.length, 'przepis', 'przepisy', 'przepisów')}
+                    {formatNumber(group.items.length, 0)} {T.recipes(group.items.length)}
                     {group.basket && ` · ${tripsLine(group.basket, group.items)}`}
                   </p>
                 </div>
@@ -302,10 +365,8 @@ function Recipes({ dataset, products }: { dataset: Dataset; products: IndexedPro
       </section>
 
       <section className="wrap fd-rec-ready" aria-labelledby="fd-rec-ready-heading">
-        <h2 id="fd-rec-ready-heading">Gotowe produkty białkowe</h2>
-        <p className="hint">
-          Bez przygotowania: produkty, które same spełniają zasadę (na 100 g), od najwięcej białka na kalorię.
-        </p>
+        <h2 id="fd-rec-ready-heading">{T.ready}</h2>
+        <p className="hint">{T.readyHint}</p>
         <ReadyProducts groups={ready} dict={dict} onOpen={open} />
       </section>
 

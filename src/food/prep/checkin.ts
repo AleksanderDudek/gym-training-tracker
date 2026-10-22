@@ -3,6 +3,7 @@ import { bmr, goalDirection, tdee } from '../diet/energy';
 import { addDays, daysBetween, paceText } from '../diet/model';
 import type { Profile } from '../diet/types';
 import { formatNumber, plural } from '../lib/format';
+import { pluralEn, text } from '../../i18n';
 
 /**
  * The check-in before a new plan: what the scale and the log say about the person's real
@@ -65,6 +66,74 @@ const CONFIDENCE = 2;
 const round10 = (n: number) => Math.round(n / 10) * 10;
 const kcal = (n: number) => `${formatNumber(Math.round(n), 0)} kcal`;
 const clamp = (n: number, limit: number) => Math.max(-limit, Math.min(limit, n));
+/** `paceText` in a sentence of its own: English needs the full stop the Polish abbreviation brings. */
+const paceEn = (pace: string) => pace.replace(/\.$/, '');
+
+const T = text({
+  pl: {
+    needData: (n: number, spanDays: number, logged: number) =>
+      `Do dopasowania celu potrzebuję co najmniej ${MIN_WEIGH_INS} ważeń z ${MIN_SPAN} dni i pełnych zapisów jedzenia ` +
+      `z ¾ tych dni (teraz: ${n} ${plural(n, 'ważenie', 'ważenia', 'ważeń')}` +
+      `${spanDays ? ` z ${spanDays} dni, pełne zapisy z ${logged}` : ''}). Plan bierze cel z profilu.`,
+    implausible: (observed: number, resting: number, low: boolean) =>
+      `Z zapisów i wagi wychodzi spalanie ${kcal(observed)}, a to poza tym, co możliwe przy Twojej przemianie ` +
+      `materii (${kcal(resting)}) — ${low ? 'zapisy jedzenia są chyba niepełne' : 'to pewnie woda, która schodzi na początku diety, albo zapisy z nadmiarem'}. Plan bierze cel z profilu.`,
+    minimum: (floor: number, male: boolean) => `minimum ${kcal(floor)} ${male ? 'dla mężczyzn' : 'dla kobiet'}`,
+    basal: (floor: number) => `Twoja podstawowa przemiana materii (${kcal(floor)})`,
+    // `paceText` ends in "tydz.": the abbreviation's dot ends the sentence too.
+    tempo: (spanDays: number, observed: string, planned: string) =>
+      `Przez ostatnie ${spanDays} dni waga szła w tempie ${observed}, plan zakładał ${planned}`,
+    reached: (target: number, trendKg: number) =>
+      `Cel ${formatNumber(target, 1)} kg osiągnięty (trend: ${formatNumber(trendKg, 1)} kg).`,
+    keepGoal: (done: string, keep: number) => `${done} Cel ${kcal(keep)} to już utrzymanie — zostaje.`,
+    maintenance: (done: string, keep: number, maintenance: number | null) =>
+      `${done} Na utrzymanie proponuję ${kcal(keep)}` +
+      (maintenance !== null ? ` — do ${kcal(maintenance)} dojdziesz w kolejnych planach, po ${MAINTENANCE_STEP} kcal.` : '.'),
+    noisy: (tempo: string, noise: number, goal: number) =>
+      `${tempo} Waga skacze za bardzo, żeby to znaczyło coś pewnego (±${kcal(noise)} dziennie), więc cel zostaje: ${kcal(goal)}. Ważenie codziennie rano da pewniejszy wynik.`,
+    onPlan: (tempo: string, goal: number) => `${tempo} To zgodnie z planem — cel zostaje: ${kcal(goal)}.`,
+    burns: (observed: number, model: number) =>
+      `Z dziennika i wagi wychodzi, że spalasz ok. ${kcal(observed)} dziennie, a model liczył ${kcal(model)}.`,
+    atFloor: (tempo: string, burns: string, goal: number, below: boolean, floorWords: string) =>
+      `${tempo} ${burns} Niżej nie schodzę: ${kcal(goal)} to już ${below ? 'mniej niż ' : ''}${floorWords} — dołóż kroków zamiast ucinać jedzenie.`,
+    suggest: (tempo: string, burns: string, suggested: number, goal: number) =>
+      `${tempo} ${burns} Proponuję ${kcal(suggested)} zamiast ${kcal(goal)}`,
+    capped: ` — o ${STEP} kcal naraz, resztę pokaże kolejny check-in.`,
+    floored: (floorWords: string) => ` Niżej nie schodzę: to ${floorWords}.`,
+    tooFast: ' Szybsze chudnięcie niż w planie kosztuje mięśnie.',
+  },
+  en: {
+    needData: (n: number, spanDays: number, logged: number) =>
+      `To fit your goal I need at least ${MIN_WEIGH_INS} weigh-ins over ${MIN_SPAN} days and full food logs on ` +
+      `¾ of those days (now: ${n} ${pluralEn(n, 'weigh-in', 'weigh-ins')}` +
+      `${spanDays ? ` over ${spanDays} days, full logs on ${logged}` : ''}). The plan uses the goal from your profile.`,
+    implausible: (observed: number, resting: number, low: boolean) =>
+      `Your logs and weight point to burning ${kcal(observed)}, which is beyond what your metabolism ` +
+      `(${kcal(resting)}) allows — ${low ? 'your food logs are probably incomplete' : 'probably water lost at the start of a diet, or logs with too much in them'}. The plan uses the goal from your profile.`,
+    minimum: (floor: number, male: boolean) => `the minimum of ${kcal(floor)} ${male ? 'for men' : 'for women'}`,
+    basal: (floor: number) => `your basal metabolic rate (${kcal(floor)})`,
+    tempo: (spanDays: number, observed: string, planned: string) =>
+      `Over the last ${spanDays} days your weight moved at ${paceEn(observed)}; the plan assumed ${paceEn(planned)}.`,
+    reached: (target: number, trendKg: number) =>
+      `Target of ${formatNumber(target, 1)} kg reached (trend: ${formatNumber(trendKg, 1)} kg).`,
+    keepGoal: (done: string, keep: number) => `${done} Your goal of ${kcal(keep)} is already maintenance — it stays.`,
+    maintenance: (done: string, keep: number, maintenance: number | null) =>
+      `${done} For maintenance I suggest ${kcal(keep)}` +
+      (maintenance !== null ? ` — you’ll get to ${kcal(maintenance)} over the next plans, ${MAINTENANCE_STEP} kcal at a time.` : '.'),
+    noisy: (tempo: string, noise: number, goal: number) =>
+      `${tempo} Your weight jumps around too much to be sure of anything (±${kcal(noise)} a day), so the goal stays at ${kcal(goal)}. Weighing yourself every morning gives a surer result.`,
+    onPlan: (tempo: string, goal: number) => `${tempo} That’s on plan — the goal stays at ${kcal(goal)}.`,
+    burns: (observed: number, model: number) =>
+      `Your diary and weight say you burn about ${kcal(observed)} a day; the model expected ${kcal(model)}.`,
+    atFloor: (tempo: string, burns: string, goal: number, below: boolean, floorWords: string) =>
+      `${tempo} ${burns} I won’t go lower: ${kcal(goal)} is already ${below ? 'less than ' : ''}${floorWords} — add steps instead of cutting food.`,
+    suggest: (tempo: string, burns: string, suggested: number, goal: number) =>
+      `${tempo} ${burns} I suggest ${kcal(suggested)} instead of ${kcal(goal)}`,
+    capped: ` — ${STEP} kcal at a time; the next check-in will show the rest.`,
+    floored: (floorWords: string) => ` I won’t go lower: that’s ${floorWords}.`,
+    tooFast: ' Losing faster than planned costs muscle.',
+  },
+});
 
 /**
  * Least-squares line through (day, kg): the slope in kg a day, the value at a day, and the slope's
@@ -134,13 +203,7 @@ export function checkIn({ profile, days, eaten, today }: CheckInInput): CheckIn 
   };
 
   if (weighIns.length < MIN_WEIGH_INS || spanDays < MIN_SPAN || logged.length < MIN_LOGGED * spanDays) {
-    const n = weighIns.length;
-    return unchanged(
-      'za-malo-danych',
-      `Do dopasowania celu potrzebuję co najmniej ${MIN_WEIGH_INS} ważeń z ${MIN_SPAN} dni i pełnych zapisów jedzenia ` +
-        `z ¾ tych dni (teraz: ${n} ${plural(n, 'ważenie', 'ważenia', 'ważeń')}` +
-        `${spanDays ? ` z ${spanDays} dni, pełne zapisy z ${logged.length}` : ''}). Plan bierze cel z profilu.`,
-    );
+    return unchanged('za-malo-danych', T.needData(weighIns.length, spanDays, logged.length));
   }
 
   const line = trend(weighIns.map((d) => ({ x: daysBetween(first!, d.date), kg: d.weightKg })));
@@ -152,21 +215,15 @@ export function checkIn({ profile, days, eaten, today }: CheckInInput): CheckIn 
   // A log that leaves food out makes anyone look like they burn little; water lost in the first
   // days of a diet makes them look like they burn a lot.
   if (observedTdee < 0.8 * resting || observedTdee > 2.5 * resting)
-    return unchanged(
-      'za-malo-danych',
-      `Z zapisów i wagi wychodzi spalanie ${kcal(observedTdee)}, a to poza tym, co możliwe przy Twojej przemianie ` +
-        `materii (${kcal(resting)}) — ${observedTdee < resting ? 'zapisy jedzenia są chyba niepełne' : 'to pewnie woda, która schodzi na początku diety, albo zapisy z nadmiarem'}. Plan bierze cel z profilu.`,
-    );
+    return unchanged('za-malo-danych', T.implausible(observedTdee, resting, observedTdee < resting));
 
   const observedPace = -line.slope * 7;
   const plannedPace = paceAt(modelTdee);
   const sexMinimum = profile.sex === 'M' ? 1500 : 1200;
   const floor = Math.max(round10(resting), sexMinimum);
-  const floorWords =
-    floor === sexMinimum ? `minimum ${kcal(floor)} ${profile.sex === 'M' ? 'dla mężczyzn' : 'dla kobiet'}` : `Twoja podstawowa przemiana materii (${kcal(floor)})`;
+  const floorWords = floor === sexMinimum ? T.minimum(floor, profile.sex === 'M') : T.basal(floor);
   const common = { ...facts, trendKg, observedPace, plannedPace, observedTdee, modelTdee };
-  // `paceText` ends in "tydz.": the abbreviation's dot ends the sentence too.
-  const tempo = `Przez ostatnie ${spanDays} dni waga szła w tempie ${paceText(observedPace)}, plan zakładał ${paceText(plannedPace)}`;
+  const tempo = T.tempo(spanDays, paceText(observedPace), paceText(plannedPace));
 
   // What the scale says the model still gets wrong - only the part the trend is sure of.
   const error = observedTdee - modelTdee;
@@ -185,18 +242,14 @@ export function checkIn({ profile, days, eaten, today }: CheckInInput): CheckIn 
     const maintenance = round10(modelTdee + step);
     const move = clamp(maintenance - profile.dailyKcal, MAINTENANCE_STEP);
     const keep = Math.abs(move) < TOLERANCE ? profile.dailyKcal : Math.max(floor, round10(profile.dailyKcal + move));
-    const done = `Cel ${formatNumber(profile.targetWeightKg, 1)} kg osiągnięty (trend: ${formatNumber(trendKg, 1)} kg).`;
+    const done = T.reached(profile.targetWeightKg, trendKg);
     return {
       ...common,
       status: 'cel',
       suggestedKcal: keep,
       correction,
       limited: keep === profile.dailyKcal ? null : keep === floor && floor > maintenance ? 'floor' : keep !== maintenance ? 'cap' : null,
-      reason:
-        keep === profile.dailyKcal
-          ? `${done} Cel ${kcal(keep)} to już utrzymanie — zostaje.`
-          : `${done} Na utrzymanie proponuję ${kcal(keep)}` +
-            (keep !== maintenance ? ` — do ${kcal(maintenance)} dojdziesz w kolejnych planach, po ${MAINTENANCE_STEP} kcal.` : '.'),
+      reason: keep === profile.dailyKcal ? T.keepGoal(done, keep) : T.maintenance(done, keep, keep !== maintenance ? maintenance : null),
     };
   }
 
@@ -207,9 +260,7 @@ export function checkIn({ profile, days, eaten, today }: CheckInInput): CheckIn 
       suggestedKcal: profile.dailyKcal,
       correction: applied,
       limited: null,
-      reason: noisy
-        ? `${tempo} Waga skacze za bardzo, żeby to znaczyło coś pewnego (±${kcal(noise)} dziennie), więc cel zostaje: ${kcal(profile.dailyKcal)}. Ważenie codziennie rano da pewniejszy wynik.`
-        : `${tempo} To zgodnie z planem — cel zostaje: ${kcal(profile.dailyKcal)}.`,
+      reason: noisy ? T.noisy(tempo, noise, profile.dailyKcal) : T.onPlan(tempo, profile.dailyKcal),
     };
 
   let suggested = round10(profile.dailyKcal + step);
@@ -219,7 +270,7 @@ export function checkIn({ profile, days, eaten, today }: CheckInInput): CheckIn 
     suggested = Math.max(suggested, Math.min(floor, profile.dailyKcal));
     limited = 'floor';
   }
-  const burns = `Z dziennika i wagi wychodzi, że spalasz ok. ${kcal(round10(observedTdee))} dziennie, a model liczył ${kcal(round10(modelTdee))}.`;
+  const burns = T.burns(round10(observedTdee), round10(modelTdee));
   if (suggested === profile.dailyKcal)
     return {
       ...common,
@@ -227,13 +278,13 @@ export function checkIn({ profile, days, eaten, today }: CheckInInput): CheckIn 
       suggestedKcal: suggested,
       correction,
       limited,
-      reason: `${tempo} ${burns} Niżej nie schodzę: ${kcal(profile.dailyKcal)} to już ${profile.dailyKcal < floor ? 'mniej niż ' : ''}${floorWords} — dołóż kroków zamiast ucinać jedzenie.`,
+      reason: T.atFloor(tempo, burns, profile.dailyKcal, profile.dailyKcal < floor, floorWords),
     };
   const reason =
-    `${tempo} ${burns} Proponuję ${kcal(suggested)} zamiast ${kcal(profile.dailyKcal)}` +
-    (limited === 'cap' ? ` — o ${STEP} kcal naraz, resztę pokaże kolejny check-in.` : '.') +
-    (limited === 'floor' ? ` Niżej nie schodzę: to ${floorWords}.` : '') +
+    T.suggest(tempo, burns, suggested, profile.dailyKcal) +
+    (limited === 'cap' ? T.capped : '.') +
+    (limited === 'floor' ? T.floored(floorWords) : '') +
     // Losing faster than planned is not a bonus: it costs muscle and patience.
-    (direction === 'loss' && observedPace > plannedPace + 0.1 && step > 0 ? ' Szybsze chudnięcie niż w planie kosztuje mięśnie.' : '');
+    (direction === 'loss' && observedPace > plannedPace + 0.1 && step > 0 ? T.tooFast : '');
   return { ...common, status: 'korekta', suggestedKcal: suggested, correction, limited, reason };
 }

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { EX, GEAR_LABEL, ex, gearOf } from '../data/exercises';
+import type { ReactNode } from 'react';
+import { BUILTIN, EX, GEAR_LABEL, ex, gearOf, groupLabel } from '../data/exercises';
 import { EX_JOKES } from '../data/exjokes';
 import { doneExercises, exerciseRows, trend, weeksBetween } from '../engine/history';
 import type { ExerciseRow, ExerciseSummary, Trend } from '../engine/history';
@@ -22,6 +23,7 @@ import { durationText, timed, transitions } from '../engine/clock';
 import { formatClock } from './Timer';
 import { BodyCard, CardioSummary, kcalText } from './Cardio';
 import { PromoCard } from './Promo';
+import { LOCALE, pluralEn, text } from '../i18n';
 import type { AppState, ExerciseId, LogTime } from '../types';
 
 /**
@@ -33,21 +35,203 @@ import type { AppState, ExerciseId, LogTime } from '../types';
  * skutkiem — i osobna podstrona dla każdego ruchu, który kiedykolwiek wszedł do dziennika.
  */
 
-const num = (n: number): string => Math.round(n).toLocaleString('pl-PL');
+const T = text({
+  pl: {
+    sep: '.',
+    today: 'dzisiaj',
+    yesterday: 'wczoraj',
+    daysAgo: (d: number) => `${d} dni temu`,
+    reps: 'powt.',
+    snacksTitle: 'Przekąski ruchowe',
+    snackLine: (count: number, today: number, run: number, distinct: number) =>
+      `${count} ${plural(count, ['przekąska', 'przekąski', 'przekąsek'])} od początku, dziś ${today}. Najdłuższy ciąg: ${run} ${plural(run, ['dzień', 'dni', 'dni'])} z rzędu, różnych ćwiczeń: ${distinct}.`,
+    noSnacks:
+      'Jeszcze żadnej. Krótka seria poza treningiem nie zmienia planu ani poziomów — dokłada się do odznak ćwiczeń i do postaci.',
+    snacksLink: 'Przekąski — dziś i historia',
+    firstSnack: 'Zapisz pierwszą przekąskę',
+    exBadges: 'Odznaki ćwiczenia',
+    badgesNote: 'Rekord dnia, tygodnia i miesiąca oraz suma — z treningów i przekąsek razem.',
+    snacksWith: (n: number) => ` Przekąsek z tym ruchem: ${n}.`,
+    logSnack: 'Zapisz przekąskę z tym ćwiczeniem',
+    workouts: (n: number): string => (n === 1 ? 'trening' : 'treningów'),
+    repsTile: 'powtórzeń',
+    tonnage: 'tonaż',
+    weeks: (n: number) => `${n} tyg.`,
+    tenure: 'staż',
+    lead: (
+      <>
+        Wszystko, co zrobiłeś, policzone w jednym miejscu. Bez konta, bez maila i bez
+        wysyłania czegokolwiek na zewnątrz — te liczby nie opuszczają tej przeglądarki.
+      </>
+    ) as ReactNode,
+    firstLine: (date: string, ago: string, n: number) =>
+      `Pierwszy zapisany trening: ${date}. Ostatni: ${ago}. Różnych ruchów w historii: ${n}.`,
+    yourExercises: 'Twoje ćwiczenia',
+    emptyTitle: 'Jeszcze nic tu nie ma',
+    emptyText:
+      'Ta lista bierze się z historii, więc pierwszy zamknięty trening ją zakłada — pojawią się na niej ćwiczenia zrobione, nie zaplanowane.',
+    listNote: (
+      <>
+        Lista bierze się z historii, więc rośnie sama. Kliknij dowolne ćwiczenie, żeby
+        zobaczyć, co się z nim działo w czasie.
+      </>
+    ) as ReactNode,
+    showAll: (n: number) => `Pokaż wszystkie (${n})`,
+    history: 'Historia treningów',
+    historyEmpty: 'Historia pusta',
+    historyEmptyText: 'Pierwszy zamknięty trening zajmie tu miejsce na zawsze.',
+    outOfStats: 'poza statystykami',
+    kgReps: 'kg·p',
+    showHistory: (n: number) => `Pokaż całą historię (${n})`,
+    sessions: (n: number): string => (n === 1 ? 'sesja' : n < 5 ? 'sesje' : 'sesji'),
+    best: (n: number, unit: string) => `rekord ${n} ${unit}`,
+    timeline: (n: number) => `Przebieg: ${n} ${plural(n, ['część', 'części', 'części'])}`,
+    loggedAfter: (d: string) => `zapisane po ${d}`,
+    gapBefore: 'przejście przed:',
+    verdict: {
+      up: (t: Trend) => `W górę o ${t.pct}% — z ${t.from} na ${t.to}. Tak wygląda progresja na liczbach.`,
+      down: (t: Trend) =>
+        `W dół o ${Math.abs(t.pct)}% — z ${t.from} na ${t.to}. Spadek po przerwie albo po zmianie ciężaru jest normalny; wykres nie ocenia, tylko liczy.`,
+      flat: (t: Trend) =>
+        `Bez zmian — ${t.from} wtedy, ${t.to} teraz. Utrzymanie poziomu też jest wynikiem, zwłaszcza dłużej niż miesiąc.`,
+    } as Record<Trend['dir'], (t: Trend) => string>,
+    metric: {
+      e1rm: 'szacowane maksimum',
+      reps: 'powtórzenia w sesji',
+      secs: 'sekundy w sesji',
+    } as Record<Trend['metric'], string>,
+    noExercise: 'Nie ma takiego ćwiczenia',
+    badId: (id: string) => `Identyfikator „${id}” do niczego nie pasuje.`,
+    onlySnacks: 'Na razie tylko w przekąskach — wykres sesji ruszy z pierwszym treningiem.',
+    noHistory: (name: string) => `${name} — jeszcze bez historii`,
+    noHistoryText: 'Historia zaczyna się przy pierwszym zamkniętym treningu albo pierwszej przekąsce z tym ruchem.',
+    atlas: 'Zobacz technikę w atlasie',
+    chartMax: 'szacowane maksimum (kg)',
+    chartResult: (unit: string) => `wynik sesji (${unit})`,
+    howItWent: 'Jak to szło',
+    basis: (metric: string, span: number) =>
+      `Liczone na wielkości „${metric}”: średnia z pierwszych ${span} ${span === 1 ? 'sesji' : 'sesji'} kontra średnia z ostatnich ${span}. Pojedyncze treningi skaczą za bardzo, żeby cokolwiek z nich wyczytać.`,
+    tooFew: (n: number) =>
+      `Za mało danych na kierunek — kierunek pokazuje się od czwartej sesji. Na razie masz ${n} ${n === 1 ? 'sesję' : n < 5 ? 'sesje' : 'sesji'}.`,
+    sessionsTile: 'sesji',
+    secondsTile: 'sekund',
+    heaviest: 'najcięższy',
+    bestSet: 'rekord serii',
+    inHistory: 'w historii',
+    firstLast: (date: string, ago: string) => `Pierwszy raz ${date}, ostatni ${ago}.`,
+    maxNow: (kg: number) => ` Aktualne szacowane maksimum: ${kg} kg.`,
+    kcalAll: (kcal: string) => ` Łącznie ${kcal} ponad spoczynek, z serii i przerw.`,
+    noKcal: ' Wpisz wagę w profilu, a przy każdej sesji pojawią się kalorie.',
+    bySession: 'Sesja po sesji',
+    technique: 'Technika, tor ruchu i wideo',
+    effort: { easy: 'łatwo', solid: 'solidnie', max: 'na maksa' } as Record<string, string>,
+  },
+  en: {
+    sep: '/',
+    today: 'today',
+    yesterday: 'yesterday',
+    daysAgo: (d: number) => `${d} days ago`,
+    reps: 'reps',
+    snacksTitle: 'Exercise snacks',
+    snackLine: (count: number, today: number, run: number, distinct: number) =>
+      `${count} ${pluralEn(count, 'snack', 'snacks')} so far, ${today} today. Longest streak: ${run} ${pluralEn(run, 'day', 'days')} in a row; different exercises: ${distinct}.`,
+    noSnacks:
+      'None yet. A short set outside a workout doesn’t change your plan or levels — it counts towards exercise badges and your character.',
+    snacksLink: 'Snacks — today and history',
+    firstSnack: 'Log your first snack',
+    exBadges: 'Exercise badges',
+    badgesNote: 'Best day, week and month, plus the total — workouts and snacks together.',
+    snacksWith: (n: number) => ` Snacks with this exercise: ${n}.`,
+    logSnack: 'Log a snack with this exercise',
+    workouts: (n: number) => pluralEn(n, 'workout', 'workouts'),
+    repsTile: 'reps',
+    tonnage: 'tonnage',
+    weeks: (n: number) => `${n} wk`,
+    tenure: 'training age',
+    lead: (
+      <>
+        Everything you’ve done, counted in one place. No account, no email and nothing sent anywhere — these numbers
+        never leave this browser.
+      </>
+    ),
+    firstLine: (date: string, ago: string, n: number) =>
+      `First logged workout: ${date}. Latest: ${ago}. Different exercises in your history: ${n}.`,
+    yourExercises: 'Your exercises',
+    emptyTitle: 'Nothing here yet',
+    emptyText:
+      'This list comes from your history, so your first finished workout starts it — it shows exercises you’ve done, not ones you’ve planned.',
+    listNote: (
+      <>
+        The list comes from your history, so it grows by itself. Tap any exercise to see how it has gone over time.
+      </>
+    ),
+    showAll: (n: number) => `Show all (${n})`,
+    history: 'Workout history',
+    historyEmpty: 'No history yet',
+    historyEmptyText: 'Your first finished workout will take its place here for good.',
+    outOfStats: 'not in stats',
+    kgReps: 'kg·reps',
+    showHistory: (n: number) => `Show full history (${n})`,
+    sessions: (n: number) => pluralEn(n, 'session', 'sessions'),
+    best: (n: number, unit: string) => `best ${n} ${unit}`,
+    timeline: (n: number) => `Timeline: ${n} ${pluralEn(n, 'part', 'parts')}`,
+    loggedAfter: (d: string) => `logged after ${d}`,
+    gapBefore: 'transition before:',
+    verdict: {
+      up: (t: Trend) => `Up ${t.pct}% — from ${t.from} to ${t.to}. That’s what progression looks like in numbers.`,
+      down: (t: Trend) =>
+        `Down ${Math.abs(t.pct)}% — from ${t.from} to ${t.to}. A dip after a break or a weight change is normal; the chart doesn’t judge, it just counts.`,
+      flat: (t: Trend) =>
+        `No change — ${t.from} then, ${t.to} now. Holding your level is a result too, especially for more than a month.`,
+    },
+    metric: {
+      e1rm: 'estimated max',
+      reps: 'reps per session',
+      secs: 'seconds per session',
+    },
+    noExercise: 'No such exercise',
+    badId: (id: string) => `The ID “${id}” doesn’t match anything.`,
+    onlySnacks: 'Only in snacks so far — the session chart starts with your first workout.',
+    noHistory: (name: string) => `${name} — no history yet`,
+    noHistoryText: 'History starts with your first finished workout or your first snack with this exercise.',
+    atlas: 'See the technique in the atlas',
+    chartMax: 'estimated max (kg)',
+    chartResult: (unit: string) => `session result (${unit})`,
+    howItWent: 'How it went',
+    basis: (metric: string, span: number) =>
+      `Measured on “${metric}”: the average of the first ${span} ${pluralEn(span, 'session', 'sessions')} against the average of the last ${span}. Single workouts jump around too much to read anything from them.`,
+    tooFew: (n: number) =>
+      `Not enough data for a trend — it shows from the fourth session. So far you have ${n} ${pluralEn(n, 'session', 'sessions')}.`,
+    sessionsTile: 'sessions',
+    secondsTile: 'seconds',
+    heaviest: 'heaviest',
+    bestSet: 'best set',
+    inHistory: 'in history',
+    firstLast: (date: string, ago: string) => `First time ${date}, latest ${ago}.`,
+    maxNow: (kg: number) => ` Current estimated max: ${kg} kg.`,
+    kcalAll: (kcal: string) => ` In total ${kcal} above resting, from sets and rests.`,
+    noKcal: ' Enter your weight in your profile and every session will show its calories.',
+    bySession: 'Session by session',
+    technique: 'Technique, movement path and video',
+    effort: { easy: 'easy', solid: 'solid', max: 'all out' },
+  },
+});
+
+const num = (n: number): string => Math.round(n).toLocaleString(LOCALE);
 
 const tons = (kg: number): string =>
   kg >= 1000
-    ? `${(kg / 1000).toLocaleString('pl-PL', { maximumFractionDigits: 1 })} t`
+    ? `${(kg / 1000).toLocaleString(LOCALE, { maximumFractionDigits: 1 })} t`
     : `${num(kg)} kg`;
 
 const dmy = (iso: string): string => {
   const d = new Date(iso);
-  return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}`;
+  return `${String(d.getDate()).padStart(2, '0')}${T.sep}${String(d.getMonth() + 1).padStart(2, '0')}${T.sep}${d.getFullYear()}`;
 };
 
 const dm = (iso: string): string => {
   const d = new Date(iso);
-  return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}`;
+  return `${String(d.getDate()).padStart(2, '0')}${T.sep}${String(d.getMonth() + 1).padStart(2, '0')}`;
 };
 
 const daysAgo = (iso: string): number =>
@@ -55,14 +239,12 @@ const daysAgo = (iso: string): number =>
 
 const agoLabel = (iso: string): string => {
   const d = daysAgo(iso);
-  return d <= 0 ? 'dzisiaj' : d === 1 ? 'wczoraj' : `${d} dni temu`;
+  return d <= 0 ? T.today : d === 1 ? T.yesterday : T.daysAgo(d);
 };
 
-const unitOf = (id: ExerciseId): string => (ex(id).unit === 'secs' ? 's' : 'powt.');
+const unitOf = (id: ExerciseId): string => (ex(id).unit === 'secs' ? 's' : T.reps);
 
 /* ---------------- Zakładka profilu ---------------- */
-
-const SNACK_FORMS = ['przekąska', 'przekąski', 'przekąsek'] as const;
 
 /**
  * Przekąski w profilu: jednym zdaniem ile, jak regularnie i czym — i wejście do pełnego
@@ -73,15 +255,13 @@ function SnackSummary({ state }: { state: AppState }) {
   const today = snacksOn(state, dayKey(Date.now())).length;
   return (
     <div className="grp">
-      <h2>Przekąski ruchowe</h2>
+      <h2>{T.snacksTitle}</h2>
       <p className="tight">
-        {st.count
-          ? `${st.count} ${plural(st.count, SNACK_FORMS)} od początku, dziś ${today}. Najdłuższy ciąg: ${st.run} ${plural(st.run, ['dzień', 'dni', 'dni'])} z rzędu, różnych ćwiczeń: ${st.distinct}.`
-          : 'Jeszcze żadnej. Krótka seria poza treningiem nie zmienia planu ani poziomów — dokłada się do odznak ćwiczeń i do postaci.'}
+        {st.count ? T.snackLine(st.count, today, st.run, st.distinct) : T.noSnacks}
       </p>
       <div style={{ marginTop: 10 }}>
         <button className="btn ghost sm" onClick={() => go(snacksPath())}>
-          {st.count ? 'Przekąski — dziś i historia' : 'Zapisz pierwszą przekąskę'}
+          {st.count ? T.snacksLink : T.firstSnack}
         </button>
       </div>
     </div>
@@ -94,10 +274,12 @@ function ExerciseBadgesBlock({ state, id }: { state: AppState; id: ExerciseId })
   const snacks = snacksOf(state).filter((s) => s.ex === id).length;
   return (
     <>
-      <div className="sect-label">Odznaki ćwiczenia {badgeTally(rows)}</div>
+      <div className="sect-label">
+        {T.exBadges} {badgeTally(rows)}
+      </div>
       <p className="ach-note">
-        Rekord dnia, tygodnia i miesiąca oraz suma — z treningów i przekąsek razem.
-        {snacks ? ` Przekąsek z tym ruchem: ${snacks}.` : ''}
+        {T.badgesNote}
+        {snacks ? T.snacksWith(snacks) : ''}
       </p>
       <div className="wk-body">
         {rows.map((r) => (
@@ -107,7 +289,7 @@ function ExerciseBadgesBlock({ state, id }: { state: AppState; id: ExerciseId })
       <div className="wrap">
         <div className="actions">
           <button className="btn ghost wide" onClick={() => go(snackAddPath(id))}>
-            Zapisz przekąskę z tym ćwiczeniem
+            {T.logSnack}
           </button>
         </div>
       </div>
@@ -139,10 +321,10 @@ export function ProfileView({
   const weeks = first ? weeksBetween(first.date, new Date().toISOString()) : 0;
 
   const tiles: [string, string][] = [
-    [num(m.workouts), m.workouts === 1 ? 'trening' : 'treningów'],
-    [num(m.reps), 'powtórzeń'],
-    [tons(m.tonnage), 'tonaż'],
-    [weeks ? `${weeks} tyg.` : '—', 'staż'],
+    [num(m.workouts), T.workouts(m.workouts)],
+    [num(m.reps), T.repsTile],
+    [tons(m.tonnage), T.tonnage],
+    [weeks ? T.weeks(weeks) : '—', T.tenure],
   ];
 
   const shownExercises = allExercises ? done : done.slice(0, 12);
@@ -152,10 +334,7 @@ export function ProfileView({
   return (
     <>
       <div className="wrap">
-        <p className="lead">
-          Wszystko, co zrobiłeś, policzone w jednym miejscu. Bez konta, bez maila i bez
-          wysyłania czegokolwiek na zewnątrz — te liczby nie opuszczają tej przeglądarki.
-        </p>
+        <p className="lead">{T.lead}</p>
       </div>
 
       <CharacterCard state={state} onAvatar={onAvatar} />
@@ -171,8 +350,7 @@ export function ProfileView({
         </div>
         {first && (
           <p className="tight" style={{ marginTop: 10 }}>
-            Pierwszy zapisany trening: {dmy(first.date)}. Ostatni: {agoLabel(history[0]!.date)}.
-            Różnych ruchów w historii: {done.length}.
+            {T.firstLine(dmy(first.date), agoLabel(history[0]!.date), done.length)}
           </p>
         )}
       </div>
@@ -189,18 +367,12 @@ export function ProfileView({
       <CardioSummary state={state} />
       <PromoCard />
 
-      <div className="sect-label">Twoje ćwiczenia</div>
+      <div className="sect-label">{T.yourExercises}</div>
       {!done.length ? (
-        <EmptyState
-          title="Jeszcze nic tu nie ma"
-          text="Ta lista bierze się z historii, więc pierwszy zamknięty trening ją zakłada — pojawią się na niej ćwiczenia zrobione, nie zaplanowane."
-        />
+        <EmptyState title={T.emptyTitle} text={T.emptyText} />
       ) : (
         <>
-          <p className="ach-note">
-            Lista bierze się z historii, więc rośnie sama. Kliknij dowolne ćwiczenie, żeby
-            zobaczyć, co się z nim działo w czasie.
-          </p>
+          <p className="ach-note">{T.listNote}</p>
           {shownExercises.map((s) => (
             <ExerciseRowLink key={s.id} state={state} sum={s} />
           ))}
@@ -211,18 +383,18 @@ export function ProfileView({
                 style={{ marginTop: 10 }}
                 onClick={() => setAllExercises(true)}
               >
-                Pokaż wszystkie ({done.length})
+                {T.showAll(done.length)}
               </button>
             </div>
           )}
         </>
       )}
 
-      <div className="sect-label">Historia treningów</div>
+      <div className="sect-label">{T.history}</div>
       {!history.length ? (
         <EmptyState
-          title="Historia pusta"
-          text="Pierwszy zamknięty trening zajmie tu miejsce na zawsze."
+          title={T.historyEmpty}
+          text={T.historyEmptyText}
           cast={{ who: 'gosia', mood: 'longing' }}
         />
       ) : (
@@ -234,13 +406,14 @@ export function ProfileView({
                 <div className="h-date">{dm(e.date)}</div>
                 <div>
                   <div>
-                    <b>{e.workout}</b>
+                    {/* Gotowy trening — nazwą z biblioteki w języku wizyty; własny — tak, jak go nazwano. */}
+                    <b>{BUILTIN.find((w) => w.id === e.wid)?.name ?? e.workout}</b>
                     {/* Czas stoi zawsze, gdy był zegar; spoza 3 min – 4 h tylko nie wchodzi do statystyk i odznak. */}
                     {e.time && (
                       <span className="h-time">
                         {' '}
                         · {durationText(e.time.secs)}
-                        {!timed(e.time) && <span className="h-out"> (poza statystykami)</span>}
+                        {!timed(e.time) && <span className="h-out"> ({T.outOfStats})</span>}
                       </span>
                     )}
                   </div>
@@ -252,7 +425,7 @@ export function ProfileView({
                   {e.time && e.time.parts.length > 0 && <TimeLine time={e.time} />}
                 </div>
                 <div className="streak">
-                  {num(sessionTonnage(e))} kg·p
+                  {num(sessionTonnage(e))} {T.kgReps}
                   {burn && <span className="kcal-line">{kcalText(burn.active)}</span>}
                 </div>
               </div>
@@ -265,7 +438,7 @@ export function ProfileView({
                 style={{ marginTop: 10 }}
                 onClick={() => setAllHistory(true)}
               >
-                Pokaż całą historię ({history.length})
+                {T.showHistory(history.length)}
               </button>
             </div>
           )}
@@ -290,14 +463,14 @@ function ExerciseRowLink({ state, sum }: { state: AppState; sum: ExerciseSummary
       <div>
         <div className="ex-name">{ex(sum.id).name}</div>
         <div className="ex-target">
-          {sum.sessions} {sum.sessions === 1 ? 'sesja' : sum.sessions < 5 ? 'sesje' : 'sesji'}
+          {sum.sessions} {T.sessions(sum.sessions)}
           {' · '}
           {agoLabel(sum.last)}
           {t && ` · ${t.dir === 'up' ? '▲' : t.dir === 'down' ? '▼' : '='} ${Math.abs(t.pct)}%`}
         </div>
       </div>
       <div className="streak">
-        {p.e1rm ? `1RM ≈ ${p.e1rm} kg` : `rekord ${sum.bestSet} ${unitOf(sum.id)}`}
+        {p.e1rm ? `1RM ≈ ${p.e1rm} kg` : T.best(sum.bestSet, unitOf(sum.id))}
         <Sparkline hist={p.hist} />
       </div>
     </button>
@@ -312,17 +485,20 @@ function TimeLine({ time }: { time: LogTime }) {
   const gaps = new Map(transitions(time).map((g) => [g.block, g.secs]));
   return (
     <details className="h-parts">
-      <summary>
-        Przebieg: {time.parts.length} {plural(time.parts.length, ['część', 'części', 'części'])}
-      </summary>
+      <summary>{T.timeline(time.parts.length)}</summary>
       <ol>
         {time.parts.map((p) => {
           const gap = gaps.get(p.block);
           return (
             <li key={p.block}>
               {p.ex.map((id) => EX[id]?.name ?? id).join(' + ')} —{' '}
-              {p.at !== undefined ? durationText(p.end - p.at) : `zapisane po ${durationText(p.end)}`}
-              {gap !== undefined && <span className="h-gap"> · przejście przed: {formatClock(gap)}</span>}
+              {p.at !== undefined ? durationText(p.end - p.at) : T.loggedAfter(durationText(p.end))}
+              {gap !== undefined && (
+                <span className="h-gap">
+                  {' '}
+                  · {T.gapBefore} {formatClock(gap)}
+                </span>
+              )}
             </li>
           );
         })}
@@ -333,19 +509,9 @@ function TimeLine({ time }: { time: LogTime }) {
 
 /* ---------------- Historia jednego ćwiczenia ---------------- */
 
-const VERDICT: Record<Trend['dir'], (t: Trend, unit: string) => string> = {
-  up: (t) => `W górę o ${t.pct}% — z ${t.from} na ${t.to}. Tak wygląda progresja na liczbach.`,
-  down: (t) =>
-    `W dół o ${Math.abs(t.pct)}% — z ${t.from} na ${t.to}. Spadek po przerwie albo po zmianie ciężaru jest normalny; wykres nie ocenia, tylko liczy.`,
-  flat: (t) =>
-    `Bez zmian — ${t.from} wtedy, ${t.to} teraz. Utrzymanie poziomu też jest wynikiem, zwłaszcza dłużej niż miesiąc.`,
-};
+const VERDICT: Record<Trend['dir'], (t: Trend, unit: string) => string> = T.verdict;
 
-const METRIC_LABEL: Record<Trend['metric'], string> = {
-  e1rm: 'szacowane maksimum',
-  reps: 'powtórzenia w sesji',
-  secs: 'sekundy w sesji',
-};
+const METRIC_LABEL: Record<Trend['metric'], string> = T.metric;
 
 export function ExerciseStatsPage({ state, id }: { state: AppState; id: ExerciseId }) {
   const m = EX[id];
@@ -355,8 +521,8 @@ export function ExerciseStatsPage({ state, id }: { state: AppState; id: Exercise
     return (
       <div className="wrap">
         <EmptyState
-          title="Nie ma takiego ćwiczenia"
-          text={`Identyfikator „${id}” do niczego nie pasuje.`}
+          title={T.noExercise}
+          text={T.badId(id)}
           cast={{ who: 'siwy', mood: 'wise' }}
         />
       </div>
@@ -374,16 +540,16 @@ export function ExerciseStatsPage({ state, id }: { state: AppState; id: Exercise
               <Chip state={state} id={id} />
               <div>
                 <div className="ex-group">
-                  {m.group} · {GEAR_LABEL[gearOf(id)]}
+                  {groupLabel(m.group)} · {GEAR_LABEL[gearOf(id)]}
                 </div>
                 <h2 className="ex-h">{m.name}</h2>
-                <div className="ex-target">Na razie tylko w przekąskach — wykres sesji ruszy z pierwszym treningiem.</div>
+                <div className="ex-target">{T.onlySnacks}</div>
               </div>
             </div>
           ) : (
             <EmptyState
-              title={`${m.name} — jeszcze bez historii`}
-              text="Historia zaczyna się przy pierwszym zamkniętym treningu albo pierwszej przekąsce z tym ruchem."
+              title={T.noHistory(m.name)}
+              text={T.noHistoryText}
             />
           )}
         </div>
@@ -393,7 +559,7 @@ export function ExerciseStatsPage({ state, id }: { state: AppState; id: Exercise
           <div className="wrap">
             <div className="actions">
               <button className="btn wide" onClick={() => go(snackAddPath(id))}>
-                Zapisz przekąskę z tym ćwiczeniem
+                {T.logSnack}
               </button>
             </div>
           </div>
@@ -401,7 +567,7 @@ export function ExerciseStatsPage({ state, id }: { state: AppState; id: Exercise
         <div className="wrap">
           <div className="actions">
             <button className="btn ghost wide" onClick={() => go(exercisePath(id))}>
-              Zobacz technikę w atlasie
+              {T.atlas}
             </button>
           </div>
         </div>
@@ -421,7 +587,7 @@ export function ExerciseStatsPage({ state, id }: { state: AppState; id: Exercise
   const chart = e1rms.length >= 3 ? e1rms : rows.map((r) => r.total);
   const burns = rows.map((r) => rowBurn(state, id, r));
   const kcalAll = burns.every((b) => b !== null) ? burns.reduce<number>((a, b) => a + (b ?? 0), 0) : null;
-  const chartLabel = e1rms.length >= 3 ? 'szacowane maksimum (kg)' : `wynik sesji (${unit})`;
+  const chartLabel = e1rms.length >= 3 ? T.chartMax : T.chartResult(unit);
 
   return (
     <>
@@ -430,7 +596,7 @@ export function ExerciseStatsPage({ state, id }: { state: AppState; id: Exercise
           <Chip state={state} id={id} />
           <div>
             <div className="ex-group">
-              {m.group} · {GEAR_LABEL[gearOf(id)]}
+              {groupLabel(m.group)} · {GEAR_LABEL[gearOf(id)]}
             </div>
             <h2 className="ex-h">{m.name}</h2>
             <div className="ex-target">{planLabel(state, id)}</div>
@@ -439,21 +605,14 @@ export function ExerciseStatsPage({ state, id }: { state: AppState; id: Exercise
       </div>
 
       <div className="grp">
-        <h2>Jak to szło</h2>
+        <h2>{T.howItWent}</h2>
         {t ? (
           <>
             <p className={`trend ${t.dir}`}>{VERDICT[t.dir](t, unit)}</p>
-            <p className="tight">
-              Liczone na wielkości „{METRIC_LABEL[t.metric]}”: średnia z pierwszych {t.span}{' '}
-              {t.span === 1 ? 'sesji' : 'sesji'} kontra średnia z ostatnich {t.span}. Pojedyncze
-              treningi skaczą za bardzo, żeby cokolwiek z nich wyczytać.
-            </p>
+            <p className="tight">{T.basis(METRIC_LABEL[t.metric], t.span)}</p>
           </>
         ) : (
-          <p className="tight">
-            Za mało danych na kierunek — kierunek pokazuje się od czwartej sesji. Na razie
-            masz {rows.length} {rows.length === 1 ? 'sesję' : rows.length < 5 ? 'sesje' : 'sesji'}.
-          </p>
+          <p className="tight">{T.tooFew(rows.length)}</p>
         )}
         <Trendline values={chart} label={chartLabel} />
         {EX_JOKES[id] && <p className="exjoke">{EX_JOKES[id]}</p>}
@@ -463,33 +622,31 @@ export function ExerciseStatsPage({ state, id }: { state: AppState; id: Exercise
         <div className="tiles">
           <div className="tile">
             <b>{rows.length}</b>
-            <span>sesji</span>
+            <span>{T.sessionsTile}</span>
           </div>
           <div className="tile">
             <b>{num(total)}</b>
-            <span>{unit === 's' ? 'sekund' : 'powtórzeń'}</span>
+            <span>{unit === 's' ? T.secondsTile : T.repsTile}</span>
           </div>
           <div className="tile">
             <b>{weights.length ? `${Math.max(...weights)} kg` : `${bestSet} ${unit}`}</b>
-            <span>{weights.length ? 'najcięższy' : 'rekord serii'}</span>
+            <span>{weights.length ? T.heaviest : T.bestSet}</span>
           </div>
           <div className="tile">
-            <b>{tonnage ? tons(tonnage) : `${span} tyg.`}</b>
-            <span>{tonnage ? 'tonaż' : 'w historii'}</span>
+            <b>{tonnage ? tons(tonnage) : T.weeks(span)}</b>
+            <span>{tonnage ? T.tonnage : T.inHistory}</span>
           </div>
         </div>
         <p className="tight" style={{ marginTop: 10 }}>
-          Pierwszy raz {dmy(rows[0]!.date)}, ostatni {agoLabel(rows[rows.length - 1]!.date)}.
-          {p.e1rm ? ` Aktualne szacowane maksimum: ${p.e1rm} kg.` : ''}
-          {kcalAll !== null
-            ? ` Łącznie ${kcalText(kcalAll)} ponad spoczynek, z serii i przerw.`
-            : ' Wpisz wagę w profilu, a przy każdej sesji pojawią się kalorie.'}
+          {T.firstLast(dmy(rows[0]!.date), agoLabel(rows[rows.length - 1]!.date))}
+          {p.e1rm ? T.maxNow(p.e1rm) : ''}
+          {kcalAll !== null ? T.kcalAll(kcalText(kcalAll)) : T.noKcal}
         </p>
       </div>
 
       <ExerciseBadgesBlock state={state} id={id} />
 
-      <div className="sect-label">Sesja po sesji</div>
+      <div className="sect-label">{T.bySession}</div>
       {rows
         .map((r, i) => ({ r, kcal: burns[i] ?? null }))
         .reverse()
@@ -500,7 +657,7 @@ export function ExerciseStatsPage({ state, id }: { state: AppState; id: Exercise
       <div className="wrap">
         <div className="actions">
           <button className="btn ghost wide" onClick={() => go(exercisePath(id))}>
-            Technika, tor ruchu i wideo
+            {T.technique}
           </button>
         </div>
       </div>
@@ -508,11 +665,7 @@ export function ExerciseStatsPage({ state, id }: { state: AppState; id: Exercise
   );
 }
 
-const EFFORT_MARK: Record<string, string> = {
-  easy: 'łatwo',
-  solid: 'solidnie',
-  max: 'na maksa',
-};
+const EFFORT_MARK: Record<string, string> = T.effort;
 
 function SessionRow({ row, unit, kcal }: { row: ExerciseRow; unit: string; kcal: number | null }) {
   return (

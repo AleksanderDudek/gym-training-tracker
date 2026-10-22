@@ -4,6 +4,12 @@ import type { MoveName, PropSpot } from '../data/moves';
 import { STAGE, face, headAngle, polyline, sampleCycle, skeleton } from '../engine/pose';
 import type { Pt, Skeleton } from '../engine/pose';
 import type { Gear } from '../types';
+import { text } from '../i18n';
+
+const T = text({
+  pl: { pause: 'Zatrzymaj', play: 'Odtwórz', frame: 'klatka ruchu' },
+  en: { pause: 'Pause', play: 'Play', frame: 'movement frame' },
+});
 
 /**
  * Manekin ćwiczeń: ruch wykonuje ktoś z obsady — Gustaw albo Gosia.
@@ -319,11 +325,11 @@ export function AnimatedMannequin({
       <div className="mq-side">
         <p className="mq-alt">{MOVES[move].alt}</p>
         <button className="btn sm ghost" onClick={toggle} aria-pressed={playing}>
-          {playing ? 'Zatrzymaj' : 'Odtwórz'}
+          {playing ? T.pause : T.play}
         </button>
         {!playing && (
           <label className="mq-scrub">
-            <span>klatka ruchu</span>
+            <span>{T.frame}</span>
             <input
               type="range"
               min={0}

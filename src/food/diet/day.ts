@@ -1,5 +1,43 @@
+import { num, text } from '../../i18n';
 import type { MacroTargets } from './profiles';
 import type { Nutrients } from './types';
+
+const T = text({
+  pl: {
+    kcalOver: (kcal: number) => `${kcal} kcal ponad cel`,
+    kcalUnder: (kcal: number) => `${kcal} kcal poniżej celu – za mało jedzenia też spowalnia`,
+    kcalLeft: (kcal: number) => `zostało ${kcal} kcal`,
+    onTarget: 'w normie',
+    proteinShort: (g: string) => `brakuje ${g} białka`,
+    proteinOk: 'białko w normie',
+    carbsOver: (g: string) => `${g} węglowodanów ponad limit`,
+    carbsLeft: (g: string) => `zostało ${g} węglowodanów`,
+    fatOver: (g: string) => `${g} tłuszczu ponad limit`,
+    fatShort: (g: string) => `za mało tłuszczu (${g} do minimum) – potrzebny do hormonów i witamin`,
+    fatLeft: (g: string) => `zostało ${g} tłuszczu`,
+    weekOnPlan: 'Ten tydzień idzie zgodnie z planem.',
+    weekSurplus: (kcal: number, days: number) =>
+      `W tym tygodniu zjedzone ${kcal} kcal ponad plan – rozkładam to na ${days} ${days === 1 ? 'dzień' : 'dni'}.`,
+    weekDeficit: (kcal: number) => `W tym tygodniu ${kcal} kcal mniej niż w planie – możesz dziś zjeść trochę więcej.`,
+  },
+  en: {
+    kcalOver: (kcal: number) => `${num(kcal)} kcal over the goal`,
+    kcalUnder: (kcal: number) => `${num(kcal)} kcal under the goal – eating too little slows you down too`,
+    kcalLeft: (kcal: number) => `${num(kcal)} kcal left`,
+    onTarget: 'on target',
+    proteinShort: (g: string) => `${g} protein to go`,
+    proteinOk: 'protein on target',
+    carbsOver: (g: string) => `${g} carbs over the limit`,
+    carbsLeft: (g: string) => `${g} carbs left`,
+    fatOver: (g: string) => `${g} fat over the limit`,
+    fatShort: (g: string) => `too little fat (${g} to the minimum) – you need it for hormones and vitamins`,
+    fatLeft: (g: string) => `${g} fat left`,
+    weekOnPlan: 'This week is going to plan.',
+    weekSurplus: (kcal: number, days: number) =>
+      `This week you’ve eaten ${num(kcal)} kcal over the plan – I’m spreading it over ${days} ${days === 1 ? 'day' : 'days'}.`,
+    weekDeficit: (kcal: number) => `This week you’re ${num(kcal)} kcal under the plan – you can eat a bit more today.`,
+  },
+});
 
 export interface DayTotals {
   kcal: number;
@@ -29,6 +67,7 @@ export function totals(entries: Nutrients[]): DayTotals {
   };
 }
 
+// i18n-ignore: status keys (CSS classes, comparisons), not text
 export type Status = 'brak' | 'ok' | 'nadmiar';
 export interface MacroLine {
   status: Status;
@@ -49,24 +88,26 @@ export function macroStatus(t: MacroTargets, eaten: DayTotals, dayDone: boolean)
   const kcalDelta = eaten.kcal - t.kcal;
   const kcal: MacroLine =
     kcalDelta > t.kcal * 0.05
-      ? { status: 'nadmiar', delta: kcalDelta, note: `${Math.round(kcalDelta)} kcal ponad cel` }
+      ? { status: 'nadmiar', delta: kcalDelta, note: T.kcalOver(Math.round(kcalDelta)) }
       : dayDone && kcalDelta < -t.kcal * 0.15
         ? {
+            // i18n-ignore: status key
             status: 'brak',
             delta: kcalDelta,
-            note: `${Math.round(-kcalDelta)} kcal poniżej celu – za mało jedzenia też spowalnia`,
+            note: T.kcalUnder(Math.round(-kcalDelta)),
           }
         : {
             status: 'ok',
             delta: kcalDelta,
-            note: kcalDelta <= 0 ? `zostało ${Math.round(-kcalDelta)} kcal` : 'w normie',
+            note: kcalDelta <= 0 ? T.kcalLeft(Math.round(-kcalDelta)) : T.onTarget,
           };
 
   const proteinDelta = eaten.protein - t.protein.target;
   const protein: MacroLine =
     eaten.protein < t.protein.min || (!dayDone && proteinDelta < 0)
-      ? { status: 'brak', delta: Math.round(proteinDelta), note: `brakuje ${g(proteinDelta)} białka` }
-      : { status: 'ok', delta: Math.round(proteinDelta), note: 'białko w normie' };
+      ? // i18n-ignore: status key
+        { status: 'brak', delta: Math.round(proteinDelta), note: T.proteinShort(g(proteinDelta)) }
+      : { status: 'ok', delta: Math.round(proteinDelta), note: T.proteinOk };
 
   const carbsDelta = eaten.carbs - t.carbs.target;
   const carbsCeiling = t.carbs.max ?? t.carbs.target * 1.25;
@@ -75,29 +116,30 @@ export function macroStatus(t: MacroTargets, eaten: DayTotals, dayDone: boolean)
       ? {
           status: 'nadmiar',
           delta: Math.round(carbsDelta),
-          note: `${g(eaten.carbs - carbsCeiling)} węglowodanów ponad limit`,
+          note: T.carbsOver(g(eaten.carbs - carbsCeiling)),
         }
       : {
           status: 'ok',
           delta: Math.round(carbsDelta),
-          note: carbsDelta <= 0 ? `zostało ${g(carbsDelta)} węglowodanów` : 'w normie',
+          note: carbsDelta <= 0 ? T.carbsLeft(g(carbsDelta)) : T.onTarget,
         };
 
   const fatDelta = eaten.fat - t.fat.target;
   const fatCeiling = t.fat.max ?? Number.POSITIVE_INFINITY;
   const fat: MacroLine =
     eaten.fat > fatCeiling
-      ? { status: 'nadmiar', delta: Math.round(fatDelta), note: `${g(eaten.fat - fatCeiling)} tłuszczu ponad limit` }
+      ? { status: 'nadmiar', delta: Math.round(fatDelta), note: T.fatOver(g(eaten.fat - fatCeiling)) }
       : dayDone && eaten.fat < t.fat.min
         ? {
+            // i18n-ignore: status key
             status: 'brak',
             delta: Math.round(fatDelta),
-            note: `za mało tłuszczu (${g(t.fat.min - eaten.fat)} do minimum) – potrzebny do hormonów i witamin`,
+            note: T.fatShort(g(t.fat.min - eaten.fat)),
           }
         : {
             status: 'ok',
             delta: Math.round(fatDelta),
-            note: fatDelta <= 0 ? `zostało ${g(fatDelta)} tłuszczu` : 'w normie',
+            note: fatDelta <= 0 ? T.fatLeft(g(fatDelta)) : T.onTarget,
           };
 
   return { kcal, protein, carbs, fat };
@@ -148,9 +190,9 @@ export function weeklyAdjustment(
   const delta = Math.round(Math.max(-cap, Math.min(cap, raw)) / 10) * 10 || 0;
   const explanation =
     surplus === 0
-      ? 'Ten tydzień idzie zgodnie z planem.'
+      ? T.weekOnPlan
       : surplus > 0
-        ? `W tym tygodniu zjedzone ${Math.round(surplus)} kcal ponad plan – rozkładam to na ${daysLeft} ${daysLeft === 1 ? 'dzień' : 'dni'}.`
-        : `W tym tygodniu ${Math.round(-surplus)} kcal mniej niż w planie – możesz dziś zjeść trochę więcej.`;
+        ? T.weekSurplus(Math.round(surplus), daysLeft)
+        : T.weekDeficit(Math.round(-surplus));
   return { adjusted: goal + delta, delta, surplus: Math.round(surplus), daysLeft, explanation };
 }

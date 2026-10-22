@@ -1,9 +1,11 @@
+import { LOCALE } from '../../i18n';
+
 const numberFormats = new Map<number, Intl.NumberFormat>();
 
 export function formatNumber(value: number, maxDigits = 1): string {
   let format = numberFormats.get(maxDigits);
   if (!format) {
-    format = new Intl.NumberFormat('pl-PL', { maximumFractionDigits: maxDigits });
+    format = new Intl.NumberFormat(LOCALE, { maximumFractionDigits: maxDigits });
     numberFormats.set(maxDigits, format);
   }
   return format.format(value);
@@ -19,13 +21,13 @@ export function formatKcal(value: number | null): string {
   return value === null ? UNKNOWN : `${formatNumber(value, 0)} kcal`;
 }
 
-const priceFormat = new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' });
+const priceFormat = new Intl.NumberFormat(LOCALE, { style: 'currency', currency: 'PLN' });
 
 export function formatPrice(value: number): string {
   return priceFormat.format(value);
 }
 
-const dateFormat = new Intl.DateTimeFormat('pl-PL', {
+const dateFormat = new Intl.DateTimeFormat(LOCALE, {
   day: 'numeric',
   month: 'short',
   year: 'numeric',

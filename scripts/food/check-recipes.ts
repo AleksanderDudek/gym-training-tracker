@@ -2,6 +2,7 @@
 // shops cover each recipe (one shop, or a shop and an online shop), and what
 // the default variant looks like. Chains' and online shops' data is merged as the app does.
 // Usage: npm run food:check-recipes
+import './lib/polish';
 import { readFile, readdir } from 'node:fs/promises';
 import { gunzipSync } from 'node:zlib';
 import { indexProducts } from '../../src/food/lib/search';

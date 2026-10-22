@@ -1,5 +1,6 @@
 import type { PlannedDay } from '../types';
 import type { PlanStats, Schedule } from './schedule';
+import { say } from '../i18n';
 
 /**
  * Punktacja nagradza obecność w terminie, nie tonaż. Ciężar i tak rozlicza silnik progresji,
@@ -104,14 +105,14 @@ export interface Rank {
  * i stopień mówi o tym, jak często cię tam widują.
  */
 export const RANKS: Rank[] = [
-  { name: 'Gość z ulicy', at: 0 },
-  { name: 'Bywalec', at: 500 },
-  { name: 'Stały klient', at: 1500 },
-  { name: 'Etat na siłowni', at: 3000 },
-  { name: 'Legenda szatni', at: 5500 },
-  { name: 'Postrach hantli', at: 9000 },
-  { name: 'Zjawisko pogodowe', at: 14000 },
-  { name: 'Pomnik za życia', at: 20000 },
+  { name: say('Gość z ulicy', 'Walk-in'), at: 0 },
+  { name: say('Bywalec', 'Regular'), at: 500 },
+  { name: say('Stały klient', 'Familiar face'), at: 1500 },
+  { name: say('Etat na siłowni', 'Part of the furniture'), at: 3000 },
+  { name: say('Legenda szatni', 'Changing-room legend'), at: 5500 },
+  { name: say('Postrach hantli', 'Terror of the dumbbells'), at: 9000 },
+  { name: say('Zjawisko pogodowe', 'Force of nature'), at: 14000 },
+  { name: say('Pomnik za życia', 'Living monument'), at: 20000 },
 ];
 
 export interface RankState {

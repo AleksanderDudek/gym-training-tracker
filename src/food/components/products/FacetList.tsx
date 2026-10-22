@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { LOCALE, text } from '../../../i18n';
 import type { Counts } from '../../lib/browse';
 import { formatNumber } from '../../lib/format';
 import { normalizeForSearch } from '../../lib/text';
@@ -12,7 +13,26 @@ interface Props {
   limit?: number;
 }
 
-const collator = new Intl.Collator('pl-PL');
+const collator = new Intl.Collator(LOCALE);
+
+const T = text({
+  pl: {
+    none: 'Brak wartości dla bieżących filtrów.',
+    search: (label: string) => `Szukaj: ${label.toLowerCase()}`,
+    searchIn: (label: string) => `Szukaj w: ${label}`,
+    nothing: 'Nic nie pasuje.',
+    less: 'Pokaż mniej',
+    more: (n: string) => `Pokaż więcej (${n})`,
+  },
+  en: {
+    none: 'No values for the current filters.',
+    search: (label: string) => `Search: ${label.toLowerCase()}`,
+    searchIn: (label: string) => `Search in: ${label}`,
+    nothing: 'Nothing matches.',
+    less: 'Show less',
+    more: (n: string) => `Show more (${n})`,
+  },
+});
 
 /**
  * Lista pól wyboru dla jednej grupy (kategoria, marka, sklep, etykiety). Zaznaczone stoją na górze
@@ -36,7 +56,7 @@ export function FacetList({ label, counts, selected, names, onChange, limit = 8 
   const matching = needle ? entries.filter((e) => normalizeForSearch(e.name).includes(needle)) : entries;
   const visible = expanded || needle ? matching.slice(0, 200) : matching.slice(0, Math.max(limit, selected.length));
 
-  if (entries.length === 0) return <p className="fd-note">Brak wartości dla bieżących filtrów.</p>;
+  if (entries.length === 0) return <p className="fd-note">{T.none}</p>;
 
   return (
     <div className="fd-facet">
@@ -46,8 +66,8 @@ export function FacetList({ label, counts, selected, names, onChange, limit = 8 
           className="fd-facet-search"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder={`Szukaj: ${label.toLowerCase()}`}
-          aria-label={`Szukaj w: ${label}`}
+          placeholder={T.search(label)}
+          aria-label={T.searchIn(label)}
           autoComplete="off"
         />
       )}
@@ -66,10 +86,10 @@ export function FacetList({ label, counts, selected, names, onChange, limit = 8 
           </li>
         ))}
       </ul>
-      {needle && matching.length === 0 && <p className="fd-note">Nic nie pasuje.</p>}
+      {needle && matching.length === 0 && <p className="fd-note">{T.nothing}</p>}
       {!needle && matching.length > limit && (
         <button type="button" className="fd-more" onClick={() => setExpanded((x) => !x)} aria-expanded={expanded}>
-          {expanded ? 'Pokaż mniej' : `Pokaż więcej (${formatNumber(matching.length - limit, 0)})`}
+          {expanded ? T.less : T.more(formatNumber(matching.length - limit, 0))}
         </button>
       )}
     </div>

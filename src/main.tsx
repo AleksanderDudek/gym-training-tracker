@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { registerSW } from 'virtual:pwa-register';
 import App from './App';
 import { RootBoundary } from './components/RootBoundary';
+import { LANG, text } from './i18n';
 import { startPwa } from './pwa';
 // Kroje pisma z paczki, nie z Google Fonts: działają offline od pierwszej wizyty, nie wysyłają
 // nikogo do cudzego serwera, a obrazki do udostępnienia dostają prawdziwe litery.
@@ -17,6 +18,19 @@ import './styles.css';
 // zapyta o nowszą, a ekran awarii (`RootBoundary`) ją wpuści. W trybie deweloperskim
 // `virtual:pwa-register` jest pusty — bez service workera.
 startPwa(registerSW);
+
+// Język strony dla czytników ekranu, dzielenia wyrazów i tłumacza przeglądarki — `index.html` ma
+// polski na sztywno, a wizyta może być po angielsku.
+document.documentElement.lang = LANG;
+document
+  .querySelector('meta[name="description"]')
+  ?.setAttribute(
+    'content',
+    text({
+      pl: 'Trening siłowy z automatyczną progresją: plan, terminy, przekąski ruchowe i osiągnięcia.',
+      en: 'Strength training with automatic progression: a plan, deadlines, exercise snacks and achievements.',
+    }),
+  );
 
 const root = document.getElementById('root');
 if (!root) throw new Error('Brak elementu #root w index.html');

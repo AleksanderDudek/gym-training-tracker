@@ -1,4 +1,5 @@
 import { API_URL, apiConfigured } from './api';
+import { LOCALE, text } from './i18n';
 import { cleanKey, deriveKeys, open } from './watchseal';
 import type { WatchKeys } from './watchseal';
 
@@ -152,13 +153,26 @@ export function mailbox<P>(slot: ReturnType<typeof keySlot>, configured: () => b
 
 const pad = (n: number): string => String(n).padStart(2, '0');
 
+const T = text({
+  pl: {
+    today: (time: string) => `dziś ${time}`,
+    yesterday: (time: string) => `wczoraj ${time}`,
+    other: (d: Date, time: string) => `${d.getDate()}.${pad(d.getMonth() + 1)} ${time}`,
+  },
+  en: {
+    today: (time: string) => `today ${time}`,
+    yesterday: (time: string) => `yesterday ${time}`,
+    other: (d: Date, time: string) => `${d.toLocaleDateString(LOCALE, { day: 'numeric', month: 'short' })} ${time}`,
+  },
+});
+
 /** „dziś 14:05”, „wczoraj 7:30”, „1.10 21:40” — według zegara telefonu. */
 export function whenText(iso: string, now: Date = new Date()): string {
   const d = new Date(iso);
   const time = `${d.getHours()}:${pad(d.getMinutes())}`;
   const yesterday = new Date(now);
   yesterday.setDate(now.getDate() - 1);
-  if (d.toDateString() === now.toDateString()) return `dziś ${time}`;
-  if (d.toDateString() === yesterday.toDateString()) return `wczoraj ${time}`;
-  return `${d.getDate()}.${pad(d.getMonth() + 1)} ${time}`;
+  if (d.toDateString() === now.toDateString()) return T.today(time);
+  if (d.toDateString() === yesterday.toDateString()) return T.yesterday(time);
+  return T.other(d, time);
 }

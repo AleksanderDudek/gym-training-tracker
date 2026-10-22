@@ -1,3 +1,4 @@
+import { say } from '../../i18n';
 import { normalizeForSearch } from '../lib/text';
 import type { IndexedProduct, Product } from '../lib/types';
 import { isProteinForward, macrosOf, type Macros } from './macros';
@@ -33,13 +34,13 @@ const GROUPS: {
 }[] = [
   {
     id: 'batony',
-    label: 'Batony białkowe',
+    label: say('Batony białkowe', 'Protein bars'),
     claims: isProteinBar,
     plausible: (m) => m.protein <= 55 && m.kcal >= 200 && m.kcal <= 550,
   },
   {
     id: 'odzywki',
-    label: 'Białko w proszku',
+    label: say('Białko w proszku', 'Protein powder'),
     // By name, or by macros: nothing but a powder is half protein at 300+ kcal.
     claims: (p, name, m) =>
       has(p, 'en:protein-powders', 'en:whey-powder') ||
@@ -49,13 +50,13 @@ const GROUPS: {
   },
   {
     id: 'napoje',
-    label: "Napoje i shake'i białkowe",
+    label: say("Napoje i shake'i białkowe", 'Protein drinks and shakes'),
     claims: isProteinDrink,
     plausible: (m) => m.kcal <= 150,
   },
   {
     id: 'twarogi',
-    label: 'Twarogi i serki wiejskie',
+    label: say('Twarogi i serki wiejskie', 'Quark and cottage cheese'),
     claims: (p, name) =>
       has(p, 'en:quarks', 'en:lean-quark', 'en:cottage-cheeses') ||
       /serek wiejski|\btwarog\w*|twarozek|cottage/.test(name),
@@ -63,7 +64,7 @@ const GROUPS: {
   },
   {
     id: 'nabial',
-    label: 'Skyry, jogurty i desery białkowe',
+    label: say('Skyry, jogurty i desery białkowe', 'Skyr, yoghurts and protein desserts'),
     // A hard cheese that calls itself high-protein is still a cheese.
     claims: (p, name) =>
       /\bskyr\b/.test(name) ||

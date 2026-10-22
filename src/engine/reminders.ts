@@ -1,4 +1,5 @@
 import { BUILTIN } from '../data/exercises';
+import { text } from '../i18n';
 import type { AppState, ReminderPrefs } from '../types';
 import { latestWeight } from './body';
 import { REMINDER_EVENING, REMINDER_MORNING, REMINDER_WEIGH, pick } from './quips';
@@ -15,6 +16,22 @@ import { snapshot } from './snapshot';
  * z telefonu w innej postaci niż tytuł przypomnienia. Lista odświeża się przy każdym otwarciu
  * aplikacji; gdy ktoś przestanie ją otwierać, przypomnienia skończą się po trzech tygodniach.
  */
+
+/** Tytuły powiadomień — w języku wizyty, w której telefon ułożył listę. */
+const T = text({
+  pl: {
+    workout: (name: string) => `Dziś trening: ${name}`,
+    fromPlan: 'z planu',
+    weigh: 'Poranne ważenie',
+    evening: 'Kroki i ruch z dziś',
+  },
+  en: {
+    workout: (name: string) => `Workout today: ${name}`,
+    fromPlan: 'from your plan',
+    weigh: 'Morning weigh-in',
+    evening: 'Today’s steps and movement',
+  },
+});
 
 export const WEIGH_AT = '07:00';
 export const MORNING_AT = '07:30';
@@ -76,7 +93,7 @@ export function reminderItems(state: AppState, prefs: ReminderPrefs, today: stri
           tag: 'trening',
           date: d.date,
           time: MORNING_AT,
-          title: clip(`Dziś trening: ${names.get(d.workout) ?? 'z planu'}`, TITLE_MAX),
+          title: clip(T.workout(names.get(d.workout) ?? T.fromPlan), TITLE_MAX),
           body: pick(REMINDER_MORNING, seed(d.date)),
           url: '#/sesja',
         }),
@@ -93,7 +110,7 @@ export function reminderItems(state: AppState, prefs: ReminderPrefs, today: stri
         tag: 'waga',
         date,
         time: WEIGH_AT,
-        title: 'Poranne ważenie',
+        title: T.weigh,
         body: pick(REMINDER_WEIGH, seed(date)),
         url: '#/sesja',
       });
@@ -108,7 +125,7 @@ export function reminderItems(state: AppState, prefs: ReminderPrefs, today: stri
         tag: 'ruch',
         date,
         time: EVENING_AT,
-        title: 'Kroki i ruch z dziś',
+        title: T.evening,
         body: pick(REMINDER_EVENING, seed(date)),
         url: '#/cardio',
       });

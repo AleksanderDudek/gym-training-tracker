@@ -1,3 +1,4 @@
+import { text } from '../../../i18n';
 import { formatPrice } from '../../lib/format';
 import type { Price } from '../../lib/types';
 import './common.css';
@@ -13,7 +14,7 @@ export function PriceTag({ price, className = '' }: { price: Price; className?: 
       {price.perKg && <small>/kg</small>}
       {price.regularValue !== null && (
         <>
-          <span className="sr-only">, przed obniżką</span>
+          <span className="sr-only">{text({ pl: ', przed obniżką', en: ', before the discount' })}</span>
           <s>{formatPrice(price.regularValue)}</s>
         </>
       )}

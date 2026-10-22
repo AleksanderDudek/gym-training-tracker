@@ -1,8 +1,10 @@
 import { useState } from 'react';
+import type { ReactNode } from 'react';
 import { checkSaid } from '../deviceStatus';
 import { localDayOf } from '../engine/watch';
 import { GARMIN_APP_URL, forgetWatch, garminConfigured, garminKey, lastPullAt, onWatchCheck, saveGarminKey, watchStatus } from '../garmin';
 import type { PullResult } from '../garmin';
+import { text } from '../i18n';
 import { cleanKey, newKey } from '../watchseal';
 import type { AppState } from '../types';
 import { CARD_ID, Checklist, StatusBlock, useNow, useScrollHere, watchChecks } from './DeviceStatus';
@@ -17,6 +19,131 @@ import { CARD_ID, Checklist, StatusBlock, useNow, useScrollHere, watchChecks } f
  * Po połączeniu karta odpowiada na pytanie „czy to działa”: kiedy przyszła ostatnia paczka,
  * kiedy następna, czy „Sprawdź teraz” przyniosło coś nowego — i co sprawdzić, gdy nie.
  */
+
+const T = text({
+  pl: {
+    saveFailed: 'Nie udało się zapisać klucza w tej przeglądarce.',
+    copied: 'Klucz skopiowany — wklej go w ustawieniach aplikacji na zegarku.',
+    copyFailed: 'Nie udało się skopiować — zaznacz klucz w polu i skopiuj go ręcznie.',
+    disconnected:
+      'Zegarek odłączony. Dane, które już przyszły, zostają w historii. Klucz usuń też z ustawień aplikacji na zegarku.',
+    title: 'Zegarek Garmin',
+    intro: (
+      <>
+        Kroki, przejazdy rowerem, tętno, stres i Body Battery przyjdą z zegarka same — bez
+        przepisywania. Potrzebna jest mała aplikacja GYM TRACKER na zegarku i jeden klucz wklejony
+        w jej ustawienia.
+      </>
+    ) as ReactNode,
+    viaPhone: (
+      <>
+        Prościej przez telefon: karta „Zdrowie z telefonu” bierze dane, które Garmin Connect zapisuje
+        w Apple Zdrowie albo Health Connect — razem ze snem i wagą. Ta karta dokłada stres i Body Battery.
+      </>
+    ) as ReactNode,
+    connect: 'Połącz zegarek',
+    haveKey: 'Mam już klucz z innego urządzenia',
+    badKey: 'Klucz to 64 znaki: cyfry i litery od a do f.',
+    otherKey: 'klucz z drugiego urządzenia',
+    saveKey: 'Zapisz klucz',
+    cancel: 'Anuluj',
+    from: 'z zegarka',
+    steps: 'Kroki połączenia',
+    install: (link: ReactNode): ReactNode => (
+      <>
+        Zainstaluj na zegarku aplikację GYM TRACKER z{' '}
+        {link}
+        .
+      </>
+    ),
+    settings: (
+      <>
+        W aplikacji Garmin Connect na telefonie otwórz ustawienia GYM TRACKER: zegarek →
+        Aktywności i aplikacje → GYM TRACKER → Ustawienia.
+      </>
+    ) as ReactNode,
+    pasteHere: 'Wklej tam ten klucz:',
+    keyLabel: 'Klucz do zegarka',
+    copyKey: 'Kopiuj klucz',
+    openOnce: (
+      <>
+        Otwórz raz GYM TRACKER na zegarku. Pierwsze dane przyjdą po chwili, potem co pół godziny,
+        gdy telefon jest w pobliżu.
+      </>
+    ) as ReactNode,
+    check: 'Sprawdź teraz',
+    hideKey: 'Schowaj klucz',
+    showKey: 'Pokaż klucz',
+    sure: 'Na pewno odłączyć?',
+    disconnect: 'Odłącz zegarek',
+    privacy: (
+      <>
+        Zegarek szyfruje dane tym kluczem, zanim wyjdą z telefonu. Serwer przechowuje tylko ostatnią
+        zaszyfrowaną paczkę, najwyżej przez tydzień, i nie zna klucza — otworzy ją wyłącznie
+        przeglądarka, w której klucz jest zapisany. Klucz nie trafia do eksportu danych; na drugim
+        urządzeniu wklej go przez „Mam już klucz”.
+      </>
+    ) as ReactNode,
+    policy: 'Polityka prywatności',
+  },
+  en: {
+    saveFailed: 'Couldn’t save the key in this browser.',
+    copied: 'Key copied — paste it into the watch app’s settings.',
+    copyFailed: 'Couldn’t copy — select the key in the box and copy it by hand.',
+    disconnected:
+      'Watch disconnected. Data that has already arrived stays in your history. Remove the key from the watch app’s settings too.',
+    title: 'Garmin watch',
+    intro: (
+      <>
+        Steps, bike rides, heart rate, stress and Body Battery come from your watch by themselves — no retyping. You
+        need the small GYM TRACKER app on the watch and one key pasted into its settings.
+      </>
+    ),
+    viaPhone: (
+      <>
+        Simpler through your phone: the “Health from your phone” card takes the data Garmin Connect saves to Apple
+        Health or Health Connect — sleep and weight included. This card adds stress and Body Battery.
+      </>
+    ),
+    connect: 'Connect watch',
+    haveKey: 'I already have a key from another device',
+    badKey: 'The key is 64 characters: digits and the letters a to f.',
+    otherKey: 'key from your other device',
+    saveKey: 'Save key',
+    cancel: 'Cancel',
+    from: 'from the watch',
+    steps: 'Connection steps',
+    install: (link: ReactNode): ReactNode => <>Install the GYM TRACKER app on your watch from the {link}.</>,
+    settings: (
+      <>
+        In the Garmin Connect app on your phone, open the GYM TRACKER settings: watch → Activities &amp; Apps → GYM
+        TRACKER → Settings.
+      </>
+    ),
+    pasteHere: 'Paste this key there:',
+    keyLabel: 'Key for the watch',
+    copyKey: 'Copy key',
+    openOnce: (
+      <>
+        Open GYM TRACKER on the watch once. The first data arrives shortly, then every half hour while your phone is
+        nearby.
+      </>
+    ),
+    check: 'Check now',
+    hideKey: 'Hide key',
+    showKey: 'Show key',
+    sure: 'Really disconnect?',
+    disconnect: 'Disconnect watch',
+    privacy: (
+      <>
+        The watch encrypts your data with this key before it leaves the phone. The server keeps only the latest
+        encrypted upload, for a week at most, and doesn’t know the key — only a browser with the key saved can open
+        it. The key isn’t included in data exports; on another device, paste it via “I already have a key”.
+      </>
+    ),
+    policy: 'Privacy policy',
+  },
+});
 
 /** Klucz w grupach po osiem znaków — łatwiej porównać na dwóch ekranach. Zegarek spacje pomija. */
 const grouped = (k: string): string => k.match(/.{1,8}/g)!.join(' ');
@@ -52,7 +179,7 @@ export function GarminCard({
 
   const connect = (raw: string) => {
     if (!saveGarminKey(raw)) {
-      onToast('Nie udało się zapisać klucza w tej przeglądarce.');
+      onToast(T.saveFailed);
       return;
     }
     bump((n) => n + 1);
@@ -78,9 +205,9 @@ export function GarminCard({
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(key!);
-      onToast('Klucz skopiowany — wklej go w ustawieniach aplikacji na zegarku.');
+      onToast(T.copied);
     } catch {
-      onToast('Nie udało się skopiować — zaznacz klucz w polu i skopiuj go ręcznie.');
+      onToast(T.copyFailed);
     }
   };
 
@@ -96,30 +223,23 @@ export function GarminCard({
     bump((n) => n + 1);
     setShowKey(false);
     setResult('');
-    onToast('Zegarek odłączony. Dane, które już przyszły, zostają w historii. Klucz usuń też z ustawień aplikacji na zegarku.');
+    onToast(T.disconnected);
   };
 
   return (
     <div className="grp dev-card" id={CARD_ID.watch} ref={ref}>
-      <h2>Zegarek Garmin</h2>
+      <h2>{T.title}</h2>
       {!key ? (
         <>
-          <p className="tight">
-            Kroki, przejazdy rowerem, tętno, stres i Body Battery przyjdą z zegarka same — bez
-            przepisywania. Potrzebna jest mała aplikacja GYM TRACKER na zegarku i jeden klucz wklejony
-            w jej ustawienia.
-          </p>
-          <p className="tight">
-            Prościej przez telefon: karta „Zdrowie z telefonu” bierze dane, które Garmin Connect zapisuje
-            w Apple Zdrowie albo Health Connect — razem ze snem i wagą. Ta karta dokłada stres i Body Battery.
-          </p>
+          <p className="tight">{T.intro}</p>
+          <p className="tight">{T.viaPhone}</p>
           {paste === null ? (
             <div className="watch-actions">
               <button className="btn" onClick={() => connect(newKey())}>
-                Połącz zegarek
+                {T.connect}
               </button>
               <button className="btn ghost sm" onClick={() => setPaste('')}>
-                Mam już klucz z innego urządzenia
+                {T.haveKey}
               </button>
             </div>
           ) : (
@@ -127,11 +247,11 @@ export function GarminCard({
               onSubmit={(e) => {
                 e.preventDefault();
                 if (cleanKey(paste)) connect(paste);
-                else onToast('Klucz to 64 znaki: cyfry i litery od a do f.');
+                else onToast(T.badKey);
               }}
             >
               <label className="fld">
-                <span>klucz z drugiego urządzenia</span>
+                <span>{T.otherKey}</span>
                 <textarea
                   className="watch-key"
                   rows={3}
@@ -144,10 +264,10 @@ export function GarminCard({
               </label>
               <div className="watch-actions">
                 <button className="btn sm" type="submit">
-                  Zapisz klucz
+                  {T.saveKey}
                 </button>
                 <button className="btn ghost sm" type="button" onClick={() => setPaste(null)}>
-                  Anuluj
+                  {T.cancel}
                 </button>
               </div>
             </form>
@@ -159,7 +279,7 @@ export function GarminCard({
             device="watch"
             status={status}
             now={now}
-            from="z zegarka"
+            from={T.from}
             todaySteps={todaySteps}
             checkedAt={lastPullAt()}
           />
@@ -167,61 +287,52 @@ export function GarminCard({
             {result}
           </p>
           {(!got || showKey) && (
-            <ol className="watch-steps" aria-label="Kroki połączenia">
+            <ol className="watch-steps" aria-label={T.steps}>
               <li>
-                Zainstaluj na zegarku aplikację GYM TRACKER z{' '}
-                <a href={GARMIN_APP_URL} target="_blank" rel="noopener noreferrer">
-                  Connect IQ Store
-                </a>
-                .
+                {T.install(
+                  <a href={GARMIN_APP_URL} target="_blank" rel="noopener noreferrer">
+                    Connect IQ Store
+                  </a>,
+                )}
               </li>
+              <li>{T.settings}</li>
               <li>
-                W aplikacji Garmin Connect na telefonie otwórz ustawienia GYM TRACKER: zegarek →
-                Aktywności i aplikacje → GYM TRACKER → Ustawienia.
-              </li>
-              <li>
-                Wklej tam ten klucz:
+                {T.pasteHere}
                 <textarea
                   readOnly
                   className="watch-key"
                   rows={3}
                   value={grouped(key)}
-                  aria-label="Klucz do zegarka"
+                  aria-label={T.keyLabel}
                   onFocus={(e) => e.currentTarget.select()}
                 />
                 <button className="btn sm" onClick={() => void copy()}>
-                  Kopiuj klucz
+                  {T.copyKey}
                 </button>
               </li>
-              <li>
-                Otwórz raz GYM TRACKER na zegarku. Pierwsze dane przyjdą po chwili, potem co pół godziny,
-                gdy telefon jest w pobliżu.
-              </li>
+              <li>{T.openOnce}</li>
             </ol>
           )}
           <div className="watch-actions">
             <button className="btn sm" disabled={busy} onClick={() => void check()}>
-              Sprawdź teraz
+              {T.check}
             </button>
             {got && (
               <button className="btn ghost sm" onClick={() => setShowKey(!showKey)}>
-                {showKey ? 'Schowaj klucz' : 'Pokaż klucz'}
+                {showKey ? T.hideKey : T.showKey}
               </button>
             )}
             <button className="btn ghost sm" disabled={busy} onClick={() => void disconnect()}>
-              {sure ? 'Na pewno odłączyć?' : 'Odłącz zegarek'}
+              {sure ? T.sure : T.disconnect}
             </button>
           </div>
           <Checklist level={status.level} checked={lastPullAt() !== null} items={watchChecks(status.level)} />
         </>
       )}
       <p className="hint" style={{ marginTop: 10 }}>
-        Zegarek szyfruje dane tym kluczem, zanim wyjdą z telefonu. Serwer przechowuje tylko ostatnią
-        zaszyfrowaną paczkę, najwyżej przez tydzień, i nie zna klucza — otworzy ją wyłącznie
-        przeglądarka, w której klucz jest zapisany. Klucz nie trafia do eksportu danych; na drugim
-        urządzeniu wklej go przez „Mam już klucz”.{' '}
+        {T.privacy}{' '}
         <a href="privacy.html" target="_blank" rel="noopener">
-          Polityka prywatności
+          {T.policy}
         </a>
         .
       </p>

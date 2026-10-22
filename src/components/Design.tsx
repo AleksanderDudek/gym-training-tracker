@@ -4,23 +4,39 @@ import { RULES } from '../engine/design';
 import type { DesignNote } from '../engine/design';
 import { ATLAS_PATH, SECTIONS } from '../routing';
 import { Sections } from './Sections';
+import { LOCALE, text } from '../i18n';
+
+const T = text({
+  pl: {
+    empty: 'Dodaj ćwiczenie, a pokażę, które partie pracują.',
+    sessionAria: 'Serie na partię mięśni w tej sesji',
+    weeklyAria: 'Serie tygodniowo na partię mięśni',
+    sectionsAria: 'Sekcje zakładki Trening',
+  },
+  en: {
+    empty: 'Add an exercise and I’ll show you which muscles work.',
+    sessionAria: 'Sets per muscle group in this session',
+    weeklyAria: 'Weekly sets per muscle group',
+    sectionsAria: 'Training tab sections',
+  },
+});
 
 /**
  * Wspólne klocki podglądu treningu i planu: paski mięśni, uwagi doradcy, przełącznik
  * sekcji zakładki Trening i rząd filtrów.
  */
 
-const fmt = (n: number): string => n.toLocaleString('pl-PL', { maximumFractionDigits: 1 });
+const fmt = (n: number): string => n.toLocaleString(LOCALE, { maximumFractionDigits: 1 });
 
 /**
  * Serie na partię w jednej sesji. Skala sięga co najmniej do limitu sesji, więc długość paska
  * od razu mówi, jak blisko granicy jest partia; kreska na pasku to sam limit.
  */
 export function MuscleBars({ loads, cap = RULES.sessionCap }: { loads: { muscle: MuscleId; sets: number }[]; cap?: number }) {
-  if (!loads.length) return <p className="tight">Dodaj ćwiczenie, a pokażę, które partie pracują.</p>;
+  if (!loads.length) return <p className="tight">{T.empty}</p>;
   const scale = Math.max(cap * 1.2, ...loads.map((l) => l.sets));
   return (
-    <div className="mbars" role="list" aria-label="Serie na partię mięśni w tej sesji">
+    <div className="mbars" role="list" aria-label={T.sessionAria}>
       {loads.map((l) => (
         <div key={l.muscle} className={`mbar${l.sets > cap ? ' over' : ''}`} role="listitem">
           <span className="mbar-name">{MUSCLE_NAME[l.muscle]}</span>
@@ -44,7 +60,7 @@ export function WeeklyBars({ weekly }: { weekly: { muscle: MuscleId; sets: numbe
   const scale = Math.max(RULES.weeklyMax * 1.25, ...weekly.map((w) => w.sets));
   const pct = (n: number): string => `${(n / scale) * 100}%`;
   return (
-    <div className="mbars weekly" role="list" aria-label="Serie tygodniowo na partię mięśni">
+    <div className="mbars weekly" role="list" aria-label={T.weeklyAria}>
       {[...weekly]
         .sort((a, b) => b.sets - a.sets)
         .map((w) => (
@@ -77,11 +93,12 @@ export function DesignNotes({ notes }: { notes: DesignNote[] }) {
   );
 }
 
+// i18n-ignore: trasy
 const SECTION_PATH = { plan: '#/plan', workouts: '#/treningi', atlas: ATLAS_PATH } as const;
 
 /** Trzy sekcje zakładki Trening: Plan, Treningi i Ćwiczenia — u góry każdej z nich. */
 export function SectionSwitch({ on }: { on: keyof typeof SECTION_PATH }) {
-  return <Sections aria-label="Sekcje zakładki Trening" items={SECTIONS.work} current={SECTION_PATH[on]} />;
+  return <Sections aria-label={T.sectionsAria} items={SECTIONS.work} current={SECTION_PATH[on]} />;
 }
 
 /** Rząd filtrów, który zawija się do kolejnej linii — przełącznik segmentowy mieści najwyżej trzy. */

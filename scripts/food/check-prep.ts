@@ -2,6 +2,7 @@
 // broadest online shop) and every eating style, a week of four meals - how close each day gets to its
 // targets, which recipes were chosen, and what the shopping list holds (lines, packs, known prices).
 // Usage: npm run food:check-prep
+import './lib/polish';
 import { readFile, readdir } from 'node:fs/promises';
 import { gunzipSync } from 'node:zlib';
 import { mergeChains } from '../../src/food/chains/merge';

@@ -1,9 +1,27 @@
 import { inPoland, shortUrl, supportUrl } from '../contact';
 import { COACH_TIPS, SUPPORT_SHORT, daySeed, pick } from '../engine/quips';
 import { addDays } from '../engine/schedule';
+import { text } from '../i18n';
 import { Gorilla } from './Gorilla';
 import type { CoachMood } from './Gorilla';
 import type { AppState } from '../types';
+
+const T = text({
+  pl: {
+    eyebrow: 'Rada dnia · Trener Siwy',
+    espresso: 'Postaw espresso',
+    newTab: 'otwiera się w nowej karcie',
+    hide: (days: number) => `Schowaj pasek wsparcia na ${days} dni`,
+    hideShort: (days: number) => `Schowaj na ${days} dni`,
+  },
+  en: {
+    eyebrow: 'Tip of the day · Coach Siwy',
+    espresso: 'Buy an espresso',
+    newTab: 'opens in a new tab',
+    hide: (days: number) => `Hide the support bar for ${days} days`,
+    hideShort: (days: number) => `Hide for ${days} days`,
+  },
+});
 
 /**
  * Wsparcie autora — z Trenerem Siwym.
@@ -37,7 +55,7 @@ export function SupportLine({
         <Gorilla who="siwy" mood={t.mood} {...(compact ? { crop: 'face' as const, size: 56 } : { size: 150 })} />
       </span>
       <span className="mbanner-body">
-        {!compact && <span className="mbanner-eyebrow">Rada dnia · Trener Siwy</span>}
+        {!compact && <span className="mbanner-eyebrow">{T.eyebrow}</span>}
         {!compact && <span className="mbanner-tip">{t.tip}</span>}
         <span className="mbanner-line">{t.joke}</span>
         {/*
@@ -45,8 +63,12 @@ export function SupportLine({
           szerokości telefonu tamta łamała się na dwa wiersze i przycisk rósł do 64 px.
           Nadpis nad radą i tak mówi, czyja to rada, więc imię w przycisku było powtórzeniem.
         */}
-        <span className="btn sm coffee">Postaw espresso</span>
-        {!compact && <span className="mbanner-url">{shortUrl(url)} · otwiera się w nowej karcie</span>}
+        <span className="btn sm coffee">{T.espresso}</span>
+        {!compact && (
+          <span className="mbanner-url">
+            {shortUrl(url)} · {T.newTab}
+          </span>
+        )}
       </span>
     </a>
   );
@@ -86,15 +108,15 @@ export function SupportStrip({ onSnooze }: { onSnooze: () => void }) {
         </span>
         <span className="strip-text">{pick(SUPPORT_SHORT, seed)}</span>
         <span className="strip-cta">
-          <span className="cta-long">Postaw espresso</span>
+          <span className="cta-long">{T.espresso}</span>
           <span className="cta-short">Espresso</span>
         </span>
       </a>
       <button
         className="strip-close"
         onClick={onSnooze}
-        aria-label={`Schowaj pasek wsparcia na ${SNOOZE_DAYS} dni`}
-        title={`Schowaj na ${SNOOZE_DAYS} dni`}
+        aria-label={T.hide(SNOOZE_DAYS)}
+        title={T.hideShort(SNOOZE_DAYS)}
       >
         ×
       </button>

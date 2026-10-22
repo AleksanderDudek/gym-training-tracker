@@ -1,5 +1,11 @@
 import { useState, useSyncExternalStore } from 'react';
 import { applyUpdate, needRefresh, subscribe } from '../pwa';
+import { text } from '../i18n';
+
+const T = text({
+  pl: { text: 'Nowa wersja aplikacji.', refresh: 'Odśwież', later: 'Później' },
+  en: { text: 'A new version of the app is ready.', refresh: 'Refresh', later: 'Later' },
+});
 
 /**
  * Pasek „Nowa wersja aplikacji”. Service worker rejestruje `main.tsx` (`src/pwa.ts`), zanim cokolwiek
@@ -17,12 +23,12 @@ export function UpdateBar({ hold }: { hold: boolean }) {
   if (!waiting || hold || later) return null;
   return (
     <div className="updatebar" role="status">
-      <span className="updatebar-text">Nowa wersja aplikacji.</span>
+      <span className="updatebar-text">{T.text}</span>
       <button className="btn sm" onClick={() => void applyUpdate()}>
-        Odśwież
+        {T.refresh}
       </button>
       <button className="btn sm ghost" onClick={() => setLater(true)}>
-        Później
+        {T.later}
       </button>
     </div>
   );

@@ -1,10 +1,46 @@
 import { TrendingDown } from 'lucide-react';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { WEIGHT_RANGE, validWeight } from '../../../engine/body';
+import { LANG, pluralEn, text } from '../../../i18n';
 import { dietPath } from '../../../routing';
 import { useBridge } from '../../bridge';
 import { daysBetween } from '../../diet/model';
 import { formatNumber } from '../../lib/format';
+
+const T = text({
+  pl: {
+    lastToday: (kg: string, gap: number) => `Ostatnio ${kg}, ${gap === 1 ? 'wczoraj' : `${gap} dni temu`}.`,
+    lastBefore: (kg: string, gap: number) => `Poprzednie ważenie: ${kg}, ${gap === 1 ? 'dzień' : `${gap} dni`} wcześniej.`,
+    progress: 'Postęp',
+    weight: (kg: string) => `Waga: ${kg} kg`,
+    changeWeight: 'Zmień wagę',
+    change: 'Zmień',
+    askToday: 'Ile dziś ważysz?',
+    askPast: 'Ile ważyłeś tego dnia?',
+    field: 'Waga, kg',
+    saveWeight: 'Zapisz wagę',
+    save: 'Zapisz',
+    cancel: 'Anuluj',
+    range: (min: number, max: number) => `Waga od ${min} do ${max} kg.`,
+    tip: 'Najlepiej rano, po toalecie, przed jedzeniem.',
+  },
+  en: {
+    lastToday: (kg: string, gap: number) => `Last time ${kg}, ${gap === 1 ? 'yesterday' : `${gap} days ago`}.`,
+    lastBefore: (kg: string, gap: number) => `Previous weigh-in: ${kg}, ${gap} ${pluralEn(gap, 'day', 'days')} earlier.`,
+    progress: 'Progress',
+    weight: (kg: string) => `Weight: ${kg} kg`,
+    changeWeight: 'Change weight',
+    change: 'Change',
+    askToday: 'What do you weigh today?',
+    askPast: 'What did you weigh that day?',
+    field: 'Weight, kg',
+    saveWeight: 'Save weight',
+    save: 'Save',
+    cancel: 'Cancel',
+    range: (min: number, max: number) => `Weight from ${min} to ${max} kg.`,
+    tip: 'Best in the morning, after the loo, before eating.',
+  },
+});
 
 interface Props {
   date: string;
@@ -19,7 +55,7 @@ function kgOrNull(text: string): number | null {
   return text.trim() && Number.isFinite(n) && n > 0 ? n : null;
 }
 
-const kgText = (kg: number) => String(kg).replace('.', ',');
+const kgText = (kg: number) => (LANG === 'pl' ? String(kg).replace('.', ',') : String(kg));
 
 /**
  * Ostatnie ważenie przed oglądanym dniem — z dziennika wagi w moście (rosnąco po dniu), więc bez
@@ -31,8 +67,8 @@ function lastBefore(weights: readonly { day: string; kg: number }[], date: strin
   if (!last) return null;
   const gap = daysBetween(last.day, date);
   const kg = `${formatNumber(last.kg, 1)} kg`;
-  if (date === today) return `Ostatnio ${kg}, ${gap === 1 ? 'wczoraj' : `${gap} dni temu`}.`;
-  return `Poprzednie ważenie: ${kg}, ${gap === 1 ? 'dzień' : `${gap} dni`} wcześniej.`;
+  if (date === today) return T.lastToday(kg, gap);
+  return T.lastBefore(kg, gap);
 }
 
 /**
@@ -64,7 +100,7 @@ export function WeighCard({ date, today, weightKg }: Props) {
 
   const progress = (
     <a className="fd-diet-weigh-link" href={dietPath('progress')}>
-      <TrendingDown size={18} strokeWidth={2} aria-hidden /> Postęp
+      <TrendingDown size={18} strokeWidth={2} aria-hidden /> {T.progress}
     </a>
   );
 
@@ -72,19 +108,19 @@ export function WeighCard({ date, today, weightKg }: Props) {
     return (
       <section className="grp fd-diet-weigh" aria-labelledby="fd-diet-weigh-title">
         <div className="fd-diet-weigh-head">
-          <h2 id="fd-diet-weigh-title">Waga: {formatNumber(weightKg, 1)} kg</h2>
+          <h2 id="fd-diet-weigh-title">{T.weight(formatNumber(weightKg, 1))}</h2>
           <button
             ref={change}
             type="button"
             className="btn ghost sm"
-            aria-label="Zmień wagę"
+            aria-label={T.changeWeight}
             onClick={() => {
               setText(kgText(weightKg));
               setEditing(true);
               refocus.current = 'field';
             }}
           >
-            Zmień
+            {T.change}
           </button>
           {progress}
         </div>
@@ -108,12 +144,12 @@ export function WeighCard({ date, today, weightKg }: Props) {
   return (
     <section className="grp fd-diet-weigh" aria-labelledby="fd-diet-weigh-title">
       <div className="fd-diet-weigh-head">
-        <h2 id="fd-diet-weigh-title">{date === today ? 'Ile dziś ważysz?' : 'Ile ważyłeś tego dnia?'}</h2>
+        <h2 id="fd-diet-weigh-title">{date === today ? T.askToday : T.askPast}</h2>
         {progress}
       </div>
       <form className="fd-diet-body" onSubmit={save} noValidate>
         <label className="fld">
-          <span>Waga, kg</span>
+          <span>{T.field}</span>
           <input
             ref={field}
             type="text"
@@ -127,8 +163,8 @@ export function WeighCard({ date, today, weightKg }: Props) {
             aria-describedby="fd-diet-weigh-hint"
           />
         </label>
-        <button type="submit" className="btn sm" disabled={!fresh} aria-label="Zapisz wagę">
-          Zapisz
+        <button type="submit" className="btn sm" disabled={!fresh} aria-label={T.saveWeight}>
+          {T.save}
         </button>
         {editing && (
           <button
@@ -139,14 +175,14 @@ export function WeighCard({ date, today, weightKg }: Props) {
               refocus.current = 'change';
             }}
           >
-            Anuluj
+            {T.cancel}
           </button>
         )}
       </form>
       <p className={`tight${bad ? ' fd-diet-warn' : ''}`} id="fd-diet-weigh-hint">
         {bad
-          ? `Waga od ${WEIGHT_RANGE.min} do ${WEIGHT_RANGE.max} kg.`
-          : `${hint ? `${hint} ` : ''}Najlepiej rano, po toalecie, przed jedzeniem.`}
+          ? T.range(WEIGHT_RANGE.min, WEIGHT_RANGE.max)
+          : `${hint ? `${hint} ` : ''}${T.tip}`}
       </p>
     </section>
   );

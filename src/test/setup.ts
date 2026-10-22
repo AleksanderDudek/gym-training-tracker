@@ -4,6 +4,12 @@
 // IndexedDB w pamięci: dziennik jedzenia stoi na Dexie (jego testy biegną też w node).
 import 'fake-indexeddb/auto';
 import { afterEach } from 'vitest';
+// Sam typ: deklaracja `__KB_LANG__` w `globalThis`, bez wczytania modułu języka przed testem.
+import type {} from '../i18n';
+
+// Testy piszą po polsku, więc język jest polski bez względu na język maszyny. Test po angielsku
+// ustawia go sam, zanim cokolwiek zaimportuje: `vi.hoisted(() => { globalThis.__KB_LANG__ = 'en'; })`.
+globalThis.__KB_LANG__ = 'pl';
 
 if (typeof window !== 'undefined') {
   // Dopasowania jest-dom i Testing Library tylko tam, gdzie jest DOM: testy w node nie płacą

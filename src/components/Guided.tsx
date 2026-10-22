@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { EFFORT, READY, ex, ladderFor } from '../data/exercises';
 import { EX_JOKES } from '../data/exjokes';
 import { blocksOf } from '../engine/blocks';
@@ -17,6 +17,156 @@ import { PrepContent } from './Structure';
 import { Segmented } from './ui';
 import { Timer, formatClock } from './Timer';
 import type { AppState, EffortKey, ExerciseId, ReadyKey, Session, SetResult, Workout } from '../types';
+import { pluralEn, text } from '../i18n';
+
+const T = text({
+  pl: {
+    rest: 'Przerwa',
+    restPair: 'Przejście do pary',
+    restMove: 'Następna stacja',
+    restRound: 'Przerwa po rundzie',
+    restNext: 'Przerwa przed kolejnym ćwiczeniem',
+    set: (set: number, of: number) => `Seria ${set} z ${of}`,
+    round: (round: number | undefined, rounds: number | undefined, pos: number, size: number) =>
+      `Runda ${round} z ${rounds} · stacja ${pos} z ${size}`,
+    amrap: 'ile dasz radę',
+    secs: (n: number) => `${n} s`,
+    reps: (n: number) => `${n} powt.`,
+    perSide: ' na stronę',
+    skipped: (name: string) => `${name} pominięte na dziś.`,
+    partSkipped: 'Ta część pominięta na dziś.',
+    allDone: 'Wszystkie serie zrobione',
+    allDoneText: 'Zamknij trening, a aplikacja przeliczy poziomy i ustawi cele na następny raz.',
+    then: (name: string, where: string, target: string): ReactNode => (
+      <>
+        Potem: <b>{name}</b> · {where} · {target}
+      </>
+    ),
+    undo: (name: string) => `Cofnij serię: ${name}`,
+    list: 'Lista ćwiczeń',
+    finish: 'Zamknij trening',
+    stations: (n: number) => `${n} ${plural(n, ['stacja', 'stacje', 'stacji'])}`,
+    rounds: (n: number) => `${n} ${plural(n, ['runda', 'rundy', 'rund'])}`,
+    pair: (names: string) => `Para: ${names}`,
+    circuit: (stations: string, rounds: string) => `Obwód: ${stations} × ${rounds}`,
+    circuitBtn: (stations: string) => `obwód (${stations})`,
+    deload: 'Tydzień lżejszy',
+    deloadText: 'Mniej serii niż zwykle i bez testu „ile dasz radę”. Zostaw 2–3 powtórzenia zapasu.',
+    feel: 'Jak się dziś czujesz? Wpływa na dzisiejsze cele, nie na twoje poziomy.',
+    feelLabel: 'Samopoczucie',
+    prep: 'Przygotowanie stanowiska i rozgrzewka',
+    parts: (n: number) => `${n} ${plural(n, ['część', 'części', 'części'])} po kolei`,
+    howTo: (n: number) =>
+      `${n} ${plural(n, ['seria', 'serie', 'serii'])}. Po każdej stuknij „Zrobione” — przerwa odliczy się sama, a telefon zapika, kiedy minie. Kolejną część zaczynasz stuknięciem „Start”, więc zegar zmierzy też przejścia między ćwiczeniami.`,
+    showClock: 'Pokaż czas treningu w pasku',
+    begin: 'Zaczynam',
+    restOver: 'Przerwa minęła — czas na serię.',
+    less: 'Mniej',
+    more: 'Więcej',
+    secsLabel: 'sekundy',
+    repsLabel: 'powtórzenia',
+    weight: 'ciężar',
+    done: 'Zrobione',
+    technique: 'Technika',
+    seeTechnique: 'Zobacz technikę →',
+    skipEx: 'Pomiń to ćwiczenie dziś',
+    skipPart: 'Pomiń tę część dziś',
+    restLeft: (clock: string) => `Do końca przerwy ${clock}`,
+    skipRest: 'Pomiń przerwę',
+    getReady: (name: string, where: string, target: string): ReactNode => (
+      <>
+        Teraz przygotuj: <b>{name}</b> · {where} · {target}
+      </>
+    ),
+    partWaits: (n: number, parts: number) => `Część ${n} z ${parts} czeka na start`,
+    transition: 'Przejście',
+    sinceAria: (min: number) => `Od końca poprzedniego ćwiczenia: ${min} min`,
+    since: 'od końca poprzedniego ćwiczenia',
+    recRest: (label: string) => `Zalecana przerwa · ${label} · zostało`,
+    recRestLeft: (clock: string) => `Do końca zalecanej przerwy ${clock}`,
+    recRestOver: 'Zalecana przerwa minęła — możesz zaczynać.',
+    nextPart: 'Następna część',
+    effort: (name: string): ReactNode => (
+      <>
+        <b>{name}</b> — ile zostało w zapasie po ostatniej serii?
+      </>
+    ),
+    effortAria: (name: string) => `Zapas po ćwiczeniu ${name}`,
+  },
+  en: {
+    rest: 'Rest',
+    restPair: 'Over to the pair',
+    restMove: 'Next station',
+    restRound: 'Rest after the round',
+    restNext: 'Rest before the next exercise',
+    set: (set: number, of: number) => `Set ${set} of ${of}`,
+    round: (round: number | undefined, rounds: number | undefined, pos: number, size: number) =>
+      `Round ${round} of ${rounds} · station ${pos} of ${size}`,
+    amrap: 'as many as you can',
+    secs: (n: number) => `${n} s`,
+    reps: (n: number) => `${n} ${pluralEn(n, 'rep', 'reps')}`,
+    perSide: ' per side',
+    skipped: (name: string) => `${name} skipped for today.`,
+    partSkipped: 'This part skipped for today.',
+    allDone: 'All sets done',
+    allDoneText: 'Finish the workout and the app will recalculate your levels and set targets for next time.',
+    then: (name: string, where: string, target: string): ReactNode => (
+      <>
+        Then: <b>{name}</b> · {where} · {target}
+      </>
+    ),
+    undo: (name: string) => `Undo set: ${name}`,
+    list: 'Exercise list',
+    finish: 'Finish workout',
+    stations: (n: number) => `${n} ${pluralEn(n, 'station', 'stations')}`,
+    rounds: (n: number) => `${n} ${pluralEn(n, 'round', 'rounds')}`,
+    pair: (names: string) => `Pair: ${names}`,
+    circuit: (stations: string, rounds: string) => `Circuit: ${stations} × ${rounds}`,
+    circuitBtn: (stations: string) => `circuit (${stations})`,
+    deload: 'Lighter week',
+    deloadText: 'Fewer sets than usual and no “as many as you can” test. Leave 2–3 reps in reserve.',
+    feel: 'How do you feel today? It affects today’s targets, not your levels.',
+    feelLabel: 'How you feel',
+    prep: 'Station setup and warm-up',
+    parts: (n: number) => `${n} ${pluralEn(n, 'part', 'parts')} in order`,
+    howTo: (n: number) =>
+      `${n} ${pluralEn(n, 'set', 'sets')}. After each one, tap “Done” — the rest counts down by itself and your phone beeps when it’s over. You start the next part by tapping “Start”, so the clock also times the changeovers between exercises.`,
+    showClock: 'Show workout time in the bar',
+    begin: 'Let’s go',
+    restOver: 'Rest’s over — time for your set.',
+    less: 'Less',
+    more: 'More',
+    secsLabel: 'seconds',
+    repsLabel: 'reps',
+    weight: 'weight',
+    done: 'Done',
+    technique: 'Technique',
+    seeTechnique: 'See technique →',
+    skipEx: 'Skip this exercise today',
+    skipPart: 'Skip this part today',
+    restLeft: (clock: string) => `Rest left: ${clock}`,
+    skipRest: 'Skip rest',
+    getReady: (name: string, where: string, target: string): ReactNode => (
+      <>
+        Get ready: <b>{name}</b> · {where} · {target}
+      </>
+    ),
+    partWaits: (n: number, parts: number) => `Part ${n} of ${parts} is ready to start`,
+    transition: 'Changeover',
+    sinceAria: (min: number) => `Since the previous exercise ended: ${min} min`,
+    since: 'since the previous exercise ended',
+    recRest: (label: string) => `Recommended rest · ${label} · left`,
+    recRestLeft: (clock: string) => `Recommended rest left: ${clock}`,
+    recRestOver: 'Recommended rest is over — you can start.',
+    nextPart: 'Next part',
+    effort: (name: string): ReactNode => (
+      <>
+        <b>{name}</b> — how much was left in the tank after the last set?
+      </>
+    ),
+    effortAria: (name: string) => `Reps in reserve after ${name}`,
+  },
+});
 
 /**
  * Prowadzenie sesji: na ekranie jest tylko to, co trzeba zrobić teraz — jedna seria, a po
@@ -56,19 +206,19 @@ interface Props {
 }
 
 const REST_TITLE: Record<RestPlan['kind'], string> = {
-  set: 'Przerwa',
-  pair: 'Przejście do pary',
-  move: 'Następna stacja',
-  round: 'Przerwa po rundzie',
-  next: 'Przerwa przed kolejnym ćwiczeniem',
+  set: T.rest,
+  pair: T.restPair,
+  move: T.restMove,
+  round: T.restRound,
+  next: T.restNext,
 };
 
 /** „Seria 2 z 3”, w obwodzie „Runda 2 z 3 · stacja 3 z 7”. */
 function where(step: Step, steps: readonly Step[]): string {
-  if (step.kind !== 'circuit') return `Seria ${step.set} z ${step.of}`;
+  if (step.kind !== 'circuit') return T.set(step.set, step.of);
   const stations = new Set(steps.filter((s) => s.block === step.block).map((s) => s.ex));
   const pos = [...stations].indexOf(step.ex) + 1;
-  return `Runda ${step.round} z ${step.rounds} · stacja ${pos} z ${stations.size}`;
+  return T.round(step.round, step.rounds, pos, stations.size);
 }
 
 /** Cel serii słowami: „10 powt. · 16 kg”, „30 s”, „ile dasz radę”. */
@@ -76,9 +226,9 @@ function targetText(state: AppState, step: Step): string {
   const r = plan(state, step.ex)[step.set - 1];
   if (!r) return '';
   const m = ex(step.ex);
-  if (r.amrap) return `ile dasz radę${r.w !== null ? ` · ${r.w} kg` : ''}`;
-  const amount = m.unit === 'secs' ? `${r.reps} s` : `${r.reps} powt.`;
-  return `${amount}${m.side ? ' na stronę' : ''}${r.w !== null ? ` · ${r.w} kg` : ''}`;
+  if (r.amrap) return `${T.amrap}${r.w !== null ? ` · ${r.w} kg` : ''}`;
+  const amount = m.unit === 'secs' ? T.secs(r.reps) : T.reps(r.reps);
+  return `${amount}${m.side ? T.perSide : ''}${r.w !== null ? ` · ${r.w} kg` : ''}`;
 }
 
 /**
@@ -171,7 +321,7 @@ export function GuidedSession(props: Props) {
           }}
           onSkip={(ids) => {
             props.onSkipPart(ids);
-            props.onToast(ids.length === 1 ? `${ex(ids[0]!).name} pominięte na dziś.` : 'Ta część pominięta na dziś.');
+            props.onToast(ids.length === 1 ? T.skipped(ex(ids[0]!).name) : T.partSkipped);
           }}
         />
       ) : resting && rest ? (
@@ -190,13 +340,13 @@ export function GuidedSession(props: Props) {
           }}
           onSkip={() => {
             props.onSkip(step.ex);
-            props.onToast(`${ex(step.ex).name} pominięte na dziś.`);
+            props.onToast(T.skipped(ex(step.ex).name));
           }}
         />
       ) : (
         <div className="grp guide-done">
-          <h2>Wszystkie serie zrobione</h2>
-          <p className="tight">Zamknij trening, a aplikacja przeliczy poziomy i ustawi cele na następny raz.</p>
+          <h2>{T.allDone}</h2>
+          <p className="tight">{T.allDoneText}</p>
         </div>
       )}
 
@@ -205,9 +355,7 @@ export function GuidedSession(props: Props) {
       {!resting && step && waiting === null && (() => {
         const n = upcoming(cursor + 1);
         return n ? (
-          <p className="hint guide-next">
-            Potem: <b>{ex(n.ex).name}</b> · {where(n, steps).toLowerCase()} · {targetText(state, n)}
-          </p>
+          <p className="hint guide-next">{T.then(ex(n.ex).name, where(n, steps).toLowerCase(), targetText(state, n))}</p>
         ) : null;
       })()}
 
@@ -222,30 +370,27 @@ export function GuidedSession(props: Props) {
             session.last && !session.skip[session.last] && loggedSets(session, session.last) > 0 ? session.last : byOrder;
           return last ? (
             <button className="btn ghost sm" onClick={() => props.onUndo(last)}>
-              Cofnij serię: {ex(last).name}
+              {T.undo(ex(last).name)}
             </button>
           ) : null;
         })()}
         <button className="btn ghost sm" onClick={props.onList}>
-          Lista ćwiczeń
+          {T.list}
         </button>
         <button className={`btn${cursor < 0 ? '' : ' ghost'} sm`} onClick={props.onFinish}>
-          Zamknij trening
+          {T.finish}
         </button>
       </div>
     </div>
   );
 }
 
-const STATION_FORMS = ['stacja', 'stacje', 'stacji'] as const;
-const ROUND_FORMS = ['runda', 'rundy', 'rund'] as const;
-
 /** Część jednym wierszem: „Przysiad · 3 × 8 powt. · 16 kg”, „Para: A + B”, „Obwód: 5 stacji × 3 rundy”. */
 function partLine(state: AppState, b: Block): string {
   if (b.kind === 'straight') return `${ex(b.ids[0]!).name} · ${planLabel(state, b.ids[0]!)}`;
-  if (b.kind === 'pair') return `Para: ${b.ids.map((id) => ex(id).name).join(' + ')}`;
+  if (b.kind === 'pair') return T.pair(b.ids.map((id) => ex(id).name).join(' + '));
   const rounds = Math.max(...b.ids.map((id) => plan(state, id).length));
-  return `Obwód: ${b.ids.length} ${plural(b.ids.length, STATION_FORMS)} × ${rounds} ${plural(rounds, ROUND_FORMS)}`;
+  return T.circuit(T.stations(b.ids.length), T.rounds(rounds));
 }
 
 function Start({ state, workout, onReady, onList, onBegin, onClockPref }: Props) {
@@ -256,25 +401,23 @@ function Start({ state, workout, onReady, onList, onBegin, onClockPref }: Props)
     <div className="wrap guide">
       {session.deload && (
         <div className="dnote tip" style={{ marginTop: 12 }}>
-          <b>Tydzień lżejszy</b>
-          <p className="tight">Mniej serii niż zwykle i bez testu „ile dasz radę”. Zostaw 2–3 powtórzenia zapasu.</p>
+          <b>{T.deload}</b>
+          <p className="tight">{T.deloadText}</p>
         </div>
       )}
-      <div className="segline">Jak się dziś czujesz? Wpływa na dzisiejsze cele, nie na twoje poziomy.</div>
+      <div className="segline">{T.feel}</div>
       <Segmented
-        label="Samopoczucie"
+        label={T.feelLabel}
         value={session.ready}
         onChange={onReady}
         options={(Object.keys(READY) as ReadyKey[]).map((k) => ({ key: k, label: READY[k] }))}
       />
       <details className="prep prep-session" open>
-        <summary>Przygotowanie stanowiska i rozgrzewka</summary>
+        <summary>{T.prep}</summary>
         <PrepContent state={state} workout={workout} />
       </details>
       <div className="grp parts-plan">
-        <h2>
-          {blocks.length} {plural(blocks.length, ['część', 'części', 'części'])} po kolei
-        </h2>
+        <h2>{T.parts(blocks.length)}</h2>
         <ol className="parts-list">
           {blocks.map((b) => (
             <li key={b.n}>{partLine(state, b)}</li>
@@ -282,20 +425,18 @@ function Start({ state, workout, onReady, onList, onBegin, onClockPref }: Props)
         </ol>
       </div>
       <p className="hint" style={{ marginTop: 10 }}>
-        {steps.length} {plural(steps.length, ['seria', 'serie', 'serii'])}. Po każdej stuknij „Zrobione” — przerwa
-        odliczy się sama, a telefon zapika, kiedy minie. Kolejną część zaczynasz stuknięciem „Start”, więc zegar
-        zmierzy też przejścia między ćwiczeniami.
+        {T.howTo(steps.length)}
       </p>
       <label className="check-row">
         <input type="checkbox" checked={state.cfg.clock !== false} onChange={(e) => onClockPref(e.target.checked)} />
-        <span>Pokaż czas treningu w pasku</span>
+        <span>{T.showClock}</span>
       </label>
       <button className="btn wide" onClick={onBegin}>
-        Zaczynam
+        {T.begin}
       </button>
       <div className="guide-foot">
         <button className="btn ghost sm" onClick={onList}>
-          Lista ćwiczeń
+          {T.list}
         </button>
       </div>
     </div>
@@ -334,7 +475,7 @@ function SetPanel({
 
   return (
     <div className="grp guide-set">
-      {rested && <p className="guide-ready">Przerwa minęła — czas na serię.</p>}
+      {rested && <p className="guide-ready">{T.restOver}</p>}
       <div className="guide-where">
         <b className="ex-tag">{step.tag}</b> {where(step, steps)}
       </div>
@@ -342,11 +483,11 @@ function SetPanel({
       <p className="guide-target">{targetText(state, step)}</p>
 
       <div className="guide-entry">
-        <button className="btn ghost step" aria-label="Mniej" onClick={() => setValue(String(Math.max(0, n - 1)))}>
+        <button className="btn ghost step" aria-label={T.less} onClick={() => setValue(String(Math.max(0, n - 1)))}>
           −
         </button>
         <label className="fld">
-          <span>{timed ? 'sekundy' : 'powtórzenia'}</span>
+          <span>{timed ? T.secsLabel : T.repsLabel}</span>
           <input
             type="number"
             inputMode="numeric"
@@ -356,13 +497,13 @@ function SetPanel({
             onChange={(e) => setValue(e.target.value)}
           />
         </label>
-        <button className="btn ghost step" aria-label="Więcej" onClick={() => setValue(String(n + 1))}>
+        <button className="btn ghost step" aria-label={T.more} onClick={() => setValue(String(n + 1))}>
           +
         </button>
       </div>
       {r && r.w !== null && (
         <label className="fld guide-weight">
-          <span>ciężar</span>
+          <span>{T.weight}</span>
           <select value={String(w ?? r.w)} onChange={(e) => setW(Number(e.target.value))}>
             {ladderFor(state, step.ex).map((x) => (
               <option key={x} value={x}>
@@ -379,19 +520,19 @@ function SetPanel({
         disabled={n <= 0}
         onClick={() => onDone({ reps: n, w: r && r.w !== null ? (w ?? r.w) : null })}
       >
-        Zrobione
+        {T.done}
       </button>
 
       <details className="why">
-        <summary>Technika</summary>
+        <summary>{T.technique}</summary>
         <p className="hint">{m.hint}</p>
         {EX_JOKES[step.ex] && <p className="exjoke">{EX_JOKES[step.ex]}</p>}
         <a className="vidlink" href={exercisePath(step.ex)}>
-          Zobacz technikę →
+          {T.seeTechnique}
         </a>
       </details>
       <button className="btn ghost sm" onClick={onSkip}>
-        Pomiń to ćwiczenie dziś
+        {T.skipEx}
       </button>
     </div>
   );
@@ -417,7 +558,7 @@ function RestPanel({
   return (
     <div className="grp guide-rest" aria-live="polite">
       <div className="guide-where">{REST_TITLE[rest.kind ?? 'set']} · {restLabel(rest.secs)}</div>
-      <div className="guide-clock" role="timer" aria-label={`Do końca przerwy ${formatClock(left)}`}>
+      <div className="guide-clock" role="timer" aria-label={T.restLeft(formatClock(left))}>
         {formatClock(Math.ceil(left))}
       </div>
       <div className="guide-bar" aria-hidden="true">
@@ -429,13 +570,11 @@ function RestPanel({
           +30 s
         </button>
         <button className="btn sm" onClick={() => onRest('skip')}>
-          Pomiń przerwę
+          {T.skipRest}
         </button>
       </div>
       {next && (
-        <p className="guide-up">
-          Teraz przygotuj: <b>{ex(next.ex).name}</b> · {where(next, steps).toLowerCase()} · {targetText(state, next)}
-        </p>
+        <p className="guide-up">{T.getReady(ex(next.ex).name, where(next, steps).toLowerCase(), targetText(state, next))}</p>
       )}
     </div>
   );
@@ -484,28 +623,26 @@ function TransitionPanel({
   // Na przycisku to, co naprawdę teraz zaczynasz: ćwiczenie, oba z pary, a w obwodzie — liczba stacji.
   const label =
     block.kind === 'circuit' && open.length > 1
-      ? `obwód (${open.length} ${plural(open.length, STATION_FORMS)})`
+      ? T.circuitBtn(T.stations(open.length))
       : open.map((st) => ex(st.ex).name).join(' + ');
   const left = rest ? Math.max(0, (rest.until - now) / 1000) : 0;
   return (
     <div className="grp guide-trans">
-      <div className="guide-where">
-        Część {block.n} z {parts} czeka na start
-      </div>
-      <h2 className="guide-name">Przejście</h2>
+      <div className="guide-where">{T.partWaits(block.n, parts)}</div>
+      <h2 className="guide-name">{T.transition}</h2>
       {since !== null && (
         <>
-          <div className="guide-clock" role="timer" aria-label={`Od końca poprzedniego ćwiczenia: ${Math.floor(gap / 60)} min`}>
+          <div className="guide-clock" role="timer" aria-label={T.sinceAria(Math.floor(gap / 60))}>
             {formatClock(gap)}
           </div>
-          <p className="trans-cap">od końca poprzedniego ćwiczenia</p>
+          <p className="trans-cap">{T.since}</p>
         </>
       )}
       {rest && (
         <div className="trans-rest">
           <div className="guide-where">
-            Zalecana przerwa · {restLabel(rest.secs)} · zostało{' '}
-            <b role="timer" aria-label={`Do końca zalecanej przerwy ${formatClock(left)}`}>
+            {T.recRest(restLabel(rest.secs))}{' '}
+            <b role="timer" aria-label={T.recRestLeft(formatClock(left))}>
               {formatClock(Math.ceil(left))}
             </b>
           </div>
@@ -518,8 +655,8 @@ function TransitionPanel({
           </button>
         </div>
       )}
-      {rested && <p className="guide-ready">Zalecana przerwa minęła — możesz zaczynać.</p>}
-      <ul className="trans-next" aria-label="Następna część">
+      {rested && <p className="guide-ready">{T.recRestOver}</p>}
+      <ul className="trans-next" aria-label={T.nextPart}>
         {open.map((st) => (
           <li key={st.ex}>
             <b className="ex-tag">{st.tag}</b> <b>{ex(st.ex).name}</b> · {targetText(state, st)}
@@ -530,7 +667,7 @@ function TransitionPanel({
         Start: {label}
       </button>
       <button className="btn ghost sm" onClick={() => onSkip(open.map((st) => st.ex))}>
-        {open.length > 1 ? 'Pomiń tę część dziś' : 'Pomiń to ćwiczenie dziś'}
+        {open.length > 1 ? T.skipPart : T.skipEx}
       </button>
     </div>
   );
@@ -539,10 +676,8 @@ function TransitionPanel({
 function EffortAsk({ id, onEffort }: { id: ExerciseId; onEffort: (e: EffortKey) => void }) {
   return (
     <div className="grp guide-effort">
-      <div className="segline">
-        <b>{ex(id).name}</b> — ile zostało w zapasie po ostatniej serii?
-      </div>
-      <div className="seg" role="group" aria-label={`Zapas po ćwiczeniu ${ex(id).name}`}>
+      <div className="segline">{T.effort(ex(id).name)}</div>
+      <div className="seg" role="group" aria-label={T.effortAria(ex(id).name)}>
         {(Object.keys(EFFORT) as EffortKey[]).map((k) => (
           <button key={k} onClick={() => onEffort(k)}>
             {EFFORT[k].label}

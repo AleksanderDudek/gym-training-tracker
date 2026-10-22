@@ -1,14 +1,23 @@
+import { text } from '../../i18n';
 import type { MenuItem } from './types';
 
 export type MenuSort = 'menu' | 'bialko' | 'kcal' | 'gestosc';
 
 /** Polish keys: they are what a link shows (`?sort=bialko`). */
-export const SORT_LABELS: Record<MenuSort, string> = {
-  menu: 'Jak w menu',
-  bialko: 'Najwięcej białka',
-  kcal: 'Najmniej kcal',
-  gestosc: 'Białko na kcal',
-};
+export const SORT_LABELS: Record<MenuSort, string> = text({
+  pl: {
+    menu: 'Jak w menu',
+    bialko: 'Najwięcej białka',
+    kcal: 'Najmniej kcal',
+    gestosc: 'Białko na kcal',
+  },
+  en: {
+    menu: 'As on the menu',
+    bialko: 'Most protein',
+    kcal: 'Fewest kcal',
+    gestosc: 'Protein per kcal',
+  },
+});
 
 const density = (i: MenuItem) => (i.kcal > 0 ? i.protein / i.kcal : 0);
 

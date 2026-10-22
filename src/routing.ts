@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { IconName } from './components/icons';
 import { hashPath } from './food/hash';
+import { text } from './i18n';
 import type { CardioSport, DietPage, ExerciseId, FoodSection, Route, TabKey } from './types';
 
 /**
@@ -9,6 +10,89 @@ import type { CardioSport, DietPage, ExerciseId, FoodSection, Route, TabKey } fr
  * więc jeden `index.html` obsługuje każdą podstronę, a ścieżka dokumentu zostaje ta sama
  * i względne adresy zasobów (`base: './'`) dalej się rozwiązują.
  */
+
+const T = text({
+  pl: {
+    tabs: { train: 'Dziś', work: 'Trening', food: 'Jedzenie', ach: 'Osiągnięcia', prog: 'Profil' },
+    food: { diary: 'Jedzenie', recipes: 'Przepisy', products: 'Produkty', nearby: 'W pobliżu' } as Record<FoodSection, string>,
+    diet: {
+      plan: 'Plan posiłków',
+      plans: 'Moje plany',
+      progress: 'Postęp',
+      profile: 'Profil diety',
+      shopping: 'Lista zakupów',
+    } as Record<DietPage, string>,
+    sections: { plan: 'Plan', workouts: 'Treningi', atlas: 'Ćwiczenia', diary: 'Dziennik' },
+    sport: { steps: 'Kroki', treadmill: 'Bieżnia', bike: 'Rower', dance: 'Taniec' } as Record<CardioSport, string>,
+    screen: {
+      train: 'Dziś',
+      plan: 'Plan',
+      atlas: 'Atlas',
+      ach: 'Osiągnięcia',
+      prog: 'Profil',
+      work: 'Treningi',
+      food: 'Jedzenie',
+      set: 'Ustawienia',
+    } as Record<TabKey, string>,
+    exercises: 'Ćwiczenia',
+    workout: 'Trening',
+    editWorkout: 'Edycja treningu',
+    newWorkout: 'Nowy trening',
+    plans: 'Plany',
+    classic: 'Plan klasyczny',
+    planOne: 'Plan',
+    editPlan: 'Edycja planu',
+    newPlan: 'Nowy plan',
+    exercise: 'Ćwiczenie',
+    history: 'Twoja historia',
+    snacks: 'Przekąski',
+    snack: 'Przekąska',
+    cardio: 'Kroki i cardio',
+    promo: 'Poleć znajomym',
+    menu: 'Menu',
+    restaurants: 'Lokale',
+  },
+  en: {
+    tabs: { train: 'Today', work: 'Training', food: 'Food', ach: 'Awards', prog: 'Profile' },
+    food: { diary: 'Food', recipes: 'Recipes', products: 'Products', nearby: 'Nearby' },
+    diet: {
+      plan: 'Meal plan',
+      plans: 'My plans',
+      progress: 'Progress',
+      profile: 'Diet profile',
+      shopping: 'Shopping list',
+    },
+    sections: { plan: 'Plan', workouts: 'Workouts', atlas: 'Exercises', diary: 'Diary' },
+    sport: { steps: 'Steps', treadmill: 'Treadmill', bike: 'Bike', dance: 'Dance' },
+    screen: {
+      train: 'Today',
+      plan: 'Plan',
+      atlas: 'Atlas',
+      ach: 'Achievements',
+      prog: 'Profile',
+      work: 'Workouts',
+      food: 'Food',
+      set: 'Settings',
+    },
+    exercises: 'Exercises',
+    workout: 'Workout',
+    editWorkout: 'Edit workout',
+    newWorkout: 'New workout',
+    plans: 'Plans',
+    classic: 'Classic plan',
+    planOne: 'Plan',
+    editPlan: 'Edit plan',
+    newPlan: 'New plan',
+    exercise: 'Exercise',
+    history: 'Your history',
+    snacks: 'Snacks',
+    snack: 'Snack',
+    cardio: 'Steps & cardio',
+    promo: 'Recommend to friends',
+    menu: 'Menu',
+    restaurants: 'Restaurants',
+  },
+});
 
 /**
  * Zakładki dolnego paska. Pięć, bo tyle przewidują i wytyczne Material 3 („od trzech do
@@ -27,11 +111,11 @@ import type { CardioSport, DietPage, ExerciseId, FoodSection, Route, TabKey } fr
  * odnośnik w pasku liczy `tabHref` przy każdym renderze.
  */
 export const TABS: { key: TabKey; label: string; path: string; icon: IconName }[] = [
-  { key: 'train', label: 'Dziś', path: '#/sesja', icon: 'session' },
-  { key: 'work', label: 'Trening', path: '#/treningi', icon: 'workouts' },
-  { key: 'food', label: 'Jedzenie', path: '#/jedzenie', icon: 'food' },
-  { key: 'ach', label: 'Osiągnięcia', path: '#/osiagniecia', icon: 'awards' },
-  { key: 'prog', label: 'Profil', path: '#/profil', icon: 'profile' },
+  { key: 'train', label: T.tabs.train, path: '#/sesja', icon: 'session' },
+  { key: 'work', label: T.tabs.work, path: '#/treningi', icon: 'workouts' }, // i18n-ignore: trasa
+  { key: 'food', label: T.tabs.food, path: '#/jedzenie', icon: 'food' },
+  { key: 'ach', label: T.tabs.ach, path: '#/osiagniecia', icon: 'awards' },
+  { key: 'prog', label: T.tabs.prog, path: '#/profil', icon: 'profile' },
 ];
 
 /** Ustawienia mają własny przycisk w pasku aplikacji — poza dolnym paskiem, ale wciąż jeden klik. */
@@ -109,20 +193,9 @@ const DIET_BY_SLUG = Object.fromEntries(Object.entries(DIET_SLUG).map(([k, v]) =
 
 export const dietPath = (page: DietPage): string => `${FOOD_PATH}/${DIET_SLUG[page]}`;
 
-const FOOD_TITLE: Record<FoodSection, string> = {
-  diary: 'Jedzenie',
-  recipes: 'Przepisy',
-  products: 'Produkty',
-  nearby: 'W pobliżu',
-};
+const FOOD_TITLE: Record<FoodSection, string> = T.food;
 
-const DIET_TITLE: Record<DietPage, string> = {
-  plan: 'Plan posiłków',
-  plans: 'Moje plany',
-  progress: 'Postęp',
-  profile: 'Profil diety',
-  shopping: 'Lista zakupów',
-};
+const DIET_TITLE: Record<DietPage, string> = T.diet;
 
 /** Pozycja przełącznika sekcji: adres korzenia sekcji i jej nazwa. */
 export interface SectionLink {
@@ -136,20 +209,20 @@ export interface SectionLink {
  */
 export const SECTIONS: Record<'work' | 'food', readonly SectionLink[]> = {
   work: [
-    { path: '#/plan', label: 'Plan' },
-    { path: '#/treningi', label: 'Treningi' },
-    { path: ATLAS_PATH, label: 'Ćwiczenia' },
+    { path: '#/plan', label: T.sections.plan },
+    { path: '#/treningi', label: T.sections.workouts }, // i18n-ignore: trasa
+    { path: ATLAS_PATH, label: T.sections.atlas },
   ],
   food: [
-    { path: FOOD_PATH, label: 'Dziennik' },
-    { path: RECIPES_PATH, label: 'Przepisy' },
-    { path: PRODUCTS_PATH, label: 'Produkty' },
-    { path: NEARBY_PATH, label: 'W pobliżu' },
+    { path: FOOD_PATH, label: T.sections.diary },
+    { path: RECIPES_PATH, label: T.food.recipes },
+    { path: PRODUCTS_PATH, label: T.food.products },
+    { path: NEARBY_PATH, label: T.food.nearby },
   ],
 };
 
 /** Podgląd treningu: ćwiczenia z seriami, mięśnie, doradca i start. */
-export const workoutPath = (id: string): string => `#/treningi/${encodeURIComponent(id)}`;
+export const workoutPath = (id: string): string => `#/treningi/${encodeURIComponent(id)}`; // i18n-ignore: trasa
 
 /**
  * Kreator: pusty albo z kopią gotowego treningu. `add` — ćwiczenie do dopisania na wejściu
@@ -157,13 +230,13 @@ export const workoutPath = (id: string): string => `#/treningi/${encodeURICompon
  */
 export const workoutNewPath = (from?: string, add?: string): string =>
   add
-    ? `#/treningi/nowy/${from ? encodeURIComponent(from) : '-'}/${encodeURIComponent(add)}`
+    ? `#/treningi/nowy/${from ? encodeURIComponent(from) : '-'}/${encodeURIComponent(add)}` // i18n-ignore: trasa
     : from
-      ? `#/treningi/nowy/${encodeURIComponent(from)}`
-      : '#/treningi/nowy';
+      ? `#/treningi/nowy/${encodeURIComponent(from)}` // i18n-ignore: trasa
+      : '#/treningi/nowy'; // i18n-ignore: trasa
 
 export const workoutEditPath = (id: string, add?: string): string =>
-  `#/treningi/${encodeURIComponent(id)}/edytuj${add ? `/${encodeURIComponent(add)}` : ''}`;
+  `#/treningi/${encodeURIComponent(id)}/edytuj${add ? `/${encodeURIComponent(add)}` : ''}`; // i18n-ignore: trasa
 
 /** Katalog planów, konfigurator klasyczny, podgląd planu i kreator. */
 export const PLANS_PATH = '#/plany';
@@ -195,7 +268,7 @@ export const snackAddPath = (id?: ExerciseId): string =>
 export const cardioPath = (): string => '#/cardio';
 
 const SPORT_SLUG: Record<CardioSport, string> = {
-  steps: 'kroki',
+  steps: 'kroki', // i18n-ignore: trasa
   treadmill: 'bieznia',
   bike: 'rower',
   dance: 'taniec',
@@ -208,12 +281,7 @@ const SPORT_BY_SLUG = Object.fromEntries(
 ) as Record<string, CardioSport>;
 
 /** Nazwa formularza w pasku aplikacji — to, co się wpisuje. */
-export const SPORT_TITLE: Record<CardioSport, string> = {
-  steps: 'Kroki',
-  treadmill: 'Bieżnia',
-  bike: 'Rower',
-  dance: 'Taniec',
-};
+export const SPORT_TITLE: Record<CardioSport, string> = T.sport;
 
 /** Czy od uruchomienia była już jakaś zmiana trasy w aplikacji. */
 let movedInApp = false;
@@ -225,14 +293,14 @@ export interface Screen {
 }
 
 const TAB_SCREEN: Record<TabKey, Screen> = {
-  train: { title: 'Dziś', parent: null },
-  plan: { title: 'Plan', parent: null },
-  atlas: { title: 'Atlas', parent: null },
-  ach: { title: 'Osiągnięcia', parent: null },
-  prog: { title: 'Profil', parent: null },
-  work: { title: 'Treningi', parent: null },
-  food: { title: 'Jedzenie', parent: null },
-  set: { title: 'Ustawienia', parent: '#/profil' },
+  train: { title: T.screen.train, parent: null },
+  plan: { title: T.screen.plan, parent: null },
+  atlas: { title: T.screen.atlas, parent: null },
+  ach: { title: T.screen.ach, parent: null },
+  prog: { title: T.screen.prog, parent: null },
+  work: { title: T.screen.work, parent: null },
+  food: { title: T.screen.food, parent: null },
+  set: { title: T.screen.set, parent: '#/profil' },
 };
 
 /**
@@ -245,33 +313,33 @@ export function screenOf(route: Route): Screen {
       return TAB_SCREEN[route.tab];
     case 'atlas':
       // Sekcja zakładki Trening — przełącznik u góry ekranu, więc bez strzałki wstecz.
-      return { title: 'Ćwiczenia', parent: null };
+      return { title: T.exercises, parent: null };
     case 'workout':
-      return { title: 'Trening', parent: '#/treningi' };
+      return { title: T.workout, parent: '#/treningi' }; // i18n-ignore: trasa
     case 'workoutEdit':
-      return { title: route.id ? 'Edycja treningu' : 'Nowy trening', parent: '#/treningi' };
+      return { title: route.id ? T.editWorkout : T.newWorkout, parent: '#/treningi' }; // i18n-ignore: trasa
     case 'plans':
-      return { title: 'Plany', parent: '#/plan' };
+      return { title: T.plans, parent: '#/plan' };
     case 'planClassic':
-      return { title: 'Plan klasyczny', parent: PLANS_PATH };
+      return { title: T.classic, parent: PLANS_PATH };
     case 'planDetail':
-      return { title: 'Plan', parent: PLANS_PATH };
+      return { title: T.planOne, parent: PLANS_PATH };
     case 'planEdit':
-      return { title: route.id ? 'Edycja planu' : 'Nowy plan', parent: PLANS_PATH };
+      return { title: route.id ? T.editPlan : T.newPlan, parent: PLANS_PATH };
     case 'exercise':
-      return { title: 'Ćwiczenie', parent: '#/cwiczenia' };
+      return { title: T.exercise, parent: '#/cwiczenia' };
     case 'exstats':
-      return { title: 'Twoja historia', parent: '#/profil' };
+      return { title: T.history, parent: '#/profil' };
     case 'snacks':
-      return { title: 'Przekąski', parent: '#/sesja' };
+      return { title: T.snacks, parent: '#/sesja' };
     case 'snackAdd':
-      return { title: 'Przekąska', parent: '#/sesja' };
+      return { title: T.snack, parent: '#/sesja' };
     case 'cardio':
-      return { title: 'Kroki i cardio', parent: '#/sesja' };
+      return { title: T.cardio, parent: '#/sesja' };
     case 'cardioAdd':
       return { title: SPORT_TITLE[route.sport ?? 'steps'], parent: '#/sesja' };
     case 'promo':
-      return { title: 'Poleć znajomym', parent: SETTINGS_PATH };
+      return { title: T.promo, parent: SETTINGS_PATH };
     case 'food':
       return { title: FOOD_TITLE[route.section], parent: null };
     case 'diet':
@@ -282,7 +350,7 @@ export function screenOf(route: Route): Screen {
       };
     case 'restaurants':
       // Nazwa sieci stoi dużą czcionką w treści — w pasku, jak przy ćwiczeniu, rodzaj strony.
-      return route.chain ? { title: 'Menu', parent: RESTAURANTS_PATH } : { title: 'Lokale', parent: PRODUCTS_PATH };
+      return route.chain ? { title: T.menu, parent: RESTAURANTS_PATH } : { title: T.restaurants, parent: PRODUCTS_PATH };
   }
 }
 
@@ -385,7 +453,7 @@ export const sectionHref = (path: string): string => memory.hashes[path] ?? path
  * termin), inaczej Treningi; Jedzenie — Dziennik. Pozostałe zakładki mają stały adres.
  */
 export function tabHref(key: TabKey, opts: { hasPlan: boolean }): string {
-  if (key === 'work') return sectionHref(memory.tabs.work ?? (opts.hasPlan ? '#/plan' : '#/treningi'));
+  if (key === 'work') return sectionHref(memory.tabs.work ?? (opts.hasPlan ? '#/plan' : '#/treningi')); // i18n-ignore: trasa
   if (key === 'food') return sectionHref(memory.tabs.food ?? FOOD_PATH);
   return TABS.find((t) => t.key === key)?.path ?? HOME;
 }
@@ -439,7 +507,7 @@ export function parseHash(hash: string): Route {
     if (!second) return { kind: 'snacks' };
     return second === 'dodaj' ? { kind: 'snackAdd' } : { kind: 'snackAdd', id: second };
   }
-  if (head === 'treningi' && second) {
+  if (head === 'treningi' && second) { // i18n-ignore: trasa
     const third = parts[2];
     const add = parts[3];
     if (second === 'nowy') return { kind: 'workoutEdit', from: third === '-' ? undefined : third, add };

@@ -1,9 +1,23 @@
 import { useRef, useState } from 'react';
+import { text } from '../../../i18n';
 import { formatNumber } from '../../lib/format';
 import type { Dictionaries } from '../../lib/types';
 import type { ReadyGroup } from '../../recipes/ready';
 import { ProductCard } from '../common/ProductCard';
 import './recipes.css';
+
+const T = text({
+  pl: {
+    more: (n: string, of: string) => `Pokaż więcej (${n} z ${of})`,
+    less: 'Zwiń',
+    none: 'Brak gotowych produktów spełniających zasadę w tym sklepie.',
+  },
+  en: {
+    more: (n: string, of: string) => `Show more (${n} of ${of})`,
+    less: 'Show less',
+    none: 'No ready products meet the rule in this shop.',
+  },
+});
 
 const VISIBLE = 6;
 const STEP = 24;
@@ -42,12 +56,12 @@ function Group({ group, dict, onOpen }: { group: ReadyGroup; dict: Dictionaries;
         <div className="btnrow fd-rec-ready-more">
           {hidden > 0 && (
             <button type="button" className="btn sm ghost" onClick={() => setVisible((v) => v + STEP)}>
-              Pokaż więcej ({formatNumber(Math.min(hidden, STEP), 0)} z {formatNumber(hidden, 0)})
+              {T.more(formatNumber(Math.min(hidden, STEP), 0), formatNumber(hidden, 0))}
             </button>
           )}
           {visible > VISIBLE && (
             <button type="button" className="btn sm ghost" onClick={collapse}>
-              Zwiń
+              {T.less}
             </button>
           )}
         </div>
@@ -67,7 +81,7 @@ export function ReadyProducts({
   onOpen: (code: string) => void;
 }) {
   if (groups.length === 0) {
-    return <p className="hint">Brak gotowych produktów spełniających zasadę w tym sklepie.</p>;
+    return <p className="hint">{T.none}</p>;
   }
   return (
     <div className="fd-rec-ready-groups">

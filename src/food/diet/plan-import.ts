@@ -1,3 +1,4 @@
+import { text } from '../../i18n';
 import { storeKey } from '../lib/stores';
 import { normalizeForSearch } from '../lib/text';
 import type { Plan, PlanItem, PlanVariant } from './plan';
@@ -27,6 +28,23 @@ export interface ImportedPlan {
   warnings: string[];
 }
 
+const T = text({
+  pl: {
+    noVariants: 'W pliku nie ma arkusza WARIANTY – to nie jest plan w znanym formacie.',
+    totals: (key: string, macro: string, sum: number, stated: number) =>
+      `${key}: ${macro} wyliczone ${sum} g, w planie ${stated} g`,
+    noMacros: (items: string) => `Bez makroskładników (tylko kcal): ${items}`,
+    title: 'Plan z Excela',
+  },
+  en: {
+    noVariants: 'The file has no WARIANTY sheet – this isn’t a plan in a known format.',
+    totals: (key: string, macro: string, sum: number, stated: number) =>
+      `${key}: ${macro} adds up to ${sum} g, the plan says ${stated} g`,
+    noMacros: (items: string) => `No macros (kcal only): ${items}`,
+    title: 'Plan from Excel',
+  },
+});
+
 const fold = (value: Cell | undefined) => normalizeForSearch(String(value ?? ''));
 const num = (value: Cell | undefined): number | null =>
   typeof value === 'number' && Number.isFinite(value) ? value : null;
@@ -55,17 +73,18 @@ function readProfile(panel: Sheet | null): Partial<Profile> {
   const set = <K extends keyof Profile>(key: K, value: Profile[K] | null) => {
     if (value !== null) profile[key] = value;
   };
-  set('startWeightKg', n('Waga startowa'));
-  set('targetWeightKg', n('Waga docelowa'));
+  // The workbook's own Polish labels, matched as they are written in the file.
+  set('startWeightKg', n('Waga startowa')); // i18n-ignore: workbook label
+  set('targetWeightKg', n('Waga docelowa')); // i18n-ignore: workbook label
   set('heightCm', n('Wzrost'));
   set('age', n('Wiek'));
-  const sex = fold(panelValue(panel, 'Płeć'));
+  const sex = fold(panelValue(panel, 'Płeć')); // i18n-ignore: workbook label
   if (sex === 'm' || sex === 'k') set('sex', sex.toUpperCase() as Sex);
-  set('activityMultiplier', n('Mnożnik aktywności'));
-  set('baseSteps', n('Kroki bazowe'));
-  set('targetSteps', n('CEL: kroki'));
-  set('extraWeeklyKcal', n('Dodatkowy wysiłek'));
-  set('kcalPer1000StepsPerKg', n('kcal na 1000 kroków'));
+  set('activityMultiplier', n('Mnożnik aktywności')); // i18n-ignore: workbook label
+  set('baseSteps', n('Kroki bazowe')); // i18n-ignore: workbook label
+  set('targetSteps', n('CEL: kroki')); // i18n-ignore: workbook label
+  set('extraWeeklyKcal', n('Dodatkowy wysiłek')); // i18n-ignore: workbook label
+  set('kcalPer1000StepsPerKg', n('kcal na 1000 kroków')); // i18n-ignore: workbook label
   set('kcalPerKg', n('Energia zawarta w 1 kg'));
   const kcal = n('kcal planowane dziennie');
   set('dailyKcal', kcal === null ? null : Math.round(kcal / 10) * 10);
@@ -294,7 +313,7 @@ function checkTotals(key: string, items: PlanItem[], totals: Nutrients, warnings
   for (const k of ['protein', 'carbs', 'fat'] as const) {
     const stated = totals[k];
     if (stated !== null && Math.abs(sum(k) - stated) > 3) {
-      warnings.push(`${key}: ${k} wyliczone ${Math.round(sum(k))} g, w planie ${Math.round(stated)} g`);
+      warnings.push(T.totals(key, k, Math.round(sum(k)), Math.round(stated)));
     }
   }
 }
@@ -338,7 +357,7 @@ export function importPlan(book: Workbook, id = 'excel'): ImportedPlan {
   const warnings: string[] = [];
   const panel = sheetNamed(book, 'PANEL');
   const warianty = sheetNamed(book, 'WARIANTY');
-  if (!warianty) throw new Error('W pliku nie ma arkusza WARIANTY – to nie jest plan w znanym formacie.');
+  if (!warianty) throw new Error(T.noVariants);
   const tables = readTables(sheetNamed(book, 'DANIA'), sheetNamed(book, 'DODATKI'));
   const { templates, order } = readVariants(warianty, tables, warnings);
   const { days, logged, start } = readLoggedDays(sheetNamed(book, 'PLAN'));
@@ -349,9 +368,9 @@ export function importPlan(book: Workbook, id = 'excel'): ImportedPlan {
     for (const v of variants) for (const item of v.items) if (!foods.has(item.text)) foods.set(item.text, item);
 
   const unknown = [...foods.values()].filter((f) => f.protein === null).map((f) => f.text);
-  if (unknown.length) warnings.push(`Bez makroskładników (tylko kcal): ${unknown.join('; ')}`);
+  if (unknown.length) warnings.push(T.noMacros(unknown.join('; ')));
 
-  const title = str(panel?.get('B2')) || 'Plan z Excela';
+  const title = str(panel?.get('B2')) || T.title;
   const plan: Plan = {
     id,
     name: title,

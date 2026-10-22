@@ -207,6 +207,29 @@ w atlasie — kopiowanie jego SVG nic by nie dało, bo kolory kresek siedzą w a
 a samodzielny obrazek nie ma do niego dostępu. Skala liczona jest z obwiedni postaci, nie
 z rozmiaru sceny: scena ma 160 na 150 jednostek, a człowiek zajmuje z niej ćwiartkę.
 
+## Języki: polski i angielski
+
+Aplikacja mówi po polsku albo po angielsku. Język wybiera się sam: zapisany wybór z ustawień,
+a bez niego pierwszy obsługiwany z języków przeglądarki (`pl-PL` → polski); przeglądarka w innym
+języku dostaje angielski. W **Ustawieniach** na górze karta **„Język · Language”** (nagłówek w obu
+językach, żeby znalazł ją ktoś, kogo przeglądarka wpuściła w nie ten język): Automatycznie,
+Polski, English. Zmiana zapisuje wybór w tej przeglądarce (nie w kopii danych — import kopii na
+innym urządzeniu nie zmienia mu języka) i przeładowuje stronę; nic się nie gubi.
+
+- Teksty mieszkają w dwujęzycznych katalogach przy kodzie (`text({ pl, en })` z `src/i18n.ts`);
+  połowa angielska jest typowana polską, więc brak tłumaczenia to błąd kompilacji. Dane (ćwiczenia,
+  plany, przepisy, żarty) — `say(pl, en)` wprost w danych. Szczegóły i słowniczek: `docs/i18n.md`.
+- Liczby i daty idą przez `LOCALE` (`pl-PL` albo `en-GB`: metrycznie, dzień–miesiąc, tydzień od
+  poniedziałku).
+- Zostają po polsku: nazwy produktów, marek, sklepów i dań z menu lokali (dane polskiego rynku),
+  polskie filmy z YouTube (po angielsku schowane, gdy ćwiczenie ma inne), nazwa aplikacji
+  „GYM TRACKER Zdrowie”. Wartości zapisane (pory posiłków w dzienniku, grupy ćwiczeń, nagłówki
+  arkusza Excela) zostają kluczami — tłumaczą się tylko etykiety.
+- To, co aplikacja zapisuje jako tekst (wpis w kronice planu, domyślna nazwa kopii treningu,
+  przypomnienie w kolejce), powstaje w języku chwili zapisu i taki zostaje.
+- `node scripts/i18n-scan.mjs` wypisuje tekst po polsku poza katalogami. Testy biegną po polsku;
+  każdy obszar ma test po angielsku (`*.en.test.*`).
+
 ## Wprowadzenie, udostępnianie i wsparcie
 
 **Wprowadzenie** wchodzi samo tylko przy pierwszym uruchomieniu i nigdy w trakcie sesji.

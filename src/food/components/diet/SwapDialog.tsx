@@ -1,7 +1,23 @@
+import { text } from '../../../i18n';
 import type { Food } from '../../diet/foods';
 import { SWAP_TOLERANCE, type Suggestion } from '../../diet/suggest';
 import { Sheet } from '../common/Sheet';
 import { MacroLine, SuggestionList } from './SuggestionList';
+
+const T = text({
+  pl: {
+    title: (name: string) => `Zamień: ${name}`,
+    subtitle: (pct: number) => ` · zamienniki ±${pct}% kalorii, najbliższe makro najpierw`,
+    pick: 'Wybierz',
+    none: 'Nie ma nic o podobnej kaloryczności. Dodaj własne jedzenie („Dodaj zjedzone” → „Tylko kalorie” → zapisz) albo pomiń tę pozycję.',
+  },
+  en: {
+    title: (name: string) => `Swap: ${name}`,
+    subtitle: (pct: number) => ` · swaps within ±${pct}% of the calories, closest macros first`,
+    pick: 'Choose',
+    none: 'Nothing has similar calories. Add your own food (“Add food” → “Calories only” → save) or skip this item.',
+  },
+});
 
 interface Props {
   /** Pozycja do zamiany; `null` — arkusz zamknięty. */
@@ -20,12 +36,12 @@ export function SwapDialog({ item, options, onPick, onClose }: Props) {
   return (
     <Sheet
       open={item !== null}
-      title={item ? `Zamień: ${item.name}` : ''}
+      title={item ? T.title(item.name) : ''}
       subtitle={
         item && (
           <>
-            <MacroLine food={item} /> · zamienniki ±{Math.round(SWAP_TOLERANCE * 100)}% kalorii, najbliższe makro
-            najpierw
+            <MacroLine food={item} />
+            {T.subtitle(Math.round(SWAP_TOLERANCE * 100))}
           </>
         )
       }
@@ -36,17 +52,14 @@ export function SwapDialog({ item, options, onPick, onClose }: Props) {
         (options.length ? (
           <SuggestionList
             suggestions={options}
-            actionLabel="Wybierz"
+            actionLabel={T.pick}
             onPick={(food) => {
               onPick(food);
               onClose();
             }}
           />
         ) : (
-          <p className="tight">
-            Nie ma nic o podobnej kaloryczności. Dodaj własne jedzenie („Dodaj zjedzone” → „Tylko kalorie” → zapisz)
-            albo pomiń tę pozycję.
-          </p>
+          <p className="tight">{T.none}</p>
         ))}
     </Sheet>
   );
