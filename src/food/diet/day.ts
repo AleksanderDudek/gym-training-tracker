@@ -1,4 +1,4 @@
-import { text } from '../../i18n';
+import { num, text } from '../../i18n';
 import type { MacroTargets } from './profiles';
 import type { Nutrients } from './types';
 
@@ -21,9 +21,9 @@ const T = text({
     weekDeficit: (kcal: number) => `W tym tygodniu ${kcal} kcal mniej niż w planie – możesz dziś zjeść trochę więcej.`,
   },
   en: {
-    kcalOver: (kcal: number) => `${kcal} kcal over the goal`,
-    kcalUnder: (kcal: number) => `${kcal} kcal under the goal – eating too little slows you down too`,
-    kcalLeft: (kcal: number) => `${kcal} kcal left`,
+    kcalOver: (kcal: number) => `${num(kcal)} kcal over the goal`,
+    kcalUnder: (kcal: number) => `${num(kcal)} kcal under the goal – eating too little slows you down too`,
+    kcalLeft: (kcal: number) => `${num(kcal)} kcal left`,
     onTarget: 'on target',
     proteinShort: (g: string) => `${g} protein to go`,
     proteinOk: 'protein on target',
@@ -34,8 +34,8 @@ const T = text({
     fatLeft: (g: string) => `${g} fat left`,
     weekOnPlan: 'This week is going to plan.',
     weekSurplus: (kcal: number, days: number) =>
-      `This week you’ve eaten ${kcal} kcal over the plan – I’m spreading it over ${days} ${days === 1 ? 'day' : 'days'}.`,
-    weekDeficit: (kcal: number) => `This week you’re ${kcal} kcal under the plan – you can eat a bit more today.`,
+      `This week you’ve eaten ${num(kcal)} kcal over the plan – I’m spreading it over ${days} ${days === 1 ? 'day' : 'days'}.`,
+    weekDeficit: (kcal: number) => `This week you’re ${num(kcal)} kcal under the plan – you can eat a bit more today.`,
   },
 });
 

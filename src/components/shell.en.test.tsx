@@ -185,7 +185,7 @@ describe('device status words (English visit)', () => {
   it('screen titles, tabs and contact links', async () => {
     const { TABS, screenOf, SECTIONS } = await import('../routing');
     const { contactLinks } = await import('../contact');
-    expect(TABS.map((t) => t.label)).toEqual(['Today', 'Training', 'Food', 'Achievements', 'Profile']);
+    expect(TABS.map((t) => t.label)).toEqual(['Today', 'Training', 'Food', 'Awards', 'Profile']);
     expect(SECTIONS.work.map((s) => s.label)).toEqual(['Plan', 'Workouts', 'Exercises']);
     expect(screenOf({ kind: 'tab', tab: 'set' }).title).toBe('Settings');
     expect(screenOf({ kind: 'cardio' }).title).toBe('Steps & cardio');

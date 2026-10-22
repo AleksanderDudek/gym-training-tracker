@@ -53,7 +53,7 @@ const T = text({
     restaurants: 'Lokale',
   },
   en: {
-    tabs: { train: 'Today', work: 'Training', food: 'Food', ach: 'Achievements', prog: 'Profile' },
+    tabs: { train: 'Today', work: 'Training', food: 'Food', ach: 'Awards', prog: 'Profile' },
     food: { diary: 'Food', recipes: 'Recipes', products: 'Products', nearby: 'Nearby' },
     diet: {
       plan: 'Meal plan',

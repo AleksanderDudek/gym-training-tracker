@@ -1,4 +1,4 @@
-import { text } from '../../i18n';
+import { num, text } from '../../i18n';
 import type { Food } from './foods';
 import type { DietProfile, Fit, MacroTargets } from './profiles';
 
@@ -23,14 +23,14 @@ const T = text({
     atHome: 'you have it at home',
     everywhere: 'in any bigger shop',
     macrosUnknown: 'macros unknown',
-    overBudget: (kcal: number) => `${kcal} kcal over budget`,
+    overBudget: (kcal: number) => `${num(kcal)} kcal over budget`,
     carbsOverLimit: (carbs: string, max: number) => `${carbs} carbs with a ${max} g limit`,
     muchFat: (fat: string) => `a lot of fat (${fat})`,
     fillsProtein: (protein: string, missing: string) => `fills the protein gap: ${protein} of the missing ${missing}`,
-    kcalLeft: (kcal: number, left: number) => `${kcal} of the ${left} kcal left`,
+    kcalLeft: (kcal: number, left: number) => `${num(kcal)} of the ${num(left)} kcal left`,
     favorite: 'one of your favourites',
     pair: 'two items together',
-    instead: (kcal: number, was: number) => `${kcal} kcal instead of ${was}`,
+    instead: (kcal: number, was: number) => `${num(kcal)} kcal instead of ${num(was)}`,
     proteinDelta: (sign: string, g: number) => `${sign}${g} g protein`,
   },
 });
