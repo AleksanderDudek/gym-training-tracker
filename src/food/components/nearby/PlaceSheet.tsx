@@ -8,6 +8,7 @@ import { formatNumber } from '../../lib/format';
 import type { RankedPlace } from '../../nearby/eat';
 import { directionsUrl, geoUri, type MapsPlatform } from '../../nearby/navigate';
 import type { Chain } from '../../restaurants/types';
+import type { Unpublished } from '../../restaurants/unpublished';
 import { Sheet } from '../common/Sheet';
 import { FitBadge, MacroLine } from '../diet/SuggestionList';
 import { distanceText, ET, openText } from './eatText';
@@ -27,6 +28,10 @@ const T = text({
     saved: (name: string, kcal: string) => `Zapisane w dzienniku: ${name} · ${kcal} kcal. Lista liczy się już od nowa.`,
     saveFailed: 'Nie udało się zapisać. Spróbuj jeszcze raz.',
     noData: 'Nie znam menu tego miejsca.',
+    unpublished: (name: string, partial: string, checked: string) =>
+      `Sieć ${name} nie publikuje wartości odżywczych${partial} (sprawdzone ${checked}).`,
+    onlyKcal: ' — podaje tylko kalorie, bez makroskładników',
+    onlyAllergens: ' — podaje tylko alergeny',
     cuisine: (c: string) => `Kuchnia według OpenStreetMap: ${c}.`,
     tip: 'Na cel najprościej: porcja białka (mięso, ryba, jajka, ser, strączki), do tego warzywa; sosy i smażone ostrożnie.',
     source: (chain: string, title: string, checked: string) => `Wartości z tabeli sieci ${chain} (${title}), sprawdzone ${checked}.`,
@@ -48,6 +53,10 @@ const T = text({
     saved: (name: string, kcal: string) => `Saved to the diary: ${name} · ${kcal} kcal. The list is recounted.`,
     saveFailed: 'Couldn’t save. Try again.',
     noData: 'I don’t know this place’s menu.',
+    unpublished: (name: string, partial: string, checked: string) =>
+      `${name} doesn’t publish nutrition values${partial} (checked ${checked}).`,
+    onlyKcal: ' — only calories, no macros',
+    onlyAllergens: ' — only allergens',
     cuisine: (c: string) => `Cuisine according to OpenStreetMap: ${c}.`,
     tip: 'Simplest for your goal: a portion of protein (meat, fish, eggs, cheese, pulses) with vegetables; go easy on sauces and fried food.',
     source: (chain: string, title: string, checked: string) => `Values from ${chain}’s own table (${title}), checked ${checked}.`,
@@ -63,6 +72,8 @@ const FIRST = 12;
 interface Props {
   place: RankedPlace;
   menu: Chain | null;
+  /** The chain is known not to publish nutrition: the card says so instead of "unknown menu". */
+  unpublished?: Unpublished | null;
   ctx: Context;
   mealKcal: number;
   today: string;
@@ -79,7 +90,7 @@ const nameOf = (food: Food, menu: Chain | null) => (menu ? food.name.replaceAll(
  * everything to eat there that fits now - best first, with the diary's rating and „Zjadłem”, which
  * logs it to today (the ranking behind the card follows). What does not fit waits folded below.
  */
-export function PlaceSheet({ place, menu, ctx, mealKcal, today, now, platform, onClose }: Props) {
+export function PlaceSheet({ place, menu, unpublished, ctx, mealKcal, today, now, platform, onClose }: Props) {
   const [status, setStatus] = useState<string | null>(null);
   const [all, setAll] = useState(false);
   const p = place.place;
@@ -155,7 +166,15 @@ export function PlaceSheet({ place, menu, ctx, mealKcal, today, now, platform, o
 
       {place.options.length === 0 ? (
         <div className="fd-near-card-nodata">
-          <p>{T.noData}</p>
+          <p>
+            {unpublished
+              ? T.unpublished(
+                  unpublished.name,
+                  unpublished.partial === 'kcal' ? T.onlyKcal : unpublished.partial === 'allergens' ? T.onlyAllergens : '',
+                  unpublished.checked.split('-').reverse().join('.'),
+                )
+              : T.noData}
+          </p>
           {p.cuisine && <p className="fd-near-soft">{T.cuisine(p.cuisine.replaceAll(';', ', '))}</p>}
           <p>{T.tip}</p>
         </div>
