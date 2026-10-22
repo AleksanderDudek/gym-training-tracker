@@ -50,7 +50,18 @@ import { XP, cardioXp, levelFor, xpSummary } from './engine/xp';
 import type { LevelState } from './engine/xp';
 import { SnackEntry, SnacksPage, snackLabel } from './components/Snacks';
 import { CardioEntry, CardioPage, cardioLabel, kcalText } from './components/Cardio';
-import { addCardio, deviceStepsOn, minutesByDay, removeCardio, stepsOn, typedStepsOn, validCardio } from './engine/cardio';
+import {
+  addCardio,
+  deviceStepsOn,
+  minutesByDay,
+  minutesOn,
+  outingsOn,
+  removeCardio,
+  stepsOn,
+  stepsWorthOn,
+  typedStepsOn,
+  validCardio,
+} from './engine/cardio';
 import { mergeWatch, restoreWatch } from './engine/watch';
 import { mergePhone, restorePhone } from './engine/phone';
 import type { PhonePayload } from './engine/phone';
@@ -401,6 +412,11 @@ export default function App() {
           planned: workout ? { name: workout.name, kcal: plannedBurn(state, workout)?.active ?? null } : null,
           planActive: snap !== null,
           typicalWorkoutKcal: typical,
+          workouts: state.log.filter((e) => dayKey(e.date) === day).length,
+          snacks: snacksOn(state, day).length,
+          outings: outingsOn(state, day),
+          activeMin: minutesOn(state, day),
+          stepsWorth: stepsWorthOn(state, day),
         };
       },
       toast: setToastMsg,

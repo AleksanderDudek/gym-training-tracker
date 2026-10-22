@@ -380,3 +380,42 @@ p.fd-diet-v-over{color:var(--c-orange-ink)}
 p.fd-diet-resthead{margin:0 0 2px;font-size:13.5px;color:var(--ink-soft)}
 p.fd-diet-resthead b{color:var(--ink)}
 .fd-diet-sim .fd-diet-restvar{background:var(--surface)}
+
+/* ---------------- Co działa u ciebie: tygodnie ---------------- */
+
+.fd-diet-weeks{width:100%;min-width:620px;border-collapse:separate;border-spacing:0;font-size:13px}
+.fd-diet-weeks th,.fd-diet-weeks td{padding:7px 10px 7px 0;text-align:left;vertical-align:middle;border-top:1px solid var(--surface-2)}
+.fd-diet-weeks thead th{padding-top:0;font-size:11px;font-weight:500;line-height:1.2;color:var(--ink-soft);vertical-align:bottom;border-top:0}
+.fd-diet-weeks .n{text-align:right;font-family:var(--display);font-variant-numeric:tabular-nums}
+.fd-diet-weeks td:last-child,.fd-diet-weeks th:last-child{padding-right:0}
+.fd-diet-weeks td small{display:block;font-family:var(--body);font-size:11px;color:var(--ink-soft);white-space:nowrap}
+/* Tydzień z siatką dni zostaje na miejscu, liczby przewijają się obok. */
+.fd-diet-weeks th:first-child{position:sticky;left:0;z-index:1;min-width:104px;background:var(--surface);font-weight:400}
+.fd-diet-wlabel{display:block;margin-bottom:4px;font-size:12px;font-weight:600;white-space:nowrap}
+.fd-diet-wchange{font-weight:600}
+.fd-diet-wgood{color:var(--ok)}
+.fd-diet-wbad{color:var(--c-orange-ink)}
+.fd-diet-wflat{color:var(--ink-soft)}
+/* Siatka dni: komórka to jedzenie, pod nią znaki — trening (kwadrat), cel kroków (kropka),
+   przekąska ruchowa (trójkąt), cardio (romb). Kształty, nie same kolory. */
+.fd-diet-wgrid{display:grid;grid-template-columns:repeat(7,12px);gap:2px}
+.fd-diet-wday{display:flex;flex-direction:column;align-items:center;gap:2px}
+.fd-diet-wfood{display:block;width:12px;height:9px;border-radius:2px}
+.fd-diet-wf-ok{background:var(--c-green)}
+.fd-diet-wf-off{background:var(--c-orange)}
+.fd-diet-wf-none{box-shadow:inset 0 0 0 1px var(--line)}
+.fd-diet-wfuture{visibility:hidden}
+.fd-diet-wm{display:block;width:6px;height:6px}
+.fd-diet-wtrain{background:var(--steel)}
+.fd-diet-wsteps{border-radius:50%;background:var(--c-green-ink)}
+.fd-diet-wsnack{width:0;height:0;border-left:3.5px solid transparent;border-right:3.5px solid transparent;border-bottom:6px solid var(--c-gold-ink)}
+.fd-diet-wcardio{width:5px;height:5px;margin:0.5px 0;background:var(--c-blue-ink);transform:rotate(45deg)}
+.fd-diet-wm-off{visibility:hidden}
+.fd-diet-wlegend{display:flex;flex-wrap:wrap;gap:4px 12px;margin:2px 0 6px;padding:0;list-style:none;font-size:12px;color:var(--ink-soft)}
+.fd-diet-wlegend li{display:inline-flex;align-items:center;gap:5px}
+.grp h3.fd-diet-wsub{margin:14px 0 2px}
+.fd-diet-findings{margin:4px 0 8px;padding:0;list-style:none}
+.fd-diet-finding{padding:8px 0;border-top:1px solid var(--surface-2)}
+.grp p.fd-diet-fhead{margin:0;font-size:13.5px;line-height:1.4}
+.grp p.fd-diet-fbody{margin:3px 0 0;font-size:13px;line-height:1.45;color:var(--ink-soft);max-width:62ch}
+.fd-diet-fchip{display:inline-block;padding:0 6px;border:1px solid currentColor;border-radius:9px;font-size:11.5px;font-weight:600;white-space:nowrap}

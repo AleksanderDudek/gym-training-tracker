@@ -105,7 +105,7 @@ export function stepsDetail(state: AppState, c: Cardio): string | null {
   const floors = Math.round(b.climbM / 3);
   const parts = [
     b.distance === 'device' && d.m !== null ? `droga ${c.src === 'phone' ? 'z telefonu' : 'z zegarka'} ${kmText(d.m / 1000)}` : null,
-    ...b.parts.map((p) => `${partWord(p.kmh)} ${kmText(p.km)} w ${durText(p.secs)} (${pl(p.kmh, 1)} km/h)`),
+    ...b.parts.map((p) => `${partWord(p.kmh)} ${kmText(p.km)} w ${durText(p.secs)} (${pl(p.kmh, 1)}\u00a0km/h)`),
     floors > 0 ? `${floors} ${plural(floors, FLOOR_FORMS)}` : null,
     b.elsewhereKm > 0 ? `bez ${kmText(b.elsewhereKm)} bieżni — liczy się osobno` : null,
   ].filter(Boolean);

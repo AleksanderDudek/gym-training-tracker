@@ -62,7 +62,23 @@ your own").
 | Verdict | Coloured by the goal's direction: losing — down is good; gaining — up is good; keeping — within ±0.2 kg is good. Changes under 0.1 kg are neutral | The user's goal decides what "works" |
 | Columns | Week · its 7 days as a strip · weight change · average kcal vs the day goals (and logged days) · average steps (days at the step target) · trainings · movement snacks · cardio (sessions ≥ 10 min incl. watch runs/walks) | Everything the app records, in one row |
 | Day strip | 7 cells: background = food (within goal / over / not logged); marks = training (square), steps target (dot), movement snack (triangle), cardio (diamond); every cell has a full text label for screen readers | The visual feedback the user asked for; shapes, not only colours |
-| Findings | For each factor (trainings, steps, snacks, cardio, eating vs goal): weeks split into "more" and "less" at the value that balances the groups (2+ weeks each, 4+ weeks with a weight change, the current week excluded); average weight change in each group, the difference toward/against the goal, the strength (|r| < 0.3 weak, < 0.5 moderate, else clear) and the kcal difference between the groups („w tych tygodniach jedzenie było średnio o 180 kcal niższe”) | Plain comparison a user understands; the kcal gap shows the most common confounder — food |
+| Findings | For each factor (trainings, steps, snacks, cardio, eating vs goal): weeks split into "more" and "less" at the value that balances the groups (2+ weeks each, 4+ weeks with a weight change, the current week excluded); average weight change in each group, the difference toward/against the goal, the strength (correlation r of either sign: below 0.3 weak, below 0.5 moderate, else clear) and the kcal difference between the groups („w tych tygodniach jedzenie było średnio o 180 kcal niższe”) | Plain comparison a user understands; the kcal gap shows the most common confounder — food |
 | Honesty | „To skojarzenia z Twoich tygodni, nie dowód”; below 4 weeks: what is needed; small differences (< 0.1 kg/week) say „bez wyraźnej różnicy” | Few, noisy points; claiming causes would mislead |
 | Data | New bridge facts per day: trainings, movement snacks, cardio sessions, activity minutes, steps worth; diet history from 12 weeks back | One source of truth: the gym data |
 | Layout | Table in the existing horizontal scroller with a sticky week column; 360 px checked | Phones first |
+
+## Decisions made during implementation
+
+| Topic | Decision | Why |
+| --- | --- | --- |
+| Run steps without device distance | Parts from 7 km/h (the middle of the walk–run blend) take steps at 160/min; slower parts take distance/stride | One rule for jogging and brisk walking |
+| Worth without a weighing | The worth is a ratio of two burns at the same weight (75 kg), so it does not wait for a weighing | Walking, running and climbing all scale with body mass the same way |
+| Today in the table | Today's food and steps stay out of the week's averages (the day is not over); the day still shows in the grid, its label says „dzień trwa” | At 19:00 half a day pulled the week's food average 600 kcal down in the demo data |
+| Weak link | A finding with r below 0.3 (either sign) is „bez wyraźnej różnicy” even when the averages differ by 0.1 kg+ | In the demo data one odd week made „4+ przekąski ruchowe” look harmful with r ≈ 0.2 |
+| Food gap in kg | The food difference between the groups is also given in kg a week (gap × 7 / `kcalPerKg`) | „73 kcal a day” means nothing; „0.07 kg a week” can be set against the weight difference |
+| Empty week | The next Monday's weigh-in alone does not make a week a row | It only closes the week before |
+
+Checked at 360 px with the demo person (Playwright, `vite preview`): no page overflow, the week
+column stays while the numbers scroll. Not done: activity minutes still count steps above 5 000 at
+100/min (a run is not counted as vigorous); the gym's UTC day key vs the diet's local date stays a
+known limitation.

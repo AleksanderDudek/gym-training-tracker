@@ -453,6 +453,11 @@ describe('Kroki i ruch — przez most do treningów', () => {
         planned: null,
         planActive: false,
         typicalWorkoutKcal: 300,
+        workouts: day === '2026-10-14' ? 1 : 0,
+        snacks: 0,
+        outings: 0,
+        activeMin: 0,
+        stepsWorth: null,
       }),
     });
     renderWithBridge(<DiaryPage />, bridge);

@@ -3,7 +3,8 @@ import { useBridge } from '../../bridge';
 import { withGymSteps } from '../../diet/body';
 import { macroStatus, totals, type DayTotals, type Status } from '../../diet/day';
 import { dayReaching, forecast, goalDirection } from '../../diet/energy';
-import { addDays, dayGoal, forecastInputs, lastWeighing, projectFromWeighing, shortDay } from '../../diet/model';
+import { addDays, dayGoal, forecastInputs, lastWeighing, mondayOf, projectFromWeighing, shortDay } from '../../diet/model';
+import { findings, weekRows, type DayFacts } from '../../diet/weeks';
 import { activityKcalOf, useActivity } from '../../hooks/useActivity';
 import type { Plan } from '../../diet/plan';
 import { DIET_PROFILES } from '../../diet/profiles';
@@ -12,11 +13,15 @@ import { useMergedHistory, type History } from '../../hooks/useDiet';
 import { formatDate, formatNumber } from '../../lib/format';
 import { Loading, Onboarding } from './Onboarding';
 import { useDietBase } from './useDietPage';
+import { WeekTable } from './WeekTable';
 import { WeightChart, type ChartPoint } from './WeightChart';
 import './diet.css';
 
 /** Dwa lata to najdalej, jak sięga prognoza: dalej model nie mówi nic użytecznego. */
 const HORIZON = 730;
+
+/** Tygodnie w tabeli „Co działa u ciebie”, z bieżącym: kwartał — dość, żeby porównać, i wciąż o teraz. */
+const WEEKS = 12;
 
 const kg = (n: number) => `${formatNumber(n, 1)} kg`;
 
@@ -27,7 +32,8 @@ const kg = (n: number) => `${formatNumber(n, 1)} kg`;
 export default function DietProgressPage() {
   const { profile, plan, clock } = useDietBase();
   const today = clock.date;
-  const from = profile ? [profile.startDate, addDays(today, -14)].sort()[0]! : null;
+  // Historia na prognozę (od startu), dwa tygodnie kalorii i dwanaście tygodni tabeli.
+  const from = profile ? [profile.startDate, addDays(today, -14), addDays(mondayOf(today), -7 * (WEEKS - 1))].sort()[0]! : null;
   const history = useMergedHistory(from);
 
   if (profile === undefined || plan === undefined) return <Loading />;
@@ -88,6 +94,30 @@ function ProgressView({
   const points: ChartPoint[] = model.series
     .filter((p) => p.date <= chartEnd)
     .map((p) => ({ date: p.date, plan: p.plan, projection: model.projection.get(p.date) ?? null }));
+
+  // Tydzień po tygodniu: jedzenie wobec celu dnia, ruch z treningów i trend wagi.
+  const weeks = useMemo(() => {
+    const first = addDays(mondayOf(today), -7 * (WEEKS - 1));
+    const goalActivity = activityKcalOf(activity);
+    const days: DayFacts[] = [];
+    for (let date = first; date <= today; date = addDays(date, 1)) {
+      const move = bridge.moveOn(date);
+      days.push({
+        date,
+        eaten: history.eaten.get(date) ?? null,
+        goal: dayGoal(body, history.eaten, date, today, goalActivity).kcal,
+        steps: bridge.stepsOn(date),
+        workouts: move.workouts,
+        snacks: move.snacks,
+        outings: move.outings,
+        activeMin: move.activeMin,
+      });
+    }
+    const weighIns = [...history.days.values()].flatMap((d) => (d.weightKg == null ? [] : [{ date: d.date, kg: d.weightKg }]));
+    const direction = goalDirection(body);
+    const rows = weekRows({ days, weighIns, today, stepsGoal: body.targetSteps, direction });
+    return { rows, found: findings(rows, direction), direction };
+  }, [body, history, today, activity, bridge]);
 
   const current = model.weighing?.kg ?? profile.startWeightKg;
   const lost = profile.startWeightKg - current;
@@ -191,6 +221,15 @@ function ProgressView({
           </p>
         )}
       </section>
+
+      <WeekTable
+        rows={weeks.rows}
+        found={weeks.found}
+        direction={weeks.direction}
+        stepsGoal={body.targetSteps}
+        today={today}
+        kcalPerKg={body.kcalPerKg}
+      />
 
       <section className="grp" aria-labelledby="fd-diet-kcal-title">
         <h2 id="fd-diet-kcal-title">Kalorie – ostatnie 14 dni</h2>

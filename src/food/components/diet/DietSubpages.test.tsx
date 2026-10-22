@@ -6,7 +6,8 @@ import type { GymBridge } from '../../bridge';
 import { db } from '../../diet/db';
 import type { Plan } from '../../diet/plan';
 import { clearAll, completeProfile, logQuick, saveProfile } from '../../diet/store';
-import { renderWithBridge, testBridge } from '../../test/bridge';
+import { renderWithBridge, testBridge, testMove } from '../../test/bridge';
+import { addDays } from '../../diet/model';
 import DietPlanPage from './DietPlanPage';
 import DietProgressPage from './DietProgressPage';
 
@@ -124,6 +125,44 @@ describe('Postęp', () => {
     expect(screen.getByText('1800 / 2000')).toBeInTheDocument();
     // Prognoza pyta treningi o kroki każdego dnia — także dni bez wiersza diety.
     await waitFor(() => expect(bridge.stepsOn).toHaveBeenCalledWith('2026-10-05'));
+  });
+
+  test('„Co działa u ciebie”: tygodnie z siatką dni i to, co idzie w parze z postępem', async () => {
+    await saveProfile(completeProfile({ startDate: '2026-09-01', startWeightKg: 88, targetWeightKg: 78 }));
+    await logQuick('2026-10-06', 'Obiad', 1700);
+    window.history.replaceState(null, '', '/#/jedzenie/postep');
+    // Pięć pełnych tygodni od 7.09: na zmianę trzy treningi (−0,6 kg) i jeden (−0,1 kg).
+    const mondays = ['2026-09-07', '2026-09-14', '2026-09-21', '2026-09-28', '2026-10-05'];
+    const trainings = [3, 1, 3, 1, 3];
+    const weights: { day: string; kg: number }[] = [];
+    let kg = 86;
+    mondays.forEach((monday, i) => {
+      const change = trainings[i] === 3 ? -0.6 : -0.1;
+      weights.push({ day: monday, kg }, { day: addDays(monday, 4), kg: kg + (change * 4) / 7 });
+      kg += change;
+    });
+    weights.push({ day: '2026-10-12', kg });
+    const trainedOn = new Set(mondays.flatMap((m, i) => Array.from({ length: trainings[i]! }, (_, d) => addDays(m, d))));
+    const bridge = testBridge({
+      weights,
+      moveOn: (day) => testMove({ trained: trainedOn.has(day), workouts: trainedOn.has(day) ? 1 : 0 }),
+    });
+    renderWithBridge(<DietProgressPage />, bridge);
+
+    const section = await screen.findByRole('region', { name: 'Co działa u ciebie' });
+    const table = within(section).getByRole('table');
+    // Bieżący tydzień i pięć pełnych; starsze bez żadnych danych nie mają wierszy.
+    const rows = within(table).getAllByRole('row').slice(1);
+    expect(rows).toHaveLength(6);
+    expect(within(rows[0]!).getByRole('rowheader')).toHaveTextContent('ten tydzień');
+    const lastWeek = rows[1]!;
+    expect(within(lastWeek).getByRole('rowheader')).toHaveTextContent(/^5–11\.10/);
+    expect(within(lastWeek).getByRole('rowheader')).toHaveTextContent(/wt\.?,? 6\.10: 1700 kcal \(cel [\d\s]+\)/);
+    expect(within(lastWeek).getAllByRole('cell')[0]).toHaveTextContent('−0,6 kg');
+    expect(within(lastWeek).getAllByRole('cell')[3]).toHaveTextContent('3');
+    const finding = within(section).getByText('co najmniej 3 treningi w tygodniu').closest('li')!;
+    expect(finding).toHaveTextContent('sprzyja celowi');
+    expect(finding).toHaveTextContent(/Średnio −0,6 kg\/tydz\. \(3 tygodnie\) · w pozostałych −0,1 kg\/tydz\. \(2 tygodnie\)/);
   });
 
   test('cel wyżej niż start: do celu liczy się w górę, a data celu to pierwszy dzień na celu albo nad nim', async () => {
