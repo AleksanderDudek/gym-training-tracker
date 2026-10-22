@@ -17,6 +17,7 @@ import { plan } from '../engine/plan';
 import { altsFor } from '../engine/structure';
 import { HealthCard } from './Health';
 import { ON_OFF, RemindersCard } from './Reminders';
+import { LanguageCard } from './Language';
 import { GarminCard } from './Garmin';
 import { PhoneCard } from './Phone';
 import { PromoCard } from './Promo';
@@ -237,6 +238,7 @@ export function SettingsView({
     <>
       {/* Polecenie na samej górze: ustawienia odwiedza ten, kto już aplikację zna i lubi. */}
       <PromoCard />
+      <LanguageCard />
       {onInstall && (
         <div className="grp">
           <h2>Aplikacja na ekranie początkowym</h2>
