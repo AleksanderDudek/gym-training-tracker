@@ -118,7 +118,10 @@ function cleanCheat(raw: unknown): PlannedCheat | null {
   if (!isObject(raw)) return null;
   const n = cleanNutrients(raw);
   if (!n || n.kcal <= 0) return null;
-  return { name: typeof raw.name === 'string' ? raw.name.slice(0, 80) : '', ...n };
+  const items = Array.isArray(raw.items)
+    ? raw.items.filter((i): i is string => typeof i === 'string').slice(0, 12).map((i) => i.slice(0, 80))
+    : [];
+  return { name: typeof raw.name === 'string' ? raw.name.slice(0, 80) : '', ...n, ...(items.length && { items }) };
 }
 
 function cleanItem(raw: unknown): PlanItem | null {

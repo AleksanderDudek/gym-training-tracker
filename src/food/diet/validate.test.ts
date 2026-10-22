@@ -81,6 +81,8 @@ describe('validate', () => {
     expect(day?.cheat).toEqual({ name: 'Pizza', kcal: 1200, protein: 45, carbs: null, fat: 50 });
     expect(cleanDay({ date: '2026-10-11', cheat: { name: 'Nic', kcal: 0 } })).not.toHaveProperty('cheat');
     expect(cleanDay({ date: '2026-10-11', cheat: 'pizza' })).not.toHaveProperty('cheat');
+    const listed = cleanDay({ date: '2026-10-11', cheat: { name: 'Kebab', kcal: 900, items: ['Kebab (1 szt.)', 7, 'Cola (0,5 l)'] } });
+    expect(listed?.cheat?.items).toEqual(['Kebab (1 szt.)', 'Cola (0,5 l)']);
   });
 
   test('the activity switch is kept only as a yes or no', () => {

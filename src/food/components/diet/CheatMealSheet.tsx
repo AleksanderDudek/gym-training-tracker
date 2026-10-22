@@ -1,8 +1,11 @@
 import { useState } from 'react';
+import { Segmented } from '../../../components/ui';
 import { TYPICAL_FALLBACK_KCAL, type Assumptions } from '../../diet/activity';
 import { simulateCheat } from '../../diet/cheat';
 import type { DayTotals } from '../../diet/day';
 import type { PlannedCheat } from '../../diet/db';
+import { autoSetName, setTotals, type Food } from '../../diet/foods';
+import type { Dictionaries, IndexedProduct } from '../../lib/types';
 import { dayGoal, mealsLeftAt, remainingOf } from '../../diet/model';
 import { DIET_PROFILES } from '../../diet/profiles';
 import { eatCheat, planCheat } from '../../diet/store';
@@ -14,6 +17,7 @@ import { formatNumber } from '../../lib/format';
 import { Sheet } from '../common/Sheet';
 import { activityParts, signedKcal } from './activityText';
 import { beyondTexts, macroTexts, planText, verdictText } from './cheatText';
+import { PartsPicker, badGrams, partsOf, type Part } from './PartsPicker';
 import { RestVariants } from './RestVariants';
 import { MacroLine } from './SuggestionList';
 
@@ -37,6 +41,11 @@ interface Props {
    * more meals are left, otherwise the best single meals (the diary's „Co teraz?”).
    */
   ideasFor: (remaining: Remaining, mealsLeft: number) => { variants: RestVariant[]; singles: Suggestion[] };
+  /** The diary's food — search in restaurant menus, products, own food and favourites. */
+  pool: Food[];
+  products: IndexedProduct[];
+  dict: Dictionaries;
+  productsLoading: boolean;
   onClose: () => void;
   /** After a save the sheet closes and the app's message says what happened. */
   onSaved: (message: string) => void;
@@ -82,8 +91,15 @@ function CheatBody({
   plannedKcal,
   planned,
   ideasFor,
+  pool,
+  products,
+  dict,
+  productsLoading,
   onSaved,
 }: Props) {
+  // Nowy cheat meal zaczyna od listy (sieci, produkty, ulubione); zaplanowany — od swoich liczb.
+  const [mode, setMode] = useState<'list' | 'macros'>(planned ? 'macros' : 'list');
+  const [parts, setParts] = useState<Part[]>([]);
   const [name, setName] = useState(planned?.name ?? '');
   const [kcal, setKcal] = useState(fieldText(planned?.kcal));
   const [protein, setProtein] = useState(fieldText(planned?.protein));
@@ -121,17 +137,38 @@ function CheatBody({
   );
   const targets = DIET_PROFILES[profile.dietProfile].targets(goal.kcal, profile.targetWeightKg);
   const mealsLeft = isToday ? mealsLeftAt(hour) : date < today ? 1 : 4;
+  const chosen = partsOf(parts);
+  const listTotal = setTotals(chosen);
+  const listName = chosen.length ? autoSetName(chosen) : '';
+  const items = chosen.map((p) => (p.amountLabel ? `${p.name} (${p.amountLabel})` : p.name));
   const cheatKcal = numberOrNull(kcal);
   const cheat: PlannedCheat | null =
-    cheatKcal !== null && cheatKcal > 0
-      ? {
-          name: name.trim(),
-          kcal: Math.round(cheatKcal),
-          protein: numberOrNull(protein),
-          carbs: numberOrNull(carbs),
-          fat: numberOrNull(fat),
-        }
-      : null;
+    mode === 'list'
+      ? chosen.length && !parts.some(badGrams) && listTotal.kcal > 0
+        ? { name: name.trim() || listName, ...listTotal, items }
+        : null
+      : cheatKcal !== null && cheatKcal > 0
+        ? {
+            name: name.trim(),
+            kcal: Math.round(cheatKcal),
+            protein: numberOrNull(protein),
+            carbs: numberOrNull(carbs),
+            fat: numberOrNull(fat),
+            ...(planned?.items && { items: planned.items }),
+          }
+        : null;
+
+  // „Wpisz makro” zaczyna od sumy z listy — do poprawienia, nie do przepisania.
+  const switchMode = (next: 'list' | 'macros') => {
+    if (next === 'macros' && chosen.length) {
+      setKcal(fieldText(listTotal.kcal));
+      setProtein(fieldText(listTotal.protein));
+      setCarbs(fieldText(listTotal.carbs));
+      setFat(fieldText(listTotal.fat));
+      if (!name.trim()) setName(listName);
+    }
+    setMode(next);
+  };
   const move = bridge.moveOn(date);
   const kg = weightFrom(bridge.weights, date) ?? profile.startWeightKg;
   const since = profile.goalSince ?? '';
@@ -194,45 +231,79 @@ function CheatBody({
         void save(false);
       }}
     >
+      <Segmented
+        label="Skąd liczby"
+        options={[
+          { key: 'list', label: 'Z listy' },
+          { key: 'macros', label: 'Wpisz makro' },
+        ]}
+        value={mode}
+        onChange={switchMode}
+      />
       <label className="fld">
         <span>Co to będzie</span>
-        <input type="text" value={name} maxLength={80} onChange={(e) => setName(e.target.value)} placeholder="np. pizza ze znajomymi" />
-      </label>
-      <label className="fld">
-        <span>Kalorie (kcal)</span>
         <input
           type="text"
-          className="num"
-          required
-          inputMode="decimal"
-          autoComplete="off"
-          data-autofocus
-          value={kcal}
-          onChange={(e) => setKcal(e.target.value)}
+          value={name}
+          maxLength={80}
+          onChange={(e) => setName(e.target.value)}
+          placeholder={listName || 'np. pizza ze znajomymi'}
         />
       </label>
-      <p className="fd-diet-hint">Makroskładniki – jeśli znasz:</p>
-      <div className="fd-diet-grid3">
-        {(
-          [
-            ['Białko (g)', protein, setProtein],
-            ['Węglowodany (g)', carbs, setCarbs],
-            ['Tłuszcz (g)', fat, setFat],
-          ] as const
-        ).map(([label, value, setValue]) => (
-          <label key={label} className="fld">
-            <span>{label}</span>
+      {mode === 'list' ? (
+        <PartsPicker
+          parts={parts}
+          onParts={setParts}
+          pool={pool}
+          products={products}
+          dict={dict}
+          productsLoading={productsLoading}
+          heading="W cheat mealu"
+          empty="Wyszukaj w lokalach (pizza, burger, kebab…) i produktach albo wybierz z ulubionych poniżej. Kilka rzeczy złoży się w jeden posiłek."
+          searchLabel="Szukaj do cheat mealu"
+          removeLabel="Usuń z cheat mealu"
+          totalName={name.trim() || listName}
+          showOwnWhenEmpty
+        />
+      ) : (
+        <>
+          <label className="fld">
+            <span>Kalorie (kcal)</span>
             <input
               type="text"
               className="num"
+              required
               inputMode="decimal"
               autoComplete="off"
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
+              data-autofocus
+              value={kcal}
+              onChange={(e) => setKcal(e.target.value)}
             />
           </label>
-        ))}
-      </div>
+          <p className="fd-diet-hint">Makroskładniki – jeśli znasz:</p>
+          <div className="fd-diet-grid3">
+            {(
+              [
+                ['Białko (g)', protein, setProtein],
+                ['Węglowodany (g)', carbs, setCarbs],
+                ['Tłuszcz (g)', fat, setFat],
+              ] as const
+            ).map(([label, value, setValue]) => (
+              <label key={label} className="fld">
+                <span>{label}</span>
+                <input
+                  type="text"
+                  className="num"
+                  inputMode="decimal"
+                  autoComplete="off"
+                  value={value}
+                  onChange={(e) => setValue(e.target.value)}
+                />
+              </label>
+            ))}
+          </div>
+        </>
+      )}
 
       {now && (
         <fieldset className="fd-diet-cheatmove">

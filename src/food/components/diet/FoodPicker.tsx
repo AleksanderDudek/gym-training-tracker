@@ -1,24 +1,14 @@
-import { Plus, Trash2 } from 'lucide-react';
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Segmented } from '../../../components/ui';
 import { db } from '../../diet/db';
-import {
-  autoSetName,
-  partOf,
-  setFood,
-  setTotals,
-  withGrams,
-  type Food,
-  type FoodSet,
-} from '../../diet/foods';
+import { autoSetName, setFood, setTotals, type Food, type FoodSet } from '../../diet/foods';
 import { searchFoods } from '../../diet/search';
 import { logFood, logQuick } from '../../diet/store';
-import { useRestaurants } from '../../hooks/useRestaurants';
 import { formatNumber } from '../../lib/format';
 import type { Dictionaries, IndexedProduct } from '../../lib/types';
-import type { Chain } from '../../restaurants/types';
 import { Sheet } from '../common/Sheet';
 import { StarButton } from '../common/StarButton';
+import { FoodResults, PartsPicker, atGrams, badGrams, numberOrNull, partsOf, useMenus, type Part } from './PartsPicker';
 import { MacroLine } from './SuggestionList';
 
 interface Props {
@@ -33,19 +23,6 @@ interface Props {
   /** Po zapisie: krótka wiadomość na dole ekranu (most do treningów). */
   onLogged: (text: string) => void;
 }
-
-function numberOrNull(text: string): number | null {
-  const n = Number(text.replace(',', '.'));
-  return text.trim() && Number.isFinite(n) && n >= 0 ? n : null;
-}
-
-/** Jedzenie w wybranej gramaturze — tylko to, co ma wartości na 100 g; reszta zostaje porcją. */
-function atGrams(food: Food, grams: string): Food {
-  const g = numberOrNull(grams);
-  return food.per100 && g ? withGrams(food, g) : food;
-}
-
-const NO_CHAINS: Chain[] = [];
 
 /**
  * „Dodaj zjedzone”: szuka we wszystkim, co da się zjeść — własnych zestawach i jedzeniu, pozycjach
@@ -67,74 +44,6 @@ type BodyProps = Omit<Props, 'open' | 'onClose'> & { onDone: () => void };
 type Mode = 'search' | 'set' | 'quick';
 
 const QUICK = { name: '', kcal: '', protein: '', carbs: '', fat: '', save: false };
-
-/**
- * Menu lokali do wyszukiwania. Wczytuje się z otwarciem arkusza — osobna paczka, więc dziennik
- * rysuje się bez niej; do tego czasu (i bez sieci) wyszukiwanie po prostu ich nie zna.
- */
-function useMenus(): Chain[] {
-  const menus = useRestaurants();
-  return menus.status === 'ready' ? menus.chains : NO_CHAINS;
-}
-
-interface ResultsProps {
-  results: Food[];
-  onPick: (food: Food) => void;
-  /** Ulubione zapisuje się jednym stuknięciem „+” — w ilości z gwiazdki. */
-  onQuickAdd?: (food: Food) => void;
-}
-
-/**
- * Lista wyników: przycisk na pozycję, z liczbami, ilością i pochodzeniem, i gwiazdka „Ulubione”.
- * Ulubione stoją na górze, pod własnym nagłówkiem.
- */
-function FoodResults({ results, onPick, onQuickAdd }: ResultsProps) {
-  const favorites = results.filter((f) => f.favorite);
-  const rest = results.filter((f) => !f.favorite);
-  const row = (food: Food) => (
-    <li key={food.key} className="fd-diet-result-row">
-      <button type="button" className="fd-diet-result" onClick={() => onPick(food)}>
-        <span className="fd-diet-name">{food.name}</span>
-        <span className="fd-diet-meta">
-          <MacroLine food={food} /> · {food.amountLabel} · {food.detail}
-        </span>
-      </button>
-      {onQuickAdd && food.favorite && (
-        <button
-          type="button"
-          className="fd-diet-icon-btn"
-          onClick={() => onQuickAdd(food)}
-          aria-label={`Dodaj od razu: ${food.name}`}
-          title="Dodaj od razu"
-        >
-          <Plus size={20} strokeWidth={2} aria-hidden />
-        </button>
-      )}
-      <StarButton food={food} />
-    </li>
-  );
-  const heading = (text: string) => (
-    <li key={`grupa:${text}`} className="fd-diet-group">
-      {text}
-    </li>
-  );
-  // Jedna lista z kluczami, nagłówki grup w niej: wiersz, któremu stuknięto gwiazdkę, przechodzi do
-  // drugiej grupy jako ten sam element — React go przesuwa i fokus zostaje na gwiazdce.
-  const rows = favorites.length
-    ? [heading('Ulubione'), ...favorites.map(row), ...(rest.length ? [heading('Pozostałe')] : []), ...rest.map(row)]
-    : rest.map(row);
-  return (
-    <>
-      <p className="sr-only" aria-live="polite">
-        {results.length ? `Wyników: ${results.length}` : 'Brak wyników'}
-      </p>
-      <ul className="fd-diet-results">
-        {rows}
-        {results.length === 0 && <li className="fd-diet-empty">Nic nie pasuje – dodaj samo „Tylko kalorie”.</li>}
-      </ul>
-    </>
-  );
-}
 
 function PickerBody(props: BodyProps) {
   const [mode, setMode] = useState<Mode>('search');
@@ -256,13 +165,6 @@ function SearchMode({ date, pool, products, dict, productsLoading, onDone, onLog
   );
 }
 
-interface Part {
-  /** Klucz wiersza: ta sama rzecz może wejść do zestawu dwa razy (dwa banany w dwóch wierszach). */
-  row: number;
-  food: Food;
-  grams: string;
-}
-
 /**
  * Zestaw — kilka rzeczy zjedzonych razem („Banan + batonik”), zapisanych w dzienniku jako jedna
  * pozycja. Zaznaczone „Zapisz jako mój zestaw” zostawia go na później: wraca w wyszukiwaniu
@@ -270,30 +172,15 @@ interface Part {
  * dziennika), więc zestaw nie zmienia się razem z bazą produktów.
  */
 function SetBuilder({ date, pool, products, dict, productsLoading, onDone, onLogged }: BodyProps) {
-  const chains = useMenus();
   const [name, setName] = useState('');
   const [parts, setParts] = useState<Part[]>([]);
-  const [query, setQuery] = useState('');
   const [save, setSave] = useState(true);
-  const rows = useRef(0);
   const { busy, once } = useOnce(onLogged, onDone);
 
-  const results = useMemo(
-    () => (query.trim() ? searchFoods({ query, pool, chains, products, dict, noSets: true }) : []),
-    [query, pool, chains, products, dict],
-  );
-  const chosenParts = parts.map((p) => partOf(atGrams(p.food, p.grams)));
-  // Puste albo zerowe gramy nie mogą po cichu zostać całym opakowaniem — wtedy zestaw czeka na poprawkę.
-  const badGrams = (p: Part) => p.food.per100 !== null && !numberOrNull(p.grams);
+  const chosenParts = partsOf(parts);
   const anyBad = parts.some(badGrams);
   const finalName = name.trim() || autoSetName(chosenParts);
   const total = setTotals(chosenParts);
-
-  const addPart = (food: Food) => {
-    rows.current += 1;
-    setParts((list) => [...list, { row: rows.current, food, grams: food.grams ? String(food.grams) : '' }]);
-    setQuery('');
-  };
 
   const add = () => {
     if (!chosenParts.length || anyBad) return;
@@ -322,73 +209,20 @@ function SetBuilder({ date, pool, products, dict, productsLoading, onDone, onLog
         />
       </label>
 
-      <p className="fd-diet-group">W zestawie</p>
-      {parts.length === 0 ? (
-        <p className="fd-diet-hint">Nic jeszcze — wyszukaj poniżej pierwszą rzecz, np. „banan”, potem „baton”.</p>
-      ) : (
-        <ul className="fd-diet-list fd-diet-parts">
-          {parts.map((p) => {
-            const food = atGrams(p.food, p.grams);
-            return (
-              <li key={p.row} className="fd-diet-part">
-                <div className="fd-diet-row-main">
-                  <p className="fd-diet-name">{p.food.name}</p>
-                  <p className="fd-diet-meta">
-                    <MacroLine food={food} />
-                    {!p.food.per100 && ` · ${food.amountLabel}`}
-                  </p>
-                </div>
-                {p.food.per100 && (
-                  <label className="fld fd-diet-part-grams">
-                    <span>Gramy</span>
-                    <input
-                      type="text"
-                      className="num"
-                      inputMode="decimal"
-                      autoComplete="off"
-                      value={p.grams}
-                      onChange={(e) =>
-                        setParts((list) => list.map((x) => (x.row === p.row ? { ...x, grams: e.target.value } : x)))
-                      }
-                      aria-label={`Ile gramów: ${p.food.name}`}
-                      aria-invalid={badGrams(p) || undefined}
-                    />
-                  </label>
-                )}
-                <button
-                  type="button"
-                  className="fd-diet-icon-btn"
-                  onClick={() => setParts((list) => list.filter((x) => x.row !== p.row))}
-                  aria-label={`Usuń z zestawu: ${p.food.name}`}
-                >
-                  <Trash2 size={20} strokeWidth={2} aria-hidden />
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-      {anyBad && <p className="fd-diet-hint fd-diet-warn">Wpisz gramy przy każdej rzeczy — więcej niż 0.</p>}
-      {parts.length > 0 && (
-        <p className="fd-diet-total" aria-live="polite">
-          Razem: <MacroLine food={setFood({ name: finalName, parts: chosenParts })} />
-        </p>
-      )}
-
-      <input
-        type="search"
-        data-autofocus
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder="Dodaj: produkt, przepis, lokal…"
-        aria-label="Szukaj rzeczy do zestawu"
-        enterKeyHint="search"
-        autoComplete="off"
+      <PartsPicker
+        parts={parts}
+        onParts={setParts}
+        pool={pool}
+        products={products}
+        dict={dict}
+        productsLoading={productsLoading}
+        heading="W zestawie"
+        empty="Nic jeszcze — wyszukaj poniżej pierwszą rzecz, np. „banan”, potem „baton”."
+        searchLabel="Szukaj rzeczy do zestawu"
+        removeLabel="Usuń z zestawu"
+        totalName={finalName}
+        noSets
       />
-      {productsLoading && query.trim() && (
-        <p className="fd-diet-hint">Wczytuję bazę produktów — na razie szukam w przepisach, lokalach i Twoim jedzeniu.</p>
-      )}
-      {query.trim() && <FoodResults results={results} onPick={addPart} />}
 
       <label className="check-row">
         <input type="checkbox" checked={save} onChange={(e) => setSave(e.target.checked)} />

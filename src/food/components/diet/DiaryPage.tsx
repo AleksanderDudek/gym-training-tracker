@@ -372,6 +372,10 @@ function TodayView({ profile, plan, date, today, hour, nowMs, history, pickerOpe
             ? { variants: restVariants(pool, rest, seedOf(date), 2), singles: [] }
             : { variants: [], singles: suggest(pool, rest, 3) };
         }}
+        pool={pool}
+        products={food.products}
+        dict={dict}
+        productsLoading={food.data.status === 'loading'}
         onClose={() => setCheatOpen(false)}
         onSaved={(message) => {
           setCheatOpen(false);
@@ -531,6 +535,7 @@ function CheatCard({
         <Pizza {...ICON} /> Zaplanowany cheat meal
       </h2>
       <p className="fd-diet-name">{cheat.name || 'Cheat meal'}</p>
+      {cheat.items && cheat.items.length > 1 && <p className="fd-diet-meta">{cheat.items.join(' · ')}</p>}
       <p className="fd-diet-meta fd-diet-nums">
         {formatNumber(cheat.kcal, 0)} kcal · B {g(cheat.protein)} · W {g(cheat.carbs)} · T {g(cheat.fat)}
       </p>
