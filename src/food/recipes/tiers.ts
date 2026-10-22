@@ -1,3 +1,4 @@
+import { say } from '../../i18n';
 import type { Recipe } from './catalog';
 
 /**
@@ -10,9 +11,9 @@ export type TimeTier = 'szybkie' | 'chwila' | 'dluzej';
 
 /** Polish keys: they are what a link shows (`?czas=szybkie`). Ordered fastest first. */
 export const TIER_LABELS: Record<TimeTier, string> = {
-  szybkie: 'Szybkie',
-  chwila: 'Chwilę dłużej',
-  dluzej: 'Dłużej, w domu',
+  szybkie: say('Szybkie', 'Quick'),
+  chwila: say('Chwilę dłużej', 'A bit longer'),
+  dluzej: say('Dłużej, w domu', 'Longer, at home'),
 };
 
 /** What the tab promised before the longer tiers existed: ready in under eight minutes. */
