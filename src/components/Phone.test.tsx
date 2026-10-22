@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { freshState } from '../engine/plan';
 import { mergePhone, parsePhonePayload } from '../engine/phone';
+import { localDayOf } from '../engine/watch';
 import { addDays, dayKey } from '../engine/schedule';
 import { BodyCard, CardioPage } from './Cardio';
 import type { AppState } from '../types';
@@ -60,7 +61,7 @@ describe('karta „Zdrowie z telefonu”', () => {
     const key = (screen.getByLabelText('Klucz do aplikacji na telefonie') as HTMLTextAreaElement).value;
     expect(key).toMatch(/^([0-9a-f]{8} ){7}[0-9a-f]{8}$/);
     expect(localStorage.getItem('gt-phone-key')).toBe(key.replace(/ /g, ''));
-    const steps = screen.getByRole('list');
+    const steps = screen.getByRole('list', { name: 'Kroki połączenia' });
     expect(within(steps).getByRole('link', { name: 'pliku APK' })).toHaveAttribute('href', 'https://example.org/zdrowie.apk');
     expect(within(steps).queryByText(/iPhone/)).not.toBeInTheDocument();
     // Garmin najprościej przez telefon: Garmin Connect pisze do Health Connect.
@@ -98,12 +99,16 @@ describe('karta „Zdrowie z telefonu”', () => {
     vi.stubEnv('VITE_HEALTH_IOS_URL', 'https://apps.apple.com/app/id1');
     localStorage.setItem('gt-phone-key', 'ab'.repeat(32));
     const user = userEvent.setup();
-    const { onSync, onToast } = await card(withPhone([{ day: today, steps: 5000 }]));
-    expect(screen.getByText(/Ostatnie dane z telefonu \(Zdrowie\): dziś/)).toBeInTheDocument();
+    // Dzień telefonu, nie dzień UTC aplikacji — karta pyta o kroki z dnia według zegara telefonu.
+    const { onSync, onToast } = await card(withPhone([{ day: localDayOf(new Date()), steps: 5000 }]));
+    expect(screen.getByText(/^Działa — ostatnia paczka dziś \d+:\d\d \(1 min temu\), następna ok\. \d+:\d\d\.$/)).toBeInTheDocument();
+    expect(screen.getByText(/^Dzisiejsze kroki z telefonu \(Zdrowie\): 5000 \(stan z \d+:\d\d — rosną z każdą paczką\)\.$/)).toBeInTheDocument();
     expect(screen.queryByLabelText('Klucz do aplikacji na telefonie')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Sprawdź teraz' }));
     expect(onSync).toHaveBeenCalledOnce();
-    expect(onToast).toHaveBeenCalledWith(expect.stringContaining('Telefon jeszcze nic nie przysłał'));
+    // Pusta skrzynka przy danych w zapisie: telefon milczy od ponad tygodnia (serwer trzyma paczkę 7 dni).
+    expect(onToast).toHaveBeenCalledWith(expect.stringContaining('telefon nic nie wysłał od ponad tygodnia'));
+    expect(screen.getByRole('status')).toHaveTextContent('telefon nic nie wysłał od ponad tygodnia');
     expect(screen.getByRole('link', { name: 'Polityka prywatności' })).toHaveAttribute('href', 'privacy.html');
     await user.click(screen.getByRole('button', { name: 'Pokaż klucz' }));
     expect(screen.getByLabelText('Klucz do aplikacji na telefonie')).toBeInTheDocument();

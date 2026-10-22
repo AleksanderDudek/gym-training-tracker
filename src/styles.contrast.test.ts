@@ -85,6 +85,19 @@ describe('kontrast tokenów', () => {
     }
   });
 
+  it('kropka stanu połączenia odcina się od każdego tła', () => {
+    // Kropka tylko podpowiada (zdanie obok mówi wszystko), ale jako element graficzny i tak ma
+    // trzymać 3:1 — czysty akcent (np. --c-gold) zniknąłby na jasnej karcie.
+    const rules = css.match(/[^{}]*\.dev-dot\{[^}]*\}/g) ?? [];
+    const used = new Set(rules.flatMap((r) => [...r.matchAll(/var\(--([a-z0-9-]+)\)/g)].map((m) => m[1]!)));
+    expect(used.size).toBeGreaterThanOrEqual(5);
+    for (const name of used) {
+      for (const bd of BACKDROPS) {
+        expect(ratio(token(name), token(bd)), `--${name} na --${bd}`).toBeGreaterThanOrEqual(3);
+      }
+    }
+  });
+
   it('numer na kafelku ciężaru trzyma się koloru kettlebla', () => {
     // Kolor kettlebla jest kodem zawodowym i zostaje, więc dopasowuje się napis:
     // biel na ciemnych odważnikach, `--ink` na jasnych.

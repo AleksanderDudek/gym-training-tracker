@@ -40,9 +40,11 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-const openSheet = async (user: ReturnType<typeof userEvent.setup>) => {
+const openSheet = async (user: ReturnType<typeof userEvent.setup>, mode: 'list' | 'macros' = 'macros') => {
   await user.click(await screen.findByRole('button', { name: 'Cheat meal' }));
-  return screen.getByRole('dialog', { name: 'Cheat meal' });
+  const dialog = screen.getByRole('dialog', { name: 'Cheat meal' });
+  if (mode === 'macros') await user.click(within(dialog).getByRole('button', { name: 'Wpisz makro' }));
+  return dialog;
 };
 
 const sim = (dialog: HTMLElement) => within(dialog).getByRole('region', { name: 'Co z tego wynika' });
@@ -136,6 +138,61 @@ describe('arkusz cheat mealu', () => {
     expect(within(dialog).getByRole('button', { name: 'Zjedzone teraz' })).toBeDisabled();
     expect(within(dialog).queryByRole('group', { name: 'Ruch do końca dnia' })).not.toBeInTheDocument();
     expect(sim(dialog)).toHaveTextContent(/Cel tego dnia\s*2000 kcal/);
+  });
+});
+
+describe('cheat meal z listy', () => {
+  test('z ulubionych i z wyszukiwania: kilka rzeczy składa się w jeden posiłek, a suma idzie do symulacji', async () => {
+    await db.favorites.put({
+      key: 'custom:pizza',
+      food: {
+        key: 'custom:pizza',
+        name: 'Pizza z Biesiady',
+        detail: 'moje',
+        source: 'custom',
+        amountLabel: '1 pizza',
+        nutrients: { kcal: 1100, protein: 45, carbs: 120, fat: 45 },
+        per100: null,
+        grams: null,
+        stores: [],
+        atHome: false,
+        role: 'main',
+      },
+      addedAt: '2026-10-01T12:00:00Z',
+      uses: 3,
+      lastUsed: null,
+    });
+    const user = userEvent.setup();
+    renderWithBridge(<DiaryPage />);
+    const dialog = await openSheet(user, 'list');
+    // Ulubione widać, zanim cokolwiek się wpisze.
+    await user.click(await within(dialog).findByRole('button', { name: /^Pizza z Biesiady/ }));
+    await user.type(within(dialog).getByRole('searchbox', { name: 'Szukaj do cheat mealu' }), 'pepsi');
+    await user.click((await within(dialog).findAllByRole('button', { name: /^Pepsi/ }))[0]!);
+    const parts = within(dialog).getAllByRole('button', { name: /^Usuń z cheat mealu/ });
+    expect(parts).toHaveLength(2);
+    expect(within(dialog).getByLabelText('Co to będzie')).toHaveAttribute('placeholder', 'Pizza z Biesiady + Pepsi');
+    expect(sim(dialog)).toHaveTextContent(/Cheat meal\s*1\s?\d{3} kcal/);
+    expect(sim(dialog)).not.toHaveTextContent('Wpisz kalorie');
+
+    // „Wpisz makro” zaczyna od sumy z listy.
+    await user.click(within(dialog).getByRole('button', { name: 'Wpisz makro' }));
+    expect(Number((within(dialog).getByLabelText('Kalorie (kcal)') as HTMLInputElement).value)).toBeGreaterThan(1100);
+    expect(within(dialog).getByLabelText('Co to będzie')).toHaveValue('Pizza z Biesiady + Pepsi');
+  });
+
+  test('zaplanowany z listy pokazuje na karcie, z czego jest', async () => {
+    await planCheat(TODAY, {
+      name: 'Kebab i cola',
+      kcal: 1150,
+      protein: 50,
+      carbs: 120,
+      fat: 45,
+      items: ['Kebab duży (1 szt.)', 'Cola (0,5 l)'],
+    });
+    renderWithBridge(<DiaryPage />);
+    const card = await screen.findByRole('region', { name: /Zaplanowany cheat meal/ });
+    expect(card).toHaveTextContent('Kebab duży (1 szt.) · Cola (0,5 l)');
   });
 });
 

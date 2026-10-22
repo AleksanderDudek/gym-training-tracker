@@ -13,6 +13,7 @@ import {
   UserRound,
 } from 'lucide-react';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { Segmented } from '../../../components/ui';
 import { NEARBY_PATH, dietPath } from '../../../routing';
 import { useBridge } from '../../bridge';
 import { MISSING_DATA_MESSAGE } from '../../data';
@@ -27,7 +28,7 @@ import { addDays, dayGoal, dayLabel, longDay, mealsLeftAt, mondayOf, remainingOf
 import { plannedDay, plannedKcal, type Plan, type PlannedItem, type PlanItem } from '../../diet/plan';
 import { DIET_PROFILES } from '../../diet/profiles';
 import { dropCheat, eatCheat, logFood, updateChoices, updateDay } from '../../diet/store';
-import { autoDay, seedOf, suggest, swaps, type Context } from '../../diet/suggest';
+import { autoDay, restVariants, seedOf, suggest, swaps, type Context } from '../../diet/suggest';
 import type { Profile } from '../../diet/types';
 import { diaryFromParams, diaryToParams } from '../../diet/url';
 import {
@@ -61,6 +62,7 @@ import { StarButton } from '../common/StarButton';
 import { MacroBars } from './MacroBars';
 import { Loading, Onboarding } from './Onboarding';
 import { PlanDayCard } from './PlanDayCard';
+import { RestVariants } from './RestVariants';
 import { SuggestionList } from './SuggestionList';
 import { SwapDialog } from './SwapDialog';
 import { useDietBase, useFoodPool, type FoodPool } from './useDietPage';
@@ -157,6 +159,9 @@ function TodayView({ profile, plan, date, today, hour, nowMs, history, pickerOpe
   const favorites = useFavorites();
   const [favoritesOpen, setFavoritesOpen] = useState(false);
   const [cheatOpen, setCheatOpen] = useState(false);
+  // „Co teraz?”: cała reszta dnia w wariantach albo jeden posiłek; null — według tego, ile posiłków zostało.
+  const [nowView, setNowView] = useState<'rest' | 'one' | null>(null);
+  const [restRoll, setRestRoll] = useState(0);
   const [swapping, setSwapping] = useState<PlannedItem | null>(null);
   const activity = useActivity(profile, today);
 
@@ -196,6 +201,12 @@ function TodayView({ profile, plan, date, today, hour, nowMs, history, pickerOpe
     mealsLeft: Math.max(1, restMeals),
   };
   const suggestions = suggest(pool, ctx, 8);
+  // Reszta dnia w wariantach, gdy zostały dwa posiłki albo więcej — albo jeden, ale za duży na jeden talerz.
+  const restShown =
+    !(cheat && restMeals === 0) && ctx.remaining.kcal > 50 && (ctx.mealsLeft >= 2 || ctx.remaining.kcal > BIG_REST_KCAL);
+  const view = restShown ? (nowView ?? 'rest') : 'one';
+  // Warianty liczone tylko na widoku „Reszta dnia” — po kilka przebiegów `suggest` na każdy.
+  const variants = view === 'rest' ? restVariants(pool, ctx, seedOf(date) + restRoll * 7919, 3) : [];
   const autoSeed = day?.autoSeed ?? seedOf(date);
   // Kilkaset pozycji oceniane cztery razy: na tyle tanio, że bez zapamiętywania.
   const auto = planned || prep ? null : autoDay(pool, base, autoSeed);
@@ -302,7 +313,28 @@ function TodayView({ profile, plan, date, today, hour, nowMs, history, pickerOpe
         </p>
         <NearbyLine nearby={nearby} preferred={profile.preferredStore} dict={dict} />
         <DatasetLine food={food} />
-        <SuggestionList suggestions={suggestions} actionLabel="Zjadłem" onPick={log} />
+        {restShown && (
+          <Segmented
+            label="Co pokazać"
+            options={[
+              { key: 'rest', label: `Reszta dnia (${mealsWord(ctx.mealsLeft)})` },
+              { key: 'one', label: 'Jeden posiłek' },
+            ]}
+            value={view}
+            onChange={setNowView}
+          />
+        )}
+        {view === 'rest' ? (
+          <RestVariants
+            variants={variants}
+            left={{ kcal: ctx.remaining.kcal, protein: Math.max(0, ctx.remaining.protein) }}
+            entries={entries}
+            onLog={log}
+            onReroll={() => setRestRoll((n) => n + 1)}
+          />
+        ) : (
+          <SuggestionList suggestions={suggestions} actionLabel="Zjadłem" onPick={log} />
+        )}
       </section>
 
       <MoveCard
@@ -336,7 +368,15 @@ function TodayView({ profile, plan, date, today, hour, nowMs, history, pickerOpe
         activity={activity}
         plannedKcal={dayPlanKcal}
         planned={cheat}
-        suggestFor={(remaining, mealsLeft) => suggest(pool, { ...base, remaining, mealsLeft }, 3)}
+        ideasFor={(remaining, mealsLeft) => {
+          const rest = { ...base, remaining, mealsLeft };
+          const variants = mealsLeft >= 2 || remaining.kcal > BIG_REST_KCAL ? restVariants(pool, rest, seedOf(date), 2) : [];
+          return variants.length ? { variants, singles: [] } : { variants: [], singles: suggest(pool, rest, 3) };
+        }}
+        pool={pool}
+        products={food.products}
+        dict={dict}
+        productsLoading={food.data.status === 'loading'}
         onClose={() => setCheatOpen(false)}
         onSaved={(message) => {
           setCheatOpen(false);
@@ -457,6 +497,12 @@ function NextPlanLine({ plan, today }: { plan: PrepPlan; today: string }) {
   );
 }
 
+/** Od tylu kcal na jeden posiłek reszta dnia to już kilka pozycji, nie jeden talerz. */
+const BIG_REST_KCAL = 900;
+
+/** „1 posiłek”, „2 posiłki”, „5 posiłków”. */
+const mealsWord = (n: number) => `${n} ${n === 1 ? 'posiłek' : n < 5 ? 'posiłki' : 'posiłków'}`;
+
 /** What is eaten plus the planned cheat meal: the rest of the day is planned around it. */
 function withCheat(eaten: DayTotals, cheat: PlannedCheat): DayTotals {
   return {
@@ -496,6 +542,7 @@ function CheatCard({
         <Pizza {...ICON} /> Zaplanowany cheat meal
       </h2>
       <p className="fd-diet-name">{cheat.name || 'Cheat meal'}</p>
+      {cheat.items && cheat.items.length > 1 && <p className="fd-diet-meta">{cheat.items.join(' · ')}</p>}
       <p className="fd-diet-meta fd-diet-nums">
         {formatNumber(cheat.kcal, 0)} kcal · B {g(cheat.protein)} · W {g(cheat.carbs)} · T {g(cheat.fat)}
       </p>

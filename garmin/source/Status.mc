@@ -48,8 +48,10 @@ module Status {
         if (code == 429) {
             return say("Za często - za minutę", "Too often - try in a minute");
         }
+        // Ujemny kod to brak łączności z telefonem — najczęściej wyłączony Bluetooth albo telefon
+        // za daleko. Pytanie w tekście podpowiada, co sprawdzić, zamiast samego „nie ma”.
         if (code instanceof Number && code < 0) {
-            return say("Brak telefonu w pobliżu", "No phone nearby");
+            return say("Brak telefonu - Bluetooth?", "No phone - Bluetooth?");
         }
         return say("Błąd serwera ", "Server error ") + code;
     }

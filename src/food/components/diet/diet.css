@@ -373,3 +373,10 @@ p.fd-diet-v-tight,p.fd-diet-v-edge{color:var(--c-gold-ink)}
 p.fd-diet-v-over{color:var(--c-orange-ink)}
 .fd-diet-simideas{margin:0 0 8px;padding-left:18px;font-size:13.5px}
 .fd-diet-simideas li{margin:2px 0}
+
+/* „Reszta dnia”: zestawy posiłków na to, co zostało — każdy z sumą wobec reszty. */
+.fd-diet-rest{display:grid;gap:12px;margin-top:10px}
+.fd-diet-restvar{padding:8px 12px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+p.fd-diet-resthead{margin:0 0 2px;font-size:13.5px;color:var(--ink-soft)}
+p.fd-diet-resthead b{color:var(--ink)}
+.fd-diet-sim .fd-diet-restvar{background:var(--surface)}

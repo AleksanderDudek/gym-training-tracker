@@ -30,6 +30,9 @@ import {
 } from '../engine/cardio';
 import { phoneWeightOffer, recentPhoneDays } from '../engine/phone';
 import { PHONE_NOTE, WATCH_NOTE } from './Health';
+import { DeviceLine, LateNotes, onAnyCheck, useNow } from './DeviceStatus';
+import { watchConnected, watchStatus } from '../garmin';
+import { phoneConnected, phoneStatus } from '../phone';
 import { XP, cardioXp } from '../engine/xp';
 import {
   DANCE_SHARE,
@@ -207,10 +210,12 @@ function CardioShortcuts({ state, today }: { state: AppState; today: string }) {
 
 /**
  * Karta pod przekąską. Licznik dnia wchodzi dopiero z pierwszym wpisem — zero kroków przy
- * pustym dniu to wyrzut, a nie zaproszenie; tak samo jak przy przekąskach.
+ * pustym dniu to wyrzut, a nie zaproszenie; tak samo jak przy przekąskach. O połączeniu
+ * z zegarkiem i telefonem mówi tylko wtedy, gdy dane się spóźniają.
  */
 export function CardioCard({ state }: { state: AppState }) {
-  const today = dayKey(Date.now());
+  const now = useNow(onAnyCheck);
+  const today = dayKey(now);
   const n = cardioOn(state, today).length;
   const d = dayBurn(state, today);
   const steps = stepsOn(state, today);
@@ -243,6 +248,7 @@ export function CardioCard({ state }: { state: AppState }) {
           </p>
         </>
       )}
+      <LateNotes state={state} now={now} />
       <CardioShortcuts state={state} today={today} />
       {cardioOf(state).length > 0 && (
         <a className="vidlink" href={cardioPath()}>
@@ -665,17 +671,27 @@ function CardioItem({ state, c, onDelete }: { state: AppState; c: Cardio; onDele
   );
 }
 
-/** Zdrowie z zegarka: siedem dni, najnowszy na górze. Same liczby, bez oceny — ta należy do lekarza. */
-function WatchHealthDays({ state, today }: { state: AppState; today: string }) {
+/**
+ * Zdrowie z zegarka: siedem dni, najnowszy na górze. Same liczby, bez oceny — ta należy do lekarza.
+ * Nad nimi, gdy zegarek jest połączony, jedna linia stanu połączenia — tu najczęściej widać, że
+ * czegoś brakuje, więc tu też trzeba powiedzieć dlaczego.
+ */
+function WatchHealthDays({ state, today, now }: { state: AppState; today: string; now: number }) {
   const rows = Array.from({ length: 7 }, (_, i) => addDays(today, -i))
     .map((d) => state.watch?.health.find((h) => h.day === d))
     .filter((h): h is WatchHealth => !!h);
-  if (!rows.length) return null;
+  const linked = watchConnected();
+  if (!rows.length && !linked) return null;
   const range = (a: number | null, b: number | null): string =>
     a === null || b === null ? String(a ?? b) : a === b ? String(a) : `${a}–${b}`;
   return (
     <>
       <div className="sect-label">Z zegarka</div>
+      {linked && (
+        <div className="wrap">
+          <DeviceLine device="watch" status={watchStatus(state, now)} now={now} />
+        </div>
+      )}
       {rows.map((h) => (
         <div className="h-item" key={h.day}>
           <div className="h-date">{dm(h.day)}</div>
@@ -695,11 +711,13 @@ function WatchHealthDays({ state, today }: { state: AppState; today: string }) {
           <div className="streak" />
         </div>
       ))}
-      <div className="wrap">
-        <p className="hint" style={{ marginTop: 8 }}>
-          {WATCH_NOTE}
-        </p>
-      </div>
+      {rows.length > 0 && (
+        <div className="wrap">
+          <p className="hint" style={{ marginTop: 8 }}>
+            {WATCH_NOTE}
+          </p>
+        </div>
+      )}
     </>
   );
 }
@@ -711,8 +729,8 @@ export const sleepText = (min: number): string => {
   return h ? `${h} h${m ? ` ${m} min` : ''}` : `${m} min`;
 };
 
-/** Zdrowie z telefonu: siedem dni, najnowszy na górze. Same liczby, bez oceny — jak z zegarka. */
-function PhoneHealthDays({ state, today }: { state: AppState; today: string }) {
+/** Zdrowie z telefonu: siedem dni, najnowszy na górze. Same liczby, bez oceny — jak z zegarka. Nad nimi linia stanu. */
+function PhoneHealthDays({ state, today, now }: { state: AppState; today: string; now: number }) {
   const rows = recentPhoneDays(state, today, 7)
     .slice(0, 7)
     .map((h) => ({
@@ -729,10 +747,16 @@ function PhoneHealthDays({ state, today }: { state: AppState; today: string }) {
         .join(' · '),
     }))
     .filter((r) => r.text);
-  if (!rows.length) return null;
+  const linked = phoneConnected();
+  if (!rows.length && !linked) return null;
   return (
     <>
       <div className="sect-label">Z telefonu</div>
+      {linked && (
+        <div className="wrap">
+          <DeviceLine device="phone" status={phoneStatus(state, now)} now={now} />
+        </div>
+      )}
       {rows.map((r) => (
         <div className="h-item" key={r.day}>
           <div className="h-date">{dm(r.day)}</div>
@@ -740,11 +764,13 @@ function PhoneHealthDays({ state, today }: { state: AppState; today: string }) {
           <div className="streak" />
         </div>
       ))}
-      <div className="wrap">
-        <p className="hint" style={{ marginTop: 8 }}>
-          {PHONE_NOTE}
-        </p>
-      </div>
+      {rows.length > 0 && (
+        <div className="wrap">
+          <p className="hint" style={{ marginTop: 8 }}>
+            {PHONE_NOTE}
+          </p>
+        </div>
+      )}
     </>
   );
 }
@@ -782,7 +808,8 @@ export function CardioPage({
   onDelete: (key: string) => void;
 }) {
   const [allHistory, setAllHistory] = useState(false);
-  const today = dayKey(Date.now());
+  const now = useNow(onAnyCheck);
+  const today = dayKey(now);
   const todays = cardioOn(state, today);
   const d = dayBurn(state, today);
   const latest = latestWeight(state);
@@ -856,8 +883,8 @@ export function CardioPage({
         </p>
       </div>
 
-      <WatchHealthDays state={state} today={today} />
-      <PhoneHealthDays state={state} today={today} />
+      <WatchHealthDays state={state} today={today} now={now} />
+      <PhoneHealthDays state={state} today={today} now={now} />
 
       {past.length > 0 && (
         <>

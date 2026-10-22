@@ -1,8 +1,11 @@
 import { useState } from 'react';
-import { GARMIN_APP_URL, forgetWatch, garminConfigured, garminKey, lastPullKind, saveGarminKey, whenText } from '../garmin';
+import { checkSaid } from '../deviceStatus';
+import { localDayOf } from '../engine/watch';
+import { GARMIN_APP_URL, forgetWatch, garminConfigured, garminKey, lastPullAt, onWatchCheck, saveGarminKey, watchStatus } from '../garmin';
 import type { PullResult } from '../garmin';
 import { cleanKey, newKey } from '../watchseal';
 import type { AppState } from '../types';
+import { CARD_ID, Checklist, StatusBlock, useNow, useScrollHere, watchChecks } from './DeviceStatus';
 
 /**
  * Karta zegarka w ustawieniach: połączenie, klucz do wklejenia, stan i odłączenie.
@@ -10,17 +13,13 @@ import type { AppState } from '../types';
  * Połączenie to jeden klucz, który znają tylko ta przeglądarka i zegarek. Wkleja się go raz,
  * w ustawieniach aplikacji GYM TRACKER na zegarku — w Garmin Connect na telefonie jest
  * klawiatura i schowek, a na zegarku nie ma ani jednego, ani drugiego.
+ *
+ * Po połączeniu karta odpowiada na pytanie „czy to działa”: kiedy przyszła ostatnia paczka,
+ * kiedy następna, czy „Sprawdź teraz” przyniosło coś nowego — i co sprawdzić, gdy nie.
  */
 
 /** Klucz w grupach po osiem znaków — łatwiej porównać na dwóch ekranach. Zegarek spacje pomija. */
 const grouped = (k: string): string => k.match(/.{1,8}/g)!.join(' ');
-
-const SAID: Partial<Record<PullResult['kind'], string>> = {
-  empty:
-    'Zegarek jeszcze nic nie przysłał. Dane przychodzą kilka minut po otwarciu aplikacji na zegarku, gdy telefon jest w pobliżu.',
-  bad: 'Paczka z zegarka nie otwiera się tym kluczem — na zegarku jest pewnie inny. Wklej klucz z tej karty jeszcze raz.',
-  offline: 'Serwer nie odpowiada albo nie ma sieci. Spróbuję znów przy następnym otwarciu aplikacji.',
-};
 
 export function GarminCard({
   state,
@@ -37,13 +36,19 @@ export function GarminCard({
   const key = garminKey();
   const [showKey, setShowKey] = useState(false);
   const [paste, setPaste] = useState<string | null>(null);
-  const [kind, setKind] = useState<PullResult['kind'] | null>(() => lastPullKind());
+  // Co powiedziało ostatnie „Sprawdź teraz” w tej karcie — w linii ze stanem, nie tylko w dymku.
+  const [result, setResult] = useState('');
   const [busy, setBusy] = useState(false);
   const [sure, setSure] = useState(false);
+  const now = useNow(onWatchCheck);
+  const ref = useScrollHere('watch');
 
   if (!garminConfigured()) return null;
 
   const got = state.watch?.got;
+  const status = watchStatus(state, now);
+  // Dzień zegarka, nie dzień UTC aplikacji: zegarek liczy kroki od swojej północy.
+  const todaySteps = state.watch?.days.find((d) => d.day === localDayOf(new Date(now)))?.steps ?? null;
 
   const connect = (raw: string) => {
     if (!saveGarminKey(raw)) {
@@ -53,15 +58,18 @@ export function GarminCard({
     bump((n) => n + 1);
     setShowKey(true);
     setPaste(null);
-    setKind(null);
+    setResult('');
   };
 
   const check = async () => {
     setBusy(true);
+    // Paczka, którą karta pokazuje teraz: ta sama po sprawdzeniu to „bez nowej paczki”.
+    const before = state.watch?.t ?? null;
     try {
       const r = await onSync();
-      setKind(r.kind);
-      onToast(r.kind === 'ok' ? 'Dane z zegarka sprawdzone.' : (SAID[r.kind] ?? 'Spróbuj za chwilę.'));
+      const said = checkSaid('watch', before, r, Date.now());
+      setResult(said);
+      onToast(said);
     } finally {
       setBusy(false);
     }
@@ -87,12 +95,12 @@ export function GarminCard({
     setSure(false);
     bump((n) => n + 1);
     setShowKey(false);
-    setKind(null);
+    setResult('');
     onToast('Zegarek odłączony. Dane, które już przyszły, zostają w historii. Klucz usuń też z ustawień aplikacji na zegarku.');
   };
 
   return (
-    <div className="grp">
+    <div className="grp dev-card" id={CARD_ID.watch} ref={ref}>
       <h2>Zegarek Garmin</h2>
       {!key ? (
         <>
@@ -147,10 +155,19 @@ export function GarminCard({
         </>
       ) : (
         <>
-          <p className="tight">{got ? `Ostatnie dane z zegarka: ${whenText(got)}.` : 'Zegarek jeszcze nic nie przysłał.'}</p>
-          {kind === 'bad' && <p className="tight cardio-note warn">{SAID.bad}</p>}
+          <StatusBlock
+            device="watch"
+            status={status}
+            now={now}
+            from="z zegarka"
+            todaySteps={todaySteps}
+            checkedAt={lastPullAt()}
+          />
+          <p className="tight dev-result" role="status">
+            {result}
+          </p>
           {(!got || showKey) && (
-            <ol className="watch-steps">
+            <ol className="watch-steps" aria-label="Kroki połączenia">
               <li>
                 Zainstaluj na zegarku aplikację GYM TRACKER z{' '}
                 <a href={GARMIN_APP_URL} target="_blank" rel="noopener noreferrer">
@@ -195,6 +212,7 @@ export function GarminCard({
               {sure ? 'Na pewno odłączyć?' : 'Odłącz zegarek'}
             </button>
           </div>
+          <Checklist level={status.level} checked={lastPullAt() !== null} items={watchChecks(status.level)} />
         </>
       )}
       <p className="hint" style={{ marginTop: 10 }}>

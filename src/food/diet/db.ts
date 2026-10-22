@@ -35,6 +35,8 @@ export interface PlannedCheat {
   protein: number | null;
   carbs: number | null;
   fat: number | null;
+  /** What it is made of, when picked from the list: „Pizza Margherita (1 szt.)”, „Cola (0,5 l)”. */
+  items?: string[];
 }
 
 /** What was eaten: a snapshot, so history never changes when a product's data does. */

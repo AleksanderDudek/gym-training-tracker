@@ -13,6 +13,9 @@ module Sync {
     // Kod zamiast odpowiedzi serwera: w ustawieniach nie ma poprawnego klucza. Status.mc zna go
     // jako liczbę, bo podgląd (glance) nie widzi tego modułu.
     const NO_KEY = -1000;
+    // Pod tym kluczem w Storage przebieg w tle zapisuje, kiedy ruszył (sekundy) — z tego ekran
+    // aplikacji liczy następną wysyłkę.
+    const LAST_RUN = "run";
 
     function payload(now) {
         return "{\"v\":1,\"t\":" + now.toString()
