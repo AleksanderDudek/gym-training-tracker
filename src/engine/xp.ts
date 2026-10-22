@@ -1,3 +1,4 @@
+import { say } from '../i18n';
 import type { AppState } from '../types';
 import { achievementById, bandFor } from './badges';
 import { addDays, dayKey } from './schedule';
@@ -159,17 +160,17 @@ export const xpForLevel = (level: number): number => 50 * level * (level - 1);
  * o postaci, a nie o kimś, kto dopiero zaczyna.
  */
 export const LEVEL_TITLES: readonly { at: number; name: string }[] = [
-  { at: 1, name: 'Świeżo z dżungli' },
-  { at: 3, name: 'Młode na lianie' },
-  { at: 5, name: 'Podrostek z ambicjami' },
-  { at: 8, name: 'Czarny grzbiet' },
-  { at: 12, name: 'Pierwszy siwy włos' },
-  { at: 16, name: 'Srebrny grzbiet' },
-  { at: 20, name: 'Przywódca stada' },
-  { at: 25, name: 'Postrach bananowca' },
-  { at: 30, name: 'Legenda buszu' },
-  { at: 40, name: 'Pomnik z bambusa' },
-  { at: 50, name: 'Góra, która chodzi' },
+  { at: 1, name: say('Świeżo z dżungli', 'Fresh from the jungle') },
+  { at: 3, name: say('Młode na lianie', 'Youngster on a vine') },
+  { at: 5, name: say('Podrostek z ambicjami', 'Teenager with ambitions') },
+  { at: 8, name: say('Czarny grzbiet', 'Blackback') },
+  { at: 12, name: say('Pierwszy siwy włos', 'First grey hair') },
+  { at: 16, name: say('Srebrny grzbiet', 'Silverback') },
+  { at: 20, name: say('Przywódca stada', 'Leader of the troop') },
+  { at: 25, name: say('Postrach bananowca', 'Terror of the banana tree') },
+  { at: 30, name: say('Legenda buszu', 'Legend of the bush') },
+  { at: 40, name: say('Pomnik z bambusa', 'Bamboo monument') },
+  { at: 50, name: say('Góra, która chodzi', 'The walking mountain') },
 ];
 
 export const titleFor = (level: number): string =>

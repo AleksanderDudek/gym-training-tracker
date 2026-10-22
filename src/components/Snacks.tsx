@@ -17,6 +17,7 @@ import {
 import { periodValue } from '../engine/volume';
 import { XP, snackXpLeft } from '../engine/xp';
 import { SNACK_EMPTY, daySeed, pick, plural } from '../engine/quips';
+import { LOCALE, pluralEn, text } from '../i18n';
 import { go, goBack, snackAddPath, snacksPath, statsPath } from '../routing';
 import { Timer } from './Timer';
 import { ExercisePicker } from './ExercisePicker';
@@ -36,12 +37,145 @@ import type { AppState, ExerciseId, Snack } from '../types';
 
 export type LogSnack = (ex: ExerciseId, reps: number, w: number | null) => void;
 
+// i18n-ignore: polska odmiana — tylko dla polskiej połowy katalogu
 const SNACK_FORMS = ['przekąska', 'przekąski', 'przekąsek'] as const;
+// i18n-ignore: polska odmiana — tylko dla polskiej połowy katalogu
 const SNACK_FORMS_LOC = ['przekąsce', 'przekąskach', 'przekąskach'] as const;
+
+const T = text({
+  pl: {
+    reps: (n: number) => `${n} powt.`,
+    dm: (dd: string, mm: string) => `${dd}.${mm}`,
+    weekday: ['', 'pn', 'wt', 'śr', 'cz', 'pt', 'sb', 'nd'],
+    inSnacks: (n: number) => `w ${n} ${plural(n, SNACK_FORMS_LOC)}`,
+    today: (what: string) => `dziś ${what}`,
+    shortcutAria: (name: string, now: string | null) => `${name}${now ? `, ${now}` : ''}. Zapisz przekąskę.`,
+    other: 'Inne ćwiczenie',
+    tag: 'Przekąska ruchowa',
+    cardToday: (n: number, xp: number) => `Dziś ${n} ${plural(n, SNACK_FORMS)} · +${xp} XP`,
+    cardLeft: (n: number) => `Jeszcze ${n} ${plural(n, SNACK_FORMS)} da dziś doświadczenie.`,
+    cardCap: 'Limit doświadczenia z przekąsek na dziś wyczerpany — kolejne liczą się do odznak.',
+    cardEmpty: 'Krótka seria poza treningiem',
+    cardEmptyText:
+      'Wybierz ćwiczenie, a liczbę wpiszesz na następnym ekranie. Przekąska nie zmienia planu ani poziomów — rośnie za to postać i odznaki ćwiczeń.',
+    cardLink: 'Przekąski — dziś, tydzień i historia →',
+    bothSources: (snacks: string, count: number, workout: string) =>
+      `${snacks} w ${count} ${plural(count, SNACK_FORMS_LOC)} i ${workout} w treningu`,
+    inWorkout: 'w treningu',
+    exToday: 'Dziś z tym ćwiczeniem',
+    perSide: ' na stronę',
+    todayTotal: (where: string) => `Dziś łącznie, ${where}.`,
+    dayDone: 'Rekord dnia w komplecie — wyżej już nie ma progu.',
+    dayLeft: (tier: string, left: string) => `Do progu dnia (${tier}) brakuje ${left}.`,
+    secs: 'sekund',
+    repsSide: 'powtórzeń na stronę',
+    repsWord: 'powtórzeń',
+    pickFirst: 'Najpierw wybierz ćwiczenie.',
+    enterSecs: 'Wpisz, ile sekund trwała przekąska.',
+    enterReps: 'Wpisz, ile było powtórzeń.',
+    tooMany: (max: number, timed: boolean) => `Przekąska ma najwyżej ${max}${timed ? ' s' : ' powtórzeń'} — sprawdź liczbę.`,
+    leadEx: (what: string) => `Wpisz, ile było ${what}, i zapisz.`,
+    leadPick: 'Wybierz ćwiczenie. Pisz nazwę — lista zawęża się przy każdej literze.',
+    picker: 'ćwiczenie',
+    howMany: (what: string) => `ile ${what}`,
+    less: (n: number) => `Mniej o ${n}`,
+    more: (n: number) => `Więcej o ${n}`,
+    last: (v: string | number) => `ostatnio ${v}`,
+    weight: 'ciężar',
+    noWeight: 'bez ciężaru',
+    save: 'Zapisz przekąskę',
+    weekAria: 'Przekąski w ostatnich siedmiu dniach',
+    dayAria: (wd: string, date: string, n: number) => `${wd} ${date}: ${n} ${plural(n, SNACK_FORMS)}`,
+    deleteAria: (name: string, at: string) => `Usuń przekąskę: ${name} o ${at}`,
+    amountIn: (amount: string, n: number) => `${amount} w ${n} ${plural(n, SNACK_FORMS_LOC)}`,
+    withWorkout: (amount: string) => ` (z treningiem ${amount})`,
+    rowLeft: (left: string) => ` — do progu dnia brakuje ${left}.`,
+    rowDone: ' — rekord dnia w komplecie.',
+    lead: 'Krótka seria poza treningiem: dziesięć przysiadów przy czajniku, minuta deski w przerwie. Kilka takich w ciągu dnia przerywa siedzenie i poprawia wydolność. Przekąska nie zmienia poziomów ćwiczeń ani planu — dokłada się za to do odznak ćwiczeń i do doświadczenia postaci.',
+    add: 'Dodaj przekąskę',
+    addHint: 'Wybierz ćwiczenie — liczbę wpiszesz na następnym ekranie.',
+    todayLabel: 'Dziś',
+    todayCount: (n: number, xp: number) => `${n} ${plural(n, SNACK_FORMS)} · +${xp} XP. `,
+    todayNone: 'Dziś jeszcze bez przekąsek. ',
+    xpLeft: (n: number) => `Doświadczenie da jeszcze ${n} ${plural(n, SNACK_FORMS)}.`,
+    xpCap: 'Limit doświadczenia na dziś wyczerpany — kolejne przekąski liczą się do odznak.',
+    week: 'Ostatnie siedem dni',
+    totals: (count: number, run: number, distinct: number) =>
+      `Od początku ${count} ${plural(count, SNACK_FORMS)}${run > 1 ? ` · najdłuższy ciąg ${run} dni z rzędu` : ''}${
+        distinct ? ` · różnych ćwiczeń: ${distinct}` : ''
+      }.`,
+    earlier: 'Wcześniej',
+    showAll: (n: number) => `Pokaż wszystkie dni (${n})`,
+  },
+  en: {
+    reps: (n: number) => `${n} ${pluralEn(n, 'rep', 'reps')}`,
+    dm: (dd: string, mm: string) => `${dd}/${mm}`,
+    weekday: ['', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'],
+    inSnacks: (n: number) => `in ${n} ${pluralEn(n, 'snack', 'snacks')}`,
+    today: (what: string) => `today ${what}`,
+    shortcutAria: (name: string, now: string | null) => `${name}${now ? `, ${now}` : ''}. Log a snack.`,
+    other: 'Another exercise',
+    tag: 'Exercise snack',
+    cardToday: (n: number, xp: number) => `Today ${n} ${pluralEn(n, 'snack', 'snacks')} · +${xp} XP`,
+    cardLeft: (n: number) => `${n} more ${pluralEn(n, 'snack', 'snacks')} will earn XP today.`,
+    cardCap: 'You’ve reached today’s XP limit for snacks — more still count towards badges.',
+    cardEmpty: 'A short set outside your workout',
+    cardEmptyText:
+      'Pick an exercise and enter the number on the next screen. A snack doesn’t change your plan or levels — but your character and exercise badges grow.',
+    cardLink: 'Exercise snacks — today, this week and history →',
+    bothSources: (snacks: string, count: number, workout: string) =>
+      `${snacks} in ${count} ${pluralEn(count, 'snack', 'snacks')} and ${workout} in your workout`,
+    inWorkout: 'in your workout',
+    exToday: 'Today with this exercise',
+    perSide: ' per side',
+    todayTotal: (where: string) => `Today in total, ${where}.`,
+    dayDone: 'Day record complete — there’s no higher tier.',
+    dayLeft: (tier: string, left: string) => `${left} to go to the day tier (${tier}).`,
+    secs: 'seconds',
+    repsSide: 'reps per side',
+    repsWord: 'reps',
+    pickFirst: 'Pick an exercise first.',
+    enterSecs: 'Enter how many seconds the snack lasted.',
+    enterReps: 'Enter how many reps you did.',
+    tooMany: (max: number, timed: boolean) => `A snack is at most ${max}${timed ? ' s' : ' reps'} — check the number.`,
+    leadEx: (what: string) => `Enter the number of ${what} and save.`,
+    leadPick: 'Pick an exercise. Start typing its name — the list narrows with every letter.',
+    picker: 'exercise',
+    howMany: (what: string) => `how many ${what}`,
+    less: (n: number) => `Down by ${n}`,
+    more: (n: number) => `Up by ${n}`,
+    last: (v: string | number) => `last time ${v}`,
+    weight: 'weight',
+    noWeight: 'no weight',
+    save: 'Save snack',
+    weekAria: 'Exercise snacks in the last seven days',
+    dayAria: (wd: string, date: string, n: number) => `${wd} ${date}: ${n} ${pluralEn(n, 'snack', 'snacks')}`,
+    deleteAria: (name: string, at: string) => `Delete snack: ${name} at ${at}`,
+    amountIn: (amount: string, n: number) => `${amount} in ${n} ${pluralEn(n, 'snack', 'snacks')}`,
+    withWorkout: (amount: string) => ` (${amount} with your workout)`,
+    rowLeft: (left: string) => ` — ${left} to go to the day tier.`,
+    rowDone: ' — day record complete.',
+    lead: 'A short set outside your workout: ten squats while the kettle boils, a minute of plank on a break. A few of these a day break up sitting and improve your fitness. A snack doesn’t change your exercise levels or plan — but it adds to exercise badges and your character’s XP.',
+    add: 'Add a snack',
+    addHint: 'Pick an exercise — you’ll enter the number on the next screen.',
+    todayLabel: 'Today',
+    todayCount: (n: number, xp: number) => `${n} ${pluralEn(n, 'snack', 'snacks')} · +${xp} XP. `,
+    todayNone: 'No snacks yet today. ',
+    xpLeft: (n: number) => `${n} more ${pluralEn(n, 'snack', 'snacks')} will earn XP.`,
+    xpCap: 'Today’s XP limit is reached — more snacks still count towards badges.',
+    week: 'Last seven days',
+    totals: (count: number, run: number, distinct: number) =>
+      `${count} ${pluralEn(count, 'snack', 'snacks')} so far${run > 1 ? ` · longest streak ${run} days in a row` : ''}${
+        distinct ? ` · different exercises: ${distinct}` : ''
+      }.`,
+    earlier: 'Earlier',
+    showAll: (n: number) => `Show all days (${n})`,
+  },
+});
 
 /** Liczba z jednostką ćwiczenia: „45 powt.”, „1 min 30 s”. */
 export const amountOf = (id: ExerciseId, n: number): string =>
-  EX[id]?.unit === 'secs' ? clock(n) : `${n} powt.`;
+  EX[id]?.unit === 'secs' ? clock(n) : T.reps(n);
 
 /** „Przysiad ×15”, „Deska 45 s”, „Swing ×10 · 16 kg”. */
 export const snackLabel = (s: Pick<Snack, 'ex' | 'reps' | 'w'>): string => {
@@ -51,14 +185,14 @@ export const snackLabel = (s: Pick<Snack, 'ex' | 'reps' | 'w'>): string => {
 };
 
 const time = (iso: string): string =>
-  new Date(iso).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+  new Date(iso).toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit' });
 
 const dm = (key: string): string => {
   const [, mm, dd] = key.split('-');
-  return `${dd}.${mm}`;
+  return T.dm(dd!, mm!);
 };
 
-const WEEKDAY = ['', 'pn', 'wt', 'śr', 'cz', 'pt', 'sb', 'nd'];
+const WEEKDAY = T.weekday;
 
 /**
  * Skróty do ćwiczeń. Dzisiejsze na górze z tym, ile już jest, potem ostatnio robione,
@@ -75,13 +209,13 @@ function SnackShortcuts({ state, today }: { state: AppState; today: string }) {
     <div className="snack-exs">
       {ids.map((id) => {
         const d = done.find((x) => x.ex === id);
-        const now = d ? `dziś ${amountOf(id, d.total)}${d.count > 1 ? ` · ${d.count}×` : ''}` : null;
+        const now = d ? T.today(`${amountOf(id, d.total)}${d.count > 1 ? ` · ${d.count}×` : ''}`) : null;
         return (
           <button
             key={id}
             className={`snack-ex${d ? ' on' : ''}`}
             onClick={() => go(snackAddPath(id))}
-            aria-label={`${ex(id).name}${now ? `, ${now}` : ''}. Zapisz przekąskę.`}
+            aria-label={T.shortcutAria(ex(id).name, now)}
           >
             <span className="snack-ex-name">{ex(id).name}</span>
             {now && <span className="snack-ex-now">{now}</span>}
@@ -92,7 +226,7 @@ function SnackShortcuts({ state, today }: { state: AppState; today: string }) {
         );
       })}
       <button className="snack-ex other" onClick={() => go(snackAddPath())}>
-        <span className="snack-ex-name">Inne ćwiczenie</span>
+        <span className="snack-ex-name">{T.other}</span>
         <span className="snack-ex-go" aria-hidden="true">
           ›
         </span>
@@ -112,31 +246,22 @@ export function SnackCard({ state }: { state: AppState }) {
 
   return (
     <div className="grp snackcard">
-      <div className="today-tag light">Przekąska ruchowa</div>
+      <div className="today-tag light">{T.tag}</div>
       {n ? (
         <>
-          <h2 className="today-name">
-            Dziś {n} {plural(n, SNACK_FORMS)} · +{Math.min(n, XP.snackCap) * XP.snack} XP
-          </h2>
-          <p className="tight">
-            {left
-              ? `Jeszcze ${left} ${plural(left, SNACK_FORMS)} da dziś doświadczenie.`
-              : 'Limit doświadczenia z przekąsek na dziś wyczerpany — kolejne liczą się do odznak.'}
-          </p>
+          <h2 className="today-name">{T.cardToday(n, Math.min(n, XP.snackCap) * XP.snack)}</h2>
+          <p className="tight">{left ? T.cardLeft(left) : T.cardCap}</p>
         </>
       ) : (
         <>
-          <h2 className="today-name">Krótka seria poza treningiem</h2>
-          <p className="tight">
-            Wybierz ćwiczenie, a liczbę wpiszesz na następnym ekranie. Przekąska nie zmienia planu
-            ani poziomów — rośnie za to postać i odznaki ćwiczeń.
-          </p>
+          <h2 className="today-name">{T.cardEmpty}</h2>
+          <p className="tight">{T.cardEmptyText}</p>
         </>
       )}
       <SnackShortcuts state={state} today={today} />
       {snacksOf(state).length > 0 && (
         <a className="vidlink" href={snacksPath()}>
-          Przekąski — dziś, tydzień i historia →
+          {T.cardLink}
         </a>
       )}
     </div>
@@ -160,25 +285,25 @@ function ExerciseToday({ state, id }: { state: AppState; id: ExerciseId }) {
   // Przy jednym źródle liczba stoi już wyżej, więc zdanie mówi tylko skąd; przy dwóch — ile z czego.
   const where =
     snacks && fromWorkout > 0
-      ? `${amountOf(id, fromSnacks)} w ${snacks.count} ${plural(snacks.count, SNACK_FORMS_LOC)} i ${amountOf(id, fromWorkout)} w treningu`
+      ? T.bothSources(amountOf(id, fromSnacks), snacks.count, amountOf(id, fromWorkout))
       : snacks
-        ? `w ${snacks.count} ${plural(snacks.count, SNACK_FORMS_LOC)}`
-        : 'w treningu';
+        ? T.inSnacks(snacks.count)
+        : T.inWorkout;
 
   return (
     <>
-      <div className="sect-label">Dziś z tym ćwiczeniem</div>
+      <div className="sect-label">{T.exToday}</div>
       <div className="grp snack-today">
         <div className="snack-today-num">
           {amountOf(id, total)}
-          {EX[id]?.side && EX[id]?.unit !== 'secs' && <small> na stronę</small>}
+          {EX[id]?.side && EX[id]?.unit !== 'secs' && <small>{T.perSide}</small>}
         </div>
-        <p className="tight">Dziś łącznie, {where}.</p>
+        <p className="tight">{T.todayTotal(where)}</p>
         {r && (
           <p className="tight">
             {r.next === null
-              ? 'Rekord dnia w komplecie — wyżej już nie ma progu.'
-              : `Do progu dnia (${formatTier(r.ach, r.next)}) brakuje ${formatValue(r.ach, Math.max(0, r.next - total))}.`}
+              ? T.dayDone
+              : T.dayLeft(formatTier(r.ach, r.next), formatValue(r.ach, Math.max(0, r.next - total)))}
           </p>
         )}
       </div>
@@ -214,7 +339,7 @@ export function SnackEntry({
   const weighted = !!exId && WEIGHTED.includes(exId);
   const inc = exId ? step(exId) : 1;
   const hint = exId ? snackHint(state, exId) : { last: null, w: null };
-  const what = timed ? 'sekund' : m?.side ? 'powtórzeń na stronę' : 'powtórzeń';
+  const what = timed ? T.secs : m?.side ? T.repsSide : T.repsWord;
 
   const choose = (next: ExerciseId) => {
     setExId(next);
@@ -233,17 +358,17 @@ export function SnackEntry({
   const save = (e: FormEvent) => {
     e.preventDefault();
     if (!exId) {
-      onToast('Najpierw wybierz ćwiczenie.');
+      onToast(T.pickFirst);
       return;
     }
     const n = parseInt(reps || '0', 10) || 0;
     if (n <= 0) {
-      onToast(timed ? 'Wpisz, ile sekund trwała przekąska.' : 'Wpisz, ile było powtórzeń.');
+      onToast(timed ? T.enterSecs : T.enterReps);
       amountRef.current?.focus();
       return;
     }
     if (n > snackMax(exId)) {
-      onToast(`Przekąska ma najwyżej ${snackMax(exId)}${timed ? ' s' : ' powtórzeń'} — sprawdź liczbę.`);
+      onToast(T.tooMany(snackMax(exId), timed));
       return;
     }
     onLog(exId, n, weighted ? w : null);
@@ -254,22 +379,20 @@ export function SnackEntry({
     <>
       <div className="wrap">
         <p className="lead">
-          {m
-            ? `Wpisz, ile było ${what}, i zapisz.`
-            : 'Wybierz ćwiczenie. Pisz nazwę — lista zawęża się przy każdej literze.'}
+          {m ? T.leadEx(what) : T.leadPick}
         </p>
       </div>
 
       <form className="grp snack-entry" onSubmit={save} noValidate>
-        <ExercisePicker label="ćwiczenie" value={exId} onChange={choose} autoFocus={!initial} />
+        <ExercisePicker label={T.picker} value={exId} onChange={choose} autoFocus={!initial} />
 
         {m && exId && (
           <>
             <div className={`snack-row${weighted ? '' : ' single'}`}>
               <div className="fld">
-                <span id="snack-amount">ile {what}</span>
+                <span id="snack-amount">{T.howMany(what)}</span>
                 <div className="stepper">
-                  <button type="button" onClick={() => bump(-1)} aria-label={`Mniej o ${inc}`}>
+                  <button type="button" onClick={() => bump(-1)} aria-label={T.less(inc)}>
                     −
                   </button>
                   <input
@@ -282,24 +405,24 @@ export function SnackEntry({
                     aria-labelledby="snack-amount"
                     // Jedyna podpowiedź to własna liczba z ostatniego razu. Bez historii pole jest
                     // puste — przykładowa liczba też byłaby narzuconą.
-                    placeholder={hint.last !== null ? `ostatnio ${timed ? clock(hint.last) : hint.last}` : ''}
+                    placeholder={hint.last !== null ? T.last(timed ? clock(hint.last) : hint.last) : ''}
                     autoFocus={!!initial}
                     value={reps}
                     onChange={(e) => setReps(e.target.value)}
                   />
-                  <button type="button" onClick={() => bump(1)} aria-label={`Więcej o ${inc}`}>
+                  <button type="button" onClick={() => bump(1)} aria-label={T.more(inc)}>
                     +
                   </button>
                 </div>
               </div>
               {weighted && (
                 <label className="fld">
-                  <span>ciężar</span>
+                  <span>{T.weight}</span>
                   <select
                     value={w === null ? '' : String(w)}
                     onChange={(e) => setW(e.target.value ? Number(e.target.value) : null)}
                   >
-                    <option value="">bez ciężaru</option>
+                    <option value="">{T.noWeight}</option>
                     {ladderFor(state, exId).map((x) => (
                       <option key={x} value={x}>
                         {x} kg
@@ -322,7 +445,7 @@ export function SnackEntry({
 
             <p className="hint">{m.hint}</p>
             <button className="btn wide" type="submit">
-              Zapisz przekąskę
+              {T.save}
             </button>
           </>
         )}
@@ -337,7 +460,7 @@ export function SnackEntry({
 function WeekStrip({ byDay, today }: { byDay: Record<string, number>; today: string }) {
   const days = Array.from({ length: 7 }, (_, i) => addDays(today, i - 6));
   return (
-    <div className="snack-week" role="list" aria-label="Przekąski w ostatnich siedmiu dniach">
+    <div className="snack-week" role="list" aria-label={T.weekAria}>
       {days.map((d) => {
         const n = byDay[d] ?? 0;
         return (
@@ -345,7 +468,7 @@ function WeekStrip({ byDay, today }: { byDay: Record<string, number>; today: str
             key={d}
             role="listitem"
             className={`sw-day${n ? ' on' : ''}${d === today ? ' now' : ''}`}
-            aria-label={`${WEEKDAY[weekdayOf(d)]} ${dm(d)}: ${n} ${plural(n, SNACK_FORMS)}`}
+            aria-label={T.dayAria(WEEKDAY[weekdayOf(d)]!, dm(d), n)}
           >
             <b>{n || '·'}</b>
             <span>{WEEKDAY[weekdayOf(d)]}</span>
@@ -371,7 +494,7 @@ function SnackItem({ s, onDelete }: { s: Snack; onDelete: (key: string) => void 
       <button
         className="snack-del"
         onClick={() => onDelete(s.key)}
-        aria-label={`Usuń przekąskę: ${m?.name ?? s.ex} o ${time(s.at)}`}
+        aria-label={T.deleteAria(m?.name ?? s.ex, time(s.at))}
       >
         ×
       </button>
@@ -394,13 +517,12 @@ function TodayByExercise({ state, today }: { state: AppState; today: string }) {
         const all = periodValue(ctx.metrics.perEx[d.ex], 'dzien', today);
         return (
           <li key={d.ex}>
-            <b>{ex(d.ex).name}</b>: {amountOf(d.ex, d.total)} w {d.count}{' '}
-            {plural(d.count, SNACK_FORMS_LOC)}
-            {all > d.total ? ` (z treningiem ${amountOf(d.ex, all)})` : ''}
+            <b>{ex(d.ex).name}</b>: {T.amountIn(amountOf(d.ex, d.total), d.count)}
+            {all > d.total ? T.withWorkout(amountOf(d.ex, all)) : ''}
             {r && r.next !== null
-              ? ` — do progu dnia brakuje ${formatValue(r.ach, Math.max(0, r.next - all))}.`
+              ? T.rowLeft(formatValue(r.ach, Math.max(0, r.next - all)))
               : r
-                ? ' — rekord dnia w komplecie.'
+                ? T.rowDone
                 : '.'}
           </li>
         );
@@ -424,30 +546,22 @@ export function SnacksPage({ state, onDelete }: { state: AppState; onDelete: (ke
   return (
     <>
       <div className="wrap">
-        <p className="lead">
-          Krótka seria poza treningiem: dziesięć przysiadów przy czajniku, minuta deski w przerwie.
-          Kilka takich w ciągu dnia przerywa siedzenie i poprawia wydolność. Przekąska nie zmienia
-          poziomów ćwiczeń ani planu — dokłada się za to do odznak ćwiczeń i do doświadczenia postaci.
-        </p>
+        <p className="lead">{T.lead}</p>
       </div>
 
       <div className="grp">
-        <h2>Dodaj przekąskę</h2>
-        <p className="tight">Wybierz ćwiczenie — liczbę wpiszesz na następnym ekranie.</p>
+        <h2>{T.add}</h2>
+        <p className="tight">{T.addHint}</p>
         <SnackShortcuts state={state} today={today} />
       </div>
 
-      <div className="sect-label">Dziś</div>
+      <div className="sect-label">{T.todayLabel}</div>
       <div className="grp">
         {/* Żart w pustym dniu stoi we własnym akapicie i rejestrze — nie miesza się z liczbami. */}
         {!todays.length && <p className="tight joke">{pick(SNACK_EMPTY, daySeed())}</p>}
         <p className="tight">
-          {todays.length
-            ? `${todays.length} ${plural(todays.length, SNACK_FORMS)} · +${Math.min(todays.length, XP.snackCap) * XP.snack} XP. `
-            : 'Dziś jeszcze bez przekąsek. '}
-          {left
-            ? `Doświadczenie da jeszcze ${left} ${plural(left, SNACK_FORMS)}.`
-            : 'Limit doświadczenia na dziś wyczerpany — kolejne przekąski liczą się do odznak.'}
+          {todays.length ? T.todayCount(todays.length, Math.min(todays.length, XP.snackCap) * XP.snack) : T.todayNone}
+          {left ? T.xpLeft(left) : T.xpCap}
         </p>
         <TodayByExercise state={state} today={today} />
         {todays.map((s) => (
@@ -455,19 +569,17 @@ export function SnacksPage({ state, onDelete }: { state: AppState; onDelete: (ke
         ))}
       </div>
 
-      <div className="sect-label">Ostatnie siedem dni</div>
+      <div className="sect-label">{T.week}</div>
       <div className="grp">
         <WeekStrip byDay={stats.byDay} today={today} />
         <p className="tight" style={{ marginTop: 10 }}>
-          Od początku {stats.count} {plural(stats.count, SNACK_FORMS)}
-          {stats.run > 1 ? ` · najdłuższy ciąg ${stats.run} dni z rzędu` : ''}
-          {stats.distinct ? ` · różnych ćwiczeń: ${stats.distinct}` : ''}.
+          {T.totals(stats.count, stats.run, stats.distinct)}
         </p>
       </div>
 
       {past.length > 0 && (
         <>
-          <div className="sect-label">Wcześniej</div>
+          <div className="sect-label">{T.earlier}</div>
           {shown.map((d) => {
             const list = snacksOn(state, d);
             return (
@@ -481,7 +593,7 @@ export function SnacksPage({ state, onDelete }: { state: AppState; onDelete: (ke
           {past.length > shown.length && (
             <div className="wrap">
               <button className="btn ghost sm" style={{ marginTop: 10 }} onClick={() => setAllHistory(true)}>
-                Pokaż wszystkie dni ({past.length})
+                {T.showAll(past.length)}
               </button>
             </div>
           )}

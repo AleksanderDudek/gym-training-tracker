@@ -1,6 +1,7 @@
 import { ALL, EX } from '../data/exercises';
 import { ANIM } from '../data/anim';
 import type { MoveName } from '../data/moves';
+import { text } from '../i18n';
 import type { ExerciseId } from '../types';
 import type { AchCtx, AchDef } from './badges';
 import { periodValue } from './volume';
@@ -34,19 +35,34 @@ export const EX_MULT: Record<ExKind, number[]> = {
   lacznie: [5, 25, 75, 200, 500, 1200],
 };
 
-export const KIND_TITLE: Record<ExKind, string> = {
-  dzien: 'rekord dnia',
-  tydzien: 'rekord tygodnia',
-  miesiac: 'rekord miesiąca',
-  lacznie: 'łącznie',
-};
+export const KIND_TITLE: Record<ExKind, string> = text({
+  pl: {
+    dzien: 'rekord dnia',
+    tydzien: 'rekord tygodnia',
+    miesiac: 'rekord miesiąca',
+    lacznie: 'łącznie',
+  },
+  en: {
+    dzien: 'day record',
+    tydzien: 'week record',
+    miesiac: 'month record',
+    lacznie: 'total',
+  },
+});
 
 /** Jak nazywa się okres, w którym właśnie jesteśmy — do „dziś 30 z 50”. */
-export const KIND_NOW: Record<Period, string> = {
-  dzien: 'dziś',
-  tydzien: 'w tym tygodniu',
-  miesiac: 'w tym miesiącu',
-};
+export const KIND_NOW: Record<Period, string> = text({
+  pl: {
+    dzien: 'dziś',
+    tydzien: 'w tym tygodniu',
+    miesiac: 'w tym miesiącu',
+  },
+  en: {
+    dzien: 'today',
+    tydzien: 'this week',
+    miesiac: 'this month',
+  },
+});
 
 const STEPS = [1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 7.5, 8, 10];
 
@@ -127,13 +143,13 @@ const MOVE_ART: Partial<Record<MoveName, string>> = {
 };
 
 const GROUP_ART: Record<string, string> = {
-  'Zawias biodrowy': 'fig-hinge',
+  'Zawias biodrowy': 'fig-hinge', // i18n-ignore: nazwa grupy z biblioteki — klucz
   Przysiad: 'fig-squat',
-  Ciągnięcie: 'fig-row',
+  Ciągnięcie: 'fig-row', // i18n-ignore: nazwa grupy z biblioteki — klucz
   Pchanie: 'fig-pushup',
-  'Całe ciało': 'fig-swing',
-  'Core i carry': 'fig-plank',
-  'Nogi — dodatkowe': 'fig-calf',
+  'Całe ciało': 'fig-swing', // i18n-ignore: nazwa grupy z biblioteki — klucz
+  'Core i carry': 'fig-plank', // i18n-ignore: nazwa grupy z biblioteki — klucz
+  'Nogi — dodatkowe': 'fig-calf', // i18n-ignore: nazwa grupy z biblioteki — klucz
 };
 
 export const exerciseArt = (id: ExerciseId): string => {
@@ -144,28 +160,76 @@ export const exerciseArt = (id: ExerciseId): string => {
 const MARK: Record<Period, string> = { dzien: '24H', tydzien: '7D', miesiac: '30D' };
 
 /** Puenty, po kilka na rodzaj — ćwiczenie wybiera swoją po numerze w bibliotece. */
-export const EX_QUIPS: Record<ExKind, readonly string[]> = {
-  dzien: [
-    'Jeden dzień, jeden ruch i licznik, który się nie nudzi.',
-    'Doba, w której ten ruch był twoim hobby.',
-    'Tyle razy jednego dnia. Krzesło poczuło się niepotrzebne.',
-  ],
-  tydzien: [
-    'Tydzień z tym ruchem w roli głównej.',
-    'Siedem dni i jeden ulubiony ruch.',
-    'Tydzień, w którym to ćwiczenie miało lepszą frekwencję niż poniedziałkowe zebrania.',
-  ],
-  miesiac: [
-    'Miesiąc, w którym to ćwiczenie weszło w nawyk.',
-    'Trzydzieści dni i ruch, który przestał być wydarzeniem.',
-    'Miesiąc objętości bez fanfar. Fanfary są tutaj.',
-  ],
-  lacznie: [
-    'Suma, której nikt nie liczył. Poza tobą i tą aplikacją.',
-    'Każde powtórzenie z osobna nic nie znaczy. Razem — to.',
-    'Dorobek jednego ruchu. Stawy pamiętają każde.',
-  ],
-};
+export const EX_QUIPS: Record<ExKind, readonly string[]> = text({
+  pl: {
+    dzien: [
+      'Jeden dzień, jeden ruch i licznik, który się nie nudzi.',
+      'Doba, w której ten ruch był twoim hobby.',
+      'Tyle razy jednego dnia. Krzesło poczuło się niepotrzebne.',
+    ],
+    tydzien: [
+      'Tydzień z tym ruchem w roli głównej.',
+      'Siedem dni i jeden ulubiony ruch.',
+      'Tydzień, w którym to ćwiczenie miało lepszą frekwencję niż poniedziałkowe zebrania.',
+    ],
+    miesiac: [
+      'Miesiąc, w którym to ćwiczenie weszło w nawyk.',
+      'Trzydzieści dni i ruch, który przestał być wydarzeniem.',
+      'Miesiąc objętości bez fanfar. Fanfary są tutaj.',
+    ],
+    lacznie: [
+      'Suma, której nikt nie liczył. Poza tobą i tą aplikacją.',
+      'Każde powtórzenie z osobna nic nie znaczy. Razem — to.',
+      'Dorobek jednego ruchu. Stawy pamiętają każde.',
+    ],
+  },
+  en: {
+    dzien: [
+      'One day, one move and a counter that never gets bored.',
+      'A day when this move was your hobby.',
+      'That many in one day. The chair felt unwanted.',
+    ],
+    tydzien: [
+      'A week starring this move.',
+      'Seven days and one favourite move.',
+      'A week when this exercise had better attendance than the Monday meeting.',
+    ],
+    miesiac: [
+      'The month this exercise became a habit.',
+      'Thirty days, and the move stopped being an event.',
+      'A month of volume without fanfare. The fanfare is here.',
+    ],
+    lacznie: [
+      'A total nobody was counting. Except you and this app.',
+      'Each rep on its own means nothing. Together — this.',
+      'One move’s lifetime tally. Your joints remember every rep.',
+    ],
+  },
+});
+
+/** Jednostki i opisy rodzin ćwiczenia. */
+const T = text({
+  pl: {
+    secs: 'sekund',
+    repsSide: 'powtórzeń na stronę',
+    reps: 'powtórzeń',
+    both: 'treningi i przekąski razem',
+    dzien: (unit: string, both: string) => `Najwięcej ${unit} w jednym dniu — ${both}.`,
+    tydzien: (unit: string, both: string) => `Najwięcej ${unit} w jednym tygodniu, od poniedziałku do niedzieli — ${both}.`,
+    miesiac: (unit: string, both: string) => `Najwięcej ${unit} w jednym miesiącu kalendarzowym — ${both}.`,
+    lacznie: (unit: string, both: string) => `Wszystkie ${unit} z historii — ${both}.`,
+  },
+  en: {
+    secs: 'seconds',
+    repsSide: 'reps per side',
+    reps: 'reps',
+    both: 'workouts and exercise snacks together',
+    dzien: (unit: string, both: string) => `Most ${unit} in a single day — ${both}.`,
+    tydzien: (unit: string, both: string) => `Most ${unit} in a single week, Monday to Sunday — ${both}.`,
+    miesiac: (unit: string, both: string) => `Most ${unit} in a single calendar month — ${both}.`,
+    lacznie: (unit: string, both: string) => `All ${unit} in your history — ${both}.`,
+  },
+});
 
 /** Rodzina odznak jednego ćwiczenia. */
 export interface ExFamily extends AchDef {
@@ -178,14 +242,7 @@ export const exFamilyId = (id: ExerciseId, kind: ExKind): string => `ex:${id}:${
 function family(id: ExerciseId, kind: ExKind, index: number): ExFamily {
   const m = EX[id]!;
   const secs = m.unit === 'secs';
-  const unit = secs ? 'sekund' : m.side ? 'powtórzeń na stronę' : 'powtórzeń';
-  const both = 'treningi i przekąski razem';
-  const desc: Record<ExKind, string> = {
-    dzien: `Najwięcej ${unit} w jednym dniu — ${both}.`,
-    tydzien: `Najwięcej ${unit} w jednym tygodniu, od poniedziałku do niedzieli — ${both}.`,
-    miesiac: `Najwięcej ${unit} w jednym miesiącu kalendarzowym — ${both}.`,
-    lacznie: `Wszystkie ${unit} z historii — ${both}.`,
-  };
+  const unit = secs ? T.secs : m.side ? T.repsSide : T.reps;
   const quips = EX_QUIPS[kind];
 
   return {
@@ -194,12 +251,12 @@ function family(id: ExerciseId, kind: ExKind, index: number): ExFamily {
     ex: id,
     kind,
     name: `${m.name} — ${KIND_TITLE[kind]}`,
-    desc: desc[kind],
+    desc: T[kind](unit, T.both),
     mark: kind === 'lacznie' ? '' : MARK[kind],
     ...(kind === 'lacznie' ? { art: exerciseArt(id) } : {}),
     quip: quips[index % quips.length]!,
     tiers: exerciseTiers(id, kind),
-    ...(secs ? { fmt: clock } : { unit: m.side ? 'powtórzeń na stronę' : 'powtórzeń' }),
+    ...(secs ? { fmt: clock } : { unit: m.side ? T.repsSide : T.reps }),
     value: (c: AchCtx) => {
       const v = c.metrics.perEx[id];
       if (!v) return 0;

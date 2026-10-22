@@ -1,6 +1,20 @@
 import { EX } from '../data/exercises';
+import { text } from '../i18n';
 import type { AppState, ExerciseId, Snack } from '../types';
 import { dayKey, daysBetween, mondayOf } from './schedule';
+
+const T = text({
+  pl: {
+    unknown: (ex: string) => `Nieznane ćwiczenie: ${ex}`,
+    positive: 'Przekąska potrzebuje dodatniej liczby powtórzeń albo sekund.',
+    tooMany: (max: number) => `Przekąska ma najwyżej ${max} — to wygląda na literówkę.`,
+  },
+  en: {
+    unknown: (ex: string) => `Unknown exercise: ${ex}`,
+    positive: 'An exercise snack needs a positive number of reps or seconds.',
+    tooMany: (max: number) => `An exercise snack is at most ${max} — that looks like a typo.`,
+  },
+});
 
 /**
  * Przekąski ruchowe.
@@ -50,10 +64,10 @@ export function addSnack(
   w: number | null,
   now: number = Date.now(),
 ): Snack {
-  if (!EX[ex]) throw new Error(`Nieznane ćwiczenie: ${ex}`);
+  if (!EX[ex]) throw new Error(T.unknown(ex));
   const n = Math.round(reps);
-  if (!(n > 0)) throw new Error('Przekąska potrzebuje dodatniej liczby powtórzeń albo sekund.');
-  if (n > snackMax(ex)) throw new Error(`Przekąska ma najwyżej ${snackMax(ex)} — to wygląda na literówkę.`);
+  if (!(n > 0)) throw new Error(T.positive);
+  if (n > snackMax(ex)) throw new Error(T.tooMany(snackMax(ex)));
   state.snacks ??= [];
   const same = state.snacks.filter((s) => s.key.startsWith(`${now}-`)).length;
   const snack: Snack = {
