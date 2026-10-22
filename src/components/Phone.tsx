@@ -1,9 +1,22 @@
 import { useState } from 'react';
-import { whenText } from '../mailbox';
-import { HEALTH_ANDROID_URL, HEALTH_IOS_URL, forgetPhone, lastPhoneKind, phoneConfigured, phoneKey, platformOf, savePhoneKey } from '../phone';
+import { checkSaid } from '../deviceStatus';
+import { localDayOf } from '../engine/watch';
+import {
+  HEALTH_ANDROID_URL,
+  HEALTH_IOS_URL,
+  forgetPhone,
+  lastPhoneAt,
+  onPhoneCheck,
+  phoneConfigured,
+  phoneKey,
+  phoneStatus,
+  platformOf,
+  savePhoneKey,
+} from '../phone';
 import type { PhonePull } from '../phone';
 import { cleanKey, newKey } from '../watchseal';
 import type { AppState } from '../types';
+import { CARD_ID, Checklist, StatusBlock, phoneChecks, useNow, useScrollHere } from './DeviceStatus';
 
 /**
  * Karta „Zdrowie z telefonu” w ustawieniach: połączenie z aplikacją GYM TRACKER Zdrowie, klucz
@@ -12,17 +25,13 @@ import type { AppState } from '../types';
  * Klucz przechodzi przez schowek, jak do zegarka. Link z kluczem otwierający aplikację byłby
  * wygodniejszy o jedno stuknięcie, ale własny schemat adresu może zarejestrować każda inna
  * aplikacja i dostałaby klucz do danych o zdrowiu.
+ *
+ * Po połączeniu karta mówi to samo co karta zegarka: kiedy ostatnia paczka, kiedy następna, czy
+ * „Sprawdź teraz” przyniosło nową — i co sprawdzić na telefonie, gdy nie.
  */
 
 /** Klucz w grupach po osiem znaków — łatwiej porównać na dwóch ekranach. Aplikacja spacje pomija. */
 const grouped = (k: string): string => k.match(/.{1,8}/g)!.join(' ');
-
-const SAID: Partial<Record<PhonePull['kind'], string>> = {
-  empty:
-    'Telefon jeszcze nic nie przysłał. Otwórz GYM TRACKER Zdrowie, wklej klucz i zezwól na dostęp do danych — pierwsza paczka wyjdzie od razu.',
-  bad: 'Paczka z telefonu nie otwiera się tym kluczem — w aplikacji na telefonie jest pewnie inny. Wklej klucz z tej karty jeszcze raz.',
-  offline: 'Serwer nie odpowiada albo nie ma sieci. Spróbuję znów przy następnym otwarciu aplikacji.',
-};
 
 const STORE = {
   ios: { url: HEALTH_IOS_URL, phone: 'iPhone', data: 'Zdrowie', where: 'App Store', garmin: 'Apple Zdrowie' },
@@ -79,9 +88,12 @@ export function PhoneCard({
   const key = phoneKey();
   const [showKey, setShowKey] = useState(false);
   const [paste, setPaste] = useState<string | null>(null);
-  const [kind, setKind] = useState<PhonePull['kind'] | null>(() => lastPhoneKind());
+  // Co powiedziało ostatnie „Sprawdź teraz” w tej karcie — w linii ze stanem, nie tylko w dymku.
+  const [result, setResult] = useState('');
   const [busy, setBusy] = useState(false);
   const [sure, setSure] = useState(false);
+  const now = useNow(onPhoneCheck);
+  const ref = useScrollHere('phone');
 
   if (!phoneConfigured()) return null;
 
@@ -89,6 +101,11 @@ export function PhoneCard({
   const systems: ('ios' | 'android')[] = here === 'other' ? ['ios', 'android'] : [here];
   const got = state.phone?.got;
   const source = state.phone ? STORE[state.phone.os].data : null;
+  const status = phoneStatus(state, now);
+  // Dzień telefonu, nie dzień UTC aplikacji: telefon liczy kroki od swojej północy.
+  const todaySteps = state.phone?.days.find((d) => d.day === localDayOf(new Date(now)))?.steps ?? null;
+  // Lista na telefon, z którego przychodzą paczki; przed pierwszą — na ten, na którym otwarto stronę.
+  const checkOn: ('ios' | 'android')[] = state.phone ? [state.phone.os] : systems;
 
   const connect = (raw: string) => {
     if (!savePhoneKey(raw)) {
@@ -98,15 +115,18 @@ export function PhoneCard({
     bump((n) => n + 1);
     setShowKey(true);
     setPaste(null);
-    setKind(null);
+    setResult('');
   };
 
   const check = async () => {
     setBusy(true);
+    // Paczka, którą karta pokazuje teraz: ta sama po sprawdzeniu to „bez nowej paczki”.
+    const before = state.phone?.t ?? null;
     try {
       const r = await onSync();
-      setKind(r.kind);
-      onToast(r.kind === 'ok' ? 'Dane z telefonu sprawdzone.' : (SAID[r.kind] ?? 'Spróbuj za chwilę.'));
+      const said = checkSaid('phone', before, r, Date.now());
+      setResult(said);
+      onToast(said);
     } finally {
       setBusy(false);
     }
@@ -132,12 +152,12 @@ export function PhoneCard({
     setSure(false);
     bump((n) => n + 1);
     setShowKey(false);
-    setKind(null);
+    setResult('');
     onToast('Telefon odłączony. Dane, które już przyszły, zostają w historii. W aplikacji na telefonie naciśnij też „Odłącz”.');
   };
 
   return (
-    <div className="grp">
+    <div className="grp dev-card" id={CARD_ID.phone} ref={ref}>
       <h2>Zdrowie z telefonu</h2>
       {!key ? (
         <>
@@ -189,12 +209,19 @@ export function PhoneCard({
         </>
       ) : (
         <>
-          <p className="tight">
-            {got ? `Ostatnie dane z telefonu (${source}): ${whenText(got)}.` : 'Telefon jeszcze nic nie przysłał.'}
+          <StatusBlock
+            device="phone"
+            status={status}
+            now={now}
+            from={source ? `z telefonu (${source})` : 'z telefonu'}
+            todaySteps={todaySteps}
+            checkedAt={lastPhoneAt()}
+          />
+          <p className="tight dev-result" role="status">
+            {result}
           </p>
-          {kind === 'bad' && <p className="tight cardio-note warn">{SAID.bad}</p>}
           {(!got || showKey) && (
-            <ol className="watch-steps">
+            <ol className="watch-steps" aria-label="Kroki połączenia">
               <GarminStep systems={systems} />
               {systems.map((os) => (
                 <Install key={os} os={os} />
@@ -232,6 +259,7 @@ export function PhoneCard({
               {sure ? 'Na pewno odłączyć?' : 'Odłącz telefon'}
             </button>
           </div>
+          <Checklist level={status.level} checked={lastPhoneAt() !== null} items={phoneChecks(status.level, checkOn)} />
         </>
       )}
       <p className="hint" style={{ marginTop: 10 }}>
