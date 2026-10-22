@@ -74,7 +74,7 @@ type StepsChoice = 'target' | 'now' | 'custom';
  */
 export function CheatMealSheet(props: Props) {
   return (
-    <Sheet open={props.open} title="Cheat meal" subtitle="Wpisz makro — pod spodem zobaczysz, co z tego wynika" onClose={props.onClose} className="fd-diet-sheet">
+    <Sheet open={props.open} title="Cheat meal" subtitle="Wybierz z listy albo wpisz makro — pod spodem zobaczysz, co z tego wynika" onClose={props.onClose} className="fd-diet-sheet">
       {props.open && <CheatBody {...props} />}
     </Sheet>
   );

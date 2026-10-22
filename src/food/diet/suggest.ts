@@ -329,7 +329,9 @@ export function restSlots(meals: number): Slot[] {
 /**
  * The rest of the day as meals whose sum lands on what is left. Each slot gets its share of what is
  * STILL left after the meals already picked - so a big first meal makes the next ones smaller and
- * the last one absorbs the error - and never the same food twice.
+ * the last one absorbs the error - and never the same food twice. When the slots' meals cannot hold
+ * it all (2000 kcal left for dinner and a snack, portions of 500), more items join as „Dodatkowo”
+ * until the rest is close: a variant must add up to what is left, not to two plates.
  */
 export function restOfDay(foods: Food[], ctx: Context, seed: number): AutoMeal[] {
   const rand = random(seed);
@@ -352,16 +354,30 @@ export function restOfDay(foods: Food[], ctx: Context, seed: number): AutoMeal[]
     if (!chosen) return;
     used.add(chosen.food.key);
     meals.push({ slot: slot.name, suggestion: chosen });
-    const n = chosen.food.nutrients;
-    left = {
-      kcal: left.kcal - n.kcal,
-      protein: left.protein - (n.protein ?? 0),
-      carbs: left.carbs - (n.carbs ?? 0),
-      fat: left.fat - (n.fat ?? 0),
-    };
+    left = minus(left, chosen.food);
   });
+  for (let extra = 0; extra < MAX_EXTRAS && left.kcal > Math.max(EXTRA_FROM_KCAL, ctx.remaining.kcal * EXTRA_SHARE); extra++) {
+    const pool = foods.filter((f) => !used.has(f.key) && f.nutrients.kcal <= left.kcal * 1.15);
+    const chosen = pickWeighted(suggest(pool, { ...ctx, remaining: left, mealsLeft: 1 }, 5), rand);
+    if (!chosen) break;
+    used.add(chosen.food.key);
+    meals.push({ slot: 'Dodatkowo', suggestion: chosen });
+    left = minus(left, chosen.food);
+  }
   return meals;
 }
+
+const minus = (left: Remaining, food: Food): Remaining => ({
+  kcal: left.kcal - food.nutrients.kcal,
+  protein: left.protein - (food.nutrients.protein ?? 0),
+  carbs: left.carbs - (food.nutrients.carbs ?? 0),
+  fat: left.fat - (food.nutrients.fat ?? 0),
+});
+
+/** Extra items join while more than this is left - in kcal, and as a share of the rest. */
+const EXTRA_FROM_KCAL = 250;
+const EXTRA_SHARE = 0.15;
+const MAX_EXTRAS = 3;
 
 /** Below this a slot is not a meal: what is left goes to the meals that can still hold it. */
 const MIN_MEAL_KCAL = 80;

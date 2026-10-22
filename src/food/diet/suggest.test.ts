@@ -277,6 +277,13 @@ describe('the rest of the day', () => {
     expect(Math.abs(variants[0]!.kcal - 1100)).toBeLessThan(300);
   });
 
+  test('a lot left for few meals: more items join „Dodatkowo” until the sum is close', () => {
+    const [best] = restVariants(pool, left(2300, 200, 2), 3);
+    expect(best!.meals.some((m) => m.slot === 'Dodatkowo')).toBe(true);
+    expect(Math.abs(best!.kcal - 2300)).toBeLessThan(2300 * 0.2);
+    expect(new Set(best!.meals.map((m) => m.suggestion.food.key)).size).toBe(best!.meals.length);
+  });
+
   test('a big meal first leaves less for the next ones; almost nothing left is no variant', () => {
     const rest = restOfDay(pool, left(700, 70, 2), 1);
     const sum = rest.reduce((s, m) => s + m.suggestion.food.nutrients.kcal, 0);

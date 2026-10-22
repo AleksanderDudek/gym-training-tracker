@@ -201,7 +201,9 @@ function TodayView({ profile, plan, date, today, hour, nowMs, history, pickerOpe
     mealsLeft: Math.max(1, restMeals),
   };
   const suggestions = suggest(pool, ctx, 8);
-  const restShown = !(cheat && restMeals === 0) && ctx.remaining.kcal > 50 && ctx.mealsLeft >= 2;
+  // Reszta dnia w wariantach, gdy zostały dwa posiłki albo więcej — albo jeden, ale za duży na jeden talerz.
+  const restShown =
+    !(cheat && restMeals === 0) && ctx.remaining.kcal > 50 && (ctx.mealsLeft >= 2 || ctx.remaining.kcal > BIG_REST_KCAL);
   const view = restShown ? (nowView ?? 'rest') : 'one';
   // Warianty liczone tylko na widoku „Reszta dnia” — po kilka przebiegów `suggest` na każdy.
   const variants = view === 'rest' ? restVariants(pool, ctx, seedOf(date) + restRoll * 7919, 3) : [];
@@ -315,7 +317,7 @@ function TodayView({ profile, plan, date, today, hour, nowMs, history, pickerOpe
           <Segmented
             label="Co pokazać"
             options={[
-              { key: 'rest', label: `Reszta dnia (${ctx.mealsLeft} posiłki)` },
+              { key: 'rest', label: `Reszta dnia (${mealsWord(ctx.mealsLeft)})` },
               { key: 'one', label: 'Jeden posiłek' },
             ]}
             value={view}
@@ -368,9 +370,8 @@ function TodayView({ profile, plan, date, today, hour, nowMs, history, pickerOpe
         planned={cheat}
         ideasFor={(remaining, mealsLeft) => {
           const rest = { ...base, remaining, mealsLeft };
-          return mealsLeft >= 2
-            ? { variants: restVariants(pool, rest, seedOf(date), 2), singles: [] }
-            : { variants: [], singles: suggest(pool, rest, 3) };
+          const variants = mealsLeft >= 2 || remaining.kcal > BIG_REST_KCAL ? restVariants(pool, rest, seedOf(date), 2) : [];
+          return variants.length ? { variants, singles: [] } : { variants: [], singles: suggest(pool, rest, 3) };
         }}
         pool={pool}
         products={food.products}
@@ -495,6 +496,12 @@ function NextPlanLine({ plan, today }: { plan: PrepPlan; today: string }) {
     </div>
   );
 }
+
+/** Od tylu kcal na jeden posiłek reszta dnia to już kilka pozycji, nie jeden talerz. */
+const BIG_REST_KCAL = 900;
+
+/** „1 posiłek”, „2 posiłki”, „5 posiłków”. */
+const mealsWord = (n: number) => `${n} ${n === 1 ? 'posiłek' : n < 5 ? 'posiłki' : 'posiłków'}`;
 
 /** What is eaten plus the planned cheat meal: the rest of the day is planned around it. */
 function withCheat(eaten: DayTotals, cheat: PlannedCheat): DayTotals {
