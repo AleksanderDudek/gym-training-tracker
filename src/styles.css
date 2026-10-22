@@ -994,6 +994,11 @@
   .dev-check summary{cursor:pointer;color:var(--steel);font-weight:600;padding:12px 0;min-height:44px;
     display:flex;align-items:center;-webkit-tap-highlight-color:transparent}
   .dev-check summary:focus-visible{outline:2px solid var(--steel);outline-offset:2px}
+  /* `display:flex` zabiera przeglądarce trójkąt rozwijacza — bez niego „Dane nie przychodzą?”
+     wygląda jak nagłówek, a nie coś, co się otwiera. */
+  .dev-check summary::-webkit-details-marker{display:none}
+  .dev-check summary::after{content:'▾';margin-left:6px;color:var(--ink-soft)}
+  .dev-check[open] summary::after{content:'▴'}
   .dev-check .watch-steps{margin-top:0}
   .dev-line{margin:2px 0 8px;font-size:13.5px}
   .dev-line .dev-dot{margin-top:6px}
