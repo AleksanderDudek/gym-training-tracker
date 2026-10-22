@@ -1,5 +1,6 @@
 import { Check, TriangleAlert } from 'lucide-react';
 import { useId, useMemo } from 'react';
+import { text } from '../../../i18n';
 import { brandLine } from '../../lib/display';
 import { formatNumber } from '../../lib/format';
 import type { Dictionaries } from '../../lib/types';
@@ -8,6 +9,43 @@ import { resolveRecipe, type Basket, type Candidates, type Overrides, type Resol
 import { Sheet } from '../common/Sheet';
 import { ruleBroken } from './MacroSummary';
 import { proteinLine, swapOptions } from './IngredientLine';
+
+const T = text({
+  pl: {
+    atHomeFrom: (shops: string) => `Masz w domu – najpierw produkty z: ${shops}`,
+    atHome: 'Masz w domu – dowolny produkt',
+    from: (shops: string) => `Produkty z: ${shops}`,
+    anyShop: 'Produkty z dowolnego sklepu',
+    title: (name: string) => `Zamień: ${name}`,
+    titleEmpty: 'Zamień składnik',
+    close: 'Zamknij zamianę',
+    passes: (protein: string, kcal: string) => `Porcja: ${protein} g białka, ${kcal} kcal – zasada spełniona.`,
+    done: 'Gotowe',
+    pack: '1 opakowanie',
+    packAmount: (measure: string, grams: string) =>
+      `Ilość: ${measure} wybranego produktu, teraz ${grams}\u00a0g. Wybór od razu przelicza przepis.`,
+    sameAmount: (measure: string, grams: string) =>
+      `Ilość zostaje ta sama: ${measure}${grams}\u00a0g. Wybór od razu przelicza przepis.`,
+    breaks: 'łamie zasadę',
+  },
+  en: {
+    atHomeFrom: (shops: string) => `You have it at home – products from ${shops} first`,
+    atHome: 'You have it at home – any product',
+    from: (shops: string) => `Products from: ${shops}`,
+    anyShop: 'Products from any shop',
+    title: (name: string) => `Swap: ${name}`,
+    titleEmpty: 'Swap an ingredient',
+    close: 'Close the swap',
+    passes: (protein: string, kcal: string) => `Serving: ${protein} g protein, ${kcal} kcal – rule met.`,
+    done: 'Done',
+    pack: '1 pack',
+    packAmount: (measure: string, grams: string) =>
+      `Amount: ${measure} of the chosen product, now ${grams}\u00a0g. Your pick recalculates the recipe straight away.`,
+    sameAmount: (measure: string, grams: string) =>
+      `The amount stays the same: ${measure}${grams}\u00a0g. Your pick recalculates the recipe straight away.`,
+    breaks: 'breaks the rule',
+  },
+});
 
 interface Props {
   open: boolean;
@@ -26,8 +64,8 @@ interface Props {
 /** Skąd są produkty na liście — żeby nikt nie szukał w Lidlu zamiennika z Biedronki. */
 function sourceLine(item: ResolvedItem, basket: Basket | null, dict: Dictionaries): string {
   const name = basket?.length ? basket.map((s) => dict.stores[s] ?? s).join(' + ') : null;
-  if (item.def.role === 'pantry') return name ? `Masz w domu – najpierw produkty z: ${name}` : 'Masz w domu – dowolny produkt';
-  return name ? `Produkty z: ${name}` : 'Produkty z dowolnego sklepu';
+  if (item.def.role === 'pantry') return name ? T.atHomeFrom(name) : T.atHome;
+  return name ? T.from(name) : T.anyShop;
 }
 
 /**
@@ -60,9 +98,9 @@ export function SwapSheet({ open, recipe, candidates, basket, overrides, item, d
     <Sheet
       open={open && item !== null}
       onClose={onClose}
-      title={item ? `Zamień: ${item.def.label}` : 'Zamień składnik'}
+      title={item ? T.title(item.def.label) : T.titleEmpty}
       subtitle={item ? sourceLine(item, basket, dict) : undefined}
-      closeLabel="Zamknij zamianę"
+      closeLabel={T.close}
       className="fd-rec-swap-sheet"
       footer={
         item && (
@@ -75,13 +113,13 @@ export function SwapSheet({ open, recipe, candidates, basket, overrides, item, d
               )}
               <span>
                 {passes
-                  ? `Porcja: ${formatNumber(serving?.protein ?? 0, 0)} g białka, ${formatNumber(serving?.kcal ?? 0, 0)} kcal – zasada spełniona.`
+                  ? T.passes(formatNumber(serving?.protein ?? 0, 0), formatNumber(serving?.kcal ?? 0, 0))
                   : ruleBroken(recipe.kind)}
               </span>
             </p>
             {/* Zamyka jak ×: przez `dialog.close()`, więc `onClose` przychodzi raz, ze zdarzenia. */}
             <button type="button" className="btn wide" onClick={(e) => e.currentTarget.closest('dialog')?.close()}>
-              Gotowe
+              {T.done}
             </button>
           </>
         )
@@ -92,15 +130,9 @@ export function SwapSheet({ open, recipe, candidates, basket, overrides, item, d
           <legend className="fd-rec-swap-legend">
             {item.item.pack ? (
               // Baton to baton: ilość idzie za opakowaniem wybranego produktu.
-              <>
-                Ilość: {item.item.measure ?? '1 opakowanie'} wybranego produktu, teraz {formatNumber(item.grams, 0)}
-                &nbsp;g. Wybór od razu przelicza przepis.
-              </>
+              <>{T.packAmount(item.item.measure ?? T.pack, formatNumber(item.grams, 0))}</>
             ) : (
-              <>
-                Ilość zostaje ta sama: {item.item.measure ? `${item.item.measure} · ` : ''}
-                {formatNumber(item.item.grams, 0)}&nbsp;g. Wybór od razu przelicza przepis.
-              </>
+              <>{T.sameAmount(item.item.measure ? `${item.item.measure} · ` : '', formatNumber(item.item.grams, 0))}</>
             )}
           </legend>
           <ul className="fd-rec-swap-list">
@@ -129,7 +161,7 @@ export function SwapSheet({ open, recipe, candidates, basket, overrides, item, d
                       {breaks && (
                         <span className="fd-rec-swap-warn">
                           <TriangleAlert size={16} strokeWidth={2} aria-hidden />
-                          łamie zasadę
+                          {T.breaks}
                         </span>
                       )}
                     </span>

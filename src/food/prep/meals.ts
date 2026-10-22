@@ -1,6 +1,7 @@
 import type { DayTotals } from '../diet/day';
 import type { MacroTargets } from '../diet/profiles';
 import type { Food } from '../diet/foods';
+import { text } from '../lib/lang';
 import type { Macros } from '../recipes/macros';
 import { portionLabel } from './format';
 import type { PrepMeal, PrepPlan } from './types';
@@ -15,7 +16,7 @@ export function mealFood(meal: PrepMeal): Food {
   return {
     key: `recipe:${meal.recipeId}`,
     name: meal.name,
-    detail: 'z planu posiłków',
+    detail: text({ pl: 'z planu posiłków', en: 'from the meal plan' }),
     source: 'recipe',
     amountLabel: mealAmount(meal),
     nutrients: { kcal: Math.round(meal.total.kcal), protein: r(meal.total.protein), carbs: r(meal.total.carbs), fat: r(meal.total.fat) },
@@ -60,7 +61,15 @@ export function shoppingProgress(plan: Pick<PrepPlan, 'shopping'>, bought: Reado
   return { done: toBuy.filter((i) => bought.has(i.key)).length, total: toBuy.length };
 }
 
+// i18n-ignore: values compared in code and tests; shown through PLAN_WORDS
 export type PlanWord = 'za mało' | 'w normie' | 'za dużo';
+
+/** How a PlanWord reads on screen. */
+export const PLAN_WORDS: Record<PlanWord, string> = text({
+  pl: { 'za mało': 'za mało', 'w normie': 'w normie', 'za dużo': 'za dużo' },
+  // i18n-ignore: the keys are PlanWord values
+  en: { 'za mało': 'too little', 'w normie': 'on target', 'za dużo': 'too much' },
+});
 
 export interface DayCheck {
   kcal: PlanWord;
@@ -78,10 +87,14 @@ export interface DayCheck {
  */
 export function dayCheck(total: DayTotals, t: MacroTargets): DayCheck {
   const energy = (total.kcal - t.kcal) / t.kcal;
+  // i18n-ignore: PlanWord values
   const kcal: PlanWord = energy > 0.05 ? 'za dużo' : energy < -0.07 ? 'za mało' : 'w normie';
+  // i18n-ignore: PlanWord values
   const protein: PlanWord = total.protein < t.protein.min ? 'za mało' : 'w normie';
+  // i18n-ignore: PlanWord values
   const carbs: PlanWord = total.carbs > (t.carbs.max ?? t.carbs.target * 1.25) ? 'za dużo' : 'w normie';
   const fat: PlanWord =
+    // i18n-ignore: PlanWord values
     total.fat < t.fat.min ? 'za mało' : t.fat.max !== null && total.fat > t.fat.max ? 'za dużo' : 'w normie';
   return { kcal, protein, carbs, fat, ok: [kcal, protein, carbs, fat].every((w) => w === 'w normie') };
 }

@@ -1,3 +1,4 @@
+import { pluralEn, text } from '../lib/lang';
 import type { Recipe } from '../recipes/catalog';
 import type { IngredientId } from '../recipes/ingredients';
 import type { Macros } from '../recipes/macros';
@@ -32,12 +33,51 @@ export interface SideDef {
  */
 const TEASPOON_OIL = 4.5;
 
+const T = text({
+  pl: {
+    oil: (spoons: number, tea: number) => {
+      const big = spoons === 1 ? '1 łyżka' : spoons > 1 ? `${spoons} łyżki` : '';
+      const small = tea === 1 ? '1 łyżeczka' : tea === 2 ? '2 łyżeczki' : '';
+      return `${[big, small].filter(Boolean).join(' i ')} oliwy`;
+    },
+    rice: 'ryż',
+    riceAmount: (g: number) => `${g} g ryżu (suchego)`,
+    potato: 'ziemniaki',
+    potatoAmount: (g: number) => `${g} g ziemniaków`,
+    roll: 'bułka',
+    rollAmount: (n: number): string => (n === 1 ? '1 bułka' : `${n} bułki`),
+    banana: 'banan',
+    bananaAmount: '1 banan',
+    oilName: 'oliwa',
+    avocado: 'awokado',
+    avocadoAmount: (n: number): string => (n === 1 ? '½ awokado' : '1 awokado'),
+    nuts: 'orzechy',
+    nutsAmount: (n: number): string => (n === 1 ? '15 g orzechów (mała garść)' : '30 g orzechów (garść)'),
+  },
+  en: {
+    oil: (spoons: number, tea: number) => {
+      const big = spoons > 0 ? `${spoons} ${pluralEn(spoons, 'tablespoon', 'tablespoons')}` : '';
+      const small = tea > 0 ? `${tea} ${pluralEn(tea, 'teaspoon', 'teaspoons')}` : '';
+      return `${[big, small].filter(Boolean).join(' and ')} of olive oil`;
+    },
+    rice: 'rice',
+    riceAmount: (g: number) => `${g} g rice (dry)`,
+    potato: 'potatoes',
+    potatoAmount: (g: number) => `${g} g potatoes`,
+    roll: 'roll',
+    rollAmount: (n: number): string => `${n} ${pluralEn(n, 'roll', 'rolls')}`,
+    banana: 'banana',
+    bananaAmount: '1 banana',
+    oilName: 'olive oil',
+    avocado: 'avocado',
+    avocadoAmount: (n: number): string => (n === 1 ? '½ avocado' : '1 avocado'),
+    nuts: 'nuts',
+    nutsAmount: (n: number): string => (n === 1 ? '15 g nuts (a small handful)' : '30 g nuts (a handful)'),
+  },
+});
+
 function oilAmount(n: number): string {
-  const spoons = Math.floor(n / 3);
-  const tea = n % 3;
-  const big = spoons === 1 ? '1 łyżka' : spoons > 1 ? `${spoons} łyżki` : '';
-  const small = tea === 1 ? '1 łyżeczka' : tea === 2 ? '2 łyżeczki' : '';
-  return `${[big, small].filter(Boolean).join(' i ')} oliwy`;
+  return T.oil(Math.floor(n / 3), n % 3);
 }
 
 export const SIDES: Record<SideId, SideDef> = {
@@ -47,8 +87,8 @@ export const SIDES: Record<SideId, SideDef> = {
     kind: 'carb',
     step: 25,
     max: 4,
-    name: 'ryż',
-    amount: (n) => `${n * 25} g ryżu (suchego)`,
+    name: T.rice,
+    amount: (n) => T.riceAmount(n * 25),
   },
   potato: {
     id: 'potato',
@@ -56,8 +96,8 @@ export const SIDES: Record<SideId, SideDef> = {
     kind: 'carb',
     step: 100,
     max: 4,
-    name: 'ziemniaki',
-    amount: (n) => `${n * 100} g ziemniaków`,
+    name: T.potato,
+    amount: (n) => T.potatoAmount(n * 100),
   },
   roll: {
     id: 'roll',
@@ -65,17 +105,17 @@ export const SIDES: Record<SideId, SideDef> = {
     kind: 'carb',
     step: 60,
     max: 2,
-    name: 'bułka',
-    amount: (n) => (n === 1 ? '1 bułka' : `${n} bułki`),
+    name: T.roll,
+    amount: T.rollAmount,
   },
-  banana: { id: 'banana', ingredient: 'banana', kind: 'carb', step: 120, max: 1, name: 'banan', amount: () => '1 banan' },
+  banana: { id: 'banana', ingredient: 'banana', kind: 'carb', step: 120, max: 1, name: T.banana, amount: () => T.bananaAmount },
   oil: {
     id: 'oil',
     ingredient: 'oil',
     kind: 'fat',
     step: TEASPOON_OIL,
     max: 3,
-    name: 'oliwa',
+    name: T.oilName,
     amount: oilAmount,
   },
   avocado: {
@@ -84,8 +124,8 @@ export const SIDES: Record<SideId, SideDef> = {
     kind: 'fat',
     step: 70,
     max: 2,
-    name: 'awokado',
-    amount: (n) => (n === 1 ? '½ awokado' : '1 awokado'),
+    name: T.avocado,
+    amount: T.avocadoAmount,
   },
   nuts: {
     id: 'nuts',
@@ -93,8 +133,8 @@ export const SIDES: Record<SideId, SideDef> = {
     kind: 'fat',
     step: 15,
     max: 2,
-    name: 'orzechy',
-    amount: (n) => (n === 1 ? '15 g orzechów (mała garść)' : '30 g orzechów (garść)'),
+    name: T.nuts,
+    amount: T.nutsAmount,
   },
 };
 

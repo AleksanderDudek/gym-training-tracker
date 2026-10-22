@@ -1,4 +1,5 @@
 import { DIET_PROFILES, type MacroTargets } from '../diet/profiles';
+import { text } from '../lib/lang';
 import type { Dictionaries } from '../lib/types';
 import { isOnlineShop, onlineShop } from '../online/shops';
 import { RECIPES, servingsOf, type Recipe } from '../recipes/catalog';
@@ -51,14 +52,60 @@ export interface GenerateInput {
 
 export type GenerateResult = { ok: true; plan: PrepPlan } | { ok: false; missing: Role[]; message: string };
 
-const ROLE_WORDS: Record<Role, string> = {
-  breakfast: 'śniadanie',
-  snack: 'przekąskę',
-  lunch: 'obiad',
-  lunchBox: 'obiad',
-  dinner: 'kolację',
-  dinnerBox: 'kolację',
-};
+const T = text({
+  pl: {
+    roles: {
+      breakfast: 'śniadanie',
+      snack: 'przekąskę',
+      lunch: 'obiad',
+      lunchBox: 'obiad',
+      dinner: 'kolację',
+      dinnerBox: 'kolację',
+    } as Record<Role, string>,
+    nor: ' ani na ',
+    tips: (tips: string[]) => tips.join(', '),
+    addOnline: 'dodaj sklep internetowy',
+    otherShop: 'wybierz inny sklep',
+    dropExclusions: 'zdejmij wykluczenia',
+    fewerMeals: 'wybierz mniej posiłków',
+    missing: (what: string, style: string, tips: string) =>
+      `Nie mam przepisu na ${what} z tego koszyka dla stylu „${style}”. Spróbuj: ${tips}.`,
+    gone: 'Któregoś przepisu z planu nie da się już kupić w tym koszyku — ułóż plan od nowa.',
+    ended: 'Ten plan już się skończył — ułóż następny.',
+    swapShop: 'inny sklep',
+    swapOnline: 'sklep internetowy',
+    swapExclusions: 'mniej wykluczeń',
+    noSwap: (what: string, tips: string) => `Nie ma innego przepisu na ${what} w tym koszyku. Więcej da ${tips} w następnym planie.`,
+    eaten: 'To danie jest już zjedzone albo ugotowane — wymiana dotyczy dni, które są przed Tobą.',
+    unfit: 'Ten przepis nie pasuje już do planu — wybierz inny.',
+  },
+  en: {
+    roles: {
+      breakfast: 'breakfast',
+      snack: 'a snack',
+      lunch: 'lunch',
+      lunchBox: 'lunch',
+      dinner: 'dinner',
+      dinnerBox: 'dinner',
+    } as Record<Role, string>,
+    nor: ' or ',
+    tips: (tips: string[]) => (tips.length > 1 ? `${tips.slice(0, -1).join(', ')} or ${tips.at(-1)}` : tips.join('')),
+    addOnline: 'add an online shop',
+    otherShop: 'choose another shop',
+    dropExclusions: 'remove the exclusions',
+    fewerMeals: 'choose fewer meals',
+    missing: (what: string, style: string, tips: string) =>
+      `I have no recipe for ${what} from this basket in the “${style}” style. Try: ${tips}.`,
+    gone: 'A recipe in this plan can no longer be bought in this basket — make the plan again.',
+    ended: 'This plan has already ended — make the next one.',
+    swapShop: 'another shop',
+    swapOnline: 'an online shop',
+    swapExclusions: 'fewer exclusions',
+    noSwap: (what: string, tips: string) => `There’s no other recipe for ${what} in this basket. For more, try ${tips} in your next plan.`,
+    eaten: 'This dish is already eaten or cooked — a swap only changes the days ahead of you.',
+    unfit: 'This recipe no longer fits the plan — pick another one.',
+  },
+});
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 const times = (m: Macros, k: number): Macros => ({
@@ -101,15 +148,15 @@ function contextOf(input: GenerateInput): { pool: PlanRecipe[]; ctx: SelectConte
 }
 
 function missingMessage(missing: Role[], input: GenerateInput): string {
-  const what = [...new Set(missing.map((r) => ROLE_WORDS[r]))].join(' ani na ');
+  const what = [...new Set(missing.map((r) => T.roles[r]))].join(T.nor);
   const style = DIET_PROFILES[input.goal.dietProfile].label;
   const tips = [
-    input.settings.online ? null : 'dodaj sklep internetowy',
-    'wybierz inny sklep',
-    input.settings.exclude.length ? 'zdejmij wykluczenia' : null,
-    input.settings.meals > 3 ? 'wybierz mniej posiłków' : null,
+    input.settings.online ? null : T.addOnline,
+    T.otherShop,
+    input.settings.exclude.length ? T.dropExclusions : null,
+    input.settings.meals > 3 ? T.fewerMeals : null,
   ].filter(Boolean);
-  return `Nie mam przepisu na ${what} z tego koszyka dla stylu „${style}”. Spróbuj: ${tips.join(', ')}.`;
+  return T.missing(what, style, T.tips(tips as string[]));
 }
 
 /**
@@ -148,7 +195,7 @@ export function generatePlan(input: GenerateInput): GenerateResult {
     return {
       ok: false,
       missing: [],
-      message: 'Któregoś przepisu z planu nie da się już kupić w tym koszyku — ułóż plan od nowa.',
+      message: T.gone,
     };
   const sideCache = new Map<SideDef, ResolvedSide>();
   const resolved = (def: SideDef) => {
@@ -367,7 +414,7 @@ function remake(
   from: string,
   change: { settings?: PrepSettings; choices?: Choices },
 ): GenerateResult {
-  if (from > planEnd(plan)) return { ok: false, missing: [], message: 'Ten plan już się skończył — ułóż następny.' };
+  if (from > planEnd(plan)) return { ok: false, missing: [], message: T.ended };
   const result = generatePlan({
     ...input,
     settings: change.settings ?? plan.settings,
@@ -421,11 +468,11 @@ export function canSwap(plan: PrepPlan, role: Role, recipeId: string, from: stri
 /** Why there is nothing to swap to: the same hints the form gives. */
 export function noSwapMessage(plan: PrepPlan, role: Role): string {
   const tips = [
-    'inny sklep',
-    plan.settings.online ? null : 'sklep internetowy',
-    plan.settings.exclude.length ? 'mniej wykluczeń' : null,
+    T.swapShop,
+    plan.settings.online ? null : T.swapOnline,
+    plan.settings.exclude.length ? T.swapExclusions : null,
   ].filter(Boolean);
-  return `Nie ma innego przepisu na ${ROLE_WORDS[role]} w tym koszyku. Więcej da ${tips.join(', ')} w następnym planie.`;
+  return T.noSwap(T.roles[role], T.tips(tips as string[]));
 }
 
 /**
@@ -454,7 +501,7 @@ export function swapRecipe(
   to?: string,
 ): GenerateResult {
   if (!canSwap(plan, role, out, from))
-    return { ok: false, missing: [], message: 'To danie jest już zjedzone albo ugotowane — wymiana dotyczy dni, które są przed Tobą.' };
+    return { ok: false, missing: [], message: T.eaten };
   const settings = {
     ...plan.settings,
     avoid: [...new Set([...plan.settings.avoid, out])].filter((id) => id !== to),
@@ -468,7 +515,7 @@ export function swapRecipe(
     return {
       ok: false,
       missing: [],
-      message: to === undefined ? noSwapMessage(plan, role) : 'Ten przepis nie pasuje już do planu — wybierz inny.',
+      message: to === undefined ? noSwapMessage(plan, role) : T.unfit,
     };
   const blocks = cookingBlocks(plan.settings.start, plan.settings.days);
   const choices = {

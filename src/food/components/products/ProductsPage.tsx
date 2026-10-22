@@ -1,5 +1,6 @@
 import { ChevronRight, LayoutGrid, Table2, UtensilsCrossed } from 'lucide-react';
 import { useDeferredValue, useMemo, useRef, useState } from 'react';
+import { text } from '../../../i18n';
 import { EmptyState, Segmented } from '../../../components/ui';
 import { RESTAURANTS_PATH } from '../../../routing';
 import { useDataset } from '../../hooks/useDataset';
@@ -27,9 +28,38 @@ import './products.css';
 /** Produktów na stronie — jak w Produktach PL. */
 const PAGE_SIZE = 48;
 
+const T = text({
+  pl: {
+    cards: 'Karty',
+    table: 'Tabela',
+    eatOut: 'Lokale i sieci gastronomiczne',
+    eatOutNote: "McDonald's, KFC, Starbucks, Pizza Hut i inne — kalorie i makro z ich własnych tabel",
+    heading: 'Produkty',
+    found: 'Znaleziono',
+    page: (page: string, count: string) => ` · strona ${page} z ${count}`,
+    view: 'Widok',
+    empty: 'Brak produktów dla tych filtrów.',
+    clear: 'Wyczyść filtry',
+    list: 'Lista produktów',
+  },
+  en: {
+    cards: 'Cards',
+    table: 'Table',
+    eatOut: 'Restaurants and food chains',
+    eatOutNote: "McDonald's, KFC, Starbucks, Pizza Hut and more — calories and macros from their own tables",
+    heading: 'Products',
+    found: 'Found',
+    page: (page: string, count: string) => ` · page ${page} of ${count}`,
+    view: 'View',
+    empty: 'No products match these filters.',
+    clear: 'Clear filters',
+    list: 'Product list',
+  },
+});
+
 const VIEWS: { key: View; label: string; Icon: typeof LayoutGrid }[] = [
-  { key: 'cards', label: 'Karty', Icon: LayoutGrid },
-  { key: 'table', label: 'Tabela', Icon: Table2 },
+  { key: 'cards', label: T.cards, Icon: LayoutGrid },
+  { key: 'table', label: T.table, Icon: Table2 },
 ];
 
 /**
@@ -41,8 +71,8 @@ export function EatOutLink() {
     <a className="fd-prod-eatout" href={RESTAURANTS_PATH}>
       <UtensilsCrossed size={20} strokeWidth={2} aria-hidden />
       <span className="fd-prod-eatout-text">
-        <b>Lokale i sieci gastronomiczne</b>
-        <span>McDonald's, KFC, Starbucks, Pizza Hut i inne — kalorie i makro z ich własnych tabel</span>
+        <b>{T.eatOut}</b>
+        <span>{T.eatOutNote}</span>
       </span>
       <ChevronRight size={20} strokeWidth={2} aria-hidden />
     </a>
@@ -97,7 +127,7 @@ function Browser({ dataset, products }: { dataset: Dataset; products: IndexedPro
   return (
     <>
       <div className="wrap fd-products">
-        <h2 className="sr-only">Produkty</h2>
+        <h2 className="sr-only">{T.heading}</h2>
         <EatOutLink />
         <Toolbar
           query={state.filters.q}
@@ -110,16 +140,13 @@ function Browser({ dataset, products }: { dataset: Dataset; products: IndexedPro
 
         <div className="fd-found-row" ref={top}>
           <p className="fd-found" aria-live="polite">
-            Znaleziono <strong>{productsLabel(sorted.length)}</strong>
+            {T.found} <strong>{productsLabel(sorted.length)}</strong>
             {pageCount > 1 && (
-              <span className="fd-found-page">
-                {' '}
-                · strona {formatNumber(page, 0)} z {formatNumber(pageCount, 0)}
-              </span>
+              <span className="fd-found-page">{T.page(formatNumber(page, 0), formatNumber(pageCount, 0))}</span>
             )}
           </p>
           <Segmented<View>
-            label="Widok"
+            label={T.view}
             value={state.view}
             onChange={(view) => update({ view })}
             options={VIEWS.map(({ key, label, Icon }) => ({
@@ -139,17 +166,17 @@ function Browser({ dataset, products }: { dataset: Dataset; products: IndexedPro
       <div className={`wrap fd-results${stale ? ' fd-prod-stale' : ''}`} aria-busy={stale || undefined}>
         {sorted.length === 0 ? (
           <EmptyState
-            title="Brak produktów dla tych filtrów."
+            title={T.empty}
             action={
               <button type="button" className="btn sm" onClick={() => setFilters(EMPTY_FILTERS)}>
-                Wyczyść filtry
+                {T.clear}
               </button>
             }
           />
         ) : state.view === 'table' ? (
           <ProductTable products={pageItems} dict={dict} sort={state.sort} onSort={(next) => update({ sort: next })} onOpen={open} />
         ) : (
-          <ul className="fd-grid" aria-label="Lista produktów">
+          <ul className="fd-grid" aria-label={T.list}>
             {pageItems.map((p) => (
               <li key={p.code}>
                 <ProductCard product={p} dict={dict} onOpen={open} />

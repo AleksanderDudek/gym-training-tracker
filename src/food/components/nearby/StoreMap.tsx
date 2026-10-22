@@ -1,7 +1,33 @@
 import L from 'leaflet';
 import { useEffect, useRef, useState } from 'react';
+import { text } from '../../../i18n';
 import { formatDistance } from '../../nearby/geo';
 import type { LatLon, PlacedShop } from '../../nearby/types';
+
+const T = text({
+  pl: {
+    recipes: (n: number) => `Przepisy z kompletem składników tutaj: ${n}`,
+    noRecipes: 'Brak przepisów z kompletem składników tutaj',
+    show: 'Pokaż te przepisy',
+    zoomIn: 'Przybliż',
+    zoomOut: 'Oddal',
+    close: 'Zamknij',
+    here: 'Tu jesteś',
+    map: 'Mapa sklepów w pobliżu',
+    twoFingers: 'Mapę przesuwasz dwoma palcami',
+  },
+  en: {
+    recipes: (n: number) => `Recipes with every ingredient here: ${n}`,
+    noRecipes: 'No recipes with every ingredient here',
+    show: 'Show these recipes',
+    zoomIn: 'Zoom in',
+    zoomOut: 'Zoom out',
+    close: 'Close',
+    here: 'You are here',
+    map: 'Map of shops nearby',
+    twoFingers: 'Move the map with two fingers',
+  },
+});
 
 interface Props {
   center: LatLon | null;
@@ -142,14 +168,14 @@ export function popupFor(
   if (shop.openingHours) line(shop.openingHours, 'fd-near-pop-soft');
   const count = props.recipeCount(chain);
   line(
-    count > 0 ? `Przepisy z kompletem składników tutaj: ${count}` : 'Brak przepisów z kompletem składników tutaj',
+    count > 0 ? T.recipes(count) : T.noRecipes,
     'fd-near-pop-count',
   );
   if (count > 0) {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'btn sm fd-near-pop-btn';
-    button.textContent = 'Pokaż te przepisy';
+    button.textContent = T.show;
     button.addEventListener('click', () => {
       close();
       props.onSelectChain(shop.chain);
@@ -221,7 +247,7 @@ export function StoreMap(props: Props) {
       crossOrigin: true,
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     }).addTo(m);
-    L.control.zoom({ zoomInTitle: 'Przybliż', zoomOutTitle: 'Oddal' }).addTo(m);
+    L.control.zoom({ zoomInTitle: T.zoomIn, zoomOutTitle: T.zoomOut }).addTo(m);
     layers.current = { you: L.layerGroup().addTo(m), shops: L.layerGroup().addTo(m) };
 
     const pick = (e: L.LeafletMouseEvent) => latest.current.onPick({ lat: e.latlng.lat, lon: e.latlng.lng });
@@ -232,7 +258,7 @@ export function StoreMap(props: Props) {
     m.on('popupopen', (e: L.PopupEvent) => {
       popupOpen = true;
       // Leaflet nazywa × po angielsku („Close popup”).
-      e.popup.getElement()?.querySelector('.leaflet-popup-close-button')?.setAttribute('aria-label', 'Zamknij');
+      e.popup.getElement()?.querySelector('.leaflet-popup-close-button')?.setAttribute('aria-label', T.close);
     });
     m.on('popupclose', () => (popupOpen = false));
     m.on('preclick', () => (closedPopup = popupOpen));
@@ -279,7 +305,7 @@ export function StoreMap(props: Props) {
     const at: L.LatLngExpression = [center.lat, center.lon];
     const circle = L.circle(at, { radius, color: c.you, weight: 1.5, fillOpacity: 0.06, interactive: false }).addTo(group);
     you.current = L.circleMarker(at, { radius: 8, color: c.edge, weight: 3, fillColor: c.you, fillOpacity: 1 })
-      .bindTooltip('Tu jesteś')
+      .bindTooltip(T.here)
       .addTo(group);
     m.fitBounds(circle.getBounds(), { padding: [12, 12], animate: !reduceMotion.current });
   }, [center, radius]);
@@ -319,11 +345,11 @@ export function StoreMap(props: Props) {
         ref={box}
         className="fd-near-map-canvas"
         role="region"
-        aria-label="Mapa sklepów w pobliżu"
+        aria-label={T.map}
         aria-describedby={describedBy}
       />
       <p className={`fd-near-map-hint${twoFingers ? ' fd-near-on' : ''}`} aria-hidden="true">
-        Mapę przesuwasz dwoma palcami
+        {T.twoFingers}
       </p>
     </div>
   );

@@ -1,3 +1,4 @@
+import { text } from '../lib/lang';
 import { storeKey } from '../lib/stores';
 import type { LatLon, Shop } from './types';
 
@@ -19,7 +20,7 @@ const SHOP_TYPES = ['supermarket', 'convenience', 'discount', 'grocery'];
 
 export class OverpassUnavailable extends Error {
   constructor() {
-    super('Serwer map (OpenStreetMap) jest teraz przeciążony.');
+    super(text({ pl: 'Serwer map (OpenStreetMap) jest teraz przeciążony.', en: 'The map server (OpenStreetMap) is overloaded right now.' }));
     this.name = 'OverpassUnavailable';
   }
 }

@@ -1,6 +1,7 @@
 // The data contract of the restaurant menus: one JSON file per chain in
 // ./data, transcribed from the chain's own nutrition table (see README,
 // "Jedzenie"). Values are PER PORTION as served; null means not published.
+import { text } from '../lib/lang';
 
 export const MENU_CATEGORIES = [
   'burger',
@@ -19,44 +20,84 @@ export const MENU_CATEGORIES = [
 ] as const;
 export type MenuCategory = (typeof MENU_CATEGORIES)[number];
 
-/** Polish labels, in the order the chips show them: meals, then sides, sweets, drinks and sauces. */
-export const CATEGORY_LABELS: Record<MenuCategory, string> = {
-  burger: 'Burgery',
-  kanapka: 'Kanapki i wrapy',
-  kurczak: 'Kurczak',
-  pizza: 'Pizza',
-  salatka: 'Sałatki i bowle',
-  sniadanie: 'Śniadania',
-  danie: 'Dania',
-  zupa: 'Zupy',
-  dodatek: 'Frytki i dodatki',
-  deser: 'Desery',
-  kawa: 'Kawa i napoje gorące',
-  napoj: 'Napoje zimne',
-  sos: 'Sosy',
+/** Both languages: the search finds a position by the Polish category name in English too. */
+export const CATEGORY_TEXT: { pl: Record<MenuCategory, string>; en: Record<MenuCategory, string> } = {
+  pl: {
+    burger: 'Burgery',
+    kanapka: 'Kanapki i wrapy',
+    kurczak: 'Kurczak',
+    pizza: 'Pizza',
+    salatka: 'Sałatki i bowle',
+    sniadanie: 'Śniadania',
+    danie: 'Dania',
+    zupa: 'Zupy',
+    dodatek: 'Frytki i dodatki',
+    deser: 'Desery',
+    kawa: 'Kawa i napoje gorące',
+    napoj: 'Napoje zimne',
+    sos: 'Sosy',
+  },
+  en: {
+    burger: 'Burgers',
+    kanapka: 'Sandwiches & wraps',
+    kurczak: 'Chicken',
+    pizza: 'Pizza',
+    salatka: 'Salads & bowls',
+    sniadanie: 'Breakfasts',
+    danie: 'Mains',
+    zupa: 'Soups',
+    dodatek: 'Fries & sides',
+    deser: 'Desserts',
+    kawa: 'Coffee & hot drinks',
+    napoj: 'Cold drinks',
+    sos: 'Sauces',
+  },
 };
+
+/** Polish labels, in the order the chips show them: meals, then sides, sweets, drinks and sauces. */
+export const CATEGORY_LABELS: Record<MenuCategory, string> = text(CATEGORY_TEXT);
 
 export const CHAIN_KINDS = ['fast-food', 'kawiarnia', 'pizzeria', 'bar', 'stacja', 'sklep'] as const;
 export type ChainKind = (typeof CHAIN_KINDS)[number];
 
-export const CHAIN_KIND_LABELS: Record<ChainKind, string> = {
-  'fast-food': 'Fast food',
-  kawiarnia: 'Kawiarnia',
-  pizzeria: 'Pizzeria',
-  stacja: 'Stacja paliw',
-  bar: 'Bar i restauracja',
-  sklep: 'Sklep z gorącym jedzeniem',
-};
+export const CHAIN_KIND_LABELS: Record<ChainKind, string> = text({
+  pl: {
+    'fast-food': 'Fast food',
+    kawiarnia: 'Kawiarnia',
+    pizzeria: 'Pizzeria',
+    stacja: 'Stacja paliw',
+    bar: 'Bar i restauracja',
+    sklep: 'Sklep z gorącym jedzeniem',
+  },
+  en: {
+    'fast-food': 'Fast food',
+    kawiarnia: 'Café',
+    pizzeria: 'Pizzeria',
+    stacja: 'Petrol station',
+    bar: 'Bar & restaurant',
+    sklep: 'Shop with hot food',
+  },
+});
 
 /** Headings of the chain list, grouped by kind. */
-export const CHAIN_KIND_GROUPS: Record<ChainKind, string> = {
-  'fast-food': 'Fast food',
-  kawiarnia: 'Kawiarnie',
-  pizzeria: 'Pizzerie',
-  stacja: 'Stacje paliw',
-  bar: 'Bary i restauracje',
-  sklep: 'Sklepy',
-};
+export const CHAIN_KIND_GROUPS: Record<ChainKind, string> = text({
+  pl: {
+    'fast-food': 'Fast food',
+    kawiarnia: 'Kawiarnie',
+    pizzeria: 'Pizzerie',
+    stacja: 'Stacje paliw',
+    bar: 'Bary i restauracje',
+    sklep: 'Sklepy',
+  },
+  en: {
+    'fast-food': 'Fast food',
+    kawiarnia: 'Cafés',
+    pizzeria: 'Pizzerias',
+    stacja: 'Petrol stations',
+    bar: 'Bars & restaurants',
+    sklep: 'Shops',
+  },
+});
 
 /** One menu position as the file has it. */
 export interface MenuItemData {

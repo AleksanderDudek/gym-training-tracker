@@ -1,7 +1,13 @@
 import { useId, type CSSProperties } from 'react';
+import { text } from '../../../i18n';
 import { RADIUS_STEPS, radiusLabel } from '../../nearby/radius';
 
 const LAST = RADIUS_STEPS.length - 1;
+
+const T = text({
+  pl: { radius: 'Promień', smaller: 'Mniejszy promień', larger: 'Większy promień' },
+  en: { radius: 'Radius', smaller: 'Smaller radius', larger: 'Larger radius' },
+});
 
 /**
  * Promień wyszukiwania w stroju suwaka z kreatora planu (`.stepper`: −, suwak, +). Stopnie nie są
@@ -20,13 +26,13 @@ export function RadiusSlider({ radius, onChange }: { radius: number; onChange: (
   return (
     <div className="fd-near-radius">
       <p className="fd-near-radius-head">
-        <span id={labelId}>Promień</span>
+        <span id={labelId}>{T.radius}</span>
         <output className="fd-near-radius-value" aria-hidden="true">
           {radiusLabel(radius)}
         </output>
       </p>
       <div className="stepper">
-        <button type="button" onClick={() => to(index - 1)} aria-disabled={index === 0} aria-label="Mniejszy promień">
+        <button type="button" onClick={() => to(index - 1)} aria-disabled={index === 0} aria-label={T.smaller}>
           −
         </button>
         <input
@@ -40,7 +46,7 @@ export function RadiusSlider({ radius, onChange }: { radius: number; onChange: (
           aria-valuetext={radiusLabel(radius)}
           style={fill}
         />
-        <button type="button" onClick={() => to(index + 1)} aria-disabled={index === LAST} aria-label="Większy promień">
+        <button type="button" onClick={() => to(index + 1)} aria-disabled={index === LAST} aria-label={T.larger}>
           +
         </button>
       </div>

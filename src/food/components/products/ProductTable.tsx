@@ -1,4 +1,5 @@
 import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
+import { text } from '../../../i18n';
 import { brandLine } from '../../lib/display';
 import { formatGrams, formatNumber, UNKNOWN } from '../../lib/format';
 import type { Sort, SortKey } from '../../lib/sort';
@@ -15,12 +16,35 @@ interface Props {
   onOpen: (code: string) => void;
 }
 
+const T = text({
+  pl: {
+    protein: 'Białko',
+    fat: 'Tłuszcz',
+    carbs: 'Węglow.',
+    sugars: 'Cukry',
+    salt: 'Sól',
+    table: 'Tabela produktów',
+    name: 'Nazwa',
+    price: 'Cena',
+  },
+  en: {
+    protein: 'Protein',
+    fat: 'Fat',
+    carbs: 'Carbs',
+    sugars: 'Sugars',
+    salt: 'Salt',
+    table: 'Product table',
+    name: 'Name',
+    price: 'Price',
+  },
+});
+
 const NUTRIENT_COLUMNS: { key: Nutrient & SortKey; label: string }[] = [
-  { key: 'protein', label: 'Białko' },
-  { key: 'fat', label: 'Tłuszcz' },
-  { key: 'carbs', label: 'Węglow.' },
-  { key: 'sugars', label: 'Cukry' },
-  { key: 'salt', label: 'Sól' },
+  { key: 'protein', label: T.protein },
+  { key: 'fat', label: T.fat },
+  { key: 'carbs', label: T.carbs },
+  { key: 'sugars', label: T.sugars },
+  { key: 'salt', label: T.salt },
 ];
 
 // Nowa kolumna zaczyna od kierunku, który częściej się przydaje.
@@ -61,18 +85,18 @@ function SortHeader({
  */
 export function ProductTable({ products, dict, sort, onSort, onOpen }: Props) {
   return (
-    <div className="fd-table-wrap" role="region" aria-label="Tabela produktów" tabIndex={0}>
+    <div className="fd-table-wrap" role="region" aria-label={T.table} tabIndex={0}>
       <table className="fd-table">
         <thead>
           <tr>
-            <SortHeader label="Nazwa" sortKey="name" sort={sort} onSort={onSort} className="fd-col-name" />
+            <SortHeader label={T.name} sortKey="name" sort={sort} onSort={onSort} className="fd-col-name" />
             <SortHeader label="kcal" sortKey="kcal" sort={sort} onSort={onSort} />
             {NUTRIENT_COLUMNS.map((c) => (
               <SortHeader key={c.key} label={c.label} sortKey={c.key} sort={sort} onSort={onSort} />
             ))}
             <SortHeader label="Nutri-Score" sortKey="nutriscore" sort={sort} onSort={onSort} />
             <SortHeader label="NOVA" sortKey="nova" sort={sort} onSort={onSort} />
-            <SortHeader label="Cena" sortKey="price" sort={sort} onSort={onSort} />
+            <SortHeader label={T.price} sortKey="price" sort={sort} onSort={onSort} />
           </tr>
         </thead>
         <tbody>

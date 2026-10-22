@@ -1,5 +1,6 @@
 import { ImageOff } from 'lucide-react';
 import { useState } from 'react';
+import { text } from '../../../i18n';
 import { imageUrl, type ImageSize } from '../../lib/images';
 import './common.css';
 
@@ -32,7 +33,7 @@ export function ProductImage({ path, size, alt, className = '', padded = false }
         <div className="fd-img-none">
           <ImageOff size={20} strokeWidth={2} aria-hidden />
           {/* Miniatura w wierszu tabeli nie ma miejsca na podpis; ikona wystarczy. */}
-          {size > 100 && <span>Brak zdjęcia</span>}
+          {size > 100 && <span>{text({ pl: 'Brak zdjęcia', en: 'No photo' })}</span>}
         </div>
       ) : (
         <img

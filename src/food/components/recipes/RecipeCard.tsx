@@ -1,5 +1,6 @@
 import { ChevronRight, Clock, ExternalLink, Store, Utensils } from 'lucide-react';
 import { useId, useMemo, useState, type ReactNode } from 'react';
+import { pluralEn, text } from '../../../i18n';
 import { plural } from '../../lib/format';
 import type { Dictionaries } from '../../lib/types';
 import { KIND_LABELS, servingsOf, type Recipe } from '../../recipes/catalog';
@@ -11,7 +12,73 @@ import { IngredientLine } from './IngredientLine';
 import { MacroSummary } from './MacroSummary';
 import { SwapSheet } from './SwapSheet';
 import { TierBadge } from './TierBadge';
+import { COMMON } from '../common/text';
 import './recipes.css';
+
+const T = text({
+  pl: {
+    producer: 'producent, kupisz online',
+    online: 'sklep internetowy',
+    staples: (list: string, more: boolean) => ` – a ${list}${more ? ' i reszta podstaw' : ''}` + ' w dowolnym sklepie',
+    anyShop: 'Składniki są w każdym sklepie',
+    buyOnline: (shop: ReactNode, note: string): ReactNode => (
+      <>
+        Kupisz przez internet: {shop}
+        {note}
+      </>
+    ),
+    buyAll: (shop: ReactNode): ReactNode => <>Wszystko kupisz w: {shop}</>,
+    buyTwo: (a: ReactNode, b: ReactNode, note: string): ReactNode => (
+      <>
+        Kupisz w 2 sklepach: {a} + {b}
+        {note}
+      </>
+    ),
+    shopFor: (name: string) => `Sklep dla: ${name}`,
+    ingredients: 'Składniki',
+    amounts: (n: number) => `Ilości na cały przepis, czyli ${n} ${plural(n, 'porcję', 'porcje', 'porcji')}.`,
+    steps: 'Jak zrobić',
+    quoteOpen: '„',
+    quoteClose: '”',
+    source: (recipe: ReactNode, license: ReactNode): ReactNode => (
+      <>
+        Na motywach przepisu {recipe} z Książki kucharskiej w Wikibooks (licencja {license}).
+      </>
+    ),
+    licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/deed.pl',
+  },
+  en: {
+    producer: 'producer, buy online',
+    online: 'online shop',
+    staples: (list: string, more: boolean) => ` – plus ${list}${more ? ' and the other basics' : ''} from any shop`,
+    anyShop: 'The ingredients are in every shop',
+    buyOnline: (shop: ReactNode, note: string): ReactNode => (
+      <>
+        Buy online: {shop}
+        {note}
+      </>
+    ),
+    buyAll: (shop: ReactNode): ReactNode => <>Get everything at: {shop}</>,
+    buyTwo: (a: ReactNode, b: ReactNode, note: string): ReactNode => (
+      <>
+        Buy in 2 shops: {a} + {b}
+        {note}
+      </>
+    ),
+    shopFor: (name: string) => `Shop for: ${name}`,
+    ingredients: 'Ingredients',
+    amounts: (n: number) => `Amounts for the whole recipe, that is ${n} ${pluralEn(n, 'serving', 'servings')}.`,
+    steps: 'How to make it',
+    quoteOpen: '“',
+    quoteClose: '”',
+    source: (recipe: ReactNode, license: ReactNode): ReactNode => (
+      <>
+        Based on the recipe {recipe} from the Polish Wikibooks cookbook (licence: {license}).
+      </>
+    ),
+    licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/deed.en',
+  },
+});
 
 interface Props {
   recipe: Recipe;
@@ -37,7 +104,7 @@ const inSentence = (label: string) => label.charAt(0).toLowerCase() + label.slic
 const MAX_BASKET_CHIPS = 8;
 
 /** Licencja Książki kucharskiej w Wikibooks, z której pochodzą pomysły klasyków. */
-const CC_BY_SA = 'https://creativecommons.org/licenses/by-sa/4.0/deed.pl';
+const CC_BY_SA = T.licenseUrl;
 
 /** Sklep internetowy jako odnośnik do sklepu, z dopiskiem — kolor nie mówi tego sam. */
 export function OnlineShopLink({ id, dict }: { id: string; dict: Dictionaries }) {
@@ -49,11 +116,9 @@ export function OnlineShopLink({ id, dict }: { id: string; dict: Dictionaries })
       <a className="fd-rec-online" href={shop.url} target="_blank" rel="noopener noreferrer">
         {name}
         <ExternalLink size={14} strokeWidth={2} aria-hidden />
-        <span className="sr-only"> (otwiera się w nowej karcie)</span>
+        <span className="sr-only">{COMMON.newTab}</span>
       </a>{' '}
-      <span className="fd-rec-online-kind">
-        ({shop.kind === 'producent' ? 'producent, kupisz online' : 'sklep internetowy'})
-      </span>
+      <span className="fd-rec-online-kind">({shop.kind === 'producent' ? T.producer : T.online})</span>
     </>
   );
 }
@@ -106,29 +171,13 @@ export function RecipeCard({
     .map((d) => d.label);
   const onlineOnly = !!basket && basket.length > 0 && basket.every(isOnlineShop);
   const staplesNote =
-    onlineOnly && staples.length > 0
-      ? ` – a ${staples.slice(0, 3).map(inSentence).join(', ')}${staples.length > 3 ? ' i reszta podstaw' : ''}` +
-        ' w dowolnym sklepie'
-      : '';
+    onlineOnly && staples.length > 0 ? T.staples(staples.slice(0, 3).map(inSentence).join(', '), staples.length > 3) : '';
 
   let shopLine: ReactNode;
-  if (!basket || !needsStore(recipe)) shopLine = 'Składniki są w każdym sklepie';
+  if (!basket || !needsStore(recipe)) shopLine = T.anyShop;
   else if (basket.length === 1)
-    shopLine = isOnlineShop(basket[0]!) ? (
-      <>
-        Kupisz przez internet: {describe(basket[0]!)}
-        {staplesNote}
-      </>
-    ) : (
-      <>Wszystko kupisz w: {describe(basket[0]!)}</>
-    );
-  else
-    shopLine = (
-      <>
-        Kupisz w 2 sklepach: {describe(basket[0]!)} + {describe(basket[1]!)}
-        {staplesNote}
-      </>
-    );
+    shopLine = isOnlineShop(basket[0]!) ? T.buyOnline(describe(basket[0]!), staplesNote) : T.buyAll(describe(basket[0]!));
+  else shopLine = T.buyTwo(describe(basket[0]!), describe(basket[1]!), staplesNote);
 
   return (
     <>
@@ -158,7 +207,7 @@ export function RecipeCard({
             <span>{shopLine}</span>
           </p>
           {baskets.length > 1 && (
-            <div className="chips fd-rec-shop-chips" role="group" aria-label={`Sklep dla: ${recipe.name}`}>
+            <div className="chips fd-rec-shop-chips" role="group" aria-label={T.shopFor(recipe.name)}>
               {baskets.slice(0, MAX_BASKET_CHIPS).map((b, i) => (
                 <button key={b.join('+')} type="button" aria-pressed={b === basket} onClick={() => chooseBasket(i)}>
                   {b.map(storeName).join(' + ')}
@@ -169,12 +218,8 @@ export function RecipeCard({
         </div>
 
         <div className="fd-rec-ings">
-          <Sub className="fd-rec-sub">Składniki</Sub>
-          {servings > 1 && (
-            <p className="fd-rec-ings-note">
-              Ilości na cały przepis, czyli {servings} {plural(servings, 'porcję', 'porcje', 'porcji')}.
-            </p>
-          )}
+          <Sub className="fd-rec-sub">{T.ingredients}</Sub>
+          {servings > 1 && <p className="fd-rec-ings-note">{T.amounts(servings)}</p>}
           <ul className="fd-rec-ing-list">
             {resolved.items.map((r) => (
               <IngredientLine
@@ -191,7 +236,7 @@ export function RecipeCard({
 
         <details className="fd-rec-steps">
           <summary>
-            Jak zrobić
+            {T.steps}
             <ChevronRight className="fd-rec-steps-caret" size={20} strokeWidth={2} aria-hidden />
           </summary>
           <ol>
@@ -203,16 +248,17 @@ export function RecipeCard({
 
         {recipe.inspiredBy && (
           <p className="fd-rec-source">
-            Na motywach przepisu{' '}
-            <a href={recipe.inspiredBy.url} target="_blank" rel="noopener noreferrer">
-              „<span lang={recipe.inspiredBy.lang}>{recipe.inspiredBy.title}</span>”
-              <span className="sr-only"> (otwiera się w nowej karcie)</span>
-            </a>{' '}
-            z Książki kucharskiej w Wikibooks (licencja{' '}
-            <a href={CC_BY_SA} target="_blank" rel="noopener noreferrer">
-              CC BY-SA 4.0<span className="sr-only"> (otwiera się w nowej karcie)</span>
-            </a>
-            ).
+            {T.source(
+              <a href={recipe.inspiredBy.url} target="_blank" rel="noopener noreferrer">
+                {T.quoteOpen}
+                <span lang={recipe.inspiredBy.lang}>{recipe.inspiredBy.title}</span>
+                {T.quoteClose}
+                <span className="sr-only">{COMMON.newTab}</span>
+              </a>,
+              <a href={CC_BY_SA} target="_blank" rel="noopener noreferrer">
+                CC BY-SA 4.0<span className="sr-only">{COMMON.newTab}</span>
+              </a>,
+            )}
           </p>
         )}
       </article>

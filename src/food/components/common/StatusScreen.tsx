@@ -1,7 +1,13 @@
 import { LoaderCircle } from 'lucide-react';
+import { text } from '../../../i18n';
 import { EmptyState } from '../../../components/ui';
 import { MISSING_DATA_MESSAGE } from '../../data';
 import './common.css';
+
+const T = text({
+  pl: { loading: 'Wczytywanie produktów…', error: 'Nie można wyświetlić produktów', retry: 'Spróbuj ponownie' },
+  en: { loading: 'Loading products…', error: 'Can’t show the products', retry: 'Try again' },
+});
 
 type Props = { kind: 'loading' } | { kind: 'error'; message: string; onRetry?: () => void };
 
@@ -17,7 +23,7 @@ export function StatusScreen(props: Props) {
     return (
       <div className="empty fd-status" role="status">
         <LoaderCircle className="fd-spin" size={20} strokeWidth={2} aria-hidden />
-        Wczytywanie produktów…
+        {T.loading}
       </div>
     );
   }
@@ -26,12 +32,12 @@ export function StatusScreen(props: Props) {
   return (
     <div role="alert">
       <EmptyState
-        title="Nie można wyświetlić produktów"
+        title={T.error}
         text={props.message}
         action={
           retry && (
             <button type="button" className="btn sm" onClick={retry}>
-              Spróbuj ponownie
+              {T.retry}
             </button>
           )
         }

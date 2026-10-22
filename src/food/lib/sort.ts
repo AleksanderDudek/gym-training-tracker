@@ -1,3 +1,4 @@
+import { LOCALE } from './lang';
 import { ECO_GRADES, NUTRI_GRADES, type Product } from './types';
 
 export const SORT_KEYS = [
@@ -26,7 +27,7 @@ export interface Sort {
 
 export const DEFAULT_SORT: Sort = { key: 'popularity', dir: 'desc' };
 
-const collator = new Intl.Collator('pl-PL', { sensitivity: 'base', numeric: true });
+const collator = new Intl.Collator(LOCALE, { sensitivity: 'base', numeric: true });
 
 function sortValue(p: Product, key: Exclude<SortKey, 'name'>): number | null {
   switch (key) {

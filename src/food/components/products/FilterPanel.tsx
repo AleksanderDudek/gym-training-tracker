@@ -1,5 +1,6 @@
 import { Check, ChevronDown } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { text } from '../../../i18n';
 import type { Facets } from '../../lib/browse';
 import type { Filters, ListKey, RangeKey, ToggleKey } from '../../lib/filters';
 import { formatNumber } from '../../lib/format';
@@ -16,6 +17,47 @@ import {
 import { ECO_GRADES, NOVA_GROUPS, NUTRI_GRADES, type Dictionaries } from '../../lib/types';
 import { FacetList } from './FacetList';
 import { RangeInput } from './RangeInput';
+
+const T = text({
+  pl: {
+    only: 'Pokaż tylko',
+    diet: 'Dieta',
+    nova: 'NOVA – stopień przetworzenia',
+    novaNote: '1 – nieprzetworzone, 4 – ultraprzetworzone',
+    nutrition: 'Wartości odżywcze na 100 g',
+    price: 'Cena',
+    priceNote: 'Ceny z Open Prices – ma je niewielka część produktów.',
+    category: 'Kategoria',
+    brand: 'Marka',
+    store: 'Sklep',
+    labelsTitle: 'Etykiety i certyfikaty',
+    labelsNote: 'Produkt musi mieć wszystkie zaznaczone.',
+    labels: 'Etykiety',
+    allergens: 'Bez alergenów',
+    without: (name: string) => `bez: ${name}`,
+    allergensNote: 'Wyklucza też śladowe ilości. Pokazuje tylko produkty ze znanym składem – nieznany skład nie znaczy „bez alergenów”.',
+    additives: 'Dodatki do żywności (E)',
+  },
+  en: {
+    only: 'Show only',
+    diet: 'Diet',
+    nova: 'NOVA – degree of processing',
+    novaNote: '1 – unprocessed, 4 – ultra-processed',
+    nutrition: 'Nutrition facts per 100 g',
+    price: 'Price',
+    priceNote: 'Prices from Open Prices – only a small share of products have one.',
+    category: 'Category',
+    brand: 'Brand',
+    store: 'Shop',
+    labelsTitle: 'Labels and certificates',
+    labelsNote: 'A product must have every one ticked.',
+    labels: 'Labels',
+    allergens: 'Allergen-free',
+    without: (name: string) => `without: ${name}`,
+    allergensNote: 'Also excludes traces. Shows only products with known ingredients – unknown ingredients don’t mean “allergen-free”.',
+    additives: 'Food additives (E)',
+  },
+});
 
 interface Props {
   filters: Filters;
@@ -117,10 +159,10 @@ export function FilterPanel({ filters, facets, dict, allergenOptions, onChange }
 
   return (
     <div className="fd-panel">
-      <Section title="Pokaż tylko">
+      <Section title={T.only}>
         <ul className="fd-checks">{PRESENCE_TOGGLES.map(toggleRow)}</ul>
       </Section>
-      <Section title="Dieta">
+      <Section title={T.diet}>
         <ul className="fd-checks">{DIET_TOGGLES.map(toggleRow)}</ul>
       </Section>
 
@@ -140,7 +182,7 @@ export function FilterPanel({ filters, facets, dict, allergenOptions, onChange }
         </div>
       </Section>
 
-      <Section title="NOVA – stopień przetworzenia">
+      <Section title={T.nova}>
         <div className="fd-grades">
           {NOVA_GROUPS.map((g) => (
             <Grade
@@ -154,7 +196,7 @@ export function FilterPanel({ filters, facets, dict, allergenOptions, onChange }
             />
           ))}
         </div>
-        <p className="fd-note">1 – nieprzetworzone, 4 – ultraprzetworzone</p>
+        <p className="fd-note">{T.novaNote}</p>
       </Section>
 
       <Section title="Eco-Score" open={false}>
@@ -173,26 +215,26 @@ export function FilterPanel({ filters, facets, dict, allergenOptions, onChange }
         </div>
       </Section>
 
-      <Section title="Wartości odżywcze na 100 g">
+      <Section title={T.nutrition}>
         {NUTRITION_RANGES.map((key) => (
           <RangeInput key={key} {...RANGE_LABELS[key]} range={filters.ranges[key]} onChange={(range) => setRange(key, range)} />
         ))}
       </Section>
 
-      <Section title="Cena">
+      <Section title={T.price}>
         <RangeInput {...RANGE_LABELS.price} range={filters.ranges.price} onChange={(r) => setRange('price', r)} />
-        <p className="fd-note">Ceny z Open Prices – ma je niewielka część produktów.</p>
+        <p className="fd-note">{T.priceNote}</p>
       </Section>
 
-      <Section title="Kategoria">{facet('categories', 'Kategoria')}</Section>
-      <Section title="Marka">{facet('brands', 'Marka')}</Section>
-      <Section title="Sklep">{facet('stores', 'Sklep')}</Section>
-      <Section title="Etykiety i certyfikaty" open={false}>
-        <p className="fd-note">Produkt musi mieć wszystkie zaznaczone.</p>
-        {facet('labels', 'Etykiety')}
+      <Section title={T.category}>{facet('categories', T.category)}</Section>
+      <Section title={T.brand}>{facet('brands', T.brand)}</Section>
+      <Section title={T.store}>{facet('stores', T.store)}</Section>
+      <Section title={T.labelsTitle} open={false}>
+        <p className="fd-note">{T.labelsNote}</p>
+        {facet('labels', T.labels)}
       </Section>
 
-      <Section title="Bez alergenów" open={false}>
+      <Section title={T.allergens} open={false}>
         <ul className="fd-checks">
           {allergenOptions.map((tag) => (
             <li key={tag}>
@@ -202,18 +244,15 @@ export function FilterPanel({ filters, facets, dict, allergenOptions, onChange }
                   checked={filters.withoutAllergens.includes(tag)}
                   onChange={() => set({ withoutAllergens: toggled(filters.withoutAllergens, tag) })}
                 />
-                <span className="fd-check-name">bez: {dict.allergens[tag] ?? tag}</span>
+                <span className="fd-check-name">{T.without(dict.allergens[tag] ?? tag)}</span>
               </label>
             </li>
           ))}
         </ul>
-        <p className="fd-note">
-          Wyklucza też śladowe ilości. Pokazuje tylko produkty ze znanym składem – nieznany skład nie znaczy „bez
-          alergenów”.
-        </p>
+        <p className="fd-note">{T.allergensNote}</p>
       </Section>
 
-      <Section title="Dodatki do żywności (E)" open={false}>
+      <Section title={T.additives} open={false}>
         <RangeInput {...RANGE_LABELS.additives} range={filters.ranges.additives} onChange={(r) => setRange('additives', r)} />
       </Section>
     </div>

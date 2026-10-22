@@ -1,6 +1,7 @@
 import { addDays } from '../diet/model';
 import { brandLine } from '../lib/display';
 import { formatNumber, formatPrice } from '../lib/format';
+import { LOCALE, pluralEn, text } from '../lib/lang';
 import type { Dictionaries, IndexedProduct } from '../lib/types';
 import { isOnlineShop } from '../online/shops';
 import { servingsOf, type Recipe } from '../recipes/catalog';
@@ -9,6 +10,35 @@ import { resolveRecipe, type Basket, type Candidates, type ResolvedItem, type Re
 import { AISLE, AISLE_LABELS, AISLE_ORDER } from './aisles';
 import { gramsLabel, rangeLabel } from './format';
 import type { PrepPlan, ShoppingGroup, ShoppingItem } from './types';
+
+const T = text({
+  pl: {
+    onePack: (size: string) => `1 opak. · ${size}`,
+    packs: (n: number, size: string) => `${n} opak. · po ${size}`,
+    drainedNote: (packs: string, grams: string) => `${packs} (${grams} po odsączeniu)`,
+    drained: (grams: string) => `${grams} po odsączeniu`,
+    pieces: (n: number) => `${n} szt.`,
+    title: (range: string) => `Lista zakupów · ${range}`,
+    shop: 'Sklep',
+    order: (shop: string) => `${shop} (zamówienie)`,
+    home: 'Sprawdź w domu',
+    about: (price: string) => ` · ok. ${price}`,
+    total: (total: string, known: string, all: string) => `Razem ok. ${total} (ceny znane dla ${known} z ${all} pozycji).`,
+  },
+  en: {
+    onePack: (size: string) => `1 pack · ${size}`,
+    packs: (n: number, size: string) => `${n} packs · ${size} each`,
+    drainedNote: (packs: string, grams: string) => `${packs} (${grams} drained)`,
+    drained: (grams: string) => `${grams} drained`,
+    pieces: (n: number) => `${n} ${pluralEn(n, 'piece', 'pieces')}`,
+    title: (range: string) => `Shopping list · ${range}`,
+    shop: 'Shop',
+    order: (shop: string) => `${shop} (order)`,
+    home: 'Check at home',
+    about: (price: string) => ` · about ${price}`,
+    total: (total: string, known: string, all: string) => `Total about ${total} (prices known for ${known} of ${all} items).`,
+  },
+});
 
 /** A recipe eaten or cooked: `servings` of it on `date` (a cooking day for a batch). */
 export interface RecipeUse {
@@ -198,7 +228,7 @@ export function shoppingList({ uses, sides, basket, candidates, dict, start }: S
       GROUP_ORDER[a.group] - GROUP_ORDER[b.group] ||
       (a.group === 'order' ? (a.shop ?? '').localeCompare(b.shop ?? '') : 0) ||
       AISLE_ORDER.indexOf(a.aisle) - AISLE_ORDER.indexOf(b.aisle) ||
-      a.label.localeCompare(b.label, 'pl'),
+      a.label.localeCompare(b.label, LOCALE),
   );
 }
 
@@ -206,11 +236,11 @@ export function shoppingList({ uses, sides, basket, candidates, dict, start }: S
 export function amountText(item: ShoppingItem): string {
   if (item.packs !== null && item.packGrams !== null) {
     const size = item.product?.quantity?.trim() || gramsLabel(item.packGrams);
-    const packs = item.packs === 1 ? `1 opak. · ${size}` : `${item.packs} opak. · po ${size}`;
-    return item.drained ? `${packs} (${gramsLabel(item.grams)} po odsączeniu)` : packs;
+    const packs = item.packs === 1 ? T.onePack(size) : T.packs(item.packs, size);
+    return item.drained ? T.drainedNote(packs, gramsLabel(item.grams)) : packs;
   }
-  if (item.drained) return `${gramsLabel(item.grams)} po odsączeniu`;
-  if (item.pieces !== null) return `${item.pieces} szt.`;
+  if (item.drained) return T.drained(gramsLabel(item.grams));
+  if (item.pieces !== null) return T.pieces(item.pieces);
   return gramsLabel(item.grams);
 }
 
@@ -237,26 +267,26 @@ export const pricedEnough = (sum: { known: number; unknown: number }): boolean =
 /** The list as plain text, to send or paste into notes: shop by shop, aisle by aisle. */
 export function shoppingText(plan: PrepPlan): string {
   const end = addDays(plan.settings.start, plan.settings.days - 1);
-  const out = [`Lista zakupów · ${rangeLabel(plan.settings.start, end)}`];
+  const out = [T.title(rangeLabel(plan.settings.start, end))];
   const physical = plan.shops.find((s) => !s.online);
-  const groups: { title: string; items: ShoppingItem[] }[] = [
-    { title: physical ? physical.name : 'Sklep', items: plan.shopping.filter((i) => i.group === 'visit') },
+  const groups: { title: string; items: ShoppingItem[]; home?: true }[] = [
+    { title: physical ? physical.name : T.shop, items: plan.shopping.filter((i) => i.group === 'visit') },
     ...plan.shops
       .filter((s) => s.online)
-      .map((s) => ({ title: `${s.name} (zamówienie)`, items: plan.shopping.filter((i) => i.group === 'order' && i.shop === s.key) })),
-    { title: 'Sprawdź w domu', items: plan.shopping.filter((i) => i.group === 'home') },
+      .map((s) => ({ title: T.order(s.name), items: plan.shopping.filter((i) => i.group === 'order' && i.shop === s.key) })),
+    { title: T.home, items: plan.shopping.filter((i) => i.group === 'home'), home: true },
   ];
   for (const group of groups) {
     if (!group.items.length) continue;
     out.push('', group.title);
     let aisle: string | null = null;
     for (const item of group.items) {
-      if (group.title !== 'Sprawdź w domu' && item.aisle !== aisle && item.group === 'visit') {
+      if (!group.home && item.aisle !== aisle && item.group === 'visit') {
         aisle = item.aisle;
         out.push(`  ${AISLE_LABELS[item.aisle]}`);
       }
       const done = plan.bought.includes(item.key) ? '[x]' : '[ ]';
-      const price = item.price !== null ? ` · ok. ${formatPrice(item.price)}` : '';
+      const price = item.price !== null ? T.about(formatPrice(item.price)) : '';
       out.push(`  ${done} ${itemName(item)} — ${amountText(item)}${price}`);
     }
   }
@@ -264,7 +294,7 @@ export function shoppingText(plan: PrepPlan): string {
   if (pricedEnough(sum))
     out.push(
       '',
-      `Razem ok. ${formatPrice(sum.total)} (ceny znane dla ${formatNumber(sum.known, 0)} z ${formatNumber(sum.known + sum.unknown, 0)} pozycji).`,
+      T.total(formatPrice(sum.total), formatNumber(sum.known, 0), formatNumber(sum.known + sum.unknown, 0)),
     );
   return out.join('\n');
 }

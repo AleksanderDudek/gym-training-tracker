@@ -1,3 +1,4 @@
+import { text } from '../../../i18n';
 import { brandLine } from '../../lib/display';
 import { formatGrams, formatNumber, UNKNOWN } from '../../lib/format';
 import type { Dictionaries, IndexedProduct, Product } from '../../lib/types';
@@ -6,6 +7,11 @@ import { PriceTag } from './PriceTag';
 import { ProductImage } from './ProductImage';
 import { ScoreBadge } from './ScoreBadge';
 import './common.css';
+
+const T = text({
+  pl: { online: 'Sklep internetowy:', protein: 'Białko', fat: 'Tłuszcz', carbs: 'Węglow.' },
+  en: { online: 'Online shop:', protein: 'Protein', fat: 'Fat', carbs: 'Carbs' },
+});
 
 interface Props {
   product: IndexedProduct;
@@ -41,22 +47,24 @@ export function ProductCard({ product: p, dict, onOpen, headingLevel = 3 }: Prop
         </Heading>
         {(brand || p.quantity) && <p className="fd-card-meta">{[brand, p.quantity].filter(Boolean).join(' · ')}</p>}
         {p.online?.length ? (
-          <p className="fd-card-online">Sklep internetowy: {shopNames(p, dict)}</p>
+          <p className="fd-card-online">
+            {T.online} {shopNames(p, dict)}
+          </p>
         ) : null}
         <p className="fd-card-kcal">
           {n.kcal === null ? UNKNOWN : formatNumber(n.kcal, 0)} <small>kcal / 100 g</small>
         </p>
         <dl className="fd-macros">
           <div className="protein">
-            <dt>Białko</dt>
+            <dt>{T.protein}</dt>
             <dd>{formatGrams(n.protein)}</dd>
           </div>
           <div>
-            <dt>Tłuszcz</dt>
+            <dt>{T.fat}</dt>
             <dd>{formatGrams(n.fat)}</dd>
           </div>
           <div>
-            <dt>Węglow.</dt>
+            <dt>{T.carbs}</dt>
             <dd>{formatGrams(n.carbs)}</dd>
           </div>
         </dl>

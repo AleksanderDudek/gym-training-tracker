@@ -1,6 +1,24 @@
 import type { ReactNode } from 'react';
+import { text } from '../../../i18n';
 import { Sheet } from '../common/Sheet';
 import { productsLabel } from './count';
+
+const T = text({
+  pl: {
+    title: 'Filtry',
+    close: 'Zamknij filtry',
+    clear: (n: number) => `Wyczyść (${n})`,
+    result: (count: string) => `Wynik: ${count}`,
+    show: (count: string) => `Pokaż ${count}`,
+  },
+  en: {
+    title: 'Filters',
+    close: 'Close filters',
+    clear: (n: number) => `Clear (${n})`,
+    result: (count: string) => `Result: ${count}`,
+    show: (count: string) => `Show ${count}`,
+  },
+});
 
 interface Props {
   open: boolean;
@@ -24,13 +42,13 @@ export function FilterSheet({ open, resultCount, activeCount, onClear, onClose, 
     <Sheet
       open={open}
       onClose={onClose}
-      title="Filtry"
-      closeLabel="Zamknij filtry"
+      title={T.title}
+      closeLabel={T.close}
       className="fd-filter-sheet"
       actions={
         activeCount > 0 && (
           <button type="button" className="fd-sheet-clear" onClick={onClear}>
-            Wyczyść ({activeCount})
+            {T.clear(activeCount)}
           </button>
         )
       }
@@ -39,12 +57,12 @@ export function FilterSheet({ open, resultCount, activeCount, onClear, onClose, 
           {/* Arkusz jest modalny, więc wiersz „Znaleziono …” na stronie za nim milczy. Liczbę po
               każdej zmianie filtra czytnik ekranu słyszy stąd. */}
           <p className="sr-only" role="status">
-            Wynik: {count}
+            {T.result(count)}
           </p>
           {/* Zamyka przez `dialog.close()`, jak ×: jedno `onClose`, a pole zakresu wpisane przed chwilą
               zdążyło już oddać fokus i zapisać wartość. */}
           <button type="button" className="btn wide" onClick={(e) => e.currentTarget.closest('dialog')?.close()}>
-            Pokaż {count}
+            {T.show(count)}
           </button>
         </>
       }

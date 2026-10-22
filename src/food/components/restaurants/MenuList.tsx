@@ -1,9 +1,11 @@
+import { text } from '../../../i18n';
 import { DIET_PROFILES, type DietProfile } from '../../diet/profiles';
 import type { Profile } from '../../diet/types';
 import { formatNumber } from '../../lib/format';
 import { portionLabel } from '../../restaurants/food';
 import type { Chain, MenuItem } from '../../restaurants/types';
 import { FitBadge } from '../diet/SuggestionList';
+import { COMMON } from '../common/text';
 
 /** Sposób odżywiania z profilu diety albo nic, gdy profilu nie ma — wtedy bez ocen. */
 export function dietOf(profile: Pick<Profile, 'dietProfile'> | null | undefined): DietProfile | null {
@@ -16,7 +18,7 @@ const g = (n: number) => formatNumber(n, 0);
 export function MenuNumbers({ item }: { item: MenuItem }) {
   return (
     <span className="fd-rest-nums">
-      {g(item.kcal)} kcal · B {g(item.protein)} · W {g(item.carbs)} · T {g(item.fat)}
+      {g(item.kcal)} kcal · {COMMON.p} {g(item.protein)} · {COMMON.c} {g(item.carbs)} · {COMMON.f} {g(item.fat)}
     </span>
   );
 }
@@ -52,7 +54,11 @@ export function MenuList({ items, showChain = false, diet, onOpen }: Props) {
             <span className="fd-rest-meta">
               <MenuNumbers item={item} /> · {showChain ? `${chain.name} · ` : ''}
               {portionLabel(item)}
-              {item.inconsistent && <span className="fd-rest-odd"> · liczby sieci się nie zgadzają</span>}
+              {item.inconsistent && (
+                <span className="fd-rest-odd">
+                  {text({ pl: ' · liczby sieci się nie zgadzają', en: ' · the chain’s numbers don’t add up' })}
+                </span>
+              )}
             </span>
           </button>
         </li>

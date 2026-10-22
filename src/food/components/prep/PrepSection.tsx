@@ -1,4 +1,5 @@
 import { Layers } from 'lucide-react';
+import { text } from '../../../i18n';
 import { dietPath } from '../../../routing';
 import type { Profile } from '../../diet/types';
 import { openPlans, shownPlan } from '../../prep/store';
@@ -7,6 +8,8 @@ import { planHref } from './links';
 import { PlanSwitch } from './PlanSwitch';
 import { PrepForm } from './PrepForm';
 import { PrepPlanView } from './PrepPlanView';
+
+const MY_PLANS = text({ pl: (n: number) => `Moje plany (${n})`, en: (n: number) => `My plans (${n})` });
 
 interface Props {
   profile: Profile;
@@ -32,7 +35,7 @@ export function PrepSection({ profile, plans, today, wanted, formOpen, onOpenFor
   const all = plans.length > 0 && (
     <p className="wrap fd-prep-all">
       <a href={dietPath('plans')}>
-        <Layers size={18} strokeWidth={2} aria-hidden /> Moje plany ({plans.length})
+        <Layers size={18} strokeWidth={2} aria-hidden /> {MY_PLANS(plans.length)}
       </a>
     </p>
   );

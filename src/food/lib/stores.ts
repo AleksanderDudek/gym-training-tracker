@@ -18,6 +18,7 @@ const CHAINS: { key: string; label: string; pattern: RegExp }[] = [
   { key: 'kaufland', label: 'Kaufland', pattern: /^kaufland\b/ },
   { key: 'auchan', label: 'Auchan', pattern: /^auchan\b/ },
   { key: 'carrefour', label: 'Carrefour', pattern: /^carrefour\b/ },
+  // i18n-ignore: chain name
   { key: 'zabka', label: 'Żabka', pattern: /^zabka\b/ },
   { key: 'dino', label: 'Dino', pattern: /^dino\b/ },
   { key: 'netto', label: 'Netto', pattern: /^netto\b/ },

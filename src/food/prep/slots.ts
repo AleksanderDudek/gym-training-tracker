@@ -1,4 +1,10 @@
+import { text } from '../lib/lang';
 import type { Slot } from './types';
+
+const N = text({
+  pl: { breakfast: 'Śniadanie', second: 'II śniadanie', lunch: 'Obiad', tea: 'Podwieczorek', dinner: 'Kolacja' },
+  en: { breakfast: 'Breakfast', second: 'Mid-morning snack', lunch: 'Lunch', tea: 'Afternoon snack', dinner: 'Dinner' },
+});
 
 /**
  * The meals of a day in the order they are eaten, each with its share of the day's energy. Four
@@ -6,22 +12,22 @@ import type { Slot } from './types';
  */
 const SLOTS: Record<3 | 4 | 5, Slot[]> = {
   3: [
-    { name: 'Śniadanie', kind: 'breakfast', share: 0.3 },
-    { name: 'Obiad', kind: 'lunch', share: 0.4 },
-    { name: 'Kolacja', kind: 'dinner', share: 0.3 },
+    { name: N.breakfast, kind: 'breakfast', share: 0.3 },
+    { name: N.lunch, kind: 'lunch', share: 0.4 },
+    { name: N.dinner, kind: 'dinner', share: 0.3 },
   ],
   4: [
-    { name: 'Śniadanie', kind: 'breakfast', share: 0.25 },
-    { name: 'Obiad', kind: 'lunch', share: 0.35 },
-    { name: 'Podwieczorek', kind: 'snack', share: 0.15 },
-    { name: 'Kolacja', kind: 'dinner', share: 0.25 },
+    { name: N.breakfast, kind: 'breakfast', share: 0.25 },
+    { name: N.lunch, kind: 'lunch', share: 0.35 },
+    { name: N.tea, kind: 'snack', share: 0.15 },
+    { name: N.dinner, kind: 'dinner', share: 0.25 },
   ],
   5: [
-    { name: 'Śniadanie', kind: 'breakfast', share: 0.25 },
-    { name: 'II śniadanie', kind: 'snack', share: 0.1 },
-    { name: 'Obiad', kind: 'lunch', share: 0.3 },
-    { name: 'Podwieczorek', kind: 'snack', share: 0.1 },
-    { name: 'Kolacja', kind: 'dinner', share: 0.25 },
+    { name: N.breakfast, kind: 'breakfast', share: 0.25 },
+    { name: N.second, kind: 'snack', share: 0.1 },
+    { name: N.lunch, kind: 'lunch', share: 0.3 },
+    { name: N.tea, kind: 'snack', share: 0.1 },
+    { name: N.dinner, kind: 'dinner', share: 0.25 },
   ],
 };
 

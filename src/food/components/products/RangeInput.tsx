@@ -1,6 +1,27 @@
 import { X } from 'lucide-react';
+import { text } from '../../../i18n';
 import { useDebouncedDraft } from '../../hooks/useDebouncedDraft';
 import type { Range } from '../../lib/filters';
+
+const T = text({
+  pl: {
+    /** Separator dziesiętny w polu. */
+    comma: ',',
+    from: 'od',
+    to: 'do',
+    fromLabel: (label: string) => `${label} od`,
+    toLabel: (label: string) => `${label} do`,
+    clear: (label: string) => `Wyczyść: ${label}`,
+  },
+  en: {
+    comma: '.',
+    from: 'from',
+    to: 'to',
+    fromLabel: (label: string) => `${label} from`,
+    toLabel: (label: string) => `${label} to`,
+    clear: (label: string) => `Clear: ${label}`,
+  },
+});
 
 interface Props {
   label: string;
@@ -22,7 +43,7 @@ function parse(text: string): number | null {
 const sameNumber = (draft: string, committed: string) => parse(draft) === parse(committed);
 
 /** Liczba z adresu (`10.5`) w polu po polsku: `10,5`. Bez grupowania tysięcy — `parse` go nie czyta. */
-const toDraft = (n: number | null) => (n === null ? '' : String(n).replace('.', ','));
+const toDraft = (n: number | null) => (n === null ? '' : String(n).replace('.', T.comma));
 
 /**
  * Zakres „od – do” dla jednej wartości (kalorie, białko, cena…). Pola tekstowe z klawiaturą
@@ -61,8 +82,8 @@ export function RangeInput({ label, unit, range, onChange }: Props) {
           value={minDraft}
           onChange={(e) => setMinDraft(e.target.value)}
           onBlur={flushMin}
-          placeholder="od"
-          aria-label={`${label} od`}
+          placeholder={T.from}
+          aria-label={T.fromLabel(label)}
         />
         <span aria-hidden>–</span>
         <input
@@ -72,8 +93,8 @@ export function RangeInput({ label, unit, range, onChange }: Props) {
           value={maxDraft}
           onChange={(e) => setMaxDraft(e.target.value)}
           onBlur={flushMax}
-          placeholder="do"
-          aria-label={`${label} do`}
+          placeholder={T.to}
+          aria-label={T.toLabel(label)}
         />
         {range ? (
           <button
@@ -84,7 +105,7 @@ export function RangeInput({ label, unit, range, onChange }: Props) {
               setMaxDraft('');
               onChange(undefined);
             }}
-            aria-label={`Wyczyść: ${label}`}
+            aria-label={T.clear(label)}
           >
             <X size={20} strokeWidth={2} aria-hidden />
           </button>

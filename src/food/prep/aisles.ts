@@ -1,3 +1,4 @@
+import { text } from '../lib/lang';
 import type { IngredientId } from '../recipes/ingredients';
 import type { Aisle } from './types';
 
@@ -97,12 +98,23 @@ export const AISLE: Record<IngredientId, Aisle> = {
 /** One walk through a shop: produce at the door, bread, the chillers, the freezers, the shelves. */
 export const AISLE_ORDER: readonly Aisle[] = ['warzywa', 'pieczywo', 'nabial', 'mieso', 'mrozonki', 'suche', 'inne'];
 
-export const AISLE_LABELS: Record<Aisle, string> = {
-  warzywa: 'Warzywa i owoce',
-  pieczywo: 'Pieczywo',
-  nabial: 'Nabiał i jajka',
-  mieso: 'Mięso, ryby i zamienniki',
-  mrozonki: 'Mrożonki',
-  suche: 'Suche i puszki',
-  inne: 'Inne',
-};
+export const AISLE_LABELS: Record<Aisle, string> = text({
+  pl: {
+    warzywa: 'Warzywa i owoce',
+    pieczywo: 'Pieczywo',
+    nabial: 'Nabiał i jajka',
+    mieso: 'Mięso, ryby i zamienniki',
+    mrozonki: 'Mrożonki',
+    suche: 'Suche i puszki',
+    inne: 'Inne',
+  },
+  en: {
+    warzywa: 'Fruit & veg',
+    pieczywo: 'Bread',
+    nabial: 'Dairy & eggs',
+    mieso: 'Meat, fish & alternatives',
+    mrozonki: 'Frozen',
+    suche: 'Dry goods & tins',
+    inne: 'Other',
+  },
+});
