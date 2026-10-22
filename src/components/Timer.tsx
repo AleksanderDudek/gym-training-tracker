@@ -1,6 +1,26 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Gorilla } from './Gorilla';
 import type { TraineeMood } from './Gorilla';
+import { text } from '../i18n';
+
+const T = text({
+  pl: {
+    of: (clock: string) => ` z ${clock}`,
+    stop: 'Stop',
+    resume: 'Wznów',
+    startCount: 'Start odliczania',
+    startWatch: 'Start stopera',
+    reset: 'Od nowa',
+  },
+  en: {
+    of: (clock: string) => ` of ${clock}`,
+    stop: 'Stop',
+    resume: 'Resume',
+    startCount: 'Start countdown',
+    startWatch: 'Start stopwatch',
+    reset: 'Reset',
+  },
+});
 
 /**
  * Sekundy w formacie zegara. Powyżej minuty człowiek czyta „1:30” szybciej niż „90 s”,
@@ -106,7 +126,7 @@ export function Timer({
       <div className="timer-main">
         <div className="timer-read" aria-live="off">
           {formatClock(shown)}
-          {mode === 'count' && <span className="timer-of"> z {formatClock(target)}</span>}
+          {mode === 'count' && <span className="timer-of">{T.of(formatClock(target))}</span>}
         </div>
         {mode === 'count' && (
           <div className="timer-bar">
@@ -115,11 +135,11 @@ export function Timer({
         )}
         <div className="timer-btns">
           <button className="btn sm" onClick={running ? stop : start}>
-            {running ? 'Stop' : elapsed > 0 ? 'Wznów' : mode === 'count' ? 'Start odliczania' : 'Start stopera'}
+            {running ? T.stop : elapsed > 0 ? T.resume : mode === 'count' ? T.startCount : T.startWatch}
           </button>
           {elapsed > 0 && !running && (
             <button className="btn sm ghost" onClick={reset}>
-              Od nowa
+              {T.reset}
             </button>
           )}
         </div>

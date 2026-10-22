@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Gorilla, WHO_NAME } from './Gorilla';
 import type { TraineeMood } from './Gorilla';
 import { Segmented } from './ui';
@@ -8,6 +9,127 @@ import { snacksOf } from '../engine/snacks';
 import { BASE_STEPS, activeMinutes, cardioOf } from '../engine/cardio';
 import { LEVEL_UP, pick, plural } from '../engine/quips';
 import type { AppState } from '../types';
+import { LOCALE, pluralEn, text } from '../i18n';
+
+const T = text({
+  pl: {
+    proud: 'Dziś w ruchu, i to porządnie',
+    happy: 'Dziś w ruchu',
+    first: 'Czeka na pierwszy ruch',
+    yesterday: 'Wczoraj w ruchu',
+    ago: (n: number) => `Ostatni ruch ${n} dni temu`,
+    progressAria: (n: number) => `Postęp do poziomu ${n}`,
+    yours: (name: string) => `Twoja postać · ${name}`,
+    level: (n: number) => `Poziom ${n}`,
+    meta: (xp: string, next: number, left: string) => `${xp} XP · do poziomu ${next} brakuje ${left} XP`,
+    week: (line: string, week: string, today: string) => `${line}. Ostatnie siedem dni: +${week} XP, z tego dziś +${today} XP.`,
+    nextTitle: (level: number, name: string) => `Kolejny tytuł na poziomie ${level}: ${name}.`,
+    from: (workouts: string, snacks: string, cardio: string, badges: string) =>
+      `Skąd: treningi ${workouts} · przekąski ${snacks} · kroki i cardio ${cardio} · odznaki ${badges} XP.`,
+    who: 'Kto rośnie razem z tobą',
+    whyXp: 'Skąd się bierze doświadczenie',
+    xpWorkout: (w: number, again: number): ReactNode => (
+      <>
+        <b>Zamknięty trening: {w} XP.</b> Kolejny tego samego dnia: {again} XP — te same wzorce ruchu dwa razy dziennie
+        nie budują dwa razy szybciej.
+      </>
+    ),
+    xpSnack: (snack: number, cap: number): ReactNode => (
+      <>
+        <b>Przekąska ruchowa: {snack} XP</b>, do {cap} dziennie. Kolejne liczą się do odznak, ale już bez doświadczenia:
+        przekąski mają rozkładać ruch na cały dzień, a nie zamieniać się w klikanie.
+      </>
+    ),
+    xpCardio: (perMin: number, cap: number, base: string): ReactNode => (
+      <>
+        <b>Kroki i cardio: {perMin} XP za minutę ruchu</b>, do {cap} dziennie. Minuta intensywna (bieg, szybki rower)
+        liczy się podwójnie, jak w zaleceniach WHO; z kroków liczy się to, co ponad {base}, przy 100 na minutę, a z zajęć
+        tańca — sam taniec, bez tłumaczenia. Sufit to połowa treningu — spacer ma dokładać, a nie zastępować.
+      </>
+    ),
+    xpBadge: (low: number, high: number): ReactNode => (
+      <>
+        <b>
+          Próg odznaki: od {low} do {high} XP
+        </b>
+        , zależnie od tworzywa. Odznaki ćwiczeń płacą połowę, bo jest ich po cztery na każdy ruch.
+      </>
+    ),
+    xpLevels:
+      'Każdy poziom kosztuje o sto więcej niż poprzedni. Ciężar i tonaż nie dają niczego — doświadczenie za kilogramy rosłoby najszybciej tuż przed kontuzją.',
+    xpRank:
+      'Stopień w planie to co innego: liczy punkty za terminy i istnieje tylko z planem. Poziom postaci liczy każdy ruch, także bez planu.',
+    levelSmall: 'poziom',
+    today: (xp: string) => ` · dziś +${xp} XP`,
+    toNext: (next: number, left: string) => `do poziomu ${next} brakuje ${left} XP`,
+    newTitle: (title: string): ReactNode => (
+      <>
+        Nowy tytuł: <b>{title}</b>
+      </>
+    ),
+    upText: (xp: string, next: number, left: string) => `${xp} XP. Do poziomu ${next} brakuje ${left} XP.`,
+    jump: (n: number) => ` Przeskok o ${n} ${plural(n, ['poziom', 'poziomy', 'poziomów'])} naraz.`,
+  },
+  en: {
+    proud: 'On the move today, and properly',
+    happy: 'On the move today',
+    first: 'Waiting for your first move',
+    yesterday: 'On the move yesterday',
+    ago: (n: number) => `Last moved ${n} days ago`,
+    progressAria: (n: number) => `Progress to level ${n}`,
+    yours: (name: string) => `Your character · ${name}`,
+    level: (n: number) => `Level ${n}`,
+    meta: (xp: string, next: number, left: string) => `${xp} XP · ${left} XP to level ${next}`,
+    week: (line: string, week: string, today: string) => `${line}. Last seven days: +${week} XP, +${today} XP of it today.`,
+    nextTitle: (level: number, name: string) => `Next title at level ${level}: ${name}.`,
+    from: (workouts: string, snacks: string, cardio: string, badges: string) =>
+      `From: workouts ${workouts} · exercise snacks ${snacks} · steps & cardio ${cardio} · badges ${badges} XP.`,
+    who: 'Who grows with you',
+    whyXp: 'Where XP comes from',
+    xpWorkout: (w: number, again: number): ReactNode => (
+      <>
+        <b>Finished workout: {w} XP.</b> Another one the same day: {again} XP — the same movement patterns twice a day
+        don’t build twice as fast.
+      </>
+    ),
+    xpSnack: (snack: number, cap: number): ReactNode => (
+      <>
+        <b>Exercise snack: {snack} XP</b>, up to {cap} a day. Any more still count towards badges, but without XP: snacks
+        are meant to spread movement through the day, not turn into tapping.
+      </>
+    ),
+    xpCardio: (perMin: number, cap: number, base: string): ReactNode => (
+      <>
+        <b>Steps &amp; cardio: {perMin} XP per active minute</b>, up to {cap} a day. A vigorous minute (running, fast
+        cycling) counts double, as in the WHO guidelines; for steps, what counts is everything above {base}, at 100 a
+        minute, and for dance classes — just the dancing, not the explaining. The cap is half a workout — a walk should
+        add to training, not replace it.
+      </>
+    ),
+    xpBadge: (low: number, high: number): ReactNode => (
+      <>
+        <b>
+          Badge tier: {low} to {high} XP
+        </b>
+        , depending on the material. Exercise badges pay half, because there are four for every movement.
+      </>
+    ),
+    xpLevels:
+      'Each level costs a hundred more than the one before. Weight and tonnage earn nothing — XP for kilograms would grow fastest just before an injury.',
+    xpRank:
+      'Your plan rank is something else: it counts points for deadlines and only exists with a plan. Your character level counts every move, plan or no plan.',
+    levelSmall: 'level',
+    today: (xp: string) => ` · today +${xp} XP`,
+    toNext: (next: number, left: string) => `${left} XP to level ${next}`,
+    newTitle: (title: string): ReactNode => (
+      <>
+        New title: <b>{title}</b>
+      </>
+    ),
+    upText: (xp: string, next: number, left: string) => `${xp} XP. ${left} XP to level ${next}.`,
+    jump: (n: number) => ` A jump of ${n} ${pluralEn(n, 'level', 'levels')} at once.`,
+  },
+});
 
 /**
  * Postać: goryl, który rośnie razem z punktami doświadczenia.
@@ -19,7 +141,7 @@ import type { AppState } from '../types';
 
 export type Avatar = 'gustaw' | 'gosia';
 
-const num = (n: number): string => Math.round(n).toLocaleString('pl-PL');
+const num = (n: number): string => Math.round(n).toLocaleString(LOCALE);
 
 export const avatarOf = (state: AppState): Avatar => state.cfg.avatar ?? 'gustaw';
 
@@ -49,12 +171,12 @@ export function characterMood(
   const last = lastActiveDay(state);
   if (last === today)
     return sum.move >= XP.workout
-      ? { mood: 'proud', line: 'Dziś w ruchu, i to porządnie' }
-      : { mood: 'happy', line: 'Dziś w ruchu' };
-  if (!last) return { mood: 'longing', line: 'Czeka na pierwszy ruch' };
+      ? { mood: 'proud', line: T.proud }
+      : { mood: 'happy', line: T.happy };
+  if (!last) return { mood: 'longing', line: T.first };
   const gap = daysBetween(last, today);
-  if (gap <= 1) return { mood: 'content', line: 'Wczoraj w ruchu' };
-  return { mood: 'longing', line: `Ostatni ruch ${gap} dni temu` };
+  if (gap <= 1) return { mood: 'content', line: T.yesterday };
+  return { mood: 'longing', line: T.ago(gap) };
 }
 
 function XpBar({ lv }: { lv: LevelState }) {
@@ -62,7 +184,7 @@ function XpBar({ lv }: { lv: LevelState }) {
     <div
       className="xpbar"
       role="progressbar"
-      aria-label={`Postęp do poziomu ${lv.level + 1}`}
+      aria-label={T.progressAria(lv.level + 1)}
       aria-valuemin={0}
       aria-valuemax={lv.ceil - lv.floor}
       aria-valuenow={Math.round(lv.xp - lv.floor)}
@@ -86,29 +208,20 @@ export function CharacterCard({ state, onAvatar }: { state: AppState; onAvatar: 
           <Gorilla who={who} mood={mood} size={112} />
         </span>
         <div className="char-body">
-          <div className="today-tag light">Twoja postać · {WHO_NAME[who]}</div>
-          <div className="char-level">Poziom {lv.level}</div>
+          <div className="today-tag light">{T.yours(WHO_NAME[who])}</div>
+          <div className="char-level">{T.level(lv.level)}</div>
           <div className="char-title">{lv.title}</div>
           <XpBar lv={lv} />
-          <div className="char-meta">
-            {num(lv.xp)} XP · do poziomu {lv.level + 1} brakuje {num(lv.toNext)} XP
-          </div>
+          <div className="char-meta">{T.meta(num(lv.xp), lv.level + 1, num(lv.toNext))}</div>
         </div>
       </div>
+      <p className="tight">{T.week(line, num(sum.week), num(sum.today))}</p>
+      {lv.nextTitle && <p className="tight">{T.nextTitle(lv.nextTitle.level, lv.nextTitle.name)}</p>}
       <p className="tight">
-        {line}. Ostatnie siedem dni: +{num(sum.week)} XP, z tego dziś +{num(sum.today)} XP.
-      </p>
-      {lv.nextTitle && (
-        <p className="tight">
-          Kolejny tytuł na poziomie {lv.nextTitle.level}: {lv.nextTitle.name}.
-        </p>
-      )}
-      <p className="tight">
-        Skąd: treningi {num(sum.parts.trening)} · przekąski {num(sum.parts.przekaska)} · kroki i
-        cardio {num(sum.parts.cardio)} · odznaki {num(sum.parts.odznaka)} XP.
+        {T.from(num(sum.parts.trening), num(sum.parts.przekaska), num(sum.parts.cardio), num(sum.parts.odznaka))}
       </p>
 
-      <div className="segline">Kto rośnie razem z tobą</div>
+      <div className="segline">{T.who}</div>
       <Segmented<Avatar>
         value={who}
         onChange={onAvatar}
@@ -119,36 +232,14 @@ export function CharacterCard({ state, onAvatar }: { state: AppState; onAvatar: 
       />
 
       <details className="why">
-        <summary>Skąd się bierze doświadczenie</summary>
+        <summary>{T.whyXp}</summary>
         <div>
-          <p className="tight">
-            <b>Zamknięty trening: {XP.workout} XP.</b> Kolejny tego samego dnia: {XP.workoutAgain} XP —
-            te same wzorce ruchu dwa razy dziennie nie budują dwa razy szybciej.
-          </p>
-          <p className="tight">
-            <b>Przekąska ruchowa: {XP.snack} XP</b>, do {XP.snackCap} dziennie. Kolejne liczą się do
-            odznak, ale już bez doświadczenia: przekąski mają rozkładać ruch na cały dzień, a nie
-            zamieniać się w klikanie.
-          </p>
-          <p className="tight">
-            <b>Kroki i cardio: {XP.cardioPerMin} XP za minutę ruchu</b>, do {XP.cardioCap} dziennie.
-            Minuta intensywna (bieg, szybki rower) liczy się podwójnie, jak w zaleceniach WHO;
-            z kroków liczy się to, co ponad {BASE_STEPS.toLocaleString('pl-PL')}, przy 100 na minutę,
-            a z zajęć tańca — sam taniec, bez tłumaczenia.
-            Sufit to połowa treningu — spacer ma dokładać, a nie zastępować.
-          </p>
-          <p className="tight">
-            <b>Próg odznaki: od {XP.band[1]} do {XP.band[5]} XP</b>, zależnie od tworzywa. Odznaki
-            ćwiczeń płacą połowę, bo jest ich po cztery na każdy ruch.
-          </p>
-          <p className="tight">
-            Każdy poziom kosztuje o sto więcej niż poprzedni. Ciężar i tonaż nie dają niczego —
-            doświadczenie za kilogramy rosłoby najszybciej tuż przed kontuzją.
-          </p>
-          <p className="tight">
-            Stopień w planie to co innego: liczy punkty za terminy i istnieje tylko z planem.
-            Poziom postaci liczy każdy ruch, także bez planu.
-          </p>
+          <p className="tight">{T.xpWorkout(XP.workout, XP.workoutAgain)}</p>
+          <p className="tight">{T.xpSnack(XP.snack, XP.snackCap)}</p>
+          <p className="tight">{T.xpCardio(XP.cardioPerMin, XP.cardioCap, BASE_STEPS.toLocaleString(LOCALE))}</p>
+          <p className="tight">{T.xpBadge(XP.band[1], XP.band[5])}</p>
+          <p className="tight">{T.xpLevels}</p>
+          <p className="tight">{T.xpRank}</p>
         </div>
       </details>
     </div>
@@ -165,16 +256,16 @@ export function CharacterStrip({ state }: { state: AppState }) {
   return (
     <a className="charstrip" href="#/profil">
       <span className="charstrip-lvl">
-        <small>poziom</small>
+        <small>{T.levelSmall}</small>
         {lv.level}
       </span>
       <span className="charstrip-body">
         <span className="charstrip-title">
           {lv.title}
-          {sum.today > 0 && <em> · dziś +{num(sum.today)} XP</em>}
+          {sum.today > 0 && <em>{T.today(num(sum.today))}</em>}
         </span>
         <XpBar lv={lv} />
-        <span className="charstrip-meta">do poziomu {lv.level + 1} brakuje {num(lv.toNext)} XP</span>
+        <span className="charstrip-meta">{T.toNext(lv.level + 1, num(lv.toNext))}</span>
       </span>
       <span className="go" aria-hidden="true">
         →
@@ -189,11 +280,11 @@ export function LevelUp({ before, after }: { before: LevelState; after: LevelSta
   const jump = after.level - before.level;
   return (
     <div className="lvlup">
-      <div className="lvlup-num">Poziom {after.level}</div>
-      <p className="lvlup-title">{titled ? <>Nowy tytuł: <b>{after.title}</b></> : after.title}</p>
+      <div className="lvlup-num">{T.level(after.level)}</div>
+      <p className="lvlup-title">{titled ? T.newTitle(after.title) : after.title}</p>
       <p>
-        {num(after.xp)} XP. Do poziomu {after.level + 1} brakuje {num(after.toNext)} XP.
-        {jump > 1 ? ` Przeskok o ${jump} ${plural(jump, ['poziom', 'poziomy', 'poziomów'])} naraz.` : ''}
+        {T.upText(num(after.xp), after.level + 1, num(after.toNext))}
+        {jump > 1 ? T.jump(jump) : ''}
       </p>
       <p className="tight joke">{pick(LEVEL_UP, after.level)}</p>
     </div>

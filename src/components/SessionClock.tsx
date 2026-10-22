@@ -5,6 +5,36 @@ import type { Block } from '../engine/blocks';
 import type { Step } from '../engine/steps';
 import { formatClock } from './Timer';
 import type { Session } from '../types';
+import { text } from '../i18n';
+
+const T = text({
+  pl: {
+    clockAria: (min: number) => `Czas treningu: ${min} min`,
+    onStraight: 'na tym ćwiczeniu',
+    onPair: 'na tej parze',
+    onCircuit: 'na tym obwodzie',
+    done: 'zrobiona',
+    skip: 'pominięta',
+    now: 'teraz',
+    next: 'przed tobą',
+    partsAria: 'Części treningu',
+    partSr: (n: number, names: string, state: string) => `Część ${n}: ${names} — ${state}`,
+    partOf: (n: number, of: number) => `Część ${n} z ${of}`,
+  },
+  en: {
+    clockAria: (min: number) => `Workout time: ${min} min`,
+    onStraight: 'on this exercise',
+    onPair: 'on this pair',
+    onCircuit: 'on this circuit',
+    done: 'done',
+    skip: 'skipped',
+    now: 'now',
+    next: 'up next',
+    partsAria: 'Workout parts',
+    partSr: (n: number, names: string, state: string) => `Part ${n}: ${names} — ${state}`,
+    partOf: (n: number, of: number) => `Part ${n} of ${of}`,
+  },
+});
 
 /**
  * Zegar sesji na ekranie: licznik w pasku aplikacji i pasek części nad serią.
@@ -55,25 +85,25 @@ export function ClockPill({ begin }: { begin: number }) {
   const now = useSecondTick(begin);
   const secs = secsSince(begin, now);
   return (
-    <div className="clock-pill" role="timer" aria-label={`Czas treningu: ${Math.floor(secs / 60)} min`}>
+    <div className="clock-pill" role="timer" aria-label={T.clockAria(Math.floor(secs / 60))}>
       {formatClock(secs)}
     </div>
   );
 }
 
 const ON_PART: Record<Block['kind'], string> = {
-  straight: 'na tym ćwiczeniu',
-  pair: 'na tej parze',
-  circuit: 'na tym obwodzie',
+  straight: T.onStraight,
+  pair: T.onPair,
+  circuit: T.onCircuit,
 };
 
 type PartState = 'done' | 'skip' | 'now' | 'next';
 
 const PART_STATE: Record<PartState, string> = {
-  done: 'zrobiona',
-  skip: 'pominięta',
-  now: 'teraz',
-  next: 'przed tobą',
+  done: T.done,
+  skip: T.skip,
+  now: T.now,
+  next: T.next,
 };
 
 /**
@@ -104,20 +134,18 @@ export function PartStrip({
   };
   return (
     <div className="part-strip">
-      <ol className="part-segs" aria-label="Części treningu">
+      <ol className="part-segs" aria-label={T.partsAria}>
         {blocks.map((b) => {
           const st = stateOf(b);
           return (
             <li key={b.n} className={`part-seg ${st}`}>
-              <span className="sr-only">
-                Część {b.n}: {b.ids.map((id) => ex(id).name).join(' + ')} — {PART_STATE[st]}
-              </span>
+              <span className="sr-only">{T.partSr(b.n, b.ids.map((id) => ex(id).name).join(' + '), PART_STATE[st])}</span>
             </li>
           );
         })}
       </ol>
       <p className="part-line">
-        Część {idx + 1} z {blocks.length}
+        {T.partOf(idx + 1, blocks.length)}
         {start !== undefined && ` · ${ON_PART[kind]} ${formatClock(secsSince(start, now))}`}
       </p>
     </div>

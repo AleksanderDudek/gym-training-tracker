@@ -6,6 +6,12 @@ import type { Gag, Scene, Setting } from '../data/scenes';
 import type { PlanTemplate } from '../types';
 import { Gorilla } from './Gorilla';
 import { Mannequin } from './Mannequin';
+import { text } from '../i18n';
+
+const T = text({
+  pl: { pass: 'KARNET', queue: 'KOLEJKA: 0', days: 'DNI' },
+  en: { pass: 'PASS', queue: 'QUEUE: 0', days: 'DAYS' },
+});
 
 /**
  * Ilustracje do kart treningów i planów — sceny z ekipą goryli, przeniesione z systemu
@@ -225,7 +231,7 @@ function GagG({ g, set }: { g: Gag; set: Setting }) {
         <g transform="translate(500 70) rotate(-8)">
           <rect x="-46" y="-22" width="92" height="44" rx="6" fill="var(--c-orange-bg)" {...o} />
           <text x="0" y="8" textAnchor="middle" style={{ ...DISPLAY, fontSize: 22 }} fill={INK}>
-            KARNET
+            {T.pass}
           </text>
         </g>
       );
@@ -235,7 +241,7 @@ function GagG({ g, set }: { g: Gag; set: Setting }) {
           <rect x="-4" y="0" width="8" height="120" fill="#8d8b83" />
           <rect x="-66" y="-10" width="132" height="44" rx="4" fill="var(--surface)" {...o} />
           <text x="0" y="20" textAnchor="middle" style={{ ...DISPLAY, fontSize: 20 }} fill={INK}>
-            KOLEJKA: 0
+            {T.queue}
           </text>
         </g>
       );
@@ -320,7 +326,7 @@ function Calendar({ n }: { n: string }) {
         {n}
       </text>
       <text x="96" y="86" textAnchor="end" style={{ ...DISPLAY, fontWeight: 500, fontSize: 12 }} fill="var(--ink-soft)">
-        {n === '?' ? '' : 'DNI'}
+        {n === '?' ? '' : T.days}
       </text>
     </g>
   );

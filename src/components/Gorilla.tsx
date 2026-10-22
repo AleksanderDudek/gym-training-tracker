@@ -19,6 +19,52 @@
  */
 
 import type { ReactNode } from 'react';
+import { text } from '../i18n';
+
+const L = text({
+  pl: {
+    longing: 'Tęsknota — odznaka jeszcze nie zdobyta',
+    content: 'Zadowolenie — brąz',
+    proud: 'Duma — srebro',
+    happy: 'Radość — złoto',
+    amazed: 'Zachwyt — platyna',
+    euphoric: 'Euforia — szmaragd',
+    tired: 'Zmęczenie',
+    sore: 'Zakwasy',
+    record: 'Nowy rekord',
+    missed: 'Opuszczony trening',
+    comeback: 'Powrót po przerwie',
+    share: 'Chwalę się',
+    coffee: 'Espresso na spokojnie',
+    wise: 'Rada trenera',
+    approve: 'Aprobata',
+    calm: 'Pewność i spokój',
+    wink: 'Porozumiewawcze mrugnięcie',
+    coach: 'Trener Siwy',
+    vest: 'TRENER',
+  },
+  en: {
+    longing: 'Longing — badge not earned yet',
+    content: 'Content — bronze',
+    proud: 'Pride — silver',
+    happy: 'Joy — gold',
+    amazed: 'Delight — platinum',
+    euphoric: 'Euphoria — emerald',
+    tired: 'Tired',
+    sore: 'Sore muscles',
+    record: 'New record',
+    missed: 'Missed workout',
+    comeback: 'Back after a break',
+    share: 'Showing off',
+    coffee: 'A relaxed espresso',
+    wise: 'Coach’s tip',
+    approve: 'Approval',
+    calm: 'Calm confidence',
+    wink: 'Knowing wink',
+    coach: 'Coach Siwy',
+    vest: 'COACH',
+  },
+});
 
 export type Who = 'gustaw' | 'gosia' | 'siwy';
 export type TraineeMood =
@@ -36,29 +82,29 @@ type Extra = 'sweat' | 'blush' | 'tears' | 'sparkle' | 'pain' | 'lines' | 'drop'
 interface Spec { l: Arm; r: Arm; eyes: Eyes; brows: Brows; mouth: Mouth; x?: Extra[]; label: string }
 
 export const TRAINEE_MOODS: Record<TraineeMood, Spec> = {
-  longing:  { l: 'down',  r: 'down',     eyes: 'side',   brows: 'sad',     mouth: 'pout',   x: ['drop'],                      label: 'Tęsknota — odznaka jeszcze nie zdobyta' },
-  content:  { l: 'down',  r: 'thumb',    eyes: 'open',   brows: 'relaxed', mouth: 'smile',                                    label: 'Zadowolenie — brąz' },
-  proud:    { l: 'hip',   r: 'flex',     eyes: 'open',   brows: 'one',     mouth: 'smirk',                                    label: 'Duma — srebro' },
-  happy:    { l: 'flex',  r: 'flex',     eyes: 'happy',  brows: 'relaxed', mouth: 'grin',   x: ['blush'],                     label: 'Radość — złoto' },
-  amazed:   { l: 'up',    r: 'up',       eyes: 'wide',   brows: 'up',      mouth: 'o',      x: ['sparkle'],                   label: 'Zachwyt — platyna' },
-  euphoric: { l: 'up',    r: 'up',       eyes: 'happy',  brows: 'up',      mouth: 'laugh',  x: ['tears', 'sparkle', 'blush'], label: 'Euforia — szmaragd' },
-  tired:    { l: 'hang',  r: 'hang',     eyes: 'droopy', brows: 'sad',     mouth: 'tongue', x: ['sweat', 'lines'],            label: 'Zmęczenie' },
-  sore:     { l: 'down',  r: 'shoulder', eyes: 'wince',  brows: 'angry',   mouth: 'grit',   x: ['pain', 'sweat'],             label: 'Zakwasy' },
-  record:   { l: 'fist',  r: 'point',    eyes: 'wide',   brows: 'up',      mouth: 'laugh',  x: ['stars'],                     label: 'Nowy rekord' },
-  missed:   { l: 'down',  r: 'head',     eyes: 'open',   brows: 'sad',     mouth: 'wavy',   x: ['drop', 'blush'],             label: 'Opuszczony trening' },
-  comeback: { l: 'fist',  r: 'hip',      eyes: 'focus',  brows: 'angry',   mouth: 'smirk',  x: ['lines'],                     label: 'Powrót po przerwie' },
-  share:    { l: 'peace', r: 'phone',    eyes: 'wink',   brows: 'one',     mouth: 'grin',                                     label: 'Chwalę się' },
+  longing:  { l: 'down',  r: 'down',     eyes: 'side',   brows: 'sad',     mouth: 'pout',   x: ['drop'],                      label: L.longing },
+  content:  { l: 'down',  r: 'thumb',    eyes: 'open',   brows: 'relaxed', mouth: 'smile',                                    label: L.content },
+  proud:    { l: 'hip',   r: 'flex',     eyes: 'open',   brows: 'one',     mouth: 'smirk',                                    label: L.proud },
+  happy:    { l: 'flex',  r: 'flex',     eyes: 'happy',  brows: 'relaxed', mouth: 'grin',   x: ['blush'],                     label: L.happy },
+  amazed:   { l: 'up',    r: 'up',       eyes: 'wide',   brows: 'up',      mouth: 'o',      x: ['sparkle'],                   label: L.amazed },
+  euphoric: { l: 'up',    r: 'up',       eyes: 'happy',  brows: 'up',      mouth: 'laugh',  x: ['tears', 'sparkle', 'blush'], label: L.euphoric },
+  tired:    { l: 'hang',  r: 'hang',     eyes: 'droopy', brows: 'sad',     mouth: 'tongue', x: ['sweat', 'lines'],            label: L.tired },
+  sore:     { l: 'down',  r: 'shoulder', eyes: 'wince',  brows: 'angry',   mouth: 'grit',   x: ['pain', 'sweat'],             label: L.sore },
+  record:   { l: 'fist',  r: 'point',    eyes: 'wide',   brows: 'up',      mouth: 'laugh',  x: ['stars'],                     label: L.record },
+  missed:   { l: 'down',  r: 'head',     eyes: 'open',   brows: 'sad',     mouth: 'wavy',   x: ['drop', 'blush'],             label: L.missed },
+  comeback: { l: 'fist',  r: 'hip',      eyes: 'focus',  brows: 'angry',   mouth: 'smirk',  x: ['lines'],                     label: L.comeback },
+  share:    { l: 'peace', r: 'phone',    eyes: 'wink',   brows: 'one',     mouth: 'grin',                                     label: L.share },
 };
 
 export const COACH_MOODS: Record<CoachMood, Spec> = {
-  coffee:  { l: 'sip',   r: 'down',  eyes: 'calm',  brows: 'relaxed', mouth: 'smile',                  label: 'Espresso na spokojnie' },
-  wise:    { l: 'down',  r: 'point', eyes: 'over',  brows: 'one',     mouth: 'smirk', x: ['bulb'],     label: 'Rada trenera' },
-  approve: { l: 'down',  r: 'thumb', eyes: 'happy', brows: 'relaxed', mouth: 'grin',                   label: 'Aprobata' },
-  calm:    { l: 'cross', r: 'cross', eyes: 'calm',  brows: 'relaxed', mouth: 'smile',                  label: 'Pewność i spokój' },
-  wink:    { l: 'sip',   r: 'thumb', eyes: 'wink',  brows: 'one',     mouth: 'smirk', x: ['sparkle'],  label: 'Porozumiewawcze mrugnięcie' },
+  coffee:  { l: 'sip',   r: 'down',  eyes: 'calm',  brows: 'relaxed', mouth: 'smile',                  label: L.coffee },
+  wise:    { l: 'down',  r: 'point', eyes: 'over',  brows: 'one',     mouth: 'smirk', x: ['bulb'],     label: L.wise },
+  approve: { l: 'down',  r: 'thumb', eyes: 'happy', brows: 'relaxed', mouth: 'grin',                   label: L.approve },
+  calm:    { l: 'cross', r: 'cross', eyes: 'calm',  brows: 'relaxed', mouth: 'smile',                  label: L.calm },
+  wink:    { l: 'sip',   r: 'thumb', eyes: 'wink',  brows: 'one',     mouth: 'smirk', x: ['sparkle'],  label: L.wink },
 };
 
-export const WHO_NAME: Record<Who, string> = { gustaw: 'Gustaw', gosia: 'Gosia', siwy: 'Trener Siwy' };
+export const WHO_NAME: Record<Who, string> = { gustaw: 'Gustaw', gosia: 'Gosia', siwy: L.coach };
 
 /* ---------------- Wygląd ---------------- */
 
@@ -484,7 +530,7 @@ function Torso({ who }: { who: Who }) {
           <path d="M120 196 V222 M120 244 V270" stroke="var(--c-mid, #b0aea5)" strokeWidth={2.4} />
           <path d="M66 150 L174 150" stroke={ORANGE} strokeWidth={0} />
           <path d="M60 200 L90 196 M180 200 L150 196" stroke={ORANGE} strokeWidth={5} strokeLinecap="round" />
-          <text x={120} y={238} textAnchor="middle" fontFamily="var(--font-display, Oswald, sans-serif)" fontWeight={600} fontSize={11} letterSpacing="1" fill="var(--c-light, #faf9f5)">TRENER</text>
+          <text x={120} y={238} textAnchor="middle" fontFamily="var(--font-display, Oswald, sans-serif)" fontWeight={600} fontSize={11} letterSpacing="1" fill="var(--c-light, #faf9f5)">{L.vest}</text>
           {/* gwizdek na smyczy */}
           <path d="M100 124 Q104 160 112 176 M140 124 Q136 160 128 176" fill="none" stroke={ORANGE} strokeWidth={2.6} />
           <g transform="translate(120 182)">

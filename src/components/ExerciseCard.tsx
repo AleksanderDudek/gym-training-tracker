@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { EFFORT, ex, ladderFor } from '../data/exercises';
 import { EX_JOKES } from '../data/exjokes';
 import { levelHint, whyText } from '../engine/hints';
@@ -7,6 +7,68 @@ import { exercisePath } from '../routing';
 import { Chip, Segmented } from './ui';
 import { Timer } from './Timer';
 import type { AppState, EffortKey, ExerciseId, SetResult } from '../types';
+import { text } from '../i18n';
+
+const T = text({
+  pl: {
+    secs: 'sekundy',
+    reps: 'powtórzenia',
+    secsShort: 's',
+    repsShort: 'powt.',
+    needOne: 'Wpisz wynik przynajmniej jednej serii.',
+    video: 'Zobacz technikę na wideo →',
+    swappedFor: (name: string) => `Zamiennik za: ${name}.`,
+    swapToday: 'Maszyna zajęta albo brak sprzętu? Zamień na dziś:',
+    backTo: (name: string) => `Wróć do: ${name}`,
+    timed: (
+      <>
+        To ćwiczenie mierzy się <b>w sekundach</b>, nie w powtórzeniach.
+      </>
+    ) as ReactNode,
+    calibTimer: 'Próba idzie na stoperze: włącz, wytrzymaj tyle, ile dasz radę, zatrzymaj.',
+    countTimer: 'Odliczanie startuje od przepisanego czasu i samo wpisuje wynik.',
+    amrap: (unit: string) => `${unit} — ile dasz radę`,
+    weight: 'ciężar',
+    calibEffort: 'Ile zostało w zapasie na koniec próby? Od tego zależy twój poziom startowy.',
+    effort: 'Ile zostało w zapasie po ostatniej serii?',
+    why: 'Dlaczego taki cel?',
+    update: 'Zaktualizuj wynik',
+    save: 'Zapisz wynik',
+    clear: 'Usuń wynik tego ćwiczenia',
+    restore: 'Przywróć do treningu',
+    skip: 'Pomiń to ćwiczenie',
+    heavy: 'Serie oznaczone ▲ robisz cięższym obciążeniem.',
+  },
+  en: {
+    secs: 'seconds',
+    reps: 'reps',
+    secsShort: 's',
+    repsShort: 'reps',
+    needOne: 'Enter a result for at least one set.',
+    video: 'Watch the technique video →',
+    swappedFor: (name: string) => `Swapped in for: ${name}.`,
+    swapToday: 'Machine taken or no equipment? Swap for today:',
+    backTo: (name: string) => `Back to: ${name}`,
+    timed: (
+      <>
+        This exercise is measured <b>in seconds</b>, not reps.
+      </>
+    ) as ReactNode,
+    calibTimer: 'The test set runs on the stopwatch: start it, hold as long as you can, then stop.',
+    countTimer: 'The countdown starts from the prescribed time and fills in the result by itself.',
+    amrap: (unit: string) => `${unit} — as many as you can`,
+    weight: 'weight',
+    calibEffort: 'How much was left in the tank at the end of the test set? Your starting level depends on it.',
+    effort: 'How much was left in the tank after the last set?',
+    why: 'Why this target?',
+    update: 'Update result',
+    save: 'Save result',
+    clear: 'Delete this exercise’s result',
+    restore: 'Put back into the workout',
+    skip: 'Skip this exercise',
+    heavy: 'Sets marked ▲ are done with a heavier weight.',
+  },
+});
 
 interface Props {
   state: AppState;
@@ -46,8 +108,8 @@ export function ExerciseCard({ state, id, onSave, onClear, onSkip, onToast, tag,
 
   const hint = levelHint(state, id, values, effort);
   const timed = m.unit === 'secs';
-  const unitLabel = timed ? 'sekundy' : 'powtórzenia';
-  const unitShort = timed ? 's' : 'powt.';
+  const unitLabel = timed ? T.secs : T.reps;
+  const unitShort = timed ? T.secsShort : T.repsShort;
   const calib = p.phase === 'calib';
 
   const setValue = (i: number, v: string) => {
@@ -62,7 +124,7 @@ export function ExerciseCard({ state, id, onSave, onClear, onSkip, onToast, tag,
       w: weights[i] ?? null,
     }));
     if (!out.some((r) => r.reps > 0)) {
-      onToast('Wpisz wynik przynajmniej jednej serii.');
+      onToast(T.needOne);
       return;
     }
     onSave(id, out, effort);
@@ -88,18 +150,16 @@ export function ExerciseCard({ state, id, onSave, onClear, onSkip, onToast, tag,
           <p className="hint">{m.hint}</p>
           {EX_JOKES[id] && <p className="exjoke">{EX_JOKES[id]}</p>}
           <a className="vidlink" href={exercisePath(id)}>
-            Zobacz technikę na wideo →
+            {T.video}
           </a>
           {swaps && onSwap && swaps.options.length > 0 && !saved && (
             <div className="swaprow">
               <span>
-                {swaps.orig !== id
-                  ? `Zamiennik za: ${ex(swaps.orig).name}.`
-                  : 'Maszyna zajęta albo brak sprzętu? Zamień na dziś:'}
+                {swaps.orig !== id ? T.swappedFor(ex(swaps.orig).name) : T.swapToday}
               </span>
               {swaps.options.map((o) => (
                 <button key={o} type="button" className="btn ghost sm" onClick={() => onSwap(swaps.orig, o)}>
-                  {o === swaps.orig ? `Wróć do: ${ex(o).name}` : ex(o).name}
+                  {o === swaps.orig ? T.backTo(ex(o).name) : ex(o).name}
                 </button>
               ))}
             </div>
@@ -111,10 +171,8 @@ export function ExerciseCard({ state, id, onSave, onClear, onSkip, onToast, tag,
 
           {timed && (
             <p className="hint">
-              To ćwiczenie mierzy się <b>w sekundach</b>, nie w powtórzeniach.{' '}
-              {calib
-                ? 'Próba idzie na stoperze: włącz, wytrzymaj tyle, ile dasz radę, zatrzymaj.'
-                : 'Odliczanie startuje od przepisanego czasu i samo wpisuje wynik.'}
+              {T.timed}{' '}
+              {calib ? T.calibTimer : T.countTimer}
             </p>
           )}
 
@@ -126,7 +184,7 @@ export function ExerciseCard({ state, id, onSave, onClear, onSkip, onToast, tag,
                   {r.heavy ? '▲' : ''}
                 </span>
                 <label className="fld">
-                  <span>{r.amrap ? `${unitLabel} — ile dasz radę` : unitLabel}</span>
+                  <span>{r.amrap ? T.amrap(unitLabel) : unitLabel}</span>
                   <span className="withunit">
                     <input
                       type="number"
@@ -141,7 +199,7 @@ export function ExerciseCard({ state, id, onSave, onClear, onSkip, onToast, tag,
                 </label>
                 {r.w !== null ? (
                   <label className="fld">
-                    <span>ciężar</span>
+                    <span>{T.weight}</span>
                     <select
                       value={String(weights[i] ?? r.w)}
                       onChange={(e) => {
@@ -172,9 +230,7 @@ export function ExerciseCard({ state, id, onSave, onClear, onSkip, onToast, tag,
           ))}
 
           <div className="segline">
-            {calib
-              ? 'Ile zostało w zapasie na koniec próby? Od tego zależy twój poziom startowy.'
-              : 'Ile zostało w zapasie po ostatniej serii?'}
+            {calib ? T.calibEffort : T.effort}
           </div>
           <Segmented
             value={effort}
@@ -192,28 +248,28 @@ export function ExerciseCard({ state, id, onSave, onClear, onSkip, onToast, tag,
           />
 
           <details className="why">
-            <summary>Dlaczego taki cel?</summary>
+            <summary>{T.why}</summary>
             <div dangerouslySetInnerHTML={{ __html: whyText(state, id) }} />
           </details>
 
           <button className="btn wide" onClick={save}>
-            {prev ? 'Zaktualizuj wynik' : 'Zapisz wynik'}
+            {prev ? T.update : T.save}
           </button>
           <div style={{ height: 9 }} />
           {prev && (
             <>
               <button className="btn ghost wide" onClick={() => onClear(id)}>
-                Usuń wynik tego ćwiczenia
+                {T.clear}
               </button>
               <div style={{ height: 9 }} />
             </>
           )}
           <button className="btn ghost wide" onClick={() => onSkip(id)}>
-            {skipped ? 'Przywróć do treningu' : 'Pomiń to ćwiczenie'}
+            {skipped ? T.restore : T.skip}
           </button>
           {p.trans && (
             <p className="hint" style={{ marginTop: 12 }}>
-              Serie oznaczone ▲ robisz cięższym obciążeniem.
+              {T.heavy}
             </p>
           )}
         </div>
