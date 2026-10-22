@@ -2,6 +2,7 @@
   "id": "costa",
   "name": "Costa Coffee",
   "kind": "kawiarnia",
+  "osm": { "brands": ["Costa Coffee", "Costa"] },
   "market": "PL",
   "source": {
     "url": "https://www.costacoffee.pl/docs/wartosci-odzywcze",

@@ -2,6 +2,7 @@
   "id": "bp",
   "name": "bp / Wild Bean Cafe",
   "kind": "stacja",
+  "osm": { "brands": ["BP"] },
   "market": "PL",
   "source": {
     "url": "https://www.bp.com/content/dam/bp/country-sites/pl_pl/poland/home/regulaminy/wbc_alergeny.pdf",

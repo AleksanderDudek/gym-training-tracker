@@ -2,6 +2,7 @@
   "id": "popeyes",
   "name": "Popeyes",
   "kind": "fast-food",
+  "osm": { "brands": ["Popeyes"] },
   "market": "PL",
   "source": {
     "url": "https://cdn.sanity.io/files/czqk28jt/staging_plk_pl/aba198a321c949d7ee9a39ac06e7662e0b2db88e.pdf",

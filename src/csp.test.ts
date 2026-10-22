@@ -46,6 +46,9 @@ const NAVIGATION = new Set([
   'pl.openfoodfacts.org',
   'prices.openfoodfacts.org',
   'www.openstreetmap.org',
+  // „Prowadź” w karcie lokalu: trasa w aplikacji map urządzenia — Apple Maps albo Google Maps.
+  'maps.apple.com',
+  'www.google.com',
   // Sklepy internetowe: odnośniki do sklepów i stron produktów, nic z nich nie jest pobierane.
   ...ONLINE_SHOPS.map((shop) => new URL(shop.url).hostname),
 ]);

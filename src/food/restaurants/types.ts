@@ -125,6 +125,12 @@ export interface ChainData {
   id: string;
   name: string;
   kind: ChainKind;
+  /**
+   * How the chain's venues are tagged in OpenStreetMap: their `brand` (or, without one, `name`), as
+   * written there. Matched folded and from the start of the tag (`brandOf` in brands.ts), so "Orlen"
+   * also finds "ORLEN Stop Cafe". Absent: the chain is never placed on the map.
+   */
+  osm?: { brands: string[] };
   /** Whose menu the numbers are from: "PL", or another market when the Polish one publishes none. */
   market: string;
   source: {

@@ -1,6 +1,6 @@
 import 'leaflet/dist/leaflet.css';
 import { Crosshair, LoaderCircle, LocateFixed, RefreshCw } from 'lucide-react';
-import { useCallback, useId, useMemo, useRef } from 'react';
+import { useCallback, useId, useMemo, useRef, useState } from 'react';
 import { pluralEn, text } from '../../../i18n';
 import { useDataset } from '../../hooks/useDataset';
 import { useGeolocation, type GeoState } from '../../hooks/useGeolocation';
@@ -12,7 +12,7 @@ import { formatDistance } from '../../nearby/geo';
 import { DEFAULT_RADIUS, radiusLabel } from '../../nearby/radius';
 import { placeShops, summarizeChains } from '../../nearby/summary';
 import type { LatLon } from '../../nearby/types';
-import { nearbyFromParams, nearbyToParams, type NearbyState } from '../../nearby/url';
+import { nearbyFromParams, nearbyToParams, type NearbyState, type NearbyView } from '../../nearby/url';
 import { RECIPES } from '../../recipes/catalog';
 import { chainsWithFood } from '../../recipes/chains';
 import { readyProducts } from '../../recipes/ready';
@@ -23,6 +23,8 @@ import { StatusScreen } from '../common/StatusScreen';
 import { ChipRow } from '../recipes/ChipRow';
 import { ReadyProducts } from '../recipes/ReadyProducts';
 import { RecipeCard } from '../recipes/RecipeCard';
+import { Segmented } from '../../../components/ui';
+import { EatNow } from './EatNow';
 import { RadiusSlider } from './RadiusSlider';
 import { StoreMap } from './StoreMap';
 import { COMMON } from '../common/text';
@@ -64,6 +66,9 @@ const T = text({
     emptyHere: 'Tu jeszcze nic – poczekaj na sklepy albo zwiększ promień.',
     emptyNoPlace: 'Najpierw ustal, gdzie jesteś.',
     ready: 'Gotowe produkty białkowe w tych sklepach',
+    views: 'Co w pobliżu',
+    eat: 'Zjedz teraz',
+    shops: 'Zakupy i przepisy',
   },
   en: {
     savedLocating: 'Showing the last saved place while I look for your current location…',
@@ -100,10 +105,31 @@ const T = text({
     emptyHere: 'Nothing here yet – wait for the shops or widen the radius.',
     emptyNoPlace: 'First set where you are.',
     ready: 'Ready protein products in these shops',
+    views: 'What’s nearby',
+    eat: 'Eat now',
+    shops: 'Shopping & recipes',
   },
 });
 
 const RADIUS_KEY = 'produkty-pl:radius';
+const VIEW_KEY = 'produkty-pl:nearby-view';
+
+/** The view used last on this device: a link without `widok` opens it. New visitors start at „Zjedz teraz”. */
+function savedView(): NearbyView {
+  try {
+    return window.localStorage.getItem(VIEW_KEY) === 'shops' ? 'shops' : 'eat';
+  } catch {
+    return 'eat';
+  }
+}
+
+function rememberView(view: NearbyView): void {
+  try {
+    window.localStorage.setItem(VIEW_KEY, view);
+  } catch {
+    // Niezapamiętany: następna wizyta zacznie od „Zjedz teraz”.
+  }
+}
 
 function savedRadius(): number {
   try {
@@ -147,22 +173,67 @@ function statusLine(geo: GeoState, shops: ShopsState, radius: number, knownCount
 }
 
 /**
- * W pobliżu: gdzie jesteś (lokalizacja przeglądarki albo stuknięcie w mapę), sklepy spożywcze
- * z OpenStreetMap w wybranym promieniu i przepisy, które zrobisz po wizycie w jednym z nich.
- * W adresie stoją tylko promień, sieć i otwarty produkt (`#/w-poblizu?r=500&sklep=lidl&p=…`) —
- * pozycji nie ma w nim celowo: wysłany link powiedziałby odbiorcy, gdzie byłeś.
+ * W pobliżu: gdzie jesteś (lokalizacja przeglądarki, wpisany adres albo stuknięcie w mapę) i dwa
+ * widoki z tego miejsca — „Zjedz teraz” (lokale i sklepy z tym, co pasuje do dzisiejszego celu)
+ * i „Zakupy i przepisy” (sklepy spożywcze i przepisy, które zrobisz po wizycie w jednym z nich).
+ * W adresie stoją widok, promień, sieć, otwarte miejsce albo produkt
+ * (`#/w-poblizu?widok=sklepy&r=500&sklep=lidl&p=…`) — pozycji nie ma w nim celowo: wysłany link
+ * powiedziałby odbiorcy, gdzie byłeś.
  */
 export default function NearbyPage() {
+  const [defaultView] = useState(savedView);
+  const read = useCallback((params: URLSearchParams) => nearbyFromParams(params, savedRadius(), defaultView), [defaultView]);
+  const write = useCallback((state: NearbyState) => nearbyToParams(state, defaultView), [defaultView]);
+  const [state, update, closeEntry] = useUrlState<NearbyState>(read, write);
+  const [geo, { locate, setManual }] = useGeolocation();
+  const setRadius = (radius: number) => {
+    rememberRadius(radius);
+    update({ radius });
+  };
+  const place = { state, update, closeEntry, geo, locate, setManual, setRadius };
+
+  return (
+    <>
+      <div className="wrap fd-near-views">
+        <Segmented<NearbyView>
+          label={T.views}
+          options={[
+            { key: 'eat', label: T.eat },
+            { key: 'shops', label: T.shops },
+          ]}
+          value={state.view}
+          onChange={(view) => {
+            rememberView(view);
+            update({ view, place: null, product: null });
+          }}
+        />
+      </div>
+      {state.view === 'eat' ? <EatNow {...place} /> : <ShopsView {...place} />}
+    </>
+  );
+}
+
+type ViewProps = Parameters<typeof EatNow>[0];
+
+/** „Zakupy i przepisy” czeka na bazę produktów: bez niej nie ma ani przepisów, ani gotowych produktów. */
+function ShopsView(props: ViewProps) {
   const data = useDataset();
   if (data.status === 'loading') return <StatusScreen kind="loading" />;
   if (data.status === 'error') return <StatusScreen kind="error" message={data.message} onRetry={data.retry} />;
-  return <Nearby dataset={data.dataset} products={data.products} />;
+  return <Nearby dataset={data.dataset} products={data.products} {...props} />;
 }
 
-function Nearby({ dataset, products }: { dataset: Dataset; products: IndexedProduct[] }) {
-  const read = useCallback((params: URLSearchParams) => nearbyFromParams(params, savedRadius()), []);
-  const [state, update, closeEntry] = useUrlState<NearbyState>(read, nearbyToParams);
-  const [geo, { locate, setManual }] = useGeolocation();
+function Nearby({
+  dataset,
+  products,
+  state,
+  update,
+  closeEntry,
+  geo,
+  locate,
+  setManual,
+  setRadius,
+}: ViewProps & { dataset: Dataset; products: IndexedProduct[] }) {
   const [shopsState, retry] = useNearbyShops(geo.position, state.radius);
   const dict = dataset.dictionaries;
   const { candidates } = recipeIndex(products);
@@ -228,10 +299,6 @@ function Nearby({ dataset, products }: { dataset: Dataset; products: IndexedProd
   const open = useCallback((code: string) => update({ product: code }, { push: true }), [update]);
   const mapCenter = useRef<LatLon | null>(null);
   const note = placeNote(geo);
-  const setRadius = (radius: number) => {
-    rememberRadius(radius);
-    update({ radius });
-  };
   // „Pokaż te przepisy” z dymka na mapie: wybór sieci i przejście do listy, która się właśnie zmieniła.
   const showChain = (chain: string | null) => {
     update({ store: chain });

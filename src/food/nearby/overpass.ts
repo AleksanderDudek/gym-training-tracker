@@ -42,7 +42,7 @@ export function buildQuery(center: LatLon, radius: number): string {
   );
 }
 
-interface Element {
+export interface Element {
   type: string;
   id: number;
   lat?: number;
@@ -51,10 +51,25 @@ interface Element {
   tags?: Record<string, string>;
 }
 
-function address(tags: Record<string, string>): string | null {
+export function address(tags: Record<string, string>): string | null {
   const street = tags['addr:street'] ?? tags['addr:place'];
   if (!street) return null;
   return [street, tags['addr:housenumber']].filter(Boolean).join(' ');
+}
+
+/**
+ * The elements of a complete Overpass answer. Throws on anything else: not Overpass JSON at all, or
+ * JSON carrying a runtime error (a timeout or running out of memory comes with status 200, partial
+ * elements and a `remark` - taken as an answer it would say "nothing here" and be cached for a day).
+ */
+export function elementsOf(json: unknown): Element[] {
+  const response = json as { elements?: unknown; remark?: unknown } | null;
+  const elements = response?.elements;
+  if (!Array.isArray(elements)) throw new Error('Not an Overpass response');
+  if (typeof response?.remark === 'string' && /error|timed out|out of memory/i.test(response.remark)) {
+    throw new Error(`Overpass: ${response.remark}`);
+  }
+  return elements as Element[];
 }
 
 /**
@@ -65,16 +80,11 @@ function address(tags: Record<string, string>): string | null {
  * and be cached for a day.
  */
 export function parseShops(json: unknown): Shop[] {
-  const response = json as { elements?: unknown; remark?: unknown } | null;
-  const elements = response?.elements;
-  if (!Array.isArray(elements)) throw new Error('Not an Overpass response');
-  if (typeof response?.remark === 'string' && /error|timed out|out of memory/i.test(response.remark)) {
-    throw new Error(`Overpass: ${response.remark}`);
-  }
+  const elements = elementsOf(json);
 
   const seen = new Set<string>();
   const shops: Shop[] = [];
-  for (const element of elements as Element[]) {
+  for (const element of elements) {
     const id = `${element.type}/${element.id}`;
     const lat = element.lat ?? element.center?.lat;
     const lon = element.lon ?? element.center?.lon;
@@ -96,7 +106,7 @@ export function parseShops(json: unknown): Shop[] {
   return shops;
 }
 
-interface FetchOptions {
+export interface FetchOptions {
   signal?: AbortSignal;
   fetchImpl?: typeof fetch;
   endpoints?: string[];
@@ -141,7 +151,12 @@ function sleep(ms: number, signal?: AbortSignal): Promise<void> {
  * preflight OPTIONS is refused by Overpass (406), so a JSON body would fail in
  * the browser before it was ever sent.
  */
-export async function fetchShops(center: LatLon, radius: number, options: FetchOptions = {}): Promise<Shop[]> {
+export function fetchShops(center: LatLon, radius: number, options: FetchOptions = {}): Promise<Shop[]> {
+  return fetchOverpass(buildQuery(center, radius), parseShops, options);
+}
+
+/** One Overpass question with the servers' fallbacks; `parse` turns the JSON into the answer or throws. */
+export async function fetchOverpass<T>(query: string, parse: (json: unknown) => T, options: FetchOptions = {}): Promise<T> {
   const {
     signal,
     fetchImpl = fetch,
@@ -149,7 +164,7 @@ export async function fetchShops(center: LatLon, radius: number, options: FetchO
     retryDelayMs = 2000,
     timeoutMs = REQUEST_TIMEOUT_MS,
   } = options;
-  const body = new URLSearchParams({ data: buildQuery(center, radius) });
+  const body = new URLSearchParams({ data: query });
   const attempts = [...endpoints, ...endpoints.slice(0, 1)];
 
   for (const [i, endpoint] of attempts.entries()) {
@@ -158,7 +173,7 @@ export async function fetchShops(center: LatLon, radius: number, options: FetchO
     try {
       const response = await fetchImpl(endpoint, { method: 'POST', body, signal: attempt.signal });
       if (!response.ok || !response.headers.get('content-type')?.includes('json')) continue;
-      return parseShops(await response.json());
+      return parse(await response.json());
     } catch (error) {
       // The caller's own abort ends everything; a timeout or a bad answer
       // only ends this server's turn.

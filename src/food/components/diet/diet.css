@@ -419,3 +419,6 @@ p.fd-diet-resthead b{color:var(--ink)}
 .grp p.fd-diet-fhead{margin:0;font-size:13.5px;line-height:1.4}
 .grp p.fd-diet-fbody{margin:3px 0 0;font-size:13px;line-height:1.45;color:var(--ink-soft);max-width:62ch}
 .fd-diet-fchip{display:inline-block;padding:0 6px;border:1px solid currentColor;border-radius:9px;font-size:11.5px;font-weight:600;white-space:nowrap}
+/* „Poza domem?” pod „Co teraz?” — wejście do „Zjedz teraz” w W pobliżu. */
+.fd-diet-eatout{display:inline-flex;align-items:center;gap:6px;min-height:44px;font-weight:600;color:var(--steel);
+  text-decoration:underline;text-underline-offset:2px}

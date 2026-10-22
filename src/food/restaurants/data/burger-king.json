@@ -2,6 +2,7 @@
   "id": "burger-king",
   "name": "Burger King",
   "kind": "fast-food",
+  "osm": { "brands": ["Burger King"] },
   "market": "PL",
   "source": {
     "url": "https://cdn.sanity.io/files/czqk28jt/staging_bk_pl/5ec3aec56218c5e19b8e1f96f48b848fd1426531.pdf",

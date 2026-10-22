@@ -2,6 +2,7 @@
   "id": "green-caffe-nero",
   "name": "Green Caffè Nero",
   "kind": "kawiarnia",
+  "osm": { "brands": ["Green Caffè Nero", "Caffè Nero"] },
   "market": "PL",
   "source": {
     "url": "https://caffenerowebsite.blob.core.windows.net/production/data/menus/caffenero_nutrition_allergens-pl_PL.pdf",

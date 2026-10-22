@@ -2,6 +2,7 @@
   "id": "da-grasso",
   "name": "Da Grasso",
   "kind": "pizzeria",
+  "osm": { "brands": ["Da Grasso"] },
   "market": "PL",
   "source": {
     "url": "https://cdn.prd02dagpl.solutions4delivery.com/ecom-cms/ecom-cms/assets/Scalone_pliki_26_08_2026_bbd7b36b94.pdf",

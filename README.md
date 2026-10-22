@@ -349,7 +349,7 @@ i drugi, obok wyniku sesji, po każdym zamkniętym treningu.
 | --- | --- | --- |
 | Dziś | `#/sesja` | Co masz dziś do zrobienia według planu, ważenie, karta jedzenia (kalorie i białko dnia — gdy prowadzisz dietę), pasek postaci, przekąska ruchowa i rada dnia; w trakcie — bieżąca sesja. |
 | Trening | `#/plan`, `#/treningi`, `#/cwiczenia` | Trzy sekcje. **Plan**: uruchomiony plan — kalendarz terminów, punkty, stopień, dziennik; bez planu — katalog: plany z celem, własne i klasyczny. **Treningi**: 38 gotowych treningów (całe ciało, push/pull/nogi, góra/dół, partie), 32 z profilem i własne, z filtrem sprzętu i rodzaju. **Ćwiczenia**: atlas 114 ćwiczeń. |
-| Jedzenie | `#/jedzenie`, `#/przepisy`, `#/produkty`, `#/w-poblizu` | Cztery sekcje. **Dziennik**: pytanie o wagę, bilans dnia z „Dodaj zjedzone” i „Ulubione”, zjedzone, plan posiłków albo propozycja dnia, „Co teraz?”. **Przepisy**: białkowe, z produktów jednego sklepu. **Produkty**: 29 tys. produktów z filtrami. **W pobliżu**: sklepy na mapie i przepisy z nich. |
+| Jedzenie | `#/jedzenie`, `#/przepisy`, `#/produkty`, `#/w-poblizu` | Cztery sekcje. **Dziennik**: pytanie o wagę, bilans dnia z „Dodaj zjedzone” i „Ulubione”, zjedzone, plan posiłków albo propozycja dnia, „Co teraz?”. **Przepisy**: białkowe, z produktów jednego sklepu. **Produkty**: 29 tys. produktów z filtrami. **W pobliżu**: „Zjedz teraz” (gdzie i co zjeść pod dzisiejszy cel) oraz „Zakupy i przepisy” (sklepy na mapie i przepisy z nich). |
 | Osiągnięcia | `#/osiagniecia` | Dorobek w liczbach, progi najbliższe zdobycia, 73 rodziny odznak — także czasu na treningu — i odznaki każdego zrobionego ćwiczenia. |
 | Profil | `#/profil` | Postać i doświadczenie, twoje liczby, waga i wzrost, obciążenie, przekąski, kroki i cardio, lista zrobionych ćwiczeń i historia treningów z kaloriami. |
 
@@ -982,7 +982,27 @@ internetowym (mieszanka na białkowe naleśniki z Myproteina). Nowe składniki: 
 kapusta kiszona, biała i pekińska, ogórki kiszone, marchew, ziemniaki, awokado, mąka pszenna,
 filety śledziowe i żelatyna.
 
-**W pobliżu** (`#/w-poblizu`): lokalizacja (albo kliknięcie na mapie), sklepy spożywcze
+**W pobliżu → Zjedz teraz** (`#/w-poblizu`, domyślny widok): odpowiedź na pytanie „jestem w obcym
+mieście i głodny — gdzie i co zjeść w okolicy, zgodnie z dzisiejszym celem?”. Nad mapą: ile kcal
+i białka ma mieć ten posiłek (z tego, co zostało z celu dnia — ten sam rachunek co „Co teraz?”:
+tydzień, ruch, zaplanowany cheat meal, pora dnia) i najlepszy wybór („Stripsy z kurczaka · 30 cm ·
+Subway · 420 m · 5 min pieszo”). Lokale i sklepy z OpenStreetMap (fast food, restauracje, kawiarnie,
+stacje, sklepy) w promieniu, dopasowane do menu sieci po marce (`osm.brands` w pliku sieci — nowa
+sieć sama trafia na mapę); sklep sieci daje gotowe produkty białkowe, Żabka — także Żabka Café.
+Każde miejsce oceniane najlepszym daniem dla tej chwili, z karą za odległość; przekąski ze sklepu
+łączą się w pary, gdy żadna sama nie robi posiłku. Pinezki w kolorze dopasowania (zielone świetnie,
+złote pasuje, pomarańczowe lepiej nie), pierwsza trójka z numerami jak na liście; dymek: najlepsze
+dania z oceną i „Karta miejsca”. Pod mapą trzy najlepsze wybory (po jednym na sieć), sortowanie:
+najlepsze, najwięcej białka, najbliżej, najlżejsze; zamknięte teraz (godziny otwarcia z OSM) i lokale
+bez danych schowane, z przełącznikami. Karta miejsca: adres, odległość i czas pieszo, czy otwarte,
+**„Prowadź”** (trasa pieszo w Apple Maps na iPhonie, w Google Maps gdzie indziej, na Androidzie też
+„Inna aplikacja” przez `geo:`), wszystko, co pasuje, z oceną, powodami i **„Zjadłem”** (wpis do
+dziennika, lista liczy się od nowa), a to, co nie pasuje — zwinięte. Adres zamiast lokalizacji:
+wyszukiwarka Nominatim (OpenStreetMap), tylko po wysłaniu formularza, najwyżej raz na sekundę. Bez
+profilu diety ocena dla przeciętnego dnia (2000 kcal). W dzienniku pod „Co teraz?”: „Poza domem?
+Zobacz, gdzie zjeść w pobliżu”.
+
+**W pobliżu → Zakupy i przepisy**: lokalizacja (albo kliknięcie na mapie), sklepy spożywcze
 z OpenStreetMap w promieniu od 500 m do 10 km i przepisy, które zrobisz w jednym pobliskim sklepie
 („Wszystko kupisz w: Żabka · 250 m”). Pozycja zaokrąglona do ok. 100 m idzie do serwera Overpass
 (overpass-api.de, zapasowo overpass.private.coffee), kafelki mapy z tile.openstreetmap.org. Pozycji
@@ -1509,7 +1529,7 @@ src/
     components/common/      karta i szczegóły produktu, zdjęcie, oceny, cena, arkusz od dołu, ekrany stanu
     components/products/    przeglądarka produktów: pasek narzędzi, filtry w arkuszu, fasety, aktywne filtry, tabela, strony
     components/recipes/     przepisy: lista z filtrami, karta ze sklepem, zamiana składnika, gotowe produkty
-    components/nearby/      „W pobliżu”: mapa Leaflet, promień, sklepy i przepisy z nich
+    components/nearby/      „W pobliżu”: „Zjedz teraz” (lokale pod cel dnia, karta miejsca, adres) i „Zakupy i przepisy”; wspólna mapa Leaflet
     components/diet/        dziennik (pytanie o wagę, arkusz ulubionych), plan posiłków, postęp, profil diety, pierwsze kroki, wybór jedzenia i zestawy, import z Excela
     components/prep/        plan z zakupami: formularz z check-inem, plan (przepisy, gotowanie, dzień po dniu), okna nazwy, dat i wymiany przepisu, „Moje plany”, lista zakupów, plan dnia w dzienniku
     components/restaurants/ Lokale: lista sieci z wyszukiwaniem, menu sieci, karta pozycji z dodaniem do dziennika

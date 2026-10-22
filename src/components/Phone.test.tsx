@@ -101,7 +101,7 @@ describe('karta „Zdrowie z telefonu”', () => {
     const user = userEvent.setup();
     // Dzień telefonu, nie dzień UTC aplikacji — karta pyta o kroki z dnia według zegara telefonu.
     const { onSync, onToast } = await card(withPhone([{ day: localDayOf(new Date()), steps: 5000 }]));
-    expect(screen.getByText(/^Działa — ostatnia paczka dziś \d+:\d\d \(1 min temu\), następna ok\. \d+:\d\d\.$/)).toBeInTheDocument();
+    expect(screen.getByText(/^Działa — ostatnia paczka dziś \d+:\d\d \(1 min temu\), następna (jutro )?ok\. \d+:\d\d\.$/)).toBeInTheDocument();
     expect(screen.getByText(/^Dzisiejsze kroki z telefonu \(Zdrowie\): 5000 \(stan z \d+:\d\d — rosną z każdą paczką\)\.$/)).toBeInTheDocument();
     expect(screen.queryByLabelText('Klucz do aplikacji na telefonie')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Sprawdź teraz' }));

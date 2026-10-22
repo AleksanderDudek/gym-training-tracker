@@ -23,7 +23,7 @@ const T = text({
   },
 });
 
-const FIT_LABEL: Record<FitLevel, string> = T.fit;
+export const FIT_LABEL: Record<FitLevel, string> = T.fit;
 
 /**
  * Jak jedzenie pasuje do sposobu odżywiania. Słowo niesie ocenę samo — kolor tylko ją podkreśla;

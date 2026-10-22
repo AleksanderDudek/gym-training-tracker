@@ -2,6 +2,7 @@
   "id": "max",
   "name": "MAX Premium Burgers",
   "kind": "fast-food",
+  "osm": { "brands": ["MAX Premium Burgers", "MAX Burgers"] },
   "market": "PL",
   "source": {
     "url": "https://www.maxpremiumburgers.pl/jedzenie/wartoci-odywcze/",

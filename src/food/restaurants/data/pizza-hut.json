@@ -2,6 +2,7 @@
  "id": "pizza-hut",
  "name": "Pizza Hut",
  "kind": "pizzeria",
+ "osm": { "brands": ["Pizza Hut"] },
  "market": "PL",
  "source": {
   "url": "https://ocs-pl.oktawave.com/v1/AUTH_876e5729-f8dd-45dd-908f-35d8bb716177/amrest-web-ordering/GRD4/nutrition/Nutrition_PH.pdf",

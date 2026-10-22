@@ -2,6 +2,7 @@
   "id": "starbucks",
   "name": "Starbucks",
   "kind": "kawiarnia",
+  "osm": { "brands": ["Starbucks"] },
   "market": "PL",
   "source": {
     "url": "https://www.starbucks.pl/sites/starbucks-pl-pwa/files/2026-09/autumn.pdf",
