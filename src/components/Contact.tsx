@@ -1,5 +1,23 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { contactLinks, inPoland, shortUrl } from '../contact';
+import { text } from '../i18n';
+
+const T = text({
+  pl: {
+    newTab: 'otwiera się w nowej karcie',
+    title: 'Kontakt z autorem',
+    lead: 'Poza aplikacją — tam, gdzie wygodniej.',
+    close: 'Zamknij',
+    write: 'Napisz w aplikacji',
+  },
+  en: {
+    newTab: 'opens in a new tab',
+    title: 'Contact the author',
+    lead: 'Outside the app — wherever suits you.',
+    close: 'Close',
+    write: 'Write in the app',
+  },
+});
 
 /**
  * Odnośniki kontaktowe: Instagram, Discord (w Polsce) i wsparcie (polskie albo międzynarodowe).
@@ -18,7 +36,7 @@ export function ContactLinks({ pl }: { /** Polska albo nie; brak — według prz
             <span className="contact-note">{l.note}</span>
             <span className="contact-url">
               {shortUrl(l.href)}
-              <span className="sr-only"> (otwiera się w nowej karcie)</span>
+              <span className="sr-only"> ({T.newTab})</span>
             </span>
           </a>
         </li>
@@ -64,16 +82,16 @@ export function ContactDialog({
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="fb-box" ref={box}>
-        <h2 id="ct-title">Kontakt z autorem</h2>
-        <p className="tight">Poza aplikacją — tam, gdzie wygodniej.</p>
+        <h2 id="ct-title">{T.title}</h2>
+        <p className="tight">{T.lead}</p>
         <ContactLinks {...(pl === undefined ? {} : { pl })} />
         <div className="btnrow">
           <button type="button" className="btn ghost" onClick={onClose}>
-            Zamknij
+            {T.close}
           </button>
           {onFeedback && (
             <button type="button" className="btn" onClick={onFeedback}>
-              Napisz w aplikacji
+              {T.write}
             </button>
           )}
         </div>

@@ -4,6 +4,22 @@ import { SETTINGS_PATH, goBack } from '../routing';
 import { SupportStrip } from './Support';
 import { InstallStrip } from './Install';
 import { ClockPill } from './SessionClock';
+import { text } from '../i18n';
+
+const T = text({
+  pl: {
+    back: 'Wstecz',
+    contact: 'Kontakt z autorem',
+    feedback: 'Napisz do autora — uwaga albo błąd',
+    settings: 'Ustawienia',
+  },
+  en: {
+    back: 'Back',
+    contact: 'Contact the author',
+    feedback: 'Write to the author — feedback or a bug',
+    settings: 'Settings',
+  },
+});
 
 /**
  * Pasek aplikacji — przyklejony do góry, jak w każdej aplikacji mobilnej.
@@ -81,7 +97,7 @@ export function TopBar({
     <div className={`topbar${scrolled ? ' scrolled' : ''}${strip || install ? ' with-strip' : ''}`}>
       <header className="appbar">
         {parent ? (
-          <button className="appbar-btn back-btn" onClick={() => goBack(parent)} aria-label="Wstecz">
+          <button className="appbar-btn back-btn" onClick={() => goBack(parent)} aria-label={T.back}>
             <Icon name="back" size={24} />
           </button>
         ) : (
@@ -93,17 +109,17 @@ export function TopBar({
         </div>
         {clock != null && <ClockPill begin={clock} />}
         {onContact && (
-          <button className="appbar-btn" onClick={onContact} aria-label="Kontakt z autorem" aria-haspopup="dialog">
+          <button className="appbar-btn" onClick={onContact} aria-label={T.contact} aria-haspopup="dialog">
             <Icon name="contact" size={22} />
           </button>
         )}
         {onFeedback && (
-          <button className="appbar-btn" onClick={onFeedback} aria-label="Napisz do autora — uwaga albo błąd">
+          <button className="appbar-btn" onClick={onFeedback} aria-label={T.feedback}>
             <Icon name="feedback" size={22} />
           </button>
         )}
         {settings && (
-          <a className="appbar-btn" href={SETTINGS_PATH} aria-label="Ustawienia">
+          <a className="appbar-btn" href={SETTINGS_PATH} aria-label={T.settings}>
             <Icon name="settings" size={22} />
           </a>
         )}

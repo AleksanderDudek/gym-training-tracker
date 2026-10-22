@@ -105,6 +105,7 @@ export function attachTrail(t: Trail = trail): () => void {
     t.tap(el.getAttribute('aria-label') || el.textContent || el.tagName.toLowerCase());
   };
   const onVis = () => t.visible(document.visibilityState === 'visible');
+  // i18n-ignore: ślad idzie do autora, nie na ekran
   const onError = (e: ErrorEvent) => t.error(e.message || 'błąd');
   const onReject = (e: PromiseRejectionEvent) =>
     t.error(e.reason instanceof Error ? e.reason.message : String(e.reason ?? 'odrzucona obietnica'));

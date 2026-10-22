@@ -4,6 +4,7 @@ import { SAID, aboutText, agoText, atText, lastPackText, nextText, shortAtText, 
 import type { Device, DeviceStatus, Level } from '../deviceStatus';
 import { hashQuery } from '../food/hash';
 import { lastPullAt, onWatchCheck, watchConnected, watchStatus } from '../garmin';
+import { LOCALE, text } from '../i18n';
 import { lastPhoneAt, onPhoneCheck, phoneConnected, phoneStatus } from '../phone';
 import { SETTINGS_PATH } from '../routing';
 import type { AppState } from '../types';
@@ -13,6 +14,280 @@ import type { AppState } from '../types';
  * ekranie kroków i uwagi na ekranie Dziś. Kolor kropki tylko podpowiada; wszystko, co ważne,
  * stoi w zdaniu, bo kropki nie widać na czytniku ekranu ani przy daltonizmie.
  */
+
+type Os = 'ios' | 'android';
+
+const T = text({
+  pl: {
+    name: { watch: 'Zegarek', phone: 'Telefon' } as Record<Device, string>,
+    setup: {
+      watch:
+        'Wklej klucz w ustawieniach GYM TRACKER na zegarku i otwórz tam aplikację raz — pierwsza paczka przyjdzie po kilku minutach, gdy telefon jest w pobliżu.',
+      phone:
+        'Otwórz GYM TRACKER Zdrowie, wklej klucz i zezwól na dostęp do danych — pierwsza paczka wyjdzie od razu.',
+    } as Record<Device, string>,
+    reason: {
+      watch: {
+        late: 'Najczęściej telefon jest za daleko od zegarka, Bluetooth jest wyłączony albo telefon uśpił Garmin Connect, żeby oszczędzać baterię. Dni z ostatniego tygodnia nie przepadną — zegarek za każdym razem wysyła cały tydzień.',
+        stale:
+          'Zegarek od kilku godzin nic nie wysłał. Najczęściej telefon uśpił Garmin Connect albo Bluetooth jest wyłączony — przejdź po liście „Dane nie przychodzą?”. Dni z ostatniego tygodnia nie przepadną: zegarek wysyła cały tydzień.',
+      },
+      phone: {
+        late: 'Najczęściej telefon uśpił GYM TRACKER Zdrowie, żeby oszczędzać baterię, albo aplikacja nie ma dostępu do danych w tle. Dni z ostatnich dwóch tygodni nie przepadną — telefon za każdym razem wysyła dwa tygodnie.',
+        stale:
+          'Telefon od kilku godzin nic nie wysłał. Najczęściej system uśpił GYM TRACKER Zdrowie albo cofnął jej dostęp do danych — przejdź po liście „Dane nie przychodzą?”. Dni z ostatnich dwóch tygodni nie przepadną.',
+      },
+    } as Record<Device, Record<'late' | 'stale', string>>,
+    statusOk: (last: string | null, next: string) => `Działa — ostatnia paczka ${last}, ${next}.`,
+    statusLate: (about: string, last: string | null) =>
+      `Kolejna paczka się spóźnia — miała przyjść ${about}. Ostatnia: ${last}.`,
+    statusStale: (since: string, at: string) => `Brak danych od ${since} — ostatnia paczka ${at}.`,
+    statusSetup: (setup: string) => `Czeka na pierwszą paczkę. ${setup}`,
+    statusBad: (bad: string, last: string | null) => `Zły klucz. ${bad}${last ? ` Ostatnia dobra paczka: ${last}.` : ''}`,
+    statusOffline: (last: string | null) =>
+      `Nie mogę teraz zapytać serwera — sprawdź internet w tym urządzeniu.${last ? ` Ostatnio znane: paczka ${last}.` : ''}`,
+    lineOk: (who: string, ago: string | null, next: string) => `${who} działa — ostatnia paczka ${ago}, ${next}.`,
+    lineLate: (who: string, about: string) => `${who}: kolejna paczka się spóźnia — miała przyjść ${about}.`,
+    lineStale: (who: string, since: string) => `${who}: brak danych od ${since}.`,
+    lineSetup: (who: string) => `${who}: czeka na pierwszą paczkę.`,
+    lineBad: (who: string) => `${who}: zły klucz — paczka się nie otwiera.`,
+    lineOffline: (who: string, ago: string | null) =>
+      `${who}: nie mogę teraz zapytać serwera${ago ? ` — ostatnia paczka ${ago}` : ''}.`,
+    todaySteps: (from: string, steps: string, at: string) =>
+      `Dzisiejsze kroki ${from}: ${steps} (stan z ${at} — rosną z każdą paczką).`,
+    noToday: (from: string) => `Dzisiejszych danych ${from} jeszcze nie ma.`,
+    checked: (ago: string) => `Sprawdzone ${ago}.`,
+    notArriving: 'Dane nie przychodzą?',
+    watchChecks: {
+      key: (
+        <>
+          <b>Klucz z tej karty wklejony w ustawieniach GYM TRACKER.</b> W Garmin Connect: zegarek → Aktywności
+          i aplikacje → GYM TRACKER → Ustawienia. W wersji testowej (beta) te ustawienia są w aplikacji Connect IQ
+          Store: urządzenie → GYM TRACKER → Ustawienia.
+        </>
+      ),
+      opened: (
+        <>
+          <b>GYM TRACKER otwarty choć raz na zegarku.</b> Bez tego zegarek nie planuje wysyłek w tle.
+        </>
+      ),
+      bt: (
+        <>
+          <b>Bluetooth na telefonie włączony, zegarek połączony z Garmin Connect i blisko telefonu.</b> Paczka idzie
+          z zegarka przez telefon — bez połączenia czeka na następną próbę.
+        </>
+      ),
+      gc: (
+        <>
+          <b>Garmin Connect zainstalowany, zalogowany i może działać w tle.</b> Android: Ustawienia → Aplikacje →
+          Garmin Connect → Bateria → Bez ograniczeń (wyłączona optymalizacja baterii). iPhone: Ustawienia → Ogólne →
+          Odświeżanie w tle → Garmin Connect włączone.
+        </>
+      ),
+      net: (
+        <>
+          <b>Telefon ma internet</b> (Wi‑Fi albo dane komórkowe) — Garmin Connect wysyła paczkę dalej przez sieć
+          telefonu.
+        </>
+      ),
+      modes: (
+        <>
+          <b>Na zegarku wyłączone: tryb samolotowy, oszczędzanie energii i Nie przeszkadzać.</b> Każdy z nich potrafi
+          wstrzymać połączenie z telefonem.
+        </>
+      ),
+      screen: (
+        <>
+          <b>Ekran GYM TRACKER na zegarku mówi, jak poszła ostatnia wysyłka</b> i kiedy następna: „Wysłane 14:32”
+          (Sent) — doszła; „Brak telefonu - Bluetooth?” (No phone) — zegarek nie widział telefonu; „Zły klucz” (Wrong
+          key) — wklej klucz jeszcze raz. START wysyła od razu.
+        </>
+      ),
+    } as Record<WatchCheck, ReactNode>,
+    perm: {
+      android:
+        'Android: Ustawienia → Health Connect → Uprawnienia aplikacji → GYM TRACKER Zdrowie — kroki, sen, tętno, waga i „dostęp w tle”. Bez dostępu w tle paczka wychodzi tylko przy otwarciu aplikacji.',
+      ios: 'iPhone: Zdrowie → zdjęcie profilu → Aplikacje → GYM TRACKER Zdrowie — włącz wszystkie dane.',
+    } as Record<Os, string>,
+    battery: {
+      android:
+        'Android: Ustawienia → Aplikacje → GYM TRACKER Zdrowie → Bateria → Bez ograniczeń (wyłączona optymalizacja baterii) — inaczej system usypia wysyłkę co godzinę.',
+      ios: 'iPhone: Ustawienia → Ogólne → Odświeżanie w tle → GYM TRACKER Zdrowie włączone. Zablokowany iPhone nie oddaje danych zdrowia — paczka wyjdzie po odblokowaniu.',
+    } as Record<Os, string>,
+    store: { android: 'Health Connect', ios: 'Apple Zdrowie' } as Record<Os, string>,
+    or: ' albo ',
+    phoneKey: (
+      <>
+        <b>Klucz z tej karty wklejony w GYM TRACKER Zdrowie</b> przyciskiem „Wklej klucz”.
+      </>
+    ) as ReactNode,
+    phonePerm: (per: string): ReactNode => (
+      <>
+        <b>GYM TRACKER Zdrowie ma dostęp do danych.</b> {per}
+      </>
+    ),
+    phoneBattery: (per: string): ReactNode => (
+      <>
+        <b>Aplikacja może działać w tle.</b> {per}
+      </>
+    ),
+    phoneSource: (stores: string): ReactNode => (
+      <>
+        <b>Garmin Connect (albo inna aplikacja zegarka czy wagi) zapisuje dane w{' '}
+        {stores}.</b> W Garmin Connect: Ustawienia → Połączone aplikacje.
+        Bez tego telefon ma tylko własne kroki.
+      </>
+    ),
+    phoneOpen: (
+      <>
+        <b>Otwórz GYM TRACKER Zdrowie i naciśnij „Wyślij teraz”</b> — ekran aplikacji powie, czy paczka wyszła.
+      </>
+    ) as ReactNode,
+    phoneNet: (
+      <>
+        <b>Telefon ma internet</b> (Wi‑Fi albo dane komórkowe).
+      </>
+    ) as ReactNode,
+    statusLink: 'Stan połączenia →',
+    lateNote: (d: Device, since: string) =>
+      `${d === 'watch' ? 'Zegarek' : 'Telefon'} nie przysłał danych od ${since} — sprawdź połączenie →`,
+  },
+  en: {
+    name: { watch: 'Watch', phone: 'Phone' },
+    setup: {
+      watch:
+        'Paste the key into the GYM TRACKER settings for your watch and open the app on the watch once — the first upload arrives a few minutes later, with your phone nearby.',
+      phone:
+        'Open GYM TRACKER Zdrowie, paste the key and allow access to your data — the first upload goes out straight away.',
+    },
+    reason: {
+      watch: {
+        late: 'Usually the phone is too far from the watch, Bluetooth is off or the phone has put Garmin Connect to sleep to save battery. Days from the past week won’t be lost — the watch sends the whole week every time.',
+        stale:
+          'The watch hasn’t sent anything for a few hours. Usually the phone has put Garmin Connect to sleep or Bluetooth is off — go through the “Data not arriving?” list. Days from the past week won’t be lost: the watch sends the whole week.',
+      },
+      phone: {
+        late: 'Usually the phone has put GYM TRACKER Zdrowie to sleep to save battery, or the app can’t read your data in the background. Days from the past two weeks won’t be lost — the phone sends two weeks every time.',
+        stale:
+          'The phone hasn’t sent anything for a few hours. Usually the system has put GYM TRACKER Zdrowie to sleep or taken away its access to your data — go through the “Data not arriving?” list. Days from the past two weeks won’t be lost.',
+      },
+    },
+    statusOk: (last: string | null, next: string) => `Working — last upload ${last}, ${next}.`,
+    statusLate: (about: string, last: string | null) => `The next upload is late — it was due ${about}. Last one: ${last}.`,
+    statusStale: (since: string, at: string) => `No data for ${since} — last upload ${at}.`,
+    statusSetup: (setup: string) => `Waiting for the first upload. ${setup}`,
+    statusBad: (bad: string, last: string | null) => `Wrong key. ${bad}${last ? ` Last good upload: ${last}.` : ''}`,
+    statusOffline: (last: string | null) =>
+      `Can’t reach the server right now — check this device’s internet connection.${last ? ` Last known: upload ${last}.` : ''}`,
+    lineOk: (who: string, ago: string | null, next: string) => `${who}: working — last upload ${ago}, ${next}.`,
+    lineLate: (who: string, about: string) => `${who}: the next upload is late — it was due ${about}.`,
+    lineStale: (who: string, since: string) => `${who}: no data for ${since}.`,
+    lineSetup: (who: string) => `${who}: waiting for the first upload.`,
+    lineBad: (who: string) => `${who}: wrong key — the upload won’t open.`,
+    lineOffline: (who: string, ago: string | null) =>
+      `${who}: can’t reach the server right now${ago ? ` — last upload ${ago}` : ''}.`,
+    todaySteps: (from: string, steps: string, at: string) =>
+      `Today’s steps ${from}: ${steps} (as of ${at} — they grow with every upload).`,
+    noToday: (from: string) => `No data ${from} for today yet.`,
+    checked: (ago: string) => `Checked ${ago}.`,
+    notArriving: 'Data not arriving?',
+    watchChecks: {
+      key: (
+        <>
+          <b>The key from this card is pasted into the GYM TRACKER settings.</b> In Garmin Connect: watch → Activities
+          &amp; Apps → GYM TRACKER → Settings. In the test (beta) version these settings are in the Connect IQ Store
+          app: device → GYM TRACKER → Settings.
+        </>
+      ),
+      opened: (
+        <>
+          <b>GYM TRACKER has been opened on the watch at least once.</b> Without that, the watch doesn’t schedule
+          background uploads.
+        </>
+      ),
+      bt: (
+        <>
+          <b>Your phone’s Bluetooth is on, and the watch is paired with Garmin Connect and close to the phone.</b>{' '}
+          Uploads go from the watch through the phone — without a connection they wait for the next try.
+        </>
+      ),
+      gc: (
+        <>
+          <b>Garmin Connect is installed, signed in and allowed to run in the background.</b> Android: Settings → Apps
+          → Garmin Connect → Battery → Unrestricted (battery optimisation off). iPhone: Settings → General →
+          Background App Refresh → Garmin Connect on.
+        </>
+      ),
+      net: (
+        <>
+          <b>Your phone has internet</b> (Wi‑Fi or mobile data) — Garmin Connect passes the upload on over the
+          phone’s connection.
+        </>
+      ),
+      modes: (
+        <>
+          <b>On the watch, airplane mode, battery saver and Do Not Disturb are off.</b> Any of them can pause the
+          connection to the phone.
+        </>
+      ),
+      screen: (
+        <>
+          <b>The GYM TRACKER screen on the watch says how the last upload went</b> and when the next one is due:
+          “Sent 14:32” — it got through; “No phone - Bluetooth?” — the watch couldn’t see your phone; “Wrong key -
+          paste it again” — paste the key again. START sends straight away.
+        </>
+      ),
+    },
+    perm: {
+      android:
+        'Android: Settings → Health Connect → App permissions → GYM TRACKER Zdrowie — steps, sleep, heart rate, weight and “background access”. Without background access, uploads only go out when you open the app.',
+      ios: 'iPhone: Health → profile picture → Apps → GYM TRACKER Zdrowie — turn on all data.',
+    },
+    battery: {
+      android:
+        'Android: Settings → Apps → GYM TRACKER Zdrowie → Battery → Unrestricted (battery optimisation off) — otherwise the system puts the hourly upload to sleep.',
+      ios: 'iPhone: Settings → General → Background App Refresh → GYM TRACKER Zdrowie on. A locked iPhone doesn’t hand over health data — the upload goes out once you unlock it.',
+    },
+    store: { android: 'Health Connect', ios: 'Apple Health' },
+    or: ' or ',
+    phoneKey: (
+      <>
+        <b>The key from this card is pasted into GYM TRACKER Zdrowie</b> with the “Wklej klucz” (Paste key) button.
+      </>
+    ),
+    phonePerm: (per: string): ReactNode => (
+      <>
+        <b>GYM TRACKER Zdrowie has access to your data.</b> {per}
+      </>
+    ),
+    phoneBattery: (per: string): ReactNode => (
+      <>
+        <b>The app is allowed to run in the background.</b> {per}
+      </>
+    ),
+    phoneSource: (stores: string): ReactNode => (
+      <>
+        <b>Garmin Connect (or another watch or scale app) saves data to {stores}.</b> In Garmin Connect: Settings →
+        Connected Apps. Without that, the phone only has its own steps.
+      </>
+    ),
+    phoneOpen: (
+      <>
+        {/* i18n-ignore: przycisk w aplikacji GYM TRACKER Zdrowie, która mówi tylko po polsku */}
+        <b>Open GYM TRACKER Zdrowie and tap “Wyślij teraz” (Send now)</b> — the app’s screen will tell you whether the
+        upload went out.
+      </>
+    ),
+    phoneNet: (
+      <>
+        <b>Your phone has internet</b> (Wi‑Fi or mobile data).
+      </>
+    ),
+    statusLink: 'Connection status →',
+    lateNote: (d: Device, since: string) =>
+      `Your ${d === 'watch' ? 'watch' : 'phone'} hasn’t sent data for ${since} — check the connection →`,
+  },
+});
 
 type Subscribe = (f: () => void) => () => void;
 
@@ -65,46 +340,30 @@ export function useScrollHere(device: Device) {
   return ref;
 }
 
-const NAME: Record<Device, string> = { watch: 'Zegarek', phone: 'Telefon' };
+const NAME: Record<Device, string> = T.name;
 
 /** Co zrobić, zanim przyjdzie pierwsza paczka. */
-const SETUP: Record<Device, string> = {
-  watch:
-    'Wklej klucz w ustawieniach GYM TRACKER na zegarku i otwórz tam aplikację raz — pierwsza paczka przyjdzie po kilku minutach, gdy telefon jest w pobliżu.',
-  phone:
-    'Otwórz GYM TRACKER Zdrowie, wklej klucz i zezwól na dostęp do danych — pierwsza paczka wyjdzie od razu.',
-};
+const SETUP: Record<Device, string> = T.setup;
 
 /** Najczęstsze przyczyny spóźnienia i pocieszenie, że dni nie przepadają. */
-const REASON: Record<Device, Record<'late' | 'stale', string>> = {
-  watch: {
-    late: 'Najczęściej telefon jest za daleko od zegarka, Bluetooth jest wyłączony albo telefon uśpił Garmin Connect, żeby oszczędzać baterię. Dni z ostatniego tygodnia nie przepadną — zegarek za każdym razem wysyła cały tydzień.',
-    stale:
-      'Zegarek od kilku godzin nic nie wysłał. Najczęściej telefon uśpił Garmin Connect albo Bluetooth jest wyłączony — przejdź po liście „Dane nie przychodzą?”. Dni z ostatniego tygodnia nie przepadną: zegarek wysyła cały tydzień.',
-  },
-  phone: {
-    late: 'Najczęściej telefon uśpił GYM TRACKER Zdrowie, żeby oszczędzać baterię, albo aplikacja nie ma dostępu do danych w tle. Dni z ostatnich dwóch tygodni nie przepadną — telefon za każdym razem wysyła dwa tygodnie.',
-    stale:
-      'Telefon od kilku godzin nic nie wysłał. Najczęściej system uśpił GYM TRACKER Zdrowie albo cofnął jej dostęp do danych — przejdź po liście „Dane nie przychodzą?”. Dni z ostatnich dwóch tygodni nie przepadną.',
-  },
-};
+const REASON: Record<Device, Record<'late' | 'stale', string>> = T.reason;
 
 /** Jedno zdanie o stanie połączenia — nagłówek karty w ustawieniach. */
 export function statusText(device: Device, s: DeviceStatus, now: number): string {
   const last = s.lastAt === null ? null : lastPackText(s.lastAt, now);
   switch (s.level) {
     case 'ok':
-      return `Działa — ostatnia paczka ${last}, ${nextText(s, now)}.`;
+      return T.statusOk(last, nextText(s, now));
     case 'late':
-      return `Kolejna paczka się spóźnia — miała przyjść ${aboutText(s.nextAt!, now)}. Ostatnia: ${last}.`;
+      return T.statusLate(aboutText(s.nextAt!, now), last);
     case 'stale':
-      return `Brak danych od ${sinceText(s.minutesSince!)} — ostatnia paczka ${atText(s.lastAt!, now)}.`;
+      return T.statusStale(sinceText(s.minutesSince!), atText(s.lastAt!, now));
     case 'setup':
-      return `Czeka na pierwszą paczkę. ${SETUP[device]}`;
+      return T.statusSetup(SETUP[device]);
     case 'bad':
-      return `Zły klucz. ${SAID[device].bad}${last ? ` Ostatnia dobra paczka: ${last}.` : ''}`;
+      return T.statusBad(SAID[device].bad, last);
     case 'offline':
-      return `Nie mogę teraz zapytać serwera — sprawdź internet w tym urządzeniu.${last ? ` Ostatnio znane: paczka ${last}.` : ''}`;
+      return T.statusOffline(last);
   }
 }
 
@@ -114,17 +373,17 @@ export function lineText(device: Device, s: DeviceStatus, now: number): string {
   const ago = s.lastAt === null ? null : agoText(s.lastAt, now);
   switch (s.level) {
     case 'ok':
-      return `${who} działa — ostatnia paczka ${ago}, ${nextText(s, now)}.`;
+      return T.lineOk(who, ago, nextText(s, now));
     case 'late':
-      return `${who}: kolejna paczka się spóźnia — miała przyjść ${aboutText(s.nextAt!, now)}.`;
+      return T.lineLate(who, aboutText(s.nextAt!, now));
     case 'stale':
-      return `${who}: brak danych od ${sinceText(s.minutesSince!)}.`;
+      return T.lineStale(who, sinceText(s.minutesSince!));
     case 'setup':
-      return `${who}: czeka na pierwszą paczkę.`;
+      return T.lineSetup(who);
     case 'bad':
-      return `${who}: zły klucz — paczka się nie otwiera.`;
+      return T.lineBad(who);
     case 'offline':
-      return `${who}: nie mogę teraz zapytać serwera${ago ? ` — ostatnia paczka ${ago}` : ''}.`;
+      return T.lineOffline(who, ago);
   }
 }
 
@@ -163,11 +422,11 @@ export function StatusBlock({
       {s.lastAt !== null && (
         <p className="tight">
           {todaySteps !== null
-            ? `Dzisiejsze kroki ${from}: ${todaySteps.toLocaleString('pl-PL')} (stan z ${shortAtText(s.lastAt, now)} — rosną z każdą paczką).`
-            : `Dzisiejszych danych ${from} jeszcze nie ma.`}
+            ? T.todaySteps(from, todaySteps.toLocaleString(LOCALE), shortAtText(s.lastAt, now))
+            : T.noToday(from)}
         </p>
       )}
-      {checkedAt !== null && <p className="hint dev-checked">Sprawdzone {agoText(checkedAt, now)}.</p>}
+      {checkedAt !== null && <p className="hint dev-checked">{T.checked(agoText(checkedAt, now))}</p>}
     </>
   );
 }
@@ -188,8 +447,8 @@ export function Checklist({
 }) {
   return (
     <details className="dev-check" open={level === 'late' || level === 'stale' || (level === 'setup' && checked)}>
-      <summary>Dane nie przychodzą?</summary>
-      <ol className="watch-steps" aria-label="Dane nie przychodzą?">
+      <summary>{T.notArriving}</summary>
+      <ol className="watch-steps" aria-label={T.notArriving}>
         {items.map((x) => (
           <li key={x.id}>{x.text}</li>
         ))}
@@ -202,52 +461,7 @@ export function Checklist({
 
 type WatchCheck = 'key' | 'opened' | 'bt' | 'gc' | 'net' | 'modes' | 'screen';
 
-const WATCH_CHECKS: Record<WatchCheck, ReactNode> = {
-  key: (
-    <>
-      <b>Klucz z tej karty wklejony w ustawieniach GYM TRACKER.</b> W Garmin Connect: zegarek → Aktywności
-      i aplikacje → GYM TRACKER → Ustawienia. W wersji testowej (beta) te ustawienia są w aplikacji Connect IQ
-      Store: urządzenie → GYM TRACKER → Ustawienia.
-    </>
-  ),
-  opened: (
-    <>
-      <b>GYM TRACKER otwarty choć raz na zegarku.</b> Bez tego zegarek nie planuje wysyłek w tle.
-    </>
-  ),
-  bt: (
-    <>
-      <b>Bluetooth na telefonie włączony, zegarek połączony z Garmin Connect i blisko telefonu.</b> Paczka idzie
-      z zegarka przez telefon — bez połączenia czeka na następną próbę.
-    </>
-  ),
-  gc: (
-    <>
-      <b>Garmin Connect zainstalowany, zalogowany i może działać w tle.</b> Android: Ustawienia → Aplikacje →
-      Garmin Connect → Bateria → Bez ograniczeń (wyłączona optymalizacja baterii). iPhone: Ustawienia → Ogólne →
-      Odświeżanie w tle → Garmin Connect włączone.
-    </>
-  ),
-  net: (
-    <>
-      <b>Telefon ma internet</b> (Wi‑Fi albo dane komórkowe) — Garmin Connect wysyła paczkę dalej przez sieć
-      telefonu.
-    </>
-  ),
-  modes: (
-    <>
-      <b>Na zegarku wyłączone: tryb samolotowy, oszczędzanie energii i Nie przeszkadzać.</b> Każdy z nich potrafi
-      wstrzymać połączenie z telefonem.
-    </>
-  ),
-  screen: (
-    <>
-      <b>Ekran GYM TRACKER na zegarku mówi, jak poszła ostatnia wysyłka</b> i kiedy następna: „Wysłane 14:32”
-      (Sent) — doszła; „Brak telefonu - Bluetooth?” (No phone) — zegarek nie widział telefonu; „Zły klucz” (Wrong
-      key) — wklej klucz jeszcze raz. START wysyła od razu.
-    </>
-  ),
-};
+const WATCH_CHECKS: Record<WatchCheck, ReactNode> = T.watchChecks;
 
 /** Najbardziej prawdopodobna przyczyna na górze — inna, gdy nic jeszcze nie przyszło, a inna, gdy przestało. */
 const WATCH_ORDER: Record<Level, WatchCheck[]> = {
@@ -264,63 +478,28 @@ export const watchChecks = (level: Level) => WATCH_ORDER[level].map((id) => ({ i
 /* ---------------- Lista: telefon ---------------- */
 
 type PhoneCheck = 'key' | 'perm' | 'battery' | 'source' | 'open' | 'net';
-type Os = 'ios' | 'android';
 
-const PERM: Record<Os, string> = {
-  android:
-    'Android: Ustawienia → Health Connect → Uprawnienia aplikacji → GYM TRACKER Zdrowie — kroki, sen, tętno, waga i „dostęp w tle”. Bez dostępu w tle paczka wychodzi tylko przy otwarciu aplikacji.',
-  ios: 'iPhone: Zdrowie → zdjęcie profilu → Aplikacje → GYM TRACKER Zdrowie — włącz wszystkie dane.',
-};
+const PERM: Record<Os, string> = T.perm;
 
-const BATTERY: Record<Os, string> = {
-  android:
-    'Android: Ustawienia → Aplikacje → GYM TRACKER Zdrowie → Bateria → Bez ograniczeń (wyłączona optymalizacja baterii) — inaczej system usypia wysyłkę co godzinę.',
-  ios: 'iPhone: Ustawienia → Ogólne → Odświeżanie w tle → GYM TRACKER Zdrowie włączone. Zablokowany iPhone nie oddaje danych zdrowia — paczka wyjdzie po odblokowaniu.',
-};
+const BATTERY: Record<Os, string> = T.battery;
 
-const STORE_NAME: Record<Os, string> = { android: 'Health Connect', ios: 'Apple Zdrowie' };
+const STORE_NAME: Record<Os, string> = T.store;
 
 function phoneCheck(id: PhoneCheck, systems: Os[]): ReactNode {
   const per = (m: Record<Os, string>) => systems.map((os) => m[os]).join(' ');
   switch (id) {
     case 'key':
-      return (
-        <>
-          <b>Klucz z tej karty wklejony w GYM TRACKER Zdrowie</b> przyciskiem „Wklej klucz”.
-        </>
-      );
+      return T.phoneKey;
     case 'perm':
-      return (
-        <>
-          <b>GYM TRACKER Zdrowie ma dostęp do danych.</b> {per(PERM)}
-        </>
-      );
+      return T.phonePerm(per(PERM));
     case 'battery':
-      return (
-        <>
-          <b>Aplikacja może działać w tle.</b> {per(BATTERY)}
-        </>
-      );
+      return T.phoneBattery(per(BATTERY));
     case 'source':
-      return (
-        <>
-          <b>Garmin Connect (albo inna aplikacja zegarka czy wagi) zapisuje dane w{' '}
-          {systems.map((os) => STORE_NAME[os]).join(' albo ')}.</b> W Garmin Connect: Ustawienia → Połączone aplikacje.
-          Bez tego telefon ma tylko własne kroki.
-        </>
-      );
+      return T.phoneSource(systems.map((os) => STORE_NAME[os]).join(T.or));
     case 'open':
-      return (
-        <>
-          <b>Otwórz GYM TRACKER Zdrowie i naciśnij „Wyślij teraz”</b> — ekran aplikacji powie, czy paczka wyszła.
-        </>
-      );
+      return T.phoneOpen;
     case 'net':
-      return (
-        <>
-          <b>Telefon ma internet</b> (Wi‑Fi albo dane komórkowe).
-        </>
-      );
+      return T.phoneNet;
   }
 }
 
@@ -344,7 +523,7 @@ export function DeviceLine({ device, status, now }: { device: Device; status: De
     <div className={`dev-status dev-line ${status.level}`}>
       <Dot />
       <p className="tight">
-        {lineText(device, status, now)} <a href={deviceCardPath(device)}>Stan połączenia →</a>
+        {lineText(device, status, now)} <a href={deviceCardPath(device)}>{T.statusLink}</a>
       </p>
     </div>
   );
@@ -365,7 +544,7 @@ export function LateNotes({ state, now }: { state: AppState; now: number }) {
     <>
       {late.map(({ device, s }) => (
         <a key={device} className="vidlink dev-late" href={deviceCardPath(device)}>
-          {NAME[device]} nie przysłał danych od {sinceText(s.minutesSince!)} — sprawdź połączenie →
+          {T.lateNote(device, sinceText(s.minutesSince!))}
         </a>
       ))}
     </>

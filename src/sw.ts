@@ -107,6 +107,13 @@ self.addEventListener('message', (event) => {
  * skończyć się powiadomieniem: Chrome inaczej pokazuje własne „strona zaktualizowana w tle”,
  * a Safari po kilku cichych wiadomościach odbiera subskrypcję.
  */
+/**
+ * Język powiadomienia dla czytnika ekranu. Service worker nie widzi języka wybranego w ustawieniach,
+ * a treść przychodzi gotowa, w języku aplikacji — polskie przypomnienia mają polskie litery już
+ * w tytule („Dziś trening”, „Poranne ważenie”).
+ */
+const langOf = (text: string): string => (/[ąćęłńóśźż]/i.test(text) ? 'pl' : 'en');
+
 self.addEventListener('push', (event) => {
   let data: { title?: string; body?: string; url?: unknown; tag?: string } = {};
   try {
@@ -116,13 +123,15 @@ self.addEventListener('push', (event) => {
   }
   // Tylko trasy aplikacji — powiadomienie nie otwiera cudzych stron.
   const url = typeof data.url === 'string' && /^#\/[\w/-]*$/.test(data.url) ? data.url : '#/sesja';
+  const title = data.title || 'GYM TRACKER';
+  const body = data.body || '';
   event.waitUntil(
-    self.registration.showNotification(data.title || 'GYM TRACKER', {
-      body: data.body || '',
+    self.registration.showNotification(title, {
+      body,
       icon: './icons/icon-192.png',
       // Ten sam rodzaj zastępuje poprzednie powiadomienie zamiast piętrzyć je w szufladzie.
       tag: data.tag || 'gym-tracker',
-      lang: 'pl',
+      lang: langOf(`${title} ${body}`),
       data: { url },
     }),
   );

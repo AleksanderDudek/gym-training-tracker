@@ -1,4 +1,5 @@
 import { SUPPORT_URL } from './engine/share';
+import { text } from './i18n';
 
 /**
  * Kontakt z autorem poza aplikacją: Instagram, serwer na Discordzie i wsparcie. Wszystko to
@@ -62,17 +63,34 @@ export interface ContactLink {
   href: string;
 }
 
+const T = text({
+  pl: {
+    instagram: 'Kulisy aplikacji i wiadomość prosto do autora.',
+    discord: 'Serwer po polsku: pytania, pomysły, rozmowy o treningu.',
+    espresso: 'Postaw espresso',
+    supportPl: 'Wsparcie autora przez buycoffee.to.',
+    supportWorld: 'Wsparcie autora — płatność kartą z każdego kraju.',
+  },
+  en: {
+    instagram: 'Behind the scenes of the app, and messages straight to the author.',
+    discord: 'A Polish-language server: questions, ideas, training talk.',
+    espresso: 'Buy an espresso',
+    supportPl: 'Support the author via buycoffee.to.',
+    supportWorld: 'Support the author — pay by card from any country.',
+  },
+});
+
 /** Odnośniki kontaktowe dla tego miejsca, w kolejności pokazywania. */
 export function contactLinks(pl: boolean, instagram: string | null = INSTAGRAM_URL): ContactLink[] {
   const links: ContactLink[] = [];
   if (instagram)
-    links.push({ id: 'instagram', name: 'Instagram', note: 'Kulisy aplikacji i wiadomość prosto do autora.', href: instagram });
+    links.push({ id: 'instagram', name: 'Instagram', note: T.instagram, href: instagram });
   if (pl)
-    links.push({ id: 'discord', name: 'Discord', note: 'Serwer po polsku: pytania, pomysły, rozmowy o treningu.', href: DISCORD_URL });
+    links.push({ id: 'discord', name: 'Discord', note: T.discord, href: DISCORD_URL });
   links.push(
     pl
-      ? { id: 'support', name: 'Postaw espresso', note: 'Wsparcie autora przez buycoffee.to.', href: SUPPORT_URL }
-      : { id: 'support', name: 'Buy me a coffee', note: 'Wsparcie autora — płatność kartą z każdego kraju.', href: SUPPORT_URL_WORLD },
+      ? { id: 'support', name: T.espresso, note: T.supportPl, href: SUPPORT_URL }
+      : { id: 'support', name: 'Buy me a coffee', note: T.supportWorld, href: SUPPORT_URL_WORLD },
   );
   return links;
 }

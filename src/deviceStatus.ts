@@ -1,3 +1,4 @@
+import { LOCALE, pluralEn, text } from './i18n';
 import type { BoxResult } from './mailbox';
 
 /**
@@ -74,6 +75,99 @@ export function deviceStatus(i: DeviceInput): DeviceStatus {
 
 const pad = (n: number): string => String(n).padStart(2, '0');
 
+interface Said {
+  who: string;
+  every: string;
+  sendNow: string;
+  empty: string;
+  bad: string;
+  offline: string;
+}
+
+const T = text({
+  pl: {
+    today: 'dziś',
+    yesterday: 'wczoraj',
+    tomorrow: 'jutro',
+    date: (d: Date) => `${d.getDate()}.${pad(d.getMonth() + 1)}`,
+    about: (clock: string, day: string | null) => (day === null ? `ok. ${clock}` : `${day} ok. ${clock}`),
+    justNow: 'przed chwilą',
+    minAgo: (min: number) => `${min} min temu`,
+    hoursAgo: (h: number) => `${h} godz. temu`,
+    sinceMin: (min: number) => `${min} min`,
+    sinceHours: (h: number) => `${h} godz.`,
+    sinceDays: (days: number) => (days === 1 ? 'doby' : `${days} dni`),
+    nextSoon: 'następna lada chwila',
+    next: (about: string) => `następna ${about}`,
+    said: {
+      watch: {
+        who: 'zegarek',
+        every: 'zegarek wysyła co ok. 30 min',
+        sendNow: 'Otwórz GYM TRACKER na zegarku i naciśnij START.',
+        empty:
+          'Zegarek jeszcze nic nie przysłał. Dane przychodzą kilka minut po otwarciu aplikacji na zegarku, gdy telefon jest w pobliżu.',
+        bad: 'Paczka z zegarka nie otwiera się tym kluczem — na zegarku jest pewnie inny. Wklej klucz z tej karty jeszcze raz.',
+        offline: 'Serwer nie odpowiada albo nie ma sieci. Spróbuję znów przy następnym otwarciu aplikacji.',
+      },
+      phone: {
+        who: 'telefon',
+        every: 'telefon wysyła mniej więcej co godzinę',
+        sendNow: 'Otwórz GYM TRACKER Zdrowie i naciśnij „Wyślij teraz”.',
+        empty:
+          'Telefon jeszcze nic nie przysłał. Otwórz GYM TRACKER Zdrowie, wklej klucz i zezwól na dostęp do danych — pierwsza paczka wyjdzie od razu.',
+        bad: 'Paczka z telefonu nie otwiera się tym kluczem — w aplikacji na telefonie jest pewnie inny. Wklej klucz z tej karty jeszcze raz.',
+        offline: 'Serwer nie odpowiada albo nie ma sieci. Spróbuję znów przy następnym otwarciu aplikacji.',
+      },
+    } as Record<Device, Said>,
+    arrived: (at: string) => `Przyszła nowa paczka (${at}).`,
+    noNew: (at: string, s: Said) => `Bez nowej paczki — ostatnia z ${at}, ${s.every}. Chcesz teraz? ${s.sendNow}`,
+    serverEmpty: (s: Said) =>
+      `Na serwerze nie ma żadnej paczki — ${s.who} nic nie wysłał od ponad tygodnia. Zajrzyj do „Dane nie przychodzą?”.`,
+    later: 'Spróbuj za chwilę.',
+  },
+  en: {
+    today: 'today',
+    yesterday: 'yesterday',
+    tomorrow: 'tomorrow',
+    date: (d: Date) => d.toLocaleDateString(LOCALE, { day: 'numeric', month: 'short' }),
+    about: (clock: string, day: string | null) => (day === null ? `around ${clock}` : `${day} around ${clock}`),
+    justNow: 'just now',
+    minAgo: (min: number) => `${min} min ago`,
+    hoursAgo: (h: number) => `${h} ${pluralEn(h, 'hour', 'hours')} ago`,
+    sinceMin: (min: number) => `${min} min`,
+    sinceHours: (h: number) => `${h} ${pluralEn(h, 'hour', 'hours')}`,
+    sinceDays: (days: number) => (days === 1 ? 'a day' : `${days} days`),
+    nextSoon: 'next one any moment',
+    next: (about: string) => `next ${about}`,
+    said: {
+      watch: {
+        who: 'the watch',
+        every: 'the watch sends every 30 min or so',
+        sendNow: 'Open GYM TRACKER on the watch and press START.',
+        empty:
+          'The watch hasn’t sent anything yet. Data arrives a few minutes after you open the app on the watch, with your phone nearby.',
+        bad: 'The watch’s upload won’t open with this key — the watch probably has a different one. Paste the key from this card again.',
+        offline: 'The server isn’t responding or you’re offline. I’ll try again next time you open the app.',
+      },
+      phone: {
+        who: 'the phone',
+        every: 'the phone sends roughly every hour',
+        // i18n-ignore: przycisk w aplikacji GYM TRACKER Zdrowie, która mówi tylko po polsku
+        sendNow: 'Open GYM TRACKER Zdrowie and tap “Wyślij teraz” (Send now).',
+        empty:
+          'The phone hasn’t sent anything yet. Open GYM TRACKER Zdrowie, paste the key and allow access to your data — the first upload goes out straight away.',
+        bad: 'The phone’s upload won’t open with this key — the app on your phone probably has a different one. Paste the key from this card again.',
+        offline: 'The server isn’t responding or you’re offline. I’ll try again next time you open the app.',
+      },
+    },
+    arrived: (at: string) => `A new upload arrived (${at}).`,
+    noNew: (at: string, s: Said) => `No new upload — the last one is from ${at}; ${s.every}. Want one now? ${s.sendNow}`,
+    serverEmpty: (s: Said) =>
+      `There’s no upload on the server — ${s.who} hasn’t sent anything for over a week. Check “Data not arriving?”.`,
+    later: 'Try again in a moment.',
+  },
+});
+
 /** „14:05” według zegara tej przeglądarki. */
 export const clockText = (ms: number): string => {
   const d = new Date(ms);
@@ -90,11 +184,10 @@ const dayDiff = (ms: number, nowMs: number): number => {
 
 const dayWord = (ms: number, nowMs: number): string => {
   const diff = dayDiff(ms, nowMs);
-  if (diff === 0) return 'dziś';
-  if (diff === -1) return 'wczoraj';
-  if (diff === 1) return 'jutro';
-  const d = new Date(ms);
-  return `${d.getDate()}.${pad(d.getMonth() + 1)}`;
+  if (diff === 0) return T.today;
+  if (diff === -1) return T.yesterday;
+  if (diff === 1) return T.tomorrow;
+  return T.date(new Date(ms));
 };
 
 /** „dziś 14:32”, „wczoraj 21:40”, „1.10 21:40”. */
@@ -106,7 +199,7 @@ export const shortAtText = (ms: number, nowMs: number): string =>
 
 /** „ok. 15:02”, a dla innego dnia „jutro ok. 0:20” albo „wczoraj ok. 23:40”. */
 export const aboutText = (ms: number, nowMs: number): string =>
-  dayDiff(ms, nowMs) === 0 ? `ok. ${clockText(ms)}` : `${dayWord(ms, nowMs)} ok. ${clockText(ms)}`;
+  T.about(clockText(ms), dayDiff(ms, nowMs) === 0 ? null : dayWord(ms, nowMs));
 
 /**
  * Czas względny: „przed chwilą”, „12 min temu”, „2 godz. temu”, a od wczoraj już data z godziną
@@ -114,9 +207,9 @@ export const aboutText = (ms: number, nowMs: number): string =>
  */
 export function agoText(ms: number, nowMs: number): string {
   const min = Math.floor((nowMs - ms) / MIN);
-  if (min < 1) return 'przed chwilą';
-  if (min < 60) return `${min} min temu`;
-  if (dayDiff(ms, nowMs) === 0) return `${Math.floor(min / 60)} godz. temu`;
+  if (min < 1) return T.justNow;
+  if (min < 60) return T.minAgo(min);
+  if (dayDiff(ms, nowMs) === 0) return T.hoursAgo(Math.floor(min / 60));
   return atText(ms, nowMs);
 }
 
@@ -133,16 +226,15 @@ export function lastPackText(ms: number, nowMs: number): string {
 /** Jak długo nic nie przyszło: „7 godz.”, „doby”, „3 dni” — do „Brak danych od …”. */
 export function sinceText(minutes: number): string {
   const hours = Math.round(minutes / 60);
-  if (hours < 1) return `${Math.max(1, minutes)} min`;
-  if (hours < 24) return `${hours} godz.`;
-  const days = Math.floor(minutes / 1440);
-  return days === 1 ? 'doby' : `${days} dni`;
+  if (hours < 1) return T.sinceMin(Math.max(1, minutes));
+  if (hours < 24) return T.sinceHours(hours);
+  return T.sinceDays(Math.floor(minutes / 1440));
 }
 
 /** „następna ok. 15:02” albo „następna lada chwila”, gdy jej pora już minęła. */
 export function nextText(s: DeviceStatus, nowMs: number): string {
-  if (s.nextAt === null) return 'następna lada chwila';
-  return s.nextAt <= nowMs ? 'następna lada chwila' : `następna ${aboutText(s.nextAt, nowMs)}`;
+  if (s.nextAt === null) return T.nextSoon;
+  return s.nextAt <= nowMs ? T.nextSoon : T.next(aboutText(s.nextAt, nowMs));
 }
 
 /* ---------------- Po „Sprawdź teraz” ---------------- */
@@ -150,29 +242,7 @@ export function nextText(s: DeviceStatus, nowMs: number): string {
 export type Device = 'watch' | 'phone';
 
 /** Teksty, które różnią zegarek od telefonu — reszta zdań jest wspólna. */
-export const SAID: Record<
-  Device,
-  { who: string; every: string; sendNow: string; empty: string; bad: string; offline: string }
-> = {
-  watch: {
-    who: 'zegarek',
-    every: 'zegarek wysyła co ok. 30 min',
-    sendNow: 'Otwórz GYM TRACKER na zegarku i naciśnij START.',
-    empty:
-      'Zegarek jeszcze nic nie przysłał. Dane przychodzą kilka minut po otwarciu aplikacji na zegarku, gdy telefon jest w pobliżu.',
-    bad: 'Paczka z zegarka nie otwiera się tym kluczem — na zegarku jest pewnie inny. Wklej klucz z tej karty jeszcze raz.',
-    offline: 'Serwer nie odpowiada albo nie ma sieci. Spróbuję znów przy następnym otwarciu aplikacji.',
-  },
-  phone: {
-    who: 'telefon',
-    every: 'telefon wysyła mniej więcej co godzinę',
-    sendNow: 'Otwórz GYM TRACKER Zdrowie i naciśnij „Wyślij teraz”.',
-    empty:
-      'Telefon jeszcze nic nie przysłał. Otwórz GYM TRACKER Zdrowie, wklej klucz i zezwól na dostęp do danych — pierwsza paczka wyjdzie od razu.',
-    bad: 'Paczka z telefonu nie otwiera się tym kluczem — w aplikacji na telefonie jest pewnie inny. Wklej klucz z tej karty jeszcze raz.',
-    offline: 'Serwer nie odpowiada albo nie ma sieci. Spróbuję znów przy następnym otwarciu aplikacji.',
-  },
-};
+export const SAID: Record<Device, Said> = T.said;
 
 /**
  * Co powiedzieć po „Sprawdź teraz”. Samo „sprawdzone” nic nie mówi — ważne, czy przyszła NOWA
@@ -184,21 +254,17 @@ export function checkSaid(device: Device, beforeT: number | null, r: BoxResult<{
   switch (r.kind) {
     case 'ok': {
       const at = shortAtText(r.payload.t * 1000, nowMs);
-      return beforeT === null || r.payload.t > beforeT
-        ? `Przyszła nowa paczka (${at}).`
-        : `Bez nowej paczki — ostatnia z ${at}, ${s.every}. Chcesz teraz? ${s.sendNow}`;
+      return beforeT === null || r.payload.t > beforeT ? T.arrived(at) : T.noNew(at, s);
     }
     case 'empty':
       // Pusta skrzynka przy danych w zapisie: serwer trzyma paczkę najwyżej tydzień od ostatniej
       // wysyłki, więc urządzenie milczy od ponad tygodnia.
-      return beforeT === null
-        ? s.empty
-        : `Na serwerze nie ma żadnej paczki — ${s.who} nic nie wysłał od ponad tygodnia. Zajrzyj do „Dane nie przychodzą?”.`;
+      return beforeT === null ? s.empty : T.serverEmpty(s);
     case 'bad':
       return s.bad;
     case 'offline':
       return s.offline;
     default:
-      return 'Spróbuj za chwilę.';
+      return T.later;
   }
 }

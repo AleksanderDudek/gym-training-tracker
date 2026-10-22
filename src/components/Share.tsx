@@ -3,6 +3,7 @@ import type { ReactElement } from 'react';
 import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 import { canShareFiles, download, share, shareCard, shareLinks, shareText } from '../engine/share';
+import { text } from '../i18n';
 import type { ShareSubject } from '../engine/share';
 import { pick } from '../engine/quips';
 import { BAND_MOOD, BAND_NAME } from './BadgeArt';
@@ -10,6 +11,25 @@ import type { Band } from './BadgeArt';
 import { Gorilla } from './Gorilla';
 import type { CoachMood, TraineeMood } from './Gorilla';
 import type { Cast } from './ui';
+
+const T = text({
+  pl: {
+    share: 'Udostępnij',
+    copied: 'Skopiowane do schowka.',
+    cantShare: 'Ta przeglądarka nie udostępnia sama — wybierz serwis albo pobierz obrazek.',
+    preparing: 'Przygotowuję…',
+    peek: 'Co pójdzie w świat',
+    download: 'Pobierz obrazek',
+  },
+  en: {
+    share: 'Share',
+    copied: 'Copied to the clipboard.',
+    cantShare: 'This browser can’t share by itself — pick a service or download the image.',
+    preparing: 'Preparing…',
+    peek: 'What gets shared',
+    download: 'Download image',
+  },
+});
 
 /**
  * Kto stoi w narożnikach blankietu. Po lewej podopieczny, który reaguje na wynik, po prawej
@@ -84,7 +104,7 @@ export function cardFor(subject: ShareSubject, medal?: SVGSVGElement | null): Pr
 export function ShareButton({
   subject,
   medalRef,
-  label = 'Udostępnij',
+  label = T.share,
 }: {
   subject: ShareSubject;
   /** Medal do wklejenia w kartę. Brak oznacza kartę z samym tytułem i liczbami. */
@@ -123,23 +143,23 @@ export function ShareButton({
 
     if (res === 'shared' || res === 'cancelled') return;
     if (res === 'copied') {
-      setNote('Skopiowane do schowka.');
+      setNote(T.copied);
       setFallback(true);
       return;
     }
-    setNote('Ta przeglądarka nie udostępnia sama — wybierz serwis albo pobierz obrazek.');
+    setNote(T.cantShare);
     setFallback(true);
   };
 
   return (
     <div className="share">
       <button className="btn ghost sm" onClick={() => void go()} disabled={busy}>
-        {busy ? 'Przygotowuję…' : label}
+        {busy ? T.preparing : label}
       </button>
 
       {/* Podgląd wpisu: nic nie wychodzi w świat bez pokazania, co dokładnie wychodzi. */}
       <details className="share-peek">
-        <summary>Co pójdzie w świat</summary>
+        <summary>{T.peek}</summary>
         <p>{shareText(subject)}</p>
       </details>
 
@@ -156,7 +176,7 @@ export function ShareButton({
             className="btn ghost sm"
             onClick={() => void build().then((b) => b && download(b))}
           >
-            Pobierz obrazek
+            {T.download}
           </button>
         </div>
       )}
