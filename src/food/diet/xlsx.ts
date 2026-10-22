@@ -1,4 +1,5 @@
 import { strFromU8, unzipSync } from 'fflate';
+import { say } from '../../i18n';
 
 /**
  * A minimal .xlsx reader: a workbook is a zip of XML parts, and the parts a
@@ -76,12 +77,13 @@ const MAX_PART_BYTES = 30_000_000;
 const WANTED = /^xl\/(workbook\.xml|_rels\/workbook\.xml\.rels|sharedStrings\.xml|worksheets\/[^/]+\.xml)$/;
 
 export function readWorkbook(bytes: Uint8Array): Workbook {
-  if (bytes.length > MAX_WORKBOOK_BYTES) throw new Error('Plik jest za duży jak na arkusz z planem (ponad 10 MB).');
+  if (bytes.length > MAX_WORKBOOK_BYTES)
+    throw new Error(say('Plik jest za duży jak na arkusz z planem (ponad 10 MB).', 'The file is too big for a plan workbook (over 10 MB).'));
   const files = unzipSync(bytes, { filter: (file) => WANTED.test(file.name) && file.originalSize <= MAX_PART_BYTES });
   const read = (path: string) => (files[path] ? strFromU8(files[path]) : undefined);
   const workbook = read('xl/workbook.xml');
   const rels = read('xl/_rels/workbook.xml.rels');
-  if (!workbook || !rels) throw new Error('To nie jest plik Excela (.xlsx).');
+  if (!workbook || !rels) throw new Error(say('To nie jest plik Excela (.xlsx).', 'This isn’t an Excel file (.xlsx).'));
 
   const targets = new Map<string, string>();
   for (const m of rels.matchAll(/<Relationship\b([^>]*)\/?>/g)) {

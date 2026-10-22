@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { say } from '../../i18n';
 import { pruneCache, readCache, writeCache, type Circle, type ShopCache } from '../nearby/cache';
 import { distanceMeters } from '../nearby/geo';
 import { OverpassUnavailable, fetchShops } from '../nearby/overpass';
@@ -80,7 +81,10 @@ export function useNearbyShops(position: LatLon | null, radius: number): [ShopsS
           const message =
             error instanceof OverpassUnavailable
               ? error.message
-              : 'Nie udało się pobrać sklepów. Sprawdź połączenie z internetem.';
+              : say(
+                  'Nie udało się pobrać sklepów. Sprawdź połączenie z internetem.',
+                  'Couldn’t load the shops. Check your internet connection.',
+                );
           setFetched((f) => ({ ...f, status: 'error', error: message }));
         }
       },

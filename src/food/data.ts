@@ -6,13 +6,29 @@ import { mergeChains } from './chains/merge';
 import type { ChainData } from './chains/types';
 import { mergeOnline } from './online/merge';
 import type { ShopData } from './online/types';
+import { text } from '../i18n';
+
+const T = text({
+  pl: {
+    missing: 'Dane produktów nie są dołączone do tej wersji aplikacji.',
+    offline: 'Nie udało się pobrać danych produktów. Sprawdź połączenie z internetem.',
+    http: (status: number) => `Nie udało się pobrać danych produktów (HTTP ${status}).`,
+    broken: 'Dane produktów są uszkodzone.',
+  },
+  en: {
+    missing: 'Product data isn’t included in this version of the app.',
+    offline: 'Couldn’t load the product data. Check your internet connection.',
+    http: (status: number) => `Couldn’t load the product data (HTTP ${status}).`,
+    broken: 'The product data is damaged.',
+  },
+});
 
 export interface LoadedDataset {
   dataset: Dataset;
   products: IndexedProduct[];
 }
 
-export const MISSING_DATA_MESSAGE = 'Dane produktów nie są dołączone do tej wersji aplikacji.';
+export const MISSING_DATA_MESSAGE = T.missing;
 
 /**
  * Tekst bazy z pobranych bajtów. Plik leży na serwerze jako gzip (`data/products.<wersja>.json.gz`),
@@ -47,16 +63,16 @@ async function fetchDataset(): Promise<LoadedDataset> {
   const shops = loadShops();
   // Zerwane połączenie wychodzi z `fetch` albo dopiero w trakcie czytania treści.
   const offline = () => {
-    throw new Error('Nie udało się pobrać danych produktów. Sprawdź połączenie z internetem.');
+    throw new Error(T.offline);
   };
   const response = await fetch(import.meta.env.BASE_URL + url).catch(offline);
-  if (!response.ok) throw new Error(`Nie udało się pobrać danych produktów (HTTP ${response.status}).`);
+  if (!response.ok) throw new Error(T.http(response.status));
   const bytes = new Uint8Array(await response.arrayBuffer().catch(offline));
   let dataset: Dataset;
   try {
     dataset = JSON.parse(await inflate(bytes)) as Dataset;
   } catch {
-    throw new Error('Dane produktów są uszkodzone.');
+    throw new Error(T.broken);
   }
   const extra = await shops;
   // Najpierw sieci stacjonarne (ich produkty łączą się z bazą po EAN), potem sklepy internetowe —
@@ -65,13 +81,13 @@ async function fetchDataset(): Promise<LoadedDataset> {
     dataset = mergeChains(dataset, extra.chains);
   } catch (error) {
     // Uszkodzony plik sieci nie może zabrać 29 tysięcy produktów — baza przychodzi bez niej.
-    console.warn('Produkty sieci pominięte:', error);
+    console.warn('Produkty sieci pominięte:', error); // i18n-ignore: developer log
   }
   try {
     dataset = mergeOnline(dataset, extra.shops);
   } catch (error) {
     // Uszkodzony plik sklepu nie może zabrać 29 tysięcy produktów — baza przychodzi bez sklepów.
-    console.warn('Produkty sklepów internetowych pominięte:', error);
+    console.warn('Produkty sklepów internetowych pominięte:', error); // i18n-ignore: developer log
   }
   return { dataset, products: indexProducts(dataset.products, dataset.dictionaries.brands) };
 }

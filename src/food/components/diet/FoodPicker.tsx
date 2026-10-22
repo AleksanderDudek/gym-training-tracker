@@ -4,12 +4,72 @@ import { db } from '../../diet/db';
 import { autoSetName, setFood, setTotals, type Food, type FoodSet } from '../../diet/foods';
 import { searchFoods } from '../../diet/search';
 import { logFood, logQuick } from '../../diet/store';
-import { formatNumber } from '../../lib/format';
+import { text } from '../../../i18n';
 import type { Dictionaries, IndexedProduct } from '../../lib/types';
 import { Sheet } from '../common/Sheet';
 import { StarButton } from '../common/StarButton';
+import { DT } from './dietText';
 import { FoodResults, PartsPicker, atGrams, badGrams, numberOrNull, partsOf, useMenus, type Part } from './PartsPicker';
 import { MacroLine } from './SuggestionList';
+
+const T = text({
+  pl: {
+    how: 'Sposób dodania',
+    search: 'Szukaj',
+    set: 'Zestaw',
+    quick: 'Tylko kalorie',
+    searchPlaceholder: 'Produkt, przepis, lokal, pozycja planu…',
+    searchLabel: 'Szukaj jedzenia',
+    loading: 'Wczytuję bazę produktów — na razie szukam w planie, przepisach, lokalach i Twoim jedzeniu.',
+    grams: 'Ile gramów',
+    add: 'Dodaj',
+    back: 'Wróć',
+    setWaits: ' Zestaw czeka w wyszukiwaniu.',
+    setName: 'Nazwa zestawu',
+    setPlaceholder: 'np. Banan i batonik',
+    inSet: 'W zestawie',
+    setEmpty: 'Nic jeszcze — wyszukaj poniżej pierwszą rzecz, np. „banan”, potem „baton”.',
+    setSearch: 'Szukaj rzeczy do zestawu',
+    setRemove: 'Usuń z zestawu',
+    saveSet: 'Zapisz jako mój zestaw (pojawi się w wyszukiwaniu i propozycjach)',
+    /** The amount of a food of the user's own, saved with it. */
+    portion: '1 porcja',
+    /** The name of a calories-only entry without one; `logQuick` saves the same. */
+    offPlan: 'Coś poza planem',
+    chains: 'Jedzenie z sieci (McDonald\'s, KFC, Starbucks i inne) znajdziesz w „Szukaj” — razem z makro.',
+    what: 'Co to było',
+    whatPlaceholder: 'np. obiad u rodziców',
+    macrosHint: 'Makroskładniki – jeśli znasz:',
+    saveFood: 'Zapisz jako moje jedzenie (pojawi się w wyszukiwaniu i propozycjach)',
+  },
+  en: {
+    how: 'How to add',
+    search: 'Search',
+    set: 'Set',
+    quick: 'Calories only',
+    searchPlaceholder: 'Product, recipe, restaurant, plan item…',
+    searchLabel: 'Search food',
+    loading: 'Loading the product database — for now I’m searching the plan, recipes, restaurants and your food.',
+    grams: 'Grams',
+    add: 'Add',
+    back: 'Back',
+    setWaits: ' The set is waiting for you in search.',
+    setName: 'Set name',
+    setPlaceholder: 'e.g. Banana and a bar',
+    inSet: 'In the set',
+    setEmpty: 'Nothing yet — search below for the first thing, e.g. “banana”, then “bar”.',
+    setSearch: 'Search for things to add to the set',
+    setRemove: 'Remove from the set',
+    saveSet: 'Save as my set (it will show up in search and suggestions)',
+    portion: '1 serving',
+    offPlan: 'Something off-plan',
+    chains: 'Food from chains (McDonald’s, KFC, Starbucks and more) is in “Search” — with its macros.',
+    what: 'What was it',
+    whatPlaceholder: 'e.g. lunch at your parents’',
+    macrosHint: 'Macros – if you know them:',
+    saveFood: 'Save as my food (it will show up in search and suggestions)',
+  },
+});
 
 interface Props {
   open: boolean;
@@ -33,7 +93,7 @@ interface Props {
  */
 export function FoodPicker({ open, onClose, ...rest }: Props) {
   return (
-    <Sheet open={open} title="Dodaj zjedzone" onClose={onClose} className="fd-diet-sheet">
+    <Sheet open={open} title={DT.addEaten} onClose={onClose} className="fd-diet-sheet">
       {open && <PickerBody {...rest} onDone={onClose} />}
     </Sheet>
   );
@@ -50,11 +110,11 @@ function PickerBody(props: BodyProps) {
   return (
     <>
       <Segmented
-        label="Sposób dodania"
+        label={T.how}
         options={[
-          { key: 'search', label: 'Szukaj' },
-          { key: 'set', label: 'Zestaw' },
-          { key: 'quick', label: 'Tylko kalorie' },
+          { key: 'search', label: T.search },
+          { key: 'set', label: T.set },
+          { key: 'quick', label: T.quick },
         ]}
         value={mode}
         onChange={setMode}
@@ -95,7 +155,7 @@ function SearchMode({ date, pool, products, dict, productsLoading, onDone, onLog
   const chosen = selected ? atGrams(selected, grams) : null;
 
   const log = (food: Food) =>
-    void once(() => logFood(date, food), `Zapisane: ${food.name} · ${formatNumber(food.nutrients.kcal, 0)} kcal.`);
+    void once(() => logFood(date, food), DT.saved(food.name, food.nutrients.kcal));
   const add = () => {
     if (chosen) log(chosen);
   };
@@ -110,14 +170,12 @@ function SearchMode({ date, pool, products, dict, productsLoading, onDone, onLog
           setQuery(e.target.value);
           setSelected(null);
         }}
-        placeholder="Produkt, przepis, lokal, pozycja planu…"
-        aria-label="Szukaj jedzenia"
+        placeholder={T.searchPlaceholder}
+        aria-label={T.searchLabel}
         enterKeyHint="search"
         autoComplete="off"
       />
-      {productsLoading && (
-        <p className="fd-diet-hint">Wczytuję bazę produktów — na razie szukam w planie, przepisach, lokalach i Twoim jedzeniu.</p>
-      )}
+      {productsLoading && <p className="fd-diet-hint">{T.loading}</p>}
       {chosen ? (
         <div className="fd-diet-chosen">
           <div className="fd-diet-chosen-head">
@@ -128,7 +186,7 @@ function SearchMode({ date, pool, products, dict, productsLoading, onDone, onLog
           <p className="fd-diet-meta">{chosen.detail}</p>
           {chosen.per100 && (
             <label className="fld fd-diet-grams">
-              <span>Ile gramów</span>
+              <span>{T.grams}</span>
               <input
                 type="text"
                 className="num"
@@ -144,10 +202,10 @@ function SearchMode({ date, pool, products, dict, productsLoading, onDone, onLog
           </p>
           <div className="fd-diet-acts">
             <button type="button" className="btn" onClick={add} disabled={busy}>
-              Dodaj
+              {T.add}
             </button>
             <button type="button" className="btn ghost" onClick={() => setSelected(null)}>
-              Wróć
+              {T.back}
             </button>
           </div>
         </div>
@@ -192,19 +250,19 @@ function SetBuilder({ date, pool, products, dict, productsLoading, onDone, onLog
           const id = save ? await db.sets.add(set) : undefined;
           await logFood(date, setFood(id === undefined ? set : { ...set, id }));
         }),
-      `Zapisane: ${finalName} · ${formatNumber(total.kcal, 0)} kcal.${save ? ' Zestaw czeka w wyszukiwaniu.' : ''}`,
+      `${DT.saved(finalName, total.kcal)}${save ? T.setWaits : ''}`,
     );
   };
 
   return (
     <div className="fd-diet-set">
       <label className="fld">
-        <span>Nazwa zestawu</span>
+        <span>{T.setName}</span>
         <input
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder={chosenParts.length ? autoSetName(chosenParts) : 'np. Banan i batonik'}
+          placeholder={chosenParts.length ? autoSetName(chosenParts) : T.setPlaceholder}
           autoComplete="off"
         />
       </label>
@@ -216,20 +274,20 @@ function SetBuilder({ date, pool, products, dict, productsLoading, onDone, onLog
         products={products}
         dict={dict}
         productsLoading={productsLoading}
-        heading="W zestawie"
-        empty="Nic jeszcze — wyszukaj poniżej pierwszą rzecz, np. „banan”, potem „baton”."
-        searchLabel="Szukaj rzeczy do zestawu"
-        removeLabel="Usuń z zestawu"
+        heading={T.inSet}
+        empty={T.setEmpty}
+        searchLabel={T.setSearch}
+        removeLabel={T.setRemove}
         totalName={finalName}
         noSets
       />
 
       <label className="check-row">
         <input type="checkbox" checked={save} onChange={(e) => setSave(e.target.checked)} />
-        Zapisz jako mój zestaw (pojawi się w wyszukiwaniu i propozycjach)
+        {T.saveSet}
       </label>
       <button type="button" className="btn wide" onClick={add} disabled={busy || parts.length === 0 || anyBad}>
-        Dodaj
+        {T.add}
       </button>
     </div>
   );
@@ -253,9 +311,9 @@ function QuickMode({ date, onDone, onLogged }: BodyProps) {
         // Jedna transakcja: posiłek i zapisane jedzenie przychodzą razem albo wcale.
         db.transaction('rw', db.entries, db.foods, async () => {
           await logQuick(date, name, kcal, macros);
-          if (quick.save && name) await db.foods.add({ name, amountLabel: '1 porcja', kcal, ...macros });
+          if (quick.save && name) await db.foods.add({ name, amountLabel: T.portion, kcal, ...macros });
         }),
-      `Zapisane: ${name || 'Coś poza planem'} · ${formatNumber(kcal, 0)} kcal.`,
+      DT.saved(name || T.offPlan, kcal),
     );
   };
 
@@ -268,20 +326,18 @@ function QuickMode({ date, onDone, onLogged }: BodyProps) {
         addQuick();
       }}
     >
-      <p className="fd-diet-hint">
-        Jedzenie z sieci (McDonald's, KFC, Starbucks i inne) znajdziesz w „Szukaj” — razem z makro.
-      </p>
+      <p className="fd-diet-hint">{T.chains}</p>
       <label className="fld">
-        <span>Co to było</span>
+        <span>{T.what}</span>
         <input
           type="text"
           value={quick.name}
           onChange={(e) => setQuick({ ...quick, name: e.target.value })}
-          placeholder="np. obiad u rodziców"
+          placeholder={T.whatPlaceholder}
         />
       </label>
       <label className="fld">
-        <span>Kalorie (kcal)</span>
+        <span>{DT.kcalField}</span>
         <input
           type="text"
           className="num"
@@ -292,11 +348,11 @@ function QuickMode({ date, onDone, onLogged }: BodyProps) {
           onChange={(e) => setQuick({ ...quick, kcal: e.target.value })}
         />
       </label>
-      <p className="fd-diet-hint">Makroskładniki – jeśli znasz:</p>
+      <p className="fd-diet-hint">{T.macrosHint}</p>
       <div className="fd-diet-grid3">
         {(['protein', 'carbs', 'fat'] as const).map((k) => (
           <label key={k} className="fld">
-            <span>{{ protein: 'Białko (g)', carbs: 'Węglowodany (g)', fat: 'Tłuszcz (g)' }[k]}</span>
+            <span>{{ protein: DT.proteinG, carbs: DT.carbsG, fat: DT.fatG }[k]}</span>
             <input
               type="text"
               className="num"
@@ -310,10 +366,10 @@ function QuickMode({ date, onDone, onLogged }: BodyProps) {
       </div>
       <label className="check-row">
         <input type="checkbox" checked={quick.save} onChange={(e) => setQuick({ ...quick, save: e.target.checked })} />
-        Zapisz jako moje jedzenie (pojawi się w wyszukiwaniu i propozycjach)
+        {T.saveFood}
       </label>
       <button type="submit" className="btn wide" disabled={busy || numberOrNull(quick.kcal) === null}>
-        Dodaj
+        {T.add}
       </button>
     </form>
   );

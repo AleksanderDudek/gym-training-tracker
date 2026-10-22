@@ -1,3 +1,4 @@
+import { say } from '../../i18n';
 import { cleanPrepPlan } from '../prep/validate';
 import { db, type DayRow, type DietDb, type Entry, type PlannedCheat } from './db';
 import { bumpFavorite } from './favorites';
@@ -90,7 +91,7 @@ export async function logQuick(
   return database.entries.add({
     date,
     time: now().time,
-    name: name.trim() || 'Coś poza planem',
+    name: name.trim() || say('Coś poza planem', 'Something off-plan'),
     amountLabel: '',
     kcal,
     protein: macros.protein ?? null,
@@ -141,7 +142,7 @@ export async function logPlanItem(date: string, index: number, item: PlanItem, d
       date,
       time: now().time,
       name: item.text,
-      amountLabel: 'z planu',
+      amountLabel: say('z planu', 'from the plan'),
       kcal: item.kcal,
       protein: item.protein,
       carbs: item.carbs,
@@ -226,7 +227,7 @@ export async function importWorkbook(bytes: Uint8Array, database: DietDb = db): 
         await database.entries.add({
           date: day.date,
           time: '12:00',
-          name: 'Extra kcal z planu',
+          name: say('Extra kcal z planu', 'Extra kcal from the plan'),
           amountLabel: '',
           kcal: day.extraKcal,
           protein: null,
@@ -281,7 +282,7 @@ export async function exportAll(database: DietDb = db): Promise<Backup> {
  */
 export async function restoreAll(backup: unknown, database: DietDb = db): Promise<{ dropped: number }> {
   const b = backup as Partial<Record<keyof Backup, unknown>> | null;
-  if (b?.app !== 'produkty-pl' || b.version !== 1) throw new Error('To nie jest kopia zapasowa tej aplikacji.');
+  if (b?.app !== 'produkty-pl' || b.version !== 1) throw new Error(say('To nie jest kopia zapasowa tej aplikacji.', 'This isn’t a backup of this app.'));
   const days = cleanRows(b.days, cleanDay);
   const entries = cleanRows(b.entries, cleanEntry);
   const plans = cleanRows(b.plans, cleanPlan);

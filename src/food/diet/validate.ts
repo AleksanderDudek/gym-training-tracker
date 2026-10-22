@@ -1,3 +1,4 @@
+import { say } from '../../i18n';
 import type { CustomFood, Food, FoodSet, FoodSource, MealRole, SetPart } from './foods';
 import type { DayRow, Entry, Favorite, PlannedCheat } from './db';
 import type { Plan, PlanItem, PlanVariant } from './plan';
@@ -180,7 +181,7 @@ export function cleanCustomFood(raw: unknown): (CustomFood & { id?: number }) | 
   return {
     ...(finite(raw.id) && { id: raw.id }),
     name: raw.name,
-    amountLabel: typeof raw.amountLabel === 'string' ? raw.amountLabel : '1 porcja',
+    amountLabel: typeof raw.amountLabel === 'string' ? raw.amountLabel : say('1 porcja', '1 serving'),
     ...n,
   };
 }

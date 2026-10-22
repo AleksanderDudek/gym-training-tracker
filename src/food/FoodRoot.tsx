@@ -3,6 +3,7 @@ import { Sections } from '../components/Sections';
 import { LOADING, daySeed, pick } from '../engine/quips';
 import { FOOD_SECTION_PATH, SECTIONS, type FoodRoute } from '../routing';
 import type { DietPage, FoodSection } from '../types';
+import { say } from '../i18n';
 import './food.css';
 
 /**
@@ -62,7 +63,7 @@ export default function FoodRoot({ route }: { route: FoodRoute }) {
     <>
       {route.kind === 'food' && (
         <div className="wrap">
-          <Sections aria-label="Sekcje zakładki Jedzenie" items={SECTIONS.food} current={FOOD_SECTION_PATH[route.section]} />
+          <Sections aria-label={say('Sekcje zakładki Jedzenie', 'Food tab sections')} items={SECTIONS.food} current={FOOD_SECTION_PATH[route.section]} />
         </div>
       )}
       <Suspense fallback={<div className="empty">{pick(LOADING, daySeed())}</div>}>

@@ -68,6 +68,7 @@ export const BridgeContext = createContext<GymBridge | null>(null);
 /** Most z kontekstu. Bez niego ekran jedzenia nie ma skąd wziąć danych — to błąd montażu, nie stan. */
 export function useBridge(): GymBridge {
   const bridge = useContext(BridgeContext);
+  // i18n-ignore: a developer's mounting error, never shown to a user
   if (!bridge) throw new Error('useBridge: brak BridgeContext.Provider — ekran jedzenia musi stać pod mostem z App.');
   return bridge;
 }

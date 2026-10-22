@@ -14,12 +14,111 @@ import type { Profile } from '../../diet/types';
 import { useBridge } from '../../bridge';
 import { weightFrom, type ActivityOf } from '../../hooks/useActivity';
 import { formatNumber } from '../../lib/format';
+import { text } from '../../../i18n';
 import { Sheet } from '../common/Sheet';
 import { activityParts, signedKcal } from './activityText';
 import { beyondTexts, macroTexts, planText, verdictText } from './cheatText';
+import { DT } from './dietText';
 import { PartsPicker, badGrams, partsOf, type Part } from './PartsPicker';
 import { RestVariants } from './RestVariants';
 import { MacroLine } from './SuggestionList';
+
+const T = text({
+  pl: {
+    subtitle: 'Wybierz z listy albo wpisz makro — pod spodem zobaczysz, co z tego wynika',
+    saved: (label: string, kcal: string) => `Zapisane: ${label} · ${kcal}.`,
+    planned: (label: string, kcal: string) =>
+      `Cheat meal zaplanowany: ${label} · ${kcal}. Reszta dnia liczy się już z nim.`,
+    source: 'Skąd liczby',
+    fromList: 'Z listy',
+    enterMacros: 'Wpisz makro',
+    what: 'Co to będzie',
+    whatPlaceholder: 'np. pizza ze znajomymi',
+    inCheat: 'W cheat mealu',
+    empty:
+      'Wyszukaj w lokalach (pizza, burger, kebab…) i produktach albo wybierz z ulubionych poniżej. Kilka rzeczy złoży się w jeden posiłek.',
+    search: 'Szukaj do cheat mealu',
+    remove: 'Usuń z cheat mealu',
+    macrosHint: 'Makroskładniki – jeśli znasz:',
+    moveLegend: 'Ruch do końca dnia',
+    stepsGroup: 'Kroki do końca dnia',
+    steps: 'Kroki',
+    reachTarget: (steps: string) => `Dojdę do celu (${steps} kroków)`,
+    stayNow: (steps: string) => `Zostanę przy obecnych (${steps})`,
+    otherNumber: 'Inna liczba',
+    stepsDone: (steps: string) => `Kroki: ${steps} — cel na dziś już jest.`,
+    stepsEnd: 'Kroki na koniec dnia',
+    trainingDone: (kcal: string) => `Trening zrobiony: ${kcal}.`,
+    trainingGroup: 'Trening do końca dnia',
+    training: 'Trening',
+    plannedTraining: (name: string | null, kcal: string) =>
+      `Trening z planu będzie${name ? ` („${name}”, ok. ${kcal})` : ''}`,
+    noTrainingToday: 'Dziś treningu nie będzie',
+    asUsual: 'Jak zwykle (profil zakłada treningi w tygodniu)',
+    noTraining: 'Bez treningu',
+    extraTraining: 'Zrobię dodatkowy trening',
+    onlySimulation: 'Te założenia są tylko do symulacji — cel w dzienniku zmieni się, gdy ruch naprawdę się wydarzy.',
+    result: 'Co z tego wynika',
+    goal: (today: boolean) => `Cel ${today ? 'na dziś' : 'tego dnia'}`,
+    eaten: 'Zjedzone',
+    total: 'Razem',
+    moveInGoal: (kcal: string, parts: string) => `Ruch w celu: ${kcal}${parts ? ` — ${parts}` : ''}.`,
+    enterKcal: 'Wpisz kalorie — zobaczysz, czy dzień się mieści i co zostaje na resztę.',
+    restCould: 'Tak może wyglądać reszta dnia:',
+    lastMeal: 'Na ostatni posiłek pasuje na przykład:',
+    failed: 'Nie udało się zapisać w tej przeglądarce — spróbuj jeszcze raz.',
+    saveChanges: 'Zapisz zmiany',
+    plan: 'Zaplanuj',
+    eatenNow: 'Zjedzone teraz',
+  },
+  en: {
+    subtitle: 'Pick from the list or enter the macros — below you’ll see what it means',
+    saved: (label: string, kcal: string) => `Saved: ${label} · ${kcal}.`,
+    planned: (label: string, kcal: string) =>
+      `Cheat meal planned: ${label} · ${kcal}. The rest of the day now counts with it.`,
+    source: 'Where the numbers come from',
+    fromList: 'From the list',
+    enterMacros: 'Enter macros',
+    what: 'What will it be',
+    whatPlaceholder: 'e.g. pizza with friends',
+    inCheat: 'In the cheat meal',
+    empty:
+      'Search restaurants (pizza, burger, kebab…) and products, or pick from your favourites below. Several things add up to one meal.',
+    search: 'Search for the cheat meal',
+    remove: 'Remove from the cheat meal',
+    macrosHint: 'Macros – if you know them:',
+    moveLegend: 'Activity for the rest of the day',
+    stepsGroup: 'Steps for the rest of the day',
+    steps: 'Steps',
+    reachTarget: (steps: string) => `I’ll reach the goal (${steps} steps)`,
+    stayNow: (steps: string) => `I’ll stay where I am (${steps})`,
+    otherNumber: 'Another number',
+    stepsDone: (steps: string) => `Steps: ${steps} — today’s goal is already reached.`,
+    stepsEnd: 'Steps at the end of the day',
+    trainingDone: (kcal: string) => `Workout done: ${kcal}.`,
+    trainingGroup: 'Workout for the rest of the day',
+    training: 'Workout',
+    plannedTraining: (name: string | null, kcal: string) =>
+      `The planned workout will happen${name ? ` (“${name}”, about ${kcal})` : ''}`,
+    noTrainingToday: 'No workout today',
+    asUsual: 'As usual (your profile assumes workouts during the week)',
+    noTraining: 'No workout',
+    extraTraining: 'I’ll do an extra workout',
+    onlySimulation: 'These guesses are only for the simulation — the diary’s goal changes when the activity really happens.',
+    result: 'What it means',
+    goal: (today: boolean) => (today ? 'Today’s goal' : 'Goal that day'),
+    eaten: 'Eaten',
+    total: 'Total',
+    moveInGoal: (kcal: string, parts: string) => `Activity in the goal: ${kcal}${parts ? ` — ${parts}` : ''}.`,
+    enterKcal: 'Enter the calories — you’ll see whether the day fits and what’s left for the rest of it.',
+    restCould: 'The rest of the day could look like this:',
+    lastMeal: 'For the last meal, for example:',
+    failed: 'Couldn’t save in this browser — try again.',
+    saveChanges: 'Save changes',
+    plan: 'Plan it',
+    eatenNow: 'Eaten now',
+  },
+});
 
 interface Props {
   open: boolean;
@@ -74,7 +173,7 @@ type StepsChoice = 'target' | 'now' | 'custom';
  */
 export function CheatMealSheet(props: Props) {
   return (
-    <Sheet open={props.open} title="Cheat meal" subtitle="Wybierz z listy albo wpisz makro — pod spodem zobaczysz, co z tego wynika" onClose={props.onClose} className="fd-diet-sheet">
+    <Sheet open={props.open} title="Cheat meal" subtitle={T.subtitle} onClose={props.onClose} className="fd-diet-sheet">
       {props.open && <CheatBody {...props} />}
     </Sheet>
   );
@@ -210,9 +309,7 @@ function CheatBody({
       if (eat) await eatCheat(date, cheat);
       else await planCheat(date, cheat);
       onSaved(
-        eat
-          ? `Zapisane: ${label} · ${kcalText(cheat.kcal)}.`
-          : `Cheat meal zaplanowany: ${label} · ${kcalText(cheat.kcal)}. Reszta dnia liczy się już z nim.`,
+        eat ? T.saved(label, kcalText(cheat.kcal)) : T.planned(label, kcalText(cheat.kcal)),
       );
     } catch {
       // Komunikat aplikacji stoi pod arkuszem — błąd mówi pasek arkusza.
@@ -232,22 +329,22 @@ function CheatBody({
       }}
     >
       <Segmented
-        label="Skąd liczby"
+        label={T.source}
         options={[
-          { key: 'list', label: 'Z listy' },
-          { key: 'macros', label: 'Wpisz makro' },
+          { key: 'list', label: T.fromList },
+          { key: 'macros', label: T.enterMacros },
         ]}
         value={mode}
         onChange={switchMode}
       />
       <label className="fld">
-        <span>Co to będzie</span>
+        <span>{T.what}</span>
         <input
           type="text"
           value={name}
           maxLength={80}
           onChange={(e) => setName(e.target.value)}
-          placeholder={listName || 'np. pizza ze znajomymi'}
+          placeholder={listName || T.whatPlaceholder}
         />
       </label>
       {mode === 'list' ? (
@@ -258,17 +355,17 @@ function CheatBody({
           products={products}
           dict={dict}
           productsLoading={productsLoading}
-          heading="W cheat mealu"
-          empty="Wyszukaj w lokalach (pizza, burger, kebab…) i produktach albo wybierz z ulubionych poniżej. Kilka rzeczy złoży się w jeden posiłek."
-          searchLabel="Szukaj do cheat mealu"
-          removeLabel="Usuń z cheat mealu"
+          heading={T.inCheat}
+          empty={T.empty}
+          searchLabel={T.search}
+          removeLabel={T.remove}
           totalName={name.trim() || listName}
           showOwnWhenEmpty
         />
       ) : (
         <>
           <label className="fld">
-            <span>Kalorie (kcal)</span>
+            <span>{DT.kcalField}</span>
             <input
               type="text"
               className="num"
@@ -280,13 +377,13 @@ function CheatBody({
               onChange={(e) => setKcal(e.target.value)}
             />
           </label>
-          <p className="fd-diet-hint">Makroskładniki – jeśli znasz:</p>
+          <p className="fd-diet-hint">{T.macrosHint}</p>
           <div className="fd-diet-grid3">
             {(
               [
-                ['Białko (g)', protein, setProtein],
-                ['Węglowodany (g)', carbs, setCarbs],
-                ['Tłuszcz (g)', fat, setFat],
+                [DT.proteinG, protein, setProtein],
+                [DT.carbsG, carbs, setCarbs],
+                [DT.fatG, fat, setFat],
               ] as const
             ).map(([label, value, setValue]) => (
               <label key={label} className="fld">
@@ -307,33 +404,33 @@ function CheatBody({
 
       {now && (
         <fieldset className="fd-diet-cheatmove">
-          <legend>Ruch do końca dnia</legend>
+          <legend>{T.moveLegend}</legend>
           {belowTarget ? (
-            <div className="fd-diet-radios" role="radiogroup" aria-label="Kroki do końca dnia">
+            <div className="fd-diet-radios" role="radiogroup" aria-label={T.stepsGroup}>
               <p className="fd-diet-radiohead" aria-hidden="true">
-                Kroki
+                {T.steps}
               </p>
               <label className="check-row">
                 <input type="radio" name="cheat-steps" checked={stepsChoice === 'target'} onChange={() => setStepsChoice('target')} />
-                Dojdę do celu ({formatNumber(profile.targetSteps, 0)} kroków)
+                {T.reachTarget(formatNumber(profile.targetSteps, 0))}
               </label>
               {stepsKnown && (
                 <label className="check-row">
                   <input type="radio" name="cheat-steps" checked={stepsChoice === 'now'} onChange={() => setStepsChoice('now')} />
-                  Zostanę przy obecnych ({formatNumber(stepsNow, 0)})
+                  {T.stayNow(formatNumber(stepsNow, 0))}
                 </label>
               )}
               <label className="check-row">
                 <input type="radio" name="cheat-steps" checked={stepsChoice === 'custom'} onChange={() => setStepsChoice('custom')} />
-                Inna liczba
+                {T.otherNumber}
               </label>
             </div>
           ) : (
-            <p className="tight">Kroki: {formatNumber(stepsNow, 0)} — cel na dziś już jest.</p>
+            <p className="tight">{T.stepsDone(formatNumber(stepsNow, 0))}</p>
           )}
           {belowTarget && stepsChoice === 'custom' && (
             <label className="fld fd-diet-cheatsteps">
-              <span>Kroki na koniec dnia</span>
+              <span>{T.stepsEnd}</span>
               <input
                 type="text"
                 className="num"
@@ -345,58 +442,56 @@ function CheatBody({
             </label>
           )}
           {now.training.trained ? (
-            <p className="tight">Trening zrobiony: {kcalText(now.training.done)}.</p>
+            <p className="tight">{T.trainingDone(kcalText(now.training.done))}</p>
           ) : (
-            <div className="fd-diet-radios" role="radiogroup" aria-label="Trening do końca dnia">
+            <div className="fd-diet-radios" role="radiogroup" aria-label={T.trainingGroup}>
               <p className="fd-diet-radiohead" aria-hidden="true">
-                Trening
+                {T.training}
               </p>
               {now.training.source === 'plan' && now.training.planned > 0 ? (
                 <>
                   <label className="check-row">
                     <input type="radio" name="cheat-training" checked={training === 'planned'} onChange={() => setTraining('planned')} />
-                    Trening z planu będzie{now.training.plannedName ? ` („${now.training.plannedName}”, ok. ${kcalText(now.training.planned)})` : ''}
+                    {T.plannedTraining(now.training.plannedName, kcalText(now.training.planned))}
                   </label>
                   <label className="check-row">
                     <input type="radio" name="cheat-training" checked={training === 'none'} onChange={() => setTraining('none')} />
-                    Dziś treningu nie będzie
+                    {T.noTrainingToday}
                   </label>
                 </>
               ) : (
                 <>
                   <label className="check-row">
                     <input type="radio" name="cheat-training" checked={training === 'planned'} onChange={() => setTraining('planned')} />
-                    {now.training.source === 'profile' ? 'Jak zwykle (profil zakłada treningi w tygodniu)' : 'Bez treningu'}
+                    {now.training.source === 'profile' ? T.asUsual : T.noTraining}
                   </label>
                   {now.training.source === 'profile' && (
                     <label className="check-row">
                       <input type="radio" name="cheat-training" checked={training === 'none'} onChange={() => setTraining('none')} />
-                      Dziś treningu nie będzie
+                      {T.noTrainingToday}
                     </label>
                   )}
                 </>
               )}
               <label className="check-row">
                 <input type="radio" name="cheat-training" checked={training === 'extra'} onChange={() => setTraining('extra')} />
-                Zrobię dodatkowy trening
+                {T.extraTraining}
               </label>
             </div>
           )}
-          <p className="tight fd-diet-soft">
-            Te założenia są tylko do symulacji — cel w dzienniku zmieni się, gdy ruch naprawdę się wydarzy.
-          </p>
+          <p className="tight fd-diet-soft">{T.onlySimulation}</p>
         </fieldset>
       )}
 
-      <section className="fd-diet-sim" aria-label="Co z tego wynika">
-        <h3>Co z tego wynika</h3>
+      <section className="fd-diet-sim" aria-label={T.result}>
+        <h3>{T.result}</h3>
         <dl className="fd-diet-simrows">
           <div>
-            <dt>Cel {isToday ? 'na dziś' : 'tego dnia'}</dt>
+            <dt>{T.goal(isToday)}</dt>
             <dd>{kcalText(targets.kcal)}</dd>
           </div>
           <div>
-            <dt>Zjedzone</dt>
+            <dt>{T.eaten}</dt>
             <dd>{kcalText(eaten.kcal)}</dd>
           </div>
           <div>
@@ -404,18 +499,15 @@ function CheatBody({
             <dd>{cheat ? kcalText(cheat.kcal) : '—'}</dd>
           </div>
           <div className="fd-diet-simsum">
-            <dt>Razem</dt>
+            <dt>{T.total}</dt>
             <dd>{kcalText(eaten.kcal + (cheat?.kcal ?? 0))}</dd>
           </div>
         </dl>
         {expected && (expected.kcal !== 0 || activityParts(expected).length > 0) && (
-          <p className="tight">
-            Ruch w celu: {signedKcal(expected.kcal)}
-            {activityParts(expected).length ? ` — ${activityParts(expected).join(' · ')}` : ''}.
-          </p>
+          <p className="tight">{T.moveInGoal(signedKcal(expected.kcal), activityParts(expected).join(' · '))}</p>
         )}
         {!sim ? (
-          <p className="tight">Wpisz kalorie — zobaczysz, czy dzień się mieści i co zostaje na resztę.</p>
+          <p className="tight">{T.enterKcal}</p>
         ) : (
           <>
             <p className={`fd-diet-verdict fd-diet-v-${sim.verdict}`} aria-live="polite">
@@ -429,7 +521,7 @@ function CheatBody({
             {planText(sim) && <p className="tight">{planText(sim)}</p>}
             {ideas && ideas.variants.length > 0 ? (
               <>
-                <p className="tight">Tak może wyglądać reszta dnia:</p>
+                <p className="tight">{T.restCould}</p>
                 <RestVariants
                   variants={ideas.variants}
                   left={{ kcal: sim.left, protein: Math.max(0, sim.protein) }}
@@ -439,7 +531,7 @@ function CheatBody({
               ideas &&
               ideas.singles.length > 0 && (
                 <>
-                  <p className="tight">Na ostatni posiłek pasuje na przykład:</p>
+                  <p className="tight">{T.lastMeal}</p>
                   <ul className="fd-diet-simideas">
                     {ideas.singles.map((s) => (
                       <li key={s.food.key}>
@@ -461,15 +553,15 @@ function CheatBody({
 
       {failed && (
         <p className="tight fd-diet-warn" role="alert">
-          Nie udało się zapisać w tej przeglądarce — spróbuj jeszcze raz.
+          {T.failed}
         </p>
       )}
       <div className="actions fd-diet-cheatacts">
         <button type="submit" className="btn" disabled={!cheat || busy}>
-          {planned ? 'Zapisz zmiany' : 'Zaplanuj'}
+          {planned ? T.saveChanges : T.plan}
         </button>
         <button type="button" className="btn ghost" disabled={!cheat || busy || future} onClick={() => void save(true)}>
-          Zjedzone teraz
+          {T.eatenNow}
         </button>
       </div>
     </form>

@@ -10,10 +10,35 @@ import { hashWith } from './hash';
 import { activityKcalOf, useActivity } from './hooks/useActivity';
 import { useClock, useEntries, useHistory, useProfile } from './hooks/useDiet';
 import { formatNumber } from './lib/format';
+import { text } from '../i18n';
+import { DT } from './components/diet/dietText';
 import './components/diet/diet.css';
 
 const kcal = (n: number) => `${formatNumber(Math.round(n), 0)} kcal`;
 const grams = (n: number) => `${formatNumber(Math.round(n), 0)} g`;
+
+const T = text({
+  pl: {
+    left: (kcal: string, protein: string | null) =>
+      `Zostało ${kcal}${protein ? ` i ${protein} białka` : ' — białko na dziś już jest'}.`,
+    over: (kcal: string, protein: string | null) =>
+      `${kcal} ponad cel${protein ? `, a białka brakuje jeszcze ${protein}` : ''}.`,
+    tag: 'Jedzenie',
+    eaten: (eaten: string, goal: string) => `Dziś ${eaten} z ${goal}`,
+    goal: (goal: string) => `Cel na dziś: ${goal}`,
+    kcalBar: 'Kalorie',
+  },
+  en: {
+    left: (kcal: string, protein: string | null) =>
+      protein ? `${kcal} and ${protein} protein left.` : `${kcal} left — today’s protein is done.`,
+    over: (kcal: string, protein: string | null) =>
+      `${kcal} over the goal${protein ? `, and still ${protein} protein to go` : ''}.`,
+    tag: 'Food',
+    eaten: (eaten: string, goal: string) => `Today ${eaten} of ${goal}`,
+    goal: (goal: string) => `Today’s goal: ${goal}`,
+    kcalBar: 'Calories',
+  },
+});
 
 /** „Dodaj zjedzone” prosto z ekranu Dziś: dziennik otwiera arkusz i zdejmuje `dodaj` z adresu. */
 const ADD_HREF = hashWith(FOOD_PATH, diaryToParams({ date: null, add: true }));
@@ -46,32 +71,28 @@ export default function TodayFoodCard() {
   const status = macroStatus(targets, eaten, hour >= 21);
   const leftKcal = targets.kcal - eaten.kcal;
   const leftProtein = targets.protein.target - eaten.protein;
-  const line =
-    leftKcal >= 0
-      ? `Zostało ${kcal(leftKcal)}${leftProtein > 0 ? ` i ${grams(leftProtein)} białka` : ' — białko na dziś już jest'}.`
-      : `${kcal(-leftKcal)} ponad cel${leftProtein > 0 ? `, a białka brakuje jeszcze ${grams(leftProtein)}` : ''}.`;
+  const protein = leftProtein > 0 ? grams(leftProtein) : null;
+  const line = leftKcal >= 0 ? T.left(kcal(leftKcal), protein) : T.over(kcal(-leftKcal), protein);
 
   return (
     <div className="grp snackcard fd-diet-foodcard" style={{ minHeight: FOOD_CARD_HEIGHT }}>
       <a className="fd-diet-foodcard-link" href={FOOD_PATH}>
-        <div className="today-tag light">Jedzenie</div>
+        <div className="today-tag light">{T.tag}</div>
         <h2 className="today-name">
-          {eaten.kcal > 0
-            ? `Dziś ${formatNumber(eaten.kcal, 0)} z ${kcal(targets.kcal)}`
-            : `Cel na dziś: ${kcal(targets.kcal)}`}
+          {eaten.kcal > 0 ? T.eaten(formatNumber(eaten.kcal, 0), kcal(targets.kcal)) : T.goal(kcal(targets.kcal))}
         </h2>
-        <Bar value={eaten.kcal} target={targets.kcal} status={status.kcal.status} label="Kalorie" />
+        <Bar value={eaten.kcal} target={targets.kcal} status={status.kcal.status} label={T.kcalBar} />
         <div className="fd-diet-macro-head">
-          <span>Białko</span>
+          <span>{DT.protein}</span>
           <span className="fd-diet-nums">
             {formatNumber(eaten.protein, 0)} / {grams(targets.protein.target)}
           </span>
         </div>
-        <Bar value={eaten.protein} target={targets.protein.target} status={status.protein.status} label="Białko" />
+        <Bar value={eaten.protein} target={targets.protein.target} status={status.protein.status} label={DT.protein} />
         <p className="tight">{line}</p>
       </a>
       <a className="btn sm" href={ADD_HREF}>
-        Dodaj zjedzone
+        {DT.addEaten}
       </a>
     </div>
   );

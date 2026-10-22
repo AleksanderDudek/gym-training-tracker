@@ -1,3 +1,4 @@
+import { pluralEn, text } from '../../i18n';
 import { brandLine } from '../lib/display';
 import { packGrams } from '../lib/quantity';
 import type { Dictionaries, Product } from '../lib/types';
@@ -42,6 +43,27 @@ export interface Food {
   /** Starred by the user („Ulubione”): first in the picker, a bonus in suggestions. */
   favorite?: true;
 }
+
+const T = text({
+  pl: {
+    recipe: (minutes: number) => `przepis · ${minutes} min`,
+    cookFor: (servings: number) => ` · gotujesz na ${servings} porcje`,
+    serving: '1 porcja',
+    fromPlan: 'z planu',
+    planItem: '1 pozycja',
+    mine: 'moje',
+    set: (n: number) => `zestaw · ${n} ${n === 1 ? 'pozycja' : n < 5 ? 'pozycje' : 'pozycji'}`,
+  },
+  en: {
+    recipe: (minutes: number) => `recipe · ${minutes} min`,
+    cookFor: (servings: number) => ` · you cook ${servings} servings`,
+    serving: '1 serving',
+    fromPlan: 'from the plan',
+    planItem: '1 item',
+    mine: 'mine',
+    set: (n: number) => `set · ${n} ${pluralEn(n, 'item', 'items')}`,
+  },
+});
 
 /** One pack ("150 g", "4 x 125 g", "330ml") as the portion; a family pack or an unreadable label means 100 g. */
 export function portionGrams(quantity: string | null): number {
@@ -101,9 +123,9 @@ export function recipeFood(
   return {
     key: `recipe:${recipe.id}`,
     name: recipe.name,
-    detail: `przepis · ${recipe.minutes} min${(recipe.servings ?? 1) > 1 ? ` · gotujesz na ${recipe.servings} porcje` : ''}`,
+    detail: `${T.recipe(recipe.minutes)}${(recipe.servings ?? 1) > 1 ? T.cookFor(recipe.servings ?? 1) : ''}`,
     source: 'recipe',
-    amountLabel: '1 porcja',
+    amountLabel: T.serving,
     nutrients,
     per100: null,
     grams: null,
@@ -120,9 +142,9 @@ export function planFood(item: PlanItem): Food {
   return {
     key: `plan:${item.text}`,
     name: item.text,
-    detail: 'z planu',
+    detail: T.fromPlan,
     source: 'plan',
-    amountLabel: '1 pozycja',
+    amountLabel: T.planItem,
     nutrients: { kcal: item.kcal, protein: item.protein, carbs: item.carbs, fat: item.fat },
     per100: null,
     grams: null,
@@ -142,7 +164,7 @@ export function customFood(c: CustomFood & { id: number }): Food {
   return {
     key: `custom:${c.id}`,
     name: c.name,
-    detail: 'moje',
+    detail: T.mine,
     source: 'custom',
     amountLabel: c.amountLabel,
     nutrients: { kcal: c.kcal, protein: c.protein, carbs: c.carbs, fat: c.fat },
@@ -207,7 +229,7 @@ export function setFood(set: FoodSet): Food {
   return {
     key: set.id !== undefined ? `set:${set.id}` : `set:${set.name}`,
     name: set.name,
-    detail: `zestaw · ${n} ${n === 1 ? 'pozycja' : n < 5 ? 'pozycje' : 'pozycji'}`,
+    detail: T.set(n),
     source: 'set',
     amountLabel: setAmountLabel(set.parts),
     nutrients,

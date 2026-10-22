@@ -1,10 +1,29 @@
 import { Plus, Star } from 'lucide-react';
+import { text } from '../../../i18n';
 import type { Food } from '../../diet/foods';
 import type { Fit, FitLevel } from '../../diet/profiles';
 import { isPair, type Suggestion } from '../../diet/suggest';
 import { formatNumber } from '../../lib/format';
+import { DT } from './dietText';
 
-const FIT_LABEL: Record<FitLevel, string> = { great: 'pasuje', ok: 'może być', avoid: 'nie pasuje' };
+const T = text({
+  pl: {
+    fit: { great: 'pasuje', ok: 'może być', avoid: 'nie pasuje' } as Record<FitLevel, string>,
+    none: 'Brak propozycji w tym budżecie.',
+    pairsFirst: 'Dwie rzeczy razem',
+    pairsAfter: 'Albo dwie rzeczy razem',
+    best: 'najlepsze',
+  },
+  en: {
+    fit: { great: 'fits', ok: 'could do', avoid: 'doesn’t fit' },
+    none: 'No suggestions within this budget.',
+    pairsFirst: 'Two things together',
+    pairsAfter: 'Or two things together',
+    best: 'best',
+  },
+});
+
+const FIT_LABEL: Record<FitLevel, string> = T.fit;
 
 /**
  * Jak jedzenie pasuje do sposobu odżywiania. Słowo niesie ocenę samo — kolor tylko ją podkreśla;
@@ -24,7 +43,7 @@ export function MacroLine({ food }: { food: Food }) {
   const g = (v: number | null) => (v === null ? '?' : formatNumber(v, 0));
   return (
     <span className="fd-diet-nums">
-      {formatNumber(n.kcal, 0)} kcal · B {g(n.protein)} · W {g(n.carbs)} · T {g(n.fat)}
+      {formatNumber(n.kcal, 0)} kcal · {DT.p} {g(n.protein)} · {DT.c} {g(n.carbs)} · {DT.f} {g(n.fat)}
     </span>
   );
 }
@@ -37,7 +56,7 @@ interface Props {
 
 /** Propozycje w kolejności, z powodami; gwiazdka przy najlepszych na tę chwilę. */
 export function SuggestionList({ suggestions, actionLabel, onPick }: Props) {
-  if (suggestions.length === 0) return <p className="tight">Brak propozycji w tym budżecie.</p>;
+  if (suggestions.length === 0) return <p className="tight">{T.none}</p>;
   return (
     <ul className="fd-diet-list">
       {suggestions.map((s, i) => {
@@ -46,13 +65,13 @@ export function SuggestionList({ suggestions, actionLabel, onPick }: Props) {
         const firstPair = isPair(s.food) && (!prev || !isPair(prev.food));
         return (
           <li key={s.food.key} className="fd-diet-sug">
-            {firstPair && <p className="fd-diet-group">{i === 0 ? 'Dwie rzeczy razem' : 'Albo dwie rzeczy razem'}</p>}
+            {firstPair && <p className="fd-diet-group">{i === 0 ? T.pairsFirst : T.pairsAfter}</p>}
             <div className="fd-diet-row">
               <div className="fd-diet-row-main">
                 <p className="fd-diet-name">
                   {s.best && (
                     <span className="fd-diet-best">
-                      <Star size={14} strokeWidth={2} aria-hidden /> najlepsze
+                      <Star size={14} strokeWidth={2} aria-hidden /> {T.best}
                     </span>
                   )}{' '}
                   {s.food.name} <FitBadge fit={s.fit} />
