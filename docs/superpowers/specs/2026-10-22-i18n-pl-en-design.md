@@ -38,3 +38,23 @@ from machine. Plan it out and then finish on your own").
 | Completeness check | `scripts/i18n-scan.mjs` (TypeScript AST): Polish text outside catalogs, `// i18n-ignore: reason` for data | Measurable; found ~4 060 texts before the work |
 | Style | British English, short, friendly, second person; a glossary in `docs/i18n.md` | Eight parallel translators need one vocabulary |
 | Work split | Eight parallel agents on disjoint files: shell & settings & devices; training screens; cardio, body & badges; engine coaching texts; exercise & plan data; food diary & diet; recipe catalogue; other food screens | ~4 000 texts; disjoint files merge without conflicts |
+
+## Decisions made during implementation
+
+| Topic | Decision | Why |
+| --- | --- | --- |
+| Exercise groups | The Polish group stays the key (energy, badges, metrics); `groupLabel()` shows it; search matches both | Translating the key would break the energy profiles and badge counts |
+| Meal slots, plan words | Stay keys (`slotLabel()`, `PLAN_WORDS`) | Stored in the diary and compared in code |
+| Saved texts | Badge entries in the plan journal are rebuilt from the catalog by their key (`badgeEventNow`); built-in workouts in the history show the library name; other saved texts (plan journal entries, a copied workout's default name, prep plan snapshots, reminders in the queue) keep the language of the moment they were saved | A key can be re-rendered; free text cannot |
+| Polish YouTube videos | Hidden on English visits when the exercise has other videos | An English user cannot follow a Polish tutorial |
+| Tab label | „Awards” in the bottom bar (the screen is „Achievements”) | „Achievements” is cut at 360 px |
+| Push notifications | The service worker sets the notification `lang` to Polish when the text has Polish letters, otherwise English | The server forwards only title, body, url and tag |
+| Node scripts | `check-prep` / `check-recipes` force Polish before importing app modules; the data-building scripts never reach `src/i18n.ts` (checked) | Node reports the machine's language; the data must not change with it |
+| `setLang` | Reloads through `globalThis.location` | `tsconfig.node.json` (scripts) has no DOM types |
+| Companion app | „GYM TRACKER Zdrowie” and its Polish button names are quoted with an English gloss | The iOS/Android companions speak only Polish |
+
+Result: 4 060 texts moved to catalogs (scanner 0), ~2 030 tests (all Polish ones unchanged, plus an
+English test per area), an English tour of every screen at 360 px finds Polish only in data
+(products, shops, the user's own sets and plan items) and in the bilingual „Język · Language”.
+Not done: the watch app and the phone companions keep their own languages; the web manifest stays
+Polish.
