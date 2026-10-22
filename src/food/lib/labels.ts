@@ -1,6 +1,6 @@
 // Every user-facing Polish string that is not product data.
 import type { RangeKey, ToggleKey } from './filters';
-import { text } from './lang';
+import { text } from '../../i18n';
 import type { SortDir, SortKey } from './sort';
 import type { EcoGrade, NovaGroup, NutriGrade, Nutrient } from './types';
 

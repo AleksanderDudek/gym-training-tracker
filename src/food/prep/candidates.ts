@@ -1,5 +1,5 @@
 import type { DietProfile, Fit } from '../diet/profiles';
-import { text } from '../lib/lang';
+import { text } from '../../i18n';
 import { RECIPES, servingsOf, type Recipe } from '../recipes/catalog';
 import { INGREDIENTS, type IngredientId } from '../recipes/ingredients';
 import type { Macros } from '../recipes/macros';

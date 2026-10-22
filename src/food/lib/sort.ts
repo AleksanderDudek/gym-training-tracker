@@ -1,4 +1,4 @@
-import { LOCALE } from './lang';
+import { LOCALE } from '../../i18n';
 import { ECO_GRADES, NUTRI_GRADES, type Product } from './types';
 
 export const SORT_KEYS = [

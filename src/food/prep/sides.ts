@@ -1,4 +1,4 @@
-import { pluralEn, text } from '../lib/lang';
+import { pluralEn, text } from '../../i18n';
 import type { Recipe } from '../recipes/catalog';
 import type { IngredientId } from '../recipes/ingredients';
 import type { Macros } from '../recipes/macros';

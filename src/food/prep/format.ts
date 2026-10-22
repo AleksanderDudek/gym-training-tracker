@@ -1,6 +1,6 @@
 import { paceText } from '../diet/model';
 import { formatNumber, plural } from '../lib/format';
-import { LOCALE, pluralEn, text } from '../lib/lang';
+import { LOCALE, pluralEn, text } from '../../i18n';
 
 const T = text({
   pl: {

@@ -1,5 +1,5 @@
 import { DIET_PROFILES, type MacroTargets } from '../diet/profiles';
-import { text } from '../lib/lang';
+import { text } from '../../i18n';
 import type { Dictionaries } from '../lib/types';
 import { isOnlineShop, onlineShop } from '../online/shops';
 import { RECIPES, servingsOf, type Recipe } from '../recipes/catalog';

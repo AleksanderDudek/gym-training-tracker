@@ -1,4 +1,4 @@
-import { text } from '../lib/lang';
+import { text } from '../../i18n';
 import type { MenuItem } from './types';
 
 export type MenuSort = 'menu' | 'bialko' | 'kcal' | 'gestosc';

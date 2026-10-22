@@ -3,7 +3,7 @@ import { bmr, goalDirection, tdee } from '../diet/energy';
 import { addDays, daysBetween, paceText } from '../diet/model';
 import type { Profile } from '../diet/types';
 import { formatNumber, plural } from '../lib/format';
-import { pluralEn, text } from '../lib/lang';
+import { pluralEn, text } from '../../i18n';
 
 /**
  * The check-in before a new plan: what the scale and the log say about the person's real

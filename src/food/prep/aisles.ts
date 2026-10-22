@@ -1,4 +1,4 @@
-import { text } from '../lib/lang';
+import { text } from '../../i18n';
 import type { IngredientId } from '../recipes/ingredients';
 import type { Aisle } from './types';
 

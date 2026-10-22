@@ -1,7 +1,7 @@
 import { addDays } from '../diet/model';
 import { brandLine } from '../lib/display';
 import { formatNumber, formatPrice } from '../lib/format';
-import { LOCALE, pluralEn, text } from '../lib/lang';
+import { LOCALE, pluralEn, text } from '../../i18n';
 import type { Dictionaries, IndexedProduct } from '../lib/types';
 import { isOnlineShop } from '../online/shops';
 import { servingsOf, type Recipe } from '../recipes/catalog';

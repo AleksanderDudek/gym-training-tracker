@@ -1,7 +1,7 @@
 // The data contract of the restaurant menus: one JSON file per chain in
 // ./data, transcribed from the chain's own nutrition table (see README,
 // "Jedzenie"). Values are PER PORTION as served; null means not published.
-import { text } from '../lib/lang';
+import { text } from '../../i18n';
 
 export const MENU_CATEGORIES = [
   'burger',

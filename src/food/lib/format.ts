@@ -1,4 +1,4 @@
-import { LOCALE } from './lang';
+import { LOCALE } from '../../i18n';
 
 const numberFormats = new Map<number, Intl.NumberFormat>();
 

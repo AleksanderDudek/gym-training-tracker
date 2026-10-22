@@ -1,4 +1,4 @@
-import { text } from '../lib/lang';
+import { text } from '../../i18n';
 import { storeKey } from '../lib/stores';
 import type { LatLon, Shop } from './types';
 

@@ -1,7 +1,7 @@
 import { RANGE_KEYS, isActiveRange, type Filters, type ListKey, type Range, type RangeKey } from './filters';
 import { formatNumber, formatPrice } from './format';
 import { RANGE_LABELS, TOGGLE_LABELS, gradeLabel } from './labels';
-import { text } from './lang';
+import { text } from '../../i18n';
 import type { Dictionaries } from './types';
 
 const T = text({

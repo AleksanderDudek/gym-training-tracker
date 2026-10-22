@@ -1,7 +1,7 @@
 import type { DayTotals } from '../diet/day';
 import type { MacroTargets } from '../diet/profiles';
 import type { Food } from '../diet/foods';
-import { text } from '../lib/lang';
+import { text } from '../../i18n';
 import type { Macros } from '../recipes/macros';
 import { portionLabel } from './format';
 import type { PrepMeal, PrepPlan } from './types';
