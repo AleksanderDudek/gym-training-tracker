@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest';
 import { DATASET, makeProduct } from '../test/fixtures';
 import { customFood, planFood, portionGrams, productFood, withGrams, type Food } from './foods';
 import { DIET_PROFILES } from './profiles';
-import { autoDay, combine, seedOf, suggest, swaps, type Context } from './suggest';
+import { autoDay, combine, restOfDay, restSlots, restVariants, seedOf, suggest, swaps, type Context } from './suggest';
 
 const dict = DATASET.dictionaries;
 const n = (kcal: number, protein: number, carbs: number, fat: number) => ({
@@ -234,5 +234,53 @@ describe('autoDay', () => {
       ),
     );
     expect(days.size).toBeGreaterThan(1);
+  });
+});
+
+describe('the rest of the day', () => {
+  const pool = [
+    food('shake', 450, 50, 30, 5, { role: 'light' }),
+    food('omlet', 300, 30, 5, 15, { role: 'light' }),
+    food('skyr', 200, 25, 15, 1, { role: 'light' }),
+    food('jogurt', 150, 15, 12, 3, { role: 'light' }),
+    food('kurczak', 600, 60, 50, 15, { role: 'main' }),
+    food('losos', 550, 45, 20, 30, { role: 'main' }),
+    food('chili', 520, 45, 40, 15, { role: 'main' }),
+    food('dorsz', 380, 50, 30, 6, { role: 'main' }),
+  ];
+  const left = (kcal: number, protein: number, mealsLeft: number) =>
+    ctx({ remaining: { kcal, protein, carbs: 100, fat: 40 }, mealsLeft, nearby: [] });
+
+  test('the slots still ahead: the day ends with dinner and a snack', () => {
+    expect(restSlots(4).map((s) => s.name)).toEqual(['Śniadanie', 'Obiad', 'Kolacja', 'Przekąska']);
+    expect(restSlots(3).map((s) => s.name)).toEqual(['Obiad', 'Kolacja', 'Przekąska']);
+    expect(restSlots(2).map((s) => s.name)).toEqual(['Kolacja', 'Przekąska']);
+    expect(restSlots(1).map((s) => s.name)).toEqual(['Kolacja']);
+    expect(restSlots(0)).toEqual([]);
+  });
+
+  test('meals for the slots ahead, never the same food twice, stable for a seed', () => {
+    const rest = restOfDay(pool, left(1100, 110, 3), 5);
+    expect(rest.map((m) => m.slot)).toEqual(['Obiad', 'Kolacja', 'Przekąska']);
+    expect(new Set(rest.map((m) => m.suggestion.food.key)).size).toBe(3);
+    expect(restOfDay(pool, left(1100, 110, 3), 5).map((m) => m.suggestion.food.key)).toEqual(
+      rest.map((m) => m.suggestion.food.key),
+    );
+  });
+
+  test('variants differ, the closest to what is left first, and the best lands near it', () => {
+    const variants = restVariants(pool, left(1100, 110, 3), 3);
+    expect(variants.length).toBeGreaterThan(1);
+    expect(new Set(variants.map((v) => v.meals.map((m) => m.suggestion.food.key).sort().join())).size).toBe(variants.length);
+    const miss = (v: (typeof variants)[number]) => Math.abs(v.kcal - 1100) + 3 * Math.max(0, 110 - v.protein);
+    expect(variants.map(miss)).toEqual([...variants.map(miss)].sort((a, b) => a - b));
+    expect(Math.abs(variants[0]!.kcal - 1100)).toBeLessThan(300);
+  });
+
+  test('a big meal first leaves less for the next ones; almost nothing left is no variant', () => {
+    const rest = restOfDay(pool, left(700, 70, 2), 1);
+    const sum = rest.reduce((s, m) => s + m.suggestion.food.nutrients.kcal, 0);
+    expect(sum).toBeLessThan(700 * 1.4);
+    expect(restVariants(pool, left(60, 10, 2), 1)).toEqual([]);
   });
 });

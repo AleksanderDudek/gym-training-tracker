@@ -294,22 +294,104 @@ export function autoDay(foods: Food[], ctx: Omit<Context, 'mealsLeft' | 'remaini
       fat: ctx.targets.fat.target * slot.share,
     };
     const pool = foods.filter((f) => slot.roles.includes(f.role) && !used.has(f.key));
-    const ranked = suggest(pool, { ...ctx, remaining, mealsLeft: 1 }, 5).filter((s) => s.fit.level !== 'avoid');
-    const [first] = ranked;
-    if (!first) continue;
-    // Better ranks are likelier: weights 5, 4, 3, 2, 1.
-    const weight = (i: number) => ranked.length - i;
-    let pick = rand() * ranked.reduce((sum, _, i) => sum + weight(i), 0);
-    let chosen = first;
-    for (const [i, suggestion] of ranked.entries()) {
-      pick -= weight(i);
-      if (pick <= 0) {
-        chosen = suggestion;
-        break;
-      }
-    }
+    const chosen = pickWeighted(suggest(pool, { ...ctx, remaining, mealsLeft: 1 }, 5), rand);
+    if (!chosen) continue;
     used.add(chosen.food.key);
     meals.push({ slot: slot.name, suggestion: chosen });
   }
   return meals;
+}
+
+/** One of the ranked, better ranks likelier (weights 5, 4, 3, 2, 1); never one that does not fit the diet. */
+function pickWeighted(ranked: Suggestion[], rand: () => number): Suggestion | null {
+  const fit = ranked.filter((s) => s.fit.level !== 'avoid');
+  const [first] = fit;
+  if (!first) return null;
+  const weight = (i: number) => fit.length - i;
+  let pick = rand() * fit.reduce((sum, _, i) => sum + weight(i), 0);
+  for (const [i, suggestion] of fit.entries()) {
+    pick -= weight(i);
+    if (pick <= 0) return suggestion;
+  }
+  return first;
+}
+
+/** The slots still ahead when this many meals are left: the day ends with dinner and a snack. */
+export function restSlots(meals: number): Slot[] {
+  const [, lunch, dinner, snack] = DAY_SLOTS as [Slot, Slot, Slot, Slot];
+  if (meals >= 4) return DAY_SLOTS;
+  if (meals === 3) return [lunch, dinner, snack];
+  if (meals === 2) return [dinner, snack];
+  if (meals === 1) return [dinner];
+  return [];
+}
+
+/**
+ * The rest of the day as meals whose sum lands on what is left. Each slot gets its share of what is
+ * STILL left after the meals already picked - so a big first meal makes the next ones smaller and
+ * the last one absorbs the error - and never the same food twice.
+ */
+export function restOfDay(foods: Food[], ctx: Context, seed: number): AutoMeal[] {
+  const rand = random(seed);
+  const slots = restSlots(ctx.mealsLeft);
+  const used = new Set<string>();
+  const meals: AutoMeal[] = [];
+  let left = { ...ctx.remaining };
+  slots.forEach((slot, i) => {
+    const shares = slots.slice(i).reduce((sum, s) => sum + s.share, 0);
+    const part = slot.share / shares;
+    const remaining = {
+      kcal: Math.max(0, left.kcal * part),
+      protein: Math.max(0, left.protein * part),
+      carbs: Math.max(0, left.carbs * part),
+      fat: Math.max(0, left.fat * part),
+    };
+    if (remaining.kcal < MIN_MEAL_KCAL) return;
+    const pool = foods.filter((f) => slot.roles.includes(f.role) && !used.has(f.key));
+    const chosen = pickWeighted(suggest(pool, { ...ctx, remaining, mealsLeft: 1 }, 5), rand);
+    if (!chosen) return;
+    used.add(chosen.food.key);
+    meals.push({ slot: slot.name, suggestion: chosen });
+    const n = chosen.food.nutrients;
+    left = {
+      kcal: left.kcal - n.kcal,
+      protein: left.protein - (n.protein ?? 0),
+      carbs: left.carbs - (n.carbs ?? 0),
+      fat: left.fat - (n.fat ?? 0),
+    };
+  });
+  return meals;
+}
+
+/** Below this a slot is not a meal: what is left goes to the meals that can still hold it. */
+const MIN_MEAL_KCAL = 80;
+
+export interface RestVariant {
+  meals: AutoMeal[];
+  kcal: number;
+  protein: number;
+}
+
+/**
+ * Several different rests of the day, the closest to what is left first: the kcal miss, and protein
+ * short of what is left counting three times as much (the diet's first macro).
+ */
+export function restVariants(foods: Food[], ctx: Context, seed: number, count = 3): RestVariant[] {
+  if (ctx.remaining.kcal < MIN_MEAL_KCAL) return [];
+  const seen = new Set<string>();
+  const out: RestVariant[] = [];
+  for (let i = 0; i < count * 4 && out.length < count; i++) {
+    const meals = restOfDay(foods, ctx, seed + i * 7919);
+    const key = meals.map((m) => m.suggestion.food.key).sort().join('|');
+    if (!meals.length || seen.has(key)) continue;
+    seen.add(key);
+    out.push({
+      meals,
+      kcal: Math.round(meals.reduce((sum, m) => sum + m.suggestion.food.nutrients.kcal, 0)),
+      protein: Math.round(meals.reduce((sum, m) => sum + (m.suggestion.food.nutrients.protein ?? 0), 0)),
+    });
+  }
+  const miss = (v: RestVariant) =>
+    Math.abs(v.kcal - ctx.remaining.kcal) + 3 * Math.max(0, ctx.remaining.protein - v.protein);
+  return out.sort((a, b) => miss(a) - miss(b));
 }

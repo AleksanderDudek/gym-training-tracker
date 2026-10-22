@@ -6,7 +6,7 @@ import type { PlannedCheat } from '../../diet/db';
 import { dayGoal, mealsLeftAt, remainingOf } from '../../diet/model';
 import { DIET_PROFILES } from '../../diet/profiles';
 import { eatCheat, planCheat } from '../../diet/store';
-import type { Remaining, Suggestion } from '../../diet/suggest';
+import type { Remaining, RestVariant, Suggestion } from '../../diet/suggest';
 import type { Profile } from '../../diet/types';
 import { useBridge } from '../../bridge';
 import { weightFrom, type ActivityOf } from '../../hooks/useActivity';
@@ -14,6 +14,7 @@ import { formatNumber } from '../../lib/format';
 import { Sheet } from '../common/Sheet';
 import { activityParts, signedKcal } from './activityText';
 import { beyondTexts, macroTexts, planText, verdictText } from './cheatText';
+import { RestVariants } from './RestVariants';
 import { MacroLine } from './SuggestionList';
 
 interface Props {
@@ -31,8 +32,11 @@ interface Props {
   plannedKcal: number | null;
   /** The cheat meal already planned on this day — the sheet edits it. */
   planned: PlannedCheat | null;
-  /** Food for what is left after the cheat meal (the diary's „Co teraz?” ranking). */
-  suggestFor: (remaining: Remaining, mealsLeft: number) => Suggestion[];
+  /**
+   * Food for what is left after the cheat meal: variants of the whole rest of the day when two or
+   * more meals are left, otherwise the best single meals (the diary's „Co teraz?”).
+   */
+  ideasFor: (remaining: Remaining, mealsLeft: number) => { variants: RestVariant[]; singles: Suggestion[] };
   onClose: () => void;
   /** After a save the sheet closes and the app's message says what happened. */
   onSaved: (message: string) => void;
@@ -77,7 +81,7 @@ function CheatBody({
   activity,
   plannedKcal,
   planned,
-  suggestFor,
+  ideasFor,
   onSaved,
 }: Props) {
   const [name, setName] = useState(planned?.name ?? '');
@@ -157,7 +161,8 @@ function CheatBody({
         fat: eaten.fat + (cheat.fat ?? 0),
       }
     : eaten;
-  const ideas = sim && sim.restMeals > 0 && sim.left > 100 ? suggestFor(remainingOf(targets, after), sim.restMeals).slice(0, 3) : [];
+  const ideas =
+    sim && sim.restMeals > 0 && sim.left > 100 ? ideasFor(remainingOf(targets, after), sim.restMeals) : null;
 
   const save = async (eat: boolean) => {
     if (!cheat || busy) return;
@@ -351,17 +356,28 @@ function CheatBody({
               </p>
             ))}
             {planText(sim) && <p className="tight">{planText(sim)}</p>}
-            {ideas.length > 0 && (
+            {ideas && ideas.variants.length > 0 ? (
               <>
-                <p className="tight">Na resztę dnia pasuje na przykład:</p>
-                <ul className="fd-diet-simideas">
-                  {ideas.map((s) => (
-                    <li key={s.food.key}>
-                      <span className="fd-diet-name">{s.food.name}</span> <MacroLine food={s.food} />
-                    </li>
-                  ))}
-                </ul>
+                <p className="tight">Tak może wyglądać reszta dnia:</p>
+                <RestVariants
+                  variants={ideas.variants}
+                  left={{ kcal: sim.left, protein: Math.max(0, sim.protein) }}
+                />
               </>
+            ) : (
+              ideas &&
+              ideas.singles.length > 0 && (
+                <>
+                  <p className="tight">Na ostatni posiłek pasuje na przykład:</p>
+                  <ul className="fd-diet-simideas">
+                    {ideas.singles.map((s) => (
+                      <li key={s.food.key}>
+                        <span className="fd-diet-name">{s.food.name}</span> <MacroLine food={s.food} />
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )
             )}
             {beyondTexts(sim, move.typicalWorkoutKcal !== null).map((t) => (
               <p key={t} className="tight">

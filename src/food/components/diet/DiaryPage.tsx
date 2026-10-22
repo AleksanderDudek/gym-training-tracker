@@ -13,6 +13,7 @@ import {
   UserRound,
 } from 'lucide-react';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { Segmented } from '../../../components/ui';
 import { NEARBY_PATH, dietPath } from '../../../routing';
 import { useBridge } from '../../bridge';
 import { MISSING_DATA_MESSAGE } from '../../data';
@@ -27,7 +28,7 @@ import { addDays, dayGoal, dayLabel, longDay, mealsLeftAt, mondayOf, remainingOf
 import { plannedDay, plannedKcal, type Plan, type PlannedItem, type PlanItem } from '../../diet/plan';
 import { DIET_PROFILES } from '../../diet/profiles';
 import { dropCheat, eatCheat, logFood, updateChoices, updateDay } from '../../diet/store';
-import { autoDay, seedOf, suggest, swaps, type Context } from '../../diet/suggest';
+import { autoDay, restVariants, seedOf, suggest, swaps, type Context } from '../../diet/suggest';
 import type { Profile } from '../../diet/types';
 import { diaryFromParams, diaryToParams } from '../../diet/url';
 import {
@@ -61,6 +62,7 @@ import { StarButton } from '../common/StarButton';
 import { MacroBars } from './MacroBars';
 import { Loading, Onboarding } from './Onboarding';
 import { PlanDayCard } from './PlanDayCard';
+import { RestVariants } from './RestVariants';
 import { SuggestionList } from './SuggestionList';
 import { SwapDialog } from './SwapDialog';
 import { useDietBase, useFoodPool, type FoodPool } from './useDietPage';
@@ -157,6 +159,9 @@ function TodayView({ profile, plan, date, today, hour, nowMs, history, pickerOpe
   const favorites = useFavorites();
   const [favoritesOpen, setFavoritesOpen] = useState(false);
   const [cheatOpen, setCheatOpen] = useState(false);
+  // „Co teraz?”: cała reszta dnia w wariantach albo jeden posiłek; null — według tego, ile posiłków zostało.
+  const [nowView, setNowView] = useState<'rest' | 'one' | null>(null);
+  const [restRoll, setRestRoll] = useState(0);
   const [swapping, setSwapping] = useState<PlannedItem | null>(null);
   const activity = useActivity(profile, today);
 
@@ -196,6 +201,10 @@ function TodayView({ profile, plan, date, today, hour, nowMs, history, pickerOpe
     mealsLeft: Math.max(1, restMeals),
   };
   const suggestions = suggest(pool, ctx, 8);
+  const restShown = !(cheat && restMeals === 0) && ctx.remaining.kcal > 50 && ctx.mealsLeft >= 2;
+  const view = restShown ? (nowView ?? 'rest') : 'one';
+  // Warianty liczone tylko na widoku „Reszta dnia” — po kilka przebiegów `suggest` na każdy.
+  const variants = view === 'rest' ? restVariants(pool, ctx, seedOf(date) + restRoll * 7919, 3) : [];
   const autoSeed = day?.autoSeed ?? seedOf(date);
   // Kilkaset pozycji oceniane cztery razy: na tyle tanio, że bez zapamiętywania.
   const auto = planned || prep ? null : autoDay(pool, base, autoSeed);
@@ -302,7 +311,28 @@ function TodayView({ profile, plan, date, today, hour, nowMs, history, pickerOpe
         </p>
         <NearbyLine nearby={nearby} preferred={profile.preferredStore} dict={dict} />
         <DatasetLine food={food} />
-        <SuggestionList suggestions={suggestions} actionLabel="Zjadłem" onPick={log} />
+        {restShown && (
+          <Segmented
+            label="Co pokazać"
+            options={[
+              { key: 'rest', label: `Reszta dnia (${ctx.mealsLeft} posiłki)` },
+              { key: 'one', label: 'Jeden posiłek' },
+            ]}
+            value={view}
+            onChange={setNowView}
+          />
+        )}
+        {view === 'rest' ? (
+          <RestVariants
+            variants={variants}
+            left={{ kcal: ctx.remaining.kcal, protein: Math.max(0, ctx.remaining.protein) }}
+            entries={entries}
+            onLog={log}
+            onReroll={() => setRestRoll((n) => n + 1)}
+          />
+        ) : (
+          <SuggestionList suggestions={suggestions} actionLabel="Zjadłem" onPick={log} />
+        )}
       </section>
 
       <MoveCard
@@ -336,7 +366,12 @@ function TodayView({ profile, plan, date, today, hour, nowMs, history, pickerOpe
         activity={activity}
         plannedKcal={dayPlanKcal}
         planned={cheat}
-        suggestFor={(remaining, mealsLeft) => suggest(pool, { ...base, remaining, mealsLeft }, 3)}
+        ideasFor={(remaining, mealsLeft) => {
+          const rest = { ...base, remaining, mealsLeft };
+          return mealsLeft >= 2
+            ? { variants: restVariants(pool, rest, seedOf(date), 2), singles: [] }
+            : { variants: [], singles: suggest(pool, rest, 3) };
+        }}
         onClose={() => setCheatOpen(false)}
         onSaved={(message) => {
           setCheatOpen(false);
