@@ -55,7 +55,8 @@ export function RestVariants({ variants, left, entries = [], onLog, onReroll }: 
             {v.meals.map(({ slot, suggestion: s }) => {
               const eaten = entries.some((e) => e.key === s.food.key);
               return (
-                <li key={slot} className="fd-diet-row">
+                // Jedzenie w wariancie się nie powtarza, pora tak — „Dodatkowo” bywa kilka razy.
+                <li key={s.food.key} className="fd-diet-row">
                   <div className="fd-diet-row-main">
                     <p className="fd-diet-group">{slotLabel(slot)}</p>
                     <p className="fd-diet-name">

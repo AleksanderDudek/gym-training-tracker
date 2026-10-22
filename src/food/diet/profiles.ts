@@ -1,7 +1,5 @@
 import { text } from '../../i18n';
 import type { Macros } from '../recipes/macros';
-// The global `location` for the Node scripts' compile of `i18n.ts` (types only).
-import type {} from './location';
 import type { DietProfileId } from './types';
 
 const T = text({
