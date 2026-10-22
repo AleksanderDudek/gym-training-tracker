@@ -57,7 +57,9 @@ export function beyondTexts(s: CheatSimulation, typicalTraining: boolean): strin
   if (s.over <= 0) return [];
   const out: string[] = [];
   const w = s.week;
-  if (w.kind === 'spread')
+  if (w.kind === 'spread' && w.perDay === 0)
+    out.push('Tydzień: korekta celu jest już na limicie 10% dziennie — ta nadwyżka zostanie w bilansie.');
+  else if (w.kind === 'spread')
     out.push(
       `Tydzień: cel na kolejne ${w.days} ${w.days === 1 ? 'dzień' : 'dni'} spadnie o ok. ${kcal(-w.perDay)} dziennie${w.unpaid > 0 ? `, a ${kcal(w.unpaid)} zostanie w bilansie (najwyżej 10% celu dziennie)` : ''}.`,
     );

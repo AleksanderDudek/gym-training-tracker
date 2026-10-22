@@ -258,8 +258,8 @@ function TodayView({ profile, plan, date, today, hour, nowMs, history, pickerOpe
           )}
           onEdit={() => setCheatOpen(true)}
           onEaten={() =>
-            void eatCheat(date, cheat).then(() =>
-              bridge.toast(`Zapisane: ${cheat.name || 'Cheat meal'} · ${formatNumber(cheat.kcal, 0)} kcal.`),
+            void eatCheat(date, cheat, { planned: true }).then(
+              (id) => id !== null && bridge.toast(`Zapisane: ${cheat.name || 'Cheat meal'} · ${formatNumber(cheat.kcal, 0)} kcal.`),
             )
           }
           onDrop={() => void dropCheat(date).then(() => bridge.toast('Cheat meal usunięty z planu dnia.'))}

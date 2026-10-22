@@ -9,7 +9,9 @@ import type { Profile } from './types';
  * - steps: the diet's own walking formula at the day's steps minus the same at `targetSteps`;
  * - training: what was done (gym engine kcal) minus what was planned - the session the training
  *   plan put on that day, or, without a plan, the profile's weekly assumption spread over the week;
- * - other exercise (treadmill, bike, dance, exercise snacks): planned at zero, so all of it counts.
+ * - other exercise (treadmill, bike, dance, exercise snacks): what goes beyond the profile's planned
+ *   extra exercise (`extraWeeklyKcal`, already in the goal) counts; a shortfall of it does not -
+ *   not logging a ride is not proof of not riding.
  *
  * A closed day counts in full. Today counts what already happened (steps above the target, a
  * training done, extra cardio) and keeps what may still be missing - steps short of the target, a
@@ -100,7 +102,7 @@ export function plannedTraining(p: Profile, move: MoveDay): PlannedTraining {
       : { kcal: 0, name: null, source: 'plan' };
   }
   const sessions = assumedSessions(p.activityMultiplier);
-  return sessions && move.typicalWorkoutKcal !== null
+  return sessions && move.typicalWorkoutKcal != null
     ? { kcal: (sessions * move.typicalWorkoutKcal) / 7, name: null, source: 'profile' }
     : { kcal: 0, name: null, source: 'none' };
 }
@@ -143,7 +145,8 @@ export function activityOn(
   const done = move.workoutKcal ?? 0;
   let trainingKcal = 0;
   let trainingPending = 0;
-  if (trained) trainingKcal = done - plan.kcal;
+  // A training without calories (no weighing yet) is known to have happened, not how much it burned.
+  if (trained) trainingKcal = move.workoutKcal === null ? 0 : done - plan.kcal;
   else if (phase === 'past') trainingKcal = -plan.kcal;
   else if (assumptions)
     trainingKcal = assumptions.training === 'none' ? -plan.kcal : assumptions.training === 'extra' ? typical : 0;
@@ -151,7 +154,7 @@ export function activityOn(
   // One more training than planned on a day that already had one.
   if (trained && assumptions?.training === 'extra') trainingKcal += typical;
 
-  const other = move.otherKcal ?? 0;
+  const other = Math.max(0, (move.otherKcal ?? 0) - p.extraWeeklyKcal / 7);
   const raw = stepsKcal + trainingKcal + other;
   const min = CAP.min * p.dailyKcal;
   const max = CAP.max * p.dailyKcal;

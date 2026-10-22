@@ -6,9 +6,12 @@ import type { Profile } from '../diet/types';
 /** The day's activity against the plan, for a date; with the user's guesses for the rest of today. */
 export type ActivityOf = (date: string, assumptions?: Assumptions) => Activity;
 
-/** Weight on a date from the gym's weighings: the last one up to it, `null` before the first. */
+/**
+ * Weight on a date from the gym's weighings: the last one up to it; before the first, the first -
+ * as the gym engine counts calories. `null` without any weighing.
+ */
 export function weightFrom(weights: readonly { day: string; kg: number }[], date: string): number | null {
-  let kg: number | null = null;
+  let kg: number | null = weights[0]?.kg ?? null;
   for (const w of weights) if (w.day <= date) kg = w.kg;
   return kg;
 }

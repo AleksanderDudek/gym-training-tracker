@@ -115,9 +115,18 @@ export async function dropCheat(date: string, database: DietDb = db): Promise<vo
   });
 }
 
-/** The planned cheat meal eaten: one entry in „Zjedzone”, and the plan gone - in one transaction. */
-export async function eatCheat(date: string, cheat: PlannedCheat, database: DietDb = db): Promise<number> {
+/**
+ * The cheat meal eaten: one entry in „Zjedzone”, and the plan gone - in one transaction. With
+ * `planned`, only while the day still has it: a double tap or a second tab logs it once (`null`).
+ */
+export async function eatCheat(
+  date: string,
+  cheat: PlannedCheat,
+  { planned = false }: { planned?: boolean } = {},
+  database: DietDb = db,
+): Promise<number | null> {
   return database.transaction('rw', database.entries, database.days, async () => {
+    if (planned && !(await database.days.get(date))?.cheat) return null;
     const id = await logQuick(date, cheat.name.trim() || 'Cheat meal', cheat.kcal, cheat, database);
     await dropCheat(date, database);
     return id;

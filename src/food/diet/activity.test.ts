@@ -113,8 +113,18 @@ describe('training without a plan: the profile’s assumption', () => {
 });
 
 describe('other exercise and the cap', () => {
-  test('treadmill, bike, dance and exercise snacks add in full', () => {
+  test('treadmill, bike, dance and exercise snacks add in full - beyond the extra exercise the profile plans', () => {
     expect(activityOn(p, KG, move({ planActive: true, otherKcal: 150 }), 10_000, 'today').kcal).toBe(150);
+    // 1400 kcal of planned extra exercise a week is 200 a day, already in the goal.
+    const extra = completeProfile({ dailyKcal: 2000, extraWeeklyKcal: 1400 });
+    expect(activityOn(extra, KG, move({ planActive: true, otherKcal: 200 }), 10_000, 'past').kcal).toBe(0);
+    expect(activityOn(extra, KG, move({ planActive: true, otherKcal: 350 }), 10_000, 'past').kcal).toBe(150);
+    expect(activityOn(extra, KG, move({ planActive: true, otherKcal: 0 }), 10_000, 'past').kcal).toBe(0);
+  });
+
+  test('a training without calories (no weighing yet) is no shortfall', () => {
+    const planned = move({ planActive: true, planned: { name: 'A', kcal: null }, trained: true, workoutKcal: null });
+    expect(activityOn(p, KG, planned, 10_000, 'past').kcal).toBe(0);
   });
 
   test('a typo of a day is capped at +60 % and −30 % of the goal', () => {

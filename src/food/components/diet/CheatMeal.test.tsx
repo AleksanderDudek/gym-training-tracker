@@ -59,6 +59,9 @@ describe('arkusz cheat mealu', () => {
 
     expect(sim(dialog)).toHaveTextContent(/Cel na dziś\s*2000 kcal/);
     expect(sim(dialog)).toHaveTextContent(/Razem\s*900 kcal/);
+    // Bez wpisanych kroków „zostanę przy obecnych” nic nie znaczy — tej opcji nie ma.
+    expect(within(dialog).getByRole('radio', { name: /Dojdę do celu/ })).toBeChecked();
+    expect(within(dialog).queryByRole('radio', { name: /Zostanę przy obecnych/ })).not.toBeInTheDocument();
     expect(sim(dialog)).toHaveTextContent('Mieścisz się: zostaje 1100 kcal na 2 posiłki — po ok. 550 kcal i 60 g białka.');
     expect(sim(dialog)).toHaveTextContent('Białka brakuje jeszcze 120 g');
 

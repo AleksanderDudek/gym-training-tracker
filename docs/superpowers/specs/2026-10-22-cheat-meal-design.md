@@ -86,3 +86,13 @@ practices. Pick recommended. I am away from machine. Plan it out and then finish
 | Cards drawn outside the app's bridge | The activity hook returns no activity (goal as before) | The Today card can be rendered without the provider (tests) and must not crash |
 | Steps "as now" with nothing logged | The option says „0 — nic jeszcze nie wpisane” | "0" alone reads like a measurement |
 | Cheat meal and the balance bars | The bars keep showing what is eaten; the planned cheat meal has its own card and is reserved in „Co teraz?” | A plan is not an entry — the bars stay the truth of the day |
+| Planned extra exercise (`extraWeeklyKcal`) | Cardio and exercise snacks count only beyond it; a shortfall of it does not | Found in review: it is already in the goal, so adding all cardio counted it twice. Not logging a ride is not proof of not riding |
+| A training without calories (no weighing) | No difference | Found in review: it was counted as a missed session |
+| Weight before the first weighing | The first weighing, as the gym engine counts | Found in review: the two sides used different weights |
+| A planned cheat meal eaten twice | `eatCheat(…, { planned: true })` logs only while the day still has it | Found in review: a double tap or a second tab logged it twice |
+| The sheet's activity assumptions | Shown as „tylko do symulacji”; not saved with the cheat meal | Found in review: after saving, the card (real activity only) could disagree with the sheet |
+| Steps unknown today | No „zostanę przy obecnych” option | Without logged steps "as now" means nothing |
+| Planning a future day | Today's partial intake is not a closed day of the balance | Found in review |
+
+Known limitation (kept): a treadmill walk logged as cardio may also be in the phone's or watch's
+step count; the cardio form already warns about it.

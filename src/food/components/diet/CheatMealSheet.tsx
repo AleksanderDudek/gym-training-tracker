@@ -89,12 +89,15 @@ function CheatBody({
   const [customSteps, setCustomSteps] = useState('');
   const [training, setTraining] = useState<Assumptions['training']>('planned');
   const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
   const bridge = useBridge();
 
   const isToday = date === today;
   const future = date > today;
   const now = isToday && activity ? activity(date) : null;
   const stepsNow = now?.steps.actual ?? 0;
+  // Bez wpisanych kroków „jak teraz” nic nie znaczy: nikt nie wie, ile ich było.
+  const stepsKnown = now?.steps.actual != null;
   const belowTarget = now !== null && stepsNow < profile.targetSteps;
   const assumptions: Assumptions | undefined = now
     ? {
@@ -138,7 +141,8 @@ function CheatBody({
         kg,
         date,
         // Jak w korekcie tygodniowej: dni zjedzone pod starszy cel nie są nadwyżką wobec obecnego.
-        eatenByDate: new Map([...eatenByDate].filter(([d]) => d < date && d >= since)),
+        // Dzień zamknięty to dzień przed dzisiejszym — dzisiejsze jedzenie przy planowaniu soboty jeszcze trwa.
+        eatenByDate: new Map([...eatenByDate].filter(([d]) => d < date && d < today && d >= since)),
         goalOf: activity ? (d) => profile.dailyKcal + activity(d).kcal : undefined,
         plannedLeftKcal: plannedKcal !== null ? Math.max(0, plannedKcal - eaten.kcal) : null,
         typicalWorkoutKcal: move.typicalWorkoutKcal ?? TYPICAL_FALLBACK_KCAL,
@@ -158,6 +162,7 @@ function CheatBody({
   const save = async (eat: boolean) => {
     if (!cheat || busy) return;
     setBusy(true);
+    setFailed(false);
     const label = cheat.name || 'Cheat meal';
     try {
       if (eat) await eatCheat(date, cheat);
@@ -167,6 +172,9 @@ function CheatBody({
           ? `Zapisane: ${label} · ${kcalText(cheat.kcal)}.`
           : `Cheat meal zaplanowany: ${label} · ${kcalText(cheat.kcal)}. Reszta dnia liczy się już z nim.`,
       );
+    } catch {
+      // Komunikat aplikacji stoi pod arkuszem — błąd mówi pasek arkusza.
+      setFailed(true);
     } finally {
       setBusy(false);
     }
@@ -233,30 +241,32 @@ function CheatBody({
                 <input type="radio" name="cheat-steps" checked={stepsChoice === 'target'} onChange={() => setStepsChoice('target')} />
                 Dojdę do celu ({formatNumber(profile.targetSteps, 0)} kroków)
               </label>
-              <label className="check-row">
-                <input type="radio" name="cheat-steps" checked={stepsChoice === 'now'} onChange={() => setStepsChoice('now')} />
-                Zostanę przy obecnych ({stepsNow > 0 ? formatNumber(stepsNow, 0) : '0 — nic jeszcze nie wpisane'})
-              </label>
+              {stepsKnown && (
+                <label className="check-row">
+                  <input type="radio" name="cheat-steps" checked={stepsChoice === 'now'} onChange={() => setStepsChoice('now')} />
+                  Zostanę przy obecnych ({formatNumber(stepsNow, 0)})
+                </label>
+              )}
               <label className="check-row">
                 <input type="radio" name="cheat-steps" checked={stepsChoice === 'custom'} onChange={() => setStepsChoice('custom')} />
                 Inna liczba
               </label>
-              {stepsChoice === 'custom' && (
-                <label className="fld fd-diet-cheatsteps">
-                  <span>Kroki na koniec dnia</span>
-                  <input
-                    type="text"
-                    className="num"
-                    inputMode="numeric"
-                    autoComplete="off"
-                    value={customSteps}
-                    onChange={(e) => setCustomSteps(e.target.value)}
-                  />
-                </label>
-              )}
             </div>
           ) : (
             <p className="tight">Kroki: {formatNumber(stepsNow, 0)} — cel na dziś już jest.</p>
+          )}
+          {belowTarget && stepsChoice === 'custom' && (
+            <label className="fld fd-diet-cheatsteps">
+              <span>Kroki na koniec dnia</span>
+              <input
+                type="text"
+                className="num"
+                inputMode="numeric"
+                autoComplete="off"
+                value={customSteps}
+                onChange={(e) => setCustomSteps(e.target.value)}
+              />
+            </label>
           )}
           {now.training.trained ? (
             <p className="tight">Trening zrobiony: {kcalText(now.training.done)}.</p>
@@ -296,10 +306,13 @@ function CheatBody({
               </label>
             </div>
           )}
+          <p className="tight fd-diet-soft">
+            Te założenia są tylko do symulacji — cel w dzienniku zmieni się, gdy ruch naprawdę się wydarzy.
+          </p>
         </fieldset>
       )}
 
-      <section className="fd-diet-sim" aria-live="polite" aria-label="Co z tego wynika">
+      <section className="fd-diet-sim" aria-label="Co z tego wynika">
         <h3>Co z tego wynika</h3>
         <dl className="fd-diet-simrows">
           <div>
@@ -329,7 +342,9 @@ function CheatBody({
           <p className="tight">Wpisz kalorie — zobaczysz, czy dzień się mieści i co zostaje na resztę.</p>
         ) : (
           <>
-            <p className={`fd-diet-verdict fd-diet-v-${sim.verdict}`}>{verdictText(sim)}</p>
+            <p className={`fd-diet-verdict fd-diet-v-${sim.verdict}`} aria-live="polite">
+              {verdictText(sim)}
+            </p>
             {macroTexts(sim).map((t) => (
               <p key={t} className="tight">
                 {t}
@@ -357,6 +372,11 @@ function CheatBody({
         )}
       </section>
 
+      {failed && (
+        <p className="tight fd-diet-warn" role="alert">
+          Nie udało się zapisać w tej przeglądarce — spróbuj jeszcze raz.
+        </p>
+      )}
       <div className="actions fd-diet-cheatacts">
         <button type="submit" className="btn" disabled={!cheat || busy}>
           {planned ? 'Zapisz zmiany' : 'Zaplanuj'}
