@@ -65,3 +65,19 @@ practices. Pick recommended. I am away from machine. Plan it out and then finish
 | Elsewhere | The cardio screen shows one status line above „Z zegarka” (and „Z telefonu”); the Today „Kroki i cardio” card shows a line **only when late or stale** — never noise when all is well | The places where missing data is noticed |
 | Phone card | The same status block with its own checklist (Health Connect permissions incl. background, battery optimisation off for GYM TRACKER Zdrowie, Garmin Connect writing to Health Connect, open the app) | Same question, same answer |
 | Watch app | Its screen adds the next send time („Next ~15:02”); „No phone nearby” becomes „No phone — Bluetooth?”, in Polish „Brak telefonu — Bluetooth?” | The watch is where people look first; needs a new upload of the watch app |
+
+## Decisions made during implementation
+
+| Topic | Decision | Why |
+| --- | --- | --- |
+| Rest of the day too big for the slots | Extra items („Dodatkowo”, up to 3) join while more than 250 kcal and 15 % of the rest is left; variants also show for one meal when more than 900 kcal is left | On demo data two slots gave ~1000 of 2300 kcal — portions are 300–700 kcal |
+| Shared search | „Zestaw” and the cheat meal use one `PartsPicker` (search, parts with grams, total) | One behaviour, one place to fix |
+| Status thresholds | Measured from when the next package was due: late after 15 min overdue, stale after 6 h overdue | A late morning package should not alarm at once |
+| Status line on Today | Only late/stale, and only after this visit asked the server | Right after opening, the saved data is still the old package — the line would flash |
+| Watch next-send time | The background run also saves its time (`Sync.LAST_RUN`); the screen takes the later of it and `getLastTemporalEventTime()` | The SDK returns null for the latter after each app start — exactly when someone looks |
+| Watch strings | Plain „-” instead of „—” | The watch font may lack the long dash; the web checklist quotes the watch text exactly |
+| Links to the cards | `#/ustawienia?karta=zegarek` / `telefon`, the card scrolls into view below the sticky bar | Routes live in the hash |
+| Empty mailbox with saved data | „Nothing sent for over a week” (the server keeps a package at most 7 days) | Accurate reason |
+
+Not verified: the new watch screen layout on small devices (Instinct 2, vívoactive 3) and a real
+background run; a new watch build must be uploaded (beta, then production).
