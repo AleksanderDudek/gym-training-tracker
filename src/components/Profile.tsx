@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { EX, GEAR_LABEL, ex, gearOf } from '../data/exercises';
+import { EX, GEAR_LABEL, ex, gearOf, groupLabel } from '../data/exercises';
 import { EX_JOKES } from '../data/exjokes';
 import { doneExercises, exerciseRows, trend, weeksBetween } from '../engine/history';
 import type { ExerciseRow, ExerciseSummary, Trend } from '../engine/history';
@@ -539,7 +539,7 @@ export function ExerciseStatsPage({ state, id }: { state: AppState; id: Exercise
               <Chip state={state} id={id} />
               <div>
                 <div className="ex-group">
-                  {m.group} · {GEAR_LABEL[gearOf(id)]}
+                  {groupLabel(m.group)} · {GEAR_LABEL[gearOf(id)]}
                 </div>
                 <h2 className="ex-h">{m.name}</h2>
                 <div className="ex-target">{T.onlySnacks}</div>
@@ -595,7 +595,7 @@ export function ExerciseStatsPage({ state, id }: { state: AppState; id: Exercise
           <Chip state={state} id={id} />
           <div>
             <div className="ex-group">
-              {m.group} · {GEAR_LABEL[gearOf(id)]}
+              {groupLabel(m.group)} · {GEAR_LABEL[gearOf(id)]}
             </div>
             <h2 className="ex-h">{m.name}</h2>
             <div className="ex-target">{planLabel(state, id)}</div>

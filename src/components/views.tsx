@@ -7,6 +7,7 @@ import {
   WEIGHTED,
   ex,
   gearOf,
+  groupLabel,
   ladderFor,
 } from '../data/exercises';
 import { acwr } from '../engine/math';
@@ -604,7 +605,7 @@ export function SettingsView({
           return (
             <details className="gsel" key={g}>
               <summary>
-                {g} <i>{weighted.length}</i>
+                {groupLabel(g)} <i>{weighted.length}</i>
               </summary>
               {weighted.map((id) => (
                 <div className="wsel" key={id}>

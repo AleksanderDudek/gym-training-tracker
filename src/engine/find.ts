@@ -1,4 +1,4 @@
-import { EX, GEAR_LABEL, gearOf } from '../data/exercises';
+import { EX, GEAR_LABEL, gearOf, groupLabel } from '../data/exercises';
 import type { ExerciseId } from '../types';
 import { LOCALE } from '../i18n';
 
@@ -73,7 +73,8 @@ export function findExercises(query: string): Found[] {
   const run = (anywhere: boolean): Found[] =>
     ALPHABETICAL.flatMap((id) => {
       const name = fold(EX[id]!.name);
-      const extra = fold(`${EX[id]!.group} ${GEAR_LABEL[gearOf(id)]}`);
+      // Grupa po polsku (klucz) i w języku wizyty — „hinge” znajduje to samo co „zawias”.
+      const extra = fold(`${EX[id]!.group} ${groupLabel(EX[id]!.group)} ${GEAR_LABEL[gearOf(id)]}`);
       const hits: Hit[] = [];
       const ok = words.every((w) => {
         const inName = anywhere
