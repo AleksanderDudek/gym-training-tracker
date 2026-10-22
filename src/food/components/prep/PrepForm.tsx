@@ -1,5 +1,6 @@
 import { CalendarCheck } from 'lucide-react';
 import { useMemo, useState, type FormEvent } from 'react';
+import { text } from '../../../i18n';
 import { Segmented } from '../../../components/ui';
 import { useBridge } from '../../bridge';
 import { paceKgPerWeek } from '../../diet/energy';
@@ -28,6 +29,85 @@ import './prep.css';
 const ICON = { size: 20, strokeWidth: 2, 'aria-hidden': true } as const;
 
 const EXCLUSIONS = Object.keys(EXCLUSION_LABELS) as Exclusion[];
+
+const T = text({
+  pl: {
+    saveFailed: 'Nie udało się zapisać planu na tym urządzeniu — spróbuj jeszcze raz.',
+    readyGoal: (days: number, kcal: string, was: string) =>
+      `Plan na ${days} dni gotowy. Cel kalorii w profilu: ${kcal} kcal (było ${was}).`,
+    ready: (days: number) => `Plan na ${days} dni gotowy — lista zakupów czeka.`,
+    next: 'Następny plan z zakupami',
+    title: 'Plan z listą zakupów',
+    intro:
+      'Jedzenie na kolejne dni dla jednej osoby, pod Twój cel i jeden sklep — z listą zakupów, obiadami gotowanymi na zapas (najwyżej 4 dni w lodówce) i odhaczaniem w dzienniku.',
+    start: 'Od kiedy',
+    today: (date: string) => `dziś, ${date}`,
+    tomorrow: (date: string) => `jutro, ${date}`,
+    length: 'Na ile dni',
+    days: (n: number) => `${n} dni${n === 7 ? ' (tydzień)' : n === 14 ? ' (dwa tygodnie)' : ''}`,
+    meals: 'Posiłki dziennie',
+    cooking: 'Gotowanie na zapas',
+    lunchBox: 'Obiad z pudełka',
+    bothBoxes: 'Obiad i kolacja z pudełka',
+    store: 'Sklep (jedna wizyta)',
+    online: 'Zamówienie przez internet',
+    noOrder: 'bez zamówienia',
+    more: (shop: string, n: number) => `${shop} · +${n} przepisów`,
+    name: 'Nazwa planu (nieobowiązkowa)',
+    exclude: 'Czego nie jesz',
+    goal: 'Cel planu',
+    working: 'Liczę Twoje tempo z wagi i zapisów…',
+    kcalLegend: 'Cel kalorii planu',
+    maintenance: 'utrzymanie',
+    fitted: 'dopasowany do Twojego tempa',
+    recommended: '(zalecane)',
+    asProfile: '— jak w profilu diety',
+    goalLine: (goal: string, kcal: string, style: string, protein: number, carbsMax: number | null) =>
+      `${goal} · ${kcal} kcal dziennie · ${style} · białko ${protein} g${carbsMax !== null ? ` · węglowodany do ${carbsMax} g` : ''}.`,
+    willSave: 'Zapiszę ten cel w profilu diety, żeby dziennik liczył tak samo.',
+    making: 'Układam…',
+    make: 'Ułóż plan',
+    cancel: 'Anuluj',
+  },
+  en: {
+    saveFailed: 'Couldn’t save the plan on this device — try again.',
+    readyGoal: (days: number, kcal: string, was: string) =>
+      `Your ${days}-day plan is ready. Calorie goal in your profile: ${kcal} kcal (was ${was}).`,
+    ready: (days: number) => `Your ${days}-day plan is ready — the shopping list is waiting.`,
+    next: 'Next plan & shopping',
+    title: 'Plan with a shopping list',
+    intro:
+      'Food for the coming days for one person, for your goal and one shop — with a shopping list, lunches cooked ahead (at most 4 days in the fridge) and ticking off in the diary.',
+    start: 'Starting',
+    today: (date: string) => `today, ${date}`,
+    tomorrow: (date: string) => `tomorrow, ${date}`,
+    length: 'How many days',
+    days: (n: number) => `${n} days${n === 7 ? ' (a week)' : n === 14 ? ' (two weeks)' : ''}`,
+    meals: 'Meals a day',
+    cooking: 'Batch cooking',
+    lunchBox: 'Lunch from a box',
+    bothBoxes: 'Lunch and dinner from a box',
+    store: 'Shop (one visit)',
+    online: 'Online order',
+    noOrder: 'no order',
+    more: (shop: string, n: number) => `${shop} · +${n} recipes`,
+    name: 'Plan name (optional)',
+    exclude: 'What you don’t eat',
+    goal: 'Plan goal',
+    working: 'Working out your pace from your weight and logs…',
+    kcalLegend: 'The plan’s calorie goal',
+    maintenance: 'maintenance',
+    fitted: 'fitted to your pace',
+    recommended: '(recommended)',
+    asProfile: '— as in your diet profile',
+    goalLine: (goal: string, kcal: string, style: string, protein: number, carbsMax: number | null) =>
+      `${goal} · ${kcal} kcal a day · ${style} · protein ${protein} g${carbsMax !== null ? ` · carbs up to ${carbsMax} g` : ''}.`,
+    willSave: 'I’ll save this goal in your diet profile so the diary counts the same way.',
+    making: 'Making the plan…',
+    make: 'Make the plan',
+    cancel: 'Cancel',
+  },
+});
 
 interface Props {
   profile: Profile;
@@ -140,14 +220,14 @@ function Form({
       // The adjusted goal is the profile's goal from now on: the diary and the plan say the same number.
       await startPlan(own ? { ...result.plan, name: own } : result.plan, source === 'checkin' ? planned : null);
     } catch {
-      setError('Nie udało się zapisać planu na tym urządzeniu — spróbuj jeszcze raz.');
+      setError(T.saveFailed);
       setBusy(false);
       return;
     }
     bridge.toast(
       source === 'checkin'
-        ? `Plan na ${days} dni gotowy. Cel kalorii w profilu: ${formatNumber(kcal, 0)} kcal (było ${formatNumber(profile.dailyKcal, 0)}).`
-        : `Plan na ${days} dni gotowy — lista zakupów czeka.`,
+        ? T.readyGoal(days, formatNumber(kcal, 0), formatNumber(profile.dailyKcal, 0))
+        : T.ready(days),
     );
     setBusy(false);
     onDone();
@@ -160,39 +240,36 @@ function Form({
   return (
     <form className="grp fd-prep-form" onSubmit={(e) => void submit(e)} aria-labelledby="fd-prep-form-title" noValidate>
       <h2 id="fd-prep-form-title" className="today-name">
-        {after ? 'Następny plan z zakupami' : 'Plan z listą zakupów'}
+        {after ? T.next : T.title}
       </h2>
-      <p>
-        Jedzenie na kolejne dni dla jednej osoby, pod Twój cel i jeden sklep — z listą zakupów, obiadami gotowanymi na
-        zapas (najwyżej 4 dni w lodówce) i odhaczaniem w dzienniku.
-      </p>
+      <p>{T.intro}</p>
 
       <div className="fd-prep-fields">
         <label className="fld">
-          <span>Od kiedy</span>
+          <span>{T.start}</span>
           <select value={start} onChange={(e) => setStart(e.target.value)}>
             {startOptions.map((d) => (
               <option key={d} value={d}>
-                {d === today ? `dziś, ${shortDate(d)}` : d === addDays(today, 1) ? `jutro, ${shortDate(d)}` : shortDate(d)}
+                {d === today ? T.today(shortDate(d)) : d === addDays(today, 1) ? T.tomorrow(shortDate(d)) : shortDate(d)}
               </option>
             ))}
           </select>
         </label>
         <label className="fld">
-          <span>Na ile dni</span>
+          <span>{T.length}</span>
           <select value={days} onChange={(e) => setDays(Number(e.target.value))}>
             {Array.from({ length: MAX_DAYS - MIN_DAYS + 1 }, (_, i) => MIN_DAYS + i).map((n) => (
               <option key={n} value={n}>
-                {n} dni{n === 7 ? ' (tydzień)' : n === 14 ? ' (dwa tygodnie)' : ''}
+                {T.days(n)}
               </option>
             ))}
           </select>
         </label>
       </div>
 
-      <span className="seg-label">Posiłki dziennie</span>
+      <span className="seg-label">{T.meals}</span>
       <Segmented<'3' | '4' | '5'>
-        label="Posiłki dziennie"
+        label={T.meals}
         value={String(meals) as '3' | '4' | '5'}
         onChange={(v) => setMeals(Number(v) as 3 | 4 | 5)}
         options={[
@@ -201,20 +278,20 @@ function Form({
           { key: '5', label: '5' },
         ]}
       />
-      <span className="seg-label">Gotowanie na zapas</span>
+      <span className="seg-label">{T.cooking}</span>
       <Segmented<Cooking>
-        label="Gotowanie na zapas"
+        label={T.cooking}
         value={cooking}
         onChange={setCooking}
         options={[
-          { key: 'lunch', label: 'Obiad z pudełka' },
-          { key: 'both', label: 'Obiad i kolacja z pudełka' },
+          { key: 'lunch', label: T.lunchBox },
+          { key: 'both', label: T.bothBoxes },
         ]}
       />
 
       <div className="fd-prep-fields">
         <label className="fld">
-          <span>Sklep (jedna wizyta)</span>
+          <span>{T.store}</span>
           <select value={store} onChange={(e) => setStore(e.target.value)}>
             {index.ranking.map((key) => {
               const near = nearby.chains.find((c) => c.chain === key);
@@ -228,12 +305,12 @@ function Form({
           </select>
         </label>
         <label className="fld">
-          <span>Zamówienie przez internet</span>
+          <span>{T.online}</span>
           <select value={online ?? ''} onChange={(e) => setOnline(e.target.value || null)}>
-            <option value="">bez zamówienia</option>
+            <option value="">{T.noOrder}</option>
             {index.online.map((key) => (
               <option key={key} value={key}>
-                {storeName(key)} · +{extra.get(key) ?? 0} przepisów
+                {T.more(storeName(key), extra.get(key) ?? 0)}
               </option>
             ))}
           </select>
@@ -241,7 +318,7 @@ function Form({
       </div>
 
       <label className="fld">
-        <span>Nazwa planu (nieobowiązkowa)</span>
+        <span>{T.name}</span>
         <input
           type="text"
           value={name}
@@ -252,7 +329,7 @@ function Form({
         />
       </label>
 
-      <div className="chips" role="group" aria-label="Czego nie jesz">
+      <div className="chips" role="group" aria-label={T.exclude}>
         {EXCLUSIONS.map((x) => (
           <button key={x} type="button" aria-pressed={exclude.includes(x)} onClick={() => toggle(x)}>
             {EXCLUSION_LABELS[x]}
@@ -261,33 +338,32 @@ function Form({
       </div>
 
       <section className="fd-prep-goal" aria-labelledby="fd-prep-goal-title">
-        <h3 id="fd-prep-goal-title">Cel planu</h3>
+        <h3 id="fd-prep-goal-title">{T.goal}</h3>
         {!check ? (
-          <p className="tight">Liczę Twoje tempo z wagi i zapisów…</p>
+          <p className="tight">{T.working}</p>
         ) : adjusts ? (
           <fieldset className="fd-prep-kcal">
-            <legend className="sr-only">Cel kalorii planu</legend>
+            <legend className="sr-only">{T.kcalLegend}</legend>
             <label className="check-row">
               <input type="radio" name="fd-prep-kcal" checked={useCheckIn} onChange={() => setUseCheckIn(true)} />
               <span>
-                <b>{formatNumber(check.suggestedKcal, 0)} kcal</b> — {check.status === 'cel' ? 'utrzymanie' : 'dopasowany do Twojego tempa'}{' '}
-                (zalecane)
+                <b>{formatNumber(check.suggestedKcal, 0)} kcal</b> — {check.status === 'cel' ? T.maintenance : T.fitted}{' '}
+                {T.recommended}
               </span>
             </label>
             <label className="check-row">
               <input type="radio" name="fd-prep-kcal" checked={!useCheckIn} onChange={() => setUseCheckIn(false)} />
               <span>
-                <b>{formatNumber(profile.dailyKcal, 0)} kcal</b> — jak w profilu diety
+                <b>{formatNumber(profile.dailyKcal, 0)} kcal</b> {T.asProfile}
               </span>
             </label>
           </fieldset>
         ) : null}
         {check && <p className="tight fd-prep-reason">{check.reason}</p>}
         <p className="tight">
-          <CalendarCheck {...ICON} className="fd-prep-ico" /> {goalName(pace)} · {formatNumber(kcal, 0)} kcal dziennie · {style.label}{' '}
-          · białko {targets.protein.target} g
-          {targets.carbs.max !== null ? ` · węglowodany do ${targets.carbs.max} g` : ''}.{' '}
-          {adjusts && useCheckIn ? 'Zapiszę ten cel w profilu diety, żeby dziennik liczył tak samo.' : ''}
+          <CalendarCheck {...ICON} className="fd-prep-ico" />{' '}
+          {T.goalLine(goalName(pace), formatNumber(kcal, 0), style.label, targets.protein.target, targets.carbs.max)}{' '}
+          {adjusts && useCheckIn ? T.willSave : ''}
         </p>
       </section>
 
@@ -298,11 +374,11 @@ function Form({
       )}
       <div className="fd-prep-actions">
         <button type="submit" className="btn" disabled={!history || busy || !store}>
-          {busy ? 'Układam…' : 'Ułóż plan'}
+          {busy ? T.making : T.make}
         </button>
         {onCancel && (
           <button type="button" className="btn ghost" onClick={onCancel}>
-            Anuluj
+            {T.cancel}
           </button>
         )}
       </div>

@@ -1,5 +1,6 @@
 import { X } from 'lucide-react';
 import { useEffect, useId, useLayoutEffect, useRef, type ReactNode } from 'react';
+import { text } from '../../../i18n';
 import './common.css';
 
 interface Props {
@@ -44,7 +45,7 @@ export function Sheet({
   actions,
   footer,
   full = false,
-  closeLabel = 'Zamknij',
+  closeLabel = text({ pl: 'Zamknij', en: 'Close' }),
   className,
   children,
 }: Props) {

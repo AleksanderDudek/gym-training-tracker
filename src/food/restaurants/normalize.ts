@@ -1,4 +1,4 @@
-import { CATEGORY_LABELS, type Chain, type ChainData, type MenuItem, type MenuItemData } from './types';
+import { CATEGORY_LABELS, CATEGORY_TEXT, type Chain, type ChainData, type MenuItem, type MenuItemData } from './types';
 import { foldMenuText, slug } from './text';
 
 /**
@@ -37,7 +37,9 @@ export function normalizeChain(data: ChainData): Chain {
     ...item,
     id: itemIds[order]!,
     order,
-    searchText: foldMenuText([data.name, item.name, item.portion, CATEGORY_LABELS[item.category]].join(' ')),
+    searchText: foldMenuText(
+      [data.name, item.name, item.portion, ...new Set([CATEGORY_TEXT.pl[item.category], CATEGORY_LABELS[item.category]])].join(' '),
+    ),
     inconsistent: listed.has(item.name) || listed.has(`${item.name} · ${item.portion}`) || !energyAgrees(item),
   }));
   return { ...data, items };

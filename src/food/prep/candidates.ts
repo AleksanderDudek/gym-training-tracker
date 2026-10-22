@@ -1,4 +1,5 @@
 import type { DietProfile, Fit } from '../diet/profiles';
+import { text } from '../lib/lang';
 import { RECIPES, servingsOf, type Recipe } from '../recipes/catalog';
 import { INGREDIENTS, type IngredientId } from '../recipes/ingredients';
 import type { Macros } from '../recipes/macros';
@@ -16,11 +17,18 @@ export const EXCLUDED: Record<Exclusion, ReadonlySet<IngredientId>> = {
   eggs: new Set<IngredientId>(['egg', 'eggWhites']),
 };
 
-export const EXCLUSION_LABELS: Record<Exclusion, string> = {
-  meat: 'Bez mięsa',
-  fish: 'Bez ryb i owoców morza',
-  eggs: 'Bez jajek',
-};
+export const EXCLUSION_LABELS: Record<Exclusion, string> = text({
+  pl: {
+    meat: 'Bez mięsa',
+    fish: 'Bez ryb i owoców morza',
+    eggs: 'Bez jajek',
+  },
+  en: {
+    meat: 'No meat',
+    fish: 'No fish or seafood',
+    eggs: 'No eggs',
+  },
+});
 
 /** A starch of the recipe's own: no rice or roll next to it. */
 const STARCH: ReadonlySet<IngredientId> = new Set<IngredientId>([

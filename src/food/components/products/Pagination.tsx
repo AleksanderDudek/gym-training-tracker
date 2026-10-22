@@ -1,6 +1,12 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useSyncExternalStore } from 'react';
+import { text } from '../../../i18n';
 import { formatNumber } from '../../lib/format';
+
+const T = text({
+  pl: { nav: 'Strony wyników', prev: 'Poprzednia strona', next: 'Następna strona', page: (n: string) => `Strona ${n}` },
+  en: { nav: 'Result pages', prev: 'Previous page', next: 'Next page', page: (n: string) => `Page ${n}` },
+});
 
 interface Props {
   page: number;
@@ -56,8 +62,8 @@ export function Pagination({ page, pageCount, onPage }: Props) {
   if (pageCount <= 1) return null;
 
   return (
-    <nav className="fd-pages" aria-label="Strony wyników">
-      <button type="button" className="fd-page-step" onClick={() => onPage(page - 1)} disabled={page <= 1} aria-label="Poprzednia strona">
+    <nav className="fd-pages" aria-label={T.nav}>
+      <button type="button" className="fd-page-step" onClick={() => onPage(page - 1)} disabled={page <= 1} aria-label={T.prev}>
         <ChevronLeft size={20} strokeWidth={2} aria-hidden />
       </button>
       {pageNumbers(page, pageCount, near).map((p, i) =>
@@ -71,7 +77,7 @@ export function Pagination({ page, pageCount, onPage }: Props) {
             type="button"
             onClick={() => onPage(p)}
             aria-current={p === page ? 'page' : undefined}
-            aria-label={`Strona ${formatNumber(p, 0)}`}
+            aria-label={T.page(formatNumber(p, 0))}
           >
             {formatNumber(p, 0)}
           </button>
@@ -82,7 +88,7 @@ export function Pagination({ page, pageCount, onPage }: Props) {
         className="fd-page-step"
         onClick={() => onPage(page + 1)}
         disabled={page >= pageCount}
-        aria-label="Następna strona"
+        aria-label={T.next}
       >
         <ChevronRight size={20} strokeWidth={2} aria-hidden />
       </button>

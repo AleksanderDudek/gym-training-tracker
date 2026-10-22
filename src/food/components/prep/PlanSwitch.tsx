@@ -1,6 +1,12 @@
+import { text } from '../../../i18n';
 import { rangeLabel } from '../../prep/format';
 import { planEnd } from '../../prep/store';
 import type { PrepPlan } from '../../prep/types';
+
+const T = text({
+  pl: { nav: 'Plany z zakupami', now: 'Teraz', next: 'Następny' },
+  en: { nav: 'Plans & shopping', now: 'Now', next: 'Next' },
+});
 
 interface Props {
   plans: PrepPlan[];
@@ -17,10 +23,10 @@ interface Props {
 export function PlanSwitch({ plans, shown, today, href }: Props) {
   if (plans.length < 2) return null;
   return (
-    <nav className="wrap seg fd-prep-switch" aria-label="Plany z zakupami">
+    <nav className="wrap seg fd-prep-switch" aria-label={T.nav}>
       {plans.map((p) => (
         <a key={p.id} href={href(p)} aria-current={p === shown ? 'page' : undefined}>
-          {p.settings.start <= today ? 'Teraz' : 'Następny'} · {rangeLabel(p.settings.start, planEnd(p))}
+          {p.settings.start <= today ? T.now : T.next} · {rangeLabel(p.settings.start, planEnd(p))}
         </a>
       ))}
     </nav>

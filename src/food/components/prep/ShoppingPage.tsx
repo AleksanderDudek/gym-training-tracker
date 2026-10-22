@@ -1,5 +1,6 @@
 import { Check, ExternalLink, Share2, Snowflake } from 'lucide-react';
 import { Fragment, useState } from 'react';
+import { text } from '../../../i18n';
 import { EmptyState } from '../../../components/ui';
 import { dietPath } from '../../../routing';
 import { useBridge } from '../../bridge';
@@ -17,7 +18,61 @@ import type { PrepPlan, PrepShop, ShoppingItem } from '../../prep/types';
 import { Loading } from '../diet/Onboarding';
 import { shoppingHref } from './links';
 import { PlanSwitch } from './PlanSwitch';
+import { COMMON } from '../common/text';
 import './prep.css';
+
+const T = text({
+  pl: {
+    noPlan: 'Nie masz planu z listą zakupów.',
+    noPlanText: 'Ułóż plan na kolejne dni — lista zakupów powstanie razem z nim.',
+    make: 'Ułóż plan',
+    tickFailed: 'Nie udało się zapisać odhaczenia na tym urządzeniu.',
+    list: 'Lista zakupów',
+    copied: 'Lista skopiowana — wklej ją, gdzie chcesz.',
+    shareFailed: 'Nie udało się udostępnić listy.',
+    title: (range: string) => `Zakupy na ${range}`,
+    bought: (done: string, total: string) => `Kupione ${done} z ${total}`,
+    all: ' — wszystko w koszyku.',
+    share: 'Udostępnij listę',
+    untick: 'Odznacz wszystko',
+    visit: (shop: string) => `${shop} — wizyta w sklepie`,
+    order: (shop: string) => `${shop} — zamówienie przez internet`,
+    home: 'Sprawdź w domu',
+    homeLead: 'Zwykle stoi w szafce: zajrzyj przed wyjściem, kup, czego brakuje.',
+    foot: 'Ceny orientacyjne: z Open Prices, Selgrosa i stron sklepów internetowych, z datą sprawdzenia przy produkcie. Ilości są na cały plan; ostatnie opakowanie może zostać na następny.',
+    sum: (price: string) => `Ok. ${price}`,
+    known: (known: number, all: number) => ` (ceny znane dla ${known} z ${all} pozycji)`,
+    shop: (name: string) => `Sklep ${name}`,
+    about: (price: string) => ` · ok. ${price}`,
+    freeze: (grams: string, date: string) => `zamroź ${grams} na ${date}`,
+    page: (name: string) => `Strona produktu: ${name}`,
+  },
+  en: {
+    noPlan: 'You have no plan with a shopping list.',
+    noPlanText: 'Make a plan for the coming days — the shopping list comes with it.',
+    make: 'Make a plan',
+    tickFailed: 'Couldn’t save the tick on this device.',
+    list: 'Shopping list',
+    copied: 'List copied — paste it wherever you like.',
+    shareFailed: 'Couldn’t share the list.',
+    title: (range: string) => `Shopping for ${range}`,
+    bought: (done: string, total: string) => `Bought ${done} of ${total}`,
+    all: ' — everything’s in the basket.',
+    share: 'Share list',
+    untick: 'Untick all',
+    visit: (shop: string) => `${shop} — shop visit`,
+    order: (shop: string) => `${shop} — online order`,
+    home: 'Check at home',
+    homeLead: 'Usually in the cupboard: take a look before you go and buy what’s missing.',
+    foot: 'Prices are approximate: from Open Prices, Selgros and online shops’ sites, with the date they were checked next to the product. Amounts cover the whole plan; the last pack may be left for the next one.',
+    sum: (price: string) => `About ${price}`,
+    known: (known: number, all: number) => ` (prices known for ${known} of ${all} items)`,
+    shop: (name: string) => `${name} website`,
+    about: (price: string) => ` · about ${price}`,
+    freeze: (grams: string, date: string) => `freeze ${grams} for ${date}`,
+    page: (name: string) => `Product page: ${name}`,
+  },
+});
 
 const ICON = { size: 20, strokeWidth: 2, 'aria-hidden': true } as const;
 
@@ -36,11 +91,11 @@ export default function ShoppingPage() {
     return (
       <div className="wrap">
         <EmptyState
-          title="Nie masz planu z listą zakupów."
-          text="Ułóż plan na kolejne dni — lista zakupów powstanie razem z nim."
+          title={T.noPlan}
+          text={T.noPlanText}
           action={
             <a className="btn sm" href={dietPath('plan')}>
-              Ułóż plan
+              {T.make}
             </a>
           }
         />
@@ -71,7 +126,7 @@ function ShoppingList({ plan }: { plan: PrepPlan & { id: number } }) {
   const bought = new Set(plan.shopping.map((i) => i.key).filter((k) => ticks.get(k) ?? plan.bought.includes(k)));
   const failed = () => {
     setTicks(new Map());
-    bridge.toast('Nie udało się zapisać odhaczenia na tym urządzeniu.');
+    bridge.toast(T.tickFailed);
   };
   const tick = (key: string, on: boolean) => {
     setTicks((m) => new Map(m).set(key, on));
@@ -87,15 +142,15 @@ function ShoppingList({ plan }: { plan: PrepPlan & { id: number } }) {
     const text = shoppingText(plan);
     try {
       if (navigator.share) {
-        await navigator.share({ title: 'Lista zakupów', text });
+        await navigator.share({ title: T.list, text });
         return;
       }
       await navigator.clipboard.writeText(text);
-      bridge.toast('Lista skopiowana — wklej ją, gdzie chcesz.');
+      bridge.toast(T.copied);
     } catch (e) {
       // Zamknięte okno udostępniania to nie błąd; brak schowka — tak.
       if (e instanceof DOMException && e.name === 'AbortError') return;
-      bridge.toast('Nie udało się udostępnić listy.');
+      bridge.toast(T.shareFailed);
     }
   };
 
@@ -103,21 +158,21 @@ function ShoppingList({ plan }: { plan: PrepPlan & { id: number } }) {
     <>
       <div className="grp fd-prep-head">
         <div className="today-tag light">{planName(plan)}</div>
-        <h2 className="today-name">Zakupy na {rangeLabel(plan.settings.start, planEnd(plan))}</h2>
+        <h2 className="today-name">{T.title(rangeLabel(plan.settings.start, planEnd(plan)))}</h2>
         <p className="tight" aria-live="polite">
-          Kupione {formatNumber(done, 0)} z {formatNumber(total, 0)}
-          {done === total && total > 0 && ' — wszystko w koszyku.'}
+          {T.bought(formatNumber(done, 0), formatNumber(total, 0))}
+          {done === total && total > 0 && T.all}
         </p>
         <div className="fd-prep-progress" aria-hidden>
           <i style={{ width: `${total ? (done / total) * 100 : 0}%` }} />
         </div>
         <div className="fd-prep-actions">
           <button type="button" className="btn ghost sm" onClick={() => void share()}>
-            <Share2 {...ICON} /> Udostępnij listę
+            <Share2 {...ICON} /> {T.share}
           </button>
           {bought.size > 0 && (
             <button type="button" className="btn ghost sm" onClick={untickAll}>
-              Odznacz wszystko
+              {T.untick}
             </button>
           )}
         </div>
@@ -126,7 +181,7 @@ function ShoppingList({ plan }: { plan: PrepPlan & { id: number } }) {
       {physical && visit.length > 0 && (
         <Group
           id="fd-prep-visit"
-          title={`${physical.name} — wizyta w sklepie`}
+          title={T.visit(physical.name)}
           items={visit}
           bought={bought}
           onTick={tick}
@@ -139,7 +194,7 @@ function ShoppingList({ plan }: { plan: PrepPlan & { id: number } }) {
           <Group
             key={s.key}
             id={`fd-prep-order-${s.key}`}
-            title={`${s.name} — zamówienie przez internet`}
+            title={T.order(s.name)}
             shop={s}
             items={plan.shopping.filter((i) => i.group === 'order' && i.shop === s.key)}
             bought={bought}
@@ -149,17 +204,14 @@ function ShoppingList({ plan }: { plan: PrepPlan & { id: number } }) {
       {home.length > 0 && (
         <Group
           id="fd-prep-home"
-          title="Sprawdź w domu"
-          lead="Zwykle stoi w szafce: zajrzyj przed wyjściem, kup, czego brakuje."
+          title={T.home}
+          lead={T.homeLead}
           items={home}
           bought={bought}
           onTick={tick}
         />
       )}
-      <p className="wrap fd-prep-soft fd-prep-foot">
-        Ceny orientacyjne: z Open Prices, Selgrosa i stron sklepów internetowych, z datą sprawdzenia przy produkcie. Ilości
-        są na cały plan; ostatnie opakowanie może zostać na następny.
-      </p>
+      <p className="wrap fd-prep-soft fd-prep-foot">{T.foot}</p>
     </>
   );
 }
@@ -185,16 +237,16 @@ function Group({ id, title, lead, shop, items, bought, onTick, aisles = false }:
       {lead && <p className="tight">{lead}</p>}
       {pricedEnough(sum) && (
         <p className="tight fd-prep-nums">
-          Ok. {formatPrice(sum.total)}
-          {sum.unknown > 0 && ` (ceny znane dla ${sum.known} z ${items.length} pozycji)`}
+          {T.sum(formatPrice(sum.total))}
+          {sum.unknown > 0 && T.known(sum.known, items.length)}
         </p>
       )}
       {shop?.url && (
         <p className="tight">
           <a href={shop.url} target="_blank" rel="noopener noreferrer">
-            Sklep {shop.name}
+            {T.shop(shop.name)}
             <ExternalLink size={14} strokeWidth={2} aria-hidden />
-            <span className="sr-only"> (otwiera się w nowej karcie)</span>
+            <span className="sr-only">{COMMON.newTab}</span>
           </a>
         </p>
       )}
@@ -229,11 +281,11 @@ function Item({ item, done, onTick }: { item: ShoppingItem; done: boolean; onTic
             {amountText(item)}
             {item.product && item.product.name !== item.label && ` · ${item.label}`}
             {item.product?.brand && ` · ${item.product.brand}`}
-            {item.price !== null && ` · ok. ${formatPrice(item.price)}`}
+            {item.price !== null && T.about(formatPrice(item.price))}
           </span>
           {item.freeze.map((f) => (
             <span key={f.date} className="fd-prep-meta fd-prep-cold">
-              <Snowflake size={14} strokeWidth={2} aria-hidden /> zamroź {gramsLabel(f.grams)} na {shortDate(f.date)}
+              <Snowflake size={14} strokeWidth={2} aria-hidden /> {T.freeze(gramsLabel(f.grams), shortDate(f.date))}
             </span>
           ))}
         </span>
@@ -241,7 +293,10 @@ function Item({ item, done, onTick }: { item: ShoppingItem; done: boolean; onTic
       {item.product?.url && (
         <a className="fd-prep-link" href={item.product.url} target="_blank" rel="noopener noreferrer">
           <ExternalLink {...ICON} />
-          <span className="sr-only">Strona produktu: {name} (otwiera się w nowej karcie)</span>
+          <span className="sr-only">
+            {T.page(name)}
+            {COMMON.newTab}
+          </span>
         </a>
       )}
     </li>

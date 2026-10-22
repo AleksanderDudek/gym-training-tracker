@@ -1,5 +1,25 @@
 import { paceText } from '../diet/model';
 import { formatNumber, plural } from '../lib/format';
+import { LOCALE, pluralEn, text } from '../lib/lang';
+
+const T = text({
+  pl: {
+    portion: (n: number) => `${n} ${plural(n, 'porcja', 'porcje', 'porcji')}`,
+    part: (mixed: string, _n: number) => `${mixed} porcji`,
+    one: '1 porcji',
+    losing: (pace: string) => `Redukcja · ${pace}`,
+    gaining: (pace: string) => `Budowanie masy · ${pace}`,
+    keeping: 'Utrzymanie wagi',
+  },
+  en: {
+    portion: (n: number) => `${n} ${pluralEn(n, 'serving', 'servings')}`,
+    part: (mixed: string, n: number) => `${mixed} ${n < 1 ? 'serving' : 'servings'}`,
+    one: '1 serving',
+    losing: (pace: string) => `Losing weight · ${pace}`,
+    gaining: (pace: string) => `Building mass · ${pace}`,
+    keeping: 'Keeping weight',
+  },
+});
 
 const FRACTIONS: Record<number, string> = { 0.25: '¼', 0.5: '½', 0.75: '¾' };
 
@@ -19,16 +39,16 @@ export function mixed(n: number): string {
  */
 export function portionLabel(n: number): string {
   const whole = Number.isInteger(Math.round(n * 100) / 100);
-  if (!whole) return `${mixed(n)} porcji`;
-  return `${n} ${plural(n, 'porcja', 'porcje', 'porcji')}`;
+  if (!whole) return T.part(mixed(n), n);
+  return T.portion(n);
 }
 
 /** After „po” („4 pudełka po …”): one is „1 porcji”, the rest as `portionLabel` („po ¾ porcji”, „po 2 porcje”). */
-export const portionAfterPo = (n: number): string => (n === 1 ? '1 porcji' : portionLabel(n));
+export const portionAfterPo = (n: number): string => (n === 1 ? T.one : portionLabel(n));
 
-const DAY_MONTH = new Intl.DateTimeFormat('pl-PL', { day: 'numeric', month: 'short', timeZone: 'UTC' });
-const WEEKDAY = new Intl.DateTimeFormat('pl-PL', { weekday: 'short', timeZone: 'UTC' });
-const WEEKDAY_LONG = new Intl.DateTimeFormat('pl-PL', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
+const DAY_MONTH = new Intl.DateTimeFormat(LOCALE, { day: 'numeric', month: 'short', timeZone: 'UTC' });
+const WEEKDAY = new Intl.DateTimeFormat(LOCALE, { weekday: 'short', timeZone: 'UTC' });
+const WEEKDAY_LONG = new Intl.DateTimeFormat(LOCALE, { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
 
 const at = (date: string) => new Date(`${date}T12:00:00Z`);
 
@@ -72,7 +92,7 @@ export function roundGrams(grams: number): number {
 
 /** Losing, keeping or gaining, by what the goal does at this weight (the model's pace, + is losing). */
 export function goalName(pace: number): string {
-  if (pace > 0.05) return `Redukcja · ${paceText(pace)}`;
-  if (pace < -0.05) return `Budowanie masy · ${paceText(pace)}`;
-  return 'Utrzymanie wagi';
+  if (pace > 0.05) return T.losing(paceText(pace));
+  if (pace < -0.05) return T.gaining(paceText(pace));
+  return T.keeping;
 }

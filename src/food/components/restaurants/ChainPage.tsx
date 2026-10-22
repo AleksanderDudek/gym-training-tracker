@@ -1,4 +1,5 @@
 import { useCallback, useMemo } from 'react';
+import { pluralEn, text } from '../../../i18n';
 import { EmptyState } from '../../../components/ui';
 import { RESTAURANTS_PATH } from '../../../routing';
 import { useProfile } from '../../hooks/useDiet';
@@ -18,6 +19,43 @@ import './restaurants.css';
 
 const SORTS = Object.keys(SORT_LABELS) as MenuSort[];
 
+const T = text({
+  pl: {
+    missing: 'Nie ma takiego lokalu',
+    missingText: 'Może zniknął z listy przy ostatniej aktualizacji danych.',
+    all: 'Wszystkie lokale',
+    items: (n: number) => `${plural(n, 'pozycja', 'pozycje', 'pozycji')} menu`,
+    count: (n: number) => plural(n, 'pozycja', 'pozycje', 'pozycji'),
+    source: 'Źródło:',
+    checked: (date: string) => `· sprawdzone ${date}.`,
+    market: (market: string) => `Wartości z menu rynku ${market} — polska sieć ich nie publikuje, a receptury mogą się różnić.`,
+    about: 'O tych danych',
+    top: 'Najwięcej białka',
+    topLead: (min: number) => `Co najmniej ${min} g białka w porcji i najwięcej białka na kalorię.`,
+    category: 'Kategoria',
+    everything: 'Wszystko',
+    order: 'Kolejność',
+    menu: 'Menu',
+  },
+  en: {
+    missing: 'No such restaurant',
+    missingText: 'It may have dropped off the list in the last data update.',
+    all: 'All restaurants',
+    items: (n: number) => `menu ${pluralEn(n, 'item', 'items')}`,
+    count: (n: number) => pluralEn(n, 'item', 'items'),
+    source: 'Source:',
+    checked: (date: string) => `· checked ${date}.`,
+    market: (market: string) => `Values from the ${market} menu — the Polish chain doesn’t publish them, and recipes may differ.`,
+    about: 'About this data',
+    top: 'Most protein',
+    topLead: (min: number) => `At least ${min} g of protein per portion and the most protein per calorie.`,
+    category: 'Category',
+    everything: 'All',
+    order: 'Order',
+    menu: 'Menu',
+  },
+});
+
 /**
  * Menu jednej sieci (`#/lokale/kfc`): skąd liczby, „Najwięcej białka”, kategorie, sortowanie
  * i karta pozycji. Kategoria, sortowanie i otwarta pozycja stoją w adresie
@@ -31,11 +69,11 @@ export default function ChainPage({ chainId }: { chainId: string }) {
     return (
       <div className="wrap">
         <EmptyState
-          title="Nie ma takiego lokalu"
-          text="Może zniknął z listy przy ostatniej aktualizacji danych."
+          title={T.missing}
+          text={T.missingText}
           action={
             <a className="btn sm" href={RESTAURANTS_PATH}>
-              Wszystkie lokale
+              {T.all}
             </a>
           }
         />
@@ -68,24 +106,21 @@ function Menu({ chain }: { chain: Chain }) {
       <div className="wrap fd-rest-head">
         <h2 className="fd-rest-title">{chain.name}</h2>
         <p className="fd-rest-meta">
-          {CHAIN_KIND_LABELS[chain.kind]} · {formatNumber(chain.items.length, 0)}{' '}
-          {plural(chain.items.length, 'pozycja', 'pozycje', 'pozycji')} menu
+          {CHAIN_KIND_LABELS[chain.kind]} · {formatNumber(chain.items.length, 0)} {T.items(chain.items.length)}
         </p>
         <p className="fd-rest-src">
-          Źródło:{' '}
+          {T.source}{' '}
           <a href={chain.source.url} target="_blank" rel="noopener noreferrer">
             {chain.source.title}
           </a>{' '}
-          · sprawdzone {formatDate(chain.source.checked)}.
+          {T.checked(formatDate(chain.source.checked))}
         </p>
         {chain.market !== 'PL' && (
-          <p className="fd-rest-warn">
-            Wartości z menu rynku {chain.market} — polska sieć ich nie publikuje, a receptury mogą się różnić.
-          </p>
+          <p className="fd-rest-warn">{T.market(chain.market)}</p>
         )}
         {chain.source.note && (
           <details className="fd-rest-note">
-            <summary>O tych danych</summary>
+            <summary>{T.about}</summary>
             <p>{chain.source.note}</p>
           </details>
         )}
@@ -93,10 +128,8 @@ function Menu({ chain }: { chain: Chain }) {
 
       {top.length > 0 && (
         <section className="grp" aria-labelledby="fd-rest-top-title">
-          <h2 id="fd-rest-top-title">Najwięcej białka</h2>
-          <p className="tight">
-            Co najmniej {TOP_PROTEIN_MIN} g białka w porcji i najwięcej białka na kalorię.
-          </p>
+          <h2 id="fd-rest-top-title">{T.top}</h2>
+          <p className="tight">{T.topLead(TOP_PROTEIN_MIN)}</p>
           <MenuList items={withChain(top)} diet={diet} onOpen={open} />
         </section>
       )}
@@ -104,14 +137,14 @@ function Menu({ chain }: { chain: Chain }) {
       <div className="grp fd-rest-filters">
         {categories.length > 1 && (
           <ChipRow<MenuCategory>
-            label="Kategoria"
+            label={T.category}
             value={category}
             onChange={(next) => update({ category: next })}
-            options={[{ key: null, label: 'Wszystko' }, ...categories.map((k) => ({ key: k, label: CATEGORY_LABELS[k] }))]}
+            options={[{ key: null, label: T.everything }, ...categories.map((k) => ({ key: k, label: CATEGORY_LABELS[k] }))]}
           />
         )}
         <label className="fld fd-rest-sort">
-          <span>Kolejność</span>
+          <span>{T.order}</span>
           <select value={state.sort} onChange={(e) => update({ sort: e.target.value as MenuSort })}>
             {SORTS.map((s) => (
               <option key={s} value={s}>
@@ -124,9 +157,9 @@ function Menu({ chain }: { chain: Chain }) {
 
       <section className="grp" aria-labelledby="fd-rest-menu-title">
         <h2 id="fd-rest-menu-title">
-          {category ? CATEGORY_LABELS[category] : 'Menu'}{' '}
+          {category ? CATEGORY_LABELS[category] : T.menu}{' '}
           <span className="fd-rest-h-meta">
-            · {formatNumber(items.length, 0)} {plural(items.length, 'pozycja', 'pozycje', 'pozycji')}
+            · {formatNumber(items.length, 0)} {T.count(items.length)}
           </span>
         </h2>
         <MenuList items={withChain(items)} diet={diet} onOpen={open} />

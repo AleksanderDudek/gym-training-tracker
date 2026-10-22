@@ -1,7 +1,29 @@
 import { Search, SlidersHorizontal, X } from 'lucide-react';
+import { text } from '../../../i18n';
 import { useDebouncedDraft } from '../../hooks/useDebouncedDraft';
 import { SORT_OPTIONS } from '../../lib/labels';
 import type { Sort } from '../../lib/sort';
+
+const T = text({
+  pl: {
+    search: 'Szukaj produktu',
+    placeholder: 'Nazwa, marka lub kod kreskowy',
+    clear: 'Wyczyść wyszukiwanie',
+    sort: 'Sortowanie',
+    custom: 'Własne (z tabeli)',
+    filters: 'Filtry',
+    on: (n: number) => `, włączone: ${n}`,
+  },
+  en: {
+    search: 'Search products',
+    placeholder: 'Name, brand or barcode',
+    clear: 'Clear search',
+    sort: 'Sort',
+    custom: 'Custom (from the table)',
+    filters: 'Filters',
+    on: (n: number) => `, active: ${n}`,
+  },
+});
 
 interface Props {
   query: string;
@@ -36,10 +58,10 @@ export function Toolbar({ query, onQuery, sort, onSort, activeFilters, onOpenFil
           onKeyDown={(e) => {
             if (e.key === 'Enter') flush();
           }}
-          aria-label="Szukaj produktu"
+          aria-label={T.search}
           // Krócej niż w Produktach PL („Szukaj: nazwa, marka lub kod kreskowy”): lupa mówi już „szukaj”,
           // a pełne zdanie ucinało się na telefonie w pół słowa.
-          placeholder="Nazwa, marka lub kod kreskowy"
+          placeholder={T.placeholder}
           enterKeyHint="search"
           autoComplete="off"
           spellCheck={false}
@@ -52,7 +74,7 @@ export function Toolbar({ query, onQuery, sort, onSort, activeFilters, onOpenFil
               setDraft('');
               onQuery('');
             }}
-            aria-label="Wyczyść wyszukiwanie"
+            aria-label={T.clear}
           >
             <X size={20} strokeWidth={2} aria-hidden />
           </button>
@@ -68,10 +90,10 @@ export function Toolbar({ query, onQuery, sort, onSort, activeFilters, onOpenFil
             const [key, dir] = e.target.value.split('-') as [Sort['key'], Sort['dir']];
             onSort({ key, dir });
           }}
-          aria-label="Sortowanie"
+          aria-label={T.sort}
         >
           {/* Nagłówek tabeli potrafi wybrać kierunek, którego nie ma wśród gotowych. */}
-          {!inPresets && <option value={sortValue}>Własne (z tabeli)</option>}
+          {!inPresets && <option value={sortValue}>{T.custom}</option>}
           {SORT_OPTIONS.map((o) => (
             <option key={`${o.key}-${o.dir}`} value={`${o.key}-${o.dir}`}>
               {o.label}
@@ -81,13 +103,13 @@ export function Toolbar({ query, onQuery, sort, onSort, activeFilters, onOpenFil
 
         <button type="button" className={`btn sm ghost fd-filters-btn${activeFilters > 0 ? ' on' : ''}`} onClick={onOpenFilters}>
           <SlidersHorizontal size={20} strokeWidth={2} aria-hidden />
-          Filtry
+          {T.filters}
           {activeFilters > 0 && (
             <>
               <span className="fd-badge" aria-hidden>
                 {activeFilters}
               </span>
-              <span className="sr-only">, włączone: {activeFilters}</span>
+              <span className="sr-only">{T.on(activeFilters)}</span>
             </>
           )}
         </button>
