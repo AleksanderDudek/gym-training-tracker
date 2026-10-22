@@ -1,8 +1,11 @@
 import { apiConfigured } from './api';
+import { PHONE_EVERY_MIN, deviceStatus } from './deviceStatus';
+import type { DeviceStatus } from './deviceStatus';
 import { keySlot, mailbox, readBox } from './mailbox';
 import type { BoxResult } from './mailbox';
 import { parsePhonePayload } from './engine/phone';
 import type { PhonePayload } from './engine/phone';
+import type { AppState } from './types';
 import type { WatchKeys } from './watchseal';
 
 /**
@@ -35,6 +38,26 @@ export const readPhonePull = (keys: WatchKeys, status: number, body: unknown, no
   readBox(keys, status, body, nowMs, parsePhonePayload);
 
 export const lastPhoneKind = box.lastKind;
+
+/** Kiedy ostatnio zapytano serwer o paczkę telefonu — „sprawdzone przed chwilą”. */
+export const lastPhoneAt = box.lastAt;
+
+/** Zapis na wiadomość po każdym sprawdzeniu — także tym bez nowej paczki. */
+export const onPhoneCheck = box.subscribe;
+
+/** Czy telefon jest połączony w tej przeglądarce: build zna aplikację i klucz jest zapisany. */
+export const phoneConnected = (): boolean => phoneConfigured() && slot.get() !== null;
+
+/** Stan połączenia z telefonem: aplikacja na telefonie wysyła mniej więcej co godzinę. */
+export const phoneStatus = (state: AppState, nowMs: number): DeviceStatus =>
+  deviceStatus({
+    lastT: state.phone?.t ?? null,
+    got: state.phone?.got ?? null,
+    kind: box.lastKind(),
+    hasKey: slot.get() !== null,
+    nowMs,
+    cadenceMin: PHONE_EVERY_MIN,
+  });
 
 export const pullPhone = box.pull;
 

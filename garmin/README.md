@@ -32,6 +32,32 @@ i wysyła przez aplikację Garmin Connect na telefonie.
 4. Serwer trzyma tylko najnowszą paczkę i nie zna klucza. Aplikacja odbiera ją przy otwarciu,
    sprawdza podpis, odszyfrowuje i scala.
 
+## Ekran na zegarku
+
+Ekran aplikacji mówi, jak poszła ostatnia wysyłka i kiedy następna — to pierwsze miejsce, w które
+ktoś patrzy, gdy w aplikacji brakuje danych:
+
+- **ostatnia wysyłka** — „Sent 14:32” / „Wysłane 14:32”, „No phone - Bluetooth?” / „Brak
+  telefonu - Bluetooth?” (zegarek nie dogadał się z telefonem — najczęściej wyłączony Bluetooth
+  albo telefon za daleko), „Wrong key” / „Zły klucz”, „Paste the key in Garmin Connect”, gdy
+  klucza nie ma. Ten sam tekst stoi w podglądzie (glance) na liście aplikacji;
+- **następna wysyłka** — „Next ~15:02” / „Następna ok. 15:02”: ostatni przebieg w tle plus pół
+  godziny; „Next soon” / „Następna wkrótce”, gdy ta pora już minęła, i „Next within 30 min” /
+  „Następna w ciągu 30 min”, gdy przebiegu jeszcze nie było (rusza pół godziny po pierwszym
+  otwarciu). Czas ostatniego przebiegu zapisuje sam przebieg w `Storage` (`Sync.LAST_RUN`), bo
+  `Background.getLastTemporalEventTime()` zwraca `null` po każdym otwarciu aplikacji — czyli
+  właśnie wtedy, gdy ktoś patrzy na ten ekran. Podgląd tej linii nie ma: ma osobną, małą pulę
+  pamięci;
+- **START** (albo stuknięcie) wysyła od razu.
+
+Myślnik w tekstach to zwykły „-”: nie każdy zegarek ma w czcionce systemowej długą pauzę.
+Karta „Zegarek Garmin” w aplikacji cytuje te same teksty w liście „Dane nie przychodzą?”.
+
+**Nową wersję trzeba wgrać.** Zmiany ekranu działają dopiero po nowym buildzie
+w sklepie: najpierw `./build.sh beta` i nowa wersja bety, a po publikacji także `./build.sh store`
+i nowa wersja aplikacji publicznej (kroki niżej). Zegarek ze starą wersją dalej wysyła paczki —
+pokazuje tylko stary tekst („No phone nearby”) i nie mówi, kiedy następna.
+
 Format koperty i paczki opisują `src/watchseal.ts` i `src/engine/watch.ts`. Plik `SealTest.mc`
 sprawdza ten sam wektor co testy aplikacji: jeśli zegarek i przeglądarka się rozjadą, test
 nie przejdzie.
@@ -111,20 +137,26 @@ Stan na 21.10.2026 — Connect IQ SDK 9.2.0 z urządzeniami z SDK Managera:
 - [ ] **`UserActivity.startTime`** z prawdziwą aktywnością (symulator nie ma aktywności):
       przejazd z dziś ma mieć w aplikacji dzisiejszą datę.
 - [ ] **Polskie znaki na ekranie zegarka** i **odpowiedź serwera** („Wysłane HH:MM”) — na zegarku.
+- [x] **Linia „następna wysyłka”** (22.10.2026): `./build.sh store` i `./build.sh beta` — 195 z 195
+      wariantów, `NextSendTest` przechodzi w symulatorze (fr265).
+- [ ] **Następna wysyłka na zegarku**: po pierwszym przebiegu w tle z nową wersją ekran ma pokazać
+      „Następna ok. HH:MM” pół godziny po nim, a dwuliniowy stan („Zły klucz - wklej go jeszcze
+      raz”) ma się mieścić na najmniejszych ekranach (Instinct 2, vívoactive 3).
 
 ## Pliki
 
 | Plik | Co robi |
 | --- | --- |
 | `source/GymTrackerApp.mc` | wejście: rejestruje przebieg w tle co 30 min, podgląd, wynik z tła |
-| `source/SyncService.mc` | przebieg w tle: `Sync.run` i `Background.exit(kod)` |
+| `source/SyncService.mc` | przebieg w tle: zapisuje swój czas (`Sync.LAST_RUN`), `Sync.run` i `Background.exit(kod)` |
 | `source/Sync.mc` | jedna wysyłka: paczka v1, koperta, `POST /garmin/push` |
 | `source/Collect.mc` | dane z zegarka w kształcie paczki v1; kubełki zdrowia w `Storage` |
 | `source/Seal.mc` | klucz z ustawień, klucze pochodne, AES-256-CBC + HMAC-SHA256 |
 | `source/Status.mc` | stan wysyłki słowami (ekran i podgląd) |
-| `source/MainView.mc` | ekran aplikacji; START albo stuknięcie wysyła od razu |
+| `source/MainView.mc` | ekran aplikacji: stan, następna wysyłka (`NextSend`); START albo stuknięcie wysyła od razu |
 | `source/SyncGlance.mc` | podgląd na liście aplikacji |
 | `source/SealTest.mc` | testy: wspólny wektor koperty, czytanie klucza |
+| `source/NextSendTest.mc` | test: następna wysyłka pół godziny po ostatnim przebiegu, „wkrótce”, „w ciągu 30 min” |
 | `resources/settings/` | `key` (dla użytkownika) i `api` (ukryty adres serwera) |
 | `build.sh` | testy, symulator, `.prg` na jeden zegarek, `.iq` do sklepu; klucz dewelopera |
 | `store/listing.md` | opis do sklepu po polsku i angielsku, wyjaśnienie uprawnień |

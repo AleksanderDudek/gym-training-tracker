@@ -84,13 +84,27 @@ export function keySlot(name: string) {
 
 /**
  * Skrzynka jednego urządzenia: odbiór nie częściej niż raz na minutę (chyba że ktoś naciska
- * „Sprawdź teraz”) i odłączenie. Wynik ostatniego sprawdzenia zostaje dla karty w ustawieniach.
+ * „Sprawdź teraz”) i odłączenie. Wynik i czas ostatniego sprawdzenia zostają dla ekranów, które
+ * mówią o stanie połączenia: „sprawdzone przed chwilą” i „spóźnia się” mają sens dopiero wtedy,
+ * gdy serwer naprawdę zapytano. Ekrany zapisują się na zmiany (`subscribe`), bo odbiór przy
+ * powrocie do aplikacji bez nowej paczki nie zmienia zapisu, a więc niczego nie przerysowuje.
  */
 export function mailbox<P>(slot: ReturnType<typeof keySlot>, configured: () => boolean, parse: Parse<P>) {
   let lastPull = 0;
   let lastKind: BoxResult<P>['kind'] | null = null;
+  let lastAt: number | null = null;
+  const listeners = new Set<() => void>();
+  const tell = () => listeners.forEach((f) => f());
   return {
     lastKind: (): BoxResult<P>['kind'] | null => lastKind,
+
+    /** Kiedy ostatnio zapytano serwer (ms) — `null`, jeśli jeszcze nie w tej karcie przeglądarki. */
+    lastAt: (): number | null => lastAt,
+
+    subscribe(f: () => void): () => void {
+      listeners.add(f);
+      return () => listeners.delete(f);
+    },
 
     async pull(force = false): Promise<BoxResult<P>> {
       const hex = slot.get();
@@ -113,6 +127,8 @@ export function mailbox<P>(slot: ReturnType<typeof keySlot>, configured: () => b
         r = { kind: 'offline' };
       }
       lastKind = r.kind;
+      lastAt = Date.now();
+      tell();
       return r;
     },
 
@@ -121,6 +137,8 @@ export function mailbox<P>(slot: ReturnType<typeof keySlot>, configured: () => b
       const hex = slot.get();
       slot.remove();
       lastKind = null;
+      lastAt = null;
+      tell();
       const keys = hex ? await deriveKeys(hex) : null;
       if (!keys || !apiConfigured()) return;
       await fetch(`${API_URL}/garmin/forget`, {

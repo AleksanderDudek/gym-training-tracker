@@ -976,6 +976,36 @@
   .watch-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
   .watch-src{color:var(--ink-soft);font-weight:400}
   .grp .hint a,.watch-steps a{color:var(--steel);text-decoration:underline}
+  /* Stan połączenia z zegarkiem i telefonem: kropka podpowiada, zdanie mówi. Pełna kropka to
+     „coś przyszło” (zielona — w porządku, bursztynowa — spóźnia się, czerwonawa — od dawna nic
+     albo zły klucz), pusty pierścień — „jeszcze nie wiadomo” (pierwsza paczka, brak sieci). Każdy
+     kolor to tusz z ≥ 3:1 na tłach aplikacji — pilnuje tego test kontrastu. */
+  .dev-status{display:flex;gap:9px;align-items:flex-start}
+  .dev-status p.tight{margin:0 0 4px}
+  .dev-dot{flex:none;width:10px;height:10px;margin-top:7px;border-radius:50%;background:var(--ok)}
+  .dev-status.late .dev-dot{background:var(--warn)}
+  .dev-status.stale .dev-dot,.dev-status.bad .dev-dot{background:var(--c-orange-ink)}
+  .dev-status.setup .dev-dot{background:none;border:2px solid var(--c-blue-ink)}
+  .dev-status.offline .dev-dot{background:none;border:2px solid var(--ink-soft)}
+  .grp p.dev-checked{margin:2px 0 4px}
+  /* Wynik „Sprawdź teraz”: pusty akapit zostaje w drzewie, żeby czytnik ekranu ogłosił pierwszy wynik. */
+  .grp p.dev-result:empty{margin:0}
+  .dev-check{margin-top:6px}
+  .dev-check summary{cursor:pointer;color:var(--steel);font-weight:600;padding:12px 0;min-height:44px;
+    display:flex;align-items:center;-webkit-tap-highlight-color:transparent}
+  .dev-check summary:focus-visible{outline:2px solid var(--steel);outline-offset:2px}
+  /* `display:flex` zabiera przeglądarce trójkąt rozwijacza — bez niego „Dane nie przychodzą?”
+     wygląda jak nagłówek, a nie coś, co się otwiera. */
+  .dev-check summary::-webkit-details-marker{display:none}
+  .dev-check summary::after{content:'▾';margin-left:6px;color:var(--ink-soft)}
+  .dev-check[open] summary::after{content:'▴'}
+  .dev-check .watch-steps{margin-top:0}
+  .dev-line{margin:2px 0 8px;font-size:13.5px}
+  .dev-line .dev-dot{margin-top:6px}
+  .dev-line a{color:var(--steel);font-weight:600;text-decoration:underline;white-space:nowrap}
+  .vidlink.dev-late{color:var(--warn)}
+  /* Link „Stan połączenia” przewija do karty — niech nie wjedzie pod przyklejony pasek aplikacji. */
+  .dev-card{scroll-margin-top:calc(80px + env(safe-area-inset-top))}
   .phone-weight{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:10px}
   .phone-weight p.tight{margin:0}
   .body-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;margin:10px 0}
