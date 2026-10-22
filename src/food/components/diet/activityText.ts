@@ -11,11 +11,24 @@ export const signedKcal = (n: number) =>
 const num = (n: number) => formatNumber(Math.round(n), 0);
 const sessionName = (a: Activity) => (a.training.plannedName ? `„${a.training.plannedName}”` : 'trening');
 
+/**
+ * The steps' worth when it differs from the count by 3 %+: a run, the measured distance or floors
+ * made them count for more (or a treadmill logged on its own, for less). The breakdown lives on the
+ * gym's steps screen.
+ */
+const worthNote = (a: Activity): string => {
+  const { actual, worth } = a.steps;
+  if (actual === null || worth === null || Math.abs(worth - actual) < 0.03 * Math.max(actual, 1)) return '';
+  return `; w rachunku jak ${num(worth)} — rozpis w „Kroki i cardio”`;
+};
+
 /** What already changed the goal: „+60 kcal za kroki (12 000 zamiast 10 000)” … */
 export function activityParts(a: Activity): string[] {
   const parts: string[] = [];
   if (a.steps.kcal !== 0)
-    parts.push(`${signedKcal(a.steps.kcal)} za kroki (${num(a.steps.actual ?? 0)} zamiast ${num(a.steps.planned)})`);
+    parts.push(
+      `${signedKcal(a.steps.kcal)} za kroki (${num(a.steps.actual ?? 0)} zamiast ${num(a.steps.planned)}${worthNote(a)})`,
+    );
   const t = a.training;
   if (t.kcal !== 0) {
     if (t.trained && t.source === 'plan' && t.planned > 0)
@@ -35,7 +48,9 @@ export function activityParts(a: Activity): string[] {
 export function pendingParts(a: Activity): string[] {
   const parts: string[] = [];
   if (a.steps.pending < 0)
-    parts.push(`${num(Math.max(0, a.steps.planned - (a.steps.actual ?? 0)))} kroków do celu (${signedKcal(a.steps.pending)})`);
+    parts.push(
+      `${num(Math.max(0, a.steps.planned - (a.steps.worth ?? a.steps.actual ?? 0)))} kroków do celu (${signedKcal(a.steps.pending)})`,
+    );
   if (a.training.pending < 0) parts.push(`${sessionName(a)} z planu jeszcze przed tobą (${signedKcal(a.training.pending)})`);
   return parts;
 }

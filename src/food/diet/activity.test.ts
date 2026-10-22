@@ -20,6 +20,11 @@ const move = (over: Partial<MoveDay> = {}): MoveDay => ({
   planned: null,
   planActive: false,
   typicalWorkoutKcal: 300,
+  workouts: 0,
+  snacks: 0,
+  outings: 0,
+  activeMin: 0,
+  stepsWorth: null,
   ...over,
 });
 
@@ -48,6 +53,25 @@ describe('steps', () => {
     const a = activityOn(p, KG, move({ planActive: true }), 1500, 'today', { steps: 5000, training: 'planned' });
     expect(a.kcal).toBe(-160);
     expect(a.pending).toBe(0);
+  });
+
+  test('a run or the measured distance: the steps count at their worth, also on top of a guess', () => {
+    const run = move({ planActive: true, stepsWorth: 15_000 });
+    const past = activityOn(p, KG, run, 12_000, 'past');
+    expect(past.kcal).toBe(160);
+    expect(past.steps).toMatchObject({ actual: 12_000, worth: 15_000 });
+    // Today: 8 000 steps worth 11 000 are already over the target.
+    const today = activityOn(p, KG, move({ planActive: true, stepsWorth: 11_000 }), 8000, 'today');
+    expect(today.kcal).toBe(30);
+    expect(today.pending).toBe(0);
+    // The guess of 10 000 for the evening keeps the 3 000 the run added.
+    const guess = activityOn(p, KG, move({ planActive: true, stepsWorth: 11_000 }), 8000, 'today', {
+      steps: 10_000,
+      training: 'planned',
+    });
+    expect(guess.kcal).toBe(100);
+    // Without the gym's worth the count is the worth.
+    expect(activityOn(p, KG, move({ planActive: true }), 12_000, 'past').steps.worth).toBeNull();
   });
 
   test('a future day changes nothing', () => {

@@ -106,6 +106,11 @@ describe('arkusz cheat mealu', () => {
       planned: { name: 'Trening A', kcal: 320 },
       planActive: true,
       typicalWorkoutKcal: 300,
+      workouts: 0,
+      snacks: 0,
+      outings: 0,
+      activeMin: 0,
+      stepsWorth: null,
     };
     const bridge = testBridge({
       weights: [{ day: '2026-10-01', kg: 80 }],

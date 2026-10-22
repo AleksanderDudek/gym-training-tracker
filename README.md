@@ -346,7 +346,7 @@ Podstrony mają własne adresy i strzałkę wstecz w pasku aplikacji:
 | Zapis kroków, bieżni, roweru albo zajęć tańca | `#/cardio/kroki`, `#/cardio/bieznia`, `#/cardio/rower`, `#/cardio/taniec` | Dziś |
 | Ćwiczenie — technika i wideo | `#/cwiczenia/<id>` | Trening |
 | Plan posiłków — tydzień, dni wzorcowe, warianty | `#/jedzenie/plan` | Jedzenie |
-| Postęp — waga z prognozą, kalorie z 14 dni, makro z tygodnia | `#/jedzenie/postep` | Jedzenie |
+| Postęp — waga z prognozą, co działa u ciebie (tygodnie), kalorie z 14 dni, makro z tygodnia | `#/jedzenie/postep` | Jedzenie |
 | Profil diety — energia, sposób odżywiania, plan z Excela, dane | `#/jedzenie/profil` | Jedzenie |
 | Produkt — zdjęcia, wartości, skład, ceny | `#/produkty?p=<kod>` (arkusz nad listą) | Jedzenie |
 | Historia ćwiczenia | `#/profil/<id>` | Profil |
@@ -561,12 +561,23 @@ wyświetlacz. Aktywne, bo tak ACSM liczy wydatek przy planowaniu ruchu i tak zeg
 
 | Ruch | Metoda | Źródło |
 | --- | --- | --- |
-| Kroki | droga = kroki × krok (41,4% wzrostu, bez wzrostu 70 cm), koszt marszu ACSM | równanie ACSM na marsz |
+| Kroki | droga z zegarka/telefonu (gdy średni krok 0,3–1,5 m), inaczej kroki × krok (41,4% wzrostu, bez wzrostu 70 cm); koszt marszu ACSM; biegi, marsze i wędrówki z zegarka swoją prędkością przez swój czas; piętra × 3 m × 1,8 ml O₂/kg/m | równania ACSM na marsz i bieg (z członem nachylenia) |
 | Bieżnia | marsz: 0,1·v + 1,8·v·nachylenie + 3,5; bieg: 0,2·v + 0,9·v·nachylenie + 3,5 | równania ACSM |
 | Rower, prędkość | tabela MET według prędkości, liniowo między środkami przedziałów | Compendium 2024, kody 01018–01060 |
 | Rower, moc | 1,8 · waty · 6,12 / masa + 7 | równanie ACSM dla cykloergometru |
 | Taniec | udział tańca × MET tańca + reszta × 1,5 MET słuchania | Compendium 2024: para 4,8 (03090), solo 5,0 (03010), stanie 1,5 (07041) |
 | Ćwiczenia siłowe | MET rodzaju pracy × czas serii z przerwami | Compendium 2024, m.in. 02052, 02054, 02058 |
+
+**Kroki dnia z tym, co wie urządzenie.** Waga — z dnia ruchu. W zwykłym tempie koszt marszu na
+metr prawie nie zależy od prędkości (ACSM: 0,1 ml/kg/m ponad spoczynek), więc liczy się droga —
+dlatego aplikacja bierze drogę zmierzoną przez zegarek albo telefon zamiast szacunku ze wzrostu.
+Prędkość i czas mają znaczenie przy biegu (ok. dwa razy drożej na kilometr) i szybkim marszu:
+aktywności pieszo z zegarka (bieg, marsz, wędrówka) liczą się swoją prędkością przez swój czas,
+a reszta drogi dnia jako zwykły marsz. Piętra dokładają wznoszenie. Bieżnia wpisana ręcznie
+schodzi z kroków zegarka i telefonu (policzyły ją same), a jej duplikat z zegarka znika — nic nie
+liczy się dwa razy. Wpis kroków pokazuje rozpis („droga z zegarka 11,8 km · bieg 5,2 km w 28 min
+· 9 pięter”). Dieta dostaje z tego **wartość kroków** — ile kroków zwykłego marszu spaliłoby tyle
+samo — i liczy w niej swój wzór na chodzenie wobec celu kroków.
 
 Między 6 a 8 km/h bieżnia przechodzi **płynnie** od wzoru na marsz do wzoru na bieg — twarde
 przełączenie dawało skok z 4,8 na 8,6 MET przy jednej dziesiątej km/h. Tabela roweru jest
@@ -726,6 +737,15 @@ aplikacji. Dane produktów: [Open Food Facts](https://world.openfoodfacts.org), 
   to nie brak treningu.
 - **Postęp** (podstrona): wykres wagi z planem, prognozą od ostatniego ważenia i celem, kalorie
   z 14 dni i średnie makro z tygodnia.
+- **Co działa u ciebie** (na Postępie, pod wykresem wagi): 12 tygodni w tabeli — zmiana wagi
+  (nachylenie ważeń od poniedziałku do następnego poniedziałku, kolor według kierunku celu),
+  średnie jedzenie wobec celu dnia, kroki, treningi, przekąski ruchowe, cardio i minuty ruchu, a przy
+  tygodniu siatka siedmiu dni: komórka to jedzenie (w celu / poza celem / bez zapisów), znaki to
+  trening (kwadrat), cel kroków (kropka), przekąska ruchowa (trójkąt) i cardio (romb). Pod tabelą
+  „Co idzie w parze z postępem”: dla każdego nawyku tygodnie z większą i mniejszą jego dawką (próg
+  dzielący je na równe grupy), średnia zmiana wagi w obu, siła związku i różnica w jedzeniu między
+  grupami — bo to jedzenie najczęściej tłumaczy różnicę. Od 4 pełnych tygodni z ważeniami; słaby
+  związek albo różnica poniżej 0,1 kg/tydz. to „bez wyraźnej różnicy”.
 
 **Cel w trzech kierunkach.** Tempo w profilu diety to −1…−0,25 kg na tydzień, **utrzymanie**
 i **+0,25 kg/tydz.** (spokojne budowanie masy). Kierunek wynika z wagi docelowej wobec startowej:

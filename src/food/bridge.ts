@@ -48,6 +48,19 @@ export interface MoveDay {
   planActive: boolean;
   /** Typowy trening tej osoby (średnia z ostatnich), kcal; `null` bez historii albo ważenia. */
   typicalWorkoutKcal: number | null;
+  /** Treningi siłowe zapisane tego dnia. */
+  workouts: number;
+  /** Przekąski ruchowe tego dnia. */
+  snacks: number;
+  /** Wyjścia na cardio od 10 minut: bieżnia, rower, taniec oraz biegi i marsze z zegarka. */
+  outings: number;
+  /** Minuty ruchu w przeliczeniu na umiarkowany, tak jak liczą je treningi. */
+  activeMin: number;
+  /**
+   * Ile kroków zwykłego marszu spaliłoby tyle, co kroki dnia z drogą z urządzenia, biegami
+   * i piętrami — w tej walucie dieta liczy chodzenie. `null` w dniu bez kroków.
+   */
+  stepsWorth: number | null;
 }
 
 export const BridgeContext = createContext<GymBridge | null>(null);

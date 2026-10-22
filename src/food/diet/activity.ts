@@ -6,7 +6,9 @@ import type { Profile } from './types';
  * steps of `targetSteps` and the trainings the activity multiplier assumes - so adding everything
  * the gym engine burned would count it twice. What changes the goal is only the difference:
  *
- * - steps: the diet's own walking formula at the day's steps minus the same at `targetSteps`;
+ * - steps: the diet's own walking formula at the day's steps minus the same at `targetSteps`. The
+ *   steps go in as the gym engine's worth (`MoveDay.stepsWorth`): steps of everyday walking that
+ *   burn as much as the day's did with the device's distance, runs at running cost and floors;
  * - training: what was done (gym engine kcal) minus what was planned - the session the training
  *   plan put on that day, or, without a plan, the profile's weekly assumption spread over the week;
  * - other exercise (treadmill, bike, dance, exercise snacks): what goes beyond the profile's planned
@@ -37,8 +39,11 @@ export interface Activity {
   kcal: number;
   /** May still be taken off today (≤ 0): steps short of the target, a planned training not done. */
   pending: number;
-  /** `kcal` counted now; `pending` may still be taken off today (steps short of the target). */
-  steps: { planned: number; actual: number | null; kcal: number; pending: number };
+  /**
+   * `kcal` counted now; `pending` may still be taken off today (steps short of the target). `worth`:
+   * the steps as everyday walking (`MoveDay.stepsWorth`), `null` when the gym does not know the day.
+   */
+  steps: { planned: number; actual: number | null; worth: number | null; kcal: number; pending: number };
   training: {
     /** What the goal assumes for this day, kcal. */
     planned: number;
@@ -110,7 +115,7 @@ export function plannedTraining(p: Profile, move: MoveDay): PlannedTraining {
 const ZERO = (p: Profile): Activity => ({
   kcal: 0,
   pending: 0,
-  steps: { planned: p.targetSteps, actual: null, kcal: 0, pending: 0 },
+  steps: { planned: p.targetSteps, actual: null, worth: null, kcal: 0, pending: 0 },
   training: { planned: 0, plannedName: null, source: 'none', done: 0, trained: false, kcal: 0, pending: 0 },
   other: 0,
   capped: false,
@@ -128,13 +133,16 @@ export function activityOn(
   const typical = move.typicalWorkoutKcal ?? TYPICAL_FALLBACK_KCAL;
   const plannedWalk = walkingKcal(p, kg, p.targetSteps);
 
-  // Steps. A closed day without steps is not guessed: it went by plan.
+  // Steps. A closed day without steps is not guessed: it went by plan. What a run or the measured
+  // distance adds over plain steps stays with the day, also on top of a guess for the rest of it.
+  const bonus = steps !== null && move.stepsWorth != null ? move.stepsWorth - steps : 0;
+  const walked = (n: number) => walkingKcal(p, kg, n + bonus) - plannedWalk;
   let stepsKcal = 0;
   let stepsPending = 0;
-  if (phase === 'past') stepsKcal = steps === null ? 0 : walkingKcal(p, kg, steps) - plannedWalk;
-  else if (assumptions) stepsKcal = walkingKcal(p, kg, assumptions.steps ?? steps ?? 0) - plannedWalk;
+  if (phase === 'past') stepsKcal = steps === null ? 0 : walked(steps);
+  else if (assumptions) stepsKcal = walked(assumptions.steps ?? steps ?? 0);
   else {
-    const delta = walkingKcal(p, kg, steps ?? 0) - plannedWalk;
+    const delta = walked(steps ?? 0);
     stepsKcal = Math.max(0, delta);
     stepsPending = Math.min(0, delta);
   }
@@ -165,7 +173,13 @@ export function activityOn(
   return {
     kcal: round(kcal),
     pending: round(pending),
-    steps: { planned: p.targetSteps, actual: steps, kcal: round(stepsKcal), pending: round(stepsPending) },
+    steps: {
+      planned: p.targetSteps,
+      actual: steps,
+      worth: steps !== null && move.stepsWorth != null ? move.stepsWorth : null,
+      kcal: round(stepsKcal),
+      pending: round(stepsPending),
+    },
     training: {
       planned: Math.round(plan.kcal),
       plannedName: plan.name,

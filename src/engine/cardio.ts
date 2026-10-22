@@ -1,9 +1,10 @@
 import type { AppState, Cardio, CardioInput, CardioSport } from '../types';
 import { heightOf, weightOn } from './body';
-import { DANCE_MET, DANCE_SHARE, STEP_CADENCE, cardioEnergy } from './energy';
+import { DANCE_MET, DANCE_SHARE, STEP_CADENCE, cardioEnergy, stepsEnergy } from './energy';
+import type { Burn, FootPart, StepsDay } from './energy';
 import { daysBetween, mondayOf } from './schedule';
 import { phoneEntries } from './phone';
-import { watchEntries, watchStepsOn } from './watch';
+import { localDayOf, watchEntries, watchStepsOn } from './watch';
 
 /**
  * Kroki, bieżnia, rower i taniec wpisane ręcznie.
@@ -155,6 +156,94 @@ export function deviceStepsOn(state: AppState, day: string): { steps: number; sr
   if (!w && !p) return null;
   return p > w ? { steps: p, src: 'phone' } : { steps: w, src: 'watch' };
 }
+
+/* ---------------- Kroki dnia: droga, odcinki, piętra ---------------- */
+
+/** Sporty pieszo w numeracji FIT (`Activity.Sport`): 1 bieg, 11 marsz, 17 wędrówka. */
+export const ON_FOOT: ReadonlySet<number> = new Set([1, 11, 17]);
+
+/**
+ * Bieżnia wpisana ręcznie i aktywność z zegarka to ta sama sesja, gdy trwały prawie tyle samo:
+ * różnica do 15% albo do 5 minut. Wpis ręczny nie ma godziny startu (`at` to chwila zapisu),
+ * więc porównać da się tylko dzień i czas trwania.
+ */
+const sameSession = (a: number, b: number): boolean => Math.abs(a - b) <= Math.max(300, 0.15 * b);
+
+type Steps = Extract<Cardio, { kind: 'steps' }>;
+
+/** Bieżnia wpisana ręcznie w danym dniu jako odcinek z drogą i czasem. */
+const treadmillParts = (state: AppState, day: string): FootPart[] =>
+  manualOf(state)
+    .filter((c): c is Extract<Cardio, { kind: 'treadmill' }> => c.kind === 'treadmill' && c.day === day)
+    .map((c) => ({ m: (c.kmh * c.min * 1000) / 60, sec: c.min * 60 }));
+
+/**
+ * Biegi, marsze i wędrówki z zegarka w danym dniu, z drogą — bez tych, które są tą samą sesją co
+ * bieżnia wpisana ręcznie (ta ma nachylenie i liczy się swoim wpisem).
+ */
+export function footPartsOn(state: AppState, day: string): FootPart[] {
+  const treadmill = treadmillParts(state, day);
+  return (state.watch?.acts ?? [])
+    .filter((a) => ON_FOOT.has(a.sport) && a.m !== null && a.m > 0 && localDayOf(new Date(a.start * 1000)) === day)
+    .map((a) => ({ m: a.m!, sec: a.sec }))
+    .filter((p) => !treadmill.some((t) => sameSession(p.sec, t.sec)));
+}
+
+/**
+ * Dzień kroków ze wszystkim, co wie o nim urządzenie, które je podało: droga i piętra z zegarka
+ * albo telefonu, biegi i marsze z zegarka. Bieżnia wpisana ręcznie schodzi z kroków tylko
+ * wtedy, gdy kroki policzyło urządzenie — samo, bez pytania. Kroki wpisane ręcznie zostają
+ * przy zasadzie z formularza: wpisuje się jedno albo drugie.
+ */
+export function stepsDayOf(state: AppState, c: Steps): StepsDay {
+  const dev =
+    c.src === 'watch'
+      ? state.watch?.days.find((d) => d.day === c.day)
+      : c.src === 'phone'
+        ? state.phone?.days.find((d) => d.day === c.day)
+        : undefined;
+  return {
+    steps: c.steps,
+    m: dev?.m ?? null,
+    floors: dev?.floors ?? null,
+    parts: footPartsOn(state, c.day),
+    elsewhere: c.src ? treadmillParts(state, c.day) : [],
+  };
+}
+
+/**
+ * Kalorie i droga wpisu przy danej wadze. Kroki liczą się z tym, co wie urządzenie (`stepsDayOf`);
+ * reszta — z samego wpisu.
+ */
+export const entryEnergy = (state: AppState, c: Cardio, kg: number): Burn =>
+  c.kind === 'steps' ? stepsEnergy(stepsDayOf(state, c), kg, heightOf(state)) : cardioEnergy(c, kg, heightOf(state));
+
+/**
+ * Ile kroków zwykłego marszu spaliłoby tyle, co kroki dnia z drogą z urządzenia, biegami,
+ * szybkimi marszami i piętrami — w tej walucie dieta liczy chodzenie (`diet/activity.ts`). Koszt
+ * marszu, biegu i wznoszenia rośnie z wagą tak samo, więc stosunek od wagi nie zależy i liczy
+ * się także przed pierwszym ważeniem. `null` w dniu bez kroków.
+ */
+export function stepsWorthOn(state: AppState, day: string): number | null {
+  const c = cardioOn(state, day).find((x): x is Steps => x.kind === 'steps');
+  if (!c) return null;
+  const plain = cardioEnergy(c, INTENSITY_KG, heightOf(state)).active;
+  if (plain <= 0) return c.steps;
+  return Math.round((c.steps * entryEnergy(state, c, INTENSITY_KG).active) / plain / 10) * 10;
+}
+
+/**
+ * Wyjścia na cardio w danym dniu: bieżnia, rower i zajęcia tańca od dziesięciu minut oraz biegi,
+ * marsze i wędrówki z zegarka tej samej długości (te nie są osobnymi wpisami — siedzą w krokach).
+ */
+export function outingsOn(state: AppState, day: string): number {
+  const entries = cardioOn(state, day).filter((c) => c.kind !== 'steps' && c.min >= SESSION_MIN).length;
+  return entries + footPartsOn(state, day).filter((p) => p.sec >= SESSION_MIN * 60).length;
+}
+
+/** Minuty ruchu w jednym dniu, w przeliczeniu na umiarkowany (`activeMinutes`). */
+export const minutesOn = (state: AppState, day: string): number =>
+  cardioOn(state, day).reduce((s, c) => s + activeMinutes(state, c), 0);
 
 /** Czy zapisany wpis da się bezpiecznie wczytać — po imporcie pliku albo ze starego zapisu. */
 export const validCardio = (c: unknown): c is Cardio => {
@@ -328,7 +417,6 @@ export interface CardioStats {
 
 export function cardioStats(state: AppState): CardioStats {
   const list = cardioOf(state);
-  const height = heightOf(state);
   const stepsByDay: Record<string, number> = {};
   let steps = 0;
   let sessions = 0;
@@ -344,7 +432,7 @@ export function cardioStats(state: AppState): CardioStats {
       else sessions++;
     }
     // Droga nie zależy od wagi — liczymy ją dla dowolnej, żeby odznaka nie czekała na ważenie.
-    km += cardioEnergy(c, INTENSITY_KG, height).km ?? 0;
+    km += entryEnergy(state, c, INTENSITY_KG).km ?? 0;
   });
 
   const minutes = minutesByDay(state);

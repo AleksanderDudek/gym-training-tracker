@@ -131,6 +131,11 @@ describe('ekran kroków i cardio z telefonem', () => {
     expect(screen.getByText('sen 45 min')).toBeInTheDocument();
     expect(screen.getByText(/Liczby z Apple Zdrowie albo Health Connect/)).toBeInTheDocument();
   });
+  it('kroki z drogą i piętrami z telefonu mają rozpis pod wpisem', () => {
+    const s = withPhone([{ day: today, steps: 10_000, m: 8200, floors: 12 }]);
+    render(<CardioPage state={s} onDelete={vi.fn()} />);
+    expect(screen.getByText('droga z telefonu 8,2 km · 12 pięter')).toBeInTheDocument();
+  });
 });
 
 describe('ważenie z telefonu', () => {

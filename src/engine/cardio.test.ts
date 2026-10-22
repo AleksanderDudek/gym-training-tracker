@@ -15,10 +15,14 @@ import {
   cardioOn,
   inputProblem,
   lastOf,
+  minutesOn,
   normalize,
+  outingsOn,
   removeCardio,
   sportOf,
+  stepsDayOf,
   stepsOn,
+  stepsWorthOn,
   validCardio,
 } from './cardio';
 import {
@@ -42,7 +46,7 @@ import {
   typicalWorkoutBurn,
   workoutBurn,
 } from './burn';
-import { cardioEnergy, setsEnergy } from './energy';
+import { cardioEnergy, setsEnergy, strideM } from './energy';
 import { exerciseRows } from './history';
 import { addSnack } from './snacks';
 import { BUILTIN } from '../data/exercises';
@@ -440,5 +444,81 @@ describe('statystyki kroków i cardio', () => {
     expect(35 * 5).toBeGreaterThanOrEqual(WHO_WEEK_MIN);
     expect(st.whoWeeks).toBe(1);
     expect(st.run).toBe(5);
+  });
+});
+
+describe('kroki dnia z danymi urządzenia', () => {
+  const day = '2026-10-20';
+  const noon = Date.parse(`${day}T12:00:00Z`) / 1000;
+
+  /** Zegarek z krokami, drogą i piętrami dnia oraz aktywnościami. */
+  const withWatch = (acts: { sport: number; sec: number; m: number | null }[] = [], m: number | null = 12_000) => {
+    const s = withWeight();
+    s.watch = {
+      t: noon + 3600,
+      got: `${day}T13:00:00.000Z`,
+      days: [{ day, steps: 14_000, m, floors: 10, active: 40 }],
+      acts: acts.map((a, i) => ({ start: noon - 7200 + i * 60, ...a })),
+      health: [],
+    };
+    return s;
+  };
+  const stepsEntry = (s: AppState) => cardioOn(s, day).find((c) => c.kind === 'steps')!;
+
+  it('kroki z zegarka biorą jego drogę, piętra i biegi; rower nie jest odcinkiem pieszo', () => {
+    const s = withWatch([
+      { sport: 1, sec: 1800, m: 6000 },
+      { sport: 2, sec: 3600, m: 20_000 },
+      { sport: 1, sec: 1800, m: null },
+    ]);
+    const c = stepsEntry(s);
+    expect(c.kind === 'steps' && stepsDayOf(s, c)).toEqual({
+      steps: 14_000,
+      m: 12_000,
+      floors: 10,
+      parts: [{ m: 6000, sec: 1800 }],
+      elsewhere: [],
+    });
+  });
+
+  it('bieg podnosi kalorie kroków i ich „wartość” w zwykłych krokach', () => {
+    const plainState = withWatch([], 14_000 * strideM());
+    const runState = withWatch([{ sport: 1, sec: 1800, m: 6000 }], 14_000 * strideM());
+    const plainKcal = cardioBurn(plainState, stepsEntry(plainState))!.active;
+    expect(cardioBurn(runState, stepsEntry(runState))!.active).toBeGreaterThan(plainKcal + 150);
+    // Bez biegu wartość to same kroki plus piętra; z biegiem wyraźnie więcej.
+    expect(stepsWorthOn(plainState, day)).toBeGreaterThan(14_000);
+    expect(stepsWorthOn(plainState, day)).toBeLessThan(15_000);
+    expect(stepsWorthOn(runState, day)).toBeGreaterThan(17_000);
+    expect(stepsWorthOn(freshState(), day)).toBeNull();
+  });
+
+  it('bieżnia wpisana ręcznie schodzi z kroków urządzenia, a jej duplikat z zegarka znika', () => {
+    const s = withWatch([{ sport: 1, sec: 1850, m: 5000 }]);
+    addCardio(s, { kind: 'treadmill', kmh: 10, min: 30, grade: 1 }, day);
+    const c = stepsEntry(s);
+    const d = c.kind === 'steps' ? stepsDayOf(s, c) : null;
+    expect(d?.parts).toEqual([]);
+    expect(d?.elsewhere).toEqual([{ m: 5000, sec: 1800 }]);
+    expect(outingsOn(s, day)).toBe(1);
+  });
+
+  it('kroki wpisane ręcznie nie tracą bieżni — wpisuje się jedno albo drugie', () => {
+    const s = withWeight();
+    addCardio(s, { kind: 'steps', steps: 9000 }, day);
+    addCardio(s, { kind: 'treadmill', kmh: 6, min: 30, grade: 0 }, day);
+    const c = stepsEntry(s);
+    expect(c.kind === 'steps' && stepsDayOf(s, c).elsewhere).toEqual([]);
+  });
+
+  it('wyjścia: bieżnia, rower i taniec od 10 minut oraz biegi i marsze z zegarka', () => {
+    const s = withWatch([
+      { sport: 1, sec: 1800, m: 6000 },
+      { sport: 11, sec: 300, m: 400 },
+    ]);
+    addCardio(s, { kind: 'bike', kmh: 20, min: 40 }, day);
+    addCardio(s, { kind: 'dance', style: 'pair', mix: 'half', min: 5 }, day);
+    expect(outingsOn(s, day)).toBe(2);
+    expect(minutesOn(s, day)).toBeGreaterThan(0);
   });
 });
