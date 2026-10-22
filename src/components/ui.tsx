@@ -1,9 +1,33 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { STAGES, ex, kbColor, kbInkIsLight } from '../data/exercises';
 import { P } from '../engine/plan';
+import { text } from '../i18n';
 import { Gorilla } from './Gorilla';
 import type { CoachMood, TraineeMood, Who } from './Gorilla';
 import type { AppState, ExerciseId, HistoryPoint, Notice } from '../types';
+
+const T = text({
+  pl: {
+    stage: 'ETAP',
+    body1: 'MASA',
+    body2: 'CIAŁA',
+    sessions: 'sesji',
+    trend: (label: string, first: string, last: string, low: string, high: string, n: number, noun: string) =>
+      `${label}: od ${first} do ${last}, najniżej ${low}, najwyżej ${high}, ${n} ${noun}.`,
+    yes: 'Tak',
+    cancel: 'Anuluj',
+  },
+  en: {
+    stage: 'STAGE',
+    body1: 'BODY',
+    body2: 'WEIGHT',
+    sessions: 'sessions',
+    trend: (label: string, first: string, last: string, low: string, high: string, n: number, noun: string) =>
+      `${label}: from ${first} to ${last}, lowest ${low}, highest ${high}, ${n} ${noun}.`,
+    yes: 'Yes',
+    cancel: 'Cancel',
+  },
+});
 
 /**
  * Kto reaguje na dany komunikat. Postać nigdy nie niesie informacji sama — obok niej
@@ -141,7 +165,7 @@ export function Chip({ state, id }: { state: AppState; id: ExerciseId }) {
     return (
       <div className="chip bw">
         <span className="n">
-          ETAP
+          {T.stage}
           <br />
           {(p.stage ?? 0) + 1}
         </span>
@@ -152,9 +176,9 @@ export function Chip({ state, id }: { state: AppState; id: ExerciseId }) {
     return (
       <div className="chip bw">
         <span className="n">
-          MASA
+          {T.body1}
           <br />
-          CIAŁA
+          {T.body2}
         </span>
       </div>
     );
@@ -252,7 +276,7 @@ export function Sparkline({ hist }: { hist: HistoryPoint[] }) {
 export function Trendline({
   values,
   label,
-  noun = 'sesji',
+  noun = T.sessions,
   fmt = String,
 }: {
   values: number[];
@@ -282,7 +306,7 @@ export function Trendline({
         className="trendline"
         viewBox={`0 0 ${w} ${h}`}
         role="img"
-        aria-label={`${label}: od ${fmt(values[0]!)} do ${fmt(values[values.length - 1]!)}, najniżej ${fmt(mn)}, najwyżej ${fmt(mx)}, ${values.length} ${noun}.`}
+        aria-label={T.trend(label, fmt(values[0]!), fmt(values[values.length - 1]!), fmt(mn), fmt(mx), values.length, noun)}
       >
         <polygon className="area" points={`${pts.join(' ')} ${w - pad},${h} ${pad},${h}`} />
         <polyline className="line" points={pts.join(' ')} />
@@ -342,7 +366,7 @@ export function useModal() {
     req,
     say: (title: string, body: ReactNode, opts?: { ok?: string; tone?: string; cast?: Cast }) =>
       open(title, body, opts?.ok ?? 'OK', undefined, opts?.tone, opts?.cast),
-    ask: (title: string, body: ReactNode, ok = 'Tak', cast?: Cast) =>
-      open(title, body, ok, 'Anuluj', undefined, cast),
+    ask: (title: string, body: ReactNode, ok = T.yes, cast?: Cast) =>
+      open(title, body, ok, T.cancel, undefined, cast),
   };
 }

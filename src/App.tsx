@@ -1,4 +1,5 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 import { ALL, BUILTIN, EX, ex } from './data/exercises';
 import { acwr, daysSince, epley, round1, weeklyRate } from './engine/math';
 import { P, freshState } from './engine/plan';
@@ -122,6 +123,7 @@ import { withExtension, withWeekdays } from './engine/planedit';
 import { BridgeContext } from './food/bridge';
 import type { GymBridge } from './food/bridge';
 import { LoadBoundary } from './components/LoadBoundary';
+import { LOCALE, pluralEn, text } from './i18n';
 
 /**
  * Zakładka Jedzenie w osobnej paczce (razem z Dexie, Leafletem i kodem bazy produktów): ekrany
@@ -137,8 +139,406 @@ const DAY = /^\d{4}-\d{2}-\d{2}$/;
 
 const clone = (s: AppState): AppState => JSON.parse(JSON.stringify(s)) as AppState;
 
+const T = text({
+  pl: {
+    weekdays: ['pon', 'wt', 'śr', 'czw', 'pt', 'sob', 'niedz'],
+    q: (s: string) => `„${s}”`,
+    // Podsumowanie czasu
+    time: (d: string) => `Czas: ${d}`,
+    work: (d: string) => `ćwiczenia ${d}`,
+    gaps: (d: string) => `przejścia ${d}`,
+    longest: (clock: string, names: string) => `Najdłuższe przejście ${clock} przed „${names}”.`,
+    untimed: 'Poza statystykami czasu — liczą się treningi od 3 minut do 4 godzin.',
+    // Komunikaty
+    weightsMoved: (n: number) =>
+      `Dziennik wagi przejął ${n === 1 ? 'ważenie' : `ważenia (${n})`} z dziennika diety.`,
+    swapBack: (name: string) => `Wracasz do: ${name}.`,
+    swapTo: (to: string, from: string) => `Na dziś: ${to} zamiast ${from}.`,
+    levelUp: 'Awans postaci',
+    next: 'Dalej',
+    snackSaved: (label: string, xp: number | null, quip: string) =>
+      `Zapisane: ${label} · ${xp !== null ? `+${xp} XP` : 'bez XP, limit na dziś'}. ${quip}`,
+    atSnack: 'Przy tej przekąsce',
+    snackDeleted: (revoked: number) =>
+      revoked
+        ? `Przekąska usunięta razem z ${revoked === 1 ? 'progiem, który dała' : `progami, które dała (${revoked})`}.`
+        : 'Przekąska usunięta.',
+    logged: (label: string) => `Zapisane: ${label}`,
+    noXpDay: ' · bez XP, limit dnia',
+    stepsReplaced: ' Poprzednia liczba kroków z tego dnia zastąpiona.',
+    deviceMore: (phone: boolean, steps: string) =>
+      ` ${phone ? 'Telefon' : 'Zegarek'} podał więcej (${steps}) — liczy się jego liczba.`,
+    revokedNew: (n: number) => ` Cofnięte progi, których nowa liczba nie uzasadnia: ${n}.`,
+    kcalLater: ' Kalorie pokażą się po wpisaniu wagi.',
+    atEntry: 'Przy tym wpisie',
+    fromWatch: 'Z danymi z zegarka',
+    fromPhone: 'Z danymi z telefonu',
+    entryDeleted: (revoked: number) =>
+      revoked
+        ? `Wpis usunięty razem z ${revoked === 1 ? 'progiem, który dał' : `progami, które dał (${revoked})`}.`
+        : 'Wpis usunięty.',
+    weightSaved: (when: string | null) => (when ? `Waga z ${when} zapisana: ` : 'Waga zapisana: '),
+    kcalFirst: 'Kalorie policzone — także dla wcześniejszych wpisów.',
+    kcalFromDay: 'Kalorie od tego dnia liczą się z niej.',
+    kcalFromToday: 'Kalorie od dziś liczą się z niej.',
+    weighDeleted: 'Ważenie usunięte.',
+    heightRemoved: 'Wzrost usunięty — krok liczony dla 170 cm.',
+    heightSaved: (cm: number) => `Wzrost zapisany: ${cm} cm.`,
+    weightRange: (min: number, max: number) => `Waga poza zakresem ${min}–${max} kg.`,
+    heightRange: (min: number, max: number) => `Wzrost poza zakresem ${min}–${max} cm.`,
+    stepsFailed: 'Nie udało się zapisać kroków.',
+    // Sesja
+    abandonQ: 'Porzucić trening?',
+    abandonText: 'Wpisane wyniki przepadną, a poziomy zostaną bez zmian.',
+    abandon: 'Porzuć',
+    noSaveQ: 'Zakończyć bez zapisu?',
+    noSaveText: 'Żadne ćwiczenie nie ma wyniku, więc nie ma czego przeliczyć. Trening nie trafi do historii.',
+    end: 'Zakończ',
+    reasonSpike: 'tygodniowy tonaż mocno wyprzedza średnią z miesiąca',
+    reasonLow: 'oznaczyłeś dziś gorszy dzień',
+    reasonBreak: 'po przerwie w treningach',
+    finishQ: 'Zamknąć trening?',
+    loggedOf: (n: number, total: number): ReactNode => (
+      <>
+        Zapisane: <b>{n}</b> z {total}. Bez wyniku zostaje:
+      </>
+    ),
+    allDone: (n: number) => `Wszystkie ${n} ćwiczeń ma wynik.`,
+    workoutTime: (d: string): ReactNode => (
+      <>
+        Czas treningu: <b>{d}</b>.
+      </>
+    ),
+    deloadFinish: 'Tydzień lżejszy: wyniki trafią do historii, ale poziomy zostaną bez zmian — ani w górę, ani w dół.',
+    jumpsPaused: (reason: string) =>
+      `Skoki na cięższe obciążenie są dziś wstrzymane — ${reason}. Cele powtórzeń rosną normalnie.`,
+    finishOk: 'Zamknij i przelicz',
+    done: (name: string) => `${name} zaliczony`,
+    exercisesInSession: (n: number) => `${n} ${n === 1 ? 'ćwiczenie' : 'ćwiczeń'} w tej sesji`,
+    onTraining: (d: string) => `${d} na treningu`,
+    totals: (workouts: number, reps: string) =>
+      `${workouts} ${workouts === 1 ? 'zapisany trening' : 'zapisanych treningów'} · ${reps} powtórzeń`,
+    changes: 'Zmiany na kolejną sesję:',
+    deloadSaved: 'Tydzień lżejszy — poziomy bez zmian. Kolejny mocny trening startuje z tego samego miejsca.',
+    noChanges: 'Bez zmian poziomów. Cel rośnie, gdy każda seria dobije do wyznaczonej liczby i zostanie zapas powtórzeń.',
+    xpLine: (gained: number, level: number, title: string, up: boolean, toNext: number) =>
+      `Postać: +${gained} XP · poziom ${level}, ${title}${up ? ' — awans!' : `, do kolejnego ${toNext} XP`}`,
+    burnLine: (kcal: string, min: number) => `Ruch: ${kcal} ponad spoczynek · ok. ${min} min serii z przerwami`,
+    noWeight: 'Wpisz wagę w profilu, a policzę też kalorie tego treningu.',
+    shareResult: 'Udostępnij wynik',
+    shareAll: 'Udostępnij cały dorobek',
+    sameSession: 'W tej samej sesji',
+    tier: (tier: number, of: number) => `próg ${tier} z ${of}`,
+    oneOff: 'odznaka jednorazowa',
+    earned: (n: number) => (n === 1 ? 'Zdobyte!' : `Zdobyte: ${n}`),
+    shareBadge: 'Udostępnij odznakę',
+    nice: 'Nieźle',
+    // Ustawienia i plan
+    twoWeights: 'Podaj przynajmniej dwie wagi, np. 12, 16, 20, 24.',
+    remeasureQ: 'Zmierzyć poziomy od nowa?',
+    remeasureText: (
+      <>
+        Każde ćwiczenie dostanie serię próbną — jedną serię bez sufitu, z której wyjdzie nowy
+        poziom. Próba startuje od miejsca, w którym jesteś teraz, więc może pójść w górę albo w
+        dół. Historia i zapisane treningi zostają nietknięte.
+      </>
+    ) as ReactNode,
+    remeasure: 'Zmierz od nowa',
+    remeasured: 'Próby ustawione. Kolejny trening zmierzy poziomy.',
+    planStarted: (name: string) => `Start planu: ${name}`,
+    firstDates: (start: string) => `Pierwsze terminy od ${start}. `,
+    bankedPlan: (n: number) => `Punkty z poprzedniego planu (${n}) trafiły do dorobku.`,
+    planSet: 'Plan ustawiony',
+    planSetLine: (name: string, start: string, first: string | null) =>
+      `${name}. Start ${start}${first ? `, pierwszy termin ${first}` : ''}.`,
+    seeded: (n: number): ReactNode => (
+      <>
+        Ciężary startowe ustawione w <b>{n}</b> ćwiczeniach. Ćwiczenia z zaliczonym już
+        wynikiem zostały nietknięte — zmierzony poziom jest wart więcej niż tabelka.
+      </>
+    ),
+    policyShift: 'Opuszczony termin nie zjada treningu: ten sam trening wchodzi na kolejny termin.',
+    policyStrict: 'Rotacja idzie sztywno z kalendarzem — opuszczony trening przepada.',
+    freqQ: (days: number) => `Przejść na ${days}× w tygodniu?`,
+    freqText: (
+      <>
+        Nowy kalendarz rusza od dziś. Punkty z dotychczasowego planu trafiają do dorobku,
+        odznaki i poziomy ćwiczeń zostają bez zmian.
+      </>
+    ) as ReactNode,
+    changePlan: 'Zmień plan',
+    freqEvent: (days: number) => `Zmiana wariantu na ${days}× w tygodniu`,
+    bankedCalendar: (n: number) => `Punkty z poprzedniego kalendarza (${n}) trafiły do dorobku.`,
+    freqChanged: (days: number) => `Plan zmieniony na ${days}× w tygodniu.`,
+    daysEvent: (days: string) => `Nowe dni treningowe: ${days}`,
+    daysEventText: 'Od dziś. Terminy, które minęły, zostają bez zmian.',
+    daysChanged: 'Dni planu zmienione od dziś.',
+    policyShiftSet: 'Opuszczony trening poczeka na kolejny termin.',
+    policyStrictSet: 'Opuszczony trening przepada razem z terminem.',
+    extendEvent: (weeks: number) => `Plan dłuższy o ${weeks} tygodnie`,
+    extendEventText: 'Kolejne terminy dochodzą na końcu, w tych samych dniach.',
+    extended: (weeks: number) => `Plan przedłużony o ${weeks} tygodnie.`,
+    stopQ: 'Zakończyć plan?',
+    stopText: (
+      <>
+        Kalendarz zniknie. Punkty z tego planu przechodzą do dorobku, a odznaki, poziomy
+        ćwiczeń i historia zostają bez zmian.
+      </>
+    ) as ReactNode,
+    stop: 'Zakończ',
+    stopped: 'Plan zakończony',
+    stoppedText: (n: number) => `Do dorobku doszło ${n} punktów.`,
+    workoutSaved: (name: string) => `Zapisany: ${name}.`,
+    workoutRunning: (name: string) => `„${name}” właśnie trwa — najpierw zamknij albo porzuć sesję.`,
+    workoutInPlan: (name: string, plans: string) => `„${name}” jest w planie ${plans} — najpierw zmień plan.`,
+    deleteWorkoutQ: 'Usunąć trening?',
+    deleteWorkoutText: (name: string) => `„${name}” zniknie z listy. Poziomy ćwiczeń zostaną nietknięte.`,
+    delete: 'Usuń',
+    planSavedActive: 'Plan zapisany. Kalendarz przeliczy się z nowego układu.',
+    planSaved: (name: string) => `Plan zapisany: ${name}. Zacznij go, kiedy chcesz.`,
+    planIsActive: 'To twój aktualny plan. Najpierw go zakończ — punkty przejdą do dorobku.',
+    deletePlanQ: 'Usunąć plan?',
+    deletePlanText: (name: string) => `„${name}” zniknie z katalogu. Treningi i historia zostaną.`,
+    // Kopia danych
+    noDiet: 'Plik zapisany bez dziennika jedzenia — nie udało się go odczytać.',
+    loaded: 'Dane wczytane.',
+    loadedDiet: 'Dane wczytane — razem z dziennikiem jedzenia.',
+    loadedNoDiet: 'Trening wczytany. Dziennika jedzenia z tego pliku nie udało się odtworzyć.',
+    loadFailed: 'Nie udało się wczytać',
+    loadFailedText: 'Wybierz plik JSON wyeksportowany z tej aplikacji.',
+    resetQ: 'Usunąć wszystkie dane?',
+    resetText: (food: boolean, watch: boolean, phone: boolean) =>
+      'Historia, poziomy ćwiczeń i własne treningi znikną bezpowrotnie' +
+      (food ? ' — razem z dziennikiem jedzenia i profilem diety' : '') +
+      '.' +
+      (watch ? ' Zegarek Garmin zostanie odłączony — inaczej przysłałby ostatni tydzień z powrotem.' : '') +
+      (phone ? ' Telefon zostanie odłączony — inaczej przysłałby ostatnie dwa tygodnie z powrotem.' : ''),
+    resetAll: 'Usuń wszystko',
+    // Pasek aplikacji
+    setOf: (n: number, of: number) => `seria ${n} z ${of}`,
+    partOf: (n: number, of: number, sets: string) => `Część ${n} z ${of} · ${sets}`,
+    listProgress: (done: number, of: number) => `${done} z ${of} ćwiczeń zapisanych`,
+    firstWorkout: 'Pierwszy trening',
+    lastToday: 'Ostatni trening dzisiaj',
+    lastYesterday: 'Ostatni trening wczoraj',
+    lastDaysAgo: (d: number) => `Ostatni trening ${d} dni temu`,
+    perWeek: (rate: string) => `${rate} sesji na tydzień`,
+    loadRatio: (ratio: string) => `obciążenie ${ratio}`,
+    saveBroken: 'Zapis nie działa',
+    saveBrokenText:
+      'Przeglądarka odmówiła zapisu danych. Wyniki trzymają się w pamięci, ale znikną po odświeżeniu. Wyeksportuj plik z Ustawień, zanim zamkniesz kartę.',
+    snoozed: 'Pasek wsparcia wróci za tydzień. Kawę da się postawić też z Ustawień.',
+    home: 'Aplikacja na ekranie początkowym',
+    gotIt: 'Rozumiem',
+    installHidden: 'Instrukcja zostaje w Ustawieniach.',
+    thanks: 'Dzięki! Wiadomość poszła do autora.',
+    spike: 'Skok obciążenia',
+    spikeText: (ratio: string) =>
+      `Tonaż z ostatniego tygodnia to ${ratio} średniej z czterech tygodni. Powyżej 1,5 rośnie ryzyko przeciążenia, więc skoki na cięższe obciążenie są wstrzymane. Cele powtórzeń rosną normalnie.`,
+    trainedToday: 'Trenowałeś dzisiaj',
+    trainedTodayText:
+      'Możesz zalogować kolejną sesję, ale te same wzorce ruchowe dwa razy w ciągu dnia nie dadzą lepszej progresji.',
+    foodTab: 'zakładki Jedzenie',
+    nav: 'Główna nawigacja',
+  },
+  en: {
+    weekdays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    q: (s: string) => `“${s}”`,
+    time: (d: string) => `Time: ${d}`,
+    work: (d: string) => `exercises ${d}`,
+    gaps: (d: string) => `transitions ${d}`,
+    longest: (clock: string, names: string) => `Longest transition ${clock} before “${names}”.`,
+    untimed: 'Not in the time stats — only workouts from 3 minutes to 4 hours count.',
+    weightsMoved: (n: number) =>
+      `The weight log took over ${n === 1 ? 'a weigh-in' : `${n} weigh-ins`} from the diet diary.`,
+    swapBack: (name: string) => `Back to: ${name}.`,
+    swapTo: (to: string, from: string) => `For today: ${to} instead of ${from}.`,
+    levelUp: 'Level up!',
+    next: 'Next',
+    snackSaved: (label: string, xp: number | null, quip: string) =>
+      `Logged: ${label} · ${xp !== null ? `+${xp} XP` : 'no XP, daily limit reached'}. ${quip}`,
+    atSnack: 'With this snack',
+    snackDeleted: (revoked: number) =>
+      revoked
+        ? `Snack deleted, along with ${revoked === 1 ? 'the badge tier it earned' : `the ${revoked} badge tiers it earned`}.`
+        : 'Snack deleted.',
+    logged: (label: string) => `Logged: ${label}`,
+    noXpDay: ' · no XP, daily limit reached',
+    stepsReplaced: ' The earlier step count for that day was replaced.',
+    deviceMore: (phone: boolean, steps: string) =>
+      ` Your ${phone ? 'phone' : 'watch'} reported more (${steps}) — its number counts.`,
+    revokedNew: (n: number) => ` Badge tiers the new number no longer supports were taken back: ${n}.`,
+    kcalLater: ' Calories will show once you enter your weight.',
+    atEntry: 'With this entry',
+    fromWatch: 'With data from your watch',
+    fromPhone: 'With data from your phone',
+    entryDeleted: (revoked: number) =>
+      revoked
+        ? `Entry deleted, along with ${revoked === 1 ? 'the badge tier it earned' : `the ${revoked} badge tiers it earned`}.`
+        : 'Entry deleted.',
+    weightSaved: (when: string | null) => (when ? `Weight for ${when} saved: ` : 'Weight saved: '),
+    kcalFirst: 'Calories worked out — for earlier entries too.',
+    kcalFromDay: 'Calories from that day on use it.',
+    kcalFromToday: 'Calories from today on use it.',
+    weighDeleted: 'Weigh-in deleted.',
+    heightRemoved: 'Height removed — stride worked out for 170 cm.',
+    heightSaved: (cm: number) => `Height saved: ${cm} cm.`,
+    weightRange: (min: number, max: number) => `Weight out of range: ${min}–${max} kg.`,
+    heightRange: (min: number, max: number) => `Height out of range: ${min}–${max} cm.`,
+    stepsFailed: 'Couldn’t save steps.',
+    abandonQ: 'Abandon the workout?',
+    abandonText: 'The results you entered will be lost, and your levels stay the same.',
+    abandon: 'Abandon',
+    noSaveQ: 'Finish without saving?',
+    noSaveText: 'No exercise has a result, so there’s nothing to recalculate. The workout won’t go into your history.',
+    end: 'Finish',
+    reasonSpike: 'this week’s tonnage is well ahead of the monthly average',
+    reasonLow: 'you marked today as an off day',
+    reasonBreak: 'after a break from training',
+    finishQ: 'Finish the workout?',
+    loggedOf: (n: number, total: number): ReactNode => (
+      <>
+        Logged: <b>{n}</b> of {total}. Still without a result:
+      </>
+    ),
+    allDone: (n: number) => (n === 1 ? 'The exercise has a result.' : `All ${n} exercises have a result.`),
+    workoutTime: (d: string): ReactNode => (
+      <>
+        Workout time: <b>{d}</b>.
+      </>
+    ),
+    deloadFinish: 'Lighter week: results go into your history, but your levels stay the same — neither up nor down.',
+    jumpsPaused: (reason: string) =>
+      `Jumps to a heavier weight are paused today — ${reason}. Rep targets go up as usual.`,
+    finishOk: 'Finish and recalculate',
+    done: (name: string) => `${name} done`,
+    exercisesInSession: (n: number) => `${n} ${pluralEn(n, 'exercise', 'exercises')} this session`,
+    onTraining: (d: string) => `${d} of training`,
+    totals: (workouts: number, reps: string) =>
+      `${workouts} ${pluralEn(workouts, 'logged workout', 'logged workouts')} · ${reps} reps`,
+    changes: 'Changes for the next session:',
+    deloadSaved: 'Lighter week — levels unchanged. Your next hard workout starts from the same place.',
+    noChanges: 'No level changes. The target goes up when every set hits its number with reps to spare.',
+    xpLine: (gained: number, level: number, title: string, up: boolean, toNext: number) =>
+      `Character: +${gained} XP · level ${level}, ${title}${up ? ' — level up!' : `, ${toNext} XP to the next level`}`,
+    burnLine: (kcal: string, min: number) => `Activity: ${kcal} above resting · about ${min} min of sets with rests`,
+    noWeight: 'Enter your weight in your profile and I’ll work out this workout’s calories too.',
+    shareResult: 'Share result',
+    shareAll: 'Share all your progress',
+    sameSession: 'In the same session',
+    tier: (tier: number, of: number) => `tier ${tier} of ${of}`,
+    oneOff: 'one-off badge',
+    earned: (n: number) => (n === 1 ? 'Earned!' : `Earned: ${n}`),
+    shareBadge: 'Share badge',
+    nice: 'Nice',
+    twoWeights: 'Enter at least two weights, e.g. 12, 16, 20, 24.',
+    remeasureQ: 'Re-measure your levels?',
+    remeasureText: (
+      <>
+        Every exercise gets a test set — one set with no ceiling that gives a new level. The test starts from where you
+        are now, so it can go up or down. Your history and logged workouts stay untouched.
+      </>
+    ),
+    remeasure: 'Re-measure',
+    remeasured: 'Test sets scheduled. Your next workout will measure your levels.',
+    planStarted: (name: string) => `Plan started: ${name}`,
+    firstDates: (start: string) => `First deadlines from ${start}. `,
+    bankedPlan: (n: number) => `Points from the previous plan (${n}) went into your total.`,
+    planSet: 'Plan set',
+    planSetLine: (name: string, start: string, first: string | null) =>
+      `${name}. Starts ${start}${first ? `, first deadline ${first}` : ''}.`,
+    seeded: (n: number): ReactNode => (
+      <>
+        Starting weights set for <b>{n}</b> exercises. Exercises that already have a logged result were left alone —
+        a measured level is worth more than a table.
+      </>
+    ),
+    policyShift: 'A missed deadline doesn’t eat the workout: the same workout moves to the next deadline.',
+    policyStrict: 'The rotation follows the calendar strictly — a missed workout is lost.',
+    freqQ: (days: number) => `Switch to ${days}× a week?`,
+    freqText: (
+      <>
+        The new calendar starts today. Points from your current plan go into your total; badges and exercise levels
+        stay the same.
+      </>
+    ),
+    changePlan: 'Change plan',
+    freqEvent: (days: number) => `Switched to ${days}× a week`,
+    bankedCalendar: (n: number) => `Points from the previous calendar (${n}) went into your total.`,
+    freqChanged: (days: number) => `Plan changed to ${days}× a week.`,
+    daysEvent: (days: string) => `New training days: ${days}`,
+    daysEventText: 'From today. Past deadlines stay as they were.',
+    daysChanged: 'Plan days changed from today.',
+    policyShiftSet: 'A missed workout will wait for the next deadline.',
+    policyStrictSet: 'A missed workout is lost along with its deadline.',
+    extendEvent: (weeks: number) => `Plan extended by ${weeks} ${pluralEn(weeks, 'week', 'weeks')}`,
+    extendEventText: 'New deadlines are added at the end, on the same days.',
+    extended: (weeks: number) => `Plan extended by ${weeks} ${pluralEn(weeks, 'week', 'weeks')}.`,
+    stopQ: 'End the plan?',
+    stopText: (
+      <>
+        The calendar will disappear. Points from this plan go into your total, and badges, exercise levels and history
+        stay the same.
+      </>
+    ),
+    stop: 'End plan',
+    stopped: 'Plan ended',
+    stoppedText: (n: number) => `${n} ${pluralEn(n, 'point', 'points')} added to your total.`,
+    workoutSaved: (name: string) => `Saved: ${name}.`,
+    workoutRunning: (name: string) => `“${name}” is in progress — finish or abandon the session first.`,
+    workoutInPlan: (name: string, plans: string) => `“${name}” is in the plan ${plans} — change the plan first.`,
+    deleteWorkoutQ: 'Delete the workout?',
+    deleteWorkoutText: (name: string) => `“${name}” will disappear from the list. Exercise levels stay untouched.`,
+    delete: 'Delete',
+    planSavedActive: 'Plan saved. The calendar will recalculate from the new layout.',
+    planSaved: (name: string) => `Plan saved: ${name}. Start it whenever you like.`,
+    planIsActive: 'That’s your current plan. End it first — its points will go into your total.',
+    deletePlanQ: 'Delete the plan?',
+    deletePlanText: (name: string) => `“${name}” will disappear from the catalogue. Workouts and history stay.`,
+    noDiet: 'File saved without the food diary — it couldn’t be read.',
+    loaded: 'Data loaded.',
+    loadedDiet: 'Data loaded — food diary included.',
+    loadedNoDiet: 'Training loaded. The food diary from this file couldn’t be restored.',
+    loadFailed: 'Couldn’t load the file',
+    loadFailedText: 'Choose a JSON file exported from this app.',
+    resetQ: 'Delete all data?',
+    resetText: (food: boolean, watch: boolean, phone: boolean) =>
+      'Your history, exercise levels and custom workouts will be gone for good' +
+      (food ? ' — along with your food diary and diet profile' : '') +
+      '.' +
+      (watch ? ' Your Garmin watch will be disconnected — otherwise it would send the last week back.' : '') +
+      (phone ? ' Your phone will be disconnected — otherwise it would send the last two weeks back.' : ''),
+    resetAll: 'Delete everything',
+    setOf: (n: number, of: number) => `set ${n} of ${of}`,
+    partOf: (n: number, of: number, sets: string) => `Part ${n} of ${of} · ${sets}`,
+    listProgress: (done: number, of: number) => `${done} of ${of} exercises logged`,
+    firstWorkout: 'First workout',
+    lastToday: 'Last workout today',
+    lastYesterday: 'Last workout yesterday',
+    lastDaysAgo: (d: number) => `Last workout ${d} days ago`,
+    perWeek: (rate: string) => `${rate} sessions a week`,
+    loadRatio: (ratio: string) => `load ${ratio}`,
+    saveBroken: 'Saving isn’t working',
+    saveBrokenText:
+      'The browser refused to save your data. Your results are kept in memory but will vanish when you refresh. Export a file from Settings before you close the tab.',
+    snoozed: 'The support bar will be back in a week. You can also buy a coffee from Settings.',
+    home: 'App on your Home Screen',
+    gotIt: 'Got it',
+    installHidden: 'The instructions stay in Settings.',
+    thanks: 'Thanks! Your message is on its way to the author.',
+    spike: 'Load spike',
+    spikeText: (ratio: string) =>
+      `Last week’s tonnage is ${ratio}× your four-week average. Above 1.5 the risk of overload goes up, so jumps to a heavier weight are paused. Rep targets go up as usual.`,
+    trainedToday: 'You trained today',
+    trainedTodayText:
+      'You can log another session, but the same movement patterns twice in one day won’t give you better progress.',
+    foodTab: 'the Food tab',
+    nav: 'Main navigation',
+  },
+});
+
 /** Dni tygodnia słowami do dziennika planu. */
-const WD_NAME = ['pon', 'wt', 'śr', 'czw', 'pt', 'sob', 'niedz'];
+const WD_NAME = T.weekdays;
 
 /** Poziom postaci na teraz — liczony od zera z historii, tak jak wszystko inne. */
 const levelNow = (s: AppState): LevelState => levelFor(xpSummary(s).total);
@@ -255,20 +655,20 @@ function TimeSummary({ time }: { time: LogTime }) {
   const t = summary(time);
   const started = time.parts.some((p) => p.at !== undefined);
   const line = [
-    `Czas: ${durationText(t.secs)}`,
-    started ? `ćwiczenia ${durationText(t.work)}` : null,
-    t.longest ? `przejścia ${durationText(t.gaps)}` : null,
+    T.time(durationText(t.secs)),
+    started ? T.work(durationText(t.work)) : null,
+    t.longest ? T.gaps(durationText(t.gaps)) : null,
   ].filter(Boolean);
   return (
     <>
       <p className="xpline">{line.join(' · ')}</p>
       {t.longest && t.longest.secs > 0 && (
         <p className="kcal-split">
-          Najdłuższe przejście {formatClock(t.longest.secs)} przed „{t.longest.ex.map((id) => ex(id).name).join(' + ')}”.
+          {T.longest(formatClock(t.longest.secs), t.longest.ex.map((id) => ex(id).name).join(' + '))}
         </p>
       )}
       {!timed(time) && (
-        <p className="kcal-split">Poza statystykami czasu — liczą się treningi od 3 minut do 4 godzin.</p>
+        <p className="kcal-split">{T.untimed}</p>
       )}
     </>
   );
@@ -454,9 +854,7 @@ export default function App() {
           const next = clone(base);
           found.forEach((w) => setBodyWeight(next, w.kg, w.day));
           const writing = commit(next);
-          setToastMsg(
-            `Dziennik wagi przejął ${found.length === 1 ? 'ważenie' : `ważenia (${found.length})`} z dziennika diety.`,
-          );
+          setToastMsg(T.weightsMoved(found.length));
           saved = await writing;
         } else {
           // Te dni dziennik wagi już ma — ale może tylko w pamięci, z poprzedniego przejęcia przy
@@ -609,7 +1007,7 @@ export default function App() {
     // Zamiana zeruje wynik ćwiczenia, więc jego część mogła się otworzyć z powrotem.
     settleClock(next, { ...planned!, items: planned!.items.map((i) => ({ ...i, ex: map[i.ex] ?? i.ex })) }, [to], Date.now());
     commit(next);
-    setToastMsg(to === orig ? `Wracasz do: ${ex(orig).name}.` : `Na dziś: ${ex(to).name} zamiast ${ex(orig).name}.`);
+    setToastMsg(to === orig ? T.swapBack(ex(orig).name) : T.swapTo(ex(to).name, ex(orig).name));
   };
 
   /**
@@ -747,8 +1145,8 @@ export default function App() {
   const sayLevel = async (before: LevelState, next: AppState) => {
     const after = levelNow(next);
     if (after.level <= before.level) return;
-    await say('Awans postaci', <LevelUp before={before} after={after} />, {
-      ok: 'Dalej',
+    await say(T.levelUp, <LevelUp before={before} after={after} />, {
+      ok: T.next,
       tone: 'celebrate-box',
       cast: { who: avatarOf(next), mood: 'euphoric' },
     });
@@ -761,11 +1159,9 @@ export default function App() {
     const fresh = syncBadges(next, badgeCtx(next));
     commit(next);
     const n = snacksOn(next, dayKey(Date.now())).length;
-    setToastMsg(
-      `Zapisane: ${snackLabel(snack)} · ${n <= XP.snackCap ? `+${XP.snack} XP` : 'bez XP, limit na dziś'}. ${pick(SNACK_SAVED, n + next.snacks.length)}`,
-    );
+    setToastMsg(T.snackSaved(snackLabel(snack), n <= XP.snackCap ? XP.snack : null, pick(SNACK_SAVED, n + next.snacks.length)));
     void (async () => {
-      if (fresh.length) await sayBadges(fresh, metrics(next), 'Przy tej przekąsce');
+      if (fresh.length) await sayBadges(fresh, metrics(next), T.atSnack);
       await sayLevel(before, next);
     })();
   };
@@ -785,11 +1181,7 @@ export default function App() {
       (d) => d.group === 'przekaski' || (d.group === 'cwiczenia' && d.id.startsWith(`ex:${gone.ex}:`)),
     );
     commit(next);
-    setToastMsg(
-      revoked
-        ? `Przekąska usunięta razem z ${revoked === 1 ? 'progiem, który dała' : `progami, które dała (${revoked})`}.`
-        : 'Przekąska usunięta.',
-    );
+    setToastMsg(T.snackDeleted(revoked));
   };
 
   const setAvatar = (a: Avatar) => {
@@ -819,18 +1211,18 @@ export default function App() {
     const dayXp = (s: AppState): number => cardioXp(minutesByDay(s)[day] ?? 0);
     const gained = dayXp(next) - dayXp(from);
     setToastMsg(
-      `Zapisane: ${cardioLabel(entry)}${b ? ` · ${kcalText(b.active)}` : ''}` +
-        (gained > 0 ? ` · +${gained} XP` : dayXp(next) >= XP.cardioCap ? ' · bez XP, limit dnia' : '') +
+      `${T.logged(cardioLabel(entry))}${b ? ` · ${kcalText(b.active)}` : ''}` +
+        (gained > 0 ? ` · +${gained} XP` : dayXp(next) >= XP.cardioCap ? T.noXpDay : '') +
         '.' +
-        (replaced ? ' Poprzednia liczba kroków z tego dnia zastąpiona.' : '') +
+        (replaced ? T.stepsReplaced : '') +
         (entry.kind === 'steps' && device && device.steps > entry.steps
-          ? ` ${device.src === 'phone' ? 'Telefon' : 'Zegarek'} podał więcej (${device.steps.toLocaleString('pl-PL')}) — liczy się jego liczba.`
+          ? T.deviceMore(device.src === 'phone', device.steps.toLocaleString(LOCALE))
           : '') +
-        (revoked ? ` Cofnięte progi, których nowa liczba nie uzasadnia: ${revoked}.` : '') +
-        (b ? '' : ' Kalorie pokażą się po wpisaniu wagi.'),
+        (revoked ? T.revokedNew(revoked) : '') +
+        (b ? '' : T.kcalLater),
     );
     void (async () => {
-      if (fresh.length) await sayBadges(fresh, metrics(next), 'Przy tym wpisie');
+      if (fresh.length) await sayBadges(fresh, metrics(next), T.atEntry);
       await sayLevel(before, next);
     })();
   };
@@ -858,8 +1250,8 @@ export default function App() {
       await sayLevel(before, next);
     })();
   };
-  onWatch.current = (p) => applyDevice((s) => mergeWatch(s, p), 'Z danymi z zegarka');
-  onPhone.current = (p) => applyDevice((s) => mergePhone(s, p), 'Z danymi z telefonu');
+  onWatch.current = (p) => applyDevice((s) => mergeWatch(s, p), T.fromWatch);
+  onPhone.current = (p) => applyDevice((s) => mergePhone(s, p), T.fromPhone);
 
   const checkWatch = async (): Promise<PullResult> => {
     const r = await pullWatch(true);
@@ -879,11 +1271,7 @@ export default function App() {
     if (!removeCardio(next, key)) return;
     const revoked = revokeUnmet(next, badgeCtx(next), (d) => d.group === 'cardio');
     commit(next);
-    setToastMsg(
-      revoked
-        ? `Wpis usunięty razem z ${revoked === 1 ? 'progiem, który dał' : `progami, które dał (${revoked})`}.`
-        : 'Wpis usunięty.',
-    );
+    setToastMsg(T.entryDeleted(revoked));
   };
 
   /** Ważenie — dzisiejsze z karty ważenia i profilu, z dowolnego dnia z dziennika jedzenia. */
@@ -896,15 +1284,15 @@ export default function App() {
     const when =
       day === dayKey(Date.now())
         ? null
-        : new Date(`${day}T12:00:00`).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long' });
+        : new Date(`${day}T12:00:00`).toLocaleDateString(LOCALE, { day: 'numeric', month: 'long' });
     setToastMsg(
-      (when ? `Waga z ${when} zapisana: ` : 'Waga zapisana: ') +
-        `${b.kg.toLocaleString('pl-PL')} kg. ` +
+      T.weightSaved(when) +
+        `${b.kg.toLocaleString(LOCALE)} kg. ` +
         (first
-          ? 'Kalorie policzone — także dla wcześniejszych wpisów.'
+          ? T.kcalFirst
           : when
-            ? 'Kalorie od tego dnia liczą się z niej.'
-            : 'Kalorie od dziś liczą się z niej.'),
+            ? T.kcalFromDay
+            : T.kcalFromToday),
     );
   };
 
@@ -912,7 +1300,7 @@ export default function App() {
     const next = clone(state);
     if (!removeBodyWeight(next, day)) return;
     commit(next);
-    setToastMsg('Ważenie usunięte.');
+    setToastMsg(T.weighDeleted);
   };
 
   const setHeight = (cm: number | null, from: AppState = state) => {
@@ -920,7 +1308,7 @@ export default function App() {
     if (cm === null) delete next.cfg.height;
     else next.cfg.height = cm;
     commit(next);
-    setToastMsg(cm === null ? 'Wzrost usunięty — krok liczony dla 170 cm.' : `Wzrost zapisany: ${cm} cm.`);
+    setToastMsg(cm === null ? T.heightRemoved : T.heightSaved(cm));
   };
 
   // Zapisy z ekranów jedzenia: te same funkcje co w treningach, ale od najświeższego stanu
@@ -928,11 +1316,11 @@ export default function App() {
   bridgeWrites.current = {
     setWeight: (kg, day) => {
       if (!DAY.test(day)) return;
-      if (!validWeight(kg)) setToastMsg(`Waga poza zakresem ${WEIGHT_RANGE.min}–${WEIGHT_RANGE.max} kg.`);
+      if (!validWeight(kg)) setToastMsg(T.weightRange(WEIGHT_RANGE.min, WEIGHT_RANGE.max));
       else setWeight(kg, day, live.current ?? state);
     },
     setHeight: (cm) => {
-      if (!validHeight(cm)) setToastMsg(`Wzrost poza zakresem ${HEIGHT_RANGE.min}–${HEIGHT_RANGE.max} cm.`);
+      if (!validHeight(cm)) setToastMsg(T.heightRange(HEIGHT_RANGE.min, HEIGHT_RANGE.max));
       else setHeight(Math.round(cm), live.current ?? state);
     },
     setSteps: (day, steps) => {
@@ -942,16 +1330,16 @@ export default function App() {
       try {
         logCardio({ kind: 'steps', steps }, day, null, from);
       } catch (e) {
-        setToastMsg(e instanceof Error ? e.message : 'Nie udało się zapisać kroków.');
+        setToastMsg(e instanceof Error ? e.message : T.stepsFailed);
       }
     },
   };
 
   const cancelSession = async () => {
     const ok = await ask(
-      'Porzucić trening?',
-      <p>Wpisane wyniki przepadną, a poziomy zostaną bez zmian.</p>,
-      'Porzuć',
+      T.abandonQ,
+      <p>{T.abandonText}</p>,
+      T.abandon,
       { who: 'siwy', mood: 'wise' },
     );
     if (!ok) return;
@@ -971,9 +1359,9 @@ export default function App() {
 
     if (!logged.length) {
       const ok = await ask(
-        'Zakończyć bez zapisu?',
-        <p>Żadne ćwiczenie nie ma wyniku, więc nie ma czego przeliczyć. Trening nie trafi do historii.</p>,
-        'Zakończ',
+        T.noSaveQ,
+        <p>{T.noSaveText}</p>,
+        T.end,
         { who: 'siwy', mood: 'calm' },
       );
       if (!ok) return;
@@ -990,19 +1378,17 @@ export default function App() {
     const spike = ratio !== null && ratio > 1.5;
     const blockJump = (d !== null && d >= 11 && d < 21) || spike || session.ready === 'low';
     const reason = spike
-      ? 'tygodniowy tonaż mocno wyprzedza średnią z miesiąca'
+      ? T.reasonSpike
       : session.ready === 'low'
-        ? 'oznaczyłeś dziś gorszy dzień'
-        : 'po przerwie w treningach';
+        ? T.reasonLow
+        : T.reasonBreak;
 
     const ok = await ask(
-      'Zamknąć trening?',
+      T.finishQ,
       <>
         {missing.length ? (
           <>
-            <p>
-              Zapisane: <b>{logged.length}</b> z {w.items.length}. Bez wyniku zostaje:
-            </p>
+            <p>{T.loggedOf(logged.length, w.items.length)}</p>
             <ul>
               {missing.map((i) => (
                 <li key={i.ex}>— {ex(i.ex).name}</li>
@@ -1010,25 +1396,16 @@ export default function App() {
             </ul>
           </>
         ) : (
-          <p>Wszystkie {logged.length} ćwiczeń ma wynik.</p>
+          <p>{T.allDone(logged.length)}</p>
         )}
-        {sofar && (
-          <p style={{ marginTop: 12 }}>
-            Czas treningu: <b>{durationText(sofar.secs)}</b>.
-          </p>
-        )}
+        {sofar && <p style={{ marginTop: 12 }}>{T.workoutTime(durationText(sofar.secs))}</p>}
         {session.deload ? (
-          <p style={{ marginTop: 12 }}>
-            Tydzień lżejszy: wyniki trafią do historii, ale poziomy zostaną bez zmian — ani w górę,
-            ani w dół.
-          </p>
+          <p style={{ marginTop: 12 }}>{T.deloadFinish}</p>
         ) : blockJump && (
-          <p style={{ marginTop: 12 }}>
-            Skoki na cięższe obciążenie są dziś wstrzymane — {reason}. Cele powtórzeń rosną normalnie.
-          </p>
+          <p style={{ marginTop: 12 }}>{T.jumpsPaused(reason)}</p>
         )}
       </>,
-      'Zamknij i przelicz',
+      T.finishOk,
       { who: 'gustaw', mood: 'tired' },
     );
     if (!ok) return;
@@ -1074,11 +1451,11 @@ export default function App() {
     const subject = {
       kind: 'session' as const,
       seed: m.workouts,
-      title: `${w.name} zaliczony`,
+      title: T.done(w.name),
       lines: [
-        `${logged.length} ${logged.length === 1 ? 'ćwiczenie' : 'ćwiczeń'} w tej sesji`,
-        ...(timed(time) ? [`${durationText(time.secs)} na treningu`] : []),
-        `${m.workouts} ${m.workouts === 1 ? 'zapisany trening' : 'zapisanych treningów'} · ${m.reps.toLocaleString('pl-PL')} powtórzeń`,
+        T.exercisesInSession(logged.length),
+        ...(timed(time) ? [T.onTraining(durationText(time.secs))] : []),
+        T.totals(m.workouts, m.reps.toLocaleString(LOCALE)),
       ],
       punch: punchline(m.tonnage, m.reps, m.workouts),
     };
@@ -1095,7 +1472,7 @@ export default function App() {
         <SupportLine seed={m.workouts} />
         {changes.length ? (
           <>
-            <p>Zmiany na kolejną sesję:</p>
+            <p>{T.changes}</p>
             <ul>
               {changes.map((c, i) => (
                 <li key={i}>
@@ -1105,35 +1482,29 @@ export default function App() {
             </ul>
           </>
         ) : session.deload ? (
-          <p>Tydzień lżejszy — poziomy bez zmian. Kolejny mocny trening startuje z tego samego miejsca.</p>
+          <p>{T.deloadSaved}</p>
         ) : (
-          <p>
-            Bez zmian poziomów. Cel rośnie, gdy każda seria dobije do wyznaczonej liczby i zostanie
-            zapas powtórzeń.
-          </p>
+          <p>{T.noChanges}</p>
         )}
         {time && <TimeSummary time={time} />}
         <p className="xpline">
-          Postać: +{gained} XP · poziom {after.level}, {after.title}
-          {after.level > before.level ? ' — awans!' : `, do kolejnego ${after.toNext} XP`}
+          {T.xpLine(gained, after.level, after.title, after.level > before.level, after.toNext)}
         </p>
         {burn ? (
           <>
-            <p className="xpline">
-              Ruch: {kcalText(burn.active)} ponad spoczynek · ok. {Math.round(burn.secs / 60)} min serii z przerwami
-            </p>
+            <p className="xpline">{T.burnLine(kcalText(burn.active), Math.round(burn.secs / 60))}</p>
             <p className="kcal-split">
               {burn.items.map((i) => `${ex(i.id).name} ${kcalText(i.active).replace('≈ ', '')}`).join(' · ')}
             </p>
           </>
         ) : (
-          <p className="kcal-split">Wpisz wagę w profilu, a policzę też kalorie tego treningu.</p>
+          <p className="kcal-split">{T.noWeight}</p>
         )}
         <div className="after">
-          <ShareButton subject={subject} label="Udostępnij wynik" />
+          <ShareButton subject={subject} label={T.shareResult} />
           <ShareButton
             subject={progressSubject(m, rankNow(next), m.workouts)}
-            label="Udostępnij cały dorobek"
+            label={T.shareAll}
           />
         </div>
       </>,
@@ -1151,7 +1522,7 @@ export default function App() {
   const sayBadges = async (
     hits: AchievementHit[],
     m: ReturnType<typeof metrics>,
-    context = 'W tej samej sesji',
+    context = T.sameSession,
   ) => {
     const top = [...hits].sort(
       (a, b) => bandFor(b.tier, b.ach.tiers.length) - bandFor(a.tier, a.ach.tiers.length),
@@ -1162,22 +1533,22 @@ export default function App() {
       title: top.ach.name,
       band: BAND_NAME[bandFor(top.tier, top.ach.tiers.length)],
       lines: [
-        top.ach.tiers.length > 1 ? `próg ${top.tier} z ${top.ach.tiers.length}` : 'odznaka jednorazowa',
+        top.ach.tiers.length > 1 ? T.tier(top.tier, top.ach.tiers.length) : T.oneOff,
         top.ach.desc,
       ],
       punch: punchline(m.tonnage, m.reps, top.tier),
     };
 
     await say(
-      hits.length === 1 ? 'Zdobyte!' : `Zdobyte: ${hits.length}`,
+      T.earned(hits.length),
       <div ref={medalBox}>
         <Celebrate hits={hits} context={context} />
         <div className="after">
-          <ShareButton subject={subject} medalRef={medalBox} label="Udostępnij odznakę" />
+          <ShareButton subject={subject} medalRef={medalBox} label={T.shareBadge} />
           <SupportLine seed={top.tier + m.workouts} compact />
         </div>
       </div>,
-      { ok: 'Nieźle', tone: 'celebrate-box', cast: { who: 'gustaw', mood: BAND_MOOD[bandFor(top.tier, top.ach.tiers.length)] } },
+      { ok: T.nice, tone: 'celebrate-box', cast: { who: 'gustaw', mood: BAND_MOOD[bandFor(top.tier, top.ach.tiers.length)] } },
     );
   };
 
@@ -1191,7 +1562,7 @@ export default function App() {
 
   const setWeights = (list: number[]) => {
     if (list.length < 2) {
-      setToastMsg('Podaj przynajmniej dwie wagi, np. 12, 16, 20, 24.');
+      setToastMsg(T.twoWeights);
       return;
     }
     const next = clone(state);
@@ -1219,13 +1590,9 @@ export default function App() {
 
   const recalibrate = async () => {
     const ok = await ask(
-      'Zmierzyć poziomy od nowa?',
-      <p>
-        Każde ćwiczenie dostanie serię próbną — jedną serię bez sufitu, z której wyjdzie nowy
-        poziom. Próba startuje od miejsca, w którym jesteś teraz, więc może pójść w górę albo w
-        dół. Historia i zapisane treningi zostają nietknięte.
-      </p>,
-      'Zmierz od nowa',
+      T.remeasureQ,
+      <p>{T.remeasureText}</p>,
+      T.remeasure,
     );
     if (!ok) return;
     const next = clone(state);
@@ -1241,7 +1608,7 @@ export default function App() {
       p.trans = null;
     });
     commit(next);
-    setToastMsg('Próby ustawione. Kolejny trening zmierzy poziomy.');
+    setToastMsg(T.remeasured);
   };
 
   /**
@@ -1267,10 +1634,10 @@ export default function App() {
       id: `plan-start:${t.id}:${opts.start}`,
       date: set < opts.start ? set : opts.start,
       kind: 'plan-start',
-      title: `Start planu: ${t.name}`,
+      title: T.planStarted(t.name),
       text:
-        (opts.start > set ? `Pierwsze terminy od ${opts.start}. ` : '') +
-        (banked ? `Punkty z poprzedniego planu (${banked}) trafiły do dorobku.` : ''),
+        (opts.start > set ? T.firstDates(opts.start) : '') +
+        (banked ? T.bankedPlan(banked) : ''),
     });
     syncBadges(next, badgeCtx(next));
     commit(next);
@@ -1278,21 +1645,11 @@ export default function App() {
 
     const first = snapshot(next)?.stats.next;
     await say(
-      'Plan ustawiony',
+      T.planSet,
       <>
-        <p>
-          {t.name}. Start {opts.start}
-          {first ? `, pierwszy termin ${first.date}` : ''}.
-        </p>
-        <p style={{ marginTop: 10 }}>
-          Ciężary startowe ustawione w <b>{seeded}</b> ćwiczeniach. Ćwiczenia z zaliczonym już
-          wynikiem zostały nietknięte — zmierzony poziom jest wart więcej niż tabelka.
-        </p>
-        <p style={{ marginTop: 10 }}>
-          {opts.policy === 'shift'
-            ? 'Opuszczony termin nie zjada treningu: ten sam trening wchodzi na kolejny termin.'
-            : 'Rotacja idzie sztywno z kalendarzem — opuszczony trening przepada.'}
-        </p>
+        <p>{T.planSetLine(t.name, opts.start, first ? first.date : null)}</p>
+        <p style={{ marginTop: 10 }}>{T.seeded(seeded)}</p>
+        <p style={{ marginTop: 10 }}>{opts.policy === 'shift' ? T.policyShift : T.policyStrict}</p>
       </>,
     );
   };
@@ -1306,12 +1663,9 @@ export default function App() {
     const target = planById(planId(t.level, t.sex, days));
     if (!target) return;
     const ok = await ask(
-      `Przejść na ${days}× w tygodniu?`,
-      <p>
-        Nowy kalendarz rusza od dziś. Punkty z dotychczasowego planu trafiają do dorobku,
-        odznaki i poziomy ćwiczeń zostają bez zmian.
-      </p>,
-      'Zmień plan',
+      T.freqQ(days),
+      <p>{T.freqText}</p>,
+      T.changePlan,
     );
     if (!ok) return;
     const next = clone(state);
@@ -1327,11 +1681,11 @@ export default function App() {
       id: `plan-swap:${target.id}:${next.plan.start}`,
       date: next.plan.start,
       kind: 'plan-swap',
-      title: `Zmiana wariantu na ${days}× w tygodniu`,
-      text: `Punkty z poprzedniego kalendarza (${banked}) trafiły do dorobku.`,
+      title: T.freqEvent(days),
+      text: T.bankedCalendar(banked),
     });
     commit(next);
-    setToastMsg(`Plan zmieniony na ${days}× w tygodniu.`);
+    setToastMsg(T.freqChanged(days));
   };
 
   /**
@@ -1347,11 +1701,11 @@ export default function App() {
       id: `plan-days:${today}:${days.join('')}`,
       date: today,
       kind: 'plan-swap',
-      title: `Nowe dni treningowe: ${days.map((d) => WD_NAME[d - 1]).join(', ')}`,
-      text: 'Od dziś. Terminy, które minęły, zostają bez zmian.',
+      title: T.daysEvent(days.map((d) => WD_NAME[d - 1]).join(', ')),
+      text: T.daysEventText,
     });
     commit(next);
-    setToastMsg('Dni planu zmienione od dziś.');
+    setToastMsg(T.daysChanged);
   };
 
   const changePolicy = (policy: PlanPolicy) => {
@@ -1359,7 +1713,7 @@ export default function App() {
     const next = clone(state);
     next.plan!.policy = policy;
     commit(next);
-    setToastMsg(policy === 'shift' ? 'Opuszczony trening poczeka na kolejny termin.' : 'Opuszczony trening przepada razem z terminem.');
+    setToastMsg(policy === 'shift' ? T.policyShiftSet : T.policyStrictSet);
   };
 
   const extendPlan = (weeks: number) => {
@@ -1371,11 +1725,11 @@ export default function App() {
       id: `plan-extend:${today}:${next.plan.extraWeeks}`,
       date: today,
       kind: 'plan-swap',
-      title: `Plan dłuższy o ${weeks} tygodnie`,
-      text: 'Kolejne terminy dochodzą na końcu, w tych samych dniach.',
+      title: T.extendEvent(weeks),
+      text: T.extendEventText,
     });
     commit(next);
-    setToastMsg(`Plan przedłużony o ${weeks} tygodnie.`);
+    setToastMsg(T.extended(weeks));
   };
 
   /**
@@ -1399,12 +1753,9 @@ export default function App() {
 
   const stopPlan = async () => {
     const ok = await ask(
-      'Zakończyć plan?',
-      <p>
-        Kalendarz zniknie. Punkty z tego planu przechodzą do dorobku, a odznaki, poziomy
-        ćwiczeń i historia zostają bez zmian.
-      </p>,
-      'Zakończ',
+      T.stopQ,
+      <p>{T.stopText}</p>,
+      T.stop,
     );
     if (!ok) return;
     const next = clone(state);
@@ -1413,8 +1764,8 @@ export default function App() {
       id: `plan-stop:${next.plan!.templateId}:${dayKey(Date.now())}`,
       date: dayKey(Date.now()),
       kind: 'plan-stop',
-      title: 'Plan zakończony',
-      text: `Do dorobku doszło ${banked} punktów.`,
+      title: T.stopped,
+      text: T.stoppedText(banked),
     });
     next.plan = null;
     commit(next);
@@ -1428,7 +1779,7 @@ export default function App() {
     if (i > -1) next.workouts[i] = w;
     else next.workouts.push(w);
     commit(next);
-    setToastMsg(`Zapisany: ${w.name}.`);
+    setToastMsg(T.workoutSaved(w.name));
   };
 
   /**
@@ -1437,23 +1788,23 @@ export default function App() {
    */
   const deleteWorkout = async (w: Workout) => {
     if (state.session?.workout === w.id) {
-      setToastMsg(`„${w.name}” właśnie trwa — najpierw zamknij albo porzuć sesję.`);
+      setToastMsg(T.workoutRunning(w.name));
       return;
     }
     const inPlans = (state.plans ?? []).filter((p) => p.cycle.includes(w.id));
     const activeT = state.plan ? planOf(state, state.plan.templateId) : undefined;
     if (inPlans.length || activeT?.cycle.includes(w.id)) {
       setToastMsg(
-        `„${w.name}” jest w planie ${[...new Set([...inPlans, ...(activeT ? [activeT] : [])].map((p) => `„${p.name}”`))].join(', ')} — najpierw zmień plan.`,
+        T.workoutInPlan(w.name, [...new Set([...inPlans, ...(activeT ? [activeT] : [])].map((p) => T.q(p.name)))].join(', ')),
       );
       return;
     }
-    const ok = await ask('Usunąć trening?', <p>„{w.name}” zniknie z listy. Poziomy ćwiczeń zostaną nietknięte.</p>, 'Usuń');
+    const ok = await ask(T.deleteWorkoutQ, <p>{T.deleteWorkoutText(w.name)}</p>, T.delete);
     if (!ok) return;
     const next = clone(state);
     next.workouts = next.workouts.filter((x) => x.id !== w.id);
     commit(next);
-    go('#/treningi', { replace: true });
+    go('#/treningi', { replace: true }); // i18n-ignore: trasa
   };
 
   const savePlan = (t: PlanTemplate) => {
@@ -1469,17 +1820,17 @@ export default function App() {
     commit(next);
     setToastMsg(
       state.plan?.templateId === t.id
-        ? `Plan zapisany. Kalendarz przeliczy się z nowego układu.`
-        : `Plan zapisany: ${t.name}. Zacznij go, kiedy chcesz.`,
+        ? T.planSavedActive
+        : T.planSaved(t.name),
     );
   };
 
   const deletePlan = async (t: PlanTemplate) => {
     if (state.plan?.templateId === t.id) {
-      setToastMsg('To twój aktualny plan. Najpierw go zakończ — punkty przejdą do dorobku.');
+      setToastMsg(T.planIsActive);
       return;
     }
-    const ok = await ask('Usunąć plan?', <p>„{t.name}” zniknie z katalogu. Treningi i historia zostaną.</p>, 'Usuń');
+    const ok = await ask(T.deletePlanQ, <p>{T.deletePlanText(t.name)}</p>, T.delete);
     if (!ok) return;
     const next = clone(state);
     next.plans = (next.plans ?? []).filter((x) => x.id !== t.id);
@@ -1508,7 +1859,7 @@ export default function App() {
     a.download = `gym-tracker-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(a.href);
-    if (dietLost) setToastMsg('Plik zapisany bez dziennika jedzenia — nie udało się go odczytać.');
+    if (dietLost) setToastMsg(T.noDiet);
   };
 
   const importData = (f: File) => {
@@ -1537,17 +1888,17 @@ export default function App() {
         forgetSections();
         const diet = (parsed as AppState & { diet?: unknown }).diet;
         if (!diet) {
-          setToastMsg('Dane wczytane.');
+          setToastMsg(T.loaded);
           return;
         }
         void import('./food/backup')
           .then((m) => m.restoreDiet(diet))
           .then(
-            () => setToastMsg('Dane wczytane — razem z dziennikiem jedzenia.'),
-            () => setToastMsg('Trening wczytany. Dziennika jedzenia z tego pliku nie udało się odtworzyć.'),
+            () => setToastMsg(T.loadedDiet),
+            () => setToastMsg(T.loadedNoDiet),
           );
       } catch {
-        void say('Nie udało się wczytać', <p>Wybierz plik JSON wyeksportowany z tej aplikacji.</p>);
+        void say(T.loadFailed, <p>{T.loadFailedText}</p>);
       }
     };
     r.readAsText(f);
@@ -1560,14 +1911,9 @@ export default function App() {
     // dziennika bez profilu. Gdy bazy nie da się odczytać, nie ma czego wymieniać.
     const food = await import('./food/backup').then((m) => m.hasFoodData()).catch(() => false);
     const ok = await ask(
-      'Usunąć wszystkie dane?',
-      <p>
-        Historia, poziomy ćwiczeń i własne treningi znikną bezpowrotnie
-        {food ? ' — razem z dziennikiem jedzenia i profilem diety' : ''}.
-        {watch && ' Zegarek Garmin zostanie odłączony — inaczej przysłałby ostatni tydzień z powrotem.'}
-        {phone && ' Telefon zostanie odłączony — inaczej przysłałby ostatnie dwa tygodnie z powrotem.'}
-      </p>,
-      'Usuń wszystko',
+      T.resetQ,
+      <p>{T.resetText(food, watch, phone)}</p>,
+      T.resetAll,
       { who: 'siwy', mood: 'wise' },
     );
     if (!ok) return;
@@ -1590,25 +1936,25 @@ export default function App() {
       ? (() => {
           const steps = sessionSteps(state, current);
           const done = steps.filter((st) => (state.session!.res[st.ex]?.rows.length ?? 0) >= st.set).length;
-          const sets = `seria ${Math.min(done + 1, steps.length)} z ${steps.length}`;
+          const sets = T.setOf(Math.min(done + 1, steps.length), steps.length);
           if (!state.session!.clock) return sets;
           const blocks = blocksOf(current.items);
           const c = cursorOf(steps, state.session!);
-          return `Część ${c >= 0 ? steps[c]!.block : blocks.length} z ${blocks.length} · ${sets}`;
+          return T.partOf(c >= 0 ? steps[c]!.block : blocks.length, blocks.length, sets);
         })()
-      : `${Object.keys(state.session!.done).length} z ${current.items.length} ćwiczeń zapisanych`
+      : T.listProgress(Object.keys(state.session!.done).length, current.items.length)
     : null;
 
   const subline = [
     d === null
-      ? 'Pierwszy trening'
+      ? T.firstWorkout
       : d === 0
-        ? 'Ostatni trening dzisiaj'
+        ? T.lastToday
         : d === 1
-          ? 'Ostatni trening wczoraj'
-          : `Ostatni trening ${d} dni temu`,
-    rate !== null ? `${rate.toFixed(1)} sesji na tydzień` : null,
-    ratio !== null ? `obciążenie ${ratio.toFixed(2)}` : null,
+          ? T.lastYesterday
+          : T.lastDaysAgo(d),
+    rate !== null ? T.perWeek(rate.toFixed(1)) : null,
+    ratio !== null ? T.loadRatio(ratio.toFixed(2)) : null,
   ].filter(Boolean);
 
   const today = dayKey(Date.now());
@@ -1618,7 +1964,7 @@ export default function App() {
   const subtitle = inSession
     ? sessionProgress
     : view === 'train'
-      ? new Date().toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long' })
+      ? new Date().toLocaleDateString(LOCALE, { weekday: 'long', day: 'numeric', month: 'long' })
       : null;
   // Klucz strony: nowy ekran wjeżdża od nowa, ten sam ekran z nowymi danymi — nie. Sekcje
   // jedzenia to osobne ekrany, a zmiana samego zapytania (filtry, otwarty produkt) — ten sam.
@@ -1640,8 +1986,8 @@ export default function App() {
     <Banner
       notice={{
         level: 'warn',
-        title: 'Zapis nie działa',
-        text: 'Przeglądarka odmówiła zapisu danych. Wyniki trzymają się w pamięci, ale znikną po odświeżeniu. Wyeksportuj plik z Ustawień, zanim zamkniesz kartę.',
+        title: T.saveBroken,
+        text: T.saveBrokenText,
       }}
     />
   );
@@ -1650,21 +1996,21 @@ export default function App() {
     const next = clone(state);
     next.supportSnooze = snoozeUntil(today);
     commit(next);
-    setToastMsg('Pasek wsparcia wróci za tydzień. Kawę da się postawić też z Ustawień.');
+    setToastMsg(T.snoozed);
   };
 
   const showInstall = () =>
     void say(
-      'Aplikacja na ekranie początkowym',
+      T.home,
       <InstallSteps place={installPlace ?? 'safari'} reminders={pushConfigured()} />,
-      { ok: 'Rozumiem' },
+      { ok: T.gotIt },
     );
 
   const hideInstall = () => {
     const next = clone(state);
     next.installHidden = today;
     commit(next);
-    setToastMsg('Instrukcja zostaje w Ustawieniach.');
+    setToastMsg(T.installHidden);
   };
 
   return (
@@ -1700,7 +2046,7 @@ export default function App() {
           onClose={closeFeedback}
           onSent={() => {
             setFeedbackOpen(false);
-            setToastMsg('Dzięki! Wiadomość poszła do autora.');
+            setToastMsg(T.thanks);
           }}
         />
       )}
@@ -1716,8 +2062,8 @@ export default function App() {
           <Banner
             notice={{
               level: 'warn',
-              title: 'Skok obciążenia',
-              text: `Tonaż z ostatniego tygodnia to ${ratio.toFixed(2)} średniej z czterech tygodni. Powyżej 1,5 rośnie ryzyko przeciążenia, więc skoki na cięższe obciążenie są wstrzymane. Cele powtórzeń rosną normalnie.`,
+              title: T.spike,
+              text: T.spikeText(ratio.toFixed(2)),
             }}
           />
         )}
@@ -1725,8 +2071,8 @@ export default function App() {
           <Banner
             notice={{
               level: 'warn',
-              title: 'Trenowałeś dzisiaj',
-              text: 'Możesz zalogować kolejną sesję, ale te same wzorce ruchowe dwa razy w ciągu dnia nie dadzą lepszej progresji.',
+              title: T.trainedToday,
+              text: T.trainedTodayText,
             }}
           />
         )}
@@ -1885,7 +2231,7 @@ export default function App() {
       {isFoodRoute(route) && (
         <>
           {saveBroken && <div className="wrap">{saveBrokenBanner}</div>}
-          <LoadBoundary what="zakładki Jedzenie">
+          <LoadBoundary what={T.foodTab}>
             <Suspense fallback={<div className="empty">{pick(LOADING, daySeed())}</div>}>
               <FoodRoot route={route} />
             </Suspense>
@@ -1916,7 +2262,7 @@ export default function App() {
       </main>
       </BridgeContext.Provider>
 
-      <nav className="tabbar" aria-label="Główna nawigacja">
+      <nav className="tabbar" aria-label={T.nav}>
         {TABS.map((t) => {
           const on = activeTab(route) === t.key;
           return (

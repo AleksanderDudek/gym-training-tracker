@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { captureScreen, feedbackContext, imageFromFile, sendFeedback } from '../feedback';
 import type { SendResult } from '../feedback';
+import { text } from '../i18n';
 import type { AppState } from '../types';
 
 /**
@@ -15,12 +16,66 @@ import type { AppState } from '../types';
  * do odtworzenia.
  */
 
-const FAIL: Record<Exclude<SendResult, 'ok'>, string> = {
-  offline: 'Brak połączenia. Wiadomość została w okienku — wyślij, gdy wróci zasięg.',
-  limit: 'Za dużo wiadomości w ciągu godziny. Spróbuj za chwilę — ta poczeka w okienku.',
-  invalid: 'Sprawdź adres e-mail i treść — coś się nie zgadza.',
-  error: 'Nie udało się wysłać. Spróbuj jeszcze raz za chwilę.',
-};
+const T = text({
+  pl: {
+    fail: {
+      offline: 'Brak połączenia. Wiadomość została w okienku — wyślij, gdy wróci zasięg.',
+      limit: 'Za dużo wiadomości w ciągu godziny. Spróbuj za chwilę — ta poczeka w okienku.',
+      invalid: 'Sprawdź adres e-mail i treść — coś się nie zgadza.',
+      error: 'Nie udało się wysłać. Spróbuj jeszcze raz za chwilę.',
+    } as Record<Exclude<SendResult, 'ok'>, string>,
+    notImage: 'Tego pliku nie da się odczytać jako obrazu.',
+    tooShort: 'Napisz choć kilka słów.',
+    title: 'Napisz do autora',
+    lead: 'Uwaga, pomysł albo błąd — wiadomość trafia prosto do autora.',
+    email: 'e-mail — jeśli chcesz odpowiedzi',
+    message: 'wiadomość',
+    shooting: 'Robię zrzut tego ekranu…',
+    noShot: 'Zrzutu nie udało się zrobić — możesz dołączyć obraz z galerii.',
+    preview: 'Podgląd dołączanego obrazu',
+    attachShot: 'Dołącz zrzut ekranu, z którego piszesz',
+    attachFile: 'Dołącz wybrany obraz',
+    otherImage: 'Inny obraz z galerii',
+    image: 'Obraz z galerii',
+    tech: 'Razem z wiadomością wysyłam informacje techniczne, które pomagają odtworzyć problem.',
+    what: 'Co dokładnie',
+    details:
+      'Ekran, z którego piszesz; czas tej wizyty; kolejne ekrany, stuknięcia i błędy aplikacji (liczby zamienione na #); przeglądarkę, rozmiar ekranu i strefę czasową; liczbę zapisanych treningów i nazwę planu. Bez wyników, wag i historii. Ślad istnieje tylko w pamięci tej karty i wychodzi wyłącznie z wiadomością. Adres e-mail służy tylko do odpowiedzi.',
+    cancel: 'Anuluj',
+    sending: 'Wysyłam…',
+    send: 'Wyślij',
+  },
+  en: {
+    fail: {
+      offline: 'No connection. Your message is still in the box — send it when you’re back online.',
+      limit: 'Too many messages in an hour. Try again in a moment — this one will wait in the box.',
+      invalid: 'Check the email address and the message — something isn’t right.',
+      error: 'Couldn’t send. Try again in a moment.',
+    },
+    notImage: 'This file can’t be read as an image.',
+    tooShort: 'Write at least a few words.',
+    title: 'Write to the author',
+    lead: 'Feedback, an idea or a bug — your message goes straight to the author.',
+    email: 'email — if you’d like a reply',
+    message: 'message',
+    shooting: 'Taking a screenshot of this screen…',
+    noShot: 'Couldn’t take a screenshot — you can attach an image from your gallery.',
+    preview: 'Preview of the attached image',
+    attachShot: 'Attach a screenshot of the screen you’re writing from',
+    attachFile: 'Attach the chosen image',
+    otherImage: 'Another image from the gallery',
+    image: 'Image from the gallery',
+    tech: 'Along with your message I send technical details that help reproduce the problem.',
+    what: 'What exactly',
+    details:
+      'The screen you’re writing from; how long this visit has lasted; the screens, taps and app errors along the way (numbers replaced with #); your browser, screen size and time zone; the number of logged workouts and the plan’s name. No results, weights or history. The trace exists only in this tab’s memory and leaves only with your message. Your email address is used only to reply.',
+    cancel: 'Cancel',
+    sending: 'Sending…',
+    send: 'Send',
+  },
+});
+
+const FAIL: Record<Exclude<SendResult, 'ok'>, string> = T.fail;
 
 type Shot = { state: 'pending' } | { state: 'none' } | { state: 'ready'; url: string; source: 'screen' | 'file' };
 
@@ -62,13 +117,13 @@ export function FeedbackDialog({
     if (url) {
       setShot({ state: 'ready', url, source: 'file' });
       setAttach(true);
-    } else setError('Tego pliku nie da się odczytać jako obrazu.');
+    } else setError(T.notImage);
   };
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (text.trim().length < 3) {
-      setError('Napisz choć kilka słów.');
+      setError(T.tooShort);
       return;
     }
     setBusy(true);
@@ -88,11 +143,11 @@ export function FeedbackDialog({
   return (
     <div className="fb" role="dialog" aria-modal="true" aria-labelledby="fb-title" data-capture="off" data-trail="off">
       <form className="fb-box" onSubmit={submit} noValidate>
-        <h2 id="fb-title">Napisz do autora</h2>
-        <p className="tight">Uwaga, pomysł albo błąd — wiadomość trafia prosto do autora.</p>
+        <h2 id="fb-title">{T.title}</h2>
+        <p className="tight">{T.lead}</p>
 
         <label className="fld">
-          <span>e-mail — jeśli chcesz odpowiedzi</span>
+          <span>{T.email}</span>
           <input
             type="email"
             inputMode="email"
@@ -103,22 +158,22 @@ export function FeedbackDialog({
           />
         </label>
         <label className="fld">
-          <span>wiadomość</span>
+          <span>{T.message}</span>
           <textarea ref={area} rows={5} maxLength={4000} value={text} onChange={(e) => setText(e.target.value)} />
         </label>
 
         <div className="fb-shot">
-          {shot.state === 'pending' && <p className="tight">Robię zrzut tego ekranu…</p>}
-          {shot.state === 'none' && <p className="tight">Zrzutu nie udało się zrobić — możesz dołączyć obraz z galerii.</p>}
+          {shot.state === 'pending' && <p className="tight">{T.shooting}</p>}
+          {shot.state === 'none' && <p className="tight">{T.noShot}</p>}
           {shot.state === 'ready' && (
             <label className="fb-shot-row">
               <input type="checkbox" checked={attach} onChange={(e) => setAttach(e.target.checked)} />
-              <img src={shot.url} alt="Podgląd dołączanego obrazu" />
-              <span>{shot.source === 'screen' ? 'Dołącz zrzut ekranu, z którego piszesz' : 'Dołącz wybrany obraz'}</span>
+              <img src={shot.url} alt={T.preview} />
+              <span>{shot.source === 'screen' ? T.attachShot : T.attachFile}</span>
             </label>
           )}
           <label className="btn ghost sm fb-file">
-            {shot.state === 'ready' ? 'Inny obraz z galerii' : 'Obraz z galerii'}
+            {shot.state === 'ready' ? T.otherImage : T.image}
             <input type="file" accept="image/*" className="hidden" onChange={(e) => void pick(e.target.files?.[0])} />
           </label>
         </div>
@@ -136,13 +191,10 @@ export function FeedbackDialog({
         />
 
         <div className="hint fb-note">
-          Razem z wiadomością wysyłam informacje techniczne, które pomagają odtworzyć problem.
+          {T.tech}
           <details>
-            <summary>Co dokładnie</summary>
-            Ekran, z którego piszesz; czas tej wizyty; kolejne ekrany, stuknięcia i błędy aplikacji
-            (liczby zamienione na #); przeglądarkę, rozmiar ekranu i strefę czasową; liczbę zapisanych
-            treningów i nazwę planu. Bez wyników, wag i historii. Ślad istnieje tylko w pamięci tej
-            karty i wychodzi wyłącznie z wiadomością. Adres e-mail służy tylko do odpowiedzi.
+            <summary>{T.what}</summary>
+            {T.details}
           </details>
         </div>
 
@@ -150,10 +202,10 @@ export function FeedbackDialog({
 
         <div className="btnrow">
           <button type="button" className="btn ghost" onClick={onClose}>
-            Anuluj
+            {T.cancel}
           </button>
           <button type="submit" className="btn" disabled={busy}>
-            {busy ? 'Wysyłam…' : 'Wyślij'}
+            {busy ? T.sending : T.send}
           </button>
         </div>
       </form>
