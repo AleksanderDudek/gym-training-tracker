@@ -420,6 +420,18 @@ function ProfileForm({ profile, isNew, currentWeight, stores }: FormProps) {
               dziennie), niedojedzone kalorie wracają.
             </span>
           </label>
+          <label className="check-row fd-diet-check">
+            <input
+              type="checkbox"
+              checked={draft.adaptActivity !== false}
+              onChange={(e) => set({ adaptActivity: e.target.checked })}
+            />
+            <span>
+              Dopasowuj cel do ruchu: więcej kroków niż w celu albo trening spoza planu dodaje kalorie, mniej kroków
+              albo opuszczony trening z planu — odejmuje. Liczy się tylko różnica wobec planu, nie wszystkie spalone
+              kalorie.
+            </span>
+          </label>
         </section>
 
         <fieldset className="grp fd-diet-styles">

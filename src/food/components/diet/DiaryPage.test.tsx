@@ -440,19 +440,33 @@ describe('Kroki i ruch — przez most do treningów', () => {
     expect(bridge.setWeight).not.toHaveBeenCalled();
   });
 
-  test('pole pokazuje kroki z treningów, a ruch dnia stoi obok jako informacja', async () => {
+  test('pole pokazuje kroki z treningów; ruch zmienia cel tylko o różnicę wobec planu', async () => {
     await saveProfile(completeProfile({ startDate: '2026-10-01' }));
     const bridge = testBridge({
       weights: [{ day: '2026-10-14', kg: 82.5 }],
       stepsOn: (day) => (day === '2026-10-14' ? 7200 : null),
-      moveOn: () => ({ trained: true, workoutKcal: 310, cardioKcal: 180 }),
+      moveOn: (day) => ({
+        trained: day === '2026-10-14',
+        workoutKcal: day === '2026-10-14' ? 310 : 0,
+        cardioKcal: day === '2026-10-14' ? 180 : 0,
+        otherKcal: 0,
+        planned: null,
+        planActive: false,
+        typicalWorkoutKcal: 300,
+      }),
     });
     renderWithBridge(<DiaryPage />, bridge);
     const card = await screen.findByRole('region', { name: 'Kroki i ruch' });
     expect(within(card).getByLabelText('Kroki')).toHaveValue('7200');
     expect(within(card).queryByLabelText('Waga, kg')).not.toBeInTheDocument();
     expect(within(card).getByText(/trening 310 kcal · kroki i cardio 180 kcal/)).toBeInTheDocument();
-    expect(within(card).getByText(/nie dodaję tego do celu kalorii/)).toBeInTheDocument();
+    // Profil zakłada dwa treningi w tygodniu po 300 kcal (średnio 86 dziennie): dzisiejszy daje +220.
+    expect(card).toHaveTextContent(/Cel a ruch:.*\+220 kcal za trening/);
+    // 7200 kroków to jeszcze nie cel: brakujące mogą zabrać do wieczora, ale jeszcze nie zabrały.
+    expect(card).toHaveTextContent(/2800 kroków do celu \(−90 kcal\)/);
+    expect(within(card).getByText(/Liczę tylko różnicę/)).toBeInTheDocument();
+    // Ta sama korekta w bilansie dnia: cel 2000 + 220.
+    expect(screen.getByRole('region', { name: 'Bilans dnia' })).toHaveTextContent('/ 2220 kcal');
     // Nic do zapisania, dopóki nikt nie zmienił liczby.
     expect(within(card).getByRole('button', { name: 'Zapisz kroki' })).toBeDisabled();
   });

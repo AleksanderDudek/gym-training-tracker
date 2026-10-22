@@ -378,7 +378,7 @@ export default function App() {
     if (!state) return null;
     // Kalendarz planu treningowego i typowy trening liczone raz na stan, nie przy każdym dniu.
     const snap = snapshot(state);
-    const typical = typicalWorkoutBurn(state, dayKey(Date.now()));
+    const typical = typicalWorkoutBurn(state);
     const workouts = [...BUILTIN, ...state.workouts];
     return {
       weights: bodyOf(state),

@@ -96,7 +96,13 @@ describe('training without a plan: the profile’s assumption', () => {
 
   test('two sessions of a typical 300 kcal spread over the week', () => {
     expect(plannedTraining(p, move())).toEqual({ kcal: (2 * 300) / 7, name: null, source: 'profile' });
-    expect(plannedTraining(p, move({ typicalWorkoutKcal: null })).kcal).toBeCloseTo((2 * TYPICAL_FALLBACK_KCAL) / 7);
+    // Nobody logs trainings here: a day without a logged one is not a day without training.
+    expect(plannedTraining(p, move({ typicalWorkoutKcal: null }))).toEqual({ kcal: 0, name: null, source: 'none' });
+    expect(activityOn(p, KG, move({ typicalWorkoutKcal: null }), 10_000, 'past').kcal).toBe(0);
+    // With a training plan, a session without an estimate falls back to a typical hour.
+    expect(plannedTraining(p, move({ planActive: true, planned: { name: 'A', kcal: null }, typicalWorkoutKcal: null })).kcal).toBe(
+      TYPICAL_FALLBACK_KCAL,
+    );
     expect(plannedTraining(completeProfile({ activityMultiplier: 1.2 }), move()).source).toBe('none');
   });
 

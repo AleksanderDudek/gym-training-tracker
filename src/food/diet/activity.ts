@@ -35,7 +35,8 @@ export interface Activity {
   kcal: number;
   /** May still be taken off today (≤ 0): steps short of the target, a planned training not done. */
   pending: number;
-  steps: { planned: number; actual: number | null; kcal: number };
+  /** `kcal` counted now; `pending` may still be taken off today (steps short of the target). */
+  steps: { planned: number; actual: number | null; kcal: number; pending: number };
   training: {
     /** What the goal assumes for this day, kcal. */
     planned: number;
@@ -45,7 +46,10 @@ export interface Activity {
     source: 'plan' | 'profile' | 'none';
     done: number;
     trained: boolean;
+    /** Counted now. */
     kcal: number;
+    /** May still be taken off today: the planned session not done yet. */
+    pending: number;
   };
   /** Cardio other than steps and exercise snacks, kcal - all extra. */
   other: number;
@@ -82,22 +86,30 @@ export interface PlannedTraining {
   source: Activity['training']['source'];
 }
 
-/** What the goal assumes about training on a day with this move data. */
+/**
+ * What the goal assumes about training on a day with this move data. Without a training plan the
+ * profile's assumption applies only to someone who logs trainings here (`typicalWorkoutKcal`): for
+ * anyone else a day without a logged training is not a day without training - they may train and
+ * not log it - so nothing is assumed missing.
+ */
 export function plannedTraining(p: Profile, move: MoveDay): PlannedTraining {
-  const typical = move.typicalWorkoutKcal ?? TYPICAL_FALLBACK_KCAL;
-  if (move.planActive)
+  if (move.planActive) {
+    const typical = move.typicalWorkoutKcal ?? TYPICAL_FALLBACK_KCAL;
     return move.planned
       ? { kcal: move.planned.kcal ?? typical, name: move.planned.name, source: 'plan' }
       : { kcal: 0, name: null, source: 'plan' };
+  }
   const sessions = assumedSessions(p.activityMultiplier);
-  return sessions ? { kcal: (sessions * typical) / 7, name: null, source: 'profile' } : { kcal: 0, name: null, source: 'none' };
+  return sessions && move.typicalWorkoutKcal !== null
+    ? { kcal: (sessions * move.typicalWorkoutKcal) / 7, name: null, source: 'profile' }
+    : { kcal: 0, name: null, source: 'none' };
 }
 
 const ZERO = (p: Profile): Activity => ({
   kcal: 0,
   pending: 0,
-  steps: { planned: p.targetSteps, actual: null, kcal: 0 },
-  training: { planned: 0, plannedName: null, source: 'none', done: 0, trained: false, kcal: 0 },
+  steps: { planned: p.targetSteps, actual: null, kcal: 0, pending: 0 },
+  training: { planned: 0, plannedName: null, source: 'none', done: 0, trained: false, kcal: 0, pending: 0 },
   other: 0,
   capped: false,
 });
@@ -150,14 +162,15 @@ export function activityOn(
   return {
     kcal: round(kcal),
     pending: round(pending),
-    steps: { planned: p.targetSteps, actual: steps, kcal: round(stepsKcal + stepsPending) },
+    steps: { planned: p.targetSteps, actual: steps, kcal: round(stepsKcal), pending: round(stepsPending) },
     training: {
       planned: Math.round(plan.kcal),
       plannedName: plan.name,
       source: plan.source,
       done: Math.round(done),
       trained,
-      kcal: round(trainingKcal + trainingPending),
+      kcal: round(trainingKcal),
+      pending: round(trainingPending),
     },
     other: Math.round(other),
     capped: raw !== kcal,

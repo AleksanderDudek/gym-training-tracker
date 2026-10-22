@@ -343,3 +343,32 @@ fieldset.fd-diet-styles legend{float:left;width:100%;padding:0;margin:0 0 2px;fo
 .fd-diet-foodcard .fd-diet-macro-head{margin-top:6px}
 .fd-diet-foodcard .fd-diet-macro-head + .fd-diet-bar{height:7px;margin-top:5px}
 .fd-diet-foodcard .btn{margin-top:8px}
+
+/* ---------------- Cheat meal ---------------- */
+
+/* Zaplanowany cheat meal pod bilansem: złoty pasek z boku — plan, nie wpis. */
+.fd-diet-cheat{border-left:3px solid var(--c-gold)}
+.fd-diet-cheat h2{display:flex;align-items:center;gap:8px}
+.fd-diet-cheat .fd-diet-name{margin:6px 0 0;font-weight:600}
+.fd-diet-cheat .fd-diet-meta{margin:2px 0 6px}
+.fd-diet-cheatacts{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+/* Arkusz: pola, ruch do końca dnia, symulacja. */
+.fd-diet-cheatmove{margin:4px 0 0;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r)}
+.fd-diet-cheatmove legend{padding:0 4px;font-size:13px;font-weight:600;color:var(--ink-soft)}
+.fd-diet-radios{display:grid;gap:4px;margin:2px 0 8px}
+.fd-diet-radios .check-row{margin:0;min-height:40px}
+.fd-diet-cheatsteps{max-width:200px;margin:2px 0 0 28px}
+.fd-diet-sim{margin-top:4px;padding:12px;background:var(--surface-2);border-radius:var(--r)}
+.fd-diet-sim h3{margin:0 0 8px;font-size:15px}
+.fd-diet-simrows{display:grid;gap:2px;margin:0 0 8px}
+.fd-diet-simrows > div{display:flex;justify-content:space-between;gap:12px;font-size:14px}
+.fd-diet-simrows dt{color:var(--ink-soft)}
+.fd-diet-simrows dd{margin:0;font-variant-numeric:tabular-nums}
+.fd-diet-simrows .fd-diet-simsum{padding-top:4px;border-top:1px solid var(--line);font-weight:600}
+.fd-diet-simrows .fd-diet-simsum dt{color:var(--ink)}
+p.fd-diet-verdict{margin:6px 0 8px;font-size:15px;font-weight:600}
+p.fd-diet-v-fits{color:var(--ok)}
+p.fd-diet-v-tight,p.fd-diet-v-edge{color:var(--c-gold-ink)}
+p.fd-diet-v-over{color:var(--c-orange-ink)}
+.fd-diet-simideas{margin:0 0 8px;padding-left:18px;font-size:13.5px}
+.fd-diet-simideas li{margin:2px 0}

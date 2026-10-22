@@ -148,7 +148,7 @@ const TYPICAL_DAYS = 90;
  * Typowy trening tej osoby: średnie aktywne kalorie ostatnich treningów. Dieta bez planu
  * treningowego zakłada tyle za każdy trening z profilu. `null` bez ważenia albo bez historii.
  */
-export function typicalWorkoutBurn(state: AppState, today: string): number | null {
+export function typicalWorkoutBurn(state: AppState, today: string = dayKey(Date.now())): number | null {
   const from = Date.parse(`${today}T00:00:00Z`) - TYPICAL_DAYS * 86_400_000;
   const recent = state.log
     .filter((e) => Date.parse(e.date) >= from)

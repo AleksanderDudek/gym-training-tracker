@@ -31,6 +31,7 @@ import {
   weightOn,
 } from './body';
 import {
+  beyondStepsBurn,
   cardioBurn,
   cardioDays,
   dayBurn,
@@ -38,6 +39,7 @@ import {
   plannedBurn,
   rowBurn,
   snackBurn,
+  typicalWorkoutBurn,
   workoutBurn,
 } from './burn';
 import { cardioEnergy, setsEnergy } from './energy';
@@ -314,6 +316,28 @@ describe('kalorie z zapisów', () => {
     expect(d.snacks).toBeLessThan(10);
     expect(d.total).toBeCloseTo(d.cardio + d.workouts + d.snacks, 6);
     expect(snackBurn(s, s.snacks[0]!)).toBeCloseTo(d.snacks, 6);
+  });
+
+  it('ruch poza krokami: bieżnia, rower, taniec i przekąski — kroki liczy dieta swoim wzorem', () => {
+    const s = withWeight();
+    const day = '2026-09-28';
+    addCardio(s, { kind: 'steps', steps: 7000 }, day);
+    addCardio(s, { kind: 'bike', kmh: 20, min: 30 }, day);
+    addSnack(s, 'squat_air', 20, null, at(`${day}T10:00:00Z`));
+    const d = dayBurn(s, day)!;
+    const steps = cardioOn(s, day).find((c) => c.kind === 'steps')!;
+    expect(beyondStepsBurn(s, day)).toBeCloseTo(d.cardio - cardioBurn(s, steps)!.active + d.snacks, 6);
+    expect(beyondStepsBurn(freshState(), day)).toBeNull();
+  });
+
+  it('typowy trening: średnia z ostatnich, nie starszych niż trzy miesiące; bez historii nic', () => {
+    const s = withWeight();
+    expect(typicalWorkoutBurn(s, '2026-09-30')).toBeNull();
+    s.log.push(entry('2026-09-20T18:00:00Z'), entry('2026-09-27T18:00:00Z'));
+    const one = workoutBurn(s, s.log[0]!)!.active;
+    expect(typicalWorkoutBurn(s, '2026-09-30')).toBeCloseTo(one, 6);
+    // Pół roku później te treningi już nic o „typowym” nie mówią.
+    expect(typicalWorkoutBurn(s, '2027-03-30')).toBeNull();
   });
 
   it('szacunek przed treningiem idzie z poziomu z progresji i ostatniej wagi', () => {
