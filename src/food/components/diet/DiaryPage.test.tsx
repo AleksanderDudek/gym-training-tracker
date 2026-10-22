@@ -244,8 +244,10 @@ describe('Dziennik', () => {
     expect(await screen.findByText('Obiad u rodziców')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /Zjedzone/ })).toHaveTextContent('650 kcal');
     expect(screen.getByText(/1 wpis ma tylko kalorie/)).toBeInTheDocument();
-    expect(dialog).not.toHaveAttribute('open');
-    expect(bridge.toast).toHaveBeenCalledWith('Zapisane: Obiad u rodziców · 650 kcal.');
+    // Arkusz zamyka się po zapisie do bazy, a lista odświeża się z bazy na żywo — bywa, że wpis
+    // stoi na liście, zanim arkusz zdąży się zamknąć (CI, obciążona maszyna). Czekamy na oba.
+    await waitFor(() => expect(dialog).not.toHaveAttribute('open'));
+    await waitFor(() => expect(bridge.toast).toHaveBeenCalledWith('Zapisane: Obiad u rodziców · 650 kcal.'));
   });
 
   test('„Dodaj zjedzone”: fokus w wyszukiwaniu, × zamyka i oddaje fokus, ponowne otwarcie zaczyna od nowa', async () => {
