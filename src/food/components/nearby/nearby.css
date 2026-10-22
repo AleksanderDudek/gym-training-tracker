@@ -184,6 +184,7 @@
 p.fd-near-card-status{margin:4px 0;font-size:13.5px;font-weight:600;color:var(--ok)}
 p.fd-near-card-status:empty{display:none}
 .fd-near-card-h{margin:12px 0 2px;font-size:15px}
+.fd-near-card-body p.fd-near-card-lead,p.fd-near-card-lead{margin:2px 0 6px;font-size:13.5px;line-height:1.45;color:var(--ink-soft)}
 .fd-near-eat-why{margin:2px 0 0;font-size:12.5px;color:var(--ink-soft)}
 .fd-near-card-notnow{margin-top:10px}
 .fd-near-card-notnow summary{min-height:44px;display:flex;align-items:center;font-weight:600;color:var(--steel);cursor:pointer}

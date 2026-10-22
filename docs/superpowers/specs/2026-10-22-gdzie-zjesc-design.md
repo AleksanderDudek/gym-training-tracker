@@ -44,3 +44,20 @@ device's maps app with directions. Improve anything that makes it better.
 | Address | „Szukaj adresu” — Nominatim (OpenStreetMap) on submit only, 1 request a second at most, results to choose from; the chosen point becomes the position | Nominatim's usage policy forbids autocomplete; typing a hotel's address is the common case abroad |
 | Without a diet profile | Rated for an average day (2 000 kcal, balanced profile) with a link to set up the profile | The map is still useful; the rating says what it assumes |
 | Privacy | The rounded position goes to Overpass as before; a typed address to Nominatim; a tapped „Prowadź” sends the destination to Apple or Google — each said on the page | Same honesty as the shops view |
+
+## Decisions made during implementation
+
+| Topic | Decision | Why |
+| --- | --- | --- |
+| One map base | The Leaflet setup (canvas, two-finger hint, zoom buttons, „Ty”, radius) moved to `baseMap.tsx`; the shops map and the places map draw only their own pins | One behaviour to keep right on phones and keyboards |
+| One rule for „what is left” | `dayNeeds` (diet/now.ts) — the day's targets, the cheat meal reserved, meals ahead, one meal's share — used by the diary and „Zjedz teraz” | The two must never disagree |
+| Opening hours | OSM `opening_hours` parsed for the common syntax (24/7, day ranges and lists, several ranges, past midnight, `off`, PH rules skipped); anything else is „godziny nieznane” and stays visible | A wrong „closed” hides food from a hungry person |
+| The list | One row per chain (its best-placed venue); pins of the top three numbered in the list's order; the portion shown with every dish | Three McDonald's in a row is not three choices; 15 cm and 30 cm are not the same lunch |
+| Address search | Nominatim on submit only, 1 s between requests, results cached in memory | Its usage policy |
+| Stored order of views | The last view on this device opens when a link has no `widok`; the diary links to `?widok=zjedz` and its shops line to `?widok=sklepy` | Both views keep their own entry points |
+| Loading | „Liczę, co zostało…” until the diary is read; menus and products join when their chunks load | No flash of "nothing eaten" |
+
+Checked at 360 px with the demo person and a fixture of nine places in central Warsaw (Playwright,
+`vite preview`, Overpass answered from the fixture): no horizontal overflow, the answer, map, list
+and card readable. Not checked: a real Overpass answer in a big city at 10 km (performance), iOS
+Safari opening Apple Maps from an installed PWA.

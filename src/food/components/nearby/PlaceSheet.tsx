@@ -125,7 +125,8 @@ export function PlaceSheet({ place, menu, ctx, mealKcal, today, now, platform, o
       full
       onClose={onClose}
       title={p.name}
-      subtitle={[place.label, ET.kinds[p.kind]].filter((x, i, a) => x && a.indexOf(x) === i).join(' · ')}
+      // The chain only when the venue is named otherwise („Żabka” for „Żabka Nano”), never twice.
+      subtitle={[place.label !== p.name ? place.label : null, ET.kinds[p.kind]].filter(Boolean).join(' · ')}
     >
       <div className="fd-near-card-head">
         <p>{[p.address, distanceText(place.distance, place.walkMin)].filter(Boolean).join(' · ')}</p>
@@ -161,7 +162,7 @@ export function PlaceSheet({ place, menu, ctx, mealKcal, today, now, platform, o
       ) : (
         <>
           <h3 className="fd-near-card-h">{T.fits}</h3>
-          <p className="fd-near-soft">
+          <p className="fd-near-card-lead">
             {fits.length
               ? T.fitsLead(formatNumber(Math.round(mealKcal / 10) * 10, 0), formatNumber(Math.round(ctx.remaining.protein / ctx.mealsLeft), 0))
               : T.nothingFits}

@@ -25,7 +25,7 @@ import type { Chain } from '../../restaurants/types';
 import { readyProducts } from '../../recipes/ready';
 import { dietPath } from '../../../routing';
 import { COMMON } from '../common/text';
-import { FitBadge, MacroLine } from '../diet/SuggestionList';
+import { FIT_LABEL, FitBadge, MacroLine } from '../diet/SuggestionList';
 import { ChipRow } from '../recipes/ChipRow';
 import { AddressSearch } from './AddressSearch';
 import { distanceText, openText } from './eatText';
@@ -252,10 +252,12 @@ export function EatNow({ state, update, closeEntry, geo, locate, setManual, setR
 
   const openPlace = (id: string) => update({ place: id }, { push: true });
   const describe = (r: RankedPlace) => ({
-    head: [r.label, distanceText(r.distance, r.walkMin)].filter(Boolean).join(' · '),
+    head: [r.label !== r.place.name ? r.label : null, distanceText(r.distance, r.walkMin)].filter(Boolean).join(' · '),
     lines: [
       ...[openText(r.open, now)].filter((x): x is string => x !== null),
-      ...r.options.slice(0, 2).map((s) => `${dishName(s.food)} · ${formatNumber(s.food.nutrients.kcal, 0)} kcal`),
+      ...r.options
+        .slice(0, 2)
+        .map((s) => `${dishName(s.food)} · ${formatNumber(s.food.nutrients.kcal, 0)} kcal · ${FIT_LABEL[s.fit.level]}`),
     ],
   });
 
@@ -319,7 +321,11 @@ export function EatNow({ state, update, closeEntry, geo, locate, setManual, setR
                 <FitBadge fit={bestPick.dish.fit} />
               </span>
               <span className="fd-near-best-where">
-                {[bestPick.place.label ?? bestPick.place.place.name, distanceText(bestPick.place.distance, bestPick.place.walkMin)].join(' · ')}
+                {[
+                  bestPick.dish.food.amountLabel,
+                  bestPick.place.label ?? bestPick.place.place.name,
+                  distanceText(bestPick.place.distance, bestPick.place.walkMin),
+                ].join(' · ')}
               </span>
               <ChevronRight className="fd-near-best-go" size={20} strokeWidth={2} aria-hidden />
             </button>
@@ -451,7 +457,7 @@ function PickRow({ n, row, now, onOpen }: { n: number; row: EatPick; now: Date; 
             {[place.label ?? place.place.name, distanceText(place.distance, place.walkMin), open].filter(Boolean).join(' · ')}
           </span>
           <span className="fd-near-pick-nums">
-            <MacroLine food={dish.food} />
+            <MacroLine food={dish.food} /> · {dish.food.amountLabel}
           </span>
           {dish.reasons[0] && <span className="fd-near-pick-why">{dish.reasons[0]}</span>}
         </span>
