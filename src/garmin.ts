@@ -1,8 +1,11 @@
 import { apiConfigured } from './api';
+import { WATCH_EVERY_MIN, deviceStatus } from './deviceStatus';
+import type { DeviceStatus } from './deviceStatus';
 import { keySlot, mailbox, readBox } from './mailbox';
 import type { BoxResult } from './mailbox';
 import { parsePayload } from './engine/watch';
 import type { WatchPayload } from './engine/watch';
+import type { AppState } from './types';
 import type { WatchKeys } from './watchseal';
 
 export { PULL_GAP_MS, whenText } from './mailbox';
@@ -36,6 +39,26 @@ export const readPull = (keys: WatchKeys, status: number, body: unknown, nowMs: 
 
 /** Wynik ostatniego sprawdzenia w tej karcie przeglądarki — dla karty w ustawieniach. */
 export const lastPullKind = box.lastKind;
+
+/** Kiedy ostatnio zapytano serwer o paczkę zegarka — „sprawdzone przed chwilą”. */
+export const lastPullAt = box.lastAt;
+
+/** Zapis na wiadomość po każdym sprawdzeniu — także tym bez nowej paczki. */
+export const onWatchCheck = box.subscribe;
+
+/** Czy zegarek jest połączony w tej przeglądarce: build go zna i klucz jest zapisany. */
+export const watchConnected = (): boolean => garminConfigured() && slot.get() !== null;
+
+/** Stan połączenia z zegarkiem: zegarek wysyła co pół godziny. */
+export const watchStatus = (state: AppState, nowMs: number): DeviceStatus =>
+  deviceStatus({
+    lastT: state.watch?.t ?? null,
+    got: state.watch?.got ?? null,
+    kind: box.lastKind(),
+    hasKey: slot.get() !== null,
+    nowMs,
+    cadenceMin: WATCH_EVERY_MIN,
+  });
 
 export const pullWatch = box.pull;
 
