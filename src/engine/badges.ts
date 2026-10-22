@@ -1,5 +1,5 @@
 import { ALL } from '../data/exercises';
-import type { Achievement, AchievementHit, AppState } from '../types';
+import type { Achievement, AchievementHit, AppState, PlanEvent } from '../types';
 import type { PlanStats, Schedule } from './schedule';
 import { metrics } from './metrics';
 import type { Metrics } from './metrics';
@@ -1385,17 +1385,30 @@ export function syncBadges(state: AppState, ctx: AchCtx): AchievementHit[] {
       // Odznaki ćwiczeń nie idą do dziennika planu: jest ich po cztery na ruch i po imporcie
       // historii zasypałyby dziennik, w którym mają być terminy. Widać je przy ćwiczeniu.
       if (d.group === 'cwiczenia') return;
-      state.events.push({
-        id: `badge:${key}`,
-        date: ctx.today,
-        kind: 'badge',
-        title: T.eventTitle(d.name, d.tiers.length > 1 ? ` ${tier}` : ''),
-        text: T.eventText(d.desc, formatTier(d, threshold)),
-      });
+      state.events.push({ id: `badge:${key}`, date: ctx.today, kind: 'badge', ...badgeWords(d, tier, threshold) });
     });
   });
 
   return fresh;
+}
+
+const badgeWords = (d: Achievement, tier: number, threshold: number): Pick<PlanEvent, 'title' | 'text'> => ({
+  title: T.eventTitle(d.name, d.tiers.length > 1 ? ` ${tier}` : ''),
+  text: T.eventText(d.desc, formatTier(d, threshold)),
+});
+
+/**
+ * Wpis odznaki w dzienniku planu słowami tej wizyty. Zapisany tytuł ma język chwili zdobycia,
+ * a klucz (`badge:<odznaka>:<próg>`) wskazuje odznakę w katalogu — po zmianie języka dziennik
+ * mówi jednym językiem. Wpis, którego katalog nie zna (odznaka wycofana), zostaje jak był.
+ */
+export function badgeEventNow(e: PlanEvent): PlanEvent {
+  if (e.kind !== 'badge') return e;
+  const m = e.id.match(/^badge:(.+):(\d+)$/);
+  const d = m ? achievementById(m[1]!) : undefined;
+  const tier = Number(m?.[2]);
+  const threshold = d?.tiers[tier - 1];
+  return d && threshold !== undefined ? { ...e, ...badgeWords(d, tier, threshold) } : e;
 }
 
 /**

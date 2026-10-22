@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { EX, GEAR_LABEL, ex, gearOf, groupLabel } from '../data/exercises';
+import { BUILTIN, EX, GEAR_LABEL, ex, gearOf, groupLabel } from '../data/exercises';
 import { EX_JOKES } from '../data/exjokes';
 import { doneExercises, exerciseRows, trend, weeksBetween } from '../engine/history';
 import type { ExerciseRow, ExerciseSummary, Trend } from '../engine/history';
@@ -406,7 +406,8 @@ export function ProfileView({
                 <div className="h-date">{dm(e.date)}</div>
                 <div>
                   <div>
-                    <b>{e.workout}</b>
+                    {/* Gotowy trening — nazwą z biblioteki w języku wizyty; własny — tak, jak go nazwano. */}
+                    <b>{BUILTIN.find((w) => w.id === e.wid)?.name ?? e.workout}</b>
                     {/* Czas stoi zawsze, gdy był zegar; spoza 3 min – 4 h tylko nie wchodzi do statystyk i odznak. */}
                     {e.time && (
                       <span className="h-time">

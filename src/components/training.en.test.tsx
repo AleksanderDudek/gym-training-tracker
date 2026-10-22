@@ -267,3 +267,16 @@ describe('training screens in English', () => {
 });
 
 const edits = { onWeekdays: noop, onPolicy: noop, onExtend: noop, onStart: noop };
+
+describe('stored texts in the language of the visit', () => {
+  it('a badge entry saved in Polish reads English in the journal; an unknown one stays', async () => {
+    const { badgeEventNow, achievementById } = await import('../engine/badges');
+    const ach = achievementById('przekaski')!;
+    const saved = { id: 'badge:przekaski:1', date: '2026-08-28', kind: 'badge' as const, title: 'Odznaka: Przekąski ruchowe 1', text: 'Krótkie serie.' };
+    const now = badgeEventNow(saved);
+    expect(now.title).toContain(ach.name);
+    expect(`${now.title} ${now.text}`).not.toMatch(/[ąćęłńóśźż]/i);
+    const gone = { ...saved, id: 'badge:wycofana:1' };
+    expect(badgeEventNow(gone)).toBe(gone);
+  });
+});

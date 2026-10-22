@@ -13,7 +13,7 @@ import {
 } from '../data/plans';
 import { advise } from '../engine/advice';
 import { journal } from '../engine/journal';
-import { achievementById } from '../engine/badges';
+import { achievementById, badgeEventNow } from '../engine/badges';
 import { LANG, pluralEn, text } from '../i18n';
 import { achievementCount } from './Achievements';
 import { POINTS, pointsToday } from '../engine/score';
@@ -621,7 +621,7 @@ function BadgeLine({ state }: { state: AppState }) {
 function Journal({ snap, state }: { snap: Snapshot; state: AppState }) {
   const [all, setAll] = useState(false);
   const workoutName = nameIn(state);
-  const items = journal(snap.schedule, state.events, workoutName).filter(
+  const items = journal(snap.schedule, state.events.map(badgeEventNow), workoutName).filter(
     (e) => e.date <= snap.today,
   );
   const shown = all ? items : items.slice(0, 12);

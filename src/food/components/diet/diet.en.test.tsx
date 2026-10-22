@@ -192,7 +192,7 @@ describe('diary in English', () => {
     await user.click(within(sheet).getByRole('button', { name: 'Enter macros' }));
     await user.type(within(sheet).getByLabelText('Calories (kcal)'), '1200');
     const sim = within(sheet).getByRole('region', { name: 'What it means' });
-    expect(sim).toHaveTextContent(/Today’s goal\s*2\s?000 kcal/);
+    expect(sim).toHaveTextContent(/Today’s goal\s*2,000 kcal/);
     expect(sim).toHaveTextContent('You’ll go over the goal by 700 kcal (35%).');
     expect(sim).toHaveTextContent('Week: the goal for the next 4 days drops by about 170 kcal a day.');
     expect(sim).toHaveTextContent('In the weight forecast that’s about 93 g.');
