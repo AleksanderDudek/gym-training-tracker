@@ -1,3 +1,4 @@
+import { say } from '../../i18n';
 import { normalizeForSearch } from '../lib/text';
 import type { Product } from '../lib/types';
 import type { Macros } from './macros';
@@ -70,7 +71,7 @@ const NOT_RAW =
 const DEFINITIONS = {
   skyr: {
     id: 'skyr',
-    label: 'Skyr naturalny',
+    label: say('Skyr naturalny', 'Plain skyr'),
     role: 'store',
     typical: { kcal: 63, protein: 11, carbs: 4, fat: 0.2 },
     match: (p) =>
@@ -80,7 +81,7 @@ const DEFINITIONS = {
   },
   whey: {
     id: 'whey',
-    label: 'Białko w proszku (np. serwatkowe)',
+    label: say('Białko w proszku (np. serwatkowe)', 'Protein powder (e.g. whey)'),
     role: 'pantry',
     typical: { kcal: 390, protein: 75, carbs: 8, fat: 6 },
     match: (p) =>
@@ -90,7 +91,7 @@ const DEFINITIONS = {
   },
   cottage: {
     id: 'cottage',
-    label: 'Serek wiejski',
+    label: say('Serek wiejski', 'Cottage cheese'),
     role: 'store',
     typical: { kcal: 97, protein: 11, carbs: 2, fat: 5 },
     match: (p) =>
@@ -99,7 +100,7 @@ const DEFINITIONS = {
   },
   quark: {
     id: 'quark',
-    label: 'Twaróg chudy',
+    label: say('Twaróg chudy', 'Low-fat quark'),
     role: 'store',
     typical: { kcal: 99, protein: 19.8, carbs: 3.5, fat: 0.5 },
     match: (p) =>
@@ -108,7 +109,7 @@ const DEFINITIONS = {
   },
   proteinYogurt: {
     id: 'proteinYogurt',
-    label: 'Jogurt, skyr lub pudding proteinowy',
+    label: say('Jogurt, skyr lub pudding proteinowy', 'Protein yoghurt, skyr or pudding'),
     role: 'store',
     typical: { kcal: 64, protein: 10, carbs: 4, fat: 0.3 },
     match: (p) =>
@@ -120,7 +121,7 @@ const DEFINITIONS = {
   },
   tuna: {
     id: 'tuna',
-    label: 'Tuńczyk w sosie własnym',
+    label: say('Tuńczyk w sosie własnym', 'Tuna in water or brine'),
     role: 'store',
     typical: { kcal: 105, protein: 24, carbs: 0, fat: 1 },
     match: (p) =>
@@ -130,7 +131,7 @@ const DEFINITIONS = {
   },
   chicken: {
     id: 'chicken',
-    label: 'Pierś z kurczaka lub indyka w plastrach',
+    label: say('Pierś z kurczaka lub indyka w plastrach', 'Sliced chicken or turkey breast'),
     role: 'store',
     typical: { kcal: 105, protein: 21, carbs: 1, fat: 2 },
     match: (p) =>
@@ -140,7 +141,7 @@ const DEFINITIONS = {
   },
   oats: {
     id: 'oats',
-    label: 'Płatki owsiane',
+    label: say('Płatki owsiane', 'Rolled oats'),
     role: 'store',
     typical: { kcal: 370, protein: 13, carbs: 60, fat: 7 },
     match: (p) =>
@@ -149,7 +150,7 @@ const DEFINITIONS = {
   },
   milk: {
     id: 'milk',
-    label: 'Mleko 2% (lub chudsze)',
+    label: say('Mleko 2% (lub chudsze)', 'Milk, 2% fat (or less)'),
     role: 'staple',
     typical: { kcal: 50, protein: 3.3, carbs: 4.8, fat: 2 },
     match: (p) =>
@@ -160,7 +161,7 @@ const DEFINITIONS = {
   },
   kefir: {
     id: 'kefir',
-    label: 'Kefir naturalny',
+    label: say('Kefir naturalny', 'Plain kefir'),
     role: 'staple',
     typical: { kcal: 51, protein: 3.4, carbs: 4.4, fat: 2 },
     match: (p) =>
@@ -169,7 +170,7 @@ const DEFINITIONS = {
   },
   raspberries: {
     id: 'raspberries',
-    label: 'Maliny mrożone',
+    label: say('Maliny mrożone', 'Frozen raspberries'),
     role: 'staple',
     typical: { kcal: 52, protein: 1.2, carbs: 5.4, fat: 0.7 },
     match: (p) =>
@@ -177,7 +178,7 @@ const DEFINITIONS = {
   },
   strawberries: {
     id: 'strawberries',
-    label: 'Truskawki (świeże lub mrożone)',
+    label: say('Truskawki (świeże lub mrożone)', 'Strawberries (fresh or frozen)'),
     role: 'staple',
     typical: { kcal: 32, protein: 0.7, carbs: 5.7, fat: 0.3 },
     match: (p) =>
@@ -185,7 +186,7 @@ const DEFINITIONS = {
   },
   blueberries: {
     id: 'blueberries',
-    label: 'Borówki (świeże lub mrożone)',
+    label: say('Borówki (świeże lub mrożone)', 'Blueberries (fresh or frozen)'),
     role: 'staple',
     typical: { kcal: 57, protein: 0.7, carbs: 12, fat: 0.3 },
     match: (p) =>
@@ -193,10 +194,15 @@ const DEFINITIONS = {
       FROZEN(p) &&
       within(p, { protein: [0, 2], sugars: [0, 12], fat: [0, 1] }),
   },
-  egg: { id: 'egg', label: 'Jajko', role: 'staple', typical: { kcal: 143, protein: 12.6, carbs: 0.7, fat: 9.9 } },
+  egg: {
+    id: 'egg',
+    label: say('Jajko', 'Egg'),
+    role: 'staple',
+    typical: { kcal: 143, protein: 12.6, carbs: 0.7, fat: 9.9 },
+  },
   eggWhites: {
     id: 'eggWhites',
-    label: 'Białka jaj',
+    label: say('Białka jaj', 'Egg whites'),
     role: 'staple',
     typical: { kcal: 52, protein: 10.9, carbs: 0.7, fat: 0.2 },
   },
@@ -207,7 +213,7 @@ const DEFINITIONS = {
   // packaged one is known, it is used; otherwise typical values.
   chickenFillet: {
     id: 'chickenFillet',
-    label: 'Filet z piersi kurczaka (surowy)',
+    label: say('Filet z piersi kurczaka (surowy)', 'Chicken breast fillet (raw)'),
     role: 'staple',
     // No match, on purpose. The "Filet z piersi kurczaka" products in the data
     // are mostly weighed at a deli counter (in-store 2xxx codes) with no
@@ -218,7 +224,7 @@ const DEFINITIONS = {
   },
   turkeyMince: {
     id: 'turkeyMince',
-    label: 'Mięso mielone z indyka',
+    label: say('Mięso mielone z indyka', 'Turkey mince'),
     role: 'staple',
     // Plain turkey mince, not the leaner breast-only kind: the recipes must
     // pass the rule with whichever one the shop has.
@@ -231,14 +237,14 @@ const DEFINITIONS = {
   },
   leanBeef: {
     id: 'leanBeef',
-    label: 'Wołowina chuda (udziec lub ligawa)',
+    label: say('Wołowina chuda (udziec lub ligawa)', 'Lean beef (topside or silverside)'),
     role: 'staple',
     // No match: the data has tartare and salami, not a piece of beef to stew.
     typical: { kcal: 125, protein: 21.5, carbs: 0, fat: 4.3 },
   },
   salmonFillet: {
     id: 'salmonFillet',
-    label: 'Łosoś, filet (świeży lub mrożony)',
+    label: say('Łosoś, filet (świeży lub mrożony)', 'Salmon fillet (fresh or frozen)'),
     role: 'staple',
     typical: { kcal: 205, protein: 20.5, carbs: 0, fat: 13.5 },
     match: (p) =>
@@ -254,7 +260,7 @@ const DEFINITIONS = {
   },
   whiteFish: {
     id: 'whiteFish',
-    label: 'Filet z dorsza lub mintaja (bez skóry)',
+    label: say('Filet z dorsza lub mintaja (bez skóry)', 'Cod or pollock fillet (skinless)'),
     role: 'staple',
     typical: { kcal: 78, protein: 17.5, carbs: 0, fat: 0.8 },
     match: (p) =>
@@ -267,7 +273,7 @@ const DEFINITIONS = {
   // data has them at Biedronka, Lidl and Auchan, so they decide the store.
   shrimp: {
     id: 'shrimp',
-    label: 'Krewetki (mrożone, obrane)',
+    label: say('Krewetki (mrożone, obrane)', 'Prawns (frozen, peeled)'),
     role: 'store',
     typical: { kcal: 75, protein: 17, carbs: 0.3, fat: 0.8 },
     match: (p) =>
@@ -279,7 +285,7 @@ const DEFINITIONS = {
   // matters as much as it does for skyr: bought for the recipe, in that shop.
   smokedSalmon: {
     id: 'smokedSalmon',
-    label: 'Łosoś wędzony',
+    label: say('Łosoś wędzony', 'Smoked salmon'),
     role: 'store',
     typical: { kcal: 185, protein: 20.5, carbs: 0.3, fat: 11.5 },
     match: (p) =>
@@ -290,55 +296,75 @@ const DEFINITIONS = {
       within(p, { protein: [17, 26], fat: [1, 16], carbs: [0, 2] }),
   },
 
-  tomato: { id: 'tomato', label: 'Pomidor', role: 'staple', typical: { kcal: 18, protein: 0.9, carbs: 2.6, fat: 0.2 } },
+  tomato: {
+    id: 'tomato',
+    label: say('Pomidor', 'Tomato'),
+    role: 'staple',
+    typical: { kcal: 18, protein: 0.9, carbs: 2.6, fat: 0.2 },
+  },
   cucumber: {
     id: 'cucumber',
-    label: 'Ogórek',
+    label: say('Ogórek', 'Cucumber'),
     role: 'staple',
     typical: { kcal: 15, protein: 0.7, carbs: 2.5, fat: 0.1 },
   },
   chives: {
     id: 'chives',
-    label: 'Szczypiorek',
+    label: say('Szczypiorek', 'Chives'),
     role: 'staple',
     typical: { kcal: 30, protein: 3.3, carbs: 1.8, fat: 0.7 },
   },
   spinach: {
     id: 'spinach',
-    label: 'Szpinak (świeży lub mrożony)',
+    label: say('Szpinak (świeży lub mrożony)', 'Spinach (fresh or frozen)'),
     role: 'staple',
     typical: { kcal: 23, protein: 2.9, carbs: 1.4, fat: 0.4 },
   },
-  onion: { id: 'onion', label: 'Cebula', role: 'staple', typical: { kcal: 36, protein: 1.1, carbs: 7, fat: 0.1 } },
-  garlic: { id: 'garlic', label: 'Czosnek', role: 'staple', typical: { kcal: 149, protein: 6.4, carbs: 31, fat: 0.5 } },
+  onion: {
+    id: 'onion',
+    label: say('Cebula', 'Onion'),
+    role: 'staple',
+    typical: { kcal: 36, protein: 1.1, carbs: 7, fat: 0.1 },
+  },
+  garlic: {
+    id: 'garlic',
+    label: say('Czosnek', 'Garlic'),
+    role: 'staple',
+    typical: { kcal: 149, protein: 6.4, carbs: 31, fat: 0.5 },
+  },
   pepper: {
     id: 'pepper',
-    label: 'Papryka czerwona',
+    label: say('Papryka czerwona', 'Red pepper'),
     role: 'staple',
     typical: { kcal: 28, protein: 1, carbs: 4.6, fat: 0.3 },
   },
   zucchini: {
     id: 'zucchini',
-    label: 'Cukinia',
+    label: say('Cukinia', 'Courgette'),
     role: 'staple',
     typical: { kcal: 17, protein: 1.2, carbs: 2.1, fat: 0.3 },
   },
   radish: {
     id: 'radish',
-    label: 'Rzodkiewka',
+    label: say('Rzodkiewka', 'Radishes'),
     role: 'staple',
     typical: { kcal: 16, protein: 0.7, carbs: 1.8, fat: 0.1 },
   },
-  dill: { id: 'dill', label: 'Koperek', role: 'staple', typical: { kcal: 43, protein: 3.5, carbs: 5, fat: 1.1 } },
+  dill: {
+    id: 'dill',
+    label: say('Koperek', 'Dill'),
+    role: 'staple',
+    typical: { kcal: 43, protein: 3.5, carbs: 5, fat: 1.1 },
+  },
   lemon: {
     id: 'lemon',
-    label: 'Cytryna lub limonka (sok)',
+    label: say('Cytryna lub limonka (sok)', 'Lemon or lime (juice)'),
     role: 'staple',
     typical: { kcal: 22, protein: 0.4, carbs: 6.9, fat: 0.2 },
   },
   broccoli: {
     id: 'broccoli',
-    label: 'Brokuł (świeży lub mrożony)',
+    label: say('Brokuł (świeży lub mrożony)', 'Broccoli (fresh or frozen)'),
     role: 'staple',
     typical: { kcal: 32, protein: 2.8, carbs: 3.3, fat: 0.4 },
     match: (p) =>
@@ -348,7 +374,7 @@ const DEFINITIONS = {
   },
   mushrooms: {
     id: 'mushrooms',
-    label: 'Pieczarki',
+    label: say('Pieczarki', 'Mushrooms'),
     role: 'staple',
     typical: { kcal: 22, protein: 3.1, carbs: 2.3, fat: 0.3 },
     match: (p) =>
@@ -358,7 +384,7 @@ const DEFINITIONS = {
   },
   passata: {
     id: 'passata',
-    label: 'Passata pomidorowa',
+    label: say('Passata pomidorowa', 'Tomato passata'),
     role: 'staple',
     typical: { kcal: 32, protein: 1.4, carbs: 5, fat: 0.2 },
     match: (p) =>
@@ -368,7 +394,7 @@ const DEFINITIONS = {
   },
   cannedTomatoes: {
     id: 'cannedTomatoes',
-    label: 'Pomidory krojone z puszki',
+    label: say('Pomidory krojone z puszki', 'Tinned chopped tomatoes'),
     role: 'staple',
     typical: { kcal: 21, protein: 1.1, carbs: 3.3, fat: 0.2 },
     // The fat bound keeps out the "with olive oil and garlic" kind.
@@ -379,7 +405,7 @@ const DEFINITIONS = {
   },
   beans: {
     id: 'beans',
-    label: 'Fasola czerwona z puszki (odsączona)',
+    label: say('Fasola czerwona z puszki (odsączona)', 'Tinned red kidney beans (drained)'),
     role: 'staple',
     typical: { kcal: 100, protein: 7.5, carbs: 13, fat: 0.6 },
     // Canned, not dry: dry beans are three times as dense and would read as a typo.
@@ -389,7 +415,7 @@ const DEFINITIONS = {
   },
   rice: {
     id: 'rice',
-    label: 'Ryż biały (suchy)',
+    label: say('Ryż biały (suchy)', 'White rice (uncooked)'),
     role: 'staple',
     typical: { kcal: 350, protein: 7.2, carbs: 78, fat: 0.7 },
     match: (p) =>
@@ -400,7 +426,7 @@ const DEFINITIONS = {
   },
   lentilPasta: {
     id: 'lentilPasta',
-    label: 'Makaron z soczewicy lub ciecierzycy',
+    label: say('Makaron z soczewicy lub ciecierzycy', 'Lentil or chickpea pasta'),
     role: 'staple',
     // Twice the protein of wheat pasta, which is what lets a pasta dinner keep
     // the rule. "Protein" pasta made of wheat (19 g / 63 g) is kept out by the bounds.
@@ -412,7 +438,7 @@ const DEFINITIONS = {
   },
   parmesan: {
     id: 'parmesan',
-    label: 'Parmezan lub grana padano',
+    label: say('Parmezan lub grana padano', 'Parmesan or Grana Padano'),
     role: 'staple',
     typical: { kcal: 400, protein: 32.5, carbs: 0, fat: 29.5 },
     match: (p) =>
@@ -424,11 +450,21 @@ const DEFINITIONS = {
   // so USDA FoodData Central (SR Legacy 09040, 09003) is the honest number. The
   // typical values of the bought ones are medians of their matches in the
   // dataset of 2026-10 (15 rolls, 27 rice cakes, 25 crispbreads, 37 bars, 46 drinks).
-  banana: { id: 'banana', label: 'Banan', role: 'staple', typical: { kcal: 89, protein: 1.1, carbs: 22.8, fat: 0.3 } },
-  apple: { id: 'apple', label: 'Jabłko', role: 'staple', typical: { kcal: 52, protein: 0.3, carbs: 13.8, fat: 0.2 } },
+  banana: {
+    id: 'banana',
+    label: say('Banan', 'Banana'),
+    role: 'staple',
+    typical: { kcal: 89, protein: 1.1, carbs: 22.8, fat: 0.3 },
+  },
+  apple: {
+    id: 'apple',
+    label: say('Jabłko', 'Apple'),
+    role: 'staple',
+    typical: { kcal: 52, protein: 0.3, carbs: 13.8, fat: 0.2 },
+  },
   roll: {
     id: 'roll',
-    label: 'Bułka grahamka lub kajzerka',
+    label: say('Bułka grahamka lub kajzerka', 'Wholemeal or Kaiser roll'),
     role: 'staple',
     typical: { kcal: 260, protein: 9.1, carbs: 51, fat: 1.4 },
     // A plain roll, not a sweet bun, a burger bun or breadcrumbs ("bułka tarta").
@@ -439,7 +475,7 @@ const DEFINITIONS = {
   },
   riceCakes: {
     id: 'riceCakes',
-    label: 'Wafle ryżowe naturalne',
+    label: say('Wafle ryżowe naturalne', 'Plain rice cakes'),
     role: 'store',
     typical: { kcal: 385, protein: 8.1, carbs: 78, fat: 3.3 },
     // The fat bound keeps out the chocolate-coated ones, the sugar bound the sweet flavours.
@@ -450,7 +486,7 @@ const DEFINITIONS = {
   },
   crispbread: {
     id: 'crispbread',
-    label: 'Pieczywo chrupkie',
+    label: say('Pieczywo chrupkie', 'Crispbread'),
     role: 'store',
     typical: { kcal: 362, protein: 8.6, carbs: 73, fat: 1.5 },
     match: (p) =>
@@ -460,7 +496,7 @@ const DEFINITIONS = {
   },
   proteinBar: {
     id: 'proteinBar',
-    label: 'Baton białkowy',
+    label: say('Baton białkowy', 'Protein bar'),
     role: 'store',
     typical: { kcal: 382, protein: 33, carbs: 29, fat: 16 },
     // A third of the bar protein is what makes it a protein bar; below that it is
@@ -473,7 +509,7 @@ const DEFINITIONS = {
   },
   proteinDrink: {
     id: 'proteinDrink',
-    label: 'Napój proteinowy lub skyr pitny',
+    label: say('Napój proteinowy lub skyr pitny', 'Protein drink or drinking skyr'),
     role: 'store',
     typical: { kcal: 61, protein: 10, carbs: 4.8, fat: 0.5 },
     // Ready to drink: a powder (300+ kcal) or a sweet milkshake stays out.
@@ -486,7 +522,7 @@ const DEFINITIONS = {
   // then needs no delivery. Typical values: medians of the matches in the merged data of 2026-10.
   proteinPancakeMix: {
     id: 'proteinPancakeMix',
-    label: 'Mieszanka na białkowe naleśniki',
+    label: say('Mieszanka na białkowe naleśniki', 'Protein pancake mix'),
     role: 'store',
     typical: { kcal: 390, protein: 54, carbs: 28, fat: 6 },
     match: (p) =>
@@ -494,7 +530,7 @@ const DEFINITIONS = {
   },
   mugCake: {
     id: 'mugCake',
-    label: 'Mieszanka na białkowe ciasto w kubku',
+    label: say('Mieszanka na białkowe ciasto w kubku', 'Protein mug cake mix'),
     role: 'store',
     typical: { kcal: 376, protein: 43, carbs: 33, fat: 6.7 },
     match: (p) =>
@@ -502,7 +538,7 @@ const DEFINITIONS = {
   },
   peanutPowder: {
     id: 'peanutPowder',
-    label: 'Masło orzechowe w proszku',
+    label: say('Masło orzechowe w proszku', 'Peanut butter powder'),
     role: 'store',
     typical: { kcal: 408, protein: 50, carbs: 26, fat: 12 },
     match: (p) =>
@@ -511,7 +547,7 @@ const DEFINITIONS = {
   },
   proteinCrisps: {
     id: 'proteinCrisps',
-    label: 'Chipsy białkowe',
+    label: say('Chipsy białkowe', 'Protein crisps'),
     role: 'store',
     typical: { kcal: 432, protein: 33.5, carbs: 42, fat: 13.3 },
     match: (p) =>
@@ -519,7 +555,7 @@ const DEFINITIONS = {
   },
   ketoPasta: {
     id: 'ketoPasta',
-    label: 'Makaron keto lub białkowy (suchy)',
+    label: say('Makaron keto lub białkowy (suchy)', 'Keto or protein pasta (dry)'),
     role: 'store',
     typical: { kcal: 284, protein: 36, carbs: 9.8, fat: 4.8 },
     // The protein bound is what makes it: a lentil pasta (24 g) is `lentilPasta`, wheat pasta 12 g.
@@ -529,14 +565,14 @@ const DEFINITIONS = {
   },
   konjac: {
     id: 'konjac',
-    label: 'Makaron konjac (shirataki)',
+    label: say('Makaron konjac (shirataki)', 'Konjac noodles (shirataki)'),
     role: 'store',
     typical: { kcal: 6, protein: 0, carbs: 1.3, fat: 0 },
     match: (p) => /\b(konjac\w*|konjak\w*|shirataki)\b/.test(nameOf(p)) && within(p, { kcal: [0, 40], fat: [0, 1] }),
   },
   proteinBread: {
     id: 'proteinBread',
-    label: 'Chleb białkowy (keto)',
+    label: say('Chleb białkowy (keto)', 'Protein bread (keto)'),
     role: 'store',
     typical: { kcal: 255, protein: 29, carbs: 8, fat: 10 },
     match: (p) =>
@@ -547,21 +583,24 @@ const DEFINITIONS = {
   },
   ketoPizzaBase: {
     id: 'ketoPizzaBase',
-    label: 'Spód do pizzy keto',
+    label: say('Spód do pizzy keto', 'Keto pizza base'),
     role: 'store',
     typical: { kcal: 215, protein: 14, carbs: 7, fat: 7 },
     match: (p) => /spod\w* do pizz|pizza base/.test(nameOf(p)) && within(p, { protein: [12, 40], carbs: [0, 15] }),
   },
   ketoTortilla: {
     id: 'ketoTortilla',
-    label: 'Tortilla keto (niskowęglowodanowa)',
+    label: say('Tortilla keto (niskowęglowodanowa)', 'Keto tortilla (low-carb)'),
     role: 'store',
     typical: { kcal: 248, protein: 19.7, carbs: 11.6, fat: 12.9 },
     match: (p) => /\btortill\w*|\bwrap\w*/.test(nameOf(p)) && within(p, { protein: [15, 40], carbs: [0, 25] }),
   },
   plantProtein: {
     id: 'plantProtein',
-    label: 'Białko roślinne w proszku (groch, ryż, dynia, konopie)',
+    label: say(
+      'Białko roślinne w proszku (groch, ryż, dynia, konopie)',
+      'Plant protein powder (pea, rice, pumpkin, hemp)',
+    ),
     role: 'store',
     typical: { kcal: 384, protein: 75, carbs: 6, fat: 5.4 },
     // A powder made from plants: by its source in the name, and mostly protein - a "vege mix" of
@@ -576,7 +615,7 @@ const DEFINITIONS = {
   },
   zeroSyrup: {
     id: 'zeroSyrup',
-    label: 'Syrop zero (bez cukru)',
+    label: say('Syrop zero (bez cukru)', 'Zero syrup (sugar-free)'),
     role: 'store',
     typical: { kcal: 2, protein: 0, carbs: 0.5, fat: 0 },
     match: (p) =>
@@ -586,7 +625,7 @@ const DEFINITIONS = {
   },
   zeroSauce: {
     id: 'zeroSauce',
-    label: 'Sos zero (bez cukru), np. słodkie chili lub BBQ',
+    label: say('Sos zero (bez cukru), np. słodkie chili lub BBQ', 'Zero sauce (sugar-free), e.g. sweet chilli or BBQ'),
     role: 'store',
     typical: { kcal: 17, protein: 0.1, carbs: 4.1, fat: 0 },
     match: (p) =>
@@ -597,7 +636,7 @@ const DEFINITIONS = {
   },
   plantDeli: {
     id: 'plantDeli',
-    label: 'Roślinna wędlina (pepperoni, szynka, kabanosy)',
+    label: say('Roślinna wędlina (pepperoni, szynka, kabanosy)', 'Plant-based cold cuts (pepperoni, ham, kabanos)'),
     role: 'store',
     typical: { kcal: 260, protein: 28, carbs: 10, fat: 10 },
     match: (p) =>
@@ -607,7 +646,10 @@ const DEFINITIONS = {
   },
   plantMeat: {
     id: 'plantMeat',
-    label: 'Roślinne mięso do smażenia (kebab, kawałki, filety)',
+    label: say(
+      'Roślinne mięso do smażenia (kebab, kawałki, filety)',
+      'Plant-based meat for frying (kebab, pieces, fillets)',
+    ),
     role: 'store',
     typical: { kcal: 226, protein: 21, carbs: 6.3, fat: 13 },
     match: (p) =>
@@ -617,7 +659,7 @@ const DEFINITIONS = {
   },
   cocoa: {
     id: 'cocoa',
-    label: 'Kakao bez cukru',
+    label: say('Kakao bez cukru', 'Unsweetened cocoa'),
     role: 'pantry',
     typical: { kcal: 350, protein: 21, carbs: 12, fat: 11 },
     match: (p) =>
@@ -626,7 +668,7 @@ const DEFINITIONS = {
   },
   coffee: {
     id: 'coffee',
-    label: 'Kawa (espresso lub mocna kawa)',
+    label: say('Kawa (espresso lub mocna kawa)', 'Coffee (espresso or strong coffee)'),
     role: 'pantry',
     typical: { kcal: 2, protein: 0.1, carbs: 0, fat: 0.2 },
   },
@@ -634,7 +676,7 @@ const DEFINITIONS = {
   // egg, so it is weighed in every recipe that fries or roasts.
   oil: {
     id: 'oil',
-    label: 'Oliwa z oliwek lub olej rzepakowy',
+    label: say('Oliwa z oliwek lub olej rzepakowy', 'Olive oil or rapeseed oil'),
     role: 'pantry',
     typical: { kcal: 824, protein: 0, carbs: 0, fat: 91.6 },
     match: (p) =>
@@ -644,13 +686,13 @@ const DEFINITIONS = {
   },
   spices: {
     id: 'spices',
-    label: 'Przyprawy (papryka, oregano, kmin, chili)',
+    label: say('Przyprawy (papryka, oregano, kmin, chili)', 'Spices (paprika, oregano, cumin, chilli)'),
     role: 'pantry',
     typical: { kcal: 280, protein: 13, carbs: 24, fat: 10 },
   },
   curry: {
     id: 'curry',
-    label: 'Curry w proszku',
+    label: say('Curry w proszku', 'Curry powder'),
     role: 'pantry',
     typical: { kcal: 293, protein: 12.7, carbs: 28, fat: 11 },
   },
@@ -658,27 +700,32 @@ const DEFINITIONS = {
   // and so does the rule: the cheesecake passes even when they count.
   sweetener: {
     id: 'sweetener',
-    label: 'Erytrytol (lub inny słodzik)',
+    label: say('Erytrytol (lub inny słodzik)', 'Erythritol (or another sweetener)'),
     role: 'pantry',
     typical: { kcal: 0, protein: 0, carbs: 100, fat: 0 },
   },
   potatoStarch: {
     id: 'potatoStarch',
-    label: 'Mąka ziemniaczana',
+    label: say('Mąka ziemniaczana', 'Potato starch'),
     role: 'pantry',
     typical: { kcal: 343, protein: 0.1, carbs: 85, fat: 0.1 },
   },
   cinnamon: {
     id: 'cinnamon',
-    label: 'Cynamon',
+    label: say('Cynamon', 'Cinnamon'),
     role: 'pantry',
     typical: { kcal: 247, protein: 4, carbs: 27.5, fat: 1.2 },
   },
-  water: { id: 'water', label: 'Woda', role: 'pantry', typical: { kcal: 0, protein: 0, carbs: 0, fat: 0 } },
-  ice: { id: 'ice', label: 'Lód', role: 'pantry', typical: { kcal: 0, protein: 0, carbs: 0, fat: 0 } },
+  water: {
+    id: 'water',
+    label: say('Woda', 'Water'),
+    role: 'pantry',
+    typical: { kcal: 0, protein: 0, carbs: 0, fat: 0 },
+  },
+  ice: { id: 'ice', label: say('Lód', 'Ice'), role: 'pantry', typical: { kcal: 0, protein: 0, carbs: 0, fat: 0 } },
   saltPepper: {
     id: 'saltPepper',
-    label: 'Sól i pieprz',
+    label: say('Sól i pieprz', 'Salt and pepper'),
     role: 'pantry',
     typical: { kcal: 0, protein: 0, carbs: 0, fat: 0 },
   },
@@ -687,14 +734,14 @@ const DEFINITIONS = {
   // indyk, śledź, awokado i żelatyna.
   turkeyFillet: {
     id: 'turkeyFillet',
-    label: 'Filet z piersi indyka (surowy)',
+    label: say('Filet z piersi indyka (surowy)', 'Turkey breast fillet (raw)'),
     role: 'staple',
     // No match, like the chicken fillet: what the data calls a turkey fillet is mostly a cold cut.
     typical: { kcal: 105, protein: 23.5, carbs: 0, fat: 1.2 },
   },
   sauerkraut: {
     id: 'sauerkraut',
-    label: 'Kapusta kiszona',
+    label: say('Kapusta kiszona', 'Sauerkraut'),
     role: 'staple',
     typical: { kcal: 19, protein: 1.1, carbs: 3.4, fat: 0.2 },
     match: (p) =>
@@ -704,7 +751,7 @@ const DEFINITIONS = {
   },
   brinedCucumber: {
     id: 'brinedCucumber',
-    label: 'Ogórki kiszone',
+    label: say('Ogórki kiszone', 'Fermented gherkins'),
     role: 'staple',
     typical: { kcal: 12, protein: 0.6, carbs: 1.8, fat: 0.1 },
     // Kiszone, not konserwowe: those sit in sweetened vinegar.
@@ -715,22 +762,37 @@ const DEFINITIONS = {
   },
   whiteCabbage: {
     id: 'whiteCabbage',
-    label: 'Kapusta biała (świeża)',
+    label: say('Kapusta biała (świeża)', 'White cabbage (fresh)'),
     role: 'staple',
     typical: { kcal: 25, protein: 1.3, carbs: 5.8, fat: 0.1 },
   },
   pekingCabbage: {
     id: 'pekingCabbage',
-    label: 'Kapusta pekińska',
+    label: say('Kapusta pekińska', 'Chinese leaf'),
     role: 'staple',
     typical: { kcal: 16, protein: 1.2, carbs: 3.2, fat: 0.2 },
   },
-  carrot: { id: 'carrot', label: 'Marchew', role: 'staple', typical: { kcal: 41, protein: 0.9, carbs: 9.6, fat: 0.2 } },
-  potato: { id: 'potato', label: 'Ziemniaki', role: 'staple', typical: { kcal: 77, protein: 2, carbs: 17, fat: 0.1 } },
-  avocado: { id: 'avocado', label: 'Awokado', role: 'staple', typical: { kcal: 160, protein: 2, carbs: 8.5, fat: 14.7 } },
+  carrot: {
+    id: 'carrot',
+    label: say('Marchew', 'Carrots'),
+    role: 'staple',
+    typical: { kcal: 41, protein: 0.9, carbs: 9.6, fat: 0.2 },
+  },
+  potato: {
+    id: 'potato',
+    label: say('Ziemniaki', 'Potatoes'),
+    role: 'staple',
+    typical: { kcal: 77, protein: 2, carbs: 17, fat: 0.1 },
+  },
+  avocado: {
+    id: 'avocado',
+    label: say('Awokado', 'Avocado'),
+    role: 'staple',
+    typical: { kcal: 160, protein: 2, carbs: 8.5, fat: 14.7 },
+  },
   flour: {
     id: 'flour',
-    label: 'Mąka pszenna',
+    label: say('Mąka pszenna', 'Wheat flour'),
     role: 'staple',
     typical: { kcal: 345, protein: 11, carbs: 72, fat: 1.4 },
     match: (p) =>
@@ -740,7 +802,7 @@ const DEFINITIONS = {
   },
   herring: {
     id: 'herring',
-    label: 'Filety śledziowe (a’la matjas lub solone)',
+    label: say('Filety śledziowe (a’la matjas lub solone)', 'Herring fillets (matjes-style or salted)'),
     // In every Polish supermarket's chiller, though few of them are in the data yet.
     role: 'staple',
     typical: { kcal: 175, protein: 16, carbs: 0.5, fat: 12.5 },
@@ -753,10 +815,15 @@ const DEFINITIONS = {
   // Meal prep (2026-10-20): the fat a keto or low-carb day needs and protein recipes do not bring.
   // A staple with no matcher, like fruit: nuts in the data are mostly salted, coated or in mixes.
   // Typical values from a Polish walnut label (EU carbohydrate, fibre not counted).
-  nuts: { id: 'nuts', label: 'Orzechy włoskie', role: 'staple', typical: { kcal: 665, protein: 15, carbs: 7, fat: 65 } },
+  nuts: {
+    id: 'nuts',
+    label: say('Orzechy włoskie', 'Walnuts'),
+    role: 'staple',
+    typical: { kcal: 665, protein: 15, carbs: 7, fat: 65 },
+  },
   gelatin: {
     id: 'gelatin',
-    label: 'Żelatyna',
+    label: say('Żelatyna', 'Gelatine'),
     role: 'pantry',
     typical: { kcal: 335, protein: 84, carbs: 0, fat: 0.1 },
     // Pure gelatine; a "fix" with sugar is a dessert mix.
