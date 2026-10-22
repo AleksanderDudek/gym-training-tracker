@@ -81,7 +81,8 @@ export function setLang(lang: Lang | null): void {
   } catch {
     // Bez localStorage wybór nie przetrwa przeładowania — zostaje język przeglądarki.
   }
-  location.reload();
+  // Przez `globalThis`: moduł czytają też skrypty w Node (`scripts/food`), bez typów DOM.
+  (globalThis as { location?: { reload(): void } }).location?.reload();
 }
 
 /** Połowa katalogu w języku tej wizyty. Angielska musi mieć kształt polskiej. */
