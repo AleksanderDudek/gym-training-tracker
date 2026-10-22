@@ -2,3 +2,4 @@
 # a ten sam identyfikator dla obu odrzuca. Ten plik zastępuje monkey.jungle przy ./build.sh beta,
 # które wpisuje identyfikator bety w kopię manifestu (manifest-beta.xml, poza gitem).
 project.manifest = manifest-beta.xml
+base.sourcePath = source

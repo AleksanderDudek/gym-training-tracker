@@ -1,1 +1,4 @@
 project.manifest = manifest.xml
+# Źródła tylko z source/. Domyślnie SDK bierze każdy plik .mc z całego katalogu (.\**.mc), także
+# kopie w bin/ — i zgłasza wtedy każdą klasę dwa razy.
+base.sourcePath = source

@@ -92,16 +92,17 @@ case "$cmd" in
     # Kopia projektu z losowym kluczem wpisanym na stałe: START wysyła prawdziwą paczkę z danych
     # symulatora do osobnej skrzynki (znika po 7 dniach), a ekran pokazuje „Sent HH:MM”.
     # Twój klucz i twoje dane w tym nie biorą udziału.
+    # Kopia w katalogu tymczasowym, poza projektem: w środku jego kompilator widziałby źródła dwa razy.
     need_device
-    rm -rf bin/shots && mkdir -p bin/shots
-    cp -R source resources resources-pol manifest.xml monkey.jungle bin/shots/
+    shots="$(mktemp -d)"
+    cp -R source resources resources-pol manifest.xml monkey.jungle "$shots/"
     demo="$(openssl rand -hex 32)"
     sed -i '' "s#<property id=\"key\" type=\"string\"></property>#<property id=\"key\" type=\"string\">$demo</property>#" \
-      bin/shots/resources/settings/properties.xml
-    grep -q "$demo" bin/shots/resources/settings/properties.xml || { echo "Nie udało się wpisać klucza demo." >&2; exit 1; }
-    ( cd bin/shots && "$SDK/bin/monkeyc" -f monkey.jungle -y "$KEY" -o shots.prg -d "$device" )
+      "$shots/resources/settings/properties.xml"
+    grep -q "$demo" "$shots/resources/settings/properties.xml" || { echo "Nie udało się wpisać klucza demo." >&2; exit 1; }
+    ( cd "$shots" && "$SDK/bin/monkeyc" -f monkey.jungle -y "$KEY" -o shots.prg -d "$device" )
     echo "Symulator: START (Enter albo przycisk) wysyła paczkę. Zrzut okna: Cmd+Shift+4, spacja, kliknij okno symulatora."
-    sim bin/shots/shots.prg "$device"
+    sim "$shots/shots.prg" "$device"
     ;;
   beta)
     sed "s/$PROD_ID/$BETA_ID/" manifest.xml > manifest-beta.xml
