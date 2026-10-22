@@ -177,11 +177,8 @@ const burn = (met: number, kg: number, secs: number, km: number | null): Burn =>
 
 export function cardioEnergy(c: CardioInput, kg: number, heightCm?: number): Burn {
   switch (c.kind) {
-    case 'steps': {
-      const stride = strideM(heightCm);
-      const kmh = (stride * STEP_CADENCE * 60) / 1000;
-      return burn(treadmillMet(kmh), kg, (c.steps / STEP_CADENCE) * 60, (c.steps * stride) / 1000);
-    }
+    case 'steps':
+      return stepsEnergy({ steps: c.steps, m: null, floors: null, parts: [], elsewhere: [] }, kg, heightCm);
     case 'treadmill':
       return burn(treadmillMet(c.kmh, c.grade), kg, c.min * 60, (c.kmh * c.min) / 60);
     case 'bike':
@@ -191,6 +188,135 @@ export function cardioEnergy(c: CardioInput, kg: number, heightCm?: number): Bur
     case 'dance':
       return burn(danceMet(c.style, c.mix), kg, c.min * 60, null);
   }
+}
+
+/* ---------------- Kroki dnia z tym, co wie urządzenie ---------------- */
+
+/**
+ * Kadencja biegu, gdy trzeba zgadnąć, ile kroków dnia zabrał bieg, a urządzenie nie podało drogi
+ * dnia: 160 na minutę, typowo dla biegaczy amatorów (150–170).
+ */
+export const RUN_CADENCE = 160;
+
+/** Od tej prędkości odcinek liczy kroki kadencją biegu — środek przejścia z marszu w bieg. */
+const RUN_STEP_KMH = (WALK_MAX_KMH + RUN_MIN_KMH) / 2;
+
+/** Piętro według zegarków Garmin i Apple Zdrowie: ok. 3 m w górę (10 stóp). */
+export const FLOOR_M = 3;
+
+/**
+ * ACSM, koszt wznoszenia w marszu: 1,8 ml tlenu na kilogram na każdy metr w górę — człon
+ * nachylenia z równania na marsz (1,8 · v · nachylenie). Tylko w górę: schodzenia zegarek nie
+ * podaje, a jego koszt jest kilka razy mniejszy.
+ */
+export const CLIMB_VO2_PER_M = 1.8;
+
+/**
+ * Średnia długość kroku dnia, przy której droga z urządzenia jest wiarygodna. Krótsza albo dłuższa
+ * to błąd czujnika albo synchronizacji — wtedy droga idzie ze wzrostu. Bieg podnosi średnią
+ * (krok biegowy to ok. metra), stąd górna granica wyżej niż sam marsz.
+ */
+export const STRIDE_LIMITS = [0.3, 1.5] as const;
+
+/** Odcinek z własną drogą i czasem: bieg, marsz albo wędrówka zapisane na zegarku, albo bieżnia. */
+export interface FootPart {
+  m: number;
+  sec: number;
+}
+
+/** Dzień kroków ze wszystkim, co poza liczbą wie o nim urządzenie. */
+export interface StepsDay {
+  steps: number;
+  /** Droga dnia zmierzona przez urządzenie, m; `null` — liczona z kroków i wzrostu. */
+  m: number | null;
+  /** Piętra w górę, jak liczy je urządzenie. */
+  floors: number | null;
+  /** Aktywności pieszo z zegarka: każda liczy się swoją prędkością przez swój czas. */
+  parts: readonly FootPart[];
+  /**
+   * Bieżnia wpisana osobno, której kroki urządzenie już policzyło. Jej kalorie liczy jej własny
+   * wpis — tu tylko schodzi z drogi kroków, żeby nie policzyła się drugi raz.
+   */
+  elsewhere: readonly FootPart[];
+}
+
+export interface PartBurn {
+  km: number;
+  secs: number;
+  kmh: number;
+  met: number;
+  active: number;
+}
+
+export interface StepsBurn extends Burn {
+  /** Droga zwykłym marszem — to, co zostało po odcinkach. */
+  walkKm: number;
+  parts: PartBurn[];
+  /** Wzniesienie z pięter, m, i jego kalorie. */
+  climbM: number;
+  climbKcal: number;
+  /** Skąd droga: zmierzona przez urządzenie albo z długości kroku. */
+  distance: 'device' | 'stride';
+  /** Droga bieżni wpisanej osobno, która zeszła z kroków, km. */
+  elsewhereKm: number;
+}
+
+const kmhOf = (p: FootPart): number => (p.m / p.sec) * 3.6;
+
+/** Odcinek, który da się policzyć: jakaś droga, co najmniej minuta i ludzka prędkość pieszo. */
+export const validPart = (p: FootPart): boolean =>
+  p.m > 0 && p.sec >= 60 && kmhOf(p) >= 2 && kmhOf(p) <= 25;
+
+/**
+ * Kalorie z kroków dnia. Waga — z dnia ruchu. Droga — zmierzona przez urządzenie, gdy ją podało,
+ * inaczej kroki razy krok ze wzrostu. Biegi, szybkie marsze i wędrówki z zegarka liczą się swoją
+ * prędkością przez swój czas: bieg kosztuje na kilometr mniej więcej dwa razy tyle co marsz
+ * (ACSM: 0,2 wobec 0,1 ml/kg/m), a marsz szybszy niż 6 km/h więcej niż spacer. Reszta drogi to
+ * zwykły marsz, którego koszt na metr od tempa prawie nie zależy. Piętra dokładają wznoszenie.
+ */
+export function stepsEnergy(d: StepsDay, kg: number, heightCm?: number): StepsBurn {
+  const stride = strideM(heightCm);
+  const walkKmh = (stride * STEP_CADENCE * 60) / 1000;
+  const parts = d.parts.filter(validPart);
+  const elsewhere = d.elsewhere.filter(validPart);
+  const taken = [...parts, ...elsewhere];
+  const avg = d.m !== null && d.steps > 0 ? d.m / d.steps : null;
+  const device = avg !== null && avg >= STRIDE_LIMITS[0] && avg <= STRIDE_LIMITS[1];
+  // Bez drogi z urządzenia odcinki zabierają swoje kroki: bieg kadencją biegu, marsz swoją drogą.
+  const stepsOf = (p: FootPart): number => (kmhOf(p) >= RUN_STEP_KMH ? (p.sec / 60) * RUN_CADENCE : p.m / stride);
+  const restM = device
+    ? Math.max(0, d.m! - taken.reduce((s, p) => s + p.m, 0))
+    : Math.max(0, d.steps - taken.reduce((s, p) => s + stepsOf(p), 0)) * stride;
+
+  const walkMet = treadmillMet(walkKmh);
+  const walkSecs = restM / (walkKmh / 3.6);
+  const partBurns: PartBurn[] = parts.map((p) => {
+    const met = treadmillMet(kmhOf(p));
+    return { km: p.m / 1000, secs: p.sec, kmh: kmhOf(p), met, active: activeKcal(met, kg, p.sec) };
+  });
+  const climbM = Math.max(0, d.floors ?? 0) * FLOOR_M;
+  // Tlen na kalorie tak jak w MET: 3,5 ml/kg/min przez godzinę to 1 kcal na kilogram.
+  const climbKcal = (CLIMB_VO2_PER_M * climbM * kg) / (REST_VO2 * 60);
+
+  const secs = walkSecs + parts.reduce((s, p) => s + p.sec, 0);
+  const active = activeKcal(walkMet, kg, walkSecs) + partBurns.reduce((s, p) => s + p.active, 0) + climbKcal;
+  const total =
+    totalKcal(walkMet, kg, walkSecs) +
+    parts.reduce((s, p, i) => s + totalKcal(partBurns[i]!.met, kg, p.sec), 0) +
+    climbKcal;
+  return {
+    secs,
+    met: secs > 0 ? (total * 3600) / (kg * secs) : walkMet,
+    active,
+    total,
+    km: restM / 1000 + partBurns.reduce((s, p) => s + p.km, 0),
+    walkKm: restM / 1000,
+    parts: partBurns,
+    climbM,
+    climbKcal,
+    distance: device ? 'device' : 'stride',
+    elsewhereKm: elsewhere.reduce((s, p) => s + p.m, 0) / 1000,
+  };
 }
 
 /* ---------------- Ćwiczenia siłowe ---------------- */

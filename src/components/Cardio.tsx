@@ -23,7 +23,9 @@ import {
   lastOf,
   minutesByDay,
   normalize,
+  entryEnergy,
   sportOf,
+  stepsDayOf,
   stepsOn,
   typedStepsOn,
   weekMinutes,
@@ -41,6 +43,7 @@ import {
   WALK_MAX_KMH,
   cardioEnergy,
   roundKcal,
+  stepsEnergy,
 } from '../engine/energy';
 import { CARDIO_EMPTY, daySeed, pick, plural } from '../engine/quips';
 import { addDays, dayKey, weekdayOf } from '../engine/schedule';
@@ -82,6 +85,32 @@ const STEP_FORMS = ['krok', 'kroki', 'kroków'] as const;
 export const stepsText = (n: number): string => `${n.toLocaleString('pl-PL')} ${plural(n, STEP_FORMS)}`;
 
 const DANCE_NAME: Record<DanceStyle, string> = { pair: 'Taniec w parze', solo: 'Taniec solo' };
+
+const FLOOR_FORMS = ['piętro', 'piętra', 'pięter'] as const;
+
+/** Odcinek z zegarka słowem, po prędkości: od środka przejścia marsz–bieg to już bieg. */
+const partWord = (kmh: number): string =>
+  kmh >= (WALK_MAX_KMH + RUN_MIN_KMH) / 2 ? 'bieg' : kmh > WALK_MAX_KMH ? 'szybki marsz' : 'marsz';
+
+/**
+ * Skąd kalorie kroków dnia, gdy urządzenie wiedziało więcej niż samą liczbę: „droga z zegarka
+ * 12,0 km · bieg 6,0 km w 30 min (12,0 km/h) · 10 pięter · bez 5,0 km bieżni”. `null` przy samym
+ * szacunku z kroków i wzrostu — wtedy nie ma czego rozpisywać.
+ */
+export function stepsDetail(state: AppState, c: Cardio): string | null {
+  if (c.kind !== 'steps') return null;
+  const d = stepsDayOf(state, c);
+  // Droga i odcinki nie zależą od wagi — rozpis stoi także przed pierwszym ważeniem.
+  const b = stepsEnergy(d, 70, heightOf(state));
+  const floors = Math.round(b.climbM / 3);
+  const parts = [
+    b.distance === 'device' && d.m !== null ? `droga ${c.src === 'phone' ? 'z telefonu' : 'z zegarka'} ${kmText(d.m / 1000)}` : null,
+    ...b.parts.map((p) => `${partWord(p.kmh)} ${kmText(p.km)} w ${durText(p.secs)} (${pl(p.kmh, 1)} km/h)`),
+    floors > 0 ? `${floors} ${plural(floors, FLOOR_FORMS)}` : null,
+    b.elsewhereKm > 0 ? `bez ${kmText(b.elsewhereKm)} bieżni — liczy się osobno` : null,
+  ].filter(Boolean);
+  return parts.length ? parts.join(' · ') : null;
+}
 
 /**
  * Podział zajęć słowami użytkownika. Przedziały zamiast jednej liczby, bo tak się to pamięta;
@@ -637,7 +666,9 @@ export function CardioEntry({
             ? 'Spacer na bieżni z telefonem w kieszeni jest już w krokach. Wpisz jedno albo drugie — inaczej ten sam marsz policzy się dwa razy.'
             : kind === 'dance'
               ? 'Telefon w kieszeni liczy też kroki taneczne. Jeśli był przy tobie na zajęciach, kroki z tego dnia mają już kawałek tańca — kalorie wyjdą wtedy trochę za wysoko.'
-              : 'Jeśli telefon był przy tobie, jego kroki mogą już zawierać ten ruch. Wpisz jedno albo drugie — inaczej policzy się dwa razy.'}
+              : kind === 'treadmill'
+                ? 'Kroki z zegarka i telefonu z tego dnia nie policzą tej drogi drugi raz — odejmę ją od nich. Kroki wpisane ręcznie: wpisz jedno albo drugie.'
+                : 'Jeśli telefon był przy tobie, jego kroki mogą już zawierać ten ruch. Wpisz jedno albo drugie — inaczej policzy się dwa razy.'}
         </p>
       </div>
     </>
@@ -649,13 +680,15 @@ export function CardioEntry({
 function CardioItem({ state, c, onDelete }: { state: AppState; c: Cardio; onDelete: (key: string) => void }) {
   const b = cardioBurn(state, c);
   // Droga nie zależy od wagi, więc stoi na liście także przed pierwszym ważeniem.
-  const km = cardioEnergy(c, 70, heightOf(state)).km;
+  const km = entryEnergy(state, c, 70).km;
+  const detail = stepsDetail(state, c);
   // Wpis z zegarka albo telefonu nie ma krzyżyka: nie leży w zapisie, a urządzenie przyśle go znowu.
   return (
     <div className="cardio-item">
       <span className="cardio-name">
         {cardioLabel(c)}
         {c.src && <small className="watch-src"> · {c.src === 'phone' ? 'z telefonu' : 'z zegarka'}</small>}
+        {detail && <small className="cardio-detail">{detail}</small>}
       </span>
       <span className="snack-amt">
         {[km !== null ? kmText(km) : null, b ? kcalText(b.active) : null].filter(Boolean).join(' · ')}
@@ -918,9 +951,15 @@ export function CardioPage({
           sumę razem ze spoczynkiem, dlatego formularz podaje obie.
         </p>
         <p>
-          <b>Kroki.</b> Droga to kroki razy długość kroku — 41% wzrostu, a bez wzrostu w profilu 70 cm.
-          Koszt marszu idzie z równania ACSM: ponad spoczynek to 0,1 ml tlenu na kilogram na każdy metr,
-          więc liczy się droga, a nie tempo.
+          <b>Kroki.</b> Droga — ta, którą zmierzył zegarek albo telefon (długość kroku kalibrują
+          u siebie biegi z GPS); bez niej kroki razy długość kroku: 41% wzrostu, a bez wzrostu
+          w profilu 70 cm. Koszt marszu idzie z równania ACSM: ponad spoczynek 0,1 ml tlenu na
+          kilogram na każdy metr, więc przy zwykłym tempie liczy się droga, a nie czas. Bieg kosztuje
+          na kilometr mniej więcej dwa razy tyle (0,2 ml/kg/m), a marsz szybszy niż 6 km/h też
+          więcej — dlatego biegi, marsze i wędrówki zapisane na zegarku liczą się swoją prędkością
+          przez swój czas, a reszta dnia jako zwykły marsz. Piętra dokładają wznoszenie: 3 m na
+          piętro, 1,8 ml tlenu na kilogram na metr w górę. Waga — z dnia ruchu. Bieżnia wpisana
+          ręcznie schodzi z kroków zegarka i telefonu, bo one policzyły ją same.
         </p>
         <p>
           <b>Bieżnia.</b> Równania ACSM na marsz i bieg, z nachyleniem — tymi samymi wzorami liczą

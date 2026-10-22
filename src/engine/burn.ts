@@ -1,9 +1,9 @@
 import { EX } from '../data/exercises';
 import type { AppState, Cardio, ExerciseId, LogEntry, Snack, Workout } from '../types';
-import { heightOf, latestWeight, weightOn } from './body';
-import { cardioEnergy, setsEnergy } from './energy';
+import { latestWeight, weightOn } from './body';
+import { setsEnergy } from './energy';
 import type { Burn } from './energy';
-import { cardioOf, cardioOn, stepsOn } from './cardio';
+import { cardioOf, cardioOn, entryEnergy, stepsOn } from './cardio';
 import type { ExerciseRow } from './history';
 import { P } from './plan';
 import { snacksOn } from './snacks';
@@ -18,9 +18,10 @@ import { CIRCUIT_MOVE, ROUND_REST, baseRest } from './rests';
  * liczbę, która wygląda na zmierzoną.
  */
 
+/** Kroki liczą się z drogą, biegami i piętrami z urządzenia (`stepsDayOf`), reszta z samego wpisu. */
 export function cardioBurn(state: AppState, c: Cardio): Burn | null {
   const kg = weightOn(state, c.day);
-  return kg === null ? null : cardioEnergy(c, kg, heightOf(state));
+  return kg === null ? null : entryEnergy(state, c, kg);
 }
 
 export interface ItemBurn {

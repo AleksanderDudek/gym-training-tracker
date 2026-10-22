@@ -14,11 +14,14 @@ import {
   roundKcal,
   runVO2,
   setsEnergy,
+  stepsEnergy,
   strideM,
   totalKcal,
   treadmillMet,
+  validPart,
   walkVO2,
 } from './energy';
+import type { StepsDay } from './energy';
 
 describe('równania ACSM', () => {
   it('marsz po płaskim: 0,1 ml/kg/min na każdy metr na minutę ponad spoczynek', () => {
@@ -116,6 +119,91 @@ describe('kroki', () => {
     expect(cardioEnergy({ kind: 'steps', steps: 10_000 }, 70).active).toBeCloseTo(2 * a, 6);
     expect(cardioEnergy({ kind: 'steps', steps: 5000 }, 140).active).toBeCloseTo(2 * a, 6);
     expect(cardioEnergy({ kind: 'steps', steps: 5000 }, 70, 190).active).toBeGreaterThan(a);
+  });
+});
+
+describe('kroki dnia z danymi urządzenia', () => {
+  const day = (over: Partial<StepsDay> = {}): StepsDay => ({
+    steps: 10_000,
+    m: null,
+    floors: null,
+    parts: [],
+    elsewhere: [],
+    ...over,
+  });
+  // 10 000 kroków po 70,4 cm przy 80 kg: 7,04 km marszu, 268 kcal ponad spoczynek.
+  const plain = cardioEnergy({ kind: 'steps', steps: 10_000 }, 80).active;
+  const perKm = plain / (10 * strideM());
+
+  it('bez danych z urządzenia to ten sam wynik co sam wpis kroków', () => {
+    const b = stepsEnergy(day(), 80);
+    expect(b.active).toBeCloseTo(plain, 6);
+    expect(b.km).toBeCloseTo(7.04, 2);
+    expect(b.distance).toBe('stride');
+  });
+
+  it('droga zmierzona przez urządzenie zastępuje szacunek ze wzrostu', () => {
+    const b = stepsEnergy(day({ m: 8000 }), 80);
+    expect(b.distance).toBe('device');
+    expect(b.km).toBeCloseTo(8, 6);
+    expect(b.active).toBeCloseTo(8 * perKm, 6);
+  });
+
+  it('niewiarygodna droga (krok 10 cm albo 2 m) zostaje pominięta', () => {
+    expect(stepsEnergy(day({ m: 1000 }), 80).distance).toBe('stride');
+    expect(stepsEnergy(day({ m: 20_000 }), 80).distance).toBe('stride');
+  });
+
+  it('bieg kosztuje na kilometr dwa razy tyle co marsz; reszta drogi to marsz', () => {
+    // 12 km dnia, z tego 6 km biegu w 30 minut (12 km/h).
+    const b = stepsEnergy(day({ steps: 14_000, m: 12_000, parts: [{ m: 6000, sec: 1800 }] }), 80);
+    expect(b.walkKm).toBeCloseTo(6, 6);
+    expect(b.parts).toHaveLength(1);
+    expect(b.parts[0]!.kmh).toBeCloseTo(12, 6);
+    expect(b.parts[0]!.active).toBeCloseTo(2 * 6 * perKm, 1);
+    expect(b.active).toBeCloseTo(3 * 6 * perKm, 1);
+    expect(b.km).toBeCloseTo(12, 6);
+  });
+
+  it('spokojny marsz z zegarka liczy się jak zwykłe kroki, szybki — drożej', () => {
+    const slow = stepsEnergy(day({ m: 8000, parts: [{ m: 5000, sec: 3600 }] }), 80);
+    expect(slow.active).toBeCloseTo(8 * perKm, 6);
+    // 7 km/h to ok. 6 MET — Compendium daje bardzo szybkiemu marszowi 5–7.
+    const brisk = stepsEnergy(day({ m: 8000, parts: [{ m: 7000, sec: 3600 }] }), 80);
+    expect(brisk.parts[0]!.met).toBeCloseTo(6, 1);
+    expect(brisk.active).toBeGreaterThan(8 * perKm + 100);
+  });
+
+  it('bez drogi z urządzenia bieg zabiera swoje kroki kadencją biegu', () => {
+    // 30 minut biegu po 160 kroków to 4 800 kroków; zostaje 9 200 kroków marszu.
+    const b = stepsEnergy(day({ steps: 14_000, parts: [{ m: 6000, sec: 1800 }] }), 80);
+    expect(b.walkKm).toBeCloseTo((9200 * strideM()) / 1000, 6);
+  });
+
+  it('piętra dokładają wznoszenie: 10 pięter przy 80 kg to ok. 20 kcal', () => {
+    const b = stepsEnergy(day({ floors: 10 }), 80);
+    expect(b.climbM).toBe(30);
+    expect(b.climbKcal).toBeCloseTo((1.8 * 30 * 80) / 210, 6);
+    expect(b.active).toBeCloseTo(plain + b.climbKcal, 6);
+  });
+
+  it('bieżnia wpisana osobno schodzi z drogi kroków — liczy ją jej własny wpis', () => {
+    const b = stepsEnergy(day({ steps: 12_000, m: 9000, elsewhere: [{ m: 5000, sec: 3000 }] }), 80);
+    expect(b.walkKm).toBeCloseTo(4, 6);
+    expect(b.elsewhereKm).toBeCloseTo(5, 6);
+    expect(b.parts).toEqual([]);
+    expect(b.active).toBeCloseTo(4 * perKm, 6);
+  });
+
+  it('odcinek bez sensu (40 km/h, pół minuty) nic nie zmienia', () => {
+    expect(validPart({ m: 20_000, sec: 1800 })).toBe(false);
+    expect(validPart({ m: 100, sec: 30 })).toBe(false);
+    expect(stepsEnergy(day({ parts: [{ m: 20_000, sec: 1800 }] }), 80).active).toBeCloseTo(plain, 6);
+  });
+
+  it('droga odcinków większa niż droga dnia nie daje ujemnego marszu', () => {
+    const b = stepsEnergy(day({ m: 3000, steps: 4000, parts: [{ m: 5000, sec: 1500 }] }), 80);
+    expect(b.walkKm).toBe(0);
   });
 });
 
