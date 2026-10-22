@@ -24,7 +24,7 @@ Your watch’s steps, rides, heart rate, stress and Body Battery — sent to the
 
 ## Description
 
-Store limit: 3700 characters. This text: about 2000 (the Polish one below: about 1800).
+Store limit: 3700 characters. **For the store field use `description-en.txt`** (about 3600 characters, plain text ready to paste). The shorter text below (about 2000) is a summary; the Polish one at the end has about 1800.
 
 GYM TRACKER brings the numbers from your Garmin watch into GYM TRACKER, a free training app that runs in your browser (https://aleksanderdudek.github.io/gym-training-tracker/ — the app interface is in Polish). No retyping, no account.
 
