@@ -1,6 +1,6 @@
 /**
  * OpenStreetMap `opening_hours` -> "is it open now?", for the part of the syntax restaurants and
- * shops actually use (https://wiki.openstreetmap.org/wiki/Key:opening_hours/specification).
+ * shops actually use (wiki.openstreetmap.org/wiki/Key:opening_hours/specification).
  * Anything outside that part gives `null`: on a "where to eat now" list no answer beats a wrong one.
  */
 

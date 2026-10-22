@@ -2,6 +2,7 @@
   "id": "kfc",
   "name": "KFC",
   "kind": "fast-food",
+  "osm": { "brands": ["KFC", "Kentucky Fried Chicken"] },
   "market": "PL",
   "source": {
     "url": "https://amrestcdn.azureedge.net/kfc-web-ordering/KFC/TOU/wartosci_odzywcze_2026.09.29.pdf",

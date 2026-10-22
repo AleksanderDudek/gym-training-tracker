@@ -5,29 +5,31 @@ export type ShopCache = Pick<Storage, 'getItem' | 'setItem'>;
 export type Circle = LatLon & { radius: number };
 
 const KEY = 'produkty-pl:shops';
+/** Places to eat („Zjedz teraz”): restaurants and shops in one answer, kept apart from the shops. */
+export const PLACES_KEY = 'produkty-pl:places';
 const TTL_MS = 24 * 3600 * 1000;
 // A 10 km answer in a city is thousands of shops; four answers is plenty of
 // reuse without filling the storage the position and radius share.
 const MAX_ENTRIES = 4;
 
-interface Entry extends Circle {
+interface Entry<T = Shop> extends Circle {
   fetchedAt: number;
-  shops: Shop[];
+  shops: T[];
 }
 
-function load(storage: ShopCache | null): Entry[] {
+function load<T = Shop>(storage: ShopCache | null, key = KEY): Entry<T>[] {
   try {
-    const raw = storage?.getItem(KEY);
+    const raw = storage?.getItem(key);
     const entries = raw ? (JSON.parse(raw) as unknown) : [];
-    return Array.isArray(entries) ? (entries as Entry[]) : [];
+    return Array.isArray(entries) ? (entries as Entry<T>[]) : [];
   } catch {
     return [];
   }
 }
 
-function store(storage: ShopCache | null, entries: Entry[]): void {
+function store<T>(storage: ShopCache | null, entries: Entry<T>[], key = KEY): void {
   try {
-    storage?.setItem(KEY, JSON.stringify(entries));
+    storage?.setItem(key, JSON.stringify(entries));
   } catch {
     // Full or forbidden: the next visit simply asks the server again.
   }
@@ -43,28 +45,35 @@ export function covers(outer: Circle, center: LatLon, radius: number): boolean {
  * shrinking the radius, or moving a few metres, needs no new request to a
  * server that is often busy. Storage failures read as "nothing cached".
  */
-export function readCache(storage: ShopCache | null, center: LatLon, radius: number, now: number): Shop[] | null {
-  for (const entry of load(storage)) {
+export function readCache<T = Shop>(
+  storage: ShopCache | null,
+  center: LatLon,
+  radius: number,
+  now: number,
+  key = KEY,
+): T[] | null {
+  for (const entry of load<T>(storage, key)) {
     if (now - entry.fetchedAt <= TTL_MS && covers(entry, center, radius)) return entry.shops;
   }
   return null;
 }
 
 /** `circle` is the query circle (rounded centre), never the exact position. */
-export function writeCache(storage: ShopCache | null, circle: Circle, shops: Shop[], now: number): void {
-  const fresh = load(storage).filter((e) => now - e.fetchedAt <= TTL_MS);
+export function writeCache<T = Shop>(storage: ShopCache | null, circle: Circle, shops: T[], now: number, key = KEY): void {
+  const fresh = load<T>(storage, key).filter((e) => now - e.fetchedAt <= TTL_MS);
   store(
     storage,
     [{ lat: circle.lat, lon: circle.lon, radius: circle.radius, fetchedAt: now, shops }, ...fresh].slice(
       0,
       MAX_ENTRIES,
     ),
+    key,
   );
 }
 
 /** Drops expired answers, so a trail of past places does not stay on the device. */
-export function pruneCache(storage: ShopCache | null, now: number): void {
-  const entries = load(storage);
+export function pruneCache(storage: ShopCache | null, now: number, key = KEY): void {
+  const entries = load(storage, key);
   const fresh = entries.filter((e) => now - e.fetchedAt <= TTL_MS);
-  if (fresh.length !== entries.length) store(storage, fresh);
+  if (fresh.length !== entries.length) store(storage, fresh, key);
 }

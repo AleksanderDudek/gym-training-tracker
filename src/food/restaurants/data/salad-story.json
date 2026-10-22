@@ -2,6 +2,7 @@
   "id": "salad-story",
   "name": "Salad Story",
   "kind": "bar",
+  "osm": { "brands": ["Salad Story"] },
   "market": "PL",
   "source": {
     "url": "https://cs.cdn-upm.com/themes/56dd4e07-6f04-11e8-8513-525400841de1/assets-396/Alergeny%20i%20Wartosci%20JESIEN_26_strona_apka.pdf",

@@ -2,6 +2,7 @@
   "id": "mcdonalds",
   "name": "McDonald's",
   "kind": "fast-food",
+  "osm": { "brands": ["McDonald's", "McDonalds", "Mc Donald's"] },
   "market": "PL",
   "source": {
     "url": "https://cdn.mcdonalds.pl/uploads/20261007142738/352978-tabela-wo-8-11-2023-mop.pdf",

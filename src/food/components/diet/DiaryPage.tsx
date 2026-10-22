@@ -21,13 +21,13 @@ import { MISSING_DATA_MESSAGE } from '../../data';
 import { hashWith } from '../../hash';
 import type { Activity } from '../../diet/activity';
 import { simulateCheat } from '../../diet/cheat';
-import { macroStatus, totals, type DayTotals } from '../../diet/day';
+import { macroStatus, totals } from '../../diet/day';
 import { db, type DayRow, type Entry, type PlannedCheat } from '../../diet/db';
 import { entryFood } from '../../diet/favorites';
 import { planFood, type Food } from '../../diet/foods';
-import { addDays, dayGoal, dayLabel, longDay, mealsLeftAt, mondayOf, remainingOf } from '../../diet/model';
+import { addDays, dayGoal, dayLabel, longDay, mealsLeftAt, mondayOf } from '../../diet/model';
+import { dayNeeds } from '../../diet/now';
 import { plannedDay, plannedKcal, type Plan, type PlannedItem, type PlanItem } from '../../diet/plan';
-import { DIET_PROFILES } from '../../diet/profiles';
 import { dropCheat, eatCheat, logFood, updateChoices, updateDay } from '../../diet/store';
 import { autoDay, restVariants, seedOf, suggest, swaps, type Context } from '../../diet/suggest';
 import type { Profile } from '../../diet/types';
@@ -116,6 +116,7 @@ const T = text({
     preferred: (store: string) => `Planuję pod sklep ${store} – nie znam sklepów wokół Ciebie.`,
     noShops: 'Nie znam sklepów wokół Ciebie – propozycje biorą pod uwagę wszystkie sieci.',
     refreshNearby: 'Odśwież w „W pobliżu”',
+    eatOut: 'Poza domem? Zobacz, gdzie zjeść w pobliżu',
     openNearby: 'Otwórz „W pobliżu”',
     datasetLoading: 'Wczytuję bazę produktów — przepisy i produkty zaraz dojdą.',
     noDataset: 'Bez bazy produktów proponuję tylko z planu i Twojego jedzenia.',
@@ -185,6 +186,7 @@ const T = text({
     preferred: (store: string) => `I’m planning around ${store} – I don’t know the shops around you.`,
     noShops: 'I don’t know the shops around you – suggestions take every chain into account.',
     refreshNearby: 'Refresh in “Nearby”',
+    eatOut: 'Out and about? See where to eat nearby',
     openNearby: 'Open “Nearby”',
     datasetLoading: 'Loading the product database — recipes and products are on their way.',
     noDataset: 'Without the product database I suggest only from your plan and your own food.',
@@ -317,11 +319,9 @@ function TodayView({ profile, plan, date, today, hour, nowMs, history, pickerOpe
   const moved = activity ? activity(date) : null;
   // Zaplanowany cheat meal rezerwuje swoje kalorie i jeden posiłek: reszta dnia liczy się już z nim.
   const cheat = day?.cheat ?? null;
-  const reserved = cheat ? withCheat(eaten, cheat) : eaten;
   const mealsAhead = date === today ? mealsLeftAt(hour) : date < today ? 1 : 4;
-  const restMeals = cheat ? Math.max(0, mealsAhead - 1) : mealsAhead;
-  const dietProfile = DIET_PROFILES[profile.dietProfile];
-  const targets = dietProfile.targets(goal.kcal, profile.targetWeightKg);
+  const needs = dayNeeds({ profile, goalKcal: goal.kcal, eaten, cheat, mealsAhead });
+  const { restMeals, targets, profile: dietProfile } = needs;
   const dayDone = date < today || (date === today && hour >= 21);
   const status = macroStatus(targets, eaten, dayDone);
   const planned = plan && !prep ? plannedDay(plan, date, day?.choices) : null;
@@ -341,11 +341,7 @@ function TodayView({ profile, plan, date, today, hour, nowMs, history, pickerOpe
       return c ? formatDistance(c.nearest.distance) : null;
     },
   };
-  const ctx: Context = {
-    ...base,
-    remaining: remainingOf(targets, reserved),
-    mealsLeft: Math.max(1, restMeals),
-  };
+  const ctx: Context = { ...base, remaining: needs.remaining, mealsLeft: needs.mealsLeft };
   const suggestions = suggest(pool, ctx, 8);
   // Reszta dnia w wariantach, gdy zostały dwa posiłki albo więcej — albo jeden, ale za duży na jeden talerz.
   const restShown =
@@ -463,6 +459,13 @@ function TodayView({ profile, plan, date, today, hour, nowMs, history, pickerOpe
                 : T.used}{' '}
           {T.profile(dietProfile.label)}
         </p>
+        {date === today && (
+          <p className="tight">
+            <a className="fd-diet-eatout" href={`${NEARBY_PATH}?widok=zjedz`}>
+              <MapPin size={18} strokeWidth={2} aria-hidden /> {T.eatOut}
+            </a>
+          </p>
+        )}
         <NearbyLine nearby={nearby} preferred={profile.preferredStore} dict={dict} />
         <DatasetLine food={food} />
         {restShown && (
@@ -655,16 +658,6 @@ function NextPlanLine({ plan, today }: { plan: PrepPlan; today: string }) {
 /** Od tylu kcal na jeden posiłek reszta dnia to już kilka pozycji, nie jeden talerz. */
 const BIG_REST_KCAL = 900;
 
-/** What is eaten plus the planned cheat meal: the rest of the day is planned around it. */
-function withCheat(eaten: DayTotals, cheat: PlannedCheat): DayTotals {
-  return {
-    kcal: eaten.kcal + cheat.kcal,
-    protein: eaten.protein + (cheat.protein ?? 0),
-    carbs: eaten.carbs + (cheat.carbs ?? 0),
-    fat: eaten.fat + (cheat.fat ?? 0),
-    unknownMacros: eaten.unknownMacros + (cheat.protein === null || cheat.carbs === null || cheat.fat === null ? 1 : 0),
-  };
-}
 
 /**
  * Zaplanowany cheat meal na górze dnia: co to i ile, czy dzień się z nim mieści, i trzy ruchy —
@@ -779,7 +772,7 @@ function NearbyLine({
           : nearby.source === 'preferred' && preferred
             ? T.preferred(name(preferred))
             : T.noShops}{' '}
-        <a href={NEARBY_PATH}>{nearby.source === 'nearby' ? T.refreshNearby : T.openNearby}</a>
+        <a href={`${NEARBY_PATH}?widok=sklepy`}>{nearby.source === 'nearby' ? T.refreshNearby : T.openNearby}</a>
       </span>
     </p>
   );

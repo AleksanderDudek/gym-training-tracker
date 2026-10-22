@@ -7,12 +7,14 @@ import type { Plugin } from 'vite';
 export const ORIGINS = {
   // Zdjęcia produktów (Open Food Facts), kafelki mapy (OpenStreetMap), miniatury filmów (YouTube).
   img: ['https://images.openfoodfacts.org', 'https://tile.openstreetmap.org', 'https://i.ytimg.com'],
-  // Sklepy w pobliżu: Overpass i jego zapasowy serwer. Obrazki z listy wyżej stoją tu drugi raz, bo
+  // W pobliżu: Overpass i jego zapasowy serwer (sklepy i lokale), Nominatim (adres wpisany zamiast
+  // lokalizacji). Obrazki z listy wyżej stoją tu drugi raz, bo
   // zrzut ekranu do wiadomości dla autora (html-to-image) pobiera je skryptem, żeby wkleić w obrazek —
   // bez tego miniatura filmu wyszłaby na zrzucie pustym prostokątem.
   connect: [
     'https://overpass-api.de',
     'https://overpass.private.coffee',
+    'https://nominatim.openstreetmap.org',
     'https://images.openfoodfacts.org',
     'https://tile.openstreetmap.org',
     'https://i.ytimg.com',

@@ -2,7 +2,7 @@ import { LANG, text, type Lang } from '../../i18n';
 
 /**
  * The public Nominatim server. Its usage policy
- * (https://operations.osmfoundation.org/policies/nominatim/) allows at most one request a second,
+ * (operations.osmfoundation.org/policies/nominatim/) allows at most one request a second,
  * requires caching, and forbids search-as-you-type: `geocode` is called only when the user
  * submits a search, and enforces the other two itself.
  */

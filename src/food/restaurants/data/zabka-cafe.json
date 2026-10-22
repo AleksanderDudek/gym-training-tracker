@@ -2,6 +2,7 @@
   "id": "zabka-cafe",
   "name": "Żabka Café",
   "kind": "sklep",
+  "osm": { "brands": ["Żabka"] },
   "market": "PL",
   "source": {
     "url": "https://cdn.zabka.pl/wp-content/uploads/2025/04/16160639/Tabela-alergenow-i-wartosci-odzywczych-Zabka-Cafe_15042025.pdf",

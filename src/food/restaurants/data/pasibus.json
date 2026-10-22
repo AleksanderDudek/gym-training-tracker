@@ -2,6 +2,7 @@
   "id": "pasibus",
   "name": "Pasibus",
   "kind": "fast-food",
+  "osm": { "brands": ["Pasibus"] },
   "market": "PL",
   "source": {
     "url": "https://pasibus.pl/wp-content/uploads/2026/09/pozawroclaw.pdf",

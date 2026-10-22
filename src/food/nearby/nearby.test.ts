@@ -279,10 +279,21 @@ describe('cache', () => {
 });
 
 describe('url', () => {
-  test('radius, chain and open product round-trip; the default writes nothing', () => {
-    const state = { radius: 3000, store: 'lidl', product: '590' };
-    expect(nearbyFromParams(nearbyToParams(state))).toEqual(state);
-    expect(nearbyToParams({ radius: DEFAULT_RADIUS, store: null, product: null }).toString()).toBe('');
+  const base = { view: 'eat' as const, radius: DEFAULT_RADIUS, store: null, product: null, place: null, sort: 'best' as const, closed: false, unknown: false };
+
+  test('view, radius, chain, product, place, sort and filters round-trip; the defaults write nothing', () => {
+    const shops = { ...base, view: 'shops' as const, radius: 3000, store: 'lidl', product: '590' };
+    expect(nearbyFromParams(nearbyToParams(shops))).toEqual(shops);
+    const eat = { ...base, place: 'node/42', sort: 'protein' as const, closed: true, unknown: true };
+    expect(nearbyFromParams(nearbyToParams(eat))).toEqual(eat);
+    expect(nearbyToParams(eat).toString()).toBe('miejsce=node%2F42&sort=bialko&zamkniete=1&bez-danych=1');
+    expect(nearbyToParams(base).toString()).toBe('');
+  });
+
+  test('without `widok` the link opens the view used last here', () => {
+    expect(nearbyFromParams(new URLSearchParams(''), DEFAULT_RADIUS, 'shops').view).toBe('shops');
+    expect(nearbyToParams({ ...base, view: 'shops' }, 'shops').toString()).toBe('');
+    expect(nearbyFromParams(new URLSearchParams('widok=zjedz'), DEFAULT_RADIUS, 'shops').view).toBe('eat');
   });
 
   test('a radius off the steps is snapped; a missing one uses the fallback', () => {
@@ -291,7 +302,10 @@ describe('url', () => {
   });
 
   test('the position is never part of the URL', () => {
-    expect(Object.keys(nearbyFromParams(new URLSearchParams('lat=52&lon=21')))).toEqual(['radius', 'store', 'product']);
+    const keys = Object.keys(nearbyFromParams(new URLSearchParams('lat=52&lon=21')));
+    expect(keys).not.toContain('lat');
+    expect(keys).not.toContain('lon');
+    expect(nearbyToParams(nearbyFromParams(new URLSearchParams('lat=52&lon=21'))).toString()).toBe('');
   });
 });
 

@@ -82,6 +82,8 @@ function grantLocation(granted: boolean) {
 
 beforeEach(() => {
   window.localStorage.clear();
+  // Te testy są o widoku „Zakupy i przepisy”; „Zjedz teraz” ma własne (EatNow.test.tsx).
+  window.localStorage.setItem('produkty-pl:nearby-view', 'shops');
   window.history.replaceState(null, '', '#/w-poblizu');
   vi.mocked(loadDataset).mockReset();
   vi.mocked(loadedDataset).mockReset();

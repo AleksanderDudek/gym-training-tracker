@@ -2,6 +2,7 @@
  "id": "subway",
  "name": "Subway",
  "kind": "fast-food",
+ "osm": { "brands": ["Subway"] },
  "market": "PL",
  "source": {
   "url": "https://mysubway.sk/pdf/pl/nutrition.pdf",
