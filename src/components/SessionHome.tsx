@@ -14,6 +14,68 @@ import { hasDiet } from '../food/dietFlag';
 import { FoodCardPlaceholder } from '../food/FoodCardPlaceholder';
 import { trail } from '../trail';
 import type { AppState, Workout } from '../types';
+import { LANG, pluralEn, text } from '../i18n';
+
+const T = text({
+  pl: {
+    days: (n: number): string => (n === 1 ? 'jutro' : `za ${n} dni`),
+    leadDue: 'Plan ma na dziś konkretny trening. Zacznij go jednym przyciskiem albo wybierz coś innego.',
+    leadRest: (quip: string) => `${quip} Możesz też zrobić sesję dodatkową.`,
+    leadNone: 'Nie masz planu, więc decydujesz sam. Plan robiłby to za ciebie i nigdy by nie zapomniał.',
+    late: 'Termin do nadrobienia',
+    planned: 'Dziś według planu',
+    deloadTag: ' · tydzień lżejszy',
+    exercises: (n: number, names: string) => `${n} ćwiczeń · ${names}`,
+    wasLate: (late: number, quip: string) =>
+      `Termin był ${late === 1 ? 'wczoraj' : `${late} dni temu`}. ${quip} Nadrobienie wciąż się liczy, tylko taniej.`,
+    full: 'Zrobiony dziś liczy się w pełni.',
+    points: (n: number) => ` Do wzięcia ${n} pkt.`,
+    deload:
+      'Tydzień lżejszy: mniej serii (z trzech zostają dwie) i bez serii „ile dasz radę”. Zostaw 2–3 powtórzenia zapasu — wynik trafi do historii, ale nie zmieni poziomów.',
+    burn: (min: number, kcal: string) => `Na twoim poziomie to ok. ${min} min serii z przerwami i ${kcal} ponad spoczynek.`,
+    start: (name: string) => `Zacznij: ${name}`,
+    restDay: 'Dzień bez terminu',
+    next: (when: string) => `Następny termin ${when}`,
+    today: 'dzisiaj',
+    noMore: 'Plan nie ma już terminów',
+    nextLine: (date: string, name: string | undefined) => `${date} — ${name ?? ''}. Przerwa też pracuje: w niej rośnie siła.`,
+    noPlan: 'Bez planu',
+    nobody: 'Nikt nie pilnuje terminów',
+    planPitch:
+      'Plan rozpisuje od 4 do 48 tygodni na konkretne dni, liczy realizację i sam decyduje, który trening wypada następny — także wtedy, gdy poprzedni się nie odbył. Nie obraża się i nie przypomina o sobie w nocy.',
+    setPlan: 'Ustaw plan',
+    pickAny: 'Wybierz dowolny trening',
+  },
+  en: {
+    days: (n: number): string => (n === 1 ? 'tomorrow' : `in ${n} days`),
+    leadDue: 'Your plan has a workout for today. Start it with one tap or pick something else.',
+    leadRest: (quip: string) => `${quip} You can also do an extra session.`,
+    leadNone: 'You have no plan, so it’s your call. A plan would do this for you and never forget.',
+    late: 'Workout to make up',
+    planned: 'Today, as planned',
+    deloadTag: ' · lighter week',
+    exercises: (n: number, names: string) => `${n} ${pluralEn(n, 'exercise', 'exercises')} · ${names}`,
+    wasLate: (late: number, quip: string) =>
+      `The deadline was ${late === 1 ? 'yesterday' : `${late} days ago`}. ${quip} Making it up still counts, just for fewer points.`,
+    full: 'Done today, it counts in full.',
+    points: (n: number) => ` ${n} pts up for grabs.`,
+    deload:
+      'Lighter week: fewer sets (two instead of three) and no “as many as you can” set. Leave 2–3 reps in reserve — the result goes into your history but won’t change your levels.',
+    burn: (min: number, kcal: string) => `At your level that’s about ${min} min of sets with rests and ${kcal} above resting.`,
+    start: (name: string) => `Start: ${name}`,
+    restDay: 'No deadline today',
+    next: (when: string) => `Next deadline ${when}`,
+    today: 'today',
+    noMore: 'The plan has no more deadlines',
+    nextLine: (date: string, name: string | undefined) => `${date} — ${name ?? ''}. Rest works too: that’s when strength grows.`,
+    noPlan: 'No plan',
+    nobody: 'Nobody’s keeping an eye on deadlines',
+    planPitch:
+      'A plan lays out 4 to 48 weeks on specific days, tracks how you’re doing and decides which workout comes next — even when the previous one didn’t happen. It doesn’t sulk and won’t nag you at night.',
+    setPlan: 'Set up a plan',
+    pickAny: 'Pick any workout',
+  },
+});
 
 /**
  * Karta jedzenia z osobnej paczki (Dexie, dziennik). Wczytywana tylko u kogoś, kto prowadzi dietę
@@ -61,10 +123,10 @@ export interface TodayPlan {
 
 const shortDate = (key: string): string => {
   const [, mm, dd] = key.split('-');
-  return `${dd}.${mm}`;
+  return LANG === 'pl' ? `${dd}.${mm}` : `${dd}/${mm}`;
 };
 
-const days = (n: number): string => (n === 1 ? 'jutro' : `za ${n} dni`);
+const days = (n: number): string => T.days(n);
 
 /**
  * Ekran Dziś. Odpowiada na jedno pytanie: co robię dzisiaj. Lista wszystkich treningów
@@ -96,10 +158,10 @@ export function SessionHome({
         <p className="statline">{statsLine}</p>
         <p className="lead">
           {today.kind === 'due'
-            ? 'Plan ma na dziś konkretny trening. Zacznij go jednym przyciskiem albo wybierz coś innego.'
+            ? T.leadDue
             : today.kind === 'rest'
-              ? `${pick(REST, daySeed())} Możesz też zrobić sesję dodatkową.`
-              : 'Nie masz planu, więc decydujesz sam. Plan robiłby to za ciebie i nigdy by nie zapomniał.'}
+              ? T.leadRest(pick(REST, daySeed()))
+              : T.leadNone}
         </p>
         <CharacterStrip state={state} />
       </div>
@@ -107,34 +169,28 @@ export function SessionHome({
       {today.kind === 'due' && w && (
         <div className="grp today">
           <div className="today-tag">
-            {today.late ? 'Termin do nadrobienia' : 'Dziś według planu'}
-            {today.deload ? ' · tydzień lżejszy' : ''}
+            {today.late ? T.late : T.planned}
+            {today.deload ? T.deloadTag : ''}
           </div>
           <h2 className="today-name">{w.name}</h2>
-          <p className="tight">
-            {w.items.length} ćwiczeń · {w.items.map((i) => ex(i.ex).name).join(' · ')}
-          </p>
+          <p className="tight">{T.exercises(w.items.length, w.items.map((i) => ex(i.ex).name).join(' · '))}</p>
           <p className="tight" style={{ marginTop: 6 }}>
-            {today.late
-              ? `Termin był ${today.late === 1 ? 'wczoraj' : `${today.late} dni temu`}. ${pick(LATE, today.late)} Nadrobienie wciąż się liczy, tylko taniej.`
-              : 'Zrobiony dziś liczy się w pełni.'}
-            {today.points ? ` Do wzięcia ${today.points} pkt.` : ''}
+            {today.late ? T.wasLate(today.late, pick(LATE, today.late)) : T.full}
+            {today.points ? T.points(today.points) : ''}
           </p>
           {today.deload && (
             <p className="tight" style={{ marginTop: 6 }}>
-              Tydzień lżejszy: mniej serii (z trzech zostają dwie) i bez serii „ile dasz radę”. Zostaw
-              2–3 powtórzenia zapasu — wynik trafi do historii, ale nie zmieni poziomów.
+              {T.deload}
             </p>
           )}
           {burn && (
             <p className="tight" style={{ marginTop: 6 }}>
-              Na twoim poziomie to ok. {Math.round(burn.secs / 60)} min serii z przerwami i{' '}
-              {kcalText(burn.active)} ponad spoczynek.
+              {T.burn(Math.round(burn.secs / 60), kcalText(burn.active))}
             </p>
           )}
           <div className="actions">
             <button className="btn wide" onClick={() => onStart(w.id)}>
-              Zacznij: {w.name}
+              {T.start(w.name)}
             </button>
           </div>
         </div>
@@ -142,17 +198,11 @@ export function SessionHome({
 
       {today.kind === 'rest' && (
         <div className="grp">
-          <div className="today-tag light">Dzień bez terminu</div>
+          <div className="today-tag light">{T.restDay}</div>
           <h2 className="today-name">
-            {today.nextDate
-              ? `Następny termin ${today.nextIn === 0 ? 'dzisiaj' : days(today.nextIn ?? 1)}`
-              : 'Plan nie ma już terminów'}
+            {today.nextDate ? T.next(today.nextIn === 0 ? T.today : days(today.nextIn ?? 1)) : T.noMore}
           </h2>
-          {today.nextDate && (
-            <p className="tight">
-              {shortDate(today.nextDate)} — {today.nextName}. Przerwa też pracuje: w niej rośnie siła.
-            </p>
-          )}
+          {today.nextDate && <p className="tight">{T.nextLine(shortDate(today.nextDate), today.nextName)}</p>}
         </div>
       )}
 
@@ -160,16 +210,12 @@ export function SessionHome({
 
       {today.kind === 'none' && (
         <div className="grp">
-          <div className="today-tag light">Bez planu</div>
-          <h2 className="today-name">Nikt nie pilnuje terminów</h2>
-          <p className="tight">
-            Plan rozpisuje od 4 do 48 tygodni na konkretne dni, liczy realizację i sam decyduje,
-            który trening wypada następny — także wtedy, gdy poprzedni się nie odbył. Nie obraża
-            się i nie przypomina o sobie w nocy.
-          </p>
+          <div className="today-tag light">{T.noPlan}</div>
+          <h2 className="today-name">{T.nobody}</h2>
+          <p className="tight">{T.planPitch}</p>
           <div className="actions">
             <button className="btn ghost wide" onClick={() => go('#/plan')}>
-              Ustaw plan
+              {T.setPlan}
             </button>
           </div>
         </div>
@@ -179,9 +225,10 @@ export function SessionHome({
         <div className="actions">
           <button
             className={`btn wide${today.kind === 'due' ? ' ghost' : ''}`}
+            // i18n-ignore: trasa
             onClick={() => go('#/treningi')}
           >
-            Wybierz dowolny trening
+            {T.pickAny}
           </button>
         </div>
       </div>

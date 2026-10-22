@@ -5,6 +5,12 @@ import { sampleCycle, skeleton } from '../engine/pose';
 import { bandFor } from '../engine/badges';
 import type { Band } from '../engine/badges';
 import type { TraineeMood } from './Gorilla';
+import { text } from '../i18n';
+
+const T = text({
+  pl: { 0: 'niezdobyta', 1: 'brąz', 2: 'srebro', 3: 'złoto', 4: 'platyna', 5: 'szmaragd' },
+  en: { 0: 'not earned', 1: 'bronze', 2: 'silver', 3: 'gold', 4: 'platinum', 5: 'emerald' },
+});
 
 /**
  * Odznaki jako przedmioty, nie znaki typograficzne.
@@ -34,12 +40,12 @@ export const BAND_MOOD: Record<Band, TraineeMood> = {
 };
 
 export const BAND_NAME: Record<Band, string> = {
-  0: 'niezdobyta',
-  1: 'brąz',
-  2: 'srebro',
-  3: 'złoto',
-  4: 'platyna',
-  5: 'szmaragd',
+  0: T[0],
+  1: T[1],
+  2: T[2],
+  3: T[3],
+  4: T[4],
+  5: T[5],
 };
 
 /* ---------------- Piktogramy ---------------- */

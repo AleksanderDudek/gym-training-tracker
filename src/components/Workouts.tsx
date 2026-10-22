@@ -1,4 +1,4 @@
-import { Fragment, useState } from 'react';
+import { Fragment, useState, type ReactNode } from 'react';
 import { BUILTIN, EX, ex } from '../data/exercises';
 import { OWN_WORKOUT_JOKES, WORKOUT_JOKES } from '../data/exjokes';
 import { EX_MUSCLES, MUSCLE_NAME } from '../data/muscles';
@@ -21,6 +21,202 @@ import { HealthNote } from './Health';
 import { EmptyState, Segmented } from './ui';
 import { SupportLine } from './Support';
 import type { AppState, ExerciseId, Workout, WorkoutGear, WorkoutKind } from '../types';
+import { pluralEn, text } from '../i18n';
+
+const T = text({
+  pl: {
+    noGear: 'bez sprzętu',
+    gym: 'siłownia',
+    any: 'Każdy',
+    noGearF: 'Bez sprzętu',
+    gymF: 'Siłownia',
+    all: 'Wszystkie',
+    full: 'Całe ciało',
+    split: 'Push · pull · nogi',
+    ul: 'Góra · dół',
+    part: 'Partie',
+    profile: 'Z profilem',
+    own: 'Twoje',
+    ownKind: 'własny',
+    exercises: (n: number) => `${n} ${plural(n, ['ćwiczenie', 'ćwiczenia', 'ćwiczeń'])}`,
+    about: (min: number) => `ok. ${min} min`,
+    plannedToday: 'Dziś według planu',
+    mostWork: (list: string) => `Najwięcej pracy: ${list}.`,
+    doubts: 'Doradca ma zastrzeżenia — zajrzyj do podglądu.',
+    start: 'Zacznij',
+    preview: 'Podgląd',
+    edit: 'Edytuj',
+    makeYours: 'Zmień pod siebie',
+    libLead:
+      'Gotowe zestawy — całe ciało, podziały push/pull/nogi i góra/dół oraz treningi pod konkretną partię — i twoje własne. Każdy ma podgląd: ćwiczenia z seriami, które partie pracują i co mówi doradca.',
+    buildOwn: 'Ułóż własny trening',
+    gear: 'Sprzęt',
+    kind: 'Rodzaj treningu',
+    noOwnTitle: 'Jeszcze nic własnego',
+    noMatchTitle: 'Nic nie pasuje do filtrów',
+    noOwnText: 'Ułóż pierwszy trening albo skopiuj gotowy i zmień go pod siebie — doradca podpowie w trakcie.',
+    noMatchText: 'Zmień sprzęt albo rodzaj treningu.',
+    offAtlas: 'ćwiczenie spoza atlasu',
+    helpers: (list: string) => ` · pomocniczo ${list}`,
+    sets: (n: number) => `${n} s.`,
+    noWorkoutTitle: 'Nie ma takiego treningu',
+    noWorkoutText: 'Mógł zostać usunięty. Wróć do listy i wybierz inny.',
+    avg: (time: string, n: number) => `Twój średni czas: ${time} ${n === 1 ? '(z ostatniego treningu)' : `(z ${n} ostatnich)`}`,
+    yourVersion: (link: ReactNode) => <>Twoja wersja treningu {link}.</>,
+    startNamed: (name: string) => `Zacznij: ${name}`,
+    del: 'Usuń',
+    copy: 'Skopiuj i zmień pod siebie',
+    order: 'Kolejność i serie na dziś',
+    muscles: 'Które partie pracują',
+    musclesText: (cap: number) =>
+      `Serie na partię w tej sesji: główny mięsień ruchu liczy się w całości, pomocniczy w połowie, a serie wybuchowe i na czas — za pół. Kreska na pasku to ok. ${cap} serii, powyżej których przyrost prawie przestaje rosnąć.`,
+    advisor: 'Doradca',
+    inPlans: 'W planach',
+    noEditTitle: 'Tego treningu nie da się edytować',
+    noEditText: 'Edytować można tylko własne treningi. Gotowy skopiujesz z jego podglądu.',
+    myVersion: (name: string) => `${name} — moja wersja`,
+    already: (name: string) => `${name} już jest w treningu.`,
+    swapAria: (name: string) => `Zamień: ${name}`,
+    needName: 'Nadaj treningowi nazwę.',
+    needEx: 'Dodaj przynajmniej jedno ćwiczenie.',
+    builderLead:
+      'Dodawaj ćwiczenia, a doradca od razu policzy serie na partie, czas i kolejność. Rodzaj treningu mówi mu, czego się spodziewać — od push nikt nie oczekuje wiosłowania.',
+    basedOn: (link: ReactNode) => (
+      <>
+        Na podstawie: {link}. Oryginał zostaje bez zmian — także w planach, które go używają.
+      </>
+    ),
+    added: (name: ReactNode) => (
+      <>
+        Dopisane na końcu: {name}. Przesuń je strzałkami w odpowiednie miejsce, a potem zapisz.
+      </>
+    ),
+    name: 'nazwa',
+    namePh: 'np. Pośladki i core — wtorek',
+    type: 'rodzaj',
+    noType: 'bez rodzaju — tylko zasady ogólne',
+    rest: 'przerwa między seriami',
+    restAuto: 'z rodzaju ćwiczenia — zalecane',
+    how: 'jak robić',
+    howAria: 'Jak robić ćwiczenia',
+    straight: 'Serie pod rząd',
+    circuit: 'Obwód — rundy',
+    roundRest: 'przerwa po rundzie',
+    setsAria: (name: string) => `Serie: ${name}`,
+    pairAria: (name: string) => `Na zmianę z poprzednim: ${name}`,
+    pairTitle: 'Na zmianę z poprzednim',
+    upAria: (name: string) => `W górę: ${name}`,
+    downAria: (name: string) => `W dół: ${name}`,
+    delAria: (name: string) => `Usuń: ${name}`,
+    swapFor: (name: ReactNode) => <>Zamień {name} na ćwiczenie, które robi podobną robotę:</>,
+    anyAtlas: 'albo dowolne z atlasu',
+    keep: (name: string) => `Zostaw ${name}`,
+    hint: 'Stuknij nazwę ćwiczenia, żeby zamienić je na podobne w tym samym miejscu; × usuwa je z treningu. Liczba serii należy do ćwiczenia, nie do treningu — zmienia się wszędzie, gdzie to ćwiczenie występuje, i dalej prowadzi ją silnik progresji. ↔ łączy ćwiczenie z poprzednim w parę robioną na zmianę. W obwodzie liczba rund to liczba serii najdłuższej stacji, a przerwa po rundzie skraca się sama, gdy kolejne obwody idą równo.',
+    pair: (n: number, why: string) => `Para ${n}: ${why}`,
+    addEx: 'dodaj ćwiczenie',
+    reorder: 'Ułóż kolejność według zasad',
+    advisorSum: (sets: number, min: number) => ` · ${sets} serii · ok. ${min} min`,
+    waiting: 'Czeka na pierwsze ćwiczenie.',
+    save: 'Zapisz trening',
+    cancel: 'Anuluj',
+  },
+  en: {
+    noGear: 'no equipment',
+    gym: 'gym',
+    any: 'Any',
+    noGearF: 'No equipment',
+    gymF: 'Gym',
+    all: 'All',
+    full: 'Full body',
+    split: 'Push · pull · legs',
+    ul: 'Upper · lower',
+    part: 'Body parts',
+    profile: 'With a focus',
+    own: 'Yours',
+    ownKind: 'your own',
+    exercises: (n: number) => `${n} ${pluralEn(n, 'exercise', 'exercises')}`,
+    about: (min: number) => `about ${min} min`,
+    plannedToday: 'Today, as planned',
+    mostWork: (list: string) => `Works hardest: ${list}.`,
+    doubts: 'The advisor has doubts — take a look at the preview.',
+    start: 'Start',
+    preview: 'Preview',
+    edit: 'Edit',
+    makeYours: 'Make it yours',
+    libLead:
+      'Ready-made workouts — full body, push/pull/legs and upper/lower splits, and workouts for a single body part — plus your own. Each has a preview: the exercises with their sets, which muscles work and what the advisor says.',
+    buildOwn: 'Build your own workout',
+    gear: 'Equipment',
+    kind: 'Workout type',
+    noOwnTitle: 'Nothing of your own yet',
+    noMatchTitle: 'Nothing matches the filters',
+    noOwnText: 'Build your first workout, or copy a ready-made one and make it yours — the advisor will help along the way.',
+    noMatchText: 'Change the equipment or the workout type.',
+    offAtlas: 'exercise not in the atlas',
+    helpers: (list: string) => ` · also ${list}`,
+    sets: (n: number) => `${n} ${pluralEn(n, 'set', 'sets')}`,
+    noWorkoutTitle: 'No such workout',
+    noWorkoutText: 'It may have been deleted. Go back to the list and pick another.',
+    avg: (time: string, n: number) => `Your average time: ${time} ${n === 1 ? '(from your last workout)' : `(from your last ${n})`}`,
+    yourVersion: (link: ReactNode) => <>Your version of {link}.</>,
+    startNamed: (name: string) => `Start: ${name}`,
+    del: 'Delete',
+    copy: 'Copy and make it yours',
+    order: 'Order and sets for today',
+    muscles: 'Muscles worked',
+    musclesText: (cap: number) =>
+      `Sets per muscle group in this session: the main muscle of a movement counts in full, a helper muscle as half, and explosive and timed sets count as half. The line on the bar marks about ${cap} sets — beyond that, gains almost stop growing.`,
+    advisor: 'Advisor',
+    inPlans: 'In plans',
+    noEditTitle: 'This workout can’t be edited',
+    noEditText: 'Only your own workouts can be edited. Copy a ready-made one from its preview.',
+    myVersion: (name: string) => `${name} — my version`,
+    already: (name: string) => `${name} is already in the workout.`,
+    swapAria: (name: string) => `Swap: ${name}`,
+    needName: 'Give your workout a name.',
+    needEx: 'Add at least one exercise.',
+    builderLead:
+      'Add exercises and the advisor works out sets per muscle group, time and order straight away. The workout type tells it what to expect — nobody wants rows on push day.',
+    basedOn: (link: ReactNode) => (
+      <>
+        Based on: {link}. The original stays as it is — in the plans that use it, too.
+      </>
+    ),
+    added: (name: ReactNode) => (
+      <>
+        Added at the end: {name}. Move it into place with the arrows, then save.
+      </>
+    ),
+    name: 'name',
+    namePh: 'e.g. Glutes and core — Tuesday',
+    type: 'type',
+    noType: 'no type — general rules only',
+    rest: 'rest between sets',
+    restAuto: 'by exercise type — recommended',
+    how: 'how to do it',
+    howAria: 'How to do the exercises',
+    straight: 'Straight sets',
+    circuit: 'Circuit — rounds',
+    roundRest: 'rest after a round',
+    setsAria: (name: string) => `Sets: ${name}`,
+    pairAria: (name: string) => `Alternate with the previous one: ${name}`,
+    pairTitle: 'Alternate with the previous one',
+    upAria: (name: string) => `Move up: ${name}`,
+    downAria: (name: string) => `Move down: ${name}`,
+    delAria: (name: string) => `Remove: ${name}`,
+    swapFor: (name: ReactNode) => <>Swap {name} for an exercise that does a similar job:</>,
+    anyAtlas: 'or any from the atlas',
+    keep: (name: string) => `Keep ${name}`,
+    hint: 'Tap an exercise name to swap it for a similar one in the same spot; × removes it from the workout. The number of sets belongs to the exercise, not the workout — it changes everywhere the exercise appears, and the progression engine keeps managing it. ↔ pairs an exercise with the previous one, done alternately. In a circuit, the number of rounds is the set count of the longest station, and the rest after a round shortens by itself when the circuits go smoothly.',
+    pair: (n: number, why: string) => `Pair ${n}: ${why}`,
+    addEx: 'add exercise',
+    reorder: 'Order by the rules',
+    advisorSum: (sets: number, min: number) => ` · ${sets} ${pluralEn(sets, 'set', 'sets')} · about ${min} min`,
+    waiting: 'Waiting for the first exercise.',
+    save: 'Save workout',
+    cancel: 'Cancel',
+  },
+});
 
 /**
  * Zakładka Treningi: biblioteka gotowych zestawów i własnych, podgląd każdego z nich
@@ -28,20 +224,18 @@ import type { AppState, ExerciseId, Workout, WorkoutGear, WorkoutKind } from '..
  */
 
 export const GEAR_WORKOUT: Record<WorkoutGear, string> = {
-  none: 'bez sprzętu',
+  none: T.noGear,
   kb: 'kettlebell',
-  gym: 'siłownia',
+  gym: T.gym,
 };
 
 /** Filtr sprzętu — ten sam w bibliotece treningów i w katalogu planów. */
 export const GEAR_FILTER: { key: 'all' | WorkoutGear; label: string }[] = [
-  { key: 'all', label: 'Każdy' },
-  { key: 'none', label: 'Bez sprzętu' },
+  { key: 'all', label: T.any },
+  { key: 'none', label: T.noGearF },
   { key: 'kb', label: 'Kettlebell' },
-  { key: 'gym', label: 'Siłownia' },
+  { key: 'gym', label: T.gymF },
 ];
-
-const EX_FORMS = ['ćwiczenie', 'ćwiczenia', 'ćwiczeń'] as const;
 
 type Group = 'all' | 'full' | 'split' | 'ul' | 'part' | 'profile' | 'own';
 
@@ -62,13 +256,13 @@ const GROUP_OF: Record<WorkoutKind, Exclude<Group, 'all' | 'own' | 'profile'>> =
 };
 
 const GROUPS: { key: Group; label: string }[] = [
-  { key: 'all', label: 'Wszystkie' },
-  { key: 'full', label: 'Całe ciało' },
-  { key: 'split', label: 'Push · pull · nogi' },
-  { key: 'ul', label: 'Góra · dół' },
-  { key: 'part', label: 'Partie' },
-  { key: 'profile', label: 'Z profilem' },
-  { key: 'own', label: 'Twoje' },
+  { key: 'all', label: T.all },
+  { key: 'full', label: T.full },
+  { key: 'split', label: T.split },
+  { key: 'ul', label: T.ul },
+  { key: 'part', label: T.part },
+  { key: 'profile', label: T.profile },
+  { key: 'own', label: T.own },
 ];
 
 const isOwn = (w: Workout): boolean => !BUILTIN.some((b) => b.id === w.id);
@@ -82,10 +276,10 @@ function metaLine(state: AppState, w: Workout, secs: number): string {
   const burn = plannedBurn(state, w);
   const n = w.items.length;
   return [
-    w.kind ? KIND_LABEL[w.kind] : isOwn(w) ? 'własny' : null,
+    w.kind ? KIND_LABEL[w.kind] : isOwn(w) ? T.ownKind : null,
     w.gear ? GEAR_WORKOUT[w.gear] : null,
-    `${n} ${plural(n, EX_FORMS)}`,
-    n ? `ok. ${Math.max(1, Math.round(secs / 60))} min` : null,
+    T.exercises(n),
+    n ? T.about(Math.max(1, Math.round(secs / 60))) : null,
     burn && n ? kcalText(burn.active) : null,
   ]
     .filter(Boolean)
@@ -112,22 +306,22 @@ function WorkoutCard({
   return (
     <div className={`grp wcard${planned ? ' today' : ''}`}>
       <WorkoutArt id={w.id} />
-      {planned && <div className="today-tag">Dziś według planu</div>}
+      {planned && <div className="today-tag">{T.plannedToday}</div>}
       <h2 className="today-name">{w.name}</h2>
       <p className="wmeta">{metaLine(state, w, r.secs)}</p>
       {w.desc && <p className="tight">{w.desc}</p>}
-      {top.length > 0 && <p className="tight">Najwięcej pracy: {top.join(', ')}.</p>}
-      {!r.ok && <p className="tight warnline">Doradca ma zastrzeżenia — zajrzyj do podglądu.</p>}
+      {top.length > 0 && <p className="tight">{T.mostWork(top.join(', '))}</p>}
+      {!r.ok && <p className="tight warnline">{T.doubts}</p>}
       <div className="btnrow" style={{ marginTop: 8 }}>
         <button className="btn sm" onClick={() => onStart(w.id)}>
-          Zacznij
+          {T.start}
         </button>
         <button className="btn sm ghost" onClick={() => go(workoutPath(w.id))}>
-          Podgląd
+          {T.preview}
         </button>
         {/* Własna wersja jednym stuknięciem z listy — wcześniej przycisk stał dopiero w podglądzie. */}
         <button className="btn sm ghost" onClick={() => go(isOwn(w) ? workoutEditPath(w.id) : workoutNewPath(w.id))}>
-          {isOwn(w) ? 'Edytuj' : 'Zmień pod siebie'}
+          {isOwn(w) ? T.edit : T.makeYours}
         </button>
       </div>
     </div>
@@ -164,21 +358,17 @@ export function WorkoutLibrary({
     <>
       <div className="wrap">
         <SectionSwitch on="workouts" />
-        <p className="lead">
-          Gotowe zestawy — całe ciało, podziały push/pull/nogi i góra/dół oraz treningi pod
-          konkretną partię — i twoje własne. Każdy ma podgląd: ćwiczenia z seriami, które partie
-          pracują i co mówi doradca.
-        </p>
+        <p className="lead">{T.libLead}</p>
         <div className="actions" style={{ marginTop: 0 }}>
           <button className="btn wide" onClick={() => go(workoutNewPath())}>
-            Ułóż własny trening
+            {T.buildOwn}
           </button>
         </div>
       </div>
 
       <div className="grp">
-        <Segmented label="Sprzęt" value={gear} onChange={setGear} options={GEAR_FILTER} />
-        <Chips label="Rodzaj treningu" value={group} onChange={setGroup} options={GROUPS} />
+        <Segmented label={T.gear} value={gear} onChange={setGear} options={GEAR_FILTER} />
+        <Chips label={T.kind} value={group} onChange={setGroup} options={GROUPS} />
       </div>
 
       {sorted.length ? (
@@ -188,12 +378,8 @@ export function WorkoutLibrary({
       ) : (
         <div className="wrap">
           <EmptyState
-            title={group === 'own' ? 'Jeszcze nic własnego' : 'Nic nie pasuje do filtrów'}
-            text={
-              group === 'own'
-                ? 'Ułóż pierwszy trening albo skopiuj gotowy i zmień go pod siebie — doradca podpowie w trakcie.'
-                : 'Zmień sprzęt albo rodzaj treningu.'
-            }
+            title={group === 'own' ? T.noOwnTitle : T.noMatchTitle}
+            text={group === 'own' ? T.noOwnText : T.noMatchText}
           />
         </div>
       )}
@@ -215,16 +401,16 @@ function ExerciseLine({ state, id, n, cue }: { state: AppState; id: ExerciseId; 
         <a className="wex-name" href={exercisePath(id)}>
           {EX[id]?.name ?? id}
         </a>
-        <div className="h-detail">{EX[id] ? planLabel(state, id) : 'ćwiczenie spoza atlasu'}</div>
+        <div className="h-detail">{EX[id] ? planLabel(state, id) : T.offAtlas}</div>
         {cue && <div className="h-detail ex-cue">{cue}</div>}
         {use && (
           <div className="h-detail">
             {use.p.map((m) => lower(MUSCLE_NAME[m])).join(', ')}
-            {use.s.length ? ` · pomocniczo ${use.s.map((m) => lower(MUSCLE_NAME[m])).join(', ')}` : ''}
+            {use.s.length ? T.helpers(use.s.map((m) => lower(MUSCLE_NAME[m])).join(', ')) : ''}
           </div>
         )}
       </div>
-      <div className="streak">{dose(state, id).sets} s.</div>
+      <div className="streak">{T.sets(dose(state, id).sets)}</div>
     </div>
   );
 }
@@ -246,8 +432,8 @@ export function WorkoutPreview({
     return (
       <div className="wrap">
         <EmptyState
-          title="Nie ma takiego treningu"
-          text="Mógł zostać usunięty. Wróć do listy i wybierz inny."
+          title={T.noWorkoutTitle}
+          text={T.noWorkoutText}
           cast={{ who: 'siwy', mood: 'wise' }}
         />
       </div>
@@ -274,10 +460,7 @@ export function WorkoutPreview({
           // Szacunek mówi, ile trening powinien trwać; zegar — ile trwał u ciebie naprawdę.
           const avg = averageTime(state.log, w);
           return avg ? (
-            <p className="wmeta">
-              Twój średni czas: {durationText(avg.secs)}{' '}
-              {avg.n === 1 ? '(z ostatniego treningu)' : `(z ${avg.n} ostatnich)`}
-            </p>
+            <p className="wmeta">{T.avg(durationText(avg.secs), avg.n)}</p>
           ) : null;
         })()}
         {w.desc && <p className="lead">{w.desc}</p>}
@@ -286,28 +469,26 @@ export function WorkoutPreview({
           (() => {
             const base = allWorkouts(state).find((x) => x.id === w.base);
             return base ? (
-              <p className="tight">
-                Twoja wersja treningu <a href={workoutPath(base.id)}>{base.name}</a>.
-              </p>
+              <p className="tight">{T.yourVersion(<a href={workoutPath(base.id)}>{base.name}</a>)}</p>
             ) : null;
           })()}
         <p className="exjoke">{WORKOUT_JOKES[w.id] ?? pick(OWN_WORKOUT_JOKES, w.name.length + w.items.length)}</p>
         <div className="actions">
           <button className="btn wide" onClick={() => onStart(w.id)} disabled={!ids.length}>
-            Zacznij: {w.name}
+            {T.startNamed(w.name)}
           </button>
           {own ? (
             <div className="btnrow">
               <button className="btn ghost" onClick={() => go(workoutEditPath(w.id))}>
-                Edytuj
+                {T.edit}
               </button>
               <button className="btn ghost" onClick={() => onDelete(w)}>
-                Usuń
+                {T.del}
               </button>
             </div>
           ) : (
             <button className="btn ghost wide" onClick={() => go(workoutNewPath(w.id))}>
-              Skopiuj i zmień pod siebie
+              {T.copy}
             </button>
           )}
         </div>
@@ -315,7 +496,7 @@ export function WorkoutPreview({
 
       <PrepCard state={state} workout={w} />
 
-      <div className="sect-label">Kolejność i serie na dziś</div>
+      <div className="sect-label">{T.order}</div>
       {blocksOf(w.items).map((b) => {
         const sets = (id: ExerciseId) => dose(state, id).sets;
         const lines = b.ids.map((x, i) => (
@@ -339,17 +520,13 @@ export function WorkoutPreview({
       })}
 
       <div className="grp" style={{ marginTop: 14 }}>
-        <h2>Które partie pracują</h2>
-        <p className="tight">
-          Serie na partię w tej sesji: główny mięsień ruchu liczy się w całości, pomocniczy w połowie,
-          a serie wybuchowe i na czas — za pół. Kreska na pasku to ok. {RULES.sessionCap} serii,
-          powyżej których przyrost prawie przestaje rosnąć.
-        </p>
+        <h2>{T.muscles}</h2>
+        <p className="tight">{T.musclesText(RULES.sessionCap)}</p>
         <MuscleBars loads={r.loads} />
       </div>
 
       <div className="grp">
-        <h2>Doradca</h2>
+        <h2>{T.advisor}</h2>
         <DesignNotes notes={r.notes} />
       </div>
 
@@ -359,7 +536,7 @@ export function WorkoutPreview({
 
       {plans.length > 0 && (
         <div className="grp">
-          <h2>W planach</h2>
+          <h2>{T.inPlans}</h2>
           <ul className="ptlist">
             {plans.map((p) => (
               <li key={p.id}>
@@ -398,7 +575,7 @@ export function WorkoutBuilder({
 }) {
   const editing = id ? state.workouts.find((w) => w.id === id) : undefined;
   const source = editing ?? (from ? allWorkouts(state).find((w) => w.id === from) : undefined);
-  const [name, setName] = useState(editing ? editing.name : source ? `${source.name} — moja wersja` : '');
+  const [name, setName] = useState(editing ? editing.name : source ? T.myVersion(source.name) : '');
   const [kind, setKind] = useState<WorkoutKind | ''>(source?.kind ?? '');
   const sourceItems = source ? source.items.map((i) => i.ex) : [];
   // `hasOwn`, bo adres wpisany ręcznie (`…/edytuj/constructor`) trafiłby w prototyp obiektu
@@ -428,8 +605,8 @@ export function WorkoutBuilder({
     return (
       <div className="wrap">
         <EmptyState
-          title="Tego treningu nie da się edytować"
-          text="Edytować można tylko własne treningi. Gotowy skopiujesz z jego podglądu."
+          title={T.noEditTitle}
+          text={T.noEditText}
           cast={{ who: 'siwy', mood: 'wise' }}
         />
       </div>
@@ -454,7 +631,7 @@ export function WorkoutBuilder({
   const add = (x: ExerciseId) => {
     setPickKey((k) => k + 1);
     if (items.includes(x)) {
-      onToast(`${ex(x).name} już jest w treningu.`);
+      onToast(T.already(ex(x).name));
       return;
     }
     setItems([...items, x]);
@@ -468,7 +645,7 @@ export function WorkoutBuilder({
   const replace = (old: ExerciseId, neu: ExerciseId) => {
     setSwapFor(null);
     if (items.includes(neu)) {
-      onToast(`${ex(neu).name} już jest w treningu.`);
+      onToast(T.already(ex(neu).name));
       return;
     }
     setItems(items.map((x) => (x === old ? neu : x)));
@@ -479,7 +656,7 @@ export function WorkoutBuilder({
     onToast(`${ex(old).name} → ${ex(neu).name}.`);
     // Wiersz powstaje od nowa pod nowym ćwiczeniem — fokus wraca na jego nazwę, a nie na początek strony.
     requestAnimationFrame(() =>
-      document.querySelector<HTMLButtonElement>(`.bl-name[aria-label="Zamień: ${CSS.escape(ex(neu).name)}"]`)?.focus(),
+      document.querySelector<HTMLButtonElement>(`.bl-name[aria-label="${T.swapAria(CSS.escape(ex(neu).name))}"]`)?.focus(),
     );
   };
 
@@ -493,11 +670,11 @@ export function WorkoutBuilder({
 
   const save = () => {
     if (!name.trim()) {
-      onToast('Nadaj treningowi nazwę.');
+      onToast(T.needName);
       return;
     }
     if (!items.length) {
-      onToast('Dodaj przynajmniej jedno ćwiczenie.');
+      onToast(T.needEx);
       return;
     }
     // Własna wersja pamięta, od czego się zaczęła; kopia własnej — ten sam gotowy początek.
@@ -525,42 +702,34 @@ export function WorkoutBuilder({
   return (
     <>
       <div className="wrap">
-        <p className="lead">
-          Dodawaj ćwiczenia, a doradca od razu policzy serie na partie, czas i kolejność. Rodzaj
-          treningu mówi mu, czego się spodziewać — od push nikt nie oczekuje wiosłowania.
-        </p>
+        <p className="lead">{T.builderLead}</p>
         {(() => {
           // Od czego zaczęła się ta wersja — gotowy trening zostaje bez zmian, także w planach.
           const baseId = editing?.base ?? (source && !editing && !isOwn(source) ? source.id : source?.base);
           const base = baseId ? allWorkouts(state).find((w) => w.id === baseId) : undefined;
           return base ? (
-            <p className="tight">
-              Na podstawie: <a href={workoutPath(base.id)}>{base.name}</a>. Oryginał zostaje bez zmian — także
-              w planach, które go używają.
-            </p>
+            <p className="tight">{T.basedOn(<a href={workoutPath(base.id)}>{base.name}</a>)}</p>
           ) : null;
         })()}
         {extra && items.includes(extra) && (
-          <p className="tight">
-            Dopisane na końcu: <b>{ex(extra).name}</b>. Przesuń je strzałkami w odpowiednie miejsce, a potem zapisz.
-          </p>
+          <p className="tight">{T.added(<b>{ex(extra).name}</b>)}</p>
         )}
       </div>
 
       <div className="grp builder">
         <label className="fld">
-          <span>nazwa</span>
+          <span>{T.name}</span>
           <input
             type="text"
-            placeholder="np. Pośladki i core — wtorek"
+            placeholder={T.namePh}
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
         </label>
         <label className="fld">
-          <span>rodzaj</span>
+          <span>{T.type}</span>
           <select value={kind} onChange={(e) => setKind(e.target.value as WorkoutKind | '')}>
-            <option value="">bez rodzaju — tylko zasady ogólne</option>
+            <option value="">{T.noType}</option>
             {(Object.keys(KIND_LABEL) as WorkoutKind[]).map((k) => (
               <option key={k} value={k}>
                 {KIND_LABEL[k]}
@@ -570,9 +739,9 @@ export function WorkoutBuilder({
         </label>
 
         <label className="fld">
-          <span>przerwa między seriami</span>
+          <span>{T.rest}</span>
           <select value={String(rest)} onChange={(e) => setRest(e.target.value ? Number(e.target.value) : '')}>
-            <option value="">z rodzaju ćwiczenia — zalecane</option>
+            <option value="">{T.restAuto}</option>
             {[60, 90, 120, 150, 180].map((s) => (
               <option key={s} value={s}>
                 {restLabel(s)}
@@ -581,10 +750,10 @@ export function WorkoutBuilder({
           </select>
         </label>
         <span className="seg-label" aria-hidden="true">
-          jak robić
+          {T.how}
         </span>
         <Segmented
-          label="Jak robić ćwiczenia"
+          label={T.howAria}
           value={circ.size ? 'circuit' : 'sets'}
           // Ponowne stuknięcie w zaznaczony wariant niczego nie zmienia — inaczej kopia obwodu
           // z ćwiczeniem po nim (podciąganie po obwodzie trenera) wciągnęłaby je do stacji.
@@ -593,13 +762,13 @@ export function WorkoutBuilder({
             setCirc(v === 'circuit' ? new Set(items) : new Set());
           }}
           options={[
-            { key: 'sets', label: 'Serie pod rząd' },
-            { key: 'circuit', label: 'Obwód — rundy' },
+            { key: 'sets', label: T.straight },
+            { key: 'circuit', label: T.circuit },
           ]}
         />
         {circ.size > 0 && (
           <label className="fld">
-            <span>przerwa po rundzie</span>
+            <span>{T.roundRest}</span>
             <select value={roundRest} onChange={(e) => setRoundRest(Number(e.target.value))}>
               {[60, 90, 120, 150, 180].map((s) => (
                 <option key={s} value={s}>
@@ -619,19 +788,19 @@ export function WorkoutBuilder({
                 type="button"
                 className="bl-name"
                 aria-expanded={swapFor === x}
-                aria-label={`Zamień: ${ex(x).name}`}
+                aria-label={T.swapAria(ex(x).name)}
                 onClick={() => setSwapFor(swapFor === x ? null : x)}
               >
                 {ex(x).name}
               </button>
               <select
-                aria-label={`Serie: ${ex(x).name}`}
+                aria-label={T.setsAria(ex(x).name)}
                 value={dose(state, x).sets}
                 onChange={(e) => onSetsChange(x, Number(e.target.value))}
               >
                 {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
                   <option key={n} value={n}>
-                    {n} s.
+                    {T.sets(n)}
                   </option>
                 ))}
               </select>
@@ -643,12 +812,12 @@ export function WorkoutBuilder({
                 // w obwodzie par nie ma — stacje i tak idą na zmianę.
                 disabled={!i || pairs[i - 1] || circ.has(x) || circ.has(items[i - 1]!)}
                 aria-pressed={pairs[i] ?? false}
-                aria-label={`Na zmianę z poprzednim: ${ex(x).name}`}
-                title="Na zmianę z poprzednim"
+                aria-label={T.pairAria(ex(x).name)}
+                title={T.pairTitle}
               >
                 ↔
               </button>
-              <button type="button" className="bl-up" onClick={() => move(i, -1)} disabled={!i} aria-label={`W górę: ${ex(x).name}`}>
+              <button type="button" className="bl-up" onClick={() => move(i, -1)} disabled={!i} aria-label={T.upAria(ex(x).name)}>
                 ↑
               </button>
               <button
@@ -656,7 +825,7 @@ export function WorkoutBuilder({
                 className="bl-down"
                 onClick={() => move(i, 1)}
                 disabled={i === items.length - 1}
-                aria-label={`W dół: ${ex(x).name}`}
+                aria-label={T.downAria(ex(x).name)}
               >
                 ↓
               </button>
@@ -670,16 +839,14 @@ export function WorkoutBuilder({
                   setPaired(new Set([...paired].filter((c) => c !== x)));
                   if (swapFor === x) setSwapFor(null);
                 }}
-                aria-label={`Usuń: ${ex(x).name}`}
+                aria-label={T.delAria(ex(x).name)}
               >
                 ×
               </button>
             </div>
             {swapFor === x && (
               <div className="bl-swap">
-                <p className="tight">
-                  Zamień <b>{ex(x).name}</b> na ćwiczenie, które robi podobną robotę:
-                </p>
+                <p className="tight">{T.swapFor(<b>{ex(x).name}</b>)}</p>
                 <div className="bl-swap-opts">
                   {similarTo(x, { exclude: items, gear: workoutGear(items) }).map((o) => (
                     <button key={o} type="button" className="btn ghost sm" onClick={() => replace(x, o)}>
@@ -687,9 +854,9 @@ export function WorkoutBuilder({
                     </button>
                   ))}
                 </div>
-                <ExercisePicker label="albo dowolne z atlasu" value={null} onChange={(o) => replace(x, o)} />
+                <ExercisePicker label={T.anyAtlas} value={null} onChange={(o) => replace(x, o)} />
                 <button type="button" className="btn ghost sm" onClick={() => setSwapFor(null)}>
-                  Zostaw {ex(x).name}
+                  {T.keep(ex(x).name)}
                 </button>
               </div>
             )}
@@ -697,13 +864,7 @@ export function WorkoutBuilder({
           ))}
         </div>
         {items.length > 0 && (
-          <p className="hint">
-            Stuknij nazwę ćwiczenia, żeby zamienić je na podobne w tym samym miejscu; × usuwa je z treningu.
-            Liczba serii należy do ćwiczenia, nie do treningu — zmienia się wszędzie, gdzie to ćwiczenie
-            występuje, i dalej prowadzi ją silnik progresji. ↔ łączy ćwiczenie z poprzednim w parę
-            robioną na zmianę. W obwodzie liczba rund to liczba serii najdłuższej stacji, a przerwa po
-            rundzie skraca się sama, gdy kolejne obwody idą równo.
-          </p>
+          <p className="hint">{T.hint}</p>
         )}
         {blocks
           .filter((b) => b.kind === 'pair')
@@ -711,34 +872,36 @@ export function WorkoutBuilder({
           .filter((x) => x.why.length)
           .map(({ b, why }) => (
             <p className="tight warnline" key={b.n}>
-              Para {b.n}: {why.join(' ')}
+              {T.pair(b.n, why.join(' '))}
             </p>
           ))}
 
-        <ExercisePicker key={pickKey} label="dodaj ćwiczenie" value={null} onChange={add} />
+        <ExercisePicker key={pickKey} label={T.addEx} value={null} onChange={add} />
 
         {!r.orderOk && (
           <button className="btn ghost sm" style={{ marginTop: 10 }} onClick={() => setItems(r.order)}>
-            Ułóż kolejność według zasad
+            {T.reorder}
           </button>
         )}
       </div>
 
       <div className="grp">
         <h2>
-          Doradca{items.length ? ` · ${r.sets} serii · ok. ${Math.max(1, Math.round(r.secs / 60))} min` : ''}
+          {T.advisor}
+          {items.length ? T.advisorSum(r.sets, Math.max(1, Math.round(r.secs / 60))) : ''}
         </h2>
-        {items.length ? <DesignNotes notes={r.notes} /> : <p className="tight">Czeka na pierwsze ćwiczenie.</p>}
+        {items.length ? <DesignNotes notes={r.notes} /> : <p className="tight">{T.waiting}</p>}
         <MuscleBars loads={r.loads} />
       </div>
 
       <div className="wrap">
         <div className="actions">
           <button className="btn wide" onClick={save}>
-            Zapisz trening
+            {T.save}
           </button>
+          {/* i18n-ignore: trasa */}
           <button className="btn ghost wide" onClick={() => goBack('#/treningi')}>
-            Anuluj
+            {T.cancel}
           </button>
         </div>
       </div>
