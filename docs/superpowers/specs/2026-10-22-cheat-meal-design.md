@@ -73,3 +73,16 @@ practices. Pick recommended. I am away from machine. Plan it out and then finish
   documented limitation between 00:00 and 02:00 Polish time.
 - Without a weighing the gym engine gives no training kcal; then only steps adjust the goal.
 - The cheat meal is one per day.
+
+## Decisions made during implementation
+
+| Topic | Decision | Why |
+| --- | --- | --- |
+| No training plan, no logged trainings | The profile's weekly assumption applies only to someone who logs trainings in the app (a typical training exists in the last 90 days). Otherwise no training difference at all | Found by an existing test: a diet-only user would lose ~70 kcal on every closed day "without training" — a missing log is not a missing training |
+| Planned session without an estimate | 250 kcal (about an hour of strength training) | `plannedBurn` needs a weighing; without one the plan still says a session is due |
+| Rounding | Activity differences round to 10 kcal, like the weekly correction | Steadier numbers; ±5 kcal is noise |
+| Leftover of the weekly spread | Reported only from 50 kcal | Smaller leftovers come from rounding, not the 10 % cap, and the sentence names the cap |
+| "Offset with trainings" | Offered only to someone who logs trainings | A "typical training" of a person who never logged one is invented |
+| Cards drawn outside the app's bridge | The activity hook returns no activity (goal as before) | The Today card can be rendered without the provider (tests) and must not crash |
+| Steps "as now" with nothing logged | The option says „0 — nic jeszcze nie wpisane” | "0" alone reads like a measurement |
+| Cheat meal and the balance bars | The bars keep showing what is eaten; the planned cheat meal has its own card and is reserved in „Co teraz?” | A plan is not an entry — the bars stay the truth of the day |

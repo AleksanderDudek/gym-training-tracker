@@ -226,13 +226,16 @@ function CheatBody({
           <legend>Ruch do końca dnia</legend>
           {belowTarget ? (
             <div className="fd-diet-radios" role="radiogroup" aria-label="Kroki do końca dnia">
+              <p className="fd-diet-radiohead" aria-hidden="true">
+                Kroki
+              </p>
               <label className="check-row">
                 <input type="radio" name="cheat-steps" checked={stepsChoice === 'target'} onChange={() => setStepsChoice('target')} />
                 Dojdę do celu ({formatNumber(profile.targetSteps, 0)} kroków)
               </label>
               <label className="check-row">
                 <input type="radio" name="cheat-steps" checked={stepsChoice === 'now'} onChange={() => setStepsChoice('now')} />
-                Zostanę przy obecnych ({formatNumber(stepsNow, 0)})
+                Zostanę przy obecnych ({stepsNow > 0 ? formatNumber(stepsNow, 0) : '0 — nic jeszcze nie wpisane'})
               </label>
               <label className="check-row">
                 <input type="radio" name="cheat-steps" checked={stepsChoice === 'custom'} onChange={() => setStepsChoice('custom')} />
@@ -259,6 +262,9 @@ function CheatBody({
             <p className="tight">Trening zrobiony: {kcalText(now.training.done)}.</p>
           ) : (
             <div className="fd-diet-radios" role="radiogroup" aria-label="Trening do końca dnia">
+              <p className="fd-diet-radiohead" aria-hidden="true">
+                Trening
+              </p>
               {now.training.source === 'plan' && now.training.planned > 0 ? (
                 <>
                   <label className="check-row">
