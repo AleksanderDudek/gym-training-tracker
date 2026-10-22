@@ -1008,6 +1008,46 @@ gdzie ich nie ma, stoi „—”.
 a te może czytać wyłącznie tarcza zegarka — aplikacja dostaje odmowę już przy kompilacji.
 Paczka ma na niego miejsce, a ekran umie go pokazać, gdyby kiedyś przyszedł z innego źródła.
 
+**Czy to działa — stan połączenia.** Droga paczki jest długa: zegarek → Bluetooth → Garmin
+Connect na telefonie → internet → serwer → ta przeglądarka. Kiedy danych nie ma, nikt nie
+powinien zgadywać, w którym miejscu się urwała. Karta zegarka zaczyna się od kropki i jednego
+zdania (`src/deviceStatus.ts`, `src/components/DeviceStatus.tsx`):
+
+- **działa** — „Działa — ostatnia paczka dziś 14:32 (12 min temu), następna ok. 15:02.” Do pół
+  godziny i kwadransa zapasu od ostatniej paczki (zegarek planuje przebieg w tle „nie wcześniej
+  niż”, a system potrafi go przesunąć o kilka minut); po porze następnej — „następna lada chwila”;
+- **spóźnia się** — „Kolejna paczka się spóźnia — miała przyjść ok. 15:02.” z najczęstszymi
+  przyczynami (telefon za daleko, Bluetooth, Garmin Connect uśpiony przez oszczędzanie baterii)
+  i pocieszeniem, że dni nie przepadają, bo zegarek za każdym razem wysyła cały tydzień;
+- **od dawna nic** — spóźnienie dłuższe niż sześć godzin: „Brak danych od 7 godz.”;
+- **czeka na pierwszą paczkę**, **zły klucz** i **bez połączenia z serwerem** — ten ostatni nie
+  zgaduje, tylko mówi, że nie da się teraz zapytać, i pokazuje ostatnią znaną paczkę.
+
+Liczy się czas, w którym zegarek zrobił paczkę (`t`), a nie chwila odbioru: paczka sprzed ośmiu
+godzin odebrana przed chwilą to nadal dane sprzed ośmiu godzin. Pod zdaniem: dzisiejsze kroki
+z zegarka i stan, z którego są („rosną z każdą paczką”), albo „Dzisiejszych danych jeszcze nie
+ma”, i to, kiedy ostatnio zapytano serwer. **„Sprawdź teraz”** mówi, czy przyszła **nowa**
+paczka — porównuje jej czas z tym, co karta już pokazywała — a jeśli nie, co ile zegarek
+wysyła i że START na zegarku wysyła od razu.
+
+**„Dane nie przychodzą?”** — lista wszystkiego, co może przerwać drogę paczki: Bluetooth
+i zegarek blisko telefonu, Garmin Connect zalogowany i działający w tle (Android: bateria „Bez
+ograniczeń”, iPhone: odświeżanie w tle), GYM TRACKER otwarty choć raz na zegarku (bez tego
+zegarek nie planuje wysyłek), klucz w ustawieniach (w becie — w aplikacji Connect IQ Store, po
+publikacji — w Garmin Connect), internet w telefonie, tryb samolotowy, oszczędzanie energii
+i Nie przeszkadzać na zegarku oraz ekran GYM TRACKER na zegarku, który mówi, jak poszła ostatnia
+wysyłka i kiedy następna. Najbardziej prawdopodobna przyczyna stoi na górze: przed pierwszą
+paczką klucz i pierwsze otwarcie, przy spóźnieniu Bluetooth, przy długiej ciszy Garmin Connect
+w tle. Lista rozwija się sama przy spóźnieniu, a przed pierwszą paczką — dopiero po pierwszym
+pytaniu serwera, żeby tuż po „Połącz zegarek” nie straszyć obok kroków połączenia.
+
+**Poza ustawieniami.** Ekran kroków i cardio ma nad danymi „Z zegarka” jedną linię stanu
+z linkiem „Stan połączenia →” (`#/ustawienia?karta=zegarek` — trasy siedzą w hashu, więc kartę
+wskazuje zapytanie, a karta sama się do siebie przewija). Karta „Kroki i cardio” na ekranie Dziś
+odzywa się **tylko przy spóźnieniu** („Zegarek nie przysłał danych od 7 godz. — sprawdź
+połączenie →”) i dopiero po pytaniu serwera w tej wizycie: zaraz po otwarciu zapis ma jeszcze
+starą paczkę, a nowa może właśnie czekać na serwerze. Gdy wszystko działa — ani słowa.
+
 Karta zegarka pojawia się, gdy build zna adres serwera i adres aplikacji w Connect IQ Store
 (zmienna `GARMIN_APP_URL` w GitHubie). Wdrożenie: `garmin/README.md` i `server/api/README.md`.
 
@@ -1068,6 +1108,19 @@ sprawdza co godzinę; dane przychodzą też przy każdym otwarciu aplikacji na t
 
 Wpisy z telefonu, jak z zegarka, wyprowadza `cardioOf` z liczb w zapisie (`phone`), więc mają
 dopisek „z telefonu” i nie mają krzyżyka. „Usuń wszystkie dane” odłącza też telefon.
+
+**Stan połączenia — jak przy zegarku.** Ten sam model i te same zdania (część „Zegarek Garmin”),
+tylko z godzinnym rytmem: „działa” do godziny i kwadransa od ostatniej paczki, potem „spóźnia
+się”, po sześciu godzinach spóźnienia — „Brak danych od …”. Karta pokazuje dzisiejsze kroki
+z telefonu razem ze źródłem (Zdrowie albo Health Connect), a „Sprawdź teraz” — czy przyszła nowa
+paczka i że „Wyślij teraz” w GYM TRACKER Zdrowie wysyła od razu. Lista „Dane nie przychodzą?”
+jest na telefon, z którego przychodzą paczki (przed pierwszą — na ten, na którym otwarto stronę):
+dostęp do danych w Health Connect razem z „dostępem w tle” albo w Zdrowiu na iPhonie, wyłączona
+optymalizacja baterii dla GYM TRACKER Zdrowie (iPhone: odświeżanie w tle; zablokowany iPhone nie
+oddaje danych zdrowia, więc paczka wychodzi po odblokowaniu), Garmin Connect albo inna aplikacja
+zapisująca dane w Health Connect lub Zdrowiu, „Wyślij teraz” i internet. Przy spóźnieniu na
+górze stoi bateria, przed pierwszą paczką — klucz i dostęp do danych. Linia na ekranie kroków
+(„Z telefonu”) i uwaga na ekranie Dziś działają tak samo jak dla zegarka.
 
 Karta pojawia się, gdy build zna adres serwera i adres co najmniej jednej aplikacji (zmienne
 `HEALTH_IOS_URL` i `HEALTH_ANDROID_URL` w GitHubie). Pokazuje instrukcję dla telefonu, na
@@ -1371,6 +1424,8 @@ src/
     Structure.tsx           „przed treningiem”: przygotuj, rozgrzewka; nagłówki par i wskazówki serii
     Health.tsx              zastrzeżenie zdrowotne: krótka wersja, pełna karta i uwagi do liczb z zegarka i telefonu
     Garmin.tsx              karta zegarka w ustawieniach: klucz, kroki połączenia, stan, odłączenie
+    DeviceStatus.tsx        stan połączenia słowami: nagłówek kart zegarka i telefonu, lista „Dane nie przychodzą?”, linia na ekranie kroków, uwaga na Dziś
+    DeviceStatus.test.tsx   13 testów stanu w kartach, wyniku „Sprawdź teraz”, kolejności listy, linii na ekranie kroków i uwagi tylko przy spóźnieniu
     Phone.tsx               karta „Zdrowie z telefonu”: klucz, instrukcja dla iPhone'a albo Androida, stan, odłączenie
     Phone.test.tsx          8 testów karty (adresy z buildu, Android, komputer, zły klucz, stan), wpisów i liczb „z telefonu” i propozycji ważenia
     Boost.tsx               „Na postęp w dzień wolny” na zakładce Plan i ekranie Dziś
@@ -1423,17 +1478,19 @@ src/
   install.test.ts           2 testy miejsca: iPhone w karcie, w aplikacji z ikony, Android
   watchseal.ts              koperta zegarka: klucz, klucze pochodne, AES-256-CBC i HMAC-SHA256
   watchseal.test.ts         5 testów: wektor wspólny z zegarkiem, podróbki, czytanie klucza
-  mailbox.ts                skrzynka na serwerze, wspólna dla zegarka i telefonu: klucz w pamięci strony, odbiór, odłączenie
-  garmin.ts                 zegarek w przeglądarce: klucz, odbiór paczki, odłączenie
+  mailbox.ts                skrzynka na serwerze, wspólna dla zegarka i telefonu: klucz w pamięci strony, odbiór, czas i wynik ostatniego sprawdzenia, odłączenie
+  deviceStatus.ts           stan połączenia z zegarkiem i telefonem (działa, spóźnia się, od dawna nic, zły klucz, bez sieci), następna paczka, słowa o czasie
+  deviceStatus.test.ts      19 testów progów, następnej paczki, braku sieci, słów o czasie i wyniku „Sprawdź teraz”
+  garmin.ts                 zegarek w przeglądarce: klucz, odbiór paczki, stan połączenia, odłączenie
   garmin.test.ts            3 testy odpowiedzi serwera i godziny ostatnich danych
-  phone.ts                  telefon w przeglądarce: klucz, adresy aplikacji z buildu, odbiór, rodzaj telefonu
+  phone.ts                  telefon w przeglądarce: klucz, adresy aplikacji z buildu, odbiór, stan połączenia, rodzaj telefonu
   phone.test.ts             3 testy wspólnego wektora, cudzej paczki w skrzynce i rozpoznania telefonu
   pwa.ts                    service worker od strony aplikacji: rejestracja, „nowa wersja czeka”, wpuszczenie poprawki z ekranu awarii
   pwa.test.ts               12 testów rejestracji, pytań o nową wersję i obu „Odśwież” — bez service workera
   sw.ts                     service worker (Workbox, injectManifest): powłoka offline, baza produktów, zdjęcia, kafelki mapy, Web Push
   csp.test.ts               5 testów polityki bezpieczeństwa: każdy obcy adres z kodu przepuszczony, serwer aplikacji, miejsce znacznika
   styles.css                arkusz stylów
-  styles.contrast.test.ts   9 testów kontrastu tokenów, liczonych wprost z arkusza
+  styles.contrast.test.ts   10 testów kontrastu tokenów (także kropki stanu połączenia), liczonych wprost z arkusza
   vite-env.d.ts             typy modułu `virtual:food-data`
   test/setup.ts             przygotowanie testów: IndexedDB w pamięci, jest-dom i sprzątanie pod jsdom
   App.tsx                   spina stan i widoki
@@ -1944,8 +2001,8 @@ numer siedzi tam na własnej, stalowej etykiecie.
 **Progi pilnuje test, nie pamięć.** `styles.contrast.test.ts` czyta arkusz, wyciąga z niego
 tokeny i liczy kontrast po WCAG: wersje `ink` powyżej 4,5:1 na każdym tle (także złota wsparcia),
 `--edge` powyżej 3:1, biel na złotym przycisku kawy i tekst na złotym tle wsparcia powyżej 4,5:1,
-tusze stanów powyżej 4,5:1 i każdy kafelek ciężaru
-z właściwym kolorem liczby. Sprawdza też rzecz odwrotną — że czyste akcenty
+tusze stanów powyżej 4,5:1, kropki stanu połączenia z zegarkiem i telefonem powyżej 3:1 i każdy
+kafelek ciężaru z właściwym kolorem liczby. Sprawdza też rzecz odwrotną — że czyste akcenty
 nadal **nie** nadają się na tekst, bo gdyby kiedyś przeskoczyły próg, podział na dwa tokeny
 byłby już tylko zabobonem.
 
