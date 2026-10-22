@@ -8,6 +8,40 @@ import { acwr } from './math';
 import { P } from './plan';
 import { dayKey, daysBetween, planWeekdays } from './schedule';
 import type { Snapshot } from './snapshot';
+import { LOCALE, text } from '../i18n';
+
+const T = text({
+  pl: {
+    dose: (n: number, secs: boolean) =>
+      `1–3 serie po ${n} ${secs ? 's' : 'powt.'}, rozłożone w ciągu dnia, z zapasem 2–3 powtórzeń.`,
+    profileTitle: (name: string) => `Przekąska profilu: ${name}`,
+    profileWhy: (focus: string) => `Akcent planu „${focus}” rośnie też między treningami.`,
+    stalledTitle: (name: string) => `${name} stoi w miejscu`,
+    stalledWhy: (n: number) =>
+      `Od ${n} sesji bez postępu. Krótka, lżejsza seria w dzień wolny to częstszy bodziec bez zmęczenia przed terminem.`,
+    lagTitle: (muscle: string) => `Partia do dołożenia: ${muscle}`,
+    lagWhy: (sets: string, target: number) =>
+      `W planie ${sets} serii tygodniowo — mniej niż ${target}, od których przyrost opłaca się najbardziej.`,
+    extraTitle: 'Masz zapas: trening dodatkowy',
+    extraText: (wait: number, name: string) =>
+      `Następny termin za ${wait} dni, a obciążenie z ostatnich tygodni jest w normie. ${name} doda ruchu bez zabierania sił na termin — liczy się do doświadczenia i odznak, kalendarza planu nie rusza.`,
+  },
+  en: {
+    dose: (n: number, secs: boolean) =>
+      `1–3 sets of ${n} ${secs ? 's' : 'reps'}, spread through the day, with 2–3 reps in reserve.`,
+    profileTitle: (name: string) => `Exercise snack for your profile: ${name}`,
+    profileWhy: (focus: string) => `Your plan’s ‘${focus}’ focus keeps growing between workouts too.`,
+    stalledTitle: (name: string) => `${name} has stalled`,
+    stalledWhy: (n: number) =>
+      `No progress for ${n} sessions. A short, lighter set on a rest day means a more frequent stimulus without tiring you before your next deadline.`,
+    lagTitle: (muscle: string) => `Muscle group to top up: ${muscle}`,
+    lagWhy: (sets: string, target: number) =>
+      `Your plan has ${sets} sets a week — fewer than the ${target} where growth pays off most.`,
+    extraTitle: 'Room to spare: an extra workout',
+    extraText: (wait: number, name: string) =>
+      `Next deadline in ${wait} days, and your load over recent weeks is normal. ${name} adds movement without draining you for the deadline — it counts towards XP and badges and leaves the plan calendar alone.`,
+  },
+});
 
 /**
  * Co dorzucić w dzień bez terminu, żeby postęp szedł dalej — przekąskę ruchową albo
@@ -52,7 +86,7 @@ const snackable = (id: ExerciseId, gear: WorkoutGear): boolean =>
 function doseText(state: AppState, id: ExerciseId): string {
   const secs = EX[id]!.unit === 'secs';
   const n = Math.max(secs ? 10 : 2, Math.round(P(state, id).target * 0.6));
-  return `1–3 serie po ${n} ${secs ? 's' : 'powt.'}, rozłożone w ciągu dnia, z zapasem 2–3 powtórzeń.`;
+  return T.dose(n, secs);
 }
 
 const lower = (s: string): string => s.charAt(0).toLowerCase() + s.slice(1);
@@ -77,7 +111,7 @@ export function boost(state: AppState, snap: Snapshot, today: string): Boost[] {
     const spec = PROFILES[template.profile];
     const list = spec.snacks.filter((x) => snackable(x, gear));
     const id = list[seed % Math.max(1, list.length)];
-    if (id) snack(id, `Przekąska profilu: ${lower(EX[id]!.name)}`, `Akcent planu „${spec.name}” rośnie też między treningami.`);
+    if (id) snack(id, T.profileTitle(lower(EX[id]!.name)), T.profileWhy(spec.name));
   }
 
   const inPlan = [
@@ -89,8 +123,8 @@ export function boost(state: AppState, snap: Snapshot, today: string): Boost[] {
   if (stalled[0])
     snack(
       stalled[0],
-      `${EX[stalled[0]]!.name} stoi w miejscu`,
-      `Od ${state.prog[stalled[0]]!.stalls} sesji bez postępu. Krótka, lżejsza seria w dzień wolny to częstszy bodziec bez zmęczenia przed terminem.`,
+      T.stalledTitle(EX[stalled[0]]!.name),
+      T.stalledWhy(state.prog[stalled[0]]!.stalls),
     );
 
   if (out.length < 2) {
@@ -103,8 +137,8 @@ export function boost(state: AppState, snap: Snapshot, today: string): Boost[] {
       if (!id) continue;
       snack(
         id,
-        `Partia do dołożenia: ${lower(MUSCLE_NAME[m.muscle])}`,
-        `W planie ${m.sets.toLocaleString('pl-PL', { maximumFractionDigits: 1 })} serii tygodniowo — mniej niż ${RULES.weeklyTarget}, od których przyrost opłaca się najbardziej.`,
+        T.lagTitle(lower(MUSCLE_NAME[m.muscle])),
+        T.lagWhy(m.sets.toLocaleString(LOCALE, { maximumFractionDigits: 1 }), RULES.weeklyTarget),
       );
       break;
     }
@@ -119,8 +153,8 @@ export function boost(state: AppState, snap: Snapshot, today: string): Boost[] {
     result.push({
       kind: 'extra',
       workout: light.id,
-      title: 'Masz zapas: trening dodatkowy',
-      text: `Następny termin za ${wait} dni, a obciążenie z ostatnich tygodni jest w normie. ${light.name} doda ruchu bez zabierania sił na termin — liczy się do doświadczenia i odznak, kalendarza planu nie rusza.`,
+      title: T.extraTitle,
+      text: T.extraText(wait, light.name),
     });
 
   return result;

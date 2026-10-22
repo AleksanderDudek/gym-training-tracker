@@ -20,6 +20,110 @@ import type {
   Notice,
   SetResult,
 } from '../types';
+import { pluralEn, text } from '../i18n';
+
+const T = text({
+  pl: {
+    capLadder: (name: string) => `${name}: szczyt zakresu. Brak cięższego obciążenia na drabinie.`,
+    jumpHeld: (name: string, kg: number) => `${name}: gotowe do wejścia na ${kg} kg, skok wstrzymany do następnej sesji.`,
+    transStart: (name: string, kg: number, reps: number, rest: number | null) =>
+      `${name}: ${kg} kg wchodzi do pierwszej serii — 1 × ${reps}, reszta dalej na ${rest} kg.`,
+    heavyHeld: (name: string) => `${name}: kolejna ciężka seria wstrzymana do następnej sesji.`,
+    transStep: (name: string, kg: number, heavy: number, sets: number) => `${name}: ${kg} kg już w ${heavy} seriach z ${sets}`,
+    transDone: (name: string, old: number | null, kg: number | null, target: number, max: number) =>
+      `${name}: przejście domknięte — ${old} → ${kg} kg na wszystkich seriach, cel ${target}. Stąd powtórzenia znów rosną do ${max}.`,
+    heavyBack: (name: string, heavy: number) => `${name}: ciężkich serii z powrotem ${heavy}`,
+    transPaused: (name: string, kg: number | null) => `${name}: przejście wstrzymane, wracasz na ${kg} kg`,
+    setsDown: (name: string, from: number, to: number) => `${name}: ${from} → ${to} serie`,
+    targetDown: (name: string, target: number) => `${name}: cel schodzi na ${target}`,
+    stageDown: (name: string, stage: string | undefined) => `${name}: etap niżej — ${stage}`,
+    weightDown: (name: string, kg: number) => `${name}: ciężar w dół na ${kg} kg`,
+    testTooLight: (name: string, result: string, kg: number) => `${name}: ${result} to za lekko — próba jeszcze raz na ${kg} kg.`,
+    testStageEasy: (name: string, reps: number, stage: string | undefined) =>
+      `${name}: ${reps} powtórzeń to za łatwy etap — próba na „${stage}”.`,
+    testMoreSets: (name: string, reps: number, sets: number) =>
+      `${name}: ${reps} powtórzeń w serii — próba jeszcze raz przy ${sets} seriach.`,
+    testTooHeavy: (name: string, result: string, kg: number) =>
+      `${name}: ${result} to za dużo na start — próba jeszcze raz na ${kg} kg.`,
+    testStageHard: (name: string, stage: string | undefined) => `${name}: za trudny etap — próba na „${stage}”.`,
+    calibEasy: (name: string, kg: number) => `${name}: lekko poszło — próba jeszcze raz na ${kg} kg.`,
+    calibHeavy: (name: string, kg: number) => `${name}: za ciężko na start — próba jeszcze raz na ${kg} kg.`,
+    calibBallistic: (name: string, sets: number, target: number, kg: number | null) =>
+      `${name}: poziom startowy ustawiony — ${sets} × ${target} na ${kg} kg. Stąd rosną serie.`,
+    at: (kg: number) => ` na ${kg} kg`,
+    calibDone: (name: string, dose: string, where: string, max: string) =>
+      `${name}: poziom startowy ustawiony — ${dose}${where}. Stąd cel rośnie do ${max}.`,
+    thirdAtLimit: (name: string, target: number) =>
+      `${name}: trzeci raz z rzędu na granicy sił, więc cel schodzi na ${target}. Zapas jest warunkiem awansu — z niego bierze się jakość ruchu.`,
+    noReserve: (name: string) =>
+      `${name}: cel zaliczony bez zapasu, więc poziom zostaje. Awans wymaga tego samego wyniku z jednym–dwoma powtórzeniami w zapasie.`,
+    setsUp: (name: string, from: number, to: number, total: number) => `${name}: ${from} → ${to} serie (${total} powtórzeń łącznie)`,
+    leap: (result: string) => ` — wynik ${result} przeskoczył kilka stopni`,
+    targetUp: (name: string, from: number, to: string, leap: string) => `${name}: cel ${from} → ${to}${leap}`,
+    setUpReset: (name: string, from: number, to: number, min: number) => `${name}: ${from} → ${to} serie, cel wraca na ${min}`,
+    capBody: (name: string) => `${name}: szczyt zakresu. Dołóż obciążenie albo trudniejszy wariant.`,
+    stageUp: (name: string, stage: string | undefined, min: number) => `${name}: ${stage}, cel wraca na ${min}`,
+    capStage: (name: string) => `${name}: najwyższy etap opanowany.`,
+    breakDays: (days: number) => `Przerwa ${days} dni`,
+    breakShort:
+      'Cele powtórzeń zostają, ale skoki na cięższe obciążenie są wstrzymane na jedną sesję. Wróć do rytmu, potem ruszaj dalej.',
+    breakMid: (n: number) =>
+      `Cele powtórzeń wróciły do dolnej granicy zakresu w ${n} ćwiczeniach. Ciężary zostają bez zmian — po kilku tygodniach przerwy siła spada niewiele i wraca szybko.`,
+    breakWeeks: (weeks: number) => `Przerwa ${weeks} tygodni`,
+    breakLong: (n: number) =>
+      `Szacowane maksima obniżone o 10%, cele wróciły na dolną granicę. Ciężar zszedł o rozmiar w ${n} ćwiczeniach — tylko tam, gdzie po korekcie nie dało się utrzymać dolnej granicy zakresu.`,
+  },
+  en: {
+    capLadder: (name: string) => `${name}: top of the range. There’s no heavier weight on the ladder.`,
+    jumpHeld: (name: string, kg: number) => `${name}: ready to move up to ${kg} kg; the jump waits until next session.`,
+    transStart: (name: string, kg: number, reps: number, rest: number | null) =>
+      `${name}: ${kg} kg comes into the first set — 1 × ${reps}, the rest stay at ${rest} kg.`,
+    heavyHeld: (name: string) => `${name}: the next heavy set waits until next session.`,
+    transStep: (name: string, kg: number, heavy: number, sets: number) => `${name}: ${kg} kg now in ${heavy} of ${sets} sets`,
+    transDone: (name: string, old: number | null, kg: number | null, target: number, max: number) =>
+      `${name}: switch complete — ${old} → ${kg} kg on every set, target ${target}. From here reps climb again to ${max}.`,
+    heavyBack: (name: string, heavy: number) => `${name}: back to ${heavy} heavy ${pluralEn(heavy, 'set', 'sets')}`,
+    transPaused: (name: string, kg: number | null) => `${name}: switch paused, back to ${kg} kg`,
+    setsDown: (name: string, from: number, to: number) => `${name}: ${from} → ${to} sets`,
+    targetDown: (name: string, target: number) => `${name}: target drops to ${target}`,
+    stageDown: (name: string, stage: string | undefined) => `${name}: one stage down — ${stage}`,
+    weightDown: (name: string, kg: number) => `${name}: weight down to ${kg} kg`,
+    testTooLight: (name: string, result: string, kg: number) => `${name}: ${result} is too light — testing again at ${kg} kg.`,
+    testStageEasy: (name: string, reps: number, stage: string | undefined) =>
+      `${name}: ${reps} reps means this stage is too easy — testing ‘${stage}’.`,
+    testMoreSets: (name: string, reps: number, sets: number) =>
+      `${name}: ${reps} reps in a set — testing again with ${sets} sets.`,
+    testTooHeavy: (name: string, result: string, kg: number) =>
+      `${name}: ${result} is too heavy to start with — testing again at ${kg} kg.`,
+    testStageHard: (name: string, stage: string | undefined) => `${name}: stage too hard — testing ‘${stage}’.`,
+    calibEasy: (name: string, kg: number) => `${name}: that felt easy — testing again at ${kg} kg.`,
+    calibHeavy: (name: string, kg: number) => `${name}: too heavy to start with — testing again at ${kg} kg.`,
+    calibBallistic: (name: string, sets: number, target: number, kg: number | null) =>
+      `${name}: starting level set — ${sets} × ${target} at ${kg} kg. Sets grow from here.`,
+    at: (kg: number) => ` at ${kg} kg`,
+    calibDone: (name: string, dose: string, where: string, max: string) =>
+      `${name}: starting level set — ${dose}${where}. The target grows from here to ${max}.`,
+    thirdAtLimit: (name: string, target: number) =>
+      `${name}: third time in a row at your limit, so the target drops to ${target}. Reps in reserve are the condition for moving up — that’s where good form comes from.`,
+    noReserve: (name: string) =>
+      `${name}: target hit with nothing in reserve, so the level stays. To move up, hit the same result with one or two reps to spare.`,
+    setsUp: (name: string, from: number, to: number, total: number) => `${name}: ${from} → ${to} sets (${total} reps in total)`,
+    leap: (result: string) => ` — your ${result} jumped several steps`,
+    targetUp: (name: string, from: number, to: string, leap: string) => `${name}: target ${from} → ${to}${leap}`,
+    setUpReset: (name: string, from: number, to: number, min: number) => `${name}: ${from} → ${to} sets, target back to ${min}`,
+    capBody: (name: string) => `${name}: top of the range. Add load or a harder variation.`,
+    stageUp: (name: string, stage: string | undefined, min: number) => `${name}: ${stage}, target back to ${min}`,
+    capStage: (name: string) => `${name}: top stage mastered.`,
+    breakDays: (days: number) => `${days}-day break`,
+    breakShort:
+      'Rep targets stay, but jumps to heavier weights are paused for one session. Get back into your rhythm, then push on.',
+    breakMid: (n: number) =>
+      `Rep targets are back at the bottom of the range in ${n} ${pluralEn(n, 'exercise', 'exercises')}. Weights stay the same — after a few weeks off, strength drops only a little and comes back quickly.`,
+    breakWeeks: (weeks: number) => `${weeks}-week break`,
+    breakLong: (n: number) =>
+      `Estimated maxes lowered by 10%, targets back at the bottom of the range. The weight went down a size in ${n} ${pluralEn(n, 'exercise', 'exercises')} — only where the bottom of the range couldn’t be held after the adjustment.`,
+  },
+});
 
 export type Verdict = 'up' | 'hold' | 'hold-max' | 'down' | 'none';
 
@@ -76,15 +180,15 @@ function startTransition(state: AppState, id: ExerciseId, blockJump: boolean): C
   const nxt = nextWeight(state, id);
 
   if (p.weight === null || !nxt)
-    return { type: 'cap', text: `${m.name}: szczyt zakresu. Brak cięższego obciążenia na drabinie.` };
+    return { type: 'cap', text: T.capLadder(m.name) };
   if (blockJump)
-    return { type: 'held', text: `${m.name}: gotowe do wejścia na ${nxt} kg, skok wstrzymany do następnej sesji.` };
+    return { type: 'held', text: T.jumpHeld(m.name, nxt) };
 
   const reps = transReps(state, id, nxt);
   p.trans = { to: nxt, heavySets: 1, reps };
   return {
     type: 'level',
-    text: `${m.name}: ${nxt} kg wchodzi do pierwszej serii — 1 × ${reps}, reszta dalej na ${p.weight} kg.`,
+    text: T.transStart(m.name, nxt, reps, p.weight),
   };
 }
 
@@ -95,13 +199,13 @@ function advanceTransition(state: AppState, id: ExerciseId, blockJump: boolean):
   const t = p.trans!;
 
   if (blockJump)
-    return { type: 'held', text: `${m.name}: kolejna ciężka seria wstrzymana do następnej sesji.` };
+    return { type: 'held', text: T.heavyHeld(m.name) };
 
   t.reps = Math.max(t.reps, transReps(state, id, t.to));
   t.heavySets++;
 
   if (t.heavySets < p.sets)
-    return { type: 'reps', text: `${m.name}: ${t.to} kg już w ${t.heavySets} seriach z ${p.sets}` };
+    return { type: 'reps', text: T.transStep(m.name, t.to, t.heavySets, p.sets) };
 
   const old = p.weight;
   p.weight = t.to;
@@ -112,7 +216,7 @@ function advanceTransition(state: AppState, id: ExerciseId, blockJump: boolean):
 
   return {
     type: 'level',
-    text: `${m.name}: przejście domknięte — ${old} → ${p.weight} kg na wszystkich seriach, cel ${p.target}. Stąd powtórzenia znów rosną do ${p.max}.`,
+    text: T.transDone(m.name, old, p.weight, p.target, p.max),
   };
 }
 
@@ -124,30 +228,30 @@ function regress(state: AppState, id: ExerciseId): Change | null {
   if (p.trans) {
     if (p.trans.heavySets > 1) {
       p.trans.heavySets--;
-      return { type: 'down', text: `${m.name}: ciężkich serii z powrotem ${p.trans.heavySets}` };
+      return { type: 'down', text: T.heavyBack(m.name, p.trans.heavySets) };
     }
     p.trans = null;
-    return { type: 'down', text: `${m.name}: przejście wstrzymane, wracasz na ${p.weight} kg` };
+    return { type: 'down', text: T.transPaused(m.name, p.weight) };
   }
   if (m.mode === 'ballistic' && p.sets > p.minSets) {
     p.sets--;
-    return { type: 'down', text: `${m.name}: ${p.sets + 1} → ${p.sets} serie` };
+    return { type: 'down', text: T.setsDown(m.name, p.sets + 1, p.sets) };
   }
   const floor = floorReps(state, id);
   if (p.target > floor) {
     p.target = Math.max(floor, p.target - step(id));
-    return { type: 'down', text: `${m.name}: cel schodzi na ${p.target}` };
+    return { type: 'down', text: T.targetDown(m.name, p.target) };
   }
   if (m.mode === 'stage' && m.stages && (p.stage ?? 0) > 0) {
     p.stage = (p.stage ?? 0) - 1;
     p.target = p.max;
-    return { type: 'down', text: `${m.name}: etap niżej — ${STAGES[m.stages][p.stage]}` };
+    return { type: 'down', text: T.stageDown(m.name, STAGES[m.stages][p.stage]) };
   }
   const pw = prevWeight(state, id);
   if (p.weight !== null && pw) {
     p.weight = pw;
     p.target = p.max;
-    return { type: 'down', text: `${m.name}: ciężar w dół na ${pw} kg` };
+    return { type: 'down', text: T.weightDown(m.name, pw) };
   }
   return null;
 }
@@ -181,19 +285,19 @@ function placeFromTest(
     const nxt = shiftWeight(state, id, sizes);
     if (p.weight !== null && nxt) {
       p.weight = nxt;
-      return { retry: true, text: `${m.name}: ${usable}${u} to za lekko — próba jeszcze raz na ${nxt} kg.` };
+      return { retry: true, text: T.testTooLight(m.name, `${usable}${u}`, nxt) };
     }
     if (m.mode === 'stage' && m.stages) {
       const arr = STAGES[m.stages];
       if ((p.stage ?? 0) < arr.length - 1) {
         p.stage = (p.stage ?? 0) + 1;
-        return { retry: true, text: `${m.name}: ${usable} powtórzeń to za łatwy etap — próba na „${arr[p.stage]}”.` };
+        return { retry: true, text: T.testStageEasy(m.name, usable, arr[p.stage]) };
       }
     }
     if (m.mode === 'body' && p.sets < p.maxSets) {
       p.sets++;
       p.target = p.max;
-      return { retry: true, text: `${m.name}: ${usable} powtórzeń w serii — próba jeszcze raz przy ${p.sets} seriach.` };
+      return { retry: true, text: T.testMoreSets(m.name, usable, p.sets) };
     }
   }
 
@@ -201,12 +305,12 @@ function placeFromTest(
     const pw = prevWeight(state, id);
     if (p.weight !== null && pw) {
       p.weight = pw;
-      return { retry: true, text: `${m.name}: ${usable}${u} to za dużo na start — próba jeszcze raz na ${pw} kg.` };
+      return { retry: true, text: T.testTooHeavy(m.name, `${usable}${u}`, pw) };
     }
     if (m.mode === 'stage' && m.stages && (p.stage ?? 0) > 0) {
       p.stage = (p.stage ?? 0) - 1;
       const arr = STAGES[m.stages];
-      return { retry: true, text: `${m.name}: za trudny etap — próba na „${arr[p.stage]}”.` };
+      return { retry: true, text: T.testStageHard(m.name, arr[p.stage]) };
     }
   }
 
@@ -236,13 +340,13 @@ function calibrate(
     const nxt = nextWeight(state, id);
     if (effort === 'easy' && nxt && p.calibRuns < MAX_CALIB_RUNS) {
       p.weight = nxt;
-      return { type: 'level', text: `${m.name}: lekko poszło — próba jeszcze raz na ${nxt} kg.` };
+      return { type: 'level', text: T.calibEasy(m.name, nxt) };
     }
     if (effort === 'max') {
       const pw = prevWeight(state, id);
       if (pw && p.calibRuns < MAX_CALIB_RUNS) {
         p.weight = pw;
-        return { type: 'down', text: `${m.name}: za ciężko na start — próba jeszcze raz na ${pw} kg.` };
+        return { type: 'down', text: T.calibHeavy(m.name, pw) };
       }
     }
     p.phase = 'work';
@@ -251,7 +355,7 @@ function calibrate(
     p.e1rm = p.weight ? round1(epley(p.weight, p.target)) : null;
     return {
       type: 'level',
-      text: `${m.name}: poziom startowy ustawiony — ${p.sets} × ${p.target} na ${p.weight} kg. Stąd rosną serie.`,
+      text: T.calibBallistic(m.name, p.sets, p.target, p.weight),
     };
   }
 
@@ -267,10 +371,10 @@ function calibrate(
   // z liczby powtórzeń na próbie.
   p.e1rm = p.weight && m.unit === 'reps' ? round1(epley(p.weight, p.target)) : null;
   const u = m.unit === 'secs' ? ' s' : '';
-  const where = p.weight ? ` na ${p.weight} kg` : '';
+  const where = p.weight ? T.at(p.weight) : '';
   return {
     type: 'level',
-    text: `${m.name}: poziom startowy ustawiony — ${p.sets} × ${p.target}${u}${where}. Stąd cel rośnie do ${p.max}${u}.`,
+    text: T.calibDone(m.name, `${p.sets} × ${p.target}${u}`, where, `${p.max}${u}`),
   };
 }
 
@@ -362,13 +466,13 @@ function work(
         p.target = Math.max(floor, p.target - step(id));
         return {
           type: 'down',
-          text: `${m.name}: trzeci raz z rzędu na granicy sił, więc cel schodzi na ${p.target}. Zapas jest warunkiem awansu — z niego bierze się jakość ruchu.`,
+          text: T.thirdAtLimit(m.name, p.target),
         };
       }
     }
     return {
       type: 'hold',
-      text: `${m.name}: cel zaliczony bez zapasu, więc poziom zostaje. Awans wymaga tego samego wyniku z jednym–dwoma powtórzeniami w zapasie.`,
+      text: T.noReserve(m.name),
     };
   }
 
@@ -410,7 +514,7 @@ function work(
       p.sets = Math.min(p.maxSets, p.sets + (effort === 'easy' ? 2 : 1));
       return {
         type: 'reps',
-        text: `${m.name}: ${before} → ${p.sets} serie (${p.sets * p.target} powtórzeń łącznie)`,
+        text: T.setsUp(m.name, before, p.sets, p.sets * p.target),
       };
     }
     return startTransition(state, id, blockJump);
@@ -424,8 +528,8 @@ function work(
   if (p.target < p.max && usable < p.max) {
     const before = p.target;
     p.target = Math.min(p.max, Math.max(p.target + st, usable));
-    const leap = p.target - before > st ? ` — wynik ${reached}${u} przeskoczył kilka stopni` : '';
-    return { type: 'reps', text: `${m.name}: cel ${before} → ${p.target}${u}${leap}` };
+    const leap = p.target - before > st ? T.leap(`${reached}${u}`) : '';
+    return { type: 'reps', text: T.targetUp(m.name, before, `${p.target}${u}`, leap) };
   }
 
   // Wynik sięga szczytu zakresu: cel ląduje na maksimum i od razu idzie krok poziomu wyżej.
@@ -437,10 +541,10 @@ function work(
       p.target = p.min;
       return {
         type: 'level',
-        text: `${m.name}: ${p.sets - 1} → ${p.sets} serie, cel wraca na ${p.min}`,
+        text: T.setUpReset(m.name, p.sets - 1, p.sets, p.min),
       };
     }
-    return { type: 'cap', text: `${m.name}: szczyt zakresu. Dołóż obciążenie albo trudniejszy wariant.` };
+    return { type: 'cap', text: T.capBody(m.name) };
   }
 
   if (m.mode === 'stage' && m.stages) {
@@ -448,9 +552,9 @@ function work(
     if ((p.stage ?? 0) < arr.length - 1) {
       p.stage = (p.stage ?? 0) + 1;
       p.target = p.min;
-      return { type: 'level', text: `${m.name}: ${arr[p.stage]}, cel wraca na ${p.min}` };
+      return { type: 'level', text: T.stageUp(m.name, arr[p.stage], p.min) };
     }
-    return { type: 'cap', text: `${m.name}: najwyższy etap opanowany.` };
+    return { type: 'cap', text: T.capStage(m.name) };
   }
 
   // grind i carry
@@ -468,8 +572,8 @@ export function applyLayoff(state: AppState, days: number | null): Notice | null
   if (days < 21) {
     return {
       level: 'warn',
-      title: `Przerwa ${days} dni`,
-      text: 'Cele powtórzeń zostają, ale skoki na cięższe obciążenie są wstrzymane na jedną sesję. Wróć do rytmu, potem ruszaj dalej.',
+      title: T.breakDays(days),
+      text: T.breakShort,
     };
   }
 
@@ -488,8 +592,8 @@ export function applyLayoff(state: AppState, days: number | null): Notice | null
   if (days < 43) {
     return {
       level: 'warn',
-      title: `Przerwa ${days} dni`,
-      text: `Cele powtórzeń wróciły do dolnej granicy zakresu w ${n} ćwiczeniach. Ciężary zostają bez zmian — po kilku tygodniach przerwy siła spada niewiele i wraca szybko.`,
+      title: T.breakDays(days),
+      text: T.breakMid(n),
     };
   }
 
@@ -509,7 +613,7 @@ export function applyLayoff(state: AppState, days: number | null): Notice | null
 
   return {
     level: 'warn',
-    title: `Przerwa ${Math.round(days / 7)} tygodni`,
-    text: `Szacowane maksima obniżone o 10%, cele wróciły na dolną granicę. Ciężar zszedł o rozmiar w ${w} ćwiczeniach — tylko tam, gdzie po korekcie nie dało się utrzymać dolnej granicy zakresu.`,
+    title: T.breakWeeks(Math.round(days / 7)),
+    text: T.breakLong(w),
   };
 }

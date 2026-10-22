@@ -15,6 +15,206 @@ import type { MuscleId } from '../data/muscles';
 import { setsEnergy } from './energy';
 import { CIRCUIT_MOVE, PAIR_REST, ROUND_REST } from './rests';
 import type { AppState, ExerciseId, PlanTemplate, Workout, WorkoutKind } from '../types';
+import { LOCALE, pluralEn, text } from '../i18n';
+
+const T = text({
+  pl: {
+    circuitPair: (a: string, b: string, muscles: string) => `${a} i ${b} — obie stacje na ${muscles}.`,
+    kinds: {
+      full: 'Całe ciało',
+      push: 'Push — pchanie',
+      pull: 'Pull — ciągnięcie',
+      legs: 'Nogi',
+      upper: 'Góra',
+      lower: 'Dół',
+      glutes: 'Pośladki',
+      chest: 'Klatka',
+      back: 'Plecy',
+      shoulders: 'Barki',
+      arms: 'Ramiona',
+      core: 'Brzuch i core',
+      light: 'Dzień lekki',
+    } as Record<WorkoutKind, string>,
+    sessionCapTitle: (list: string) => `Za dużo naraz: ${list} serii`,
+    sessionCapText: (cap: number) =>
+      `Powyżej ok. ${cap} serii na jedną partię w jednej sesji przyrost prawie przestaje rosnąć, a zmęczenie rośnie dalej. Przenieś jedno ćwiczenie do innego dnia albo zamień je na ruch dla innej partii — ta sama liczba serii w dwóch sesjach da więcej.`,
+    orderTitle: 'Kolejność do poprawki',
+    orderText: (order: string) =>
+      `Siła rośnie najbardziej w tym ćwiczeniu, które idzie pierwsze, więc na początek to, na czym ci zależy — zwykle ruch wybuchowy albo wielostawowy. Izolacje potem, a brzuch, łydki i spacery na koniec, bo stabilizują każde ciężkie ćwiczenie. Na przyrost masy kolejność wpływa niewiele. Proponowana: ${order}.`,
+    circuitRepeatTitle: 'Obwód dwa razy z rzędu na tę samą partię',
+    circuitRepeatText: (repeats: string) =>
+      `${repeats} W obwodzie stacje mają zmieniać partie — wtedy jedna odpoczywa, kiedy pracuje druga, i krótkie przejścia wystarczą.`,
+    minutesTitle: (minutes: number) => `Ok. ${minutes} minut`,
+    tooLongText:
+      'To już dwa treningi w jednym — pod koniec jakość serii spada, a ryzyko błędu technicznego rośnie. Podziel go na dwa dni.',
+    longText:
+      'Długo jak na jedną sesję. Da się, ale ostatnie ćwiczenia robisz już na zmęczeniu — ważne niech idą na początek.',
+    manyTitle: (n: number) => `${n} ćwiczeń`,
+    manyText: 'Przy tylu ruchach każdy dostaje mało uwagi. Cztery do siedmiu ćwiczeń to typowy, dobrze znoszony zakres.',
+    pushHasPullTitle: 'W treningu pchania jest ciągnięcie',
+    pushHasPullText: (names: string) =>
+      `${names} — to ruchy dnia pull. W układzie push/pull mieszanie zabiera przerwę mięśniom, które miały odpocząć.`,
+    pullHasPushTitle: 'W treningu ciągnięcia jest pchanie',
+    pullHasPushText: (names: string) =>
+      `${names} — to ruchy dnia push. Przenieś je tam, gdzie klatka i triceps i tak pracują.`,
+    noKneeTitle: 'Brakuje przysiadu albo wykroku',
+    noKneeText:
+      'Nogi to dwa wzorce: kolano (przysiad, wykrok, wypychanie) i biodro (martwy ciąg, hip thrust). Bez pierwszego czworogłowe zostają w tyle.',
+    noHipTitle: 'Brakuje zawiasu biodrowego',
+    noHipText:
+      'Nogi to dwa wzorce: kolano i biodro. Bez martwego ciągu, RDL albo hip thrustu tył uda pracuje tylko pomocniczo.',
+    missLegs: 'nóg',
+    missPush: 'pchania',
+    missPull: 'ciągnięcia',
+    fullMissingTitle: (miss: string[]) => `Całe ciało bez ${miss.join(' i ')}`,
+    fullMissingText:
+      'Trening całego ciała ma ruszyć nogi, pchanie i ciągnięcie — minimum, które Iversen i in. (2021) zalecają nawet przy braku czasu. Wtedy dwa–trzy takie treningi w tygodniu to układ, który ACSM zaleca początkującym.',
+    pushPullTitle: (push: string, pull: string) => `Pchania ${push}, ciągnięcia ${pull} serii`,
+    pushPullText:
+      'Pchania jest wyraźnie więcej niż ciągnięcia. Dołóż wiosłowanie albo ściąganie drążka — plecy i tył barków trzymają ramię w stawie.',
+    noPullTitle: 'Samo pchanie, zero ciągnięcia',
+    noPullText: 'Górna połowa bez ciągnięcia to prosta droga do zaokrąglonych barków. Dodaj choć jedno wiosłowanie.',
+    focusLowTitle: (muscles: string[]) => `Mało serii na ${muscles.join(' i ')}`,
+    focusLowText: (min: number) =>
+      `Trening pod jedną partię powinien dać jej przynajmniej ${min} serii — inaczej to trening ogólny z inną nazwą.`,
+    workoutOkTitle: 'Trening trzyma się zasad',
+    workoutOkText: (cap: number, minutes: number) =>
+      `Żadna partia nie dostaje więcej niż ${cap} serii, kolejność idzie od ruchów wybuchowych i wielostawowych do izolacji, a całość mieści się w ok. ${minutes} minutach.`,
+    missingWorkoutTitle: 'Plan wskazuje trening, którego nie ma',
+    missingWorkoutText: (missing: string) => `Brakuje: ${missing}. Wybierz trening z listy albo usuń ten dzień.`,
+    emptyTitle: 'Plan bez treningów',
+    emptyText: 'Wybierz dni tygodnia i przypisz im treningi.',
+    noRestTitle: 'Siedem dni bez przerwy',
+    noRestText:
+      'Bez choćby jednego dnia wolnego zmęczenie się kumuluje, a siła rośnie właśnie w przerwie. Zostaw przynajmniej jeden dzień wolny.',
+    onceTitle: 'Jeden trening w tygodniu',
+    onceText:
+      'WHO zaleca ćwiczenia siłowe co najmniej dwa dni w tygodniu. Jeden to dobry start, ale drugi dzień wyraźnie przyspiesza efekty.',
+    recoveryTitle: (muscles: string) => `Bez 48 godzin przerwy: ${muscles}`,
+    recoveryText:
+      'Ta sama partia dostaje ciężki trening dwa dni z rzędu. ACSM (2011) zaleca co najmniej 48 godzin przed kolejnym mocnym treningiem tej samej grupy mięśni — przestaw dni albo treningi.',
+    weeklyMaxTitle: (list: string) => `Dużo w tygodniu: ${list} serii`,
+    weeklyMaxText: (max: number) =>
+      `Powyżej ok. ${max} serii tygodniowo na partię przyrost prawie już nie rośnie, a zmęczenia przybywa. To nie błąd, ale te serie więcej dadzą innej partii.`,
+    skipsTitle: (muscles: string) => `Plan pomija: ${muscles}`,
+    skipsText:
+      'WHO zaleca ćwiczenia siłowe angażujące wszystkie główne grupy mięśni. Przy planie pod jedną partię to świadomy wybór — przy ogólnym warto to uzupełnić.',
+    weeklyLowTitle: (muscles: string) => `Mało w tygodniu: ${muscles}`,
+    weeklyLowText: (min: number, target: number) =>
+      `Poniżej ${min} serii tygodniowo partia najwyżej trzyma formę. Wyraźny wzrost zaczyna się od ok. ${target} serii.`,
+    frequencyTitle: (muscles: string) => `Raz w tygodniu: ${muscles}`,
+    frequencyText:
+      'Ta sama liczba serii rozłożona na dwa dni daje lepszą jakość serii i częstszy bodziec. Przy tej samej objętości częstotliwość ma mniejsze znaczenie, ale dwa razy w tygodniu to bezpieczny wybór.',
+    weekPushPullTitle: (push: string, pull: string) => `Tygodniowo pchania ${push}, ciągnięcia ${pull} serii`,
+    weekPushPullText:
+      'Pchanie wyraźnie przeważa. Plecy i tył barków trzymają ramię w stawie — dołóż dzień albo ćwiczenia ciągnięcia.',
+    deloadTitle: (longest: number | null) =>
+      longest !== null ? `${longest} tygodni bez lżejszego tygodnia` : 'Bez tygodnia lżejszego',
+    deloadText: (weeks: number, maxGap: number) =>
+      `Przy planie na ${weeks} tygodni warto co 4–${maxGap} tygodni wstawić tydzień lżejszy: mniej serii, bez gonienia rekordów. To zarządzanie zmęczeniem, a nie przyspieszacz — tak robi większość trenujących, średnio co ok. 6 tygodni.`,
+    planOkTitle: 'Plan trzyma się zasad',
+    planOkText: (lo: string, hi: string, deload: number[]) =>
+      `Główne partie dostają od ${lo} do ${hi} serii tygodniowo, żadna nie trenuje ciężko dwa dni z rzędu, a ${deload.length ? `tydzień lżejszy wypada w ${deload.join(', ')}. tygodniu` : 'plan jest na tyle krótki, że obejdzie się bez tygodnia lżejszego'}.`,
+  },
+  en: {
+    circuitPair: (a: string, b: string, muscles: string) => `${a} and ${b} — both stations work ${muscles}.`,
+    kinds: {
+      full: 'Full body',
+      push: 'Push',
+      pull: 'Pull',
+      legs: 'Legs',
+      upper: 'Upper body',
+      lower: 'Lower body',
+      glutes: 'Glutes',
+      chest: 'Chest',
+      back: 'Back',
+      shoulders: 'Shoulders',
+      arms: 'Arms',
+      core: 'Abs & core',
+      light: 'Light day',
+    },
+    sessionCapTitle: (list: string) => `Too much in one go: ${list} sets`,
+    sessionCapText: (cap: number) =>
+      `Beyond about ${cap} sets for one muscle group in a single session, growth almost stops increasing while fatigue keeps climbing. Move one exercise to another day or swap it for a move for another muscle group — the same number of sets over two sessions gets you more.`,
+    orderTitle: 'Order needs fixing',
+    orderText: (order: string) =>
+      `Strength grows most in whichever exercise comes first, so start with what matters to you — usually an explosive or compound move. Isolation work next, then abs, calves and carries at the end, because they stabilise every heavy lift. For muscle growth the order matters little. Suggested: ${order}.`,
+    circuitRepeatTitle: 'Circuit hits the same muscle group twice in a row',
+    circuitRepeatText: (repeats: string) =>
+      `${repeats} In a circuit, stations should switch muscle groups — one rests while the other works, and short transitions are enough.`,
+    minutesTitle: (minutes: number) => `About ${minutes} minutes`,
+    tooLongText:
+      'That’s two workouts in one — towards the end the quality of your sets drops and the risk of a form slip rises. Split it over two days.',
+    longText:
+      'Long for one session. It’s doable, but you’ll do the last exercises tired — put the important ones first.',
+    manyTitle: (n: number) => `${n} exercises`,
+    manyText: 'With this many moves, each one gets little attention. Four to seven exercises is the typical, well-tolerated range.',
+    pushHasPullTitle: 'Your push workout has pulling in it',
+    pushHasPullText: (names: string) =>
+      `${names} — these are pull-day moves. In a push/pull split, mixing them takes rest away from muscles that were meant to recover.`,
+    pullHasPushTitle: 'Your pull workout has pushing in it',
+    pullHasPushText: (names: string) =>
+      `${names} — these are push-day moves. Move them to where your chest and triceps are working anyway.`,
+    noKneeTitle: 'No squat or lunge',
+    noKneeText:
+      'Legs have two patterns: knee (squat, lunge, leg press) and hip (deadlift, hip thrust). Without the first, your quads fall behind.',
+    noHipTitle: 'No hip hinge',
+    noHipText:
+      'Legs have two patterns: knee and hip. Without a deadlift, RDL or hip thrust, your hamstrings only work as helpers.',
+    missLegs: 'legs',
+    missPush: 'pushing',
+    missPull: 'pulling',
+    fullMissingTitle: (miss: string[]) => `Full body without ${miss.join(' or ')}`,
+    fullMissingText:
+      'A full-body workout should train legs, pushing and pulling — the minimum Iversen et al. (2021) recommend even when you’re short of time. Two or three of these a week is then the set-up ACSM recommends for beginners.',
+    pushPullTitle: (push: string, pull: string) => `Pushing ${push}, pulling ${pull} sets`,
+    pushPullText:
+      'There’s clearly more pushing than pulling. Add a row or a pulldown — your back and rear delts keep your shoulder in its socket.',
+    noPullTitle: 'All push, no pull',
+    noPullText: 'Upper body without pulling is a short road to rounded shoulders. Add at least one row.',
+    focusLowTitle: (muscles: string[]) => `Few sets for ${muscles.join(' and ')}`,
+    focusLowText: (min: number) =>
+      `A workout for one muscle group should give it at least ${min} sets — otherwise it’s a general workout with a different name.`,
+    workoutOkTitle: 'This workout follows the rules',
+    workoutOkText: (cap: number, minutes: number) =>
+      `No muscle group gets more than ${cap} sets, the order runs from explosive and compound moves to isolation, and the whole thing fits in about ${minutes} minutes.`,
+    missingWorkoutTitle: 'The plan points to a workout that doesn’t exist',
+    missingWorkoutText: (missing: string) => `Missing: ${missing}. Pick a workout from the list or remove this day.`,
+    emptyTitle: 'Plan with no workouts',
+    emptyText: 'Pick days of the week and assign workouts to them.',
+    noRestTitle: 'Seven days without a break',
+    noRestText:
+      'Without even one day off, fatigue builds up — and strength grows during rest. Leave at least one day off.',
+    onceTitle: 'One workout a week',
+    onceText:
+      'The WHO recommends strength training on at least two days a week. One is a good start, but a second day clearly speeds up results.',
+    recoveryTitle: (muscles: string) => `Less than 48 hours’ rest: ${muscles}`,
+    recoveryText:
+      'The same muscle group gets a hard workout two days in a row. ACSM (2011) recommends at least 48 hours before the next hard session for the same muscle group — rearrange the days or the workouts.',
+    weeklyMaxTitle: (list: string) => `A lot per week: ${list} sets`,
+    weeklyMaxText: (max: number) =>
+      `Beyond about ${max} sets a week per muscle group, growth hardly increases while fatigue piles up. It’s not a mistake, but those sets would do more for another muscle group.`,
+    skipsTitle: (muscles: string) => `The plan skips: ${muscles}`,
+    skipsText:
+      'The WHO recommends strength training that works all major muscle groups. In a plan for one muscle group that’s a conscious choice — in a general one it’s worth filling the gap.',
+    weeklyLowTitle: (muscles: string) => `Not much per week: ${muscles}`,
+    weeklyLowText: (min: number, target: number) =>
+      `Below ${min} sets a week, a muscle group at best holds its form. Clear growth starts at about ${target} sets.`,
+    frequencyTitle: (muscles: string) => `Once a week: ${muscles}`,
+    frequencyText:
+      'The same number of sets spread over two days gives better-quality sets and a more frequent stimulus. At the same volume frequency matters less, but twice a week is a safe choice.',
+    weekPushPullTitle: (push: string, pull: string) => `Per week: pushing ${push}, pulling ${pull} sets`,
+    weekPushPullText:
+      'Pushing clearly dominates. Your back and rear delts keep your shoulder in its socket — add a day or some pulling exercises.',
+    deloadTitle: (longest: number | null) =>
+      longest !== null ? `${longest} weeks without a lighter week` : 'No lighter week',
+    deloadText: (weeks: number, maxGap: number) =>
+      `With a ${weeks}-week plan, it’s worth adding a lighter week every 4–${maxGap} weeks: fewer sets, no chasing records. It’s fatigue management, not a booster — most lifters do it, on average about every 6 weeks.`,
+    planOkTitle: 'This plan follows the rules',
+    planOkText: (lo: string, hi: string, deload: number[]) =>
+      `Major muscle groups get ${lo} to ${hi} sets a week, none trains hard two days in a row, and ${deload.length ? `the lighter ${pluralEn(deload.length, 'week falls in week', 'weeks fall in weeks')} ${deload.join(', ')}` : 'the plan is short enough to do without a lighter week'}.`,
+  },
+});
 
 /**
  * Doradca układania treningów i planów.
@@ -127,7 +327,7 @@ export const loadList = (l: Loads): { muscle: MuscleId; sets: number }[] =>
     .filter((x) => x.sets > 0)
     .sort((a, b) => b.sets - a.sets);
 
-const fmt = (n: number): string => n.toLocaleString('pl-PL', { maximumFractionDigits: 1 });
+const fmt = (n: number): string => n.toLocaleString(LOCALE, { maximumFractionDigits: 1 });
 const sum = (l: Loads, ms: MuscleId[]): number => ms.reduce((a, m) => a + (l[m] ?? 0), 0);
 
 /* ---------------- Kolejność ---------------- */
@@ -183,7 +383,7 @@ export function circuitProblems(ids: readonly ExerciseId[]): string[] {
     const shared = (EX_MUSCLES[b]?.p ?? []).filter((m) => pa.includes(m));
     if (shared.length)
       out.push(
-        `${EX[a]?.name ?? a} i ${EX[b]?.name ?? b} — obie stacje na ${shared.map((m) => MUSCLE_NAME[m].toLowerCase()).join(', ')}.`,
+        T.circuitPair(EX[a]?.name ?? a, EX[b]?.name ?? b, shared.map((m) => MUSCLE_NAME[m].toLowerCase()).join(', ')),
       );
   });
   return out;
@@ -191,21 +391,7 @@ export function circuitProblems(ids: readonly ExerciseId[]): string[] {
 
 /* ---------------- Trening ---------------- */
 
-export const KIND_LABEL: Record<WorkoutKind, string> = {
-  full: 'Całe ciało',
-  push: 'Push — pchanie',
-  pull: 'Pull — ciągnięcie',
-  legs: 'Nogi',
-  upper: 'Góra',
-  lower: 'Dół',
-  glutes: 'Pośladki',
-  chest: 'Klatka',
-  back: 'Plecy',
-  shoulders: 'Barki',
-  arms: 'Ramiona',
-  core: 'Brzuch i core',
-  light: 'Dzień lekki',
-};
+export const KIND_LABEL: Record<WorkoutKind, string> = T.kinds;
 
 /** Partie, na które trening pod partię ma dać co najmniej `focusMin` serii. */
 const FOCUS: Partial<Record<WorkoutKind, MuscleId[]>> = {
@@ -305,16 +491,16 @@ export function reviewWorkout(
     notes.push({
       level: 'warn',
       code: 'session-cap',
-      title: `Za dużo naraz: ${over.map((x) => `${MUSCLE_ACC[x.muscle]} ${fmt(x.sets)}`).join(', ')} serii`,
-      text: `Powyżej ok. ${RULES.sessionCap} serii na jedną partię w jednej sesji przyrost prawie przestaje rosnąć, a zmęczenie rośnie dalej. Przenieś jedno ćwiczenie do innego dnia albo zamień je na ruch dla innej partii — ta sama liczba serii w dwóch sesjach da więcej.`,
+      title: T.sessionCapTitle(over.map((x) => `${MUSCLE_ACC[x.muscle]} ${fmt(x.sets)}`).join(', ')),
+      text: T.sessionCapText(RULES.sessionCap),
     });
 
   if (!orderOk)
     notes.push({
       level: 'tip',
       code: 'order',
-      title: 'Kolejność do poprawki',
-      text: `Siła rośnie najbardziej w tym ćwiczeniu, które idzie pierwsze, więc na początek to, na czym ci zależy — zwykle ruch wybuchowy albo wielostawowy. Izolacje potem, a brzuch, łydki i spacery na koniec, bo stabilizują każde ciężkie ćwiczenie. Na przyrost masy kolejność wpływa niewiele. Proponowana: ${names(order)}.`,
+      title: T.orderTitle,
+      text: T.orderText(names(order)),
     });
 
   blocks
@@ -325,8 +511,8 @@ export function reviewWorkout(
         notes.push({
           level: 'tip',
           code: 'circuit-repeat',
-          title: 'Obwód dwa razy z rzędu na tę samą partię',
-          text: `${repeats.join(' ')} W obwodzie stacje mają zmieniać partie — wtedy jedna odpoczywa, kiedy pracuje druga, i krótkie przejścia wystarczą.`,
+          title: T.circuitRepeatTitle,
+          text: T.circuitRepeatText(repeats.join(' ')),
         });
     });
 
@@ -335,23 +521,23 @@ export function reviewWorkout(
     notes.push({
       level: 'warn',
       code: 'too-long',
-      title: `Ok. ${minutes} minut`,
-      text: 'To już dwa treningi w jednym — pod koniec jakość serii spada, a ryzyko błędu technicznego rośnie. Podziel go na dwa dni.',
+      title: T.minutesTitle(minutes),
+      text: T.tooLongText,
     });
   else if (minutes > RULES.longMinutes)
     notes.push({
       level: 'tip',
       code: 'long',
-      title: `Ok. ${minutes} minut`,
-      text: 'Długo jak na jedną sesję. Da się, ale ostatnie ćwiczenia robisz już na zmęczeniu — ważne niech idą na początek.',
+      title: T.minutesTitle(minutes),
+      text: T.longText,
     });
 
   if (known.length > RULES.maxExercises)
     notes.push({
       level: 'tip',
       code: 'many',
-      title: `${known.length} ćwiczeń`,
-      text: 'Przy tylu ruchach każdy dostaje mało uwagi. Cztery do siedmiu ćwiczeń to typowy, dobrze znoszony zakres.',
+      title: T.manyTitle(known.length),
+      text: T.manyText,
     });
 
   const push = sum(loads, PUSH_MUSCLES);
@@ -363,8 +549,8 @@ export function reviewWorkout(
       notes.push({
         level: 'tip',
         code: 'push-has-pull',
-        title: 'W treningu pchania jest ciągnięcie',
-        text: `${names(bad)} — to ruchy dnia pull. W układzie push/pull mieszanie zabiera przerwę mięśniom, które miały odpocząć.`,
+        title: T.pushHasPullTitle,
+        text: T.pushHasPullText(names(bad)),
       });
   }
   if (kind === 'pull') {
@@ -373,8 +559,8 @@ export function reviewWorkout(
       notes.push({
         level: 'tip',
         code: 'pull-has-push',
-        title: 'W treningu ciągnięcia jest pchanie',
-        text: `${names(bad)} — to ruchy dnia push. Przenieś je tam, gdzie klatka i triceps i tak pracują.`,
+        title: T.pullHasPushTitle,
+        text: T.pullHasPushText(names(bad)),
       });
   }
   if (kind === 'legs' || kind === 'lower') {
@@ -382,44 +568,44 @@ export function reviewWorkout(
       notes.push({
         level: 'tip',
         code: 'no-knee',
-        title: 'Brakuje przysiadu albo wykroku',
-        text: 'Nogi to dwa wzorce: kolano (przysiad, wykrok, wypychanie) i biodro (martwy ciąg, hip thrust). Bez pierwszego czworogłowe zostają w tyle.',
+        title: T.noKneeTitle,
+        text: T.noKneeText,
       });
     if (!known.some(isHip))
       notes.push({
         level: 'tip',
         code: 'no-hip',
-        title: 'Brakuje zawiasu biodrowego',
-        text: 'Nogi to dwa wzorce: kolano i biodro. Bez martwego ciągu, RDL albo hip thrustu tył uda pracuje tylko pomocniczo.',
+        title: T.noHipTitle,
+        text: T.noHipText,
       });
   }
   if (kind === 'full') {
     const miss = [
-      !known.some(isLower) && 'nóg',
-      !known.some(isPush) && 'pchania',
-      !known.some(isPull) && 'ciągnięcia',
-    ].filter(Boolean);
+      !known.some(isLower) && T.missLegs,
+      !known.some(isPush) && T.missPush,
+      !known.some(isPull) && T.missPull,
+    ].filter((x): x is string => !!x);
     if (miss.length)
       notes.push({
         level: 'tip',
         code: 'full-missing',
-        title: `Całe ciało bez ${miss.join(' i ')}`,
-        text: 'Trening całego ciała ma ruszyć nogi, pchanie i ciągnięcie — minimum, które Iversen i in. (2021) zalecają nawet przy braku czasu. Wtedy dwa–trzy takie treningi w tygodniu to układ, który ACSM zaleca początkującym.',
+        title: T.fullMissingTitle(miss),
+        text: T.fullMissingText,
       });
   }
   if (kind === 'upper' && push > 0 && pull > 0 && push > pull * RULES.pushPull)
     notes.push({
       level: 'tip',
       code: 'push-pull',
-      title: `Pchania ${fmt(push)}, ciągnięcia ${fmt(pull)} serii`,
-      text: 'Pchania jest wyraźnie więcej niż ciągnięcia. Dołóż wiosłowanie albo ściąganie drążka — plecy i tył barków trzymają ramię w stawie.',
+      title: T.pushPullTitle(fmt(push), fmt(pull)),
+      text: T.pushPullText,
     });
   if ((kind === 'full' || kind === 'upper') && push >= 3 && pull === 0)
     notes.push({
       level: 'tip',
       code: 'no-pull',
-      title: 'Samo pchanie, zero ciągnięcia',
-      text: 'Górna połowa bez ciągnięcia to prosta droga do zaokrąglonych barków. Dodaj choć jedno wiosłowanie.',
+      title: T.noPullTitle,
+      text: T.noPullText,
     });
 
   const focus = kind ? FOCUS[kind] : undefined;
@@ -427,16 +613,16 @@ export function reviewWorkout(
     notes.push({
       level: 'tip',
       code: 'focus-low',
-      title: `Mało serii na ${focus.map((m) => MUSCLE_ACC[m]).join(' i ')}`,
-      text: `Trening pod jedną partię powinien dać jej przynajmniej ${RULES.focusMin} serii — inaczej to trening ogólny z inną nazwą.`,
+      title: T.focusLowTitle(focus.map((m) => MUSCLE_ACC[m])),
+      text: T.focusLowText(RULES.focusMin),
     });
 
   if (!notes.length)
     notes.push({
       level: 'good',
       code: 'ok',
-      title: 'Trening trzyma się zasad',
-      text: `Żadna partia nie dostaje więcej niż ${RULES.sessionCap} serii, kolejność idzie od ruchów wybuchowych i wielostawowych do izolacji, a całość mieści się w ok. ${minutes} minutach.`,
+      title: T.workoutOkTitle,
+      text: T.workoutOkText(RULES.sessionCap, minutes),
     });
 
   return { loads: list, sets, secs, notes, order, orderOk, ok: !notes.some((n) => n.level === 'warn') };
@@ -464,7 +650,13 @@ export const autoDeload = (weeks: number, every: number = RULES.deloadEvery): nu
     ? []
     : Array.from({ length: Math.floor(weeks / every) }, (_, i) => (i + 1) * every).filter((w) => w < weeks);
 
-const WD = ['', 'poniedziałek', 'wtorek', 'środa', 'czwartek', 'piątek', 'sobota', 'niedziela'];
+/** Dni tygodnia od poniedziałku pod indeksem 1 — z `Intl` w języku aplikacji (1 stycznia 2024 to poniedziałek). */
+const WD = [
+  '',
+  ...Array.from({ length: 7 }, (_, i) =>
+    new Intl.DateTimeFormat(LOCALE, { weekday: 'long', timeZone: 'UTC' }).format(Date.UTC(2024, 0, 1 + i)),
+  ),
+];
 
 /**
  * Przegląd planu tydzień po tygodniu. Rotacja bywa dłuższa niż tydzień (trzy treningi na dwa
@@ -479,15 +671,15 @@ export function reviewPlan(state: AppState, plan: PlanShape, workouts: Workout[]
     notes.push({
       level: 'warn',
       code: 'missing-workout',
-      title: 'Plan wskazuje trening, którego nie ma',
-      text: `Brakuje: ${missing.join(', ')}. Wybierz trening z listy albo usuń ten dzień.`,
+      title: T.missingWorkoutTitle,
+      text: T.missingWorkoutText(missing.join(', ')),
     });
   if (!days.length || !plan.cycle.length) {
     notes.push({
       level: 'warn',
       code: 'empty',
-      title: 'Plan bez treningów',
-      text: 'Wybierz dni tygodnia i przypisz im treningi.',
+      title: T.emptyTitle,
+      text: T.emptyText,
     });
     return { weekly: [], perWeek: 0, notes, ok: false };
   }
@@ -531,15 +723,15 @@ export function reviewPlan(state: AppState, plan: PlanShape, workouts: Workout[]
     notes.push({
       level: 'warn',
       code: 'no-rest',
-      title: 'Siedem dni bez przerwy',
-      text: 'Bez choćby jednego dnia wolnego zmęczenie się kumuluje, a siła rośnie właśnie w przerwie. Zostaw przynajmniej jeden dzień wolny.',
+      title: T.noRestTitle,
+      text: T.noRestText,
     });
   if (days.length === 1)
     notes.push({
       level: 'tip',
       code: 'once',
-      title: 'Jeden trening w tygodniu',
-      text: 'WHO zaleca ćwiczenia siłowe co najmniej dwa dni w tygodniu. Jeden to dobry start, ale drugi dzień wyraźnie przyspiesza efekty.',
+      title: T.onceTitle,
+      text: T.onceText,
     });
 
   // Przerwy: ta sama partia ciężko dwa dni z rzędu, także z niedzieli na poniedziałek.
@@ -559,8 +751,8 @@ export function reviewPlan(state: AppState, plan: PlanShape, workouts: Workout[]
     notes.push({
       level: 'tip',
       code: 'recovery',
-      title: `Bez 48 godzin przerwy: ${[...tight].map((m) => MUSCLE_ACC[m]).join(', ')}`,
-      text: 'Ta sama partia dostaje ciężki trening dwa dni z rzędu. ACSM (2011) zaleca co najmniej 48 godzin przed kolejnym mocnym treningiem tej samej grupy mięśni — przestaw dni albo treningi.',
+      title: T.recoveryTitle([...tight].map((m) => MUSCLE_ACC[m]).join(', ')),
+      text: T.recoveryText,
     });
 
   const over = weekly.filter((x) => x.sets > RULES.weeklyMax && !STABILIZERS.includes(x.muscle));
@@ -568,8 +760,8 @@ export function reviewPlan(state: AppState, plan: PlanShape, workouts: Workout[]
     notes.push({
       level: 'tip',
       code: 'weekly-max',
-      title: `Dużo w tygodniu: ${over.map((x) => `${MUSCLE_ACC[x.muscle]} ${fmt(x.sets)}`).join(', ')} serii`,
-      text: `Powyżej ok. ${RULES.weeklyMax} serii tygodniowo na partię przyrost prawie już nie rośnie, a zmęczenia przybywa. To nie błąd, ale te serie więcej dadzą innej partii.`,
+      title: T.weeklyMaxTitle(over.map((x) => `${MUSCLE_ACC[x.muscle]} ${fmt(x.sets)}`).join(', ')),
+      text: T.weeklyMaxText(RULES.weeklyMax),
     });
 
   const skipped = MAJOR_MUSCLES.filter((m) => get(m).sets === 0);
@@ -577,24 +769,24 @@ export function reviewPlan(state: AppState, plan: PlanShape, workouts: Workout[]
     notes.push({
       level: 'tip',
       code: 'skips',
-      title: `Plan pomija: ${skipped.map((m) => MUSCLE_ACC[m]).join(', ')}`,
-      text: 'WHO zaleca ćwiczenia siłowe angażujące wszystkie główne grupy mięśni. Przy planie pod jedną partię to świadomy wybór — przy ogólnym warto to uzupełnić.',
+      title: T.skipsTitle(skipped.map((m) => MUSCLE_ACC[m]).join(', ')),
+      text: T.skipsText,
     });
   const low = MAJOR_MUSCLES.filter((m) => get(m).sets > 0 && get(m).sets < RULES.weeklyMin);
   if (low.length)
     notes.push({
       level: 'tip',
       code: 'weekly-low',
-      title: `Mało w tygodniu: ${low.map((m) => MUSCLE_ACC[m]).join(', ')}`,
-      text: `Poniżej ${RULES.weeklyMin} serii tygodniowo partia najwyżej trzyma formę. Wyraźny wzrost zaczyna się od ok. ${RULES.weeklyTarget} serii.`,
+      title: T.weeklyLowTitle(low.map((m) => MUSCLE_ACC[m]).join(', ')),
+      text: T.weeklyLowText(RULES.weeklyMin, RULES.weeklyTarget),
     });
   const once = MAJOR_MUSCLES.filter((m) => get(m).sets >= 8 && get(m).freq < 1.5 && days.length >= 2);
   if (once.length)
     notes.push({
       level: 'tip',
       code: 'frequency',
-      title: `Raz w tygodniu: ${once.map((m) => MUSCLE_ACC[m]).join(', ')}`,
-      text: 'Ta sama liczba serii rozłożona na dwa dni daje lepszą jakość serii i częstszy bodziec. Przy tej samej objętości częstotliwość ma mniejsze znaczenie, ale dwa razy w tygodniu to bezpieczny wybór.',
+      title: T.frequencyTitle(once.map((m) => MUSCLE_ACC[m]).join(', ')),
+      text: T.frequencyText,
     });
 
   const push = sum(Object.fromEntries(weekly.map((x) => [x.muscle, x.sets])), PUSH_MUSCLES);
@@ -603,8 +795,8 @@ export function reviewPlan(state: AppState, plan: PlanShape, workouts: Workout[]
     notes.push({
       level: 'tip',
       code: 'push-pull',
-      title: `Tygodniowo pchania ${fmt(push)}, ciągnięcia ${fmt(pull)} serii`,
-      text: 'Pchanie wyraźnie przeważa. Plecy i tył barków trzymają ramię w stawie — dołóż dzień albo ćwiczenia ciągnięcia.',
+      title: T.weekPushPullTitle(fmt(push), fmt(pull)),
+      text: T.weekPushPullText,
     });
 
   const deload = [...(plan.deload ?? [])].sort((a, b) => a - b);
@@ -614,8 +806,8 @@ export function reviewPlan(state: AppState, plan: PlanShape, workouts: Workout[]
     notes.push({
       level: 'tip',
       code: 'deload',
-      title: deload.length ? `${longest} tygodni bez lżejszego tygodnia` : 'Bez tygodnia lżejszego',
-      text: `Przy planie na ${plan.weeks} tygodni warto co 4–${RULES.deloadMaxGap} tygodni wstawić tydzień lżejszy: mniej serii, bez gonienia rekordów. To zarządzanie zmęczeniem, a nie przyspieszacz — tak robi większość trenujących, średnio co ok. 6 tygodni.`,
+      title: T.deloadTitle(deload.length ? longest : null),
+      text: T.deloadText(plan.weeks, RULES.deloadMaxGap),
     });
 
   if (!notes.length) {
@@ -625,8 +817,8 @@ export function reviewPlan(state: AppState, plan: PlanShape, workouts: Workout[]
     notes.push({
       level: 'good',
       code: 'ok',
-      title: 'Plan trzyma się zasad',
-      text: `Główne partie dostają od ${fmt(lo)} do ${fmt(hi)} serii tygodniowo, żadna nie trenuje ciężko dwa dni z rzędu, a ${deload.length ? `tydzień lżejszy wypada w ${deload.join(', ')}. tygodniu` : 'plan jest na tyle krótki, że obejdzie się bez tygodnia lżejszego'}.`,
+      title: T.planOkTitle,
+      text: T.planOkText(fmt(lo), fmt(hi), deload),
     });
   }
 

@@ -2,9 +2,36 @@ import type { PlanEvent } from '../types';
 import type { Schedule } from './schedule';
 import { POINTS } from './score';
 import { countCleanWeeks } from './score';
+import { text } from '../i18n';
 
-const late = (n: number): string =>
-  n === 1 ? 'nadrobiony dzień po terminie' : `nadrobiony ${n} dni po terminie`;
+const T = text({
+  pl: {
+    late: (n: number) => (n === 1 ? 'nadrobiony dzień po terminie' : `nadrobiony ${n} dni po terminie`),
+    manual: ' · odhaczony ręcznie',
+    onTime: 'w terminie',
+    done: (name: string, how: string) => `${name} — ${how}`,
+    slot: (week: number, manual: string) => `Termin: tydzień ${week}${manual}`,
+    missedTitle: (name: string) => `${name} — termin opuszczony`,
+    missedText: 'Trening nie przepadł: wchodzi na kolejny termin.',
+    extraTitle: 'Trening poza planem',
+    extraText: 'Nie domknął żadnego terminu, ale się liczy.',
+    weekTitle: (week: number) => `Tydzień ${week} zamknięty w komplecie`,
+    weekText: 'Żaden termin nie przepadł.',
+  },
+  en: {
+    late: (n: number) => (n === 1 ? 'made up a day late' : `made up ${n} days late`),
+    manual: ' · ticked off by hand',
+    onTime: 'on time',
+    done: (name: string, how: string) => `${name} — ${how}`,
+    slot: (week: number, manual: string) => `Deadline: week ${week}${manual}`,
+    missedTitle: (name: string) => `${name} — deadline missed`,
+    missedText: 'The workout isn’t lost: it moves to the next deadline.',
+    extraTitle: 'Off-plan workout',
+    extraText: 'It didn’t close any deadline, but it still counts.',
+    weekTitle: (week: number) => `Week ${week} completed in full`,
+    weekText: 'Not a single deadline missed.',
+  },
+});
 
 /**
  * Dziennik zdarzeń. Wpisy o terminach wyprowadzane są z kalendarza przy każdym otwarciu,
@@ -23,13 +50,13 @@ export function journal(
 
   schedule.days.forEach((d) => {
     if (d.status === 'done') {
-      const manual = d.source === 'tick' ? ' · odhaczony ręcznie' : '';
+      const manual = d.source === 'tick' ? T.manual : '';
       out.push({
         id: `slot:${d.index}`,
         date: d.filled ?? d.date,
         kind: d.late === 0 ? 'done' : 'late',
-        title: `${name(d.workout)} — ${d.late === 0 ? 'w terminie' : late(d.late)}`,
-        text: `Termin: tydzień ${d.week}${manual}`,
+        title: T.done(name(d.workout), d.late === 0 ? T.onTime : T.late(d.late)),
+        text: T.slot(d.week, manual),
         points: d.late === 0 ? POINTS.onTime : (POINTS.late[Math.min(d.late, 3) - 1] ?? 25),
       });
       return;
@@ -39,8 +66,8 @@ export function journal(
         id: `slot:${d.index}`,
         date: d.date,
         kind: 'missed',
-        title: `${name(d.workout)} — termin opuszczony`,
-        text: 'Trening nie przepadł: wchodzi na kolejny termin.',
+        title: T.missedTitle(name(d.workout)),
+        text: T.missedText,
         points: 0,
       });
     }
@@ -51,8 +78,8 @@ export function journal(
       id: `extra:${day}`,
       date: day,
       kind: 'extra',
-      title: 'Trening poza planem',
-      text: 'Nie domknął żadnego terminu, ale się liczy.',
+      title: T.extraTitle,
+      text: T.extraText,
       points: POINTS.extra,
     });
   });
@@ -68,8 +95,8 @@ export function journal(
         id: `week:${w}`,
         date: last.filled ?? last.date,
         kind: 'week',
-        title: `Tydzień ${w} zamknięty w komplecie`,
-        text: 'Żaden termin nie przepadł.',
+        title: T.weekTitle(w),
+        text: T.weekText,
         points: POINTS.cleanWeek,
       });
     });

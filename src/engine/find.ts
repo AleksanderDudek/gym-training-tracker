@@ -1,5 +1,6 @@
 import { EX, GEAR_LABEL, gearOf } from '../data/exercises';
 import type { ExerciseId } from '../types';
+import { LOCALE } from '../i18n';
 
 /**
  * Wyszukiwanie ćwiczenia po nazwie — pod pole z podpowiedziami.
@@ -15,12 +16,12 @@ import type { ExerciseId } from '../types';
  *   w uproszczonym tekście są tymi samymi pozycjami w oryginale — na nich stoi podświetlenie.
  */
 
-const collator = new Intl.Collator('pl', { sensitivity: 'base' });
+const collator = new Intl.Collator(LOCALE, { sensitivity: 'base' });
 
 /** Jedna litera bez ogonka i małą. „Ł” nie rozkłada się w Unicode, więc idzie ręcznie. */
 const plain = (ch: string): string => {
   const low = ch.toLowerCase();
-  if (low === 'ł') return 'l';
+  if (low === 'ł') return 'l'; // i18n-ignore: litera do porównań, nie tekst
   const base = low.normalize('NFD').replace(/\p{M}/gu, '');
   return base.length === 1 ? base : low;
 };
