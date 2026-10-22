@@ -128,17 +128,19 @@ const MAX_SHARE = 0.1;
  * Today's goal corrected by this week so far: a surplus is paid back, a
  * deficit given back, spread over the days left to Sunday, and never more
  * than 10% of the goal a day - a party is not repaid with a starvation day.
- * Only logged days count; an unlogged day is not guessed.
+ * Only logged days count; an unlogged day is not guessed. A day with its own
+ * `goalKcal` (the goal after that day's activity) is judged against it: a lazy
+ * Monday eaten to plan is a surplus, an active one is not.
  */
 export function weeklyAdjustment(
   goal: number,
-  history: { date: string; eatenKcal: number | null }[],
+  history: { date: string; eatenKcal: number | null; goalKcal?: number }[],
   today: string,
 ): Adjustment {
   const monday = addDays(today, -weekday(today));
   const surplus = history
     .filter((d) => d.date >= monday && d.date < today && d.eatenKcal !== null)
-    .reduce((sum, d) => sum + (d.eatenKcal! - goal), 0);
+    .reduce((sum, d) => sum + (d.eatenKcal! - (d.goalKcal ?? goal)), 0);
   const daysLeft = 7 - weekday(today);
   const raw = -surplus / daysLeft;
   const cap = goal * MAX_SHARE;

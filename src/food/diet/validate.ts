@@ -1,5 +1,5 @@
 import type { CustomFood, Food, FoodSet, FoodSource, MealRole, SetPart } from './foods';
-import type { DayRow, Entry, Favorite } from './db';
+import type { DayRow, Entry, Favorite, PlannedCheat } from './db';
 import type { Plan, PlanItem, PlanVariant } from './plan';
 import { DIET_PROFILE_IDS } from './profiles';
 import type { Nutrients, Profile } from './types';
@@ -56,6 +56,7 @@ export function cleanProfile(input: unknown, defaults: Profile): Profile {
   if (typeof raw.dietProfile === 'string' && (DIET_PROFILE_IDS as string[]).includes(raw.dietProfile))
     profile.dietProfile = raw.dietProfile as Profile['dietProfile'];
   if (typeof raw.adaptWeekly === 'boolean') profile.adaptWeekly = raw.adaptWeekly;
+  if (typeof raw.adaptActivity === 'boolean') profile.adaptActivity = raw.adaptActivity;
   if (raw.preferredStore === null || typeof raw.preferredStore === 'string')
     profile.preferredStore = raw.preferredStore;
   if (isCalendarDate(raw.goalSince)) profile.goalSince = raw.goalSince;
@@ -89,6 +90,7 @@ export function cleanEntry(raw: unknown): Entry | null {
 export function cleanDay(raw: unknown): DayRow | null {
   if (!isObject(raw) || !isCalendarDate(raw.date)) return null;
   const choices = isObject(raw.choices) ? raw.choices : null;
+  const cheat = cleanCheat(raw.cheat);
   return {
     date: raw.date,
     weightKg: finite(raw.weightKg) && raw.weightKg > 0 ? raw.weightKg : null,
@@ -107,7 +109,16 @@ export function cleanDay(raw: unknown): DayRow | null {
     }),
     ...(finite(raw.autoSeed) && { autoSeed: raw.autoSeed }),
     ...(typeof raw.note === 'string' && { note: raw.note }),
+    ...(cheat && { cheat }),
   };
+}
+
+/** A planned cheat meal from a backup: a name and calories, macros when they are numbers. */
+function cleanCheat(raw: unknown): PlannedCheat | null {
+  if (!isObject(raw)) return null;
+  const n = cleanNutrients(raw);
+  if (!n || n.kcal <= 0) return null;
+  return { name: typeof raw.name === 'string' ? raw.name.slice(0, 80) : '', ...n };
 }
 
 function cleanItem(raw: unknown): PlanItem | null {
