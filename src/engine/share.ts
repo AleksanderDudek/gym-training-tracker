@@ -20,6 +20,64 @@ import {
 } from './quips';
 import { MOVES } from '../data/moves';
 import { face, headAngle, sampleCycle, skeleton } from './pose';
+import { LOCALE, pluralEn, text } from '../i18n';
+
+const T = text({
+  pl: {
+    tagline: 'Twój trening sam wie, kiedy dołożyć.',
+    freeNote: 'Na razie za darmo.',
+    promoExtras: 'Plany, przerwy z odliczaniem, odznaki i goryle. W telefonie, bez instalacji.',
+    pitch: 'Wpisujesz serie, a aplikacja sama decyduje, kiedy dołożyć powtórzenie albo ciężar.',
+    promoTexts: [
+      'Polecam GYM TRACKER: wpisujesz serie, a aplikacja sama decyduje, kiedy dołożyć powtórzenie albo ciężar. Do tego plany, przerwy z odliczaniem i odznaki. Na razie za darmo, bez konta:',
+      'Trener Siwy szuka podopiecznych. GYM TRACKER prowadzi trening siłowy: pilnuje serii, przerw i postępów. Na razie za darmo:',
+      'Ćwiczę z aplikacją, która sama wie, kiedy dołożyć ciężar. Goryle w zestawie. Na razie za darmo, bez reklam i bez konta:',
+      'Jak ktoś szuka trenera, który nie bierze pieniędzy: GYM TRACKER prowadzi trening, liczy serie i pilnuje postępów. Na razie za darmo:',
+    ],
+    workoutsReps: (workouts: number, w: string, reps: string) =>
+      `${w} ${workouts === 1 ? 'trening' : 'treningów'} · ${reps} powtórzeń`,
+    setsTons: (sets: string, tons: string) => `${sets} serii · ${tons}`,
+    mass: (mass: string) => `W sumie ${mass}.`,
+    reps: (time: string) => `Powtórzenia: ${time}.`,
+    serial: (no: string) => `nr ${no} · wydano bez trybu odwoławczego`,
+    badgeArtFailed: 'Nie udało się wczytać grafiki odznaki.',
+    pngFailed: 'Nie udało się zapisać obrazka.',
+    noCanvas: 'Przeglądarka nie udostępnia rysowania na płótnie.',
+    progressCard: 'LEGITYMACJA SIŁOWA',
+    badgeCard: 'ŚWIADECTWO POCIĘŻAROWE',
+    promoKind: 'OGŁOSZENIE · NABÓR OTWARTY',
+    promoTitle: ['Trener Siwy', 'szuka podopiecznych'] as readonly [string, string],
+    promoStamp: ['ZA DARMO', 'na razie'] as readonly [string, string],
+    promoSmallPrint: 'Opłata wpisowa: 0 zł · bez konta i bez reklam · zakwasy wliczone',
+  },
+  en: {
+    tagline: 'Your training knows when to add more.',
+    freeNote: 'Free for now.',
+    promoExtras: 'Plans, rest timers, badges and gorillas. On your phone, nothing to install.',
+    pitch: 'You log your sets, and the app decides when to add a rep or more weight.',
+    promoTexts: [
+      'I recommend GYM TRACKER: you log your sets and the app decides when to add a rep or more weight. Plus plans, rest timers and badges. Free for now, no account needed:',
+      'The gorilla coach is taking on trainees. GYM TRACKER runs your strength training: it keeps track of sets, rests and progress. Free for now:',
+      'I train with an app that knows when to add weight. Gorillas included. Free for now, no ads, no account:',
+      'If anyone’s after a coach who doesn’t charge: GYM TRACKER runs your workouts, counts your sets and tracks your progress. Free for now:',
+    ],
+    workoutsReps: (workouts: number, w: string, reps: string) =>
+      `${w} ${pluralEn(workouts, 'workout', 'workouts')} · ${reps} reps`,
+    setsTons: (sets: string, tons: string) => `${sets} sets · ${tons}`,
+    mass: (mass: string) => `Altogether, ${mass}.`,
+    reps: (time: string) => `Reps: ${time}.`,
+    serial: (no: string) => `No. ${no} · issued with no right of appeal`,
+    badgeArtFailed: 'Couldn’t load the badge image.',
+    pngFailed: 'Couldn’t save the image.',
+    noCanvas: 'Your browser doesn’t support drawing on a canvas.',
+    progressCard: 'STRENGTH ID CARD',
+    badgeCard: 'CERTIFICATE OF LIFTING',
+    promoKind: 'NOTICE · NOW RECRUITING',
+    promoTitle: ['The coach', 'needs you'],
+    promoStamp: ['FREE', 'for now'],
+    promoSmallPrint: 'Joining fee: nothing · no account, no ads · sore muscles included',
+  },
+});
 
 export const APP_URL = 'https://aleksanderdudek.github.io/gym-training-tracker/';
 export const SUPPORT_URL = 'https://buycoffee.to/uriel';
@@ -38,27 +96,22 @@ export const APP_HOST = APP_URL.replace(/^https?:\/\//, '').replace(/\/$/, '');
  * dołożyć” to dokładnie to, czego nie robi zwykły notes z treningiem — progresja dzieje się
  * bez liczenia, kiedy i o ile podnieść.
  */
-export const TAGLINE = 'Twój trening sam wie, kiedy dołożyć.';
+export const TAGLINE = T.tagline;
 
 /** Uczciwie: na razie — bez obietnicy, że zawsze. */
-export const FREE_NOTE = 'Na razie za darmo.';
+export const FREE_NOTE = T.freeNote;
 
 /** Co jeszcze jest w środku — jedna linijka pod wyjaśnieniem na plakacie. */
-export const PROMO_EXTRAS = 'Plany, przerwy z odliczaniem, odznaki i goryle. W telefonie, bez instalacji.';
+export const PROMO_EXTRAS = T.promoExtras;
 
 /** Jedno zdanie dla tych, którym hasło nie wystarczy. */
-export const PITCH = 'Wpisujesz serie, a aplikacja sama decyduje, kiedy dołożyć powtórzenie albo ciężar.';
+export const PITCH = T.pitch;
 
 /**
  * Wpis do plakatu z polecenia. Pierwsza osoba i czas teraźniejszy — ani „polecałem”, ani
  * „polecałam”, bo wysyła go i Gustaw, i Gosia. Każdy mówi, co aplikacja robi i że jest za darmo.
  */
-export const PROMO_TEXTS: readonly string[] = [
-  'Polecam GYM TRACKER: wpisujesz serie, a aplikacja sama decyduje, kiedy dołożyć powtórzenie albo ciężar. Do tego plany, przerwy z odliczaniem i odznaki. Na razie za darmo, bez konta:',
-  'Trener Siwy szuka podopiecznych. GYM TRACKER prowadzi trening siłowy: pilnuje serii, przerw i postępów. Na razie za darmo:',
-  'Ćwiczę z aplikacją, która sama wie, kiedy dołożyć ciężar. Goryle w zestawie. Na razie za darmo, bez reklam i bez konta:',
-  'Jak ktoś szuka trenera, który nie bierze pieniędzy: GYM TRACKER prowadzi trening, liczy serie i pilnuje postępów. Na razie za darmo:',
-];
+export const PROMO_TEXTS: readonly string[] = T.promoTexts;
 
 export const promoText = (seed: number): string => [pick(PROMO_TEXTS, seed), APP_URL].join('\n');
 
@@ -86,11 +139,11 @@ export function progressSubject(
   rank: string,
   seed: number,
 ): ShareSubject {
-  const n = (x: number): string => Math.round(x).toLocaleString('pl-PL');
+  const n = (x: number): string => Math.round(x).toLocaleString(LOCALE);
   // Tonaż po polsku ma przecinek, nie kropkę — ręczne dzielenie przez sto dawało „99.2 t”.
   const tons = (kg: number): string =>
     kg >= 1000
-      ? `${(Math.round(kg / 100) / 10).toLocaleString('pl-PL', { maximumFractionDigits: 1 })} t`
+      ? `${(Math.round(kg / 100) / 10).toLocaleString(LOCALE, { maximumFractionDigits: 1 })} t`
       : `${n(kg)} kg`;
   return {
     kind: 'progress',
@@ -98,8 +151,8 @@ export function progressSubject(
     title: rank,
     band: pick(PROGRESS_TITLES, seed),
     lines: [
-      `${n(m.workouts)} ${m.workouts === 1 ? 'trening' : 'treningów'} · ${n(m.reps)} powtórzeń`,
-      `${n(m.sets)} serii · ${tons(m.tonnage)}`,
+      T.workoutsReps(m.workouts, n(m.workouts), n(m.reps)),
+      T.setsTons(n(m.sets), tons(m.tonnage)),
     ],
     punch: punchline(m.tonnage, m.reps, seed),
   };
@@ -112,9 +165,9 @@ export function progressSubject(
 export function punchline(kg: number, reps: number, seed: number): string {
   const mass = massJoke(kg);
   const time = repsJoke(reps);
-  if (mass && time) return seed % 2 ? `W sumie ${mass}.` : `Powtórzenia: ${time}.`;
-  if (mass) return `W sumie ${mass}.`;
-  if (time) return `Powtórzenia: ${time}.`;
+  if (mass && time) return seed % 2 ? T.mass(mass) : T.reps(time);
+  if (mass) return T.mass(mass);
+  if (time) return T.reps(time);
   return pick(CHEERS, seed);
 }
 
@@ -136,34 +189,52 @@ const first = (s: ShareSubject): string => s.lines[0] ?? '';
 const rest = (s: ShareSubject): string => s.lines.slice(1).join(' · ');
 const punch = (s: ShareSubject): string => s.punch ?? '';
 
-const BADGE: Template[] = [
-  (s) => `Wpadła odznaka „${s.title}”${s.band ? ` — ${s.band}` : ''}. ${first(s)}. ${punch(s)}`,
-  (s) => `Zdobyte: „${s.title}”${s.band ? ` (${s.band})` : ''}. ${punch(s)} Nikt nie bił braw, aplikacja tak.`,
-  (s) => `Odznaka „${s.title}” zaliczona${s.band ? `, tworzywo: ${s.band}` : ''}. ${punch(s)} Na lodówkę się nie zmieści.`,
-  (s) => `Mam „${s.title}”${s.band ? ` w ${s.band}` : ''}. Brzmi poważnie, w praktyce to ${first(s).toLowerCase()}. ${punch(s)}`,
-  (s) => `Nowa odznaka: „${s.title}”. ${punch(s)} Wiem, że nikt nie pytał.`,
-];
-
-const SESSION: Template[] = [
-  (s) => `${s.title}. ${first(s)}. ${punch(s)}`,
-  (s) => `${s.title}. ${first(s)}, a licznik z całej historii mówi: ${punch(s)}`,
-  (s) => `Trening odhaczony. ${first(s)}. ${punch(s)} Kanapa zasłużona.`,
-  (s) => `${s.title}. ${punch(s)} Pot wyparował, dane zostały.`,
-  (s) => `Zrobione. ${first(s)}. ${punch(s)} Nikt nie patrzył, aplikacja patrzyła.`,
-];
-
-const PROGRESS: Template[] = [
-  (s) => `Stopień „${s.title}” osiągnięty. ${first(s)}. ${punch(s)}`,
-  (s) => `Bilans po wszystkim: ${first(s)}${rest(s) ? `, ${rest(s)}` : ''}. ${punch(s)} Stopień: ${s.title.toLowerCase()}.`,
-  (s) => `${first(s)}. ${punch(s)} Aplikacja mówi na mnie „${s.title.toLowerCase()}” i trudno się kłócić.`,
-  (s) => `Licznik pokazuje ${first(s).toLowerCase()}. ${punch(s)} Formalnie jestem już „${s.title.toLowerCase()}”.`,
-];
-
-const SETS: Record<NonNullable<ShareSubject['kind']>, Template[]> = {
-  badge: BADGE,
-  session: SESSION,
-  progress: PROGRESS,
-};
+const SETS = text<Record<NonNullable<ShareSubject['kind']>, Template[]>>({
+  pl: {
+    badge: [
+      (s) => `Wpadła odznaka „${s.title}”${s.band ? ` — ${s.band}` : ''}. ${first(s)}. ${punch(s)}`,
+      (s) => `Zdobyte: „${s.title}”${s.band ? ` (${s.band})` : ''}. ${punch(s)} Nikt nie bił braw, aplikacja tak.`,
+      (s) => `Odznaka „${s.title}” zaliczona${s.band ? `, tworzywo: ${s.band}` : ''}. ${punch(s)} Na lodówkę się nie zmieści.`,
+      (s) => `Mam „${s.title}”${s.band ? ` w ${s.band}` : ''}. Brzmi poważnie, w praktyce to ${first(s).toLowerCase()}. ${punch(s)}`,
+      (s) => `Nowa odznaka: „${s.title}”. ${punch(s)} Wiem, że nikt nie pytał.`,
+    ],
+    session: [
+      (s) => `${s.title}. ${first(s)}. ${punch(s)}`,
+      (s) => `${s.title}. ${first(s)}, a licznik z całej historii mówi: ${punch(s)}`,
+      (s) => `Trening odhaczony. ${first(s)}. ${punch(s)} Kanapa zasłużona.`,
+      (s) => `${s.title}. ${punch(s)} Pot wyparował, dane zostały.`,
+      (s) => `Zrobione. ${first(s)}. ${punch(s)} Nikt nie patrzył, aplikacja patrzyła.`,
+    ],
+    progress: [
+      (s) => `Stopień „${s.title}” osiągnięty. ${first(s)}. ${punch(s)}`,
+      (s) => `Bilans po wszystkim: ${first(s)}${rest(s) ? `, ${rest(s)}` : ''}. ${punch(s)} Stopień: ${s.title.toLowerCase()}.`,
+      (s) => `${first(s)}. ${punch(s)} Aplikacja mówi na mnie „${s.title.toLowerCase()}” i trudno się kłócić.`,
+      (s) => `Licznik pokazuje ${first(s).toLowerCase()}. ${punch(s)} Formalnie jestem już „${s.title.toLowerCase()}”.`,
+    ],
+  },
+  en: {
+    badge: [
+      (s) => `Badge unlocked: ‘${s.title}’${s.band ? ` — ${s.band}` : ''}. ${first(s)}. ${punch(s)}`,
+      (s) => `Earned: ‘${s.title}’${s.band ? ` (${s.band})` : ''}. ${punch(s)} Nobody clapped. The app did.`,
+      (s) => `Badge ‘${s.title}’ earned${s.band ? `, material: ${s.band}` : ''}. ${punch(s)} It won’t fit on the fridge.`,
+      (s) => `I’ve got ‘${s.title}’${s.band ? ` in ${s.band}` : ''}. Sounds serious; in practice it’s ${first(s).toLowerCase()}. ${punch(s)}`,
+      (s) => `New badge: ‘${s.title}’. ${punch(s)} I know nobody asked.`,
+    ],
+    session: [
+      (s) => `${s.title}. ${first(s)}. ${punch(s)}`,
+      (s) => `${s.title}. ${first(s)}, and the all-time counter says: ${punch(s)}`,
+      (s) => `Workout ticked off. ${first(s)}. ${punch(s)} The sofa is well earned.`,
+      (s) => `${s.title}. ${punch(s)} The sweat’s gone, the data stays.`,
+      (s) => `Done. ${first(s)}. ${punch(s)} Nobody was watching. The app was.`,
+    ],
+    progress: [
+      (s) => `Rank ‘${s.title}’ reached. ${first(s)}. ${punch(s)}`,
+      (s) => `The balance after it all: ${first(s)}${rest(s) ? `, ${rest(s)}` : ''}. ${punch(s)} Rank: ${s.title}.`,
+      (s) => `${first(s)}. ${punch(s)} The app calls me ‘${s.title}’, and it’s hard to argue.`,
+      (s) => `The counter shows ${first(s).toLowerCase()}. ${punch(s)} Officially, my rank is now ‘${s.title}’.`,
+    ],
+  },
+});
 
 /**
  * Sprzątanie po szablonach: podwójne spacje biorą się z pustych pól, a wstawiony fragment
@@ -203,7 +274,7 @@ function serial(s: ShareSubject): string {
   const base = `${s.title}${s.band ?? ''}${s.lines.join('')}`;
   let h = 7;
   for (let i = 0; i < base.length; i++) h = (h * 31 + base.charCodeAt(i)) % 900_000;
-  return `nr ${String(h + 100_000).padStart(6, '0')} · wydano bez trybu odwoławczego`;
+  return T.serial(String(h + 100_000).padStart(6, '0'));
 }
 
 /**
@@ -638,7 +709,7 @@ const loadSvg = (markup: string): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error('Nie udało się wczytać grafiki odznaki.'));
+    img.onerror = () => reject(new Error(T.badgeArtFailed));
     img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(markup)}`;
   });
 
@@ -687,7 +758,7 @@ function paper(ctx: CanvasRenderingContext2D): void {
 
 const toPng = (c: HTMLCanvasElement): Promise<Blob> =>
   new Promise((resolve, reject) => {
-    c.toBlob((b) => (b ? resolve(b) : reject(new Error('Nie udało się zapisać obrazka.'))), 'image/png');
+    c.toBlob((b) => (b ? resolve(b) : reject(new Error(T.pngFailed))), 'image/png');
   });
 
 /**
@@ -699,7 +770,7 @@ export async function shareCard(s: ShareSubject, { medal, faces = [] }: CardArt 
   c.width = CARD;
   c.height = CARD;
   const ctx = c.getContext('2d');
-  if (!ctx) throw new Error('Przeglądarka nie udostępnia rysowania na płótnie.');
+  if (!ctx) throw new Error(T.noCanvas);
   const seed = s.seed ?? s.title.length + s.lines.length;
 
   // Czekamy na kroje pisma: `fillText` przed ich załadowaniem rysuje zapasowym fontem.
@@ -745,11 +816,7 @@ export async function shareCard(s: ShareSubject, { medal, faces = [] }: CardArt 
   const between = CARD - 2 * (PORTRAIT.x + PORTRAIT.r + 24);
   ctx.fillStyle = INK.accent;
   ctx.font = FONT.kind;
-  ctx.fillText(
-    s.kind === 'progress' ? 'LEGITYMACJA SIŁOWA' : 'ŚWIADECTWO POCIĘŻAROWE',
-    CARD / 2,
-    108,
-  );
+  ctx.fillText(s.kind === 'progress' ? T.progressCard : T.badgeCard, CARD / 2, 108);
   ctx.fillStyle = INK.dark;
   ctx.font = FONT.brand;
   ctx.fillText('GYM TRACKER', CARD / 2, 146);
@@ -903,7 +970,7 @@ export async function promoCard({ coach, left, right }: PromoArt = {}): Promise<
   c.width = CARD;
   c.height = CARD;
   const ctx = c.getContext('2d');
-  if (!ctx) throw new Error('Przeglądarka nie udostępnia rysowania na płótnie.');
+  if (!ctx) throw new Error(T.noCanvas);
   if (document.fonts?.ready) await document.fonts.ready;
 
   paper(ctx);
@@ -912,11 +979,11 @@ export async function promoCard({ coach, left, right }: PromoArt = {}): Promise<
 
   ctx.fillStyle = INK.accent;
   ctx.font = '600 30px "IBM Plex Sans", system-ui, sans-serif';
-  ctx.fillText('OGŁOSZENIE · NABÓR OTWARTY', CARD / 2, 104);
+  ctx.fillText(T.promoKind, CARD / 2, 104);
   ctx.fillStyle = INK.dark;
   ctx.font = '600 76px "Oswald", system-ui, sans-serif';
-  ctx.fillText('Trener Siwy', CARD / 2, 146);
-  ctx.fillText('szuka podopiecznych', CARD / 2, 228);
+  ctx.fillText(T.promoTitle[0], CARD / 2, 146);
+  ctx.fillText(T.promoTitle[1], CARD / 2, 228);
 
   // Obsada: Siwy większy i wyżej, podopieczni niżej po bokach — stopy (tu: dół popiersia)
   // na jednej linii, jak na zdjęciu grupowym.
@@ -938,7 +1005,7 @@ export async function promoCard({ coach, left, right }: PromoArt = {}): Promise<
 
   // Pieczęć obok uniesionego palca Siwego — ta sama, co na certyfikatach, z innym wyrokiem.
   // Na obsadzie zakrywała twarze; tu stoi w pustym polu, w które i tak patrzy się po palcu.
-  stamp(ctx, ['ZA DARMO', 'na razie'], CARD - 168, 388);
+  stamp(ctx, T.promoStamp, CARD - 168, 388);
 
   ctx.fillStyle = INK.dark;
   fit(ctx, TAGLINE, (px) => `600 ${px}px "Oswald", system-ui, sans-serif`, 50, CARD - 200, 34);
@@ -956,7 +1023,7 @@ export async function promoCard({ coach, left, right }: PromoArt = {}): Promise<
 
   ctx.font = '400 23px "IBM Plex Sans", system-ui, sans-serif';
   ctx.fillStyle = INK.faint;
-  ctx.fillText('Opłata wpisowa: 0 zł · bez konta i bez reklam · zakwasy wliczone', CARD / 2, RIBBON.y + RIBBON.h + RIBBON.drop + 8);
+  ctx.fillText(T.promoSmallPrint, CARD / 2, RIBBON.y + RIBBON.h + RIBBON.drop + 8);
 
   return toPng(c);
 }

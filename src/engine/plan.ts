@@ -1,5 +1,23 @@
 import { ALL, EX, LADDERS, STAGES, ex, gearOf, ladderFor } from '../data/exercises';
 import type { AppState, ExerciseId, PlannedSet, Progress } from '../types';
+import { pluralEn, text } from '../i18n';
+
+const T = text({
+  pl: {
+    sets: (n: number) => `${n} serie`,
+    reps: ' powt.',
+    testFixed: (target: number, u: string, w: string) => `próba: 1 × ${target}${u}${w}`,
+    testMax: (timed: boolean, w: string) => `próba: ile dasz radę${timed ? ' — na czas' : ''}${w}`,
+    perSide: ' · na stronę',
+  },
+  en: {
+    sets: (n: number) => `${n} ${pluralEn(n, 'set', 'sets')}`,
+    reps: ' reps',
+    testFixed: (target: number, u: string, w: string) => `test: 1 × ${target}${u}${w}`,
+    testMax: (timed: boolean, w: string) => `test: as many as you can${timed ? ' — for time' : ''}${w}`,
+    perSide: ' · per side',
+  },
+});
 
 export const step = (id: ExerciseId): number => (ex(id).unit === 'secs' ? 5 : 1);
 
@@ -127,7 +145,7 @@ export function levelLabel(state: AppState, id: ExerciseId): string {
   const p = P(state, id);
   const m = ex(id);
   if (m.mode === 'stage' && m.stages) return STAGES[m.stages][p.stage ?? 0] ?? '';
-  if (p.weight === null) return `${p.sets} serie`;
+  if (p.weight === null) return T.sets(p.sets);
   return p.trans ? `${p.weight} → ${p.trans.to} kg` : `${p.weight} kg`;
 }
 
@@ -186,7 +204,7 @@ export function plan(state: AppState, id: ExerciseId): PlannedSet[] {
  * Jednostka dopisywana do liczby. Bez niej „3 × 30” przy spacerze farmera i przy swingach
  * znaczy dwie zupełnie różne rzeczy, a to pierwsza informacja, której ktoś szuka na karcie.
  */
-export const unitTag = (id: ExerciseId): string => (ex(id).unit === 'secs' ? ' s' : ' powt.');
+export const unitTag = (id: ExerciseId): string => (ex(id).unit === 'secs' ? ' s' : T.reps);
 
 export function planLabel(state: AppState, id: ExerciseId): string {
   const rows = plan(state, id);
@@ -196,9 +214,7 @@ export function planLabel(state: AppState, id: ExerciseId): string {
 
   if (p.phase === 'calib') {
     const w = p.weight ? ` · ${p.weight} kg` : '';
-    return m.mode === 'ballistic'
-      ? `próba: 1 × ${m.def.target}${u}${w}`
-      : `próba: ile dasz radę${m.unit === 'secs' ? ' — na czas' : ''}${w}`;
+    return m.mode === 'ballistic' ? T.testFixed(m.def.target, u, w) : T.testMax(m.unit === 'secs', w);
   }
 
   const groups: { n: number; w: number | null; reps: number }[] = [];
@@ -212,7 +228,7 @@ export function planLabel(state: AppState, id: ExerciseId): string {
   return (
     groups.map((g) => `${g.n} × ${g.reps}${u}${g.w ? ` · ${g.w} kg` : ''}`).join('  +  ') +
     (p.probe ? '  + test' : '') +
-    (m.side ? ' · na stronę' : '')
+    (m.side ? T.perSide : '')
   );
 }
 
