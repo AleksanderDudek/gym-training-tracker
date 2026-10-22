@@ -693,13 +693,20 @@ aplikacji. Dane produktów: [Open Food Facts](https://world.openfoodfacts.org), 
   niewielką premię („Twoje ulubione”). Ulubione to migawki jak zestawy: działają bez bazy produktów
   i offline; listę widać i czyści się w Profilu diety → Twoje dane. Cel dnia koryguje się według
   tygodnia — nadwyżka rozkłada się na kolejne dni (najwyżej 10% celu dziennie), niedojedzone kalorie
-  wracają — i według ruchu (niżej). „Co teraz?” podpowiada resztę dnia z gwiazdką
-  przy najlepszych i powodem.
-- **Cheat meal** — trzeci przycisk pod bilansem. Wpisuje się kalorie (i makro, jeśli znane), a pod
-  polami od razu widać skutki: cel dnia po ruchu, zjedzone, razem z cheat mealem — i czy dzień się
+  wracają — i według ruchu (niżej). „Co teraz?” ma dwa widoki: **„Reszta dnia”** — trzy różne
+  zestawy posiłków na pory dnia, które zostały (obiad, kolacja, przekąska…), których suma trafia
+  w resztę („2345 z 2300 kcal, 224 g białka”); każdy kolejny posiłek dostaje to, co zostało po
+  poprzednich, a gdy porcje są za małe na resztę, dochodzą pozycje „Dodatkowo”; „Zjadłem” przy każdym
+  posiłku i „Inne warianty”. **„Jeden posiłek”** — lista najlepszych na teraz z gwiazdką przy
+  najlepszych i powodem.
+- **Cheat meal** — trzeci przycisk pod bilansem. Arkusz otwiera się na **„Z listy”**: ta sama
+  wyszukiwarka co w „Dodaj zjedzone” (menu sieci gastronomicznych, produkty, przepisy, własne
+  jedzenie), z ulubionymi widocznymi od razu; kilka rzeczy z gramaturą (pizza + cola + deser) składa
+  się w jeden posiłek z sumą na żywo. **„Wpisz makro”** zaczyna od tej sumy albo od zera. Pod polami
+  od razu widać skutki: cel dnia po ruchu, zjedzone, razem z cheat mealem — i czy dzień się
   mieści („zostaje 900 kcal na 2 posiłki — po ok. 450 kcal i 47 g białka”), czy wychodzi ponad cel
   („o 600 kcal, 26%”). Do tego białko, które jeszcze trzeba zjeść, węglowodany i tłuszcz ponad limity
-  sposobu odżywiania, ile z planu dnia jeszcze się zmieści, trzy propozycje na resztę dnia, a ponad
+  sposobu odżywiania, ile z planu dnia jeszcze się zmieści, dwa warianty reszty dnia, a ponad
   celem: o ile obniży się cel na kolejne dni tygodnia (ta sama korekta tygodniowa), ile to w prognozie
   wagi i ile kroków albo treningów by to odrobiło. Na dziś arkusz pyta o ruch do końca dnia — kroki
   (do celu, jak teraz, własna liczba) i trening z planu (będzie, nie będzie, dodatkowy) — bo od tego
