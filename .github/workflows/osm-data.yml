@@ -1,0 +1,160 @@
+name: Dane OSM
+
+# Odświeża data/osm — lokale i sklepy spożywcze w Polsce z OpenStreetMap (data/osm/README.md) —
+# z wyciągu Geofabrik i wdraża stronę z nowymi danymi. Tylko ręcznie: Actions → Dane OSM →
+# Run workflow.
+on:
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Odśwież, nawet gdy dane w repozytorium mają mniej niż 156 h'
+        type: boolean
+        default: false
+  # Odświeżanie co tydzień (poniedziałek 3:23 UTC, gdy jest już wyciąg z niedzieli): usuń „# ” z dwóch
+  # linii niżej. Przebieg z harmonogramu nie ma „force”, więc dane odświeżone ręcznie w tym tygodniu
+  # zostają do następnego.
+  # schedule:
+  #   - cron: '23 3 * * 1'
+
+permissions:
+  contents: read
+
+# Jedno odświeżanie naraz. Trwającego nie przerywamy, żeby nie zgubić gotowych danych.
+concurrency:
+  group: osm-data
+  cancel-in-progress: false
+
+jobs:
+  # Dane i testy. Ten job wykonuje kod z npm, więc może tylko czytać repozytorium.
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    outputs:
+      changed: ${{ steps.diff.outputs.changed }}
+    steps:
+      # Bez tokenu w .git/config: nic tu nie wypycha, a kod z npm nie ma go po co widzieć.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      # Wyciąg ma ok. 2 GB, więc pobieramy go najwyżej raz w tygodniu: dane muszą mieć co najmniej
+      # 156 h (6,5 doby — zapas na godzinę wydania wyciągu i opóźnienia harmonogramu, żeby
+      # cotygodniowy przebieg nie przepadł o włos), chyba że „force”. Brak daty — odświeżamy.
+      - name: Czy pora odświeżyć
+        id: due
+        env:
+          FORCE: ${{ inputs.force }}
+        run: |
+          as_of=$(jq -r '.dataAsOf // empty' data/osm/meta.json 2>/dev/null || true)
+          due=false
+          if [ "$FORCE" = true ]; then
+            echo "Odświeżanie wymuszone (force)."
+            due=true
+          elif [ -z "$as_of" ] || ! as_of_s=$(date -u -d "$as_of" +%s 2>/dev/null); then
+            echo "Brak daty danych (dataAsOf) w data/osm/meta.json — odświeżam."
+            due=true
+          else
+            age_h=$(( ($(date -u +%s) - as_of_s) / 3600 ))
+            if [ "$age_h" -ge 156 ]; then
+              echo "Dane z $as_of mają $age_h h — odświeżam."
+              due=true
+            else
+              echo "::notice::Dane mają $age_h h ($as_of), odświeżanie od 156 h albo z force — pomijam."
+            fi
+          fi
+          echo "due=$due" >> "$GITHUB_OUTPUT"
+
+      - if: steps.due.outputs.due == 'true'
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: osmium-tool
+        if: steps.due.outputs.due == 'true'
+        run: sudo apt-get update && sudo apt-get install -y osmium-tool
+
+      - if: steps.due.outputs.due == 'true'
+        run: npm ci
+
+      # Wyciąg idzie do katalogu tymczasowego maszyny, nie do repozytorium.
+      - name: Dane z wyciągu Geofabrik
+        if: steps.due.outputs.due == 'true'
+        run: npm run food:osm
+        env:
+          OSM_CACHE_DIR: ${{ runner.temp }}/osm
+
+      # Reguły, parsery i skrypt danych sprawdzone na nowych plikach, zanim trafią do repozytorium.
+      - name: Testy
+        if: steps.due.outputs.due == 'true'
+        run: npx vitest run src/food/nearby scripts/food
+
+      # Bez zmian w danych nie ma commita ani wdrożenia. `git status`, bo przy pierwszym przebiegu
+      # plików jeszcze nie ma w repozytorium.
+      - name: Czy dane się zmieniły
+        id: diff
+        if: steps.due.outputs.due == 'true'
+        run: |
+          if [ -n "$(git status --porcelain -- data/osm/places-pl.tsv data/osm/meta.json)" ]; then
+            git status --short -- data/osm
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Dane OSM bez zmian — nie ma czego zapisać."
+          fi
+
+      # Do zapisu idą tylko te dwa pliki, przez artefakt: job, który pisze do repozytorium, nie
+      # uruchamia npm.
+      - name: Artefakt z danymi
+        if: steps.diff.outputs.changed == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: osm-data
+          path: |
+            data/osm/places-pl.tsv
+            data/osm/meta.json
+          if-no-files-found: error
+          retention-days: 7
+
+  # Commit do main i wdrożenie. Prawo zapisu ma tylko ten job, a wykonuje wyłącznie checkout,
+  # artefakt, git i gh — bez npm. Tylko z main: przebieg z innej gałęzi kończy się artefaktem do
+  # obejrzenia, inaczej `git pull --rebase` wypchnąłby do main także jej commity.
+  commit:
+    needs: build
+    if: needs.build.outputs.changed == 'true' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: osm-data
+          path: data/osm
+
+      # Data z meta.json przez zmienną i sprawdzona wzorcem, zanim trafi do opisu commita. Ktoś mógł
+      # w tym czasie wypchnąć coś do main: commit danych idzie na wierzch.
+      - name: Commit danych do main
+        run: |
+          as_of=$(jq -r '.dataAsOf // empty' data/osm/meta.json | cut -c1-10)
+          if [[ ! "$as_of" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+            echo "::error::dataAsOf w meta.json ma się zaczynać datą RRRR-MM-DD, jest: $as_of"
+            exit 1
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/osm/places-pl.tsv data/osm/meta.json
+          git commit -m "chore(osm): dane OpenStreetMap z $as_of"
+          git pull --rebase origin main && git push origin HEAD:main
+
+      # Push tokenem GITHUB_TOKEN nie uruchamia deploy.yml (GitHub tak zapobiega pętlom workflowów),
+      # a workflow_dispatch tym samym tokenem — tak.
+      - name: Wdrożenie
+        run: gh workflow run deploy.yml --ref main
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
