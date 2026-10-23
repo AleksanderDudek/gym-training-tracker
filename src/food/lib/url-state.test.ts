@@ -20,6 +20,7 @@ const FULL: ViewState = {
   view: 'table',
   page: 3,
   product: '5900120011151',
+  scan: 'list',
 };
 
 describe('url state', () => {
@@ -33,6 +34,13 @@ describe('url state', () => {
 
   test('a full state survives the round trip', () => {
     expect(fromSearchParams(toSearchParams(FULL))).toEqual(FULL);
+  });
+
+  test('the scanner: `skan=1` starts the camera (the app shortcut), `skan=lista` shows the comparison', () => {
+    expect(fromSearchParams(new URLSearchParams('skan=1')).scan).toBe('camera');
+    expect(fromSearchParams(new URLSearchParams('skan=lista')).scan).toBe('list');
+    expect(fromSearchParams(new URLSearchParams('skan=tak')).scan).toBeNull();
+    expect(toSearchParams({ ...DEFAULT_VIEW_STATE, scan: 'camera' }).toString()).toBe('skan=1');
   });
 
   test('ranges are written compactly', () => {

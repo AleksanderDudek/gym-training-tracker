@@ -10,6 +10,7 @@ import { PriceTag } from './PriceTag';
 import { ProductImage } from './ProductImage';
 import { ScoreBadge } from './ScoreBadge';
 import { productFood } from '../../diet/foods';
+import { CompareToggle } from './CompareToggle';
 import { Sheet } from './Sheet';
 import { StarButton } from './StarButton';
 import { COMMON } from './text';
@@ -88,6 +89,8 @@ interface Props {
    * podaje tu `closeEntry`, więc zamknięcie cofa wpis historii, który otwarcie dodało.
    */
   onClose: () => void;
+  /** „Pokaż porównanie” on a page that shows it itself; elsewhere the link goes to Produkty. */
+  onShowCompare?: () => void;
 }
 
 const IMAGE_LABELS = T.images;
@@ -118,7 +121,7 @@ function Tags({ items }: { items: string[] }) {
  * Montuje się otwarta; strona pokazuje ją, dopóki adres ma `p=`. Zamknięta przyciskiem Wstecz
  * (odmontowana) oddaje fokus karcie, z której ją otwarto — pilnuje tego `Sheet`.
  */
-export function ProductDetail({ product: p, dict, onClose }: Props) {
+export function ProductDetail({ product: p, dict, onClose, onShowCompare }: Props) {
   const kinds = (Object.keys(IMAGE_LABELS) as ImageKind[]).filter((k) => p.images[k]);
   const [shown, setShown] = useState<ImageKind>(kinds[0] ?? 'front');
 
@@ -235,6 +238,7 @@ export function ProductDetail({ product: p, dict, onClose }: Props) {
         </table>
         {p.servingSize && <p className="soft small">{T.serving(p.servingSize)}</p>}
         {p.labelMismatch && <p className="soft small">{T.mismatch}</p>}
+        <CompareToggle product={p} dict={dict} onShow={onShowCompare} />
       </Block>
 
       {p.ingredientsText && (

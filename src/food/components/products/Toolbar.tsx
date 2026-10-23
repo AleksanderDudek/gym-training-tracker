@@ -1,4 +1,4 @@
-import { Search, SlidersHorizontal, X } from 'lucide-react';
+import { ScanBarcode, Search, SlidersHorizontal, X } from 'lucide-react';
 import { text } from '../../../i18n';
 import { useDebouncedDraft } from '../../hooks/useDebouncedDraft';
 import { SORT_OPTIONS } from '../../lib/labels';
@@ -13,6 +13,8 @@ const T = text({
     custom: 'Własne (z tabeli)',
     filters: 'Filtry',
     on: (n: number) => `, włączone: ${n}`,
+    scan: 'Skanuj',
+    scanLabel: 'Skanuj kod kreskowy',
   },
   en: {
     search: 'Search products',
@@ -22,6 +24,8 @@ const T = text({
     custom: 'Custom (from the table)',
     filters: 'Filters',
     on: (n: number) => `, active: ${n}`,
+    scan: 'Scan',
+    scanLabel: 'Scan a barcode',
   },
 });
 
@@ -32,6 +36,8 @@ interface Props {
   onSort: (sort: Sort) => void;
   activeFilters: number;
   onOpenFilters: () => void;
+  /** Opens the barcode scanner. */
+  onScan: () => void;
 }
 
 /**
@@ -39,46 +45,55 @@ interface Props {
  * do adresu po chwili przerwy (`useDebouncedDraft`), a od razu przy opuszczeniu pola i Enterze —
  * stuknięcie w produkt tuż po wpisaniu nie może zgubić wpisanego tekstu.
  */
-export function Toolbar({ query, onQuery, sort, onSort, activeFilters, onOpenFilters }: Props) {
+export function Toolbar({ query, onQuery, sort, onSort, activeFilters, onOpenFilters, onScan }: Props) {
   const [draft, setDraft, flush] = useDebouncedDraft(query, onQuery, (a, b) => a.trim() === b.trim());
   const sortValue = `${sort.key}-${sort.dir}`;
   const inPresets = SORT_OPTIONS.some((o) => `${o.key}-${o.dir}` === sortValue);
 
   return (
     <div className="fd-toolbar">
-      {/* `div`, nie `label`: przycisk w etykiecie dokleiłby się do nazwy pola („Szukaj produktu Wyczyść wyszukiwanie”). */}
-      <div role="search" className="fd-search">
-        <Search size={20} strokeWidth={2} aria-hidden />
-        <input
-          type="search"
-          name="q"
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onBlur={flush}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') flush();
-          }}
-          aria-label={T.search}
-          // Krócej niż w Produktach PL („Szukaj: nazwa, marka lub kod kreskowy”): lupa mówi już „szukaj”,
-          // a pełne zdanie ucinało się na telefonie w pół słowa.
-          placeholder={T.placeholder}
-          enterKeyHint="search"
-          autoComplete="off"
-          spellCheck={false}
-        />
-        {draft && (
-          <button
-            type="button"
-            className="fd-search-clear"
-            onClick={() => {
-              setDraft('');
-              onQuery('');
+      <div className="fd-search-row">
+        {/* `div`, nie `label`: przycisk w etykiecie dokleiłby się do nazwy pola („Szukaj produktu Wyczyść wyszukiwanie”). */}
+        <div role="search" className="fd-search">
+          <Search size={20} strokeWidth={2} aria-hidden />
+          <input
+            type="search"
+            name="q"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={flush}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') flush();
             }}
-            aria-label={T.clear}
-          >
-            <X size={20} strokeWidth={2} aria-hidden />
-          </button>
-        )}
+            aria-label={T.search}
+            // Krócej niż w Produktach PL („Szukaj: nazwa, marka lub kod kreskowy”): lupa mówi już „szukaj”,
+            // a pełne zdanie ucinało się na telefonie w pół słowa.
+            placeholder={T.placeholder}
+            enterKeyHint="search"
+            autoComplete="off"
+            spellCheck={false}
+          />
+          {draft && (
+            <button
+              type="button"
+              className="fd-search-clear"
+              onClick={() => {
+                setDraft('');
+                onQuery('');
+              }}
+              aria-label={T.clear}
+            >
+              <X size={20} strokeWidth={2} aria-hidden />
+            </button>
+          )}
+        </div>
+        {/* Obok wyszukiwarki, bo to też wyszukiwanie — po kodzie spod kresek, aparatem. */}
+        <button type="button" className="btn fd-scan-btn" onClick={onScan} aria-label={T.scanLabel} title={T.scanLabel}>
+          <ScanBarcode size={22} strokeWidth={2} aria-hidden />
+          <span className="fd-scan-btn-label" aria-hidden="true">
+            {T.scan}
+          </span>
+        </button>
       </div>
 
       <div className="fd-tools">

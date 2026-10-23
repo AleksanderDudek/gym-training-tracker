@@ -25,8 +25,10 @@ declare const self: ServiceWorkerGlobalScope;
  *   tylko ostatnią, bo każda waży kilka megabajtów.
  * - Zdjęcia produktów i kafelki mapy — najpierw kopia, z limitem liczby i wieku. Kafelki tylko
  *   obejrzane, nigdy pobierane zawczasu (tego wymagają zasady OpenStreetMap).
+ * - Czytnik kodów kreskowych (WebAssembly) — najpierw kopia, pobrany przy pierwszym skanie.
  *
- * Overpass, serwer aplikacji i filmy z YouTube'a idą prosto do sieci: offline i tak by nie ruszyły.
+ * Overpass, Open Food Facts, serwer aplikacji i filmy z YouTube'a idą prosto do sieci: offline i tak
+ * by nie ruszyły.
  * W trybie deweloperskim ten plik nie jest rejestrowany.
  */
 
@@ -55,6 +57,17 @@ registerRoute(
   ({ url, sameOrigin }) => sameOrigin && /\/assets\/shopData-[\w-]+\.js$/.test(url.pathname),
   new CacheFirst({
     cacheName: 'gt-shop-data',
+    plugins: [new ExpirationPlugin({ maxEntries: 1 }), new CacheableResponsePlugin({ statuses: [200] })],
+  }),
+);
+
+// Czytnik kodów kreskowych (WebAssembly, ok. 1 MB) dla przeglądarek bez własnego: pobierany przy
+// pierwszym skanie, nie przy instalacji — większość telefonów z Androidem go nie potrzebuje. Potem
+// z kopii, także w sklepie bez zasięgu. Nazwa ma hasz, więc nowa wersja to nowy adres.
+registerRoute(
+  ({ url, sameOrigin }) => sameOrigin && /\/assets\/zxing_reader-[\w-]+\.wasm$/.test(url.pathname),
+  new CacheFirst({
+    cacheName: 'gt-scanner',
     plugins: [new ExpirationPlugin({ maxEntries: 1 }), new CacheableResponsePlugin({ statuses: [200] })],
   }),
 );

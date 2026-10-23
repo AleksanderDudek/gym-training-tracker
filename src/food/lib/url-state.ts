@@ -11,6 +11,8 @@ import { DEFAULT_SORT, SORT_KEYS, type Sort, type SortDir, type SortKey } from '
 import { ECO_GRADES, NOVA_GROUPS, NUTRI_GRADES } from './types';
 
 export type View = 'cards' | 'table';
+/** The scanner over the list: to scan (the camera starts) or to look at the comparison. */
+export type ScanMode = 'camera' | 'list';
 
 /** Everything on screen, so a link or a reload reproduces it. */
 export interface ViewState {
@@ -20,6 +22,8 @@ export interface ViewState {
   page: number;
   /** The code of the product whose detail is open. */
   product: string | null;
+  /** `skan=1` (the app shortcut „Skanuj produkt”) or `skan=lista`. */
+  scan: ScanMode | null;
 }
 
 export const DEFAULT_VIEW_STATE: ViewState = {
@@ -28,6 +32,7 @@ export const DEFAULT_VIEW_STATE: ViewState = {
   view: 'cards',
   page: 1,
   product: null,
+  scan: null,
 };
 
 // Short names keep links readable. Multi-values are comma-joined: no tag,
@@ -69,6 +74,7 @@ export function toSearchParams(state: ViewState): URLSearchParams {
   if (state.view !== DEFAULT_VIEW_STATE.view) params.set('view', state.view);
   if (state.page > 1) params.set('page', String(state.page));
   if (state.product) params.set('p', state.product);
+  if (state.scan) params.set('skan', state.scan === 'camera' ? '1' : 'lista');
   return params;
 }
 
@@ -138,5 +144,6 @@ export function fromSearchParams(params: URLSearchParams): ViewState {
     view: params.get('view') === 'table' ? 'table' : 'cards',
     page: Number.isInteger(page) && page > 1 ? page : 1,
     product: params.get('p') || null,
+    scan: params.get('skan') === '1' ? 'camera' : params.get('skan') === 'lista' ? 'list' : null,
   };
 }

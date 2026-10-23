@@ -189,6 +189,10 @@
 .fd-diet-picker input[type=search],.fd-diet-set input[type=search]{width:100%;padding:11px 10px;font:inherit;
   font-size:17px;border:1px solid var(--edge);border-radius:var(--r);background:#fff;color:var(--ink)}
 .fd-diet-hint,p.fd-diet-hint{margin:8px 0 0;font-size:12.5px;color:var(--ink-soft)}
+/* Wyszukiwanie i skaner kodów obok siebie; skaner rozwija się pod polem. */
+.fd-diet-search-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
+.fd-diet-scan-btn{min-width:48px;min-height:48px;padding:10px 12px}
+.fd-diet-scan{margin-top:10px}
 .fd-diet-results{list-style:none;margin:8px 0 0;padding:0}
 .fd-diet-results li{border-top:1px solid var(--surface-2)}
 .fd-diet-results li.fd-diet-result-row{display:flex;align-items:center;gap:2px}
