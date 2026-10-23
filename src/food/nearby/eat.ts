@@ -44,7 +44,10 @@ export function placeFoods(
   readyFor: (shop: string) => Food[],
   shopName: (shop: string) => string,
 ): PlaceFoods {
-  const menu = menuOf(place.brand);
+  const found = menuOf(place.brand);
+  const near = found?.osm?.near;
+  // A local chain's common name elsewhere is another business.
+  const menu = found && near && distanceMeters(place, near) > near.km * 1000 ? null : found;
   const foods = [
     ...(menu ? menu.items.map((item) => restaurantFood(menu, item)) : []),
     ...(place.shop ? readyFor(place.shop) : []),

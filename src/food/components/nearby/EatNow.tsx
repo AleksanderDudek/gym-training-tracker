@@ -21,6 +21,7 @@ import type { LatLon } from '../../nearby/types';
 import type { NearbyState } from '../../nearby/url';
 import { isOnlineShop } from '../../online/shops';
 import { brandIndex } from '../../restaurants/brands';
+import { UNPUBLISHED } from '../../restaurants/unpublished';
 import type { Chain } from '../../restaurants/types';
 import { readyProducts } from '../../recipes/ready';
 import { dietPath } from '../../../routing';
@@ -180,6 +181,7 @@ export function EatNow({ state, update, closeEntry, geo, locate, setManual, setR
   );
 
   const menuOf = useMemo(() => brandIndex(chains), [chains]);
+  const unpublishedOf = useMemo(() => brandIndex(UNPUBLISHED), []);
   // One shop chain's ready products are worked out once, however many of its shops are around.
   const readyByShop = useMemo(() => {
     const byShop = new Map<string, Food[]>();
@@ -200,9 +202,14 @@ export function EatNow({ state, update, closeEntry, geo, locate, setManual, setR
   const foodsOf = useCallback(
     (place: Place) => {
       const found = placeFoods(place, menuOf, readyFor, (shop) => dict.stores[shop] ?? storeKey(place.brand)?.label ?? place.name);
-      return { ...found, foods: found.foods.map((f) => (starred.has(f.key) ? { ...f, favorite: true as const } : f)) };
+      return {
+        ...found,
+        // A chain known to publish no nutrition still has a name to show.
+        label: found.label ?? unpublishedOf(place.brand)?.name ?? null,
+        foods: found.foods.map((f) => (starred.has(f.key) ? { ...f, favorite: true as const } : f)),
+      };
     },
-    [menuOf, readyFor, dict, starred],
+    [menuOf, unpublishedOf, readyFor, dict, starred],
   );
 
   const { needs } = eat;
@@ -427,6 +434,7 @@ export function EatNow({ state, update, closeEntry, geo, locate, setManual, setR
           key={selected.place.id}
           place={selected}
           menu={foodsOf(selected.place).menu}
+          unpublished={unpublishedOf(selected.place.brand)}
           ctx={ctx}
           mealKcal={needs.meal.kcal}
           today={eat.today}

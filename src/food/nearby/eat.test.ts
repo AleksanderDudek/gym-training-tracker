@@ -73,6 +73,15 @@ describe('what each place offers', () => {
     expect(foodsOf(place('c', 'Bar u Zdzisia', 100)).foods).toEqual([]);
   });
 
+  test('a local chain with a common name only near home: the same name elsewhere is another business', () => {
+    const local = normalizeChain({ ...chain('fresca', 'Fresca', BURGER.items.slice(0, 1)), osm: { brands: ['Fresca'], near: { ...CENTER, km: 5 } } });
+    const menuOfLocal = brandIndex([local]);
+    const here = placeFoods(place('f1', 'Fresca', 1000), menuOfLocal, readyFor, (s) => s);
+    const far = placeFoods(place('f2', 'Fresca', 50_000), menuOfLocal, readyFor, (s) => s);
+    expect(here.menu?.id).toBe('fresca');
+    expect(far.menu).toBeNull();
+  });
+
   test('the card shows a dish without its chain in brackets', () => {
     expect(dishName(foodsOf(place('a', 'Burgerownia', 100)).foods[0]!)).toBe('Wrap z kurczakiem');
     expect(dishName(SKYR)).toBe(SKYR.name);

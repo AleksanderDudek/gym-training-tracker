@@ -1,5 +1,4 @@
 import { normalizeForSearch } from '../lib/text';
-import type { Chain } from './types';
 
 /** Folded the same way on both sides: lower case, no diacritics, punctuation as spaces. */
 const fold = (s: string) => normalizeForSearch(s.replace(/[^\p{L}\p{N}]+/gu, ' '));
@@ -10,7 +9,7 @@ const fold = (s: string) => normalizeForSearch(s.replace(/[^\p{L}\p{N}]+/gu, ' '
  * "BP Express" but not "Bperfect". The longest brand wins, so "Caffè Nero" never takes a "Green
  * Caffè Nero" from a chain that names both.
  */
-export function brandIndex(chains: Chain[]): (brand: string) => Chain | null {
+export function brandIndex<T extends { osm?: { brands: string[] } | undefined }>(chains: T[]): (brand: string) => T | null {
   const entries = chains
     .flatMap((chain) => (chain.osm?.brands ?? []).map((b) => ({ key: fold(b), chain })))
     .filter((e) => e.key)

@@ -9,7 +9,7 @@ import type { LatLon } from './types';
  * only carries the brand it shows.
  */
 
-export type PlaceKind = 'fast_food' | 'restaurant' | 'cafe' | 'fuel' | 'food_court' | 'shop';
+export type PlaceKind = 'fast_food' | 'restaurant' | 'cafe' | 'fuel' | 'food_court' | 'ice_cream' | 'bakery' | 'shop';
 
 export interface Place {
   /** `node/123`, `way/456`. */
@@ -28,15 +28,18 @@ export interface Place {
   cuisine: string | null;
 }
 
-const AMENITIES = ['fast_food', 'restaurant', 'cafe', 'fuel', 'food_court'] as const;
+const AMENITIES = ['fast_food', 'restaurant', 'cafe', 'fuel', 'food_court', 'ice_cream'] as const;
+/** Grocery shops: their chain's ready products are on offer. */
 const SHOP_TYPES = ['supermarket', 'convenience', 'discount', 'grocery'];
+/** Shops that are food places of their own: bakery and café chains (Tchibo is a `shop=coffee`). */
+const FOOD_SHOPS: Record<string, PlaceKind> = { bakery: 'bakery', pastry: 'bakery', coffee: 'cafe' };
 
 export function buildPlacesQuery(center: LatLon, radius: number): string {
   const around = `around:${Math.round(radius)},${center.lat},${center.lon}`;
   return (
     `[out:json][timeout:25];(` +
     `nwr["amenity"~"^(${AMENITIES.join('|')})$"](${around});` +
-    `nwr["shop"~"^(${SHOP_TYPES.join('|')})$"](${around});` +
+    `nwr["shop"~"^(${[...SHOP_TYPES, ...Object.keys(FOOD_SHOPS)].join('|')})$"](${around});` +
     `);out center tags;`
   );
 }
@@ -55,7 +58,12 @@ export function parsePlaces(json: unknown): Place[] {
     const tags = element.tags ?? {};
     const brand = tags.brand ?? tags.name;
     if (seen.has(id) || lat === undefined || lon === undefined || !brand) continue;
-    const kind: PlaceKind | null = isAmenity(tags.amenity) ? tags.amenity : tags.shop ? 'shop' : null;
+    const grocery = SHOP_TYPES.includes(tags.shop ?? '');
+    const kind: PlaceKind | null = isAmenity(tags.amenity)
+      ? tags.amenity
+      : grocery
+        ? 'shop'
+        : (FOOD_SHOPS[tags.shop ?? ''] ?? null);
     if (!kind) continue;
     seen.add(id);
     places.push({
@@ -63,7 +71,7 @@ export function parsePlaces(json: unknown): Place[] {
       name: tags.name ?? brand,
       brand,
       kind,
-      shop: kind === 'shop' ? (storeKey(brand)?.key ?? null) : null,
+      shop: grocery ? (storeKey(brand)?.key ?? null) : null,
       lat,
       lon,
       address: address(tags),
