@@ -34,6 +34,19 @@ export class OverpassUnavailable extends Error {
   }
 }
 
+/** No connection at all: nothing is sent, and the page asks again when the connection is back. */
+export class OverpassOffline extends Error {
+  constructor() {
+    super(
+      text({
+        pl: 'Brak połączenia z internetem — zapytam serwer map, gdy wróci.',
+        en: 'No internet connection — I’ll ask the map server when it’s back.',
+      }),
+    );
+    this.name = 'OverpassOffline';
+  }
+}
+
 /** Food shops around a point; `out center` gives buildings (ways) a position too. */
 export function buildQuery(center: LatLon, radius: number): string {
   const around = `around:${Math.round(radius)},${center.lat},${center.lon}`;
@@ -155,16 +168,22 @@ function sleep(ms: number, signal?: AbortSignal): Promise<void> {
   });
 }
 
+/** A server that refuses this client (429 too many requests, 406 refused) is asked again only this many base pauses later: 30 s, as the Overpass usage policy asks. */
+const REFUSED_PAUSES = 15;
+
+/** The answers after which a server is left alone for a while: refused, rate-limited, busy. */
+export const isPauseStatus = (status: number) => status === 406 || status === 429 || status >= 500;
+
 /**
  * The pause a busy server asked for: `Retry-After` in seconds (or as a date), capped; without one, a
- * multiple of the base pause - a rate limit (429) waits longer than a full server (502, 503, 504).
+ * multiple of the base pause - a refusal (429, 406) waits much longer than a full server (502, 503, 504).
  */
 export function pauseFor(response: Response, baseMs: number, nowMs = Date.now()): number {
   const header = response.headers.get('retry-after');
   const seconds = header === null ? NaN : Number(header);
   const asked = Number.isFinite(seconds) ? seconds * 1000 : header ? Date.parse(header) - nowMs : NaN;
   if (Number.isFinite(asked)) return Math.min(MAX_WAIT_MS, Math.max(baseMs, asked));
-  return response.status === 429 ? 5 * baseMs : 3 * baseMs;
+  return response.status === 429 || response.status === 406 ? REFUSED_PAUSES * baseMs : 3 * baseMs;
 }
 
 /**
@@ -198,6 +217,8 @@ export async function fetchOverpass<T>(query: string, parse: (json: unknown) => 
     budgetMs = BUDGET_MS,
     onWait,
   } = options;
+  // Offline the request would only fail after its timeout; the page waits for the connection instead.
+  if (globalThis.navigator?.onLine === false) throw new OverpassOffline();
   const body = new URLSearchParams({ data: query });
   const deadline = Date.now() + budgetMs;
   /** When each server may be asked again. */
@@ -217,7 +238,7 @@ export async function fetchOverpass<T>(query: string, parse: (json: unknown) => 
     try {
       const response = await fetchImpl(endpoint, { method: 'POST', body, signal: attempt.signal });
       if (response.ok && response.headers.get('content-type')?.includes('json')) return parse(await response.json());
-      if (response.status === 429 || response.status >= 500) notBefore.set(endpoint, Date.now() + pauseFor(response, retryDelayMs));
+      if (isPauseStatus(response.status)) notBefore.set(endpoint, Date.now() + pauseFor(response, retryDelayMs));
     } catch (error) {
       // The caller's own abort ends everything; a timeout, a dropped connection or a bad answer
       // only ends this server's turn.

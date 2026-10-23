@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { pruneCache, readCache, readFallback, writeCache, type Circle, type ShopCache } from '../nearby/cache';
 import { distanceMeters } from '../nearby/geo';
-import { OverpassUnavailable, type FetchOptions } from '../nearby/overpass';
+import { OverpassOffline, OverpassUnavailable, type FetchOptions } from '../nearby/overpass';
 import { queryCircle } from '../nearby/query';
 import type { LatLon } from '../nearby/types';
 
@@ -134,7 +134,7 @@ export function useAround<T>(
           setFetched({ ...IDLE, status: 'ready', items, circle });
         } catch (error) {
           if (controller.signal.aborted) return;
-          const message = error instanceof OverpassUnavailable ? error.message : failed;
+          const message = error instanceof OverpassUnavailable || error instanceof OverpassOffline ? error.message : failed;
           setFetched((f) => ({ ...f, status: 'error', error: message, since: null, waitUntil: null, failedAt: Date.now() }));
         }
       },
@@ -148,6 +148,14 @@ export function useAround<T>(
   }, [lat, lon, radius, attempt, fetcher, cacheKey, failed]);
 
   const retry = useCallback(() => setAttempt((n) => n + 1), []);
+
+  // The connection is back: ask at once, not at the next scheduled try.
+  const failedNow = fetched.status === 'error';
+  useEffect(() => {
+    if (!failedNow) return;
+    window.addEventListener('online', retry);
+    return () => window.removeEventListener('online', retry);
+  }, [failedNow, retry]);
 
   // Retries by itself after a failure, counted per place and radius: a new one starts afresh.
   const placeKey = `${lat},${lon},${radius}`;

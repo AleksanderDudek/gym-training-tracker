@@ -53,6 +53,16 @@ describe('useAround', () => {
     expect(fetcher).toHaveBeenCalledTimes(AUTO_RETRY_MS.length + 2);
   });
 
+  test('the connection coming back asks again at once, not at the next scheduled try', async () => {
+    const fetcher = vi.fn<(c: LatLon, r: number, o: FetchOptions) => Promise<Item[]>>(fail);
+    renderHook(() => useAround<Item>(HERE, 1000, fetcher, KEY, 'nie wyszło'));
+    await settle();
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    act(() => void window.dispatchEvent(new Event('online')));
+    await settle();
+    expect(fetcher).toHaveBeenCalledTimes(2);
+  });
+
   test('a hidden page waits with its retry until it is looked at again', async () => {
     const fetcher = vi.fn<(c: LatLon, r: number, o: FetchOptions) => Promise<Item[]>>(fail);
     renderHook(() => useAround<Item>(HERE, 1000, fetcher, KEY, 'nie wyszło'));
