@@ -2,7 +2,7 @@
   "id": "dobra-bula",
   "name": "Dobra Buła",
   "kind": "fast-food",
-  "osm": { "brands": ["Dobra Buła"] },
+  "osm": { "brands": ["Dobra Buła"], "near": { "lat": 52.2297, "lon": 21.0122, "km": 30 } },
   "market": "PL",
   "source": {
     "url": "https://dobrabula.pl/wp-content/uploads/2025/10/Tabela-Alergenow-i-wartosci-odzywczych_0625-1.pdf",
