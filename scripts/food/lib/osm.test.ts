@@ -1,0 +1,360 @@
+import { describe, expect, test } from 'vitest';
+import type { OsmRow } from '../../../src/food/nearby/osmFormat';
+import {
+  bboxCentre,
+  buildMeta,
+  decodeId,
+  diffRows,
+  gates,
+  kindOf,
+  parsePoly,
+  readFeatures,
+  simplify,
+  simplifyCoverage,
+  type FeatureStats,
+  type Meta,
+} from './osm';
+
+type Point = [number, number];
+
+/** One line of `osmium export -f geojsonseq -u type_id`, record separator included. */
+const line = (id: string, geometry: object, properties: Record<string, string>) =>
+  `\x1e${JSON.stringify({ type: 'Feature', id, geometry, properties })}`;
+const point = (lon: number, lat: number) => ({ type: 'Point', coordinates: [lon, lat] });
+/** A closed way: the same ring as a LineString (its `w` line) and as a MultiPolygon (its `a` area). */
+const RING = [
+  [21.0, 52.2],
+  [21.002, 52.2],
+  [21.002, 52.201],
+  [21.0, 52.201],
+  [21.0, 52.2],
+];
+
+describe('osmium ids', () => {
+  test('nodes and ways as written; areas: an even number is a closed way, an odd one a relation', () => {
+    expect(decodeId('n1')).toEqual({ type: 'node', id: 1, key: 'n1' });
+    expect(decodeId('w2')).toEqual({ type: 'way', id: 2, key: 'w2' });
+    expect(decodeId('a4')).toEqual({ type: 'way', id: 2, key: 'w2' });
+    expect(decodeId('a5')).toEqual({ type: 'relation', id: 2, key: 'r2' });
+    expect(decodeId('r789')).toEqual({ type: 'relation', id: 789, key: 'r789' });
+    // Real ids: past 2^31, and twice that for an area.
+    expect(decodeId('a25463972881')).toEqual({ type: 'relation', id: 12_731_986_440, key: 'r12731986440' });
+    for (const odd of ['', 'x1', 'n', 'n-1', 'n0', 'a1', 'node/1', '42']) expect(decodeId(odd)).toBeNull();
+  });
+});
+
+describe('positions', () => {
+  test('a point is itself; anything else the centre of its bounding box, as Overpass `out center` gives', () => {
+    expect(bboxCentre(point(21.01, 52.23))).toEqual({ lat: 52.23, lon: 21.01 });
+    const line = bboxCentre({ type: 'LineString', coordinates: [[21, 52], [21.5, 52.1], [21.2, 53]] });
+    expect(line.lat).toBeCloseTo(52.5, 12);
+    expect(line.lon).toBeCloseTo(21.25, 12);
+    // Two polygons, one with a hole: the box spans both.
+    const multi = bboxCentre({
+      type: 'MultiPolygon',
+      coordinates: [
+        [RING, [[21.0005, 52.2002], [21.001, 52.2002], [21.001, 52.2008], [21.0005, 52.2002]]],
+        [[[21.01, 52.21], [21.02, 52.21], [21.02, 52.22], [21.01, 52.21]]],
+      ],
+    });
+    expect(multi.lat).toBeCloseTo(52.21, 12);
+    expect(multi.lon).toBeCloseTo(21.01, 12);
+    expect(() => bboxCentre({ type: 'Polygon', coordinates: [] })).toThrow(/without coordinates/);
+  });
+});
+
+describe('reading the export', () => {
+  const restaurant = line('n10', point(21.01, 52.23), { amenity: 'restaurant', name: 'Dziupla', cuisine: 'polish' });
+
+  test('a closed way comes as its line and its area: read once, as the way', () => {
+    const tags = { shop: 'supermarket', brand: 'Biedronka', name: 'Biedronka' };
+    const { rows, stats } = readFeatures([
+      line('w2', { type: 'LineString', coordinates: RING }, tags),
+      line('a4', { type: 'MultiPolygon', coordinates: [[RING]] }, tags),
+    ]);
+    expect(rows).toEqual([{ id: 'w2', latE5: 5_220_050, lonE5: 2_100_100, tags }]);
+    expect(stats).toMatchObject({ features: 2, duplicates: 1, types: { node: 0, way: 1, relation: 0 }, kinds: { supermarket: 1 } });
+    // The area of a multipolygon relation is the relation.
+    expect(readFeatures([line('a5', { type: 'MultiPolygon', coordinates: [[RING]] }, tags)]).rows[0]?.id).toBe('r2');
+  });
+
+  test('with or without the record separator, and past blank lines', () => {
+    const plain = restaurant.slice(1);
+    expect(readFeatures([plain]).rows).toEqual(readFeatures([restaurant]).rows);
+    expect(readFeatures(['', restaurant, '   ']).rows).toHaveLength(1);
+  });
+
+  test('what neither view asks for, and what has no brand or name, stays out', () => {
+    const { rows, stats } = readFeatures([
+      line('n1', point(21, 52), { amenity: 'bar', name: 'Pub' }),
+      line('n2', point(21, 52), { shop: 'wholesale', name: 'Hurtownia Budowlana' }),
+      line('n3', point(21, 52), { amenity: 'restaurant' }),
+      line('n4', point(21, 52), { shop: 'convenience', 'name:en': 'Shop' }),
+      line('n5', point(21, 52), { shop: 'wholesale', brand: 'Selgros', name: 'Selgros Cash & Carry' }),
+      line('n6', point(21, 52), { shop: 'bakery', name: 'Putka' }),
+      line('n7', point(21, 52), { amenity: 'fuel', shop: 'convenience', brand: 'Orlen' }),
+    ]);
+    expect(rows.map((row) => row.id)).toEqual(['n5', 'n6', 'n7']);
+    expect(stats).toMatchObject({ features: 7, duplicates: 0, notMatching: 2, unnamed: 2, kinds: { wholesale: 1, bakery: 1, fuel: 1 } });
+  });
+
+  test('only the tags the app reads, each on one line, none empty', () => {
+    const { rows } = readFeatures([
+      line('n1', point(21, 52), {
+        amenity: 'cafe',
+        name: 'Kawa\tna\nwynos\r',
+        'addr:street': 'Marszałkowska',
+        'addr:housenumber': '10',
+        'addr:city': 'Warszawa',
+        website: 'https://example.pl',
+        'fuel:diesel': 'yes',
+        cuisine: '',
+      }),
+    ]);
+    expect(rows[0]?.tags).toEqual({ amenity: 'cafe', name: 'Kawa na wynos ', 'addr:street': 'Marszałkowska', 'addr:housenumber': '10' });
+  });
+
+  test('rows come sorted: nodes, ways, relations, each by number', () => {
+    const tags = { amenity: 'cafe', name: 'Café' };
+    const { rows } = readFeatures([
+      line('w10', point(21, 52), tags),
+      line('a3', point(21, 52), tags),
+      line('n10', point(21, 52), tags),
+      line('n9', point(21, 52), tags),
+      line('w2', point(21, 52), tags),
+      line('n12345678901', point(21, 52), tags),
+    ]);
+    expect(rows.map((row) => row.id)).toEqual(['n9', 'n10', 'n12345678901', 'w2', 'w10', 'r1']);
+  });
+
+  test('a line osmium would not write stops the run, with its number', () => {
+    expect(() => readFeatures([restaurant, restaurant.slice(0, 40)])).toThrow(/line 2/);
+    expect(() => readFeatures([JSON.stringify({ type: 'Feature', id: 7, geometry: point(21, 52), properties: {} })])).toThrow(/-u type_id/);
+  });
+
+  test('kind: the amenity when it is a place to eat, else the shop type', () => {
+    expect(kindOf({ amenity: 'fuel', shop: 'convenience' })).toBe('fuel');
+    expect(kindOf({ amenity: 'bar', shop: 'convenience' })).toBe('convenience');
+    expect(kindOf({ shop: 'pastry' })).toBe('pastry');
+  });
+});
+
+describe('the coverage polygon', () => {
+  test('a Geofabrik .poly with a hole, in scientific notation', () => {
+    const poly = [
+      'poland',
+      '1',
+      '   1.400000E+01   4.900000E+01',
+      '   2.400000E+01   4.900000E+01',
+      '   2.400000E+01   5.500000E+01',
+      '   1.400000E+01   4.900000E+01',
+      'END',
+      '!2',
+      '   20.0   52.0',
+      '   20.5   52.0',
+      '   20.5   52.5',
+      'END',
+      'END',
+      '',
+    ].join('\n');
+    expect(parsePoly(poly)).toEqual({
+      rings: [
+        [
+          [49, 14],
+          [49, 24],
+          [55, 24],
+          [49, 14],
+        ],
+      ],
+      holes: [
+        [
+          [52, 20],
+          [52, 20.5],
+          [52.5, 20.5],
+        ],
+      ],
+    });
+    expect(parsePoly(poly.replace(/\n/g, '\r\n')).rings).toHaveLength(1);
+    // Cut short: no final END, a section without END, a stray line.
+    expect(() => parsePoly(poly.replace(/END\nEND\n$/, 'END\n'))).toThrow(/final END/);
+    expect(() => parsePoly('poland\n1\n 14 49\n 24 49\n 24 55\n')).toThrow(/no END/);
+    expect(() => parsePoly('poland\n1\n 14 49 0\n 24 49\n 24 55\nEND\nEND\n')).toThrow(/not a point/);
+  });
+
+  /** Great-circle distance, independent of the simplifier's flat projection. */
+  const haversine = (a: Point, b: Point) => {
+    const rad = Math.PI / 180;
+    const h = Math.sin(((b[0] - a[0]) * rad) / 2) ** 2 + Math.cos(a[0] * rad) * Math.cos(b[0] * rad) * Math.sin(((b[1] - a[1]) * rad) / 2) ** 2;
+    return 2 * 6_371_008.8 * Math.asin(Math.sqrt(h));
+  };
+  /** Distance to a segment drawn straight in latitude and longitude, sampled every few metres. */
+  const toSegment = (p: Point, a: Point, b: Point) => {
+    let best = Infinity;
+    for (let s = 0; s <= 2000; s++) {
+      const t = s / 2000;
+      best = Math.min(best, haversine(p, [a[0] + t * (b[0] - a[0]), a[1] + t * (b[1] - a[1])]));
+    }
+    return best;
+  };
+  /** A wobbly closed ring around Warsaw, ~10 km across; the closing point is a copy of the first. */
+  const wobbly = (n: number): Point[] => {
+    const ring: Point[] = [];
+    for (let k = 0; k < n; k++) {
+      const angle = (2 * Math.PI * k) / n;
+      const metres = 5000 + 400 * Math.sin(7 * angle) + 120 * Math.sin(31 * angle);
+      ring.push([52.23 + (metres * Math.sin(angle)) / 111_195, 21.01 + (metres * Math.cos(angle)) / (111_195 * Math.cos((52.23 * Math.PI) / 180))]);
+    }
+    const [lat, lon] = ring[0]!;
+    return [...ring, [lat, lon]];
+  };
+
+  test('simplified: every point left out stays within eps of the segment that replaced it', () => {
+    const ring = wobbly(1500);
+    for (const eps of [50, 300]) {
+      const simple = simplify(ring, eps);
+      expect(simple.length).toBeLessThan(ring.length / 5);
+      expect(simple[0]).toBe(ring[0]);
+      expect(simple.at(-1)).toBe(ring.at(-1));
+      const kept = simple.map((p) => ring.indexOf(p));
+      expect(kept.every((index, k) => index >= 0 && (k === 0 || index > kept[k - 1]!))).toBe(true);
+      let worst = 0;
+      for (let k = 1; k < kept.length; k++) {
+        const [from, to] = [kept[k - 1]!, kept[k]!];
+        for (let m = from + 1; m < to; m++) worst = Math.max(worst, toSegment(ring[m]!, ring[from]!, ring[to]!));
+      }
+      expect(worst).toBeLessThanOrEqual(eps * 1.001);
+      // And the bound is used, not wasted: the worst point is close to it.
+      expect(worst).toBeGreaterThan(eps * 0.5);
+    }
+  });
+
+  test('300 m, or 500 m when 300 m leaves over 800 points', () => {
+    expect(simplifyCoverage({ rings: [wobbly(400)], holes: [] }).eps).toBe(300);
+    // A zigzag of 400 m teeth along 100 km and back: each tooth survives 300 m, none survives 500 m.
+    const teeth: Point[] = [];
+    for (let k = 0; k <= 500; k++) teeth.push([52 + (k % 2 ? 0.0036 : 0), 18 + k * 0.003]);
+    for (let k = 500; k >= 0; k--) teeth.push([52.5 + (k % 2 ? 0.0036 : 0), 18 + k * 0.003]);
+    teeth.push(teeth[0]!);
+    const coverage = simplifyCoverage({ rings: [teeth], holes: [] });
+    expect(simplify(teeth, 300).length).toBeGreaterThan(800);
+    expect(coverage.eps).toBe(500);
+    expect(coverage.rings[0]!.length).toBeLessThan(20);
+  });
+});
+
+describe('meta and the checks', () => {
+  const stats: FeatureStats = {
+    features: 10,
+    duplicates: 3,
+    notMatching: 2,
+    unnamed: 1,
+    types: { node: 3, way: 1, relation: 0 },
+    kinds: { supermarket: 1, wholesale: 1, cafe: 1, fast_food: 1 },
+  };
+  const rows: OsmRow[] = [
+    { id: 'n1', latE5: 5_223_000, lonE5: 2_101_000, tags: { amenity: 'fast_food', brand: "McDonald's" } },
+    { id: 'n2', latE5: 5_209_000, lonE5: 2_085_000, tags: { amenity: 'cafe', name: 'Na rogu' } },
+    { id: 'n3', latE5: 5_006_000, lonE5: 1_994_000, tags: { shop: 'supermarket', brand: 'Biedronka' } },
+    { id: 'w4', latE5: 5_210_000, lonE5: 2_090_000, tags: { shop: 'wholesale', brand: 'Selgros' } },
+  ];
+  const coverage = {
+    eps: 300,
+    rings: [
+      [
+        [49, 14],
+        [49, 24.15],
+        [55, 24.15],
+        [49, 14],
+      ] as Point[],
+    ],
+    holes: [],
+  };
+  const built = buildMeta({ dataAsOf: '2026-10-22T20:21:33Z', sourceMd5: null, osmium: '1.19.1', rows, stats, coverage });
+
+  test('counts, flat rings in 1e-5 degrees, kinds by name, and nothing that changes from run to run', () => {
+    expect(built).toEqual({
+      format: 1,
+      dataAsOf: '2026-10-22T20:21:33Z',
+      source: 'https://download.geofabrik.de/europe/poland-latest.osm.pbf',
+      sourceMd5: null,
+      osmium: '1.19.1',
+      rows: 4,
+      types: { node: 3, way: 1, relation: 0 },
+      kinds: { cafe: 1, fast_food: 1, supermarket: 1, wholesale: 1 },
+      dropped: { duplicates: 3, notMatching: 2, unnamed: 1 },
+      warsaw: 3,
+      halls: 1,
+      coverage: {
+        source: 'https://download.geofabrik.de/europe/poland.poly',
+        eps: 300,
+        rings: [[4_900_000, 1_400_000, 4_900_000, 2_415_000, 5_500_000, 2_415_000, 4_900_000, 1_400_000]],
+        holes: [],
+      },
+      license: 'ODbL-1.0',
+      attribution: '© OpenStreetMap contributors',
+    });
+    expect(Object.keys(built.kinds)).toEqual(['cafe', 'fast_food', 'supermarket', 'wholesale']);
+    expect(JSON.stringify(buildMeta({ dataAsOf: '2026-10-22T20:21:33Z', sourceMd5: null, osmium: '1.19.1', rows, stats, coverage }))).toBe(
+      JSON.stringify(built),
+    );
+  });
+
+  /** A previous copy and a new one that passes every check; each test spoils one thing. */
+  const previous: Meta = {
+    ...built,
+    rows: 100_000,
+    kinds: { restaurant: 20_000, supermarket: 79_600, food_court: 400 },
+    warsaw: 8_800,
+    halls: 37,
+  };
+  const next = (change: Partial<Meta> = {}): Meta => ({ ...previous, dataAsOf: '2026-10-29T20:21:33Z', ...change });
+
+  test('a copy like the last one passes', () => {
+    expect(gates(previous, next(), rows)).toEqual([]);
+  });
+
+  test('total rows: −12 % fails, +5 % passes; a first copy needs 90,000', () => {
+    expect(gates(previous, next({ rows: 88_000 }), rows)).toEqual(['rows: 100000 → 88000 (-12.0 %; at most ±10 %)']);
+    expect(gates(previous, next({ rows: 105_000 }), rows)).toEqual([]);
+    expect(gates(previous, next({ rows: 110_000 }), rows)).toEqual([]);
+    expect(gates(null, next({ rows: 89_999 }), rows)).toEqual(['rows: 89999, a first copy needs at least 90000']);
+    expect(gates(null, next({ rows: 90_000, kinds: { anything: 1 } }), rows)).toEqual([]);
+  });
+
+  test('each kind: ±20 %, or ±50 % under 500 rows; a kind that appears or vanishes fails', () => {
+    const kinds = (change: Record<string, number>) => next({ kinds: { ...previous.kinds, ...change } });
+    expect(gates(previous, kinds({ restaurant: 23_900 }), rows)).toEqual([]);
+    expect(gates(previous, kinds({ restaurant: 24_100 }), rows)).toEqual(['kind restaurant: 20000 → 24100 (+20.5 %; at most ±20 %)']);
+    expect(gates(previous, kinds({ food_court: 590 }), rows)).toEqual([]);
+    expect(gates(previous, kinds({ food_court: 210 }), rows)).toEqual([]);
+    expect(gates(previous, kinds({ food_court: 610 }), rows)).toEqual(['kind food_court: 400 → 610 (+52.5 %; at most ±50 %)']);
+    expect(gates(previous, kinds({ ice_cream: 3 }), rows)).toEqual(['kind ice_cream: 3 rows, none in the previous copy']);
+    const { food_court: _gone, ...withoutFoodCourt } = previous.kinds;
+    expect(gates(previous, next({ kinds: withoutFoodCourt }), rows)).toEqual(['kind food_court: 400 → 0 (-100.0 %; at most ±50 %)']);
+  });
+
+  test('Warsaw, the wholesale halls, the data date and the bounding box', () => {
+    expect(gates(previous, next({ warsaw: 6_999, halls: 19 }), rows)).toEqual([
+      'Warsaw: 6999 rows, at least 7000 expected',
+      'Selgros/Makro halls: 19, at least 20 expected',
+    ]);
+    expect(gates(previous, next({ dataAsOf: '2026-10-21T20:21:33Z' }), rows)).toEqual([
+      "data as of 2026-10-21T20:21:33Z: older than the previous copy's 2026-10-22T20:21:33Z",
+    ]);
+    expect(gates(previous, next({ dataAsOf: previous.dataAsOf }), rows)).toEqual([]);
+    // Within the simplification error of the box's edge passes; further out fails.
+    const nearEdge: OsmRow = { id: 'n8', latE5: 5_500_200, lonE5: 2_415_400, tags: {} };
+    const abroad: OsmRow = { id: 'n9', latE5: 5_252_000, lonE5: 1_340_000, tags: {} };
+    expect(gates(previous, next(), [...rows, nearEdge])).toEqual([]);
+    expect(gates(previous, next(), [...rows, abroad])).toEqual(["outside the coverage polygon's bounding box: 1 (n9 at 52.52, 13.4)"]);
+    expect(gates(previous, next({ coverage: { ...previous.coverage, rings: [] } }), rows)).toEqual(['coverage: no polygon']);
+  });
+
+  test('the comparison with the previous copy counts added, removed and changed rows', () => {
+    const moved = { ...rows[1]!, latE5: rows[1]!.latE5 + 1 };
+    const retagged = { ...rows[2]!, tags: { ...rows[2]!.tags, opening_hours: '24/7' } };
+    const added: OsmRow = { id: 'r5', latE5: 5_000_000, lonE5: 2_000_000, tags: { amenity: 'food_court', name: 'Hala' } };
+    expect(diffRows(rows, [rows[0]!, moved, retagged, added])).toEqual({ added: 1, removed: 1, changed: 2 });
+    expect(diffRows(rows, rows)).toEqual({ added: 0, removed: 0, changed: 0 });
+  });
+});
