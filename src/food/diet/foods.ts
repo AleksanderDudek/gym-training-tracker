@@ -83,20 +83,38 @@ function roleOf(n: Nutrients, fallback: MealRole): MealRole {
 }
 
 export function productFood(p: Product, dict: Dictionaries, grams = portionGrams(p.quantity)): Food | null {
-  const { kcal, protein, carbs, fat } = p.nutrition;
+  return packagedFood({ code: p.code, name: p.name, brand: brandLine(p, dict), quantity: p.quantity, per100: p.nutrition, stores: p.stores }, grams);
+}
+
+/**
+ * A packaged food known per 100 g, one pack as the portion: a product of the dataset, or one just
+ * scanned that only Open Food Facts knows. `null` while any of the four is unknown.
+ */
+export function packagedFood(
+  item: {
+    code: string;
+    name: string;
+    brand: string | null;
+    quantity: string | null;
+    per100: { kcal: number | null; protein: number | null; carbs: number | null; fat: number | null };
+    stores: string[];
+  },
+  grams = portionGrams(item.quantity),
+): Food | null {
+  const { kcal, protein, carbs, fat } = item.per100;
   if (kcal === null || protein === null || carbs === null || fat === null) return null;
   const per100 = { kcal, protein, carbs, fat };
   const nutrients = scaled(per100, grams);
   return {
-    key: `product:${p.code}`,
-    name: p.name,
-    detail: [brandLine(p, dict), p.quantity].filter(Boolean).join(' · '),
+    key: `product:${item.code}`,
+    name: item.name,
+    detail: [item.brand, item.quantity].filter(Boolean).join(' · '),
     source: 'product',
     amountLabel: `${grams} g`,
     nutrients,
     per100,
     grams,
-    stores: p.stores,
+    stores: item.stores,
     atHome: false,
     role: roleOf(nutrients, nutrients.kcal >= 350 ? 'main' : 'light'),
   };

@@ -875,6 +875,28 @@ po nazwie, marce i kodzie kreskowym bez względu na polskie znaki. Cały stan ek
 (`#/produkty?q=skyr&ns=a`), więc link albo odświeżenie odtwarza widok, a Wstecz zamyka otwarty
 produkt.
 
+**Skaner kodów** (przycisk obok wyszukiwarki, `#/produkty?skan=1`, skrót z ikony „Skanuj produkt”):
+aparat nakierowany na kod kreskowy (EAN-13, EAN-8, UPC-A, UPC-E, z cyfrą kontrolną) i od razu
+wynik — makro w 100 g i w opakowaniu, ocena pod profil diety („pasuje”), co opakowanie znaczy dla
+tego, co zostało z dzisiejszego celu, „Zjadłem 150 g” (wpis do dziennika) i gwiazdka. Każdy skan
+trafia też do **porównania**: produkty od najlepszego pod cel — najpierw ocena proporcji (to, co
+„nie pasuje”, nie wygra jedną liczbą), potem białko na 100 kcal (redukcja, zbilansowana, sportowa)
+albo węglowodany na 100 kcal (low carb, keto); zwycięzca nazwany z powodem, a karta wyniku mówi od
+razu „2. z 3 na Twój cel — najlepszy jest …”. Wartości na 100 g albo na opakowanie, przy znanej
+cenie koszt 10 g białka. Porównanie to lista na jedne zakupy: **znika sama godzinę po ostatnim
+skanie** (strona mówi o której), jednym stuknięciem „Wyczyść” (z „Cofnij”) albo × przy produkcie;
+najwyżej 10 produktów, tylko na tym urządzeniu (`produkty-pl:porownanie`). Kod, którego nie widzi
+aparat, można wpisać. Szukanie: baza aplikacji (UPC-A z zerem z przodu, UPC-E rozpisany, krótkie
+kody dopełnione zerami jak w Open Food Facts), a czego w niej nie ma — Open Food Facts (wysyłany jest
+tylko kod; wynik podpisany „z Open Food Facts”). Kod sklepowy (towar ważony, zaczyna się od 2) nie
+idzie nigdzie. Czytnik: wbudowany w przeglądarkę `BarcodeDetector` (Chrome na Androidzie i na
+Macu), a gdzie go nie ma (iPhone, Firefox) — zxing-cpp w WebAssembly (`barcode-detector`), wczytywany
+dopiero wtedy, z własnego serwera (1,1 MB; service worker trzyma go po pierwszym skanie, także na
+sklep bez zasięgu). Aparat działa tylko przy otwartym skanerze: gaśnie, gdy karta produktu go
+zasłoni albo strona zniknie z ekranu, a obraz nie wychodzi z telefonu; latarka, gdzie aparat ją ma.
+„Porównaj” jest też w karcie każdego produktu, a w „Dodaj zjedzone” skaner obok wyszukiwania —
+zeskanowany produkt od razu czeka na gramy.
+
 **Lokale** (`#/lokale`, kafelek na górze Produktów): menu 33 sieci gastronomicznych działających
 w Polsce — 2342 pozycje z kaloriami, białkiem, węglowodanami (z cukrami), tłuszczem (z nasyconymi)
 i solą **na porcję, tak jak podaje sieć**, a przy znanej masie porcji także na 100 g. Wyszukiwanie
@@ -1022,6 +1044,16 @@ z OpenStreetMap w promieniu od 500 m do 10 km i przepisy, które zrobisz w jedny
 (overpass-api.de, zapasowo overpass.private.coffee), kafelki mapy z tile.openstreetmap.org. Pozycji
 nie ma w adresie, a ostatnie miejsce zostaje tylko na tym urządzeniu; odpowiedzi są pamiętane dobę.
 Dziennik sam nie łączy się z siecią — sklepy w podpowiedziach bierze z ostatniego wyszukiwania.
+
+**Zajęty serwer map.** Publiczne serwery Overpass bywają przeciążone (502 „at capacity”, 429, 504)
+albo odpowiadają ponad pół minuty — lokale w centrum miasta potrafią przyjść po 35 s. Dlatego: jedno
+zapytanie czeka do 50 s, serwery idą na zmianę (każdy dwa razy, całość najwyżej 2 minuty), a serwer,
+który prosi o przerwę, dostaje ją (`Retry-After`, najwyżej 30 s, albo rosnącą) — strona odlicza
+„ponawiam za 6 s” poza regionem odczytywanym przez czytnik ekranu, a po 12 s mówi, że serwer odpowiada
+wolno. Odpowiedzi zostają na urządzeniu tydzień (świeże, bez pytania serwera, przez dobę; najwyżej
+cztery): starsza albo mniejsza odpowiedź dla tego miejsca pokazuje się od razu, a gdy nowa zawiedzie,
+zostaje z podpisem („Pokazuję lokale zapisane wczoraj”). Po porażce strona sama próbuje znowu po
+30 s, minucie i 2 minutach — nie przy ukrytej karcie; potem zostaje „Spróbuj ponownie”.
 
 **Dane produktów są w repozytorium**: `data/food/products.json.gz` (3,3 MB zamiast 24 MB JSON-a).
 Build wydaje go jako `data/products.<hasz>.json.gz`, a przeglądarka rozpakowuje go sama
@@ -1535,13 +1567,14 @@ src/
     recipes/                przepisy białkowe i gotowce: katalog, składniki, koszyki sklepów i grupowanie, zamiany, progi, makro, gotowe produkty, hale po supermarketach — 319 testów
     online/                 sklepy internetowe: rejestr, dane sklepów (`data/*.json`), scalanie z bazą po EAN, kontrola liczb — 36 testów
     chains/                 sieci z własnymi danymi (Selgros): rejestr, dane (`data/*.json`), scalanie po EAN bez oferty online, kontrola liczb — 10 testów
-    nearby/                 w pobliżu: odległości, zapytanie do Overpass (z halami Selgros i Makro) z zapasowym serwerem, kopia na dobę, promień — 33 testy
+    nearby/                 w pobliżu: odległości, zapytanie do Overpass (z halami Selgros i Makro) z zapasowym serwerem, przerwami dla zajętego serwera i budżetem czasu, kopia na dobę i zapas na tydzień, promień
+    scan/                   skaner kodów: kody GS1 (cyfra kontrolna, UPC-E, warianty w bazie), Open Food Facts dla kodów spoza bazy, porównanie pod cel diety, lista porównania znikająca godzinę po ostatnim skanie, czytnik (wbudowany albo WebAssembly) — 16 testów
     diet/                   dieta: baza Dexie (`produkty-pl-dieta`, wersja 4 z zestawami, ulubionymi i planami z zakupami), model energii z kierunkiem celu, sposoby odżywiania, dzień, plan z Excela, zestawy, ulubione, wyszukiwanie, podpowiedzi, cel dopasowany do ruchu wobec planu (`activity.ts`), symulacja cheat mealu (`cheat.ts`) — 170 testów
     prep/                   plan z zakupami (meal prep): bloki gotowania, przepisy z koszyka, wybór ról i lista zamienników, porcje i dodatki, cele dni, check-in, lista zakupów, nazwa, przesuwanie dat, pierwszeństwo w dzienniku, migawka w bazie, odczyt z kopii — 120 testów
     restaurants/            lokale: dane sieci (`data/*.json`), kontrola liczb, wyszukiwanie, kolejność, „Najwięcej białka”, stan w adresie — 101 testów
-    hooks/                  baza produktów, menu lokali, dieta na żywo i scalona z treningiem, stan w adresie, lokalizacja, sklepy w pobliżu — 22 testy
-    components/common/      karta i szczegóły produktu, zdjęcie, oceny, cena, arkusz od dołu, ekrany stanu
-    components/products/    przeglądarka produktów: pasek narzędzi, filtry w arkuszu, fasety, aktywne filtry, tabela, strony
+    hooks/                  baza produktów, menu lokali, dieta na żywo i scalona z treningiem, stan w adresie, lokalizacja, sklepy w pobliżu (z zapasem i samoczynnym ponowieniem), szukanie kodu, porównanie — 26 testów
+    components/common/      karta i szczegóły produktu, zdjęcie, oceny, cena, arkusz od dołu, ekrany stanu, aparat z czytnikiem kodów, kod wpisany ręcznie, „Porównaj”
+    components/products/    przeglądarka produktów: pasek narzędzi ze skanerem, filtry w arkuszu, fasety, aktywne filtry, tabela, strony, skaner kodów z porównaniem
     components/recipes/     przepisy: lista z filtrami, karta ze sklepem, zamiana składnika, gotowe produkty
     components/nearby/      „W pobliżu”: „Zjedz teraz” (lokale pod cel dnia, karta miejsca, adres) i „Zakupy i przepisy”; wspólna mapa Leaflet
     components/diet/        dziennik (pytanie o wagę, arkusz ulubionych), plan posiłków, postęp, profil diety, pierwsze kroki, wybór jedzenia i zestawy, import z Excela
@@ -2250,7 +2283,8 @@ GYM TRACKER instaluje się na ekranie głównym telefonu i działa bez sieci od 
 - **Co gdzie leży.** Powłoka — skrypty, style, strona, ikony i kroje pisma w alfabecie łacińskim —
   jest zapisana przy instalacji, a każda nawigacja dostaje zapisaną stronę. Baza produktów: kopia
   na zawsze, jedna (nowa wersja ma nowy hasz w nazwie). Zdjęcia produktów: 400 ostatnich na 30 dni.
-  Kafelki mapy: tylko oglądane, 500 na 7 dni. Overpass i serwer przypomnień idą prosto do sieci.
+  Kafelki mapy: tylko oglądane, 500 na 7 dni. Czytnik kodów (WebAssembly): przy pierwszym skanie,
+  jedna kopia. Overpass, Open Food Facts i serwer przypomnień idą prosto do sieci.
 - **Rejestracja w `main.tsx`, poza Reactem** (`registerSW` z `virtual:pwa-register`, stan w `src/pwa.ts`):
   ustawiona przed pierwszym renderem, a nie w komponencie, który montuje się dopiero po wczytaniu
   danych; sama rejestracja rusza po wczytaniu strony, żeby nie konkurować z pierwszym ekranem.
@@ -2266,14 +2300,15 @@ GYM TRACKER instaluje się na ekranie głównym telefonu i działa bez sieci od 
   zamknie się do końca. Zapisanych danych nie rusza: trening i dziennik jedzenia czekają w przeglądarce.
 - **Manifest** generuje wtyczka (jedno źródło w `vite.config.ts`): nazwa, tryb `standalone`,
   orientacja pionowa, kolory, start na ekranie Dziś, adresy względne (działa pod dowolną ścieżką)
-  i skróty z ikony: „Przekąska ruchowa”, „Jedzenie dziś”, „Przepisy”, „Sklepy w pobliżu”,
-  „Osiągnięcia”.
+  i skróty z ikony: „Przekąska ruchowa”, „Jedzenie dziś”, „Skanuj produkt”, „Przepisy”, „Lista
+  zakupów”, „Sklepy w pobliżu”, „Osiągnięcia”.
 - **Kroje pisma z aplikacji** (`@fontsource`: Oswald i IBM Plex Sans), nie z Google Fonts — działają
   offline od pierwszej wizyty, nikt nie trafia na cudzy serwer, a obrazki do udostępnienia dostają
   prawdziwe litery.
-- **Polityka bezpieczeństwa treści** (`vite/csp.ts`) w zbudowanej stronie: skrypty tylko własne,
-  obrazy z Open Food Facts, kafelków OSM i miniatur YouTube'a, połączenia z Overpass i serwerem
-  aplikacji (`VITE_API_URL`), ramki z YouTube'a. Test przegląda kod i pilnuje, żeby każdy adres
+- **Polityka bezpieczeństwa treści** (`vite/csp.ts`) w zbudowanej stronie: skrypty tylko własne
+  (plus `'wasm-unsafe-eval'` dla czytnika kodów w WebAssembly — bez `eval` w JavaScripcie),
+  obrazy z Open Food Facts, kafelków OSM i miniatur YouTube'a, połączenia z Overpass, Nominatim,
+  Open Food Facts i serwerem aplikacji (`VITE_API_URL`), ramki z YouTube'a. Test przegląda kod i pilnuje, żeby każdy adres
   `https://`, z którym aplikacja rozmawia, był w polityce.
 - **Ikony** w `public/icons/`: zwykła 192 i 512 px, maskowalna 512 px, 180 px dla iOS i wektorowa.
 - **iPhone instaluje ręcznie.** Android sam proponuje instalację, iOS nie zrobi tego nigdy — nie ma

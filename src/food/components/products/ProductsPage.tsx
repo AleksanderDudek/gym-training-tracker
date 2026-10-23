@@ -1,8 +1,9 @@
-import { ChevronRight, LayoutGrid, Table2, UtensilsCrossed } from 'lucide-react';
+import { ChevronRight, LayoutGrid, Scale, Table2, UtensilsCrossed } from 'lucide-react';
 import { useDeferredValue, useMemo, useRef, useState } from 'react';
-import { text } from '../../../i18n';
+import { LOCALE, text } from '../../../i18n';
 import { EmptyState, Segmented } from '../../../components/ui';
 import { RESTAURANTS_PATH } from '../../../routing';
+import { useCompare } from '../../hooks/useCompare';
 import { useDataset } from '../../hooks/useDataset';
 import { useViewState } from '../../hooks/useViewState';
 import { browse } from '../../lib/browse';
@@ -22,6 +23,7 @@ import { FilterPanel } from './FilterPanel';
 import { FilterSheet } from './FilterSheet';
 import { Pagination } from './Pagination';
 import { ProductTable } from './ProductTable';
+import { ScanSheet } from './ScanSheet';
 import { Toolbar } from './Toolbar';
 import './products.css';
 
@@ -41,6 +43,8 @@ const T = text({
     empty: 'Brak produktów dla tych filtrów.',
     clear: 'Wyczyść filtry',
     list: 'Lista produktów',
+    compare: (n: number) => `Porównanie (${n})`,
+    expires: (time: string) => `zniknie o ${time}`,
   },
   en: {
     cards: 'Cards',
@@ -54,8 +58,12 @@ const T = text({
     empty: 'No products match these filters.',
     clear: 'Clear filters',
     list: 'Product list',
+    compare: (n: number) => `Comparison (${n})`,
+    expires: (time: string) => `clears at ${time}`,
   },
 });
+
+const TIME = new Intl.DateTimeFormat(LOCALE, { hour: 'numeric', minute: '2-digit' });
 
 const VIEWS: { key: View; label: string; Icon: typeof LayoutGrid }[] = [
   { key: 'cards', label: T.cards, Icon: LayoutGrid },
@@ -79,11 +87,28 @@ export function EatOutLink() {
   );
 }
 
+/** Pasek pod wyszukiwarką, gdy w porównaniu coś jest: wraca do listy bez włączania aparatu. */
+function CompareBar({ onOpen }: { onOpen: () => void }) {
+  const { items, expiresAt } = useCompare();
+  if (items.length === 0) return null;
+  return (
+    <button type="button" className="fd-prod-compare" onClick={onOpen}>
+      <Scale size={20} strokeWidth={2} aria-hidden />
+      <span className="fd-prod-compare-text">
+        <b>{T.compare(items.length)}</b>
+        {expiresAt !== null && <span>{T.expires(TIME.format(expiresAt))}</span>}
+      </span>
+      <ChevronRight size={20} strokeWidth={2} aria-hidden />
+    </button>
+  );
+}
+
 /**
- * Produkty — przeglądarka bazy Open Food Facts: wyszukiwanie, sortowanie, filtry w arkuszu, karty
- * albo tabela, strony po 48 i karta produktu. Cały stan strony (filtry, sortowanie, widok, strona,
- * otwarty produkt) stoi w zapytaniu hasha (`#/produkty?q=skyr&ns=a&p=590…`), więc odświeżenie albo
- * wysłany link pokazuje dokładnie to samo.
+ * Produkty — przeglądarka bazy Open Food Facts: wyszukiwanie (także kodem kreskowym ze skanera),
+ * sortowanie, filtry w arkuszu, karty albo tabela, strony po 48 i karta produktu. Cały stan strony
+ * (filtry, sortowanie, widok, strona, otwarty produkt, skaner) stoi w zapytaniu hasha
+ * (`#/produkty?q=skyr&ns=a&p=590…`, `?skan=1`), więc odświeżenie albo wysłany link pokazuje
+ * dokładnie to samo.
  */
 export default function ProductsPage() {
   const data = useDataset();
@@ -93,7 +118,7 @@ export default function ProductsPage() {
 }
 
 function Browser({ dataset, products }: { dataset: Dataset; products: IndexedProduct[] }) {
-  const [state, update, closeProduct] = useViewState();
+  const [state, update, closeProduct, closeScan] = useViewState();
   const [sheetOpen, setSheetOpen] = useState(false);
   const top = useRef<HTMLDivElement>(null);
   const dict = dataset.dictionaries;
@@ -136,7 +161,9 @@ function Browser({ dataset, products }: { dataset: Dataset; products: IndexedPro
           onSort={(next) => update({ sort: next })}
           activeFilters={activeCount}
           onOpenFilters={() => setSheetOpen(true)}
+          onScan={() => update({ scan: 'camera' }, { push: true })}
         />
+        {!state.scan && <CompareBar onOpen={() => update({ scan: 'list' }, { push: true })} />}
 
         <div className="fd-found-row" ref={top}>
           <p className="fd-found" aria-live="polite">
@@ -200,7 +227,28 @@ function Browser({ dataset, products }: { dataset: Dataset; products: IndexedPro
         <FilterPanel filters={state.filters} facets={facets} dict={dict} allergenOptions={allergens} onChange={setFilters} />
       </FilterSheet>
 
-      {openProduct && <ProductDetail key={openProduct.code} product={openProduct} dict={dict} onClose={closeProduct} />}
+      {state.scan && (
+        <ScanSheet
+          products={products}
+          dict={dict}
+          camera={state.scan === 'camera'}
+          covered={openProduct !== undefined}
+          onOpenProduct={open}
+          onClose={closeScan}
+        />
+      )}
+
+      {openProduct && (
+        <ProductDetail
+          key={openProduct.code}
+          product={openProduct}
+          dict={dict}
+          onClose={closeProduct}
+          // Nad skanerem porównanie leży tuż pod kartą; nad listą zastępuje kartę we wpisie historii
+          // (Wstecz wraca do listy).
+          onShowCompare={state.scan ? closeProduct : () => update({ product: null, scan: 'list' })}
+        />
+      )}
     </>
   );
 }

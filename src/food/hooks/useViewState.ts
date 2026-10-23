@@ -12,9 +12,10 @@ function resetPage(current: ViewState, changes: Partial<ViewState>, next: ViewSt
   return resets && changes.page === undefined ? { ...next, page: 1 } : next;
 }
 
-/** The product browser's state, in the URL. */
-export function useViewState(): [ViewState, UpdateViewState, () => void] {
+/** The product browser's state, in the URL; the last two close the product card and the scanner the way they opened. */
+export function useViewState(): [ViewState, UpdateViewState, () => void, () => void] {
   const [state, update, closeEntry] = useUrlState(fromSearchParams, toSearchParams, resetPage);
   const closeProduct = useCallback(() => closeEntry({ product: null }), [closeEntry]);
-  return [state, update, closeProduct];
+  const closeScan = useCallback(() => closeEntry({ scan: null }), [closeEntry]);
+  return [state, update, closeProduct, closeScan];
 }

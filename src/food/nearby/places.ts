@@ -40,7 +40,7 @@ export function buildPlacesQuery(center: LatLon, radius: number): string {
     `[out:json][timeout:25];(` +
     `nwr["amenity"~"^(${AMENITIES.join('|')})$"](${around});` +
     `nwr["shop"~"^(${[...SHOP_TYPES, ...Object.keys(FOOD_SHOPS)].join('|')})$"](${around});` +
-    `);out center tags;`
+    `);out tags center qt;`
   );
 }
 

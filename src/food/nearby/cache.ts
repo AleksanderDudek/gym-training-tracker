@@ -7,7 +7,13 @@ export type Circle = LatLon & { radius: number };
 const KEY = 'produkty-pl:shops';
 /** Places to eat („Zjedz teraz”): restaurants and shops in one answer, kept apart from the shops. */
 export const PLACES_KEY = 'produkty-pl:places';
+/** An answer this fresh is used without asking the server again. */
 const TTL_MS = 24 * 3600 * 1000;
+/**
+ * An older answer stays this long as the fallback for a busy server: shops and restaurants move less
+ * often than the public Overpass servers are overloaded, and last week's map beats an error.
+ */
+const KEEP_MS = 7 * 24 * 3600 * 1000;
 // A 10 km answer in a city is thousands of shops; four answers is plenty of
 // reuse without filling the storage the position and radius share.
 const MAX_ENTRIES = 4;
@@ -28,10 +34,19 @@ function load<T = Shop>(storage: ShopCache | null, key = KEY): Entry<T>[] {
 }
 
 function store<T>(storage: ShopCache | null, entries: Entry<T>[], key = KEY): void {
+  // A city's 10 km answer can fill the storage: the oldest answers give way, newest first.
+  for (let n = entries.length; n > 0; n--) {
+    try {
+      storage?.setItem(key, JSON.stringify(entries.slice(0, n)));
+      return;
+    } catch {
+      // Full or forbidden: try with one answer fewer.
+    }
+  }
   try {
-    storage?.setItem(key, JSON.stringify(entries));
+    storage?.setItem(key, '[]');
   } catch {
-    // Full or forbidden: the next visit simply asks the server again.
+    // Forbidden: the next visit simply asks the server again.
   }
 }
 
@@ -60,10 +75,10 @@ export function readCache<T = Shop>(
 
 /** `circle` is the query circle (rounded centre), never the exact position. */
 export function writeCache<T = Shop>(storage: ShopCache | null, circle: Circle, shops: T[], now: number, key = KEY): void {
-  const fresh = load<T>(storage, key).filter((e) => now - e.fetchedAt <= TTL_MS);
+  const kept = load<T>(storage, key).filter((e) => now - e.fetchedAt <= KEEP_MS);
   store(
     storage,
-    [{ lat: circle.lat, lon: circle.lon, radius: circle.radius, fetchedAt: now, shops }, ...fresh].slice(
+    [{ lat: circle.lat, lon: circle.lon, radius: circle.radius, fetchedAt: now, shops }, ...kept].slice(
       0,
       MAX_ENTRIES,
     ),
@@ -71,9 +86,32 @@ export function writeCache<T = Shop>(storage: ShopCache | null, circle: Circle, 
   );
 }
 
-/** Drops expired answers, so a trail of past places does not stay on the device. */
+export interface Cached<T> {
+  circle: Circle;
+  items: T[];
+  fetchedAt: number;
+}
+
+/**
+ * The best older or smaller answer for here, shown while a new one loads or when it fails: any
+ * kept answer whose circle contains the point, the one complete furthest from it first, then the
+ * newest. The caller tells the user how old it is.
+ */
+export function readFallback<T = Shop>(storage: ShopCache | null, center: LatLon, now: number, key = KEY): Cached<T> | null {
+  let best: { entry: Entry<T>; reach: number } | null = null;
+  for (const entry of load<T>(storage, key)) {
+    const reach = entry.radius - distanceMeters(entry, center);
+    if (now - entry.fetchedAt > KEEP_MS || reach <= 0) continue;
+    if (!best || reach > best.reach || (reach === best.reach && entry.fetchedAt > best.entry.fetchedAt)) best = { entry, reach };
+  }
+  if (!best) return null;
+  const { lat, lon, radius, fetchedAt, shops } = best.entry;
+  return { circle: { lat, lon, radius }, items: shops, fetchedAt };
+}
+
+/** Drops answers past keeping, so a long trail of past places does not stay on the device. */
 export function pruneCache(storage: ShopCache | null, now: number, key = KEY): void {
   const entries = load(storage, key);
-  const fresh = entries.filter((e) => now - e.fetchedAt <= TTL_MS);
-  if (fresh.length !== entries.length) store(storage, fresh, key);
+  const kept = entries.filter((e) => now - e.fetchedAt <= KEEP_MS);
+  if (kept.length !== entries.length) store(storage, kept, key);
 }

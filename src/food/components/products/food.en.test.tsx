@@ -11,13 +11,14 @@ vi.hoisted(() => {
 import { loadDataset, loadedDataset, type LoadedDataset } from '../../data';
 import { activeFilterChips } from '../../lib/active-filters';
 import { EMPTY_FILTERS } from '../../lib/filters';
+import { indexProducts } from '../../lib/search';
 import { formatDate, formatPrice } from '../../lib/format';
 import { NOVA_LABELS, NUTRIENT_LABELS, PALM_OIL_LABELS, SORT_OPTIONS, TOGGLE_LABELS, TRI_LABELS } from '../../lib/labels';
 import { OverpassUnavailable } from '../../nearby/overpass';
 import { normalizeChain } from '../../restaurants/normalize';
 import { SORT_LABELS as MENU_SORT_LABELS } from '../../restaurants/sort';
 import { CATEGORY_LABELS, CHAIN_KIND_GROUPS, CHAIN_KIND_LABELS, type ChainData, type MenuItemData } from '../../restaurants/types';
-import { DATASET, INDEXED } from '../../test/fixtures';
+import { DATASET, INDEXED, makeProduct } from '../../test/fixtures';
 import { renderWithBridge } from '../../test/bridge';
 import { RadiusSlider } from '../nearby/RadiusSlider';
 import { popupFor } from '../nearby/StoreMap';
@@ -118,6 +119,37 @@ describe('Products in English', () => {
     expect(within(detail).getByText('Contains: Mleko')).toBeInTheDocument();
     expect(within(detail).getByText(/See it on Open Food Facts/)).toBeInTheDocument();
     expect(within(detail).queryByText(/Wartości odżywcze|Zawiera|Zobacz w Open Food Facts|Alergeny/)).not.toBeInTheDocument();
+  });
+});
+
+describe('Barcode scanner in English', () => {
+  test('the scanner, a typed code, the result and the comparison speak English', async () => {
+    const skyr = makeProduct({
+      code: '5900000000015',
+      name: 'Skyr',
+      quantity: '150 g',
+      nutrition: { kcal: 63, protein: 11, carbs: 4, fat: 0, saturatedFat: null, sugars: null, fiber: null, salt: null },
+    });
+    const loaded: LoadedDataset = { dataset: { ...DATASET, products: [skyr] }, products: indexProducts([skyr], DATASET.dictionaries.brands) };
+    vi.mocked(loadedDataset).mockReturnValue(loaded);
+    vi.mocked(loadDataset).mockResolvedValue(loaded);
+    window.localStorage.clear();
+    at('#/produkty');
+    const user = userEvent.setup();
+    renderWithBridge(<ProductsPage />);
+    await user.click(await screen.findByRole('button', { name: 'Scan a barcode' }));
+    const sheet = await screen.findByRole('dialog', { name: 'Barcode scanner' });
+    expect(within(sheet).getByText('This browser doesn’t give access to the camera. Type the code below.')).toBeInTheDocument();
+    await user.type(within(sheet).getByLabelText('Or type the code'), '5900000000015{Enter}');
+    const card = await within(sheet).findByRole('article', { name: 'Skyr' });
+    expect(within(card).getByRole('rowheader', { name: 'per 100 g' })).toBeInTheDocument();
+    expect(within(card).getByRole('rowheader', { name: 'pack 150 g' })).toBeInTheDocument();
+    expect(within(card).getByText(/^For today: it fits — [\d,]+ kcal left\.$/)).toBeInTheDocument();
+    expect(within(card).getByRole('button', { name: /I ate 150 g/ })).toBeInTheDocument();
+    expect(within(sheet).getByRole('heading', { name: 'Comparison (1)' })).toBeInTheDocument();
+    expect(within(sheet).getByText('Scan another product to compare.')).toBeInTheDocument();
+    expect(within(sheet).getByText(/^It clears itself at .+ — an hour after the last scan\.$/)).toBeInTheDocument();
+    expect(sheet.textContent).not.toMatch(POLISH);
   });
 });
 

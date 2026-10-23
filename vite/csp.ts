@@ -8,13 +8,15 @@ export const ORIGINS = {
   // Zdjęcia produktów (Open Food Facts), kafelki mapy (OpenStreetMap), miniatury filmów (YouTube).
   img: ['https://images.openfoodfacts.org', 'https://tile.openstreetmap.org', 'https://i.ytimg.com'],
   // W pobliżu: Overpass i jego zapasowy serwer (sklepy i lokale), Nominatim (adres wpisany zamiast
-  // lokalizacji). Obrazki z listy wyżej stoją tu drugi raz, bo
+  // lokalizacji). Skaner kodów: Open Food Facts dla kodu, którego nie ma w bazie aplikacji.
+  // Obrazki z listy wyżej stoją tu drugi raz, bo
   // zrzut ekranu do wiadomości dla autora (html-to-image) pobiera je skryptem, żeby wkleić w obrazek —
   // bez tego miniatura filmu wyszłaby na zrzucie pustym prostokątem.
   connect: [
     'https://overpass-api.de',
     'https://overpass.private.coffee',
     'https://nominatim.openstreetmap.org',
+    'https://world.openfoodfacts.org',
     'https://images.openfoodfacts.org',
     'https://tile.openstreetmap.org',
     'https://i.ytimg.com',
@@ -39,12 +41,15 @@ function originOf(url?: string): string | null {
  * Polityka bezpieczeństwa treści dla zbudowanej aplikacji. Serwer aplikacji (`VITE_API_URL`)
  * dochodzi do `connect-src`, gdy jest: w CI zmienna bywa pusta i wtedy aplikacja działa bez niego.
  * Style z `'unsafe-inline'`, bo React i rysunki do udostępniania ustawiają atrybut `style`.
+ * Skrypty z `'wasm-unsafe-eval'`: skaner kodów w przeglądarce bez własnego czytnika kodów
+ * kompiluje czytnik WebAssembly (z tego samego serwera) — to pozwala tylko na WebAssembly,
+ * nie na `eval` w JavaScripcie.
  */
 export function csp(apiUrl?: string): string {
   const api = originOf(apiUrl);
   return [
     "default-src 'self'",
-    "script-src 'self'",
+    "script-src 'self' 'wasm-unsafe-eval'",
     "style-src 'self' 'unsafe-inline'",
     "font-src 'self' data:",
     `img-src 'self' data: blob: ${ORIGINS.img.join(' ')}`,

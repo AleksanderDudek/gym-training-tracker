@@ -41,8 +41,8 @@ const NAVIGATION = new Set([
   'pl.wikibooks.org',
   'en.wikibooks.org',
   'creativecommons.org',
-  // Jedzenie: źródła danych w stopce i strona produktu w Open Food Facts.
-  'world.openfoodfacts.org',
+  // Jedzenie: źródła danych w stopce i strona produktu w Open Food Facts. Nie `world.`: z niego
+  // skaner kodów pobiera produkty, więc musi stać w `connect-src`.
   'pl.openfoodfacts.org',
   'prices.openfoodfacts.org',
   'www.openstreetmap.org',
@@ -76,6 +76,12 @@ describe('CSP', () => {
     expect(found.has('https://i.ytimg.com')).toBe(true);
     const blocked = [...found].filter(([origin]) => !allowed.has(origin)).map(([o, f]) => `${o} (${f})`);
     expect(blocked).toEqual([]);
+  });
+
+  it('skrypty tylko z własnego serwera; WebAssembly (czytnik kodów) wolno skompilować, eval nie', () => {
+    const script = directives(csp()).get('script-src')!;
+    expect(script).toEqual(["'self'", "'wasm-unsafe-eval'"]);
+    expect(script).not.toContain("'unsafe-eval'");
   });
 
   it('dopisuje do connect-src serwer aplikacji — sam adres, bez ścieżki', () => {

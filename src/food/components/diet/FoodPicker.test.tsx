@@ -53,6 +53,7 @@ const PRODUCTS = indexProducts(
   [
     makeProduct({ code: 'ban', name: 'Banan', quantity: '100 g', nutrition: n(89, 1.1, 23, 0.3) }),
     makeProduct({ code: 'bar', name: 'Baton proteinowy', quantity: '45 g', nutrition: n(380, 33, 29, 16) }),
+    makeProduct({ code: '5900000000015', name: 'Skyr naturalny', quantity: '150 g', nutrition: n(63, 11, 4, 0) }),
   ],
   {},
 );
@@ -81,6 +82,21 @@ beforeEach(async () => {
 });
 
 describe('„Dodaj zjedzone”', () => {
+  test('kod kreskowy zamiast nazwy: znaleziony produkt czeka na gramy jak wybrany z listy', async () => {
+    const user = userEvent.setup();
+    const onLogged = vi.fn();
+    const dialog = open(onLogged);
+    await user.click(dialog.getByRole('button', { name: 'Skanuj kod kreskowy' }));
+    // Bez aparatu (jsdom) zostaje pole kodu.
+    expect(dialog.getByText('Ta przeglądarka nie daje dostępu do aparatu. Wpisz kod niżej.')).toBeInTheDocument();
+    await user.type(dialog.getByLabelText('Albo wpisz kod'), '5900000000015{Enter}');
+    expect(await dialog.findByText('Skyr naturalny')).toBeInTheDocument();
+    expect(dialog.getByRole('textbox', { name: 'Ile gramów' })).toHaveValue('150');
+    expect(dialog.queryByLabelText('Albo wpisz kod')).not.toBeInTheDocument();
+    await user.click(dialog.getByRole('button', { name: 'Dodaj' }));
+    await waitFor(() => expect(onLogged).toHaveBeenCalledWith('Zapisane: Skyr naturalny · 95 kcal.'));
+  });
+
   test('search finds restaurant positions next to products and logs one in a tap', async () => {
     const user = userEvent.setup();
     const onLogged = vi.fn();

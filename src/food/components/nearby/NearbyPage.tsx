@@ -24,6 +24,7 @@ import { ChipRow } from '../recipes/ChipRow';
 import { ReadyProducts } from '../recipes/ReadyProducts';
 import { RecipeCard } from '../recipes/RecipeCard';
 import { Segmented } from '../../../components/ui';
+import { AroundStatus } from './AroundStatus';
 import { EatNow } from './EatNow';
 import { RadiusSlider } from './RadiusSlider';
 import { StoreMap } from './StoreMap';
@@ -41,6 +42,7 @@ const T = text({
     failed: 'Nie udało się ustalić lokalizacji. Kliknij na mapie miejsce, w którym jesteś.',
     loading: (radius: string, partial: string) => `Szukam sklepów w promieniu ${radius}…${partial}`,
     fetchFailed: 'Nie udało się pobrać sklepów.',
+    what: 'sklepy',
     noneKnown: (radius: string, other: number) =>
       `W promieniu ${radius} nie ma sklepów, z których da się coś ułożyć${
         other ? ` (${plural(other, 'jest 1 inny', `są ${other} inne`, `jest ${other} innych`)})` : ''
@@ -80,6 +82,7 @@ const T = text({
     failed: 'Couldn’t find your location. Click the place on the map where you are.',
     loading: (radius: string, partial: string) => `Looking for shops within ${radius}…${partial}`,
     fetchFailed: 'Couldn’t fetch the shops.',
+    what: 'shops',
     noneKnown: (radius: string, other: number) =>
       `Within ${radius} there are no shops to make anything from${
         other ? ` (${other === 1 ? 'there’s 1 other' : `there are ${other} others`})` : ''
@@ -316,9 +319,12 @@ function Nearby({
           <RadiusSlider radius={state.radius} onChange={setRadius} />
           {note && <p className="fd-near-place-note">{note}</p>}
           <div className="fd-near-status">
-            <p role="status">
-              {statusLine(geo, shopsState, state.radius, placement.known.length, placement.otherCount)}
-            </p>
+            <AroundStatus
+              state={{ ...shopsState, items: shopsState.shops }}
+              what={T.what}
+              status={statusLine(geo, shopsState, state.radius, placement.known.length, placement.otherCount)}
+              showServer={geo.position !== null}
+            />
             {shopsState.status === 'error' && (
               <button type="button" className="btn sm ghost" onClick={retry}>
                 <RefreshCw size={16} strokeWidth={2} aria-hidden />

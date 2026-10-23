@@ -163,3 +163,47 @@ html:has(.fd-sheet[open]){overflow:hidden}
 .fd-star:focus-visible{outline:2px solid var(--steel);outline-offset:-2px}
 .fd-star[aria-pressed=true]{color:var(--c-gold-ink)}
 .fd-star[aria-pressed=true] svg{fill:var(--c-gold)}
+
+/* ---------------- Skaner kodów: aparat, kod wpisany ręcznie, „Porównaj” ---------------- */
+
+/*
+ * Podgląd z aparatu 4:3 z ramką na kod. Wideo wypełnia kadr (`object-fit: cover`), przyciemnienie
+ * poza ramką mówi, gdzie celować; komunikat stoi na dole kadru, na przejściu do czerni.
+ */
+.fd-cam{position:relative;display:grid;place-items:center;overflow:hidden;width:100%;aspect-ratio:4/3;
+  max-height:min(320px,42vh);background:#141413;border-radius:var(--r);color:#fff}
+.fd-cam-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.fd-cam-guide{position:absolute;left:10%;right:10%;top:30%;bottom:30%;border:2px solid rgba(255,255,255,.85);
+  border-radius:6px;box-shadow:0 0 0 999px rgba(0,0,0,.28);pointer-events:none}
+/* Trafienie: ramka błyska na zielono (bez animacji — zostaje zielona). */
+.fd-cam-hit{border-color:#7fd19b}
+@media (prefers-reduced-motion:no-preference){
+  .fd-cam-hit{animation:fd-cam-hit .7s ease-out forwards}
+  @keyframes fd-cam-hit{
+    from{border-color:#7fd19b;box-shadow:0 0 0 999px rgba(0,0,0,.28),inset 0 0 0 4px rgba(127,209,155,.55)}
+    to{border-color:rgba(255,255,255,.85)}
+  }
+}
+.fd-cam-msg{position:absolute;left:0;right:0;bottom:0;margin:0;padding:18px 12px 8px;font-size:13.5px;line-height:1.35;
+  text-align:center;background:linear-gradient(transparent,rgba(0,0,0,.65));color:#fff}
+.fd-cam-torch{position:absolute;top:8px;right:8px;width:44px;height:44px;display:grid;place-items:center;padding:0;
+  border:0;border-radius:50%;background:rgba(0,0,0,.5);color:#fff;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.fd-cam-torch[aria-pressed=true]{background:#fff;color:#141413}
+.fd-cam-torch:focus-visible{outline:2px solid #fff;outline-offset:2px}
+/* Bez aparatu: zwykła ramka z ikoną, komunikatem i ponowieniem — zamiast czarnego prostokąta. */
+.fd-cam.fd-cam-off{aspect-ratio:auto;max-height:none;gap:8px;padding:16px;text-align:center;color:var(--ink);
+  background:var(--surface-2);border:1px solid var(--line)}
+.fd-cam-off .fd-cam-msg{position:static;padding:0;background:none;color:var(--ink);font-size:14px}
+.fd-cam-off .btn{gap:6px}
+.fd-cam-icon{color:var(--ink-soft)}
+
+/* Kod wpisany ręcznie: pole i lupa w jednym rzędzie, 17 px, żeby iPhone nie przybliżał strony. */
+.fd-code-entry{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:end;margin-top:10px}
+.fd-code-entry input{font-size:17px;letter-spacing:.04em}
+.fd-code-entry .btn{min-width:48px;min-height:48px;padding:10px 12px}
+.fd-code-hint{grid-column:1/-1;margin:0}
+
+/* „Porównaj” pod tabelą wartości odżywczych. */
+.fd-cmp{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.fd-cmp .btn{gap:6px}
+.fd-cmp .btn[aria-pressed=true]{background:var(--surface-2)}

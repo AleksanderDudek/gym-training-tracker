@@ -1,7 +1,7 @@
 import { describe, expect, test, vi } from 'vitest';
-import { covers, pruneCache, readCache, writeCache, type ShopCache } from './cache';
+import { covers, pruneCache, readCache, readFallback, writeCache, type ShopCache } from './cache';
 import { distanceMeters, formatDistance } from './geo';
-import { OVERPASS_ENDPOINTS, OverpassUnavailable, buildQuery, fetchShops, parseShops } from './overpass';
+import { OVERPASS_ENDPOINTS, OverpassUnavailable, buildQuery, fetchShops, parseShops, pauseFor } from './overpass';
 import { QUERY_MARGIN_M, queryCircle } from './query';
 import { DEFAULT_RADIUS, RADIUS_STEPS, radiusLabel, snapRadius } from './radius';
 import { placeShops, summarizeChains } from './summary';
@@ -77,7 +77,8 @@ describe('overpass', () => {
     const q = buildQuery(PKIN, 1500);
     expect(q).toContain('[out:json]');
     expect(q).toContain('around:1500,52.2318,21.006');
-    expect(q).toContain('out center tags');
+    // Środki budynków; `qt` oszczędza serwerowi sortowania po numerach.
+    expect(q).toContain('out tags center qt;');
     expect(q).toMatch(/supermarket\|convenience/);
     // Hale Selgrosa i Makro: hurtownie, ale tylko tych marek.
     expect(q).toContain('nwr["shop"="wholesale"]["brand"~"^(Selgros|Makro)",i](around:1500,52.2318,21.006);');
@@ -134,12 +135,63 @@ describe('overpass', () => {
     expect(init.headers).toBeUndefined();
   });
 
-  test('fetch: every server failing, after one retry, is OverpassUnavailable', async () => {
+  test('fetch: every server failing, each asked twice in turn, is OverpassUnavailable', async () => {
     const fetchImpl = vi.fn().mockResolvedValue(new Response('busy', { status: 504 }));
     await expect(
       fetchShops(PKIN, 1000, { fetchImpl, endpoints: ['https://a', 'https://b'], retryDelayMs: 0 }),
     ).rejects.toBeInstanceOf(OverpassUnavailable);
-    expect(fetchImpl).toHaveBeenCalledTimes(3);
+    expect(fetchImpl.mock.calls.map((c) => c[0])).toEqual(['https://a', 'https://b', 'https://a', 'https://b']);
+  });
+
+  test('a busy server is asked again only after the pause it names (Retry-After), and the page is told', async () => {
+    vi.useFakeTimers();
+    try {
+      const fetchImpl = vi
+        .fn()
+        .mockResolvedValueOnce(new Response('at capacity', { status: 502, headers: { 'retry-after': '7' } }))
+        .mockResolvedValueOnce(new Response('busy', { status: 504 }))
+        .mockResolvedValueOnce(json(OVERPASS));
+      const onWait = vi.fn();
+      const done = fetchShops(PKIN, 1000, { fetchImpl, endpoints: ['https://a', 'https://b'], retryDelayMs: 1000, onWait });
+      await vi.advanceTimersByTimeAsync(0);
+      expect(fetchImpl).toHaveBeenCalledTimes(2);
+      // Server a asked for 7 s; the turn comes back to it after them, not after the base second.
+      expect(onWait).toHaveBeenCalledWith(7000);
+      await vi.advanceTimersByTimeAsync(6900);
+      expect(fetchImpl).toHaveBeenCalledTimes(2);
+      await vi.advanceTimersByTimeAsync(200);
+      expect(await done).toHaveLength(3);
+      expect(fetchImpl.mock.calls.map((c) => c[0])).toEqual(['https://a', 'https://b', 'https://a']);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test('pauses: Retry-After in seconds or as a date, capped at half a minute; without it, a rate limit waits longest', () => {
+    const now = Date.UTC(2026, 9, 23, 12, 0, 0);
+    const with_ = (status: number, retryAfter?: string) =>
+      new Response('', { status, headers: retryAfter ? { 'retry-after': retryAfter } : {} });
+    expect(pauseFor(with_(503, '12'), 2000, now)).toBe(12_000);
+    expect(pauseFor(with_(503, new Date(now + 9000).toUTCString()), 2000, now)).toBe(9000);
+    expect(pauseFor(with_(429, '600'), 2000, now)).toBe(30_000);
+    expect(pauseFor(with_(503, '0'), 2000, now)).toBe(2000);
+    expect(pauseFor(with_(429), 2000, now)).toBe(10_000);
+    expect(pauseFor(with_(504), 2000, now)).toBe(6000);
+  });
+
+  test('fetch: everything ends within the budget, also when servers keep asking to wait', async () => {
+    vi.useFakeTimers();
+    try {
+      const fetchImpl = vi.fn().mockResolvedValue(new Response('slow down', { status: 429, headers: { 'retry-after': '30' } }));
+      const done = fetchShops(PKIN, 1000, { fetchImpl, endpoints: ['https://a', 'https://b'], retryDelayMs: 1000, budgetMs: 20_000 });
+      const failed = expect(done).rejects.toBeInstanceOf(OverpassUnavailable);
+      await vi.advanceTimersByTimeAsync(0);
+      await failed;
+      // Both asked once; a second round would start after the 30 s they named, past the budget.
+      expect(fetchImpl).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   test('an Overpass runtime error (a timeout, out of memory) is not an answer, even as JSON with status 200', () => {
@@ -244,18 +296,51 @@ describe('cache', () => {
     expect(readCache(storage, OLD_TOWN, 500, 0)).toBeNull();
   });
 
-  test('entries expire after a day', () => {
+  test('entries are used without asking for a day', () => {
     const storage = memory();
     writeCache(storage, { ...PKIN, radius: 1000 }, shops, 0);
     expect(readCache(storage, PKIN, 1000, 25 * 3600 * 1000)).toBeNull();
   });
 
-  test('expired entries are removed, so an old trail of places does not stay on the device', () => {
+  test('entries past a week are removed, so a long trail of places does not stay on the device', () => {
     const storage = memory();
+    const DAY = 24 * 3600 * 1000;
     writeCache(storage, { ...PKIN, radius: 1000 }, shops, 0);
-    writeCache(storage, { ...OLD_TOWN, radius: 1000 }, shops, 20 * 3600 * 1000);
-    pruneCache(storage, 30 * 3600 * 1000);
+    writeCache(storage, { ...OLD_TOWN, radius: 1000 }, shops, 6 * DAY);
+    pruneCache(storage, 8 * DAY);
     expect(JSON.parse(storage.data.get('produkty-pl:shops')!)).toHaveLength(1);
+  });
+
+  test('fallback for a busy server: an older or smaller answer covering here, the most complete first, with its age', () => {
+    const storage = memory();
+    const DAY = 24 * 3600 * 1000;
+    writeCache(storage, { ...PKIN, radius: 3000 }, shops, 0);
+    writeCache(storage, { ...PKIN, radius: 1000 }, shops.slice(0, 1), 3 * DAY);
+    // Two days later than the newest: no fresh answer for 2 km, but last week's 3 km one reaches further.
+    expect(readCache(storage, PKIN, 2000, 5 * DAY)).toBeNull();
+    const fallback = readFallback(storage, PKIN, 5 * DAY);
+    expect(fallback).toMatchObject({ circle: { radius: 3000 }, fetchedAt: 0 });
+    expect(fallback?.items).toHaveLength(3);
+    // A point outside every kept circle has no fallback; neither has anything past a week.
+    expect(readFallback(storage, { lat: 52.4, lon: 21.006 }, 5 * DAY)).toBeNull();
+    expect(readFallback(storage, PKIN, 8 * DAY)).toMatchObject({ circle: { radius: 1000 }, fetchedAt: 3 * DAY });
+    expect(readFallback(null, PKIN, 0)).toBeNull();
+  });
+
+  test('a full storage keeps the newest answers that fit, never the old ones in place of the new', () => {
+    const data = new Map<string, string>();
+    // Room for about one answer.
+    const tight: ShopCache = {
+      getItem: (k) => data.get(k) ?? null,
+      setItem: (k, v) => {
+        if (v.length > 600) throw new DOMException('full', 'QuotaExceededError');
+        data.set(k, v);
+      },
+    };
+    writeCache(tight, { ...PKIN, radius: 1000 }, shops, 0);
+    writeCache(tight, { ...OLD_TOWN, radius: 1000 }, shops, 1000);
+    const kept = JSON.parse(data.get('produkty-pl:shops')!) as { lat: number }[];
+    expect(kept.map((e) => e.lat)).toEqual([OLD_TOWN.lat]);
   });
 
   test('covers: one circle inside another', () => {

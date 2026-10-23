@@ -13,8 +13,16 @@ export const OVERPASS_ENDPOINTS = [
   'https://overpass.private.coffee/api/interpreter',
 ];
 
-/** One request may take this long before the next server is tried. */
-const REQUEST_TIMEOUT_MS = 30_000;
+/**
+ * One request may take this long before the next server is tried. A busy main server answers a city
+ * centre's places in ~35 s (measured 2026-10-23, Warsaw, 1.25 km): cut at 30 s, the answer that was
+ * coming was thrown away for a backup that hung.
+ */
+const REQUEST_TIMEOUT_MS = 50_000;
+/** All tries end by then: past two minutes the page shows what it remembers and tries again later. */
+const BUDGET_MS = 120_000;
+/** A server's own `Retry-After` is honoured up to this; a longer wait is the page's to schedule. */
+const MAX_WAIT_MS = 30_000;
 
 const SHOP_TYPES = ['supermarket', 'convenience', 'discount', 'grocery'];
 
@@ -38,7 +46,7 @@ export function buildQuery(center: LatLon, radius: number): string {
     `[out:json][timeout:25];(` +
     `nwr["shop"~"^(${SHOP_TYPES.join('|')})$"](${around});` +
     `nwr["shop"="wholesale"]["brand"~"^(${WHOLESALE_BRANDS.join('|')})",i](${around});` +
-    `);out center tags;`
+    `);out tags center qt;`
   );
 }
 
@@ -110,8 +118,13 @@ export interface FetchOptions {
   signal?: AbortSignal;
   fetchImpl?: typeof fetch;
   endpoints?: string[];
+  /** The pause before a server is asked again; a busy or rate-limited server waits a multiple of it. */
   retryDelayMs?: number;
   timeoutMs?: number;
+  /** Every try, waits included, ends this long after the start. */
+  budgetMs?: number;
+  /** Told before each pause between tries, with its length: the page says "trying again in 6 s". */
+  onWait?: (ms: number) => void;
 }
 
 /**
@@ -134,18 +147,33 @@ function withTimeout(signal: AbortSignal | undefined, ms: number): { signal: Abo
 
 function sleep(ms: number, signal?: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
-    const timer = setTimeout(resolve, ms);
-    signal?.addEventListener('abort', () => {
+    const onAbort = () => {
       clearTimeout(timer);
       reject(new DOMException('aborted', 'AbortError'));
-    });
+    };
+    const timer = setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort);
+      resolve();
+    }, ms);
+    if (signal?.aborted) onAbort();
+    else signal?.addEventListener('abort', onAbort, { once: true });
   });
 }
 
 /**
- * Asks each server in turn, then the first once more after a pause. A
- * response counts only if it is Overpass JSON: the busy servers answer with an
- * HTML page, sometimes with status 200.
+ * The pause a busy server asked for: `Retry-After` in seconds (or as a date), capped; without one, a
+ * multiple of the base pause - a rate limit (429) waits longer than a full server (502, 503, 504).
+ */
+export function pauseFor(response: Response, baseMs: number, nowMs = Date.now()): number {
+  const header = response.headers.get('retry-after');
+  const seconds = header === null ? NaN : Number(header);
+  const asked = Number.isFinite(seconds) ? seconds * 1000 : header ? Date.parse(header) - nowMs : NaN;
+  if (Number.isFinite(asked)) return Math.min(MAX_WAIT_MS, Math.max(baseMs, asked));
+  return response.status === 429 ? 5 * baseMs : 3 * baseMs;
+}
+
+/**
+ * Food shops around a point, from the first server that answers.
  *
  * The request is a form POST with no headers set, a "simple" request: a
  * preflight OPTIONS is refused by Overpass (406), so a JSON body would fail in
@@ -155,7 +183,16 @@ export function fetchShops(center: LatLon, radius: number, options: FetchOptions
   return fetchOverpass(buildQuery(center, radius), parseShops, options);
 }
 
-/** One Overpass question with the servers' fallbacks; `parse` turns the JSON into the answer or throws. */
+/**
+ * One Overpass question with the servers' fallbacks; `parse` turns the JSON into the answer or throws.
+ *
+ * The servers take turns, each asked twice. A response counts only if it is Overpass JSON: the busy
+ * servers answer with an HTML page, sometimes with status 200. A server that says it is busy (502,
+ * 503, 504 - "currently at capacity, retry using exponential backoff") or rate-limited (429) is
+ * asked again only after the pause it names, or a growing one; a timeout or a dropped connection
+ * just hands the turn to the next. The page learns of each pause (`onWait`), so a long wait is never
+ * silent, and everything ends within the budget.
+ */
 export async function fetchOverpass<T>(query: string, parse: (json: unknown) => T, options: FetchOptions = {}): Promise<T> {
   const {
     signal,
@@ -163,19 +200,31 @@ export async function fetchOverpass<T>(query: string, parse: (json: unknown) => 
     endpoints = OVERPASS_ENDPOINTS,
     retryDelayMs = 2000,
     timeoutMs = REQUEST_TIMEOUT_MS,
+    budgetMs = BUDGET_MS,
+    onWait,
   } = options;
   const body = new URLSearchParams({ data: query });
-  const attempts = [...endpoints, ...endpoints.slice(0, 1)];
+  const deadline = Date.now() + budgetMs;
+  /** When each server may be asked again. */
+  const notBefore = new Map<string, number>();
 
-  for (const [i, endpoint] of attempts.entries()) {
-    if (i === attempts.length - 1 && retryDelayMs > 0) await sleep(retryDelayMs, signal);
-    const attempt = withTimeout(signal, timeoutMs);
+  for (let i = 0; i < endpoints.length * 2; i++) {
+    const endpoint = endpoints[i % endpoints.length]!;
+    // A second round starts after the base pause at least, later when the server asked for that.
+    const wait = Math.max(i >= endpoints.length ? retryDelayMs : 0, (notBefore.get(endpoint) ?? 0) - Date.now());
+    // Not worth starting a try the budget would cut short.
+    if (deadline - Date.now() - wait < Math.min(timeoutMs, 5_000)) break;
+    if (wait > 0) {
+      onWait?.(wait);
+      await sleep(wait, signal);
+    }
+    const attempt = withTimeout(signal, Math.min(timeoutMs, deadline - Date.now()));
     try {
       const response = await fetchImpl(endpoint, { method: 'POST', body, signal: attempt.signal });
-      if (!response.ok || !response.headers.get('content-type')?.includes('json')) continue;
-      return parse(await response.json());
+      if (response.ok && response.headers.get('content-type')?.includes('json')) return parse(await response.json());
+      if (response.status === 429 || response.status >= 500) notBefore.set(endpoint, Date.now() + pauseFor(response, retryDelayMs));
     } catch (error) {
-      // The caller's own abort ends everything; a timeout or a bad answer
+      // The caller's own abort ends everything; a timeout, a dropped connection or a bad answer
       // only ends this server's turn.
       if (signal?.aborted) throw error;
     } finally {

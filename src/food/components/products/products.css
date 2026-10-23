@@ -171,3 +171,87 @@
 .fd-prod-eatout > svg{flex:none;color:var(--steel)}
 .fd-prod-eatout-text{display:grid;gap:2px;flex:1;min-width:0;font-size:12.5px;color:var(--ink-soft);line-height:1.35}
 .fd-prod-eatout-text b{font-size:15px;color:var(--ink)}
+
+/* ---------------- Skaner i porównanie ---------------- */
+
+/* Wyszukiwarka i „Skanuj” w jednym rzędzie; na telefonie sam znak kodu kreskowego (nazwa w aria-label). */
+.fd-search-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
+.fd-scan-btn{min-width:48px;min-height:48px;padding:10px 12px;gap:6px}
+.fd-scan-btn-label{display:none}
+@media (min-width:420px){
+  .fd-scan-btn{padding:10px 14px}
+  .fd-scan-btn-label{display:inline}
+}
+
+/* Porównanie w toku: pasek pod wyszukiwarką — wraca do listy bez włączania aparatu. */
+.fd-prod-compare{display:flex;align-items:center;gap:10px;width:100%;min-height:52px;margin:8px 0 0;padding:8px 10px 8px 12px;
+  font:inherit;text-align:left;color:var(--ink);background:var(--surface);border:1px solid var(--steel);border-radius:var(--r);
+  cursor:pointer;-webkit-tap-highlight-color:transparent}
+.fd-prod-compare:active{background:var(--surface-2)}
+.fd-prod-compare:focus-visible{outline:2px solid var(--steel);outline-offset:2px}
+.fd-prod-compare > svg{flex:none;color:var(--steel)}
+.fd-prod-compare-text{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 8px;flex:1;min-width:0;font-size:13px;
+  color:var(--ink-soft)}
+.fd-prod-compare-text b{font-size:15px;color:var(--ink)}
+
+/* Arkusz skanera: aparat i pole kodu, wynik, porównanie. */
+.fd-scan-input{margin-bottom:14px}
+.fd-scan-start{width:100%;min-height:52px;gap:8px}
+.fd-scan-note{margin:0 0 14px;padding:12px;font-size:14px;line-height:1.45;background:var(--surface-2);border-radius:var(--r)}
+.fd-scan-note p{margin:0 0 6px}
+.fd-scan-note p:last-child{margin:0}
+.fd-scan-note a{display:inline-flex;align-items:center;gap:6px;min-height:44px;font-weight:600;color:var(--steel)}
+
+.fd-scan-result{margin:0 0 18px;padding:12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+.fd-scan-result-head{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:10px;align-items:start}
+.fd-scan-thumb{width:64px;height:64px;border:1px solid var(--line);border-radius:var(--r)}
+.fd-scan-result-titles h3{margin:0;font-size:17px;line-height:1.3;overflow-wrap:anywhere}
+.fd-scan-meta{margin:2px 0 0;font-size:13px;line-height:1.35;color:var(--ink-soft)}
+.fd-scan-fit{margin:6px 0 0;font-size:13px;line-height:1.4;color:var(--ink-soft)}
+/* Miejsce w porównaniu, zaraz pod nazwą: werdykt widać od razu po skanie. */
+.fd-scan-standing{margin:10px 0 0;padding:6px 10px;font-size:14px;line-height:1.4;border-left:3px solid var(--steel);
+  background:var(--surface-2)}
+.fd-scan-standing-best{font-weight:600;color:var(--ok);border-left-color:var(--ok)}
+/* Liczby w kolumnach równej szerokości: 100 g i opakowanie czyta się wiersz pod wierszem. */
+.fd-scan-table{width:100%;margin:12px 0 4px;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+.fd-scan-table th,.fd-scan-table td{padding:6px 4px;text-align:right;border-bottom:1px solid var(--line)}
+.fd-scan-table thead th{font-size:12.5px;font-weight:600;color:var(--ink-soft)}
+.fd-scan-table tbody th{font-size:13px;font-weight:400;text-align:left;color:var(--ink-soft);white-space:nowrap}
+.fd-scan-table tbody td:first-of-type{font-weight:600}
+.fd-scan-today{margin:8px 0 0;font-size:14px;font-weight:600}
+.fd-scan-soft{margin:4px 0 0;font-size:13px;line-height:1.4;color:var(--ink-soft)}
+.fd-scan-acts{margin-top:10px}
+.fd-scan-acts .btn{gap:6px}
+.fd-scan-status{margin:6px 0 0;font-size:13.5px;color:var(--ok)}
+
+.fd-scan-compare{margin:0 0 16px}
+.fd-scan-compare-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.fd-scan-compare-head h3{margin:0;font-size:17px}
+.fd-scan-compare-head .btn{gap:6px}
+.fd-scan-count{font-weight:400;color:var(--ink-soft)}
+.fd-scan-goal{margin:8px 0;font-size:14.5px;line-height:1.45}
+.fd-scan-cleared{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0;font-size:14px}
+.fd-scan-cleared .btn{gap:6px}
+.fd-scan-list{display:grid;gap:8px;margin:10px 0 0;padding:0;list-style:none}
+.fd-scan-row{display:grid;grid-template-columns:28px minmax(0,1fr) 44px;gap:8px;align-items:start;padding:10px 4px 10px 10px;
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+/* Najlepszy na cel: zielony brzeg i numer — słowo „najlepszy” mówi to samo bez koloru. */
+.fd-scan-win{border-color:var(--ok);box-shadow:inset 3px 0 0 var(--ok)}
+.fd-scan-rank{display:grid;place-items:center;width:26px;height:26px;margin-top:1px;font-family:var(--display);font-size:14px;
+  font-weight:500;background:var(--surface-2);border-radius:50%}
+.fd-scan-win .fd-scan-rank{color:#fff;background:var(--ok)}
+.fd-scan-row-main{min-width:0}
+.fd-scan-row-main p{margin:0}
+.fd-scan-name{font-size:15px;line-height:1.35;overflow-wrap:anywhere}
+.fd-scan-open{padding:0;font:inherit;font-weight:600;text-align:left;color:var(--ink);background:none;border:0;cursor:pointer;
+  text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
+.fd-scan-open:focus-visible{outline:2px solid var(--steel);outline-offset:2px}
+.fd-scan-best{display:inline-block;padding:0 7px;font-size:12px;font-weight:600;line-height:1.6;vertical-align:1px;color:#fff;
+  background:var(--ok);border-radius:999px}
+.fd-scan-row-main .fd-scan-nums{margin-top:4px;font-size:13.5px;font-variant-numeric:tabular-nums}
+.fd-scan-row-main .fd-scan-key{margin-top:2px;font-size:13px;font-weight:600}
+.fd-scan-x{display:grid;place-items:center;width:44px;height:44px;padding:0;color:var(--ink-soft);background:none;border:0;
+  border-radius:50%;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.fd-scan-x:active{background:var(--surface-2)}
+.fd-scan-x:focus-visible{outline:2px solid var(--steel);outline-offset:-2px}
+.fd-scan-privacy{margin-top:8px}
