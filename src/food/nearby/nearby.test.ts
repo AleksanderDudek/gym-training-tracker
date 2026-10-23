@@ -327,6 +327,22 @@ describe('cache', () => {
     expect(readFallback(null, PKIN, 0)).toBeNull();
   });
 
+  test('a full storage keeps the newest answers that fit, never the old ones in place of the new', () => {
+    const data = new Map<string, string>();
+    // Room for about one answer.
+    const tight: ShopCache = {
+      getItem: (k) => data.get(k) ?? null,
+      setItem: (k, v) => {
+        if (v.length > 600) throw new DOMException('full', 'QuotaExceededError');
+        data.set(k, v);
+      },
+    };
+    writeCache(tight, { ...PKIN, radius: 1000 }, shops, 0);
+    writeCache(tight, { ...OLD_TOWN, radius: 1000 }, shops, 1000);
+    const kept = JSON.parse(data.get('produkty-pl:shops')!) as { lat: number }[];
+    expect(kept.map((e) => e.lat)).toEqual([OLD_TOWN.lat]);
+  });
+
   test('covers: one circle inside another', () => {
     expect(covers({ lat: PKIN.lat, lon: PKIN.lon, radius: 1000 }, PKIN, 1000)).toBe(true);
     expect(covers({ lat: PKIN.lat, lon: PKIN.lon, radius: 1000 }, OLD_TOWN, 100)).toBe(false);

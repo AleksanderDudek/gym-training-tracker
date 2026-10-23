@@ -34,10 +34,19 @@ function load<T = Shop>(storage: ShopCache | null, key = KEY): Entry<T>[] {
 }
 
 function store<T>(storage: ShopCache | null, entries: Entry<T>[], key = KEY): void {
+  // A city's 10 km answer can fill the storage: the oldest answers give way, newest first.
+  for (let n = entries.length; n > 0; n--) {
+    try {
+      storage?.setItem(key, JSON.stringify(entries.slice(0, n)));
+      return;
+    } catch {
+      // Full or forbidden: try with one answer fewer.
+    }
+  }
   try {
-    storage?.setItem(key, JSON.stringify(entries));
+    storage?.setItem(key, '[]');
   } catch {
-    // Full or forbidden: the next visit simply asks the server again.
+    // Forbidden: the next visit simply asks the server again.
   }
 }
 
