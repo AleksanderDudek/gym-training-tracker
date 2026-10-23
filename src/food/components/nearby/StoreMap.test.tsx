@@ -105,9 +105,16 @@ describe('dymek przy rysowaniu pinezek od nowa', () => {
   /** Pinezka na niby: tyle z warstwy Leafleta, ile używa `popupKeeper`. */
   function pin() {
     const handlers = new Map<string, () => void>();
+    const popup = { options: { autoPan: true }, getElement: () => undefined };
     const layer = {
       on: (event: string, fn: () => void) => void handlers.set(event, fn),
-      openPopup: vi.fn(() => handlers.get('popupopen')?.()),
+      getPopup: () => popup,
+      // Records whether the popup was reopened with panning switched off.
+      openPopup: vi.fn(() => {
+        layer.pannedOnOpen = popup.options.autoPan;
+        handlers.get('popupopen')?.();
+      }),
+      pannedOnOpen: null as boolean | null,
       fire: (event: string) => handlers.get(event)?.(),
     };
     return layer as typeof layer & L.Layer;
@@ -134,6 +141,9 @@ describe('dymek przy rysowaniu pinezek od nowa', () => {
     expect(b2.openPopup).toHaveBeenCalledOnce();
     expect(a2.openPopup).not.toHaveBeenCalled();
     expect(openId.current).toBe('b');
+    // Reopened without panning the map back to it; the popup's own setting is restored after.
+    expect(b2.pannedOnOpen).toBe(false);
+    expect(b2.getPopup().options.autoPan).toBe(true);
   });
 
   test('zamknięty przez użytkownika dymek nie wraca', () => {

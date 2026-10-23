@@ -46,7 +46,7 @@ const T = text({
     failed: 'Nie udało się ustalić lokalizacji. Wpisz adres albo kliknij na mapie miejsce, w którym jesteś.',
     savedLocating: 'Pokazuję ostatnio zapisane miejsce, szukam aktualnej lokalizacji…',
     loading: (radius: string) => `Szukam lokali w promieniu ${radius}…`,
-    partial: (n: number, radius: string) => ` (na razie: ${n} ${plural(n, 'miejsce', 'miejsca', 'miejsc')} z menu w promieniu ${radius})`,
+    partial: (n: number, radius: string) => `Na razie: ${n} ${plural(n, 'miejsce', 'miejsca', 'miejsc')} z menu w promieniu ${radius}.`,
     menus: 'Wczytuję menu sieci…',
     fetchFailed: 'Nie udało się pobrać lokali.',
     what: 'lokale',
@@ -93,7 +93,7 @@ const T = text({
     failed: 'Couldn’t find your location. Type an address or click the place on the map where you are.',
     savedLocating: 'Showing the last saved place while I look for your current location…',
     loading: (radius: string) => `Looking for places within ${radius}…`,
-    partial: (n: number, radius: string) => ` (so far: ${n} ${pluralEn(n, 'place', 'places')} with a menu within ${radius})`,
+    partial: (n: number, radius: string) => `So far: ${n} ${pluralEn(n, 'place', 'places')} with a menu within ${radius}.`,
     menus: 'Loading the chains’ menus…',
     fetchFailed: 'Couldn’t fetch the places.',
     what: 'places',
@@ -278,17 +278,19 @@ export function EatNow({ state, update, closeEntry, geo, locate, setManual, setR
 
   const status = (() => {
     if (!geo.position) return geo.status === 'locating' ? T.locating : geo.status === 'denied' ? T.denied : T.failed;
-    if (placesState.status === 'loading' || placesState.status === 'idle')
-      return (
-        T.loading(radiusLabel(state.radius)) +
-        // The app's data arrives in pieces, nearest first: what is complete is said, not hidden.
-        (within > 0 && within < state.radius ? T.partial(known, radiusLabel(Math.round(within / 100) * 100)) : '')
-      );
+    if (placesState.status === 'loading' || placesState.status === 'idle') return T.loading(radiusLabel(state.radius));
     if (placesState.status === 'error') return placesState.error ?? T.fetchFailed;
     if (menus.status === 'loading') return T.menus;
     if (known === 0) return T.noneKnown(radiusLabel(state.radius));
     return T.found(radiusLabel(state.radius), known, fitting, ranked.length - known);
   })();
+  // The app's data arrives in pieces, nearest first: what is complete so far is said, not hidden —
+  // counted only once the chains' menus are here (before that every place looks menu-less).
+  const sure = Math.floor(within / 100) * 100;
+  const progress =
+    geo.position && placesState.status !== 'ready' && sure >= 100 && within < state.radius && menus.status !== 'loading'
+      ? T.partial(known, radiusLabel(sure))
+      : null;
   const note = geo.source === 'saved' && geo.status === 'locating' ? T.savedLocating : null;
   const over = needs.remaining.kcal <= 50;
 
@@ -300,7 +302,7 @@ export function EatNow({ state, update, closeEntry, geo, locate, setManual, setR
           <AddressSearch onPick={setManual} />
           {note && <p className="fd-near-place-note">{note}</p>}
           <div className="fd-near-status">
-            <AroundStatus state={placesState} what={T.what} status={status} showServer={geo.position !== null} />
+            <AroundStatus state={placesState} what={T.what} status={status} showServer={geo.position !== null} progress={progress} />
             {placesState.status === 'error' && (
               <button type="button" className="btn sm ghost" onClick={retry}>
                 <RefreshCw size={16} strokeWidth={2} aria-hidden />

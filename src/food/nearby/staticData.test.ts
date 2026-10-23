@@ -136,6 +136,25 @@ describe('the app’s own OSM data', () => {
     await vi.waitFor(async () => expect(await cache.match(oldUrl)).toBeUndefined());
   });
 
+  test('the leaves on screen are pinned: the memory makes room by dropping others, never those', async () => {
+    data = osmTestData(
+      Array.from({ length: 130 }, (_, k) => osmRow(`n${k + 1}`, 52 + k * 0.01, 21, { amenity: 'cafe', name: `Kawiarnia ${k + 1}` })),
+      WARSAW,
+      1,
+    );
+    const s = await load();
+    const refs = s.leafRefs(await s.loadIndex());
+    expect(refs.length).toBeGreaterThan(s.MEMORY_LEAVES);
+    const onScreen = refs.slice(0, 10);
+    const release = s.pinLeaves(onScreen);
+    for (const leaf of refs) await s.loadLeaf(leaf);
+    expect(onScreen.every((leaf) => s.leafNow(leaf))).toBe(true);
+    // Unpinned leaves loaded first made room; the most recent ones are kept.
+    expect(s.leafNow(refs[20]!)).toBeUndefined();
+    expect(s.leafNow(refs.at(-1)!)).toBeDefined();
+    release();
+  });
+
   test('an index the app cannot read means „unavailable” (Overpass answers instead), not a crash', async () => {
     respond = async () => new Response(JSON.stringify({ f: 2 }), { headers: { 'content-type': 'application/json' } });
     const s = await load();

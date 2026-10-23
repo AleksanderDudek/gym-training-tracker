@@ -65,7 +65,7 @@ export interface AroundNotes {
  * a pause before the next try, a search that takes long. `what` names the items („lokale”, „sklepy”).
  */
 export type AroundNotesState = Pick<AroundState<unknown>, 'status' | 'items' | 'savedAt' | 'since' | 'retryAt'> &
-  Partial<Pick<OsmState, 'source' | 'coverage' | 'dataAsOf' | 'olderLeaves'>>;
+  Partial<Pick<OsmState, 'source' | 'shown' | 'coverage' | 'dataAsOf' | 'olderLeaves'>>;
 
 export function aroundNotes(state: AroundNotesState, what: string, now: number): AroundNotes {
   const left = state.retryAt ? Math.ceil((state.retryAt - now) / 1000) : 0;
@@ -79,7 +79,9 @@ export function aroundNotes(state: AroundNotesState, what: string, now: number):
     return { status: [state.olderLeaves ? T.older : null, date ? T.stale(date) : null].filter(Boolean).join(' '), clock: null };
   }
   const live = liveNotes(state, what, now, left, elapsed);
-  if (state.source === 'mixed') {
+  // At the border, while the Polish side is what is shown; once Overpass's answer (or a saved one)
+  // is on screen, its own notes apply — with its age.
+  if (state.source === 'mixed' && state.shown !== 'live') {
     if (state.status === 'loading') return { status: T.border(what), clock: live.clock };
     if (state.status === 'error') return { status: T.borderFailed(what), clock: live.clock };
     return live;

@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { say } from '../../i18n';
-import { SHOPS_KEY, writeCache, type ShopCache } from '../nearby/cache';
+import { SHOPS_KEY, pruneCache, writeCache, type ShopCache } from '../nearby/cache';
 import { OSM_KEY, dropLegacyCaches, fetchOsm } from '../nearby/live';
 import { shopsOf, type Element } from '../nearby/overpass';
 import { queryCircle } from '../nearby/query';
@@ -17,6 +17,8 @@ export type OsmSource = 'static' | 'live' | 'mixed';
 
 export interface OsmState extends AroundState<Element> {
   source: OsmSource;
+  /** At the border: whose items are on screen — the Polish side from the app, or Overpass's whole circle. */
+  shown: 'static' | 'live';
   coverage: Coverage;
   /** The date of the app's copy of the data (ISO), when it is in use. */
   dataAsOf: string | null;
@@ -31,6 +33,10 @@ const FAILED = say(
 const OFFLINE = say(
   'Bez internetu nie mam jeszcze danych tej okolicy — pobiorę je, gdy wróci połączenie.',
   'Offline, I don’t have this area’s data yet — I’ll load it when you’re back online.',
+);
+const OFFLINE_REST = say(
+  'Bez internetu nie mam reszty tej okolicy — pobiorę ją, gdy wróci połączenie.',
+  'Offline, I don’t have the rest of this area — I’ll load it when you’re back online.',
 );
 const NETWORK = say(
   'Nie udało się pobrać danych okolicy. Sprawdź połączenie z internetem.',
@@ -61,10 +67,23 @@ function storage(): (ShopCache & Pick<Storage, 'removeItem'>) | null {
 export function useOsmAround(geo: GeoState, radius: number): [OsmState, () => void] {
   const [stat, retryStatic] = useStaticAround(geo.position, radius);
   const goLive =
-    stat.coverage === 'off' || stat.coverage === 'none' || stat.coverage === 'partial' || stat.failure === 'unavailable';
+    stat.coverage === 'off' ||
+    stat.coverage === 'none' ||
+    stat.coverage === 'partial' ||
+    stat.failure === 'unavailable' ||
+    // No index at all (never cached, the connection failing): Overpass and its saved answers stand
+    // in — abroad that is the right source anyway, and offline nothing is sent.
+    (stat.coverage === 'unknown' && stat.failure !== null);
   const [live, retryLive] = useAround<Element>(goLive ? geo.position : null, radius, fetchOsm, OSM_KEY, FAILED);
 
-  useEffect(() => dropLegacyCaches(storage()), []);
+  // Keep the device's trail within its week, whichever source this visit uses.
+  useEffect(() => {
+    const s = storage();
+    dropLegacyCaches(s);
+    const now = Date.now();
+    pruneCache(s, now, OSM_KEY);
+    pruneCache(s, now, SHOPS_KEY);
+  }, []);
 
   const state = useMemo<OsmState>(() => {
     const extra = { coverage: stat.coverage, dataAsOf: stat.dataAsOf, olderLeaves: stat.olderLeaves };
@@ -76,21 +95,25 @@ export function useOsmAround(geo: GeoState, radius: number): [OsmState, () => vo
         ...extra,
         items: useLive ? live.items : stat.items,
         completeWithin: useLive ? live.completeWithin : stat.completeWithin,
+        // A saved Overpass answer's age belongs to its items only.
+        savedAt: useLive ? live.savedAt : null,
         source: 'mixed',
+        shown: useLive ? 'live' : 'static',
       };
     }
-    if (goLive) return { ...live, ...extra, source: 'live' };
+    if (goLive) return { ...live, ...extra, source: 'live', shown: 'live' };
     const offline = globalThis.navigator?.onLine === false;
     return {
       status: stat.status,
       items: stat.items,
       completeWithin: stat.completeWithin,
-      error: stat.status === 'error' ? (offline ? OFFLINE : NETWORK) : null,
+      error: stat.status === 'error' ? (offline ? (stat.items.length > 0 ? OFFLINE_REST : OFFLINE) : NETWORK) : null,
       savedAt: null,
       since: stat.status === 'loading' ? stat.since : null,
       retryAt: stat.retryAt,
       ...extra,
       source: 'static',
+      shown: 'static',
     };
   }, [stat, live, goLive]);
 

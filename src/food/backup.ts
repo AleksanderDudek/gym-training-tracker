@@ -73,9 +73,58 @@ export async function restoreDiet(backup: unknown, database: DietDb = defaultDb)
 }
 
 /**
+ * Zapis Workboxa o tym, które pliki z tych kopii i kiedy były użyte (baza `workbox-expiration`,
+ * wspólna dla wszystkich kopii): po usunięciu kopii zostałaby w nim lista oglądanych okolic.
+ * Bazy, której nie ma, nie zakłada — pusta baza bez magazynu zepsułaby wygasanie wszystkich kopii.
+ */
+export function forgetCacheEntries(names: readonly string[]): Promise<void> {
+  return new Promise((resolve) => {
+    if (typeof indexedDB === 'undefined') return resolve();
+    let request: IDBOpenDBRequest;
+    try {
+      request = indexedDB.open('workbox-expiration');
+    } catch {
+      return resolve();
+    }
+    request.onupgradeneeded = () => request.transaction?.abort();
+    request.onerror = () => resolve();
+    request.onblocked = () => resolve();
+    request.onsuccess = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains('cache-entries')) {
+        db.close();
+        return resolve();
+      }
+      try {
+        const tx = db.transaction('cache-entries', 'readwrite');
+        const store = tx.objectStore('cache-entries');
+        const byCache = store.indexNames.contains('cacheName') ? store.index('cacheName') : null;
+        for (const name of names) {
+          const cursor = byCache ? byCache.openCursor(IDBKeyRange.only(name)) : null;
+          if (cursor)
+            cursor.onsuccess = () => {
+              const c = cursor.result;
+              if (!c) return;
+              c.delete();
+              c.continue();
+            };
+        }
+        tx.oncomplete = tx.onerror = tx.onabort = () => {
+          db.close();
+          resolve();
+        };
+      } catch {
+        db.close();
+        resolve();
+      }
+    };
+  });
+}
+
+/**
  * Całe jedzenie z tego urządzenia: dziennik, znacznik diety, zapamiętane miejsce sklepów i kopie
- * kafelków mapy i zdjęć. Miejsce i kopie idą pierwsze i niezależnie od bazy — gdyby baza odmówiła,
- * ślad po oglądanych okolicach i tak znika.
+ * kafelków mapy, kawałków danych OSM i zdjęć (z zapisem, kiedy ich użyto). Miejsce i kopie idą
+ * pierwsze i niezależnie od bazy — gdyby baza odmówiła, ślad po oglądanych okolicach i tak znika.
  */
 export async function clearFood(database: DietDb = defaultDb): Promise<void> {
   FOOD_KEYS.forEach((key) => {
@@ -86,8 +135,10 @@ export async function clearFood(database: DietDb = defaultDb): Promise<void> {
     }
   });
   // `caches` jest tylko w bezpiecznym kontekście (https, localhost) — bez niego nie ma też kopii.
-  if (typeof caches !== 'undefined')
+  if (typeof caches !== 'undefined') {
     await Promise.all(FOOD_CACHES.map((name) => caches.delete(name).catch(() => false)));
+    await forgetCacheEntries(FOOD_CACHES);
+  }
   await clearAll(database);
   markDiet(false);
 }

@@ -36,7 +36,8 @@ export interface OsmFiles {
 }
 
 function licenseText(meta: OsmMeta): string {
-  return [
+  // BOM first: a server that sends `text/plain` without a charset still gets the Polish letters right.
+  return '\ufeff' + [
     'Lokale i sklepy „W pobliżu” — dane OpenStreetMap',
     `© autorzy OpenStreetMap (https://www.openstreetmap.org/copyright), stan z ${meta.dataAsOf}.`,
     'Te pliki to baza pochodna danych OpenStreetMap, udostępniana na licencji Open Database License 1.0',

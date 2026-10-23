@@ -12,13 +12,12 @@
 //        npm run food:osm -- --poly <file>      (a poland.poly on disk instead of downloading it)
 //        --keep-pbf  keep the downloaded extract in the cache for the next run
 //        --force     write even when the checks fail (they are printed first)
-import { spawn, spawnSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { createReadStream, createWriteStream, existsSync } from 'node:fs';
 import { mkdir, readFile, rename, rm, statfs, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
-import { createInterface } from 'node:readline';
 import { Readable, Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { fileURLToPath } from 'node:url';
@@ -26,7 +25,19 @@ import { parseArgs } from 'node:util';
 import { gzipSync } from 'node:zlib';
 import { formatTsv, parseTsv, type OsmRow } from '../../src/food/nearby/osmFormat.ts';
 import { OSM_COLUMNS, osmiumFilterExpressions } from '../../src/food/nearby/osmTags.ts';
-import { POLY_URL, SOURCE_URL, buildMeta, diffRows, gates, parsePoly, readFeatures, simplifyCoverage, type Meta } from './lib/osm.ts';
+import {
+  POLY_URL,
+  SOURCE_URL,
+  buildMeta,
+  diffRows,
+  gates,
+  geometryErrors,
+  parsePoly,
+  readFeatures,
+  simplifyCoverage,
+  splitRecords,
+  type Meta,
+} from './lib/osm.ts';
 
 /**
  * Geofabrik asks downloaders to say who they are. ASCII only: a header value is bytes, and fetch
@@ -40,6 +51,8 @@ const OUT_DIR = join(ROOT, 'data/osm');
 const TSV_FILE = join(OUT_DIR, 'places-pl.tsv');
 const META_FILE = join(OUT_DIR, 'meta.json');
 const CACHE = resolve(process.env.OSM_CACHE_DIR || join(homedir(), '.cache/gym-tracker/osm'));
+/** More osmium geometry errors than this stop the refresh (a few broken areas in OSM are normal). */
+const MAX_GEOMETRY_ERRORS = 50;
 const USAGE = 'usage: npm run food:osm -- [--pbf <file> | --filtered <file>] [--poly <file>] [--keep-pbf] [--force]';
 
 function fail(message: string): never {
@@ -118,12 +131,19 @@ if (flags.filtered && pbf && replicationTimestamp(pbf) !== dataAsOf) {
 if (!sourceMd5) console.log('source md5 unknown: the run starts from a filtered extract (add --pbf <source> to record it)');
 
 console.log(`osmium export ${filtered}`);
-const lines = await exportLines(filtered);
-const { rows, stats } = orFail(filtered, () => readFeatures(lines));
+const exported = await exportLines(filtered);
+const { rows, stats } = orFail(filtered, () => readFeatures(exported.lines));
+if (exported.errors.length) {
+  console.warn(`! osmium could not build ${exported.errors.length} object(s) — missing from the copy:`);
+  for (const error of exported.errors.slice(0, 10)) console.warn(`    ${error}`);
+}
 const coverage = simplifyCoverage(poly);
 const meta = buildMeta({ dataAsOf, sourceMd5, osmium, rows, stats, coverage });
 
 const failures = gates(await readPreviousMeta(), meta, rows);
+// A few broken areas in OSM are normal; many mean the export itself went wrong.
+if (exported.errors.length > MAX_GEOMETRY_ERRORS)
+  failures.push(`osmium geometry errors: ${exported.errors.length}, at most ${MAX_GEOMETRY_ERRORS} expected`);
 if (failures.length) {
   console.error(`checks failed:\n${failures.map((failure) => `  ✗ ${failure}`).join('\n')}`);
   // The filtered extract stays in the cache: a rerun can start from it, without downloading or filtering again.
@@ -271,22 +291,22 @@ async function cachedOrDownloadedPbf(): Promise<{ file: string; md5: string }> {
   return { file, md5 };
 }
 
-/** osmium's GeoJSON export of the filtered extract, line by line; its exit code is checked too. */
-async function exportLines(file: string): Promise<string[]> {
-  const child = spawn('osmium', ['export', file, '-f', 'geojsonseq', '-u', 'type_id', '-o', '-'], {
-    stdio: ['ignore', 'pipe', 'inherit'],
+/**
+ * osmium's GeoJSON export of the filtered extract, as records, and the geometry errors it reported:
+ * the export goes to a file in the cache, so osmium's own output (`-e`) holds only the errors.
+ */
+async function exportLines(file: string): Promise<{ lines: string[]; errors: string[] }> {
+  await mkdir(CACHE, { recursive: true });
+  const out = join(CACHE, 'poland-food.geojsonseq');
+  const result = spawnSync('osmium', ['export', file, '-f', 'geojsonseq', '-u', 'type_id', '-e', '-O', '-o', out], {
+    encoding: 'utf8',
+    maxBuffer: 64 * 1024 * 1024,
   });
-  const exited = new Promise<number | null>((done, reject) => {
-    child.once('error', reject);
-    child.once('close', done);
-  });
-  // Handled below, after the output is read; this only keeps an early failure from going unhandled.
-  exited.catch(() => {});
-  const lines: string[] = [];
-  for await (const line of createInterface({ input: child.stdout, crlfDelay: Infinity })) lines.push(line);
-  const code = await exited.catch((error: Error) => fail(`osmium export: ${error.message}`));
-  if (code !== 0) fail(`osmium export ended with exit code ${code}`);
-  return lines;
+  if (result.error) fail(`osmium export: ${result.error.message}`);
+  if (result.status !== 0) fail(`osmium export ended with exit code ${result.status}: ${result.stderr.trim()}`);
+  const lines = splitRecords(await readFile(out, 'utf8'));
+  await rm(out, { force: true });
+  return { lines, errors: geometryErrors(`${result.stdout}\n${result.stderr}`) };
 }
 
 /** The committed meta file the new copy is checked against; `null` when there is none (a first copy). */

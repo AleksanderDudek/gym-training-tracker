@@ -6,11 +6,13 @@ import {
   decodeId,
   diffRows,
   gates,
+  geometryErrors,
   kindOf,
   parsePoly,
   readFeatures,
   simplify,
   simplifyCoverage,
+  splitRecords,
   type FeatureStats,
   type Meta,
 } from './osm';
@@ -361,5 +363,21 @@ describe('meta and the checks', () => {
     const added: OsmRow = { id: 'r5', latE5: 5_000_000, lonE5: 2_000_000, tags: { amenity: 'food_court', name: 'Hala' } };
     expect(diffRows(rows, [rows[0]!, moved, retagged, added])).toEqual({ added: 1, removed: 1, changed: 2 });
     expect(diffRows(rows, rows)).toEqual({ added: 0, removed: 0, changed: 0 });
+  });
+});
+
+describe('osmium output', () => {
+  test('records split at newlines only: U+2028 and U+2029 inside a tag stay inside their record', () => {
+    const one = JSON.stringify({ type: 'Feature', id: 'n1', geometry: { type: 'Point', coordinates: [21, 52] }, properties: { amenity: 'cafe', name: 'Kawa\u2028i\u2029ciastko' } });
+    const text = `\u001e${one}\n\u001e${one.replace('n1', 'n2')}\n`;
+    const records = splitRecords(text);
+    expect(records.filter(Boolean)).toHaveLength(2);
+    expect(readFeatures(records).rows.map((r) => r.tags.name)).toEqual(['Kawa\u2028i\u2029ciastko', 'Kawa\u2028i\u2029ciastko']);
+  });
+
+  test('geometry errors are picked out of osmium’s messages', () => {
+    const output = 'Geometry error: Could not build area geometry\nsomething else\nGeometry error: duplicate node\n';
+    expect(geometryErrors(output)).toHaveLength(2);
+    expect(geometryErrors('')).toEqual([]);
   });
 });

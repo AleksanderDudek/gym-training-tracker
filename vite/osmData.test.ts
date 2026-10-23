@@ -1,9 +1,13 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, test } from 'vitest';
-import { CAP, MAX_DEPTH } from '../src/food/nearby/osmGrid';
+import { CAP, MAX_DEPTH, wantedLeaves } from '../src/food/nearby/osmGrid';
 import { compareIds, parseTsv } from '../src/food/nearby/osmFormat';
 import { OSM_COLUMNS, isWholesaleHall, labelOf, matchesPlacesQuery, matchesShopsQuery } from '../src/food/nearby/osmTags';
 import { OSM_DATA_FILE, OSM_META_FILE, buildOsmFiles } from './osmPlaces';
+
+// The memory size, read as text: the module itself needs the browser (`document`, the virtual module).
+const STATIC_SOURCE = readFileSync('src/food/nearby/staticData.ts', 'utf8');
+const MEMORY_LEAVES = Number(STATIC_SOURCE.match(/export const MEMORY_LEAVES = (\d+);/)?.[1]);
 
 /**
  * The committed copy of the OSM data, checked on every deploy (`npm test` runs before `npm run
@@ -45,6 +49,11 @@ describe('the committed OSM data', () => {
 
   test('cut as the build cuts it: small leaves, at most 500 places each (except the finest cells)', () => {
     const { index, files } = buildOsmFiles(tsv, meta);
+    // The busiest 10 km views need far fewer leaves than the memory keeps (pinned ones never drop).
+    const leaves = index.leaves.map(([d, i, j]) => ({ d, i, j }));
+    for (const city of [{ lat: 52.2297, lon: 21.0122 }, { lat: 50.0617, lon: 19.9373 }, { lat: 51.1079, lon: 17.0385 }]) {
+      expect(wantedLeaves(leaves, city, 10_000).leaves.length).toBeLessThanOrEqual(MEMORY_LEAVES / 2);
+    }
     expect(index.count).toBe(rows.length);
     for (const [d, , , count] of index.leaves) if (d < MAX_DEPTH) expect(count).toBeLessThanOrEqual(CAP);
     const biggest = Math.max(...[...files].filter(([path]) => path.endsWith('.json.gz')).map(([, bytes]) => bytes.length));

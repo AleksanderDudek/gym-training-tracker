@@ -2,7 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DietDb } from './diet/db';
 import { saveProfile, completeProfile, logQuick, updateDay } from './diet/store';
-import { FOOD_CACHES, clearFood, dietBackup, forgetDietWeights, hasFoodData, restoreDiet } from './backup';
+import { forgetCacheEntries, FOOD_CACHES, clearFood, dietBackup, forgetDietWeights, hasFoodData, restoreDiet } from './backup';
 import { DIET_FLAG, hasDiet } from './dietFlag';
 // Service worker jako tekst (`?raw`): nazwy jego kopii muszą zgadzać się z tymi, które czyści reset.
 import swSource from '../sw.ts?raw';
@@ -152,5 +152,59 @@ describe('kopia jedzenia', () => {
     const days = await database.days.toArray();
     expect(days.map((d) => d.weightKg)).toEqual([undefined, undefined]);
     expect(days.map((d) => d.steps)).toEqual([9000, 4000]);
+  });
+});
+
+describe('zapis Workboxa o użytych plikach', () => {
+  /** Baza `workbox-expiration` taka, jaką zakłada Workbox: magazyn `cache-entries` z indeksem `cacheName`. */
+  async function workboxDb(rows: { id: string; cacheName: string; url: string; timestamp: number }[]) {
+    await new Promise<void>((resolve, reject) => {
+      const open = indexedDB.open('workbox-expiration', 1);
+      open.onupgradeneeded = () => {
+        const store = open.result.createObjectStore('cache-entries', { keyPath: 'id' });
+        store.createIndex('cacheName', 'cacheName', { unique: false });
+        store.createIndex('timestamp', 'timestamp', { unique: false });
+      };
+      open.onsuccess = () => {
+        const tx = open.result.transaction('cache-entries', 'readwrite');
+        rows.forEach((r) => tx.objectStore('cache-entries').put(r));
+        tx.oncomplete = () => {
+          open.result.close();
+          resolve();
+        };
+      };
+      open.onerror = () => reject(open.error);
+    });
+  }
+  const remaining = () =>
+    new Promise<string[]>((resolve) => {
+      const open = indexedDB.open('workbox-expiration');
+      open.onsuccess = () => {
+        const all = open.result.transaction('cache-entries').objectStore('cache-entries').getAll();
+        all.onsuccess = () => {
+          open.result.close();
+          resolve((all.result as { cacheName: string }[]).map((r) => r.cacheName).sort());
+        };
+      };
+    });
+
+  it('reset usuwa wpisy oglądanych kawałków i kafelków, a wpisy wspólnych kopii zostawia', async () => {
+    await workboxDb([
+      { id: 'gt-osm|a', cacheName: 'gt-osm', url: 'a', timestamp: 1 },
+      { id: 'osm-tiles|b', cacheName: 'osm-tiles', url: 'b', timestamp: 1 },
+      { id: 'gt-food-data|c', cacheName: 'gt-food-data', url: 'c', timestamp: 1 },
+    ]);
+    await forgetCacheEntries(FOOD_CACHES);
+    expect(await remaining()).toEqual(['gt-food-data']);
+  });
+
+  it('bazy, której nie ma, nie zakłada', async () => {
+    await new Promise<void>((resolve) => {
+      const del = indexedDB.deleteDatabase('workbox-expiration');
+      del.onsuccess = del.onerror = () => resolve();
+    });
+    await forgetCacheEntries(FOOD_CACHES);
+    const names = await indexedDB.databases();
+    expect(names.map((d) => d.name)).not.toContain('workbox-expiration');
   });
 });

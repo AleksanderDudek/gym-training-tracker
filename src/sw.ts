@@ -5,6 +5,7 @@ import { NavigationRoute, registerRoute } from 'workbox-routing';
 import { CacheFirst, StaleWhileRevalidate } from 'workbox-strategies';
 import { ExpirationPlugin } from 'workbox-expiration';
 import { CacheableResponsePlugin } from 'workbox-cacheable-response';
+import { NAVIGATION_DENYLIST } from './swNavigation';
 
 declare const self: ServiceWorkerGlobalScope;
 
@@ -18,9 +19,9 @@ declare const self: ServiceWorkerGlobalScope;
  *   instalacji, z listy, którą wpisuje build (`self.__WB_MANIFEST`, vite-plugin-pwa). Offline
  *   działa więc już po pierwszej wizycie, a kopie poprzedniej wersji znikają po aktywacji nowej.
  * - Strona (nawigacja) — zawsze `index.html` z tej listy, poza polityką prywatności
- *   (`privacy.html`), która ma się otwierać jako ona sama. Nowa wersja nie wchodzi sama: czeka, aż
- *   ktoś stuknie „Odśwież” na pasku (`UpdateBar`) albo na ekranie awarii (`RootBoundary`), a do tego
- *   czasu stare pliki zostają ważne.
+ *   (`privacy.html`) i plikami spod `data/` (licencja danych OSM), które mają się otwierać same.
+ *   Nowa wersja nie wchodzi sama: czeka, aż ktoś stuknie „Odśwież” na pasku (`UpdateBar`) albo na
+ *   ekranie awarii (`RootBoundary`), a do tego czasu stare pliki zostają ważne.
  * - Baza produktów — najpierw kopia. Nazwa pliku ma hasz, więc nowa baza to nowy adres; trzymamy
  *   tylko ostatnią, bo każda waży kilka megabajtów.
  * - Zdjęcia produktów i kafelki mapy — najpierw kopia, z limitem liczby i wieku. Kafelki tylko
@@ -43,7 +44,7 @@ cleanupOutdatedCaches();
 // wcześniej. Przy aktualizacji niczego to nie przyspiesza: nowa wersja i tak czeka na zgodę.
 clientsClaim();
 
-registerRoute(new NavigationRoute(createHandlerBoundToURL('index.html'), { denylist: [/\/privacy\.html$/] }));
+registerRoute(new NavigationRoute(createHandlerBoundToURL('index.html'), { denylist: NAVIGATION_DENYLIST }));
 
 registerRoute(
   ({ url, sameOrigin }) =>
@@ -73,6 +74,16 @@ registerRoute(
     plugins: [
       new ExpirationPlugin({ maxEntries: 400, maxAgeSeconds: 90 * DAY, purgeOnQuotaError: true }),
       new CacheableResponsePlugin({ statuses: [200] }),
+      // A leaf never changes under its name, so its age is how long ago it was LAST USED (what the
+      // expiration keeps track of), not its `Date` header: without the header Workbox never calls a
+      // kept copy too old, and a cell visited every few months still works offline.
+      {
+        cacheWillUpdate: async ({ response }) => {
+          const headers = new Headers(response.headers);
+          headers.delete('date');
+          return new Response(await response.blob(), { status: response.status, statusText: response.statusText, headers });
+        },
+      },
     ],
   }),
 );

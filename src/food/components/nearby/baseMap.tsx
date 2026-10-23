@@ -316,6 +316,10 @@ export const POPUP_OPTIONS: L.PopupOptions = {
  */
 export function popupKeeper(openId: { current: string | null }) {
   const reopen = openId.current;
+  // Keyboard focus inside the open popup (its button or its ×) comes back to the same control.
+  const active = document.activeElement;
+  const inPopup = active instanceof HTMLElement && active.closest('.leaflet-popup') ? active : null;
+  const focus = inPopup?.matches('.leaflet-popup-close-button') ? '.leaflet-popup-close-button' : inPopup ? 'button' : null;
   const byId = new Map<string, L.Layer>();
   return {
     track(id: string, layer: L.Layer) {
@@ -326,7 +330,15 @@ export function popupKeeper(openId: { current: string | null }) {
       });
     },
     restore() {
-      if (reopen) byId.get(reopen)?.openPopup();
+      const layer = reopen ? byId.get(reopen) : undefined;
+      const popup = layer?.getPopup();
+      if (!layer || !popup) return;
+      // Reopened where it was, without panning: the user may have moved the map since.
+      const autoPan = popup.options.autoPan;
+      popup.options.autoPan = false;
+      layer.openPopup();
+      popup.options.autoPan = autoPan;
+      if (focus) popup.getElement()?.querySelector<HTMLElement>(focus)?.focus({ preventScroll: true });
     },
   };
 }

@@ -40,11 +40,11 @@ const T = text({
     savedLocating: 'Pokazuję ostatnio zapisane miejsce, szukam aktualnej lokalizacji…',
     savedDenied: 'Pokazuję ostatnio zapisane miejsce – brak zgody na lokalizację.',
     savedFailed: 'Pokazuję ostatnio zapisane miejsce – nie udało się ustalić aktualnej lokalizacji.',
-    partial: (n: number, radius: string) => ` (na razie: ${n} ${plural(n, 'sklep', 'sklepy', 'sklepów')} w promieniu ${radius})`,
+    partial: (n: number, radius: string) => `Na razie: ${n} ${plural(n, 'sklep', 'sklepy', 'sklepów')} w promieniu ${radius}.`,
     locating: 'Szukam Twojej lokalizacji…',
     denied: 'Brak zgody na lokalizację. Kliknij na mapie miejsce, w którym jesteś.',
     failed: 'Nie udało się ustalić lokalizacji. Kliknij na mapie miejsce, w którym jesteś.',
-    loading: (radius: string, partial: string) => `Szukam sklepów w promieniu ${radius}…${partial}`,
+    loading: (radius: string) => `Szukam sklepów w promieniu ${radius}…`,
     fetchFailed: 'Nie udało się pobrać sklepów.',
     what: 'sklepy',
     noneKnown: (radius: string, other: number) =>
@@ -78,11 +78,11 @@ const T = text({
     savedLocating: 'Showing the last saved place while I look for your current location…',
     savedDenied: 'Showing the last saved place – no permission to use your location.',
     savedFailed: 'Showing the last saved place – couldn’t find your current location.',
-    partial: (n: number, radius: string) => ` (so far: ${n} ${pluralEn(n, 'shop', 'shops')} within ${radius})`,
+    partial: (n: number, radius: string) => `So far: ${n} ${pluralEn(n, 'shop', 'shops')} within ${radius}.`,
     locating: 'Looking for your location…',
     denied: 'No permission to use your location. Click the place on the map where you are.',
     failed: 'Couldn’t find your location. Click the place on the map where you are.',
-    loading: (radius: string, partial: string) => `Looking for shops within ${radius}…${partial}`,
+    loading: (radius: string) => `Looking for shops within ${radius}…`,
     fetchFailed: 'Couldn’t fetch the shops.',
     what: 'shops',
     noneKnown: (radius: string, other: number) =>
@@ -160,19 +160,26 @@ function placeNote(geo: GeoState): string | null {
 
 type ShopsState = Omit<AroundState<Element>, 'items'> & { shops: Shop[] };
 
+/**
+ * Jak daleko lista jest pełna, póki odpowiedź przychodzi kawałkami — poza regionem `status`, bo
+ * zmienia się z każdą paczką. Promień w dół do pełnych 100 m: nie obiecuje więcej, niż jest.
+ */
+function progressLine(geo: GeoState, shops: ShopsState, radius: number, knownCount: number): string | null {
+  const sure = Math.floor(shops.completeWithin / 100) * 100;
+  return geo.position && shops.status !== 'ready' && sure >= 100 && shops.completeWithin < radius
+    ? T.partial(knownCount, radiusLabel(sure))
+    : null;
+}
+
 /** Jedno zdanie o tym, co się dzieje, w kolejności, w jakiej użytkownik by o to pytał. */
 function statusLine(geo: GeoState, shops: ShopsState, radius: number, knownCount: number, otherCount: number): string {
-  const partial =
-    shops.completeWithin > 0 && shops.completeWithin < radius
-      ? T.partial(knownCount, radiusLabel(Math.round(shops.completeWithin / 100) * 100))
-      : '';
   if (!geo.position) {
     if (geo.status === 'locating') return T.locating;
     if (geo.status === 'denied') return T.denied;
     return T.failed;
   }
-  if (shops.status === 'loading' || shops.status === 'idle') return T.loading(radiusLabel(radius), partial);
-  if (shops.status === 'error') return `${shops.error ?? T.fetchFailed}${partial}`;
+  if (shops.status === 'loading' || shops.status === 'idle') return T.loading(radiusLabel(radius));
+  if (shops.status === 'error') return shops.error ?? T.fetchFailed;
   if (knownCount === 0) return T.noneKnown(radiusLabel(radius), otherCount);
   return T.found(radiusLabel(radius), knownCount, otherCount);
 }
@@ -331,6 +338,7 @@ function Nearby({
               state={{ ...shopsState, items: shopsState.shops }}
               what={T.what}
               status={statusLine(geo, shopsState, state.radius, placement.known.length, placement.otherCount)}
+              progress={progressLine(geo, shopsState, state.radius, placement.known.length)}
               showServer={geo.position !== null}
             />
             {shopsState.status === 'error' && (

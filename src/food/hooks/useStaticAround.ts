@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { OsmIndex } from '../nearby/osmFormat';
-import { completeWithin as completeOf, coverageOf, haversine, roundedCentre, wantedLeaves } from '../nearby/osmGrid';
+import { completeWithin as completeOf, coverageOf, haversine, roundedCentre, roundingMargin, wantedLeaves } from '../nearby/osmGrid';
 import type { Element } from '../nearby/overpass';
 import {
   failureOf,
@@ -10,6 +10,7 @@ import {
   leafStartedAt,
   loadIndex,
   loadLeaf,
+  pinLeaves,
   type LeafRef,
   type StaticFailure,
 } from '../nearby/staticData';
@@ -80,10 +81,14 @@ interface Failed {
 
 /**
  * „W pobliżu” from the app's own copy of the OpenStreetMap data: the index once, then the leaves
- * around the position — chosen from the position ROUNDED to ~100 m, so the files asked for tell the
- * server no more than today's rounded circle told Overpass — nearest first, all at once, never
- * aborted (a leaf that arrives late still fills the memory for the next look). What is complete is
- * measured from the exact position, on the device only.
+ * around the position — nearest first, all at once, never aborted (a leaf that arrives late still
+ * fills the memory for the next look), held in memory while on screen.
+ *
+ * Everything that decides what goes over the network — which leaves, whether the circle is inside
+ * Poland, whether Overpass is needed — comes from the position ROUNDED to ~100 m (and the radius
+ * plus the rounding's reach), so the files and questions sent tell no more than today's rounded
+ * circle told Overpass. Only what is complete on screen is measured from the exact position, on the
+ * device.
  */
 export function useStaticAround(position: LatLon | null, radius: number): [StaticState, () => void] {
   const enabled = hasStaticData();
@@ -116,16 +121,28 @@ export function useStaticAround(position: LatLon | null, radius: number): [Stati
   const refs = useMemo(() => (index ? leafRefs(index) : []), [index]);
   const lat = position?.lat;
   const lon = position?.lon;
-  // Coverage needs the exact position (which side of the border); the leaves only the rounded one.
-  const coverage = useMemo(
-    () => (index && lat !== undefined && lon !== undefined ? coverageOf({ lat, lon }, radius, index.coverage) : null),
-    [index, lat, lon, radius],
-  );
   const centre = lat !== undefined && lon !== undefined ? roundedCentre({ lat, lon }) : null;
   const cLat = centre?.lat;
   const cLon = centre?.lon;
-  const inData = coverage !== null && coverage.kind !== 'none';
-  const run = `${index?.dataAsOf ?? ''}|${cLat},${cLon},${radius}|${attempt}`;
+  // What goes over the network: from the rounded circle grown by the rounding's reach. If THAT is
+  // inside the data, so is the exact circle; near the border it errs towards asking Overpass.
+  const netCoverage = useMemo(
+    () =>
+      index && cLat !== undefined && cLon !== undefined
+        ? coverageOf({ lat: cLat, lon: cLon }, radius + roundingMargin(cLat), index.coverage)
+        : null,
+    [index, cLat, cLon, radius],
+  );
+  // What is complete on screen: the exact position (local only).
+  const exactCoverage = useMemo(
+    () => (index && lat !== undefined && lon !== undefined ? coverageOf({ lat, lon }, radius, index.coverage) : null),
+    [index, lat, lon, radius],
+  );
+  const inData = netCoverage !== null && netCoverage.kind !== 'none';
+  /** The place: what the automatic retries count against (a new place starts afresh). */
+  const place = `${index?.dataAsOf ?? ''}|${cLat},${cLon},${radius}`;
+  /** The place and the try: a new try starts with a clean failure record. */
+  const run = `${place}|${attempt}`;
 
   useEffect(() => {
     if (!index || !inData || cLat === undefined || cLon === undefined) return;
@@ -138,10 +155,16 @@ export function useStaticAround(position: LatLon | null, radius: number): [Stati
     const soon = () => {
       timer ??= setTimeout(flush, FLUSH_MS);
     };
+    const record = (leaf: LeafRef, kind: StaticFailure) =>
+      setFailed((f) => ({ run, byLeaf: { ...(f.run === run ? f.byLeaf : {}), [keyOf(leaf)]: kind }, at: Date.now() }));
     const { leaves } = wantedLeaves(refs, { lat: cLat, lon: cLon }, radius);
+    // The view's leaves stay in memory while it is on screen.
+    const release = pinLeaves(leaves);
+    let started = 0;
     for (const leaf of leaves) {
       const known = leafNow(leaf);
       if (known && !known.older) continue;
+      started++;
       loadLeaf(leaf).then(soon, (error: unknown) => {
         if (!live) return;
         const kind = failureOf(error);
@@ -152,26 +175,29 @@ export function useStaticAround(position: LatLon | null, radius: number): [Stati
             (fresh) => {
               if (!live) return;
               if (fresh !== index) setIndex(fresh);
-              else setFailed((f) => ({ run, byLeaf: { ...(f.run === run ? f.byLeaf : {}), [keyOf(leaf)]: 'unavailable' }, at: Date.now() }));
+              else record(leaf, 'unavailable');
             },
-            () => live && setFailed((f) => ({ run, byLeaf: { ...(f.run === run ? f.byLeaf : {}), [keyOf(leaf)]: 'network' }, at: Date.now() })),
+            () => live && record(leaf, 'network'),
           );
           return;
         }
-        setFailed((f) => ({ run, byLeaf: { ...(f.run === run ? f.byLeaf : {}), [keyOf(leaf)]: kind }, at: Date.now() }));
+        record(leaf, kind);
         soon();
       });
     }
+    // Loads just started: one more look shortly, so "since when" (a slow connection) is known.
+    if (started > 0) soon();
     return () => {
       live = false;
       clearTimeout(timer);
+      release();
     };
   }, [index, refs, inData, cLat, cLon, radius, run]);
 
   const failures = failed.run === run ? failed.byLeaf : NO_FAILURES;
   const networkFailedAt = Object.values(failures).includes('network') ? failed.at : null;
   const indexNetworkFailed = indexFailure === 'network';
-  const retryAt = useAutoRetry(networkFailedAt ?? (indexNetworkFailed ? indexFailed!.at : null), run, retry);
+  const retryAt = useAutoRetry(networkFailedAt ?? (indexNetworkFailed ? indexFailed!.at : null), place, retry);
 
   const state = useMemo<StaticState>(() => {
     void tick; // leaves arrived: read the memory again
@@ -181,11 +207,11 @@ export function useStaticAround(position: LatLon | null, radius: number): [Stati
       if (indexFailure === 'unavailable') return { ...BASE, failure: 'unavailable' };
       return { ...BASE, coverage: 'unknown', status: indexFailure ? 'error' : lat === undefined ? 'idle' : 'loading', failure: indexFailure };
     }
-    if (!coverage || lat === undefined || lon === undefined) return { ...BASE, coverage: 'unknown', dataAsOf };
-    if (coverage.kind === 'none') return { ...BASE, coverage: 'none', dataAsOf };
+    if (!netCoverage || !exactCoverage || lat === undefined || lon === undefined) return { ...BASE, coverage: 'unknown', dataAsOf };
+    if (netCoverage.kind === 'none') return { ...BASE, coverage: 'none', dataAsOf };
     const p = { lat, lon };
     const wanted = wantedLeaves(refs, p, radius);
-    const loaded = new Map<string, ReturnType<typeof leafNow>>();
+    const loaded = new Map<string, NonNullable<ReturnType<typeof leafNow>>>();
     let older = false;
     let since: number | null = null;
     const kinds = new Set<StaticFailure>();
@@ -196,21 +222,23 @@ export function useStaticAround(position: LatLon | null, radius: number): [Stati
         loaded.set(keyOf(leaf), got);
         older ||= got.older;
       } else if (failure) kinds.add(failure);
-      const started = got ? undefined : leafStartedAt(leaf);
-      if (started !== undefined) since = since === null ? started : Math.min(since, started);
+      const startedAt = got ? undefined : leafStartedAt(leaf);
+      if (startedAt !== undefined) since = since === null ? startedAt : Math.min(since, startedAt);
     }
     let complete = completeOf(p, radius, wanted.leaves, (leaf) => loaded.has(keyOf(leaf)));
-    if (coverage.kind === 'partial') complete = Math.min(complete, coverage.safeWithin);
+    // Near the border only the Polish side is here: complete up to the coverage's edge.
+    const safe = exactCoverage.kind === 'none' ? 0 : exactCoverage.safeWithin;
+    if (netCoverage.kind === 'partial') complete = Math.min(complete, safe);
     const items: Element[] = [];
-    for (const got of loaded.values()) for (const e of got!.elements) if (haversine(wanted.centre, e) <= wanted.reach) items.push(e);
+    for (const got of loaded.values()) for (const e of got.elements) if (haversine(wanted.centre, e) <= wanted.reach) items.push(e);
     const pendingLeaves = wanted.leaves.length - loaded.size - Object.keys(failures).filter((k) => !loaded.has(k)).length;
     const failure = kinds.has('unavailable') ? 'unavailable' : kinds.has('network') ? 'network' : null;
     return {
       status: pendingLeaves > 0 ? 'loading' : failure ? 'error' : 'ready',
       items,
       completeWithin: complete,
-      coverage: coverage.kind,
-      safeWithin: coverage.safeWithin,
+      coverage: netCoverage.kind,
+      safeWithin: safe,
       circle: { ...wanted.centre, radius: wanted.reach },
       dataAsOf,
       olderLeaves: older,
@@ -218,8 +246,11 @@ export function useStaticAround(position: LatLon | null, radius: number): [Stati
       since,
       retryAt: null,
     };
-  }, [enabled, index, indexFailure, coverage, refs, lat, lon, radius, failures, tick]);
+  }, [enabled, index, indexFailure, netCoverage, exactCoverage, refs, lat, lon, radius, failures, tick]);
 
-  const withRetry = useMemo(() => ({ ...state, retryAt: state.failure === 'network' || indexNetworkFailed ? retryAt : null }), [state, retryAt, indexNetworkFailed]);
+  const withRetry = useMemo(
+    () => ({ ...state, retryAt: state.failure === 'network' || indexNetworkFailed ? retryAt : null }),
+    [state, retryAt, indexNetworkFailed],
+  );
   return [withRetry, retry];
 }

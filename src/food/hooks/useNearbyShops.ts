@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { pruneCache, readCache, readFallback, writeCache, type Circle, type ShopCache } from '../nearby/cache';
 import { distanceMeters } from '../nearby/geo';
 import { OverpassOffline, OverpassUnavailable, type FetchOptions } from '../nearby/overpass';
@@ -177,15 +177,38 @@ export function useAround<T>(
   ];
 }
 
+function subscribeOnline(onChange: () => void): () => void {
+  window.addEventListener('online', onChange);
+  window.addEventListener('offline', onChange);
+  return () => {
+    window.removeEventListener('online', onChange);
+    window.removeEventListener('offline', onChange);
+  };
+}
+
+/** Whether the browser says it has a connection (`false` only when it knows it has none). */
+export function useOnline(): boolean {
+  return useSyncExternalStore(
+    subscribeOnline,
+    () => globalThis.navigator?.onLine !== false,
+    () => true,
+  );
+}
+
 /**
- * After a failure: try again by itself, `AUTO_RETRY_MS` apart, counted per place (`placeKey`; a new
- * place starts afresh), never while the page is hidden (it waits to be looked at), and at once when
- * the connection comes back. Returns when the next try is due, for the countdown; `null` when none is.
+ * After a failure: try again by itself, `AUTO_RETRY_MS` apart, counted per place (`placeKey`, which
+ * must NOT change with each try; a new place starts afresh), never while the page is hidden (it
+ * waits to be looked at), never while offline (no countdown then either), and at once when the
+ * connection comes back. Returns when the next try is due, for the countdown; `null` when none is.
  */
 export function useAutoRetry(failedAt: number | null, placeKey: string, retry: () => void): number | null {
   const [auto, setAuto] = useState({ key: '', used: 0 });
+  /** When the connection last came back: that try counts as the latest, the next waits from it. */
+  const [resumedAt, setResumedAt] = useState(0);
+  const online = useOnline();
   const used = auto.key === placeKey ? auto.used : 0;
-  const autoAt = failedAt !== null && used < AUTO_RETRY_MS.length ? failedAt + AUTO_RETRY_MS[used]! : null;
+  const autoAt =
+    online && failedAt !== null && used < AUTO_RETRY_MS.length ? Math.max(failedAt, resumedAt) + AUTO_RETRY_MS[used]! : null;
   useEffect(() => {
     if (autoAt === null) return;
     let onVisible: (() => void) | null = null;
@@ -213,8 +236,12 @@ export function useAutoRetry(failedAt: number | null, placeKey: string, retry: (
   const failed = failedAt !== null;
   useEffect(() => {
     if (!failed) return;
-    window.addEventListener('online', retry);
-    return () => window.removeEventListener('online', retry);
+    const onOnline = () => {
+      setResumedAt(Date.now());
+      retry();
+    };
+    window.addEventListener('online', onOnline);
+    return () => window.removeEventListener('online', onOnline);
   }, [failed, retry]);
   return autoAt;
 }

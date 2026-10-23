@@ -106,6 +106,20 @@ interface Feature {
 }
 
 /**
+ * osmium's GeoJSON export split into records at "\n" only. Not with `readline`: Node 24's ends a
+ * line at U+2028 and U+2029 too, and osmium writes those unescaped inside JSON strings — one such
+ * character in any tag would cut a record in two and stop the refresh.
+ */
+export function splitRecords(text: string): string[] {
+  return text.split('\n');
+}
+
+/** The geometry errors osmium reports with `-e`: objects it could not build, missing from the copy. */
+export function geometryErrors(output: string): string[] {
+  return output.split('\n').filter((line) => /geometry error/i.test(line));
+}
+
+/**
  * osmium's GeoJSON Text Sequence export → the rows of the copy, sorted by id.
  *
  * The same rule as the Overpass answers (`osmTags.ts`): an object counts when either view asks for
