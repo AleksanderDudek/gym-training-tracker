@@ -27,6 +27,8 @@ import { ReadyProducts } from '../recipes/ReadyProducts';
 import { RecipeCard } from '../recipes/RecipeCard';
 import { Segmented } from '../../../components/ui';
 import { AroundStatus } from './AroundStatus';
+import { NT } from './nearbyText';
+import { OsmCredit } from './OsmCredit';
 import { EatNow } from './EatNow';
 import { RadiusSlider } from './RadiusSlider';
 import { StoreMap } from './StoreMap';
@@ -62,8 +64,6 @@ const T = text({
     myLocation: 'Moja lokalizacja',
     useCentre: 'Ustaw środek mapy jako moją lokalizację',
     help: 'Albo przytrzymaj palec na mapie (prawy klik na komputerze). Na telefonie mapę przesuwasz dwoma palcami, z klawiatury strzałkami, a przybliżasz klawiszami + i −.',
-    privacy:
-      'Twoja pozycja, zaokrąglona do ok. 100 m, trafia do serwera Overpass z danymi OpenStreetMap (overpass-api.de, zapasowo overpass.private.coffee), a oglądany fragment mapy do tile.openstreetmap.org. Pozycji nie ma w adresie strony, a ostatnie miejsce zostaje tylko na tym urządzeniu.',
     chains: 'Sieci w pobliżu',
     all: 'Wszystkie',
     recipes: 'Przepisy z najbliższych sklepów',
@@ -102,8 +102,6 @@ const T = text({
     myLocation: 'My location',
     useCentre: 'Use the map centre as my location',
     help: 'Or press and hold on the map (right-click on a computer). On a phone you move the map with two fingers, from the keyboard with the arrow keys, and zoom with the + and − keys.',
-    privacy:
-      'Your position, rounded to about 100 m, goes to the Overpass server with OpenStreetMap data (overpass-api.de, with overpass.private.coffee as a backup), and the part of the map you’re viewing goes to tile.openstreetmap.org. Your position isn’t in the page address, and the last place stays only on this device.',
     chains: 'Chains nearby',
     all: 'All',
     recipes: 'Recipes from the nearest shops',
@@ -389,7 +387,8 @@ function Nearby({
           <p className="hint fd-near-map-help" id={mapHelpId}>
             {T.help}
           </p>
-          <p className="fd-near-privacy">{T.privacy}</p>
+          <OsmCredit source={osm.source} dataAsOf={osm.dataAsOf} />
+          <p className="fd-near-privacy">{NT.privacy}</p>
         </div>
       </section>
 

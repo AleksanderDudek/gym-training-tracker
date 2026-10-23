@@ -84,7 +84,9 @@ const osmium = osmiumVersion();
 await warnIfLowOnDisk(CACHE);
 
 // The polygon first: it is small, and a bad one should stop the run before the long steps.
-const polyText = flags.poly ? await readFile(userPath(flags.poly), 'utf8') : await (await get(POLY_URL)).text();
+const polyText = flags.poly
+  ? await readFile(userPath(flags.poly), 'utf8').catch((error: Error) => fail(`${flags.poly}: ${error.message}`))
+  : await (await get(POLY_URL)).text();
 const poly = orFail(flags.poly ? userPath(flags.poly) : POLY_URL, () => parsePoly(polyText));
 
 let pbf: string | null = null;
@@ -189,7 +191,10 @@ async function warnIfLowOnDisk(dir: string) {
 }
 
 async function get(url: string): Promise<Response> {
-  const response = await fetch(url, { headers: { 'User-Agent': USER_AGENT } });
+  // No connection is a sentence, not a stack trace.
+  const response = await fetch(url, { headers: { 'User-Agent': USER_AGENT } }).catch((error: Error) =>
+    fail(`${url}: ${error.message}`),
+  );
   if (!response.ok) fail(`${url}: ${response.status} ${response.statusText}`);
   return response;
 }

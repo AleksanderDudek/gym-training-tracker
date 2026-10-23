@@ -149,44 +149,9 @@ export function useAround<T>(
 
   const retry = useCallback(() => setAttempt((n) => n + 1), []);
 
-  // The connection is back: ask at once, not at the next scheduled try.
-  const failedNow = fetched.status === 'error';
-  useEffect(() => {
-    if (!failedNow) return;
-    window.addEventListener('online', retry);
-    return () => window.removeEventListener('online', retry);
-  }, [failedNow, retry]);
-
   // Retries by itself after a failure, counted per place and radius: a new one starts afresh.
   const placeKey = `${lat},${lon},${radius}`;
-  const [auto, setAuto] = useState({ key: '', used: 0 });
-  const used = auto.key === placeKey ? auto.used : 0;
-  const autoAt =
-    fetched.status === 'error' && fetched.failedAt !== null && used < AUTO_RETRY_MS.length
-      ? fetched.failedAt + AUTO_RETRY_MS[used]!
-      : null;
-  useEffect(() => {
-    if (autoAt === null) return;
-    let onVisible: (() => void) | null = null;
-    const fire = () => {
-      setAuto({ key: placeKey, used: used + 1 });
-      setAttempt((n) => n + 1);
-    };
-    const timer = setTimeout(() => {
-      // A hidden page does not keep a busy server busy: it asks again when it is looked at.
-      if (document.visibilityState !== 'hidden') return fire();
-      onVisible = () => {
-        if (document.visibilityState === 'hidden') return;
-        document.removeEventListener('visibilitychange', onVisible!);
-        fire();
-      };
-      document.addEventListener('visibilitychange', onVisible);
-    }, Math.max(0, autoAt - Date.now()));
-    return () => {
-      clearTimeout(timer);
-      if (onVisible) document.removeEventListener('visibilitychange', onVisible);
-    };
-  }, [autoAt, placeKey, used]);
+  const autoAt = useAutoRetry(fetched.status === 'error' ? fetched.failedAt : null, placeKey, retry);
 
   // Within what distance of HERE is the last answer complete? Items fetched
   // for another place are not shown for this one (after a move they would name
@@ -210,6 +175,48 @@ export function useAround<T>(
     },
     retry,
   ];
+}
+
+/**
+ * After a failure: try again by itself, `AUTO_RETRY_MS` apart, counted per place (`placeKey`; a new
+ * place starts afresh), never while the page is hidden (it waits to be looked at), and at once when
+ * the connection comes back. Returns when the next try is due, for the countdown; `null` when none is.
+ */
+export function useAutoRetry(failedAt: number | null, placeKey: string, retry: () => void): number | null {
+  const [auto, setAuto] = useState({ key: '', used: 0 });
+  const used = auto.key === placeKey ? auto.used : 0;
+  const autoAt = failedAt !== null && used < AUTO_RETRY_MS.length ? failedAt + AUTO_RETRY_MS[used]! : null;
+  useEffect(() => {
+    if (autoAt === null) return;
+    let onVisible: (() => void) | null = null;
+    const fire = () => {
+      setAuto({ key: placeKey, used: used + 1 });
+      retry();
+    };
+    const timer = setTimeout(() => {
+      // A hidden page does not keep a busy server busy: it asks again when it is looked at.
+      if (document.visibilityState !== 'hidden') return fire();
+      onVisible = () => {
+        if (document.visibilityState === 'hidden') return;
+        document.removeEventListener('visibilitychange', onVisible!);
+        fire();
+      };
+      document.addEventListener('visibilitychange', onVisible);
+    }, Math.max(0, autoAt - Date.now()));
+    return () => {
+      clearTimeout(timer);
+      if (onVisible) document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [autoAt, placeKey, used, retry]);
+
+  // The connection is back: ask at once, not at the next scheduled try.
+  const failed = failedAt !== null;
+  useEffect(() => {
+    if (!failed) return;
+    window.addEventListener('online', retry);
+    return () => window.removeEventListener('online', retry);
+  }, [failed, retry]);
+  return autoAt;
 }
 
 /** The time, once a second while `active` (a countdown on screen); otherwise as it was. */

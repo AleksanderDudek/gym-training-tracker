@@ -86,10 +86,11 @@ jobs:
         env:
           OSM_CACHE_DIR: ${{ runner.temp }}/osm
 
-      # Reguły, parsery i skrypt danych sprawdzone na nowych plikach, zanim trafią do repozytorium.
+      # Kod reguł, parserów i skryptu, a także same nowe pliki: test danych (vite/osmData.test.ts)
+      # czyta zapisany TSV, a testy wtyczki tną go na kawałki tak jak build — zanim trafią do repozytorium.
       - name: Testy
         if: steps.due.outputs.due == 'true'
-        run: npx vitest run src/food/nearby scripts/food
+        run: npx vitest run src/food/nearby scripts/food vite
 
       # Bez zmian w danych nie ma commita ani wdrożenia. `git status`, bo przy pierwszym przebiegu
       # plików jeszcze nie ma w repozytorium.
@@ -97,6 +98,8 @@ jobs:
         id: diff
         if: steps.due.outputs.due == 'true'
         run: |
+          # Oba pliki muszą być: artefakt z jednym z nich zapisałby TSV ze starymi metadanymi.
+          test -s data/osm/places-pl.tsv && test -s data/osm/meta.json || { echo '::error::Brak data/osm/places-pl.tsv albo data/osm/meta.json po odświeżeniu.'; exit 1; }
           if [ -n "$(git status --porcelain -- data/osm/places-pl.tsv data/osm/meta.json)" ]; then
             git status --short -- data/osm
             echo "changed=true" >> "$GITHUB_OUTPUT"

@@ -1,8 +1,8 @@
-import { useSecondClock, type AroundState } from '../../hooks/useNearbyShops';
-import { aroundNotes } from './aroundText';
+import { useSecondClock } from '../../hooks/useNearbyShops';
+import { aroundNotes, type AroundNotesState } from './aroundText';
 
 interface Props {
-  state: Pick<AroundState<unknown>, 'status' | 'items' | 'savedAt' | 'since' | 'retryAt'>;
+  state: AroundNotesState;
   /** What the items are, in the words of the view („lokale”, „sklepy”). */
   what: string;
   /** The view's own status sentence. */

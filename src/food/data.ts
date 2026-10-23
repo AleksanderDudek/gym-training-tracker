@@ -1,5 +1,5 @@
-import { gunzipSync } from 'fflate';
 import foodData from 'virtual:food-data';
+import { inflate } from './lib/inflate';
 import { indexProducts } from './lib/search';
 import type { Dataset, IndexedProduct } from './lib/types';
 import { mergeChains } from './chains/merge';
@@ -30,20 +30,8 @@ export interface LoadedDataset {
 
 export const MISSING_DATA_MESSAGE = T.missing;
 
-/**
- * Tekst bazy z pobranych bajtów. Plik leży na serwerze jako gzip (`data/products.<wersja>.json.gz`),
- * ale serwer, który poda go z `Content-Encoding: gzip`, oddaje już rozpakowany JSON — dlatego
- * decyduje znacznik gzipa na początku (`1f 8b`), a nie nazwa pliku czy nagłówki.
- */
-export async function inflate(bytes: Uint8Array<ArrayBuffer>): Promise<string> {
-  if (bytes[0] !== 0x1f || bytes[1] !== 0x8b) return new TextDecoder().decode(bytes);
-  if (typeof DecompressionStream === 'function') {
-    const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
-    return new Response(stream).text();
-  }
-  // Starsze przeglądarki bez DecompressionStream (Safari < 16.4).
-  return new TextDecoder().decode(gunzipSync(bytes));
-}
+/** Re-exported: the products dataset and the OSM leaves unpack the same way. */
+export { inflate };
 
 /**
  * Produkty sklepów internetowych i sieci z własnymi danymi (Selgros) — osobna paczka, wczytywana

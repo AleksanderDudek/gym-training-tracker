@@ -14,6 +14,10 @@ export const POLY_URL = 'https://download.geofabrik.de/europe/poland.poly';
 
 /** Rows a first copy must have: the extract of October 2026 gave 99,144. */
 const FIRST_RUN_MIN_ROWS = 90_000;
+/** A small kind (under 500 rows) may move this many rows either way whatever the percentage. */
+const SMALL_KIND_ROWS = 25;
+/** A kind absent from the previous copy may appear with this many rows before it counts as a rule change. */
+const NEW_KIND_ROWS = 50;
 /**
  * Warsaw's bounding box (52.09–52.37 N, 20.85–21.27 E, in 1e-5 degrees) and the rows a copy must
  * have inside it (8,785 in October 2026): a city without its shops is a broken extract.
@@ -339,10 +343,14 @@ export function gates(previous: Meta | null, meta: Meta, rows: readonly OsmRow[]
     for (const kind of [...new Set([...Object.keys(previous.kinds), ...Object.keys(meta.kinds)])].sort()) {
       const before = previous.kinds[kind] ?? 0;
       const now = meta.kinds[kind] ?? 0;
-      // A small kind moves more with a few mappers' work: half its size either way.
+      // A small kind moves more with a few mappers' work: half its size either way, and never for a
+      // handful of rows (one new `shop=discount` must not block a refresh). A kind that appears with
+      // dozens of rows at once means the rule changed, not the map.
       const tolerance = before < 500 ? 0.5 : 0.2;
-      if (before === 0) failures.push(`kind ${kind}: ${now} rows, none in the previous copy`);
-      else if (Math.abs(now - before) / before > tolerance) {
+      const small = before < 500 && Math.abs(now - before) <= SMALL_KIND_ROWS;
+      if (before === 0) {
+        if (now > NEW_KIND_ROWS) failures.push(`kind ${kind}: ${now} rows, none in the previous copy`);
+      } else if (!small && Math.abs(now - before) / before > tolerance) {
         failures.push(`kind ${kind}: ${before} → ${now} (${percent((now - before) / before)}; at most ±${tolerance * 100} %)`);
       }
     }

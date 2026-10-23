@@ -30,6 +30,8 @@ import { FIT_LABEL, FitBadge, MacroLine } from '../diet/SuggestionList';
 import { ChipRow } from '../recipes/ChipRow';
 import { AddressSearch } from './AddressSearch';
 import { AroundStatus } from './AroundStatus';
+import { NT } from './nearbyText';
+import { OsmCredit } from './OsmCredit';
 import { distanceText, openText } from './eatText';
 import { PlaceMap } from './PlaceMap';
 import { PlaceSheet } from './PlaceSheet';
@@ -44,6 +46,7 @@ const T = text({
     failed: 'Nie udało się ustalić lokalizacji. Wpisz adres albo kliknij na mapie miejsce, w którym jesteś.',
     savedLocating: 'Pokazuję ostatnio zapisane miejsce, szukam aktualnej lokalizacji…',
     loading: (radius: string) => `Szukam lokali w promieniu ${radius}…`,
+    partial: (n: number, radius: string) => ` (na razie: ${n} ${plural(n, 'miejsce', 'miejsca', 'miejsc')} z menu w promieniu ${radius})`,
     menus: 'Wczytuję menu sieci…',
     fetchFailed: 'Nie udało się pobrać lokali.',
     what: 'lokale',
@@ -74,8 +77,6 @@ const T = text({
     myLocation: 'Moja lokalizacja',
     useCentre: 'Ustaw środek mapy jako moją lokalizację',
     help: 'Albo przytrzymaj palec na mapie (prawy klik na komputerze). Na telefonie mapę przesuwasz dwoma palcami, z klawiatury strzałkami, a przybliżasz klawiszami + i −.',
-    privacy:
-      'Twoja pozycja, zaokrąglona do ok. 100 m, trafia do serwera Overpass z danymi OpenStreetMap (overpass-api.de, zapasowo overpass.private.coffee), a oglądany fragment mapy do tile.openstreetmap.org. Pozycji nie ma w adresie strony, a ostatnie miejsce zostaje tylko na tym urządzeniu.',
     filters: 'Pokaż też',
     closed: (n: number) => `zamknięte (${n})`,
     unknown: (n: number) => `bez danych o menu (${n})`,
@@ -92,6 +93,7 @@ const T = text({
     failed: 'Couldn’t find your location. Type an address or click the place on the map where you are.',
     savedLocating: 'Showing the last saved place while I look for your current location…',
     loading: (radius: string) => `Looking for places within ${radius}…`,
+    partial: (n: number, radius: string) => ` (so far: ${n} ${pluralEn(n, 'place', 'places')} with a menu within ${radius})`,
     menus: 'Loading the chains’ menus…',
     fetchFailed: 'Couldn’t fetch the places.',
     what: 'places',
@@ -121,8 +123,6 @@ const T = text({
     myLocation: 'My location',
     useCentre: 'Use the map centre as my location',
     help: 'Or press and hold on the map (right-click on a computer). On a phone you move the map with two fingers, from the keyboard with the arrow keys, and zoom with the + and − keys.',
-    privacy:
-      'Your position, rounded to about 100 m, goes to the Overpass server with OpenStreetMap data (overpass-api.de, with overpass.private.coffee as a backup), and the part of the map you’re viewing goes to tile.openstreetmap.org. Your position isn’t in the page address, and the last place stays only on this device.',
     filters: 'Also show',
     closed: (n: number) => `closed (${n})`,
     unknown: (n: number) => `no menu data (${n})`,
@@ -278,7 +278,12 @@ export function EatNow({ state, update, closeEntry, geo, locate, setManual, setR
 
   const status = (() => {
     if (!geo.position) return geo.status === 'locating' ? T.locating : geo.status === 'denied' ? T.denied : T.failed;
-    if (placesState.status === 'loading' || placesState.status === 'idle') return T.loading(radiusLabel(state.radius));
+    if (placesState.status === 'loading' || placesState.status === 'idle')
+      return (
+        T.loading(radiusLabel(state.radius)) +
+        // The app's data arrives in pieces, nearest first: what is complete is said, not hidden.
+        (within > 0 && within < state.radius ? T.partial(known, radiusLabel(Math.round(within / 100) * 100)) : '')
+      );
     if (placesState.status === 'error') return placesState.error ?? T.fetchFailed;
     if (menus.status === 'loading') return T.menus;
     if (known === 0) return T.noneKnown(radiusLabel(state.radius));
@@ -392,7 +397,8 @@ export function EatNow({ state, update, closeEntry, geo, locate, setManual, setR
           <p className="hint fd-near-map-help" id={mapHelpId}>
             {T.help}
           </p>
-          <p className="fd-near-privacy">{T.privacy}</p>
+          <OsmCredit source={osm.source} dataAsOf={osm.dataAsOf} />
+          <p className="fd-near-privacy">{NT.privacy}</p>
         </div>
       </section>
 

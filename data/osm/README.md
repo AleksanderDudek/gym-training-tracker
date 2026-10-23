@@ -29,10 +29,15 @@ npm run food:osm            # pobiera wyciąg (ok. 2 GB), filtruje go i zapisuje
 
 Opcje po `--` (dokładny opis w nagłówku skryptu): `--pbf=…` — wyciąg już pobrany, `--filtered=…` —
 wyciąg już przefiltrowany (`osmium tags-filter`), `--poly=…` — granica (plik `.poly`) z dysku,
-`--keep-pbf` — pobrany wyciąg zostaje na następny raz, `--force` — od nowa, nawet gdy dane wyglądają
-na aktualne. `OSM_CACHE_DIR` — katalog na pobrane pliki. Na GitHubie: Actions → **Dane OSM** → Run
-workflow — odświeża dane, które mają co najmniej 156 h (z opcją `force` każde), sprawdza je testami,
-zapisuje commitem do `main` i wdraża stronę.
+`--keep-pbf` — pobrany wyciąg zostaje na następny raz, `--force` — zapisuje mimo niezaliczonych
+kontroli (liczba miejsc, rodzaje, Warszawa, hale, data, granice — `gates` w `scripts/food/lib/osm.ts`),
+które najpierw wypisuje; bez niego skrypt przy niezaliczonej kontroli nie zapisuje niczego.
+`OSM_CACHE_DIR` — katalog na pobrane pliki. Na GitHubie: Actions → **Dane OSM** → Run workflow —
+odświeża dane, które mają co najmniej 156 h (opcja `force` workflow pomija tylko ten próg wieku,
+nigdy kontroli skryptu), sprawdza je testami, zapisuje commitem do `main` i wdraża stronę.
+
+Znana różnica wobec zapytań Overpass: kopia ma tylko relacje-multipoligony (budynki jako `type=building`
+osmium pomija) — w całej Polsce to kilka obiektów.
 
 ## In English
 
@@ -55,6 +60,11 @@ JSON files, finer where places are dense), and "W pobliżu" (Nearby) downloads o
 searched place. Abroad and near the border it still asks Overpass servers.
 
 **Refresh:** locally with osmium-tool (Homebrew or apt, as above) and `npm run food:osm` with the
-options above (details in the script's header), downloads in `OSM_CACHE_DIR`; or on GitHub with the
-**Dane OSM** workflow, which refreshes data at least 156 h old (any, with `force`), tests it, commits
-it to `main` and deploys the site.
+options above (details in the script's header), downloads in `OSM_CACHE_DIR`. The script checks the
+new copy against the previous one (row counts, kinds, Warsaw, the wholesale halls, the data date, the
+border box) and writes nothing when a check fails, unless `--force` (it prints the failures first).
+On GitHub the **Dane OSM** workflow (run by hand) refreshes data at least 156 h old (its `force` only
+skips that age check, never the script's checks), tests it, commits it to `main` and deploys the site.
+
+Known difference from the Overpass queries: the copy holds only multipolygon relations (osmium skips
+`type=building` relations) — a handful of objects in all of Poland.

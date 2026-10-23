@@ -2,7 +2,7 @@
 import { clientsClaim } from 'workbox-core';
 import { cleanupOutdatedCaches, createHandlerBoundToURL, precacheAndRoute } from 'workbox-precaching';
 import { NavigationRoute, registerRoute } from 'workbox-routing';
-import { CacheFirst } from 'workbox-strategies';
+import { CacheFirst, StaleWhileRevalidate } from 'workbox-strategies';
 import { ExpirationPlugin } from 'workbox-expiration';
 import { CacheableResponsePlugin } from 'workbox-cacheable-response';
 
@@ -26,6 +26,9 @@ declare const self: ServiceWorkerGlobalScope;
  * - Zdjęcia produktów i kafelki mapy — najpierw kopia, z limitem liczby i wieku. Kafelki tylko
  *   obejrzane, nigdy pobierane zawczasu (tego wymagają zasady OpenStreetMap).
  * - Czytnik kodów kreskowych (WebAssembly) — najpierw kopia, pobrany przy pierwszym skanie.
+ * - Dane OSM „W pobliżu” (`data/osm/v1/`) — kawałki mapy najpierw z kopii (nazwa ma hasz treści,
+ *   tylko oglądane okolice, 400 na 90 dni), indeks z kopii od razu i odświeżany w tle: nowe dane
+ *   po wdrożeniu przychodzą same, bez paska „Nowa wersja”.
  *
  * Overpass, Open Food Facts, serwer aplikacji i filmy z YouTube'a idą prosto do sieci: offline i tak
  * by nie ruszyły.
@@ -57,6 +60,29 @@ registerRoute(
   ({ url, sameOrigin }) => sameOrigin && /\/assets\/shopData-[\w-]+\.js$/.test(url.pathname),
   new CacheFirst({
     cacheName: 'gt-shop-data',
+    plugins: [new ExpirationPlugin({ maxEntries: 1 }), new CacheableResponsePlugin({ statuses: [200] })],
+  }),
+);
+
+// Kawałki danych OSM „W pobliżu”: nazwa z haszem treści, więc kopia jest ważna, dopóki istnieje.
+// Tylko oglądane okolice, z limitem — lista miejsc, które ktoś oglądał, nie rośnie bez końca.
+registerRoute(
+  ({ url, sameOrigin }) => sameOrigin && /\/data\/osm\/v1\/t\/\d+-\d+-\d+\.[0-9a-f]{10}\.json\.gz$/.test(url.pathname),
+  new CacheFirst({
+    cacheName: 'gt-osm',
+    plugins: [
+      new ExpirationPlugin({ maxEntries: 400, maxAgeSeconds: 90 * DAY, purgeOnQuotaError: true }),
+      new CacheableResponsePlugin({ statuses: [200] }),
+    ],
+  }),
+);
+
+// Indeks danych OSM pod stałym adresem: od razu z kopii, nowy w tle. Adres z `?r=` (odświeżenie po
+// zniknięciu kawałka po wdrożeniu) idzie prosto do sieci.
+registerRoute(
+  ({ url, sameOrigin }) => sameOrigin && url.pathname.endsWith('/data/osm/v1/index.json') && url.search === '',
+  new StaleWhileRevalidate({
+    cacheName: 'gt-osm-index',
     plugins: [new ExpirationPlugin({ maxEntries: 1 }), new CacheableResponsePlugin({ statuses: [200] })],
   }),
 );

@@ -21,10 +21,11 @@ export const FOOD_KEYS = [
 ] as const;
 
 /**
- * Kopie service workera (`src/sw.ts`), które mówią coś o człowieku: kafelki mapy zdradzają, jakie
- * okolice oglądał, a zdjęcia — jakie produkty. Baza produktów zostaje: jest ta sama dla wszystkich.
+ * Kopie service workera (`src/sw.ts`), które mówią coś o człowieku: kafelki mapy i kawałki danych OSM
+ * zdradzają, jakie okolice oglądał, a zdjęcia — jakie produkty. Baza produktów i indeks danych OSM
+ * zostają: są takie same dla wszystkich.
  */
-export const FOOD_CACHES = ['osm-tiles', 'off-images'] as const;
+export const FOOD_CACHES = ['osm-tiles', 'off-images', 'gt-osm'] as const;
 
 /**
  * Czy w dzienniku jedzenia cokolwiek jest — te same tabele, które trafiają do kopii. Rozstrzyga

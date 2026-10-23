@@ -321,14 +321,19 @@ describe('meta and the checks', () => {
     expect(gates(null, next({ rows: 90_000, kinds: { anything: 1 } }), rows)).toEqual([]);
   });
 
-  test('each kind: ±20 %, or ±50 % under 500 rows; a kind that appears or vanishes fails', () => {
+  test('each kind: ±20 %, or ±50 % under 500 rows (a handful of rows always passes); a kind that vanishes, or appears in dozens, fails', () => {
     const kinds = (change: Record<string, number>) => next({ kinds: { ...previous.kinds, ...change } });
     expect(gates(previous, kinds({ restaurant: 23_900 }), rows)).toEqual([]);
     expect(gates(previous, kinds({ restaurant: 24_100 }), rows)).toEqual(['kind restaurant: 20000 → 24100 (+20.5 %; at most ±20 %)']);
     expect(gates(previous, kinds({ food_court: 590 }), rows)).toEqual([]);
     expect(gates(previous, kinds({ food_court: 210 }), rows)).toEqual([]);
     expect(gates(previous, kinds({ food_court: 610 }), rows)).toEqual(['kind food_court: 400 → 610 (+52.5 %; at most ±50 %)']);
-    expect(gates(previous, kinds({ ice_cream: 3 }), rows)).toEqual(['kind ice_cream: 3 rows, none in the previous copy']);
+    // One newly mapped object of a kind the copy did not have (shop=discount) never blocks a refresh.
+    expect(gates(previous, kinds({ ice_cream: 3 }), rows)).toEqual([]);
+    expect(gates(previous, kinds({ ice_cream: 60 }), rows)).toEqual(['kind ice_cream: 60 rows, none in the previous copy']);
+    // A small kind growing by a few rows passes even at +75 %.
+    const small = { ...previous, kinds: { ...previous.kinds, coffee: 20 } };
+    expect(gates(small, next({ kinds: { ...small.kinds, coffee: 35 } }), rows)).toEqual([]);
     const { food_court: _gone, ...withoutFoodCourt } = previous.kinds;
     expect(gates(previous, next({ kinds: withoutFoodCourt }), rows)).toEqual(['kind food_court: 400 → 0 (-100.0 %; at most ±50 %)']);
   });

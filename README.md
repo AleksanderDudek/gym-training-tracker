@@ -1040,20 +1040,47 @@ Zobacz, gdzie zjeść w pobliżu”.
 
 **W pobliżu → Zakupy i przepisy**: lokalizacja (albo kliknięcie na mapie), sklepy spożywcze
 z OpenStreetMap w promieniu od 500 m do 10 km i przepisy, które zrobisz w jednym pobliskim sklepie
-(„Wszystko kupisz w: Żabka · 250 m”). Pozycja zaokrąglona do ok. 100 m idzie do serwera Overpass
-(overpass-api.de, zapasowo overpass.private.coffee), kafelki mapy z tile.openstreetmap.org. Pozycji
-nie ma w adresie, a ostatnie miejsce zostaje tylko na tym urządzeniu; odpowiedzi są pamiętane dobę.
-Dziennik sam nie łączy się z siecią — sklepy w podpowiedziach bierze z ostatniego wyszukiwania.
+(„Wszystko kupisz w: Żabka · 250 m”). Kafelki mapy z tile.openstreetmap.org. Pozycji nie ma
+w adresie, a ostatnie miejsce zostaje tylko na tym urządzeniu. Dziennik sam nie łączy się z siecią —
+sklepy w podpowiedziach bierze z ostatniego wyszukiwania (każda pełna odpowiedź zostawia ich skrót).
 
-**Zajęty serwer map.** Publiczne serwery Overpass bywają przeciążone (502 „at capacity”, 429, 504)
-albo odpowiadają ponad pół minuty — lokale w centrum miasta potrafią przyjść po 35 s. Dlatego: jedno
+**Skąd lokale i sklepy — dane OpenStreetMap w aplikacji.** W Polsce oba widoki biorą je z kopii
+danych OpenStreetMap dołączonej do aplikacji, a nie z serwera Overpass: odpowiedź jest od razu, nawet
+gdy Overpass leży, działa bez sieci dla oglądanych okolic, a pozycja nie trafia do nikogo. Kopia to
+`data/osm/places-pl.tsv` (99 tys. nazwanych lokali i sklepów: tagi `amenity`, `shop`, `name`, `brand`,
+`opening_hours`, `cuisine` i adres, środek każdego obiektu) z `meta.json` (data danych, liczby,
+uproszczona granica Polski). Build (`vite/osmPlaces.ts`) tnie ją na drzewo czwórkowe — najwyżej 500
+miejsc w kawałku, ok. 590 kawałków po kilka kB — pod `data/osm/v1/t/<komórka>.<hasz>.json.gz`, z indeksem
+pod stałym adresem i `LICENSE.txt`. Telefon pobiera tylko kawałki wokół pozycji zaokrąglonej do
+0,001° (ok. 100 m; serwer aplikacji nie dowie się więcej niż kiedyś Overpass), najbliższe najpierw:
+promień 1 km w centrum Warszawy to ok. 5 kawałków i 50 kB zamiast odpowiedzi Overpass 462 kB po
+kilkudziesięciu sekundach. Service worker trzyma kawałki (400 na 90 dni) i indeks (odświeżany w tle);
+nowe dane po wdrożeniu nie zmieniają kodu, więc nie ma paska „Nowa wersja”, a kawałek, który zniknął,
+każe przeczytać indeks od nowa. Przełączenie widoków nic nie pobiera; jedne dane wczytują się od
+wejścia na stronę, nie po bazie produktów. Za granicą (i dla części koła za granicą) pyta Overpass —
+jednym zapytaniem dla obu widoków. Pod mapą: „Lokale i sklepy: © autorzy OpenStreetMap · licencja ODbL
+· stan z 22 października 2026”. Reguła, które obiekty się liczą (`src/food/nearby/osmTags.ts`), jest
+jedna dla zapytań Overpass, parserów, filtra osmium i skryptu.
+
+Odświeżenie danych: `npm run food:osm` (osmium-tool z brew albo apt; pobiera wyciąg Geofabrik dla
+Polski, 2,1 GB, do `~/.cache/gym-tracker/osm`, filtruje i zapisuje `data/osm/*`; sprawdza, czy liczby
+nie skoczyły — `--force`, by zapisać mimo to; `--pbf`/`--filtered`/`--poly` dla plików lokalnych), albo
+workflow „Dane OSM” w GitHub Actions (uruchamiany ręcznie; tygodniowy harmonogram czeka zakomentowany
+w `.github/workflows/osm-data.yml`). Licencja: dane © autorzy OpenStreetMap, ODbL 1.0 — `data/osm`
+w publicznym repozytorium to oferowana baza pochodna razem ze skryptem (`data/osm/README.md`).
+
+**Zajęty serwer map** (za granicą, przy granicy i gdy danych aplikacji nie da się odczytać). Publiczne
+serwery Overpass bywają przeciążone (502 „at capacity”, 429, 504) albo odpowiadają ponad pół minuty —
+lokale w centrum miasta potrafią przyjść po 35 s. Dlatego: jedno
 zapytanie czeka do 50 s, serwery idą na zmianę (każdy dwa razy, całość najwyżej 2 minuty), a serwer,
 który prosi o przerwę, dostaje ją (`Retry-After`, najwyżej 30 s, albo rosnącą) — strona odlicza
 „ponawiam za 6 s” poza regionem odczytywanym przez czytnik ekranu, a po 12 s mówi, że serwer odpowiada
 wolno. Odpowiedzi zostają na urządzeniu tydzień (świeże, bez pytania serwera, przez dobę; najwyżej
 cztery): starsza albo mniejsza odpowiedź dla tego miejsca pokazuje się od razu, a gdy nowa zawiedzie,
 zostaje z podpisem („Pokazuję lokale zapisane wczoraj”). Po porażce strona sama próbuje znowu po
-30 s, minucie i 2 minutach — nie przy ukrytej karcie; potem zostaje „Spróbuj ponownie”.
+30 s, minucie i 2 minutach — nie przy ukrytej karcie, a od razu, gdy wróci połączenie; potem zostaje
+„Spróbuj ponownie”. Serwer, który odmawia (429, 406), dostaje 30 s spokoju; bez internetu zapytanie
+nie wychodzi wcale.
 
 **Dane produktów są w repozytorium**: `data/food/products.json.gz` (3,3 MB zamiast 24 MB JSON-a).
 Build wydaje go jako `data/products.<hasz>.json.gz`, a przeglądarka rozpakowuje go sama
@@ -1073,7 +1100,8 @@ npm run food:data
 npm run food:check-recipes   # pokrycie przepisów na nowych danych
 ```
 
-Licencje: baza Open Food Facts — ODbL, zdjęcia — CC BY-SA, mapa — © autorzy OpenStreetMap.
+Licencje: baza Open Food Facts — ODbL, zdjęcia — CC BY-SA, mapa i lokale — © autorzy OpenStreetMap
+(dane lokali w aplikacji: ODbL, `data/osm/README.md`).
 Dane tworzą użytkownicy, więc bywają niepełne; wartości spoza fizycznego zakresu (np. 3000 kcal
 w 100 g) są odrzucane.
 
@@ -1567,7 +1595,7 @@ src/
     recipes/                przepisy białkowe i gotowce: katalog, składniki, koszyki sklepów i grupowanie, zamiany, progi, makro, gotowe produkty, hale po supermarketach — 319 testów
     online/                 sklepy internetowe: rejestr, dane sklepów (`data/*.json`), scalanie z bazą po EAN, kontrola liczb — 36 testów
     chains/                 sieci z własnymi danymi (Selgros): rejestr, dane (`data/*.json`), scalanie po EAN bez oferty online, kontrola liczb — 10 testów
-    nearby/                 w pobliżu: odległości, zapytanie do Overpass (z halami Selgros i Makro) z zapasowym serwerem, przerwami dla zajętego serwera i budżetem czasu, kopia na dobę i zapas na tydzień, promień
+    nearby/                 w pobliżu: reguła obiektów OSM (`osmTags`), drzewo kawałków i wybór wokół zaokrąglonej pozycji (`osmGrid`), format danych (`osmFormat`), dane aplikacji (`staticData`), zapytanie Overpass dla obu widoków (`live`) z przerwami i budżetem czasu, kopia na dobę i zapas na tydzień, promień
     scan/                   skaner kodów: kody GS1 (cyfra kontrolna, UPC-E, warianty w bazie), Open Food Facts dla kodów spoza bazy, porównanie pod cel diety, lista porównania znikająca godzinę po ostatnim skanie, czytnik (wbudowany albo WebAssembly) — 16 testów
     diet/                   dieta: baza Dexie (`produkty-pl-dieta`, wersja 4 z zestawami, ulubionymi i planami z zakupami), model energii z kierunkiem celu, sposoby odżywiania, dzień, plan z Excela, zestawy, ulubione, wyszukiwanie, podpowiedzi, cel dopasowany do ruchu wobec planu (`activity.ts`), symulacja cheat mealu (`cheat.ts`) — 170 testów
     prep/                   plan z zakupami (meal prep): bloki gotowania, przepisy z koszyka, wybór ról i lista zamienników, porcje i dodatki, cele dni, check-in, lista zakupów, nazwa, przesuwanie dat, pierwszeństwo w dzienniku, migawka w bazie, odczyt z kopii — 120 testów
@@ -2283,7 +2311,8 @@ GYM TRACKER instaluje się na ekranie głównym telefonu i działa bez sieci od 
 - **Co gdzie leży.** Powłoka — skrypty, style, strona, ikony i kroje pisma w alfabecie łacińskim —
   jest zapisana przy instalacji, a każda nawigacja dostaje zapisaną stronę. Baza produktów: kopia
   na zawsze, jedna (nowa wersja ma nowy hasz w nazwie). Zdjęcia produktów: 400 ostatnich na 30 dni.
-  Kafelki mapy: tylko oglądane, 500 na 7 dni. Czytnik kodów (WebAssembly): przy pierwszym skanie,
+  Kafelki mapy: tylko oglądane, 500 na 7 dni. Dane OSM „W pobliżu”: kawałki tylko oglądanych okolic,
+  400 na 90 dni, indeks odświeżany w tle. Czytnik kodów (WebAssembly): przy pierwszym skanie,
   jedna kopia. Overpass, Open Food Facts i serwer przypomnień idą prosto do sieci.
 - **Rejestracja w `main.tsx`, poza Reactem** (`registerSW` z `virtual:pwa-register`, stan w `src/pwa.ts`):
   ustawiona przed pierwszym renderem, a nie w komponencie, który montuje się dopiero po wczytaniu

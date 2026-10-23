@@ -21,9 +21,9 @@ afterEach(async () => {
   await database.delete();
 });
 
-/** `caches` z przeglądarki (jsdom go nie ma): kafelki, zdjęcia i baza produktów. */
+/** `caches` z przeglądarki (jsdom go nie ma): kafelki, zdjęcia, kawałki danych OSM, baza produktów i indeks OSM. */
 function stubCaches() {
-  const names = new Set(['osm-tiles', 'off-images', 'gt-food-data']);
+  const names = new Set(['osm-tiles', 'off-images', 'gt-osm', 'gt-food-data', 'gt-osm-index']);
   const remove = vi.fn(async (name: string) => names.delete(name));
   vi.stubGlobal('caches', { delete: remove });
   return { names, remove };
@@ -88,11 +88,12 @@ describe('kopia jedzenia', () => {
     expect(window.localStorage.getItem('kb-trener-v3')).toBe('{}');
   });
 
-  it('reset usuwa kopie kafelków mapy i zdjęć produktów, a bazę produktów zostawia', async () => {
+  it('reset usuwa kopie kafelków mapy, kawałków danych OSM i zdjęć, a bazę produktów i indeks OSM zostawia', async () => {
     const { names, remove } = stubCaches();
     await clearFood(database);
-    expect(remove.mock.calls.map(([name]) => name).sort()).toEqual(['off-images', 'osm-tiles']);
-    expect([...names]).toEqual(['gt-food-data']);
+    expect(remove.mock.calls.map(([name]) => name).sort()).toEqual(['gt-osm', 'off-images', 'osm-tiles']);
+    // Te są takie same dla wszystkich: nic nie mówią o człowieku.
+    expect([...names]).toEqual(['gt-food-data', 'gt-osm-index']);
   });
 
   it('nazwy kopii do wyczyszczenia to te, których używa service worker', () => {
@@ -105,7 +106,7 @@ describe('kopia jedzenia', () => {
     window.localStorage.setItem(DIET_FLAG, '1');
     await expect(clearFood(brokenDb())).rejects.toThrow();
     expect(window.localStorage.getItem('produkty-pl:position')).toBeNull();
-    expect(remove).toHaveBeenCalledTimes(2);
+    expect(remove).toHaveBeenCalledTimes(3);
     // Dziennik został, więc znacznik też — nie udaje, że diety nie ma.
     expect(hasDiet()).toBe(true);
   });
