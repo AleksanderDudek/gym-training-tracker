@@ -11,7 +11,14 @@ import { markDiet } from './dietFlag';
  */
 
 /** Ostatnie miejsce, promień i kopia sklepów z „W pobliżu” — dane tego urządzenia, nie konta. */
-export const FOOD_KEYS = ['produkty-pl:position', 'produkty-pl:radius', 'produkty-pl:shops'] as const;
+export const FOOD_KEYS = [
+  'produkty-pl:position',
+  'produkty-pl:radius',
+  'produkty-pl:shops',
+  'produkty-pl:osm',
+  // Dawna pamięć „Zjedz teraz” — znika sama przy pierwszej wizycie, ale reset nie może jej przeoczyć.
+  'produkty-pl:places',
+] as const;
 
 /**
  * Kopie service workera (`src/sw.ts`), które mówią coś o człowieku: kafelki mapy zdradzają, jakie

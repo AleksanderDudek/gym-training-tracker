@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import osmTagsSource from './osmTags.ts?raw';
 import { AMENITIES, FOOD_SHOPS, SHOP_TYPES, address, isWholesaleHall, labelOf, matchesPlacesQuery, matchesShopsQuery, osmiumFilterExpressions } from './osmTags';
-import { buildQuery, parseShops, shopsOf } from './overpass';
+import { buildQuery, parseShops, shopsOf, type Element } from './overpass';
 import { buildPlacesQuery, parsePlaces, placesOf } from './places';
 
 describe('one rule for which OpenStreetMap objects count', () => {
@@ -49,7 +49,7 @@ describe('one rule for which OpenStreetMap objects count', () => {
   });
 
   test('one answer for both views: shops leave the restaurants out, places leave the halls out', () => {
-    const elements = [
+    const elements: Element[] = [
       { type: 'node', id: 1, lat: 52.23, lon: 21.01, tags: { amenity: 'fast_food', brand: "McDonald's", name: "McDonald's" } },
       { type: 'node', id: 2, lat: 52.23, lon: 21.01, tags: { shop: 'convenience', brand: 'Żabka', name: 'Żabka' } },
       { type: 'way', id: 3, center: { lat: 52.24, lon: 21.0 }, tags: { shop: 'wholesale', brand: 'Selgros', name: 'Selgros' } },

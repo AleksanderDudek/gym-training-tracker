@@ -7,7 +7,7 @@ import { useFavorites } from '../../hooks/useDiet';
 import { useDataset } from '../../hooks/useDataset';
 import { useEatNow } from '../../hooks/useEatNow';
 import type { GeoState } from '../../hooks/useGeolocation';
-import { useNearbyPlaces } from '../../hooks/useNearbyShops';
+import type { OsmState } from '../../hooks/useOsmAround';
 import { useRestaurants } from '../../hooks/useRestaurants';
 import { formatNumber, plural } from '../../lib/format';
 import { storeKey } from '../../lib/stores';
@@ -15,7 +15,7 @@ import type { Dictionaries, IndexedProduct } from '../../lib/types';
 import { dishName, picks, placeFoods, rankPlaces, type EatPick, type RankedPlace, type SortKey } from '../../nearby/eat';
 import { openState } from '../../nearby/hours';
 import { mapsPlatform } from '../../nearby/navigate';
-import type { Place } from '../../nearby/places';
+import { placesOf, type Place } from '../../nearby/places';
 import { radiusLabel } from '../../nearby/radius';
 import type { LatLon } from '../../nearby/types';
 import type { NearbyState } from '../../nearby/url';
@@ -155,6 +155,9 @@ interface Props {
   locate: () => void;
   setManual: (position: LatLon) => void;
   setRadius: (radius: number) => void;
+  /** The page's data for both views (`useOsmAround`). */
+  osm: OsmState;
+  retryOsm: () => void;
 }
 
 const kcal = (n: number) => formatNumber(Math.round(n / 10) * 10, 0);
@@ -165,9 +168,10 @@ const kcal = (n: number) => formatNumber(Math.round(n / 10) * 10, 0);
  * the three best choices under it (sortable), and a card per place with directions and the full
  * list. Everything follows the diary: the day's goal, what is eaten, a planned cheat meal.
  */
-export function EatNow({ state, update, closeEntry, geo, locate, setManual, setRadius }: Props) {
+export function EatNow({ state, update, closeEntry, geo, locate, setManual, setRadius, osm, retryOsm: retry }: Props) {
   const eat = useEatNow();
-  const [placesState, retry] = useNearbyPlaces(geo.position, state.radius);
+  const places = useMemo(() => placesOf(osm.items), [osm.items]);
+  const placesState = { ...osm, items: places };
   const menus = useRestaurants();
   const chains = menus.status === 'ready' ? menus.chains : NO_CHAINS;
   const data = useDataset();

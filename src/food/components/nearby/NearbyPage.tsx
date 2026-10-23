@@ -4,14 +4,16 @@ import { useCallback, useId, useMemo, useRef, useState } from 'react';
 import { pluralEn, text } from '../../../i18n';
 import { useDataset } from '../../hooks/useDataset';
 import { useGeolocation, type GeoState } from '../../hooks/useGeolocation';
-import { useNearbyShops, type ShopsState } from '../../hooks/useNearbyShops';
+import type { AroundState } from '../../hooks/useNearbyShops';
+import { useOsmAround } from '../../hooks/useOsmAround';
 import { useUrlState } from '../../hooks/useUrlState';
 import { formatNumber, plural } from '../../lib/format';
 import type { Dataset, IndexedProduct } from '../../lib/types';
 import { formatDistance } from '../../nearby/geo';
+import { shopsOf, type Element } from '../../nearby/overpass';
 import { DEFAULT_RADIUS, radiusLabel } from '../../nearby/radius';
 import { placeShops, summarizeChains } from '../../nearby/summary';
-import type { LatLon } from '../../nearby/types';
+import type { LatLon, Shop } from '../../nearby/types';
 import { nearbyFromParams, nearbyToParams, type NearbyState, type NearbyView } from '../../nearby/url';
 import { RECIPES } from '../../recipes/catalog';
 import { chainsWithFood } from '../../recipes/chains';
@@ -158,6 +160,8 @@ function placeNote(geo: GeoState): string | null {
   return T.savedFailed;
 }
 
+type ShopsState = Omit<AroundState<Element>, 'items'> & { shops: Shop[] };
+
 /** Jedno zdanie o tym, co się dzieje, w kolejności, w jakiej użytkownik by o to pytał. */
 function statusLine(geo: GeoState, shops: ShopsState, radius: number, knownCount: number, otherCount: number): string {
   const partial =
@@ -189,11 +193,14 @@ export default function NearbyPage() {
   const write = useCallback((state: NearbyState) => nearbyToParams(state, defaultView), [defaultView]);
   const [state, update, closeEntry] = useUrlState<NearbyState>(read, write);
   const [geo, { locate, setManual }] = useGeolocation();
+  // Jedne dane dla obu widoków, od wejścia na stronę: przełączenie widoku nie pyta drugi raz,
+  // a sklepy nie czekają na bazę produktów.
+  const [osm, retryOsm] = useOsmAround(geo, state.radius);
   const setRadius = (radius: number) => {
     rememberRadius(radius);
     update({ radius });
   };
-  const place = { state, update, closeEntry, geo, locate, setManual, setRadius };
+  const place = { state, update, closeEntry, geo, locate, setManual, setRadius, osm, retryOsm };
 
   return (
     <>
@@ -236,8 +243,11 @@ function Nearby({
   locate,
   setManual,
   setRadius,
+  osm,
+  retryOsm: retry,
 }: ViewProps & { dataset: Dataset; products: IndexedProduct[] }) {
-  const [shopsState, retry] = useNearbyShops(geo.position, state.radius);
+  const shops = useMemo(() => shopsOf(osm.items), [osm.items]);
+  const shopsState: ShopsState = { ...osm, shops };
   const dict = dataset.dictionaries;
   const { candidates } = recipeIndex(products);
   const mapHelpId = useId();

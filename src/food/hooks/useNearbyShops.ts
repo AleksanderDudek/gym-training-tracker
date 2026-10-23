@@ -1,11 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import { say } from '../../i18n';
-import { PLACES_KEY, pruneCache, readCache, readFallback, writeCache, type Circle, type ShopCache } from '../nearby/cache';
+import { pruneCache, readCache, readFallback, writeCache, type Circle, type ShopCache } from '../nearby/cache';
 import { distanceMeters } from '../nearby/geo';
-import { OverpassUnavailable, fetchShops, type FetchOptions } from '../nearby/overpass';
-import { fetchPlaces, type Place } from '../nearby/places';
+import { OverpassUnavailable, type FetchOptions } from '../nearby/overpass';
 import { queryCircle } from '../nearby/query';
-import type { LatLon, Shop } from '../nearby/types';
+import type { LatLon } from '../nearby/types';
 
 export type ShopsStatus = 'idle' | 'loading' | 'ready' | 'error';
 
@@ -30,10 +28,6 @@ export interface AroundState<T> {
   since: number | null;
   /** The end of a pause before the next try: the server asked for it, or the page tries again by itself. */
   retryAt: number | null;
-}
-
-export interface ShopsState extends Omit<AroundState<Shop>, 'items'> {
-  shops: Shop[];
 }
 
 interface Fetched<T> {
@@ -225,24 +219,4 @@ export function useSecondClock(active: boolean): number {
     };
   }, [active]);
   return now;
-}
-
-const SHOPS_FAILED = say(
-  'Nie udało się pobrać sklepów. Sprawdź połączenie z internetem.',
-  'Couldn’t load the shops. Check your internet connection.',
-);
-const PLACES_FAILED = say(
-  'Nie udało się pobrać lokali. Sprawdź połączenie z internetem.',
-  'Couldn’t load the places. Check your internet connection.',
-);
-
-/** Grocery shops around a position („Zakupy i przepisy”). */
-export function useNearbyShops(position: LatLon | null, radius: number): [ShopsState, () => void] {
-  const [{ items, ...rest }, retry] = useAround(position, radius, fetchShops, undefined, SHOPS_FAILED);
-  return [{ ...rest, shops: items }, retry];
-}
-
-/** Restaurants, cafés, petrol stations and grocery shops around a position („Zjedz teraz”). */
-export function useNearbyPlaces(position: LatLon | null, radius: number): [AroundState<Place>, () => void] {
-  return useAround(position, radius, fetchPlaces, PLACES_KEY, PLACES_FAILED);
 }
