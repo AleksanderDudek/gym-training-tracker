@@ -875,8 +875,8 @@ po nazwie, marce i kodzie kreskowym bez względu na polskie znaki. Cały stan ek
 (`#/produkty?q=skyr&ns=a`), więc link albo odświeżenie odtwarza widok, a Wstecz zamyka otwarty
 produkt.
 
-**Lokale** (`#/lokale`, kafelek na górze Produktów): menu 18 sieci gastronomicznych działających
-w Polsce — 1189 pozycji z kaloriami, białkiem, węglowodanami (z cukrami), tłuszczem (z nasyconymi)
+**Lokale** (`#/lokale`, kafelek na górze Produktów): menu 33 sieci gastronomicznych działających
+w Polsce — 2342 pozycje z kaloriami, białkiem, węglowodanami (z cukrami), tłuszczem (z nasyconymi)
 i solą **na porcję, tak jak podaje sieć**, a przy znanej masie porcji także na 100 g. Wyszukiwanie
 idzie przez wszystkie menu naraz; menu sieci (`#/lokale/kfc`) ma źródło z datą sprawdzenia,
 „Najwięcej białka” (co najmniej 15 g w porcji, najwięcej na kalorię), kategorie, kolejność, ocenę
@@ -885,9 +885,10 @@ przełącznika nie mieści się na ekranie 320 px.
 
 | Rodzaj | Sieci (źródło: własna tabela sieci) |
 | --- | --- |
-| Fast food | McDonald's (10.2026), KFC (09.2026), Burger King (09.2026), MAX Premium Burgers, Popeyes (10.2026), Subway (05.2024, tabela dla Europy Środkowo-Wschodniej), Pasibus (09.2026) |
-| Kawiarnie | Starbucks, Costa Coffee (10.2026), Green Caffè Nero (09.2026) |
-| Pizzerie | Pizza Hut (**tabela z 05.2019** — jedyna, jaką sieć podlinkowuje), T-Pizza, dawniej Telepizza (12.2025), Da Grasso (08.2026) |
+| Fast food | McDonald's (10.2026), KFC (09.2026), Burger King (09.2026), MAX Premium Burgers, Popeyes (10.2026), Subway (05.2024, tabela dla Europy Środkowo-Wschodniej), Pasibus (09.2026), Berlin Döner Kebap (07.2026), Dobra Buła (2025), Burgermeister (08.2026) |
+| Kawiarnie | Starbucks, Costa Coffee (10.2026), Green Caffè Nero (09.2026), So!Coffee (09.2026), Tchibo (09.2024), BubbleJoy (03.2024) |
+| Piekarnie i cukiernie | Gorąco Polecam (05.2026), Putka, Lajkonik (10.2026), Galeria Wypieków Lubaszka, Fit Cake, Oskroba, Asprod (08.2026) |
+| Pizzerie | Pizza Hut (**tabela z 05.2019** — jedyna, jaką sieć podlinkowuje), T-Pizza, dawniej Telepizza (12.2025), Da Grasso (08.2026), Biesiadowo, Pizza Fresca |
 | Bary | Salad Story (09.2026) |
 | Stacje i sklepy | ORLEN Stop Cafe, Circle K, bp / Wild Bean Cafe (10.2026), Żabka Café (04.2025) |
 
@@ -896,10 +897,23 @@ Liczby są przepisane z tabel PDF, stron i API samych sieci — bez agregatorów
 (4/4/9 kcal na gram) w granicach ±15 % (±25 kcal dla małych pozycji), cukry nie ponad węglowodany,
 nasycone nie ponad tłuszcz. Pozycje, które tak podaje **sama sieć** (23, sprawdzone ze źródłem),
 stoją w `source.inconsistent` — zostają, ale lista i karta mówią „liczby sieci się nie zgadzają”,
-a do „Najwięcej białka” nie trafiają. Pełnych makroskładników nie publikuje Domino's, Sphinx, Shell
-i Bobby Burger; Tim Hortons, Dunkin' i Krispy Kreme nie działają w Polsce, a North Fish ogłosił
-upadłość — tych sieci nie ma. Menu przychodzi własną paczką (`restaurants/catalog`, ok. 49 kB
-gzip), dopiero z Lokalami albo z „Dodaj zjedzone”.
+a do „Najwięcej białka” nie trafiają. Część sieci podaje wartości tylko na 100 g z masą sztuki
+(piekarnie, So!Coffee) — wtedy porcja jest przeliczona i oznaczona `computed`.
+
+**Sieci bez danych.** Lista ok. 420 sieci gastronomicznych w Polsce (badanie z 10.2026) została
+sprawdzona sieć po sieci — tylko oficjalne źródła sieci, bez agregatorów; wyniki z adresami są
+w `docs/research/restaurants-*.md`. Większość nie publikuje pełnych makroskładników: podaje same
+alergeny (Domino's, Sphinx, Bafra Kebab, Koku Sushi, Crazy Bubble…), same kalorie (Zahir Kebab,
+Am Am Kebab, Mango Mama), wartości tylko na 100 g bez wagi porcji (Makarun, Pizzeria 105, Cukiernia
+Sowa) albo nic (Papa John's, Grycan, Kuchnia Marché, Manekin…); lokalne sieci z kilkoma lokalami
+nie publikują niczego. 66 takich sieci jest w `restaurants/unpublished.ts` — na mapie „Zjedz teraz”
+karta ich lokalu mówi wprost, że sieć nie publikuje wartości, zamiast „nie znam menu”. Tim Hortons,
+Dunkin' i Krispy Kreme nie działają w Polsce, a North Fish ogłosił upadłość. Menu przychodzi własną
+paczką (`restaurants/catalog`, ok. 96 kB gzip), dopiero z Lokalami, „Dodaj zjedzone” albo „Zjedz teraz”.
+
+Każdy plik sieci ma `osm.brands` — markę, pod którą lokale stoją w OpenStreetMap — a sieć lokalna
+o pospolitej nazwie także `osm.near` (punkt i promień): Pizza Fresca dopasowuje się tylko w Krakowie,
+Dobra Buła w Warszawie, Lajkonik w okolicy Krakowa i Katowic.
 
 Aktualizacja: plik sieci w `src/food/restaurants/data/<sieć>.json` (schemat w `types.ts`: porcja,
 masa porcji, wartości na porcję, źródło z datą `checked`, rynek); test powie, które liczby się nie

@@ -2,7 +2,7 @@
   "id": "lajkonik",
   "name": "Lajkonik Piekarnia i Kawiarnia",
   "kind": "kawiarnia",
-  "osm": { "brands": ["Lajkonik"] },
+  "osm": { "brands": ["Lajkonik"], "near": { "lat": 50.0614, "lon": 19.9366, "km": 90 } },
   "market": "PL",
   "source": {
     "url": "https://lajkonik-pik.pl/wp-content/uploads/2026/10/TABELA-WARTOSCI-ODZYWCZYCH_ALERGENY_WWW_pazdziernik.2026.xlsx-Arkusz1.pdf",
