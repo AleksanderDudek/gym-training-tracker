@@ -22,6 +22,7 @@
     "food:check-recipes": "tsx scripts/food/check-recipes.ts",
     "food:check-prep": "tsx scripts/food/check-prep.ts",
     "food:selgros": "tsx scripts/food/fetch-selgros.ts",
+    "food:osm": "tsx scripts/food/osm-places.ts",
     "demo:seed": "TZ=Europe/Warsaw vitest run --config scripts/demo-videos/seed/vitest.config.ts",
     "demo:videos": "tsx scripts/demo-videos/record.ts"
   },
