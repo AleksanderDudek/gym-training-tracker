@@ -168,6 +168,10 @@ export function BarcodeCamera({ onCode, active = true }: Props) {
       try {
         detector = await getDetector();
       } catch {
+        // Nothing to read with: the camera goes off at once, not when the scanner closes.
+        stream.getTracks().forEach((t) => t.stop());
+        track.current = null;
+        element.srcObject = null;
         if (!stopped) setState('engine');
         return;
       }
@@ -218,7 +222,14 @@ export function BarcodeCamera({ onCode, active = true }: Props) {
         {MESSAGE[state]}
       </p>
       {failed && state !== 'unsupported' && (
-        <button type="button" className="btn ghost sm" onClick={() => setAttempt((n) => n + 1)}>
+        <button
+          type="button"
+          className="btn ghost sm"
+          onClick={() => {
+            setState('starting');
+            setAttempt((n) => n + 1);
+          }}
+        >
           <RefreshCw size={16} strokeWidth={2} aria-hidden />
           {T.again}
         </button>

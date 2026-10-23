@@ -6,6 +6,7 @@ import { loadDataset, loadedDataset, type LoadedDataset } from '../../data';
 import { db } from '../../diet/db';
 import { clearAll, completeProfile, logQuick, saveProfile } from '../../diet/store';
 import type { RankedPlace } from '../../nearby/eat';
+import { parsePlaces } from '../../nearby/places';
 import type { LatLon } from '../../nearby/types';
 import { renderWithBridge } from '../../test/bridge';
 import { DATASET, INDEXED } from '../../test/fixtures';
@@ -26,6 +27,16 @@ vi.mock('./PlaceMap', () => ({
     </div>
   ),
 }));
+
+// Ponowienia bez przerw: test mówi o tym, co strona pokazuje, a nie o tym, ile czeka zajęty serwer.
+vi.mock('../../nearby/places', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../nearby/places')>();
+  return {
+    ...actual,
+    fetchPlaces: (...[center, radius, options]: Parameters<typeof actual.fetchPlaces>) =>
+      actual.fetchPlaces(center, radius, { ...options, retryDelayMs: 0 }),
+  };
+});
 
 vi.mock('../../data', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../data')>()),
@@ -50,6 +61,7 @@ const OVERPASS = {
 };
 
 let requests: string[] = [];
+let overpassBusy = false;
 
 function json(body: unknown) {
   return new Response(JSON.stringify(body), { headers: { 'content-type': 'application/json' } });
@@ -64,6 +76,7 @@ beforeEach(async () => {
   vi.mocked(loadedDataset).mockReturnValue(LOADED);
   vi.mocked(loadDataset).mockResolvedValue(LOADED);
   requests = [];
+  overpassBusy = false;
   Object.defineProperty(navigator, 'geolocation', {
     configurable: true,
     value: { getCurrentPosition: (ok: PositionCallback) => ok({ coords: { latitude: HERE.lat, longitude: HERE.lon } } as GeolocationPosition) },
@@ -74,7 +87,7 @@ beforeEach(async () => {
       requests.push(String(url));
       if (String(url).includes('nominatim'))
         return json([{ lat: '54.3485', lon: '18.6533', display_name: 'Długa, Główne Miasto, Gdańsk, pomorskie, Polska' }]);
-      return json(OVERPASS);
+      return overpassBusy ? new Response('at capacity', { status: 502 }) : json(OVERPASS);
     }),
   );
   await saveProfile(completeProfile({ startDate: '2026-10-01', dailyKcal: 2000, targetWeightKg: 75 }));
@@ -142,6 +155,22 @@ describe('Zjedz teraz', () => {
     expect(within(card).getByText('Nie znam menu tego miejsca.')).toBeInTheDocument();
     expect(within(card).getByText('Kuchnia według OpenStreetMap: polish.')).toBeInTheDocument();
     expect(within(card).getByRole('link', { name: /Prowadź/ })).toBeInTheDocument();
+  }, 15_000);
+
+  test('a busy map server: places saved on this device two days ago stay on the map, with their age', async () => {
+    window.localStorage.setItem(
+      'produkty-pl:places',
+      JSON.stringify([{ lat: 52.23, lon: 21.012, radius: 1250, fetchedAt: Date.now() - 2 * 24 * 3600 * 1000, shops: parsePlaces(OVERPASS) }]),
+    );
+    overpassBusy = true;
+    renderWithBridge(<NearbyPage />);
+    expect(
+      await screen.findByText(/przeciążony\. Pokazuję lokale zapisane przedwczoraj\./, {}, { timeout: 4000 }),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('pins')).toHaveTextContent("McDonald's");
+    // The answer is still worked out from them: the best pick is there.
+    expect(within(screen.getByRole('region', { name: 'Na teraz' })).getByRole('button', { name: /Najlepiej:/ })).toBeInTheDocument();
+    expect(await screen.findByText(/^Ponowię sam za \d+ s\.$/)).toBeInTheDocument();
   }, 15_000);
 
   test('a typed address becomes the position after the search is sent, never while typing', async () => {

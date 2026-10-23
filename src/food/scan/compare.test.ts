@@ -147,7 +147,7 @@ describe('pamięć porównania', () => {
     expect(items.at(-1)!.code).toBe('102');
   });
 
-  test('zepsuta albo zablokowana pamięć to pusta lista, nigdy wyjątek', () => {
+  test('zablokowana pamięć: lista żyje do końca strony, zamiast kurczyć się do ostatniego skanu; nigdy wyjątek', () => {
     const broken: CompareStorage = {
       getItem: () => {
         throw new Error('denied');
@@ -160,7 +160,15 @@ describe('pamięć porównania', () => {
       },
     };
     expect(addToCompare(broken, skyr, 0).items).toHaveLength(1);
-    expect(readCompare(broken, 0).items).toEqual([]);
+    expect(addToCompare(broken, gouda, 1).items.map((i) => i.code)).toEqual(['1', '2']);
+    expect(readCompare(broken, 2).items).toHaveLength(2);
+    expect(readCompare(broken, COMPARE_TTL_MS + 1).items).toEqual([]);
+    // Bez żadnej pamięci tak samo.
+    addToCompare(null, skyr, 0);
+    expect(readCompare(null, 1).items).toHaveLength(1);
+    clearCompare(null, 2);
+    expect(readCompare(null, 3).items).toEqual([]);
+    // Uszkodzony zapis w działającej pamięci to pusta lista.
     const storage = memory();
     storage.data.set(COMPARE_KEY, '{nie json');
     expect(readCompare(storage, 0).items).toEqual([]);

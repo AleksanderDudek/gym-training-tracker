@@ -7,7 +7,7 @@ import { useFavorites } from '../../hooks/useDiet';
 import { useDataset } from '../../hooks/useDataset';
 import { useEatNow } from '../../hooks/useEatNow';
 import type { GeoState } from '../../hooks/useGeolocation';
-import { useNearbyPlaces, useSecondClock } from '../../hooks/useNearbyShops';
+import { useNearbyPlaces } from '../../hooks/useNearbyShops';
 import { useRestaurants } from '../../hooks/useRestaurants';
 import { formatNumber, plural } from '../../lib/format';
 import { storeKey } from '../../lib/stores';
@@ -29,7 +29,7 @@ import { COMMON } from '../common/text';
 import { FIT_LABEL, FitBadge, MacroLine } from '../diet/SuggestionList';
 import { ChipRow } from '../recipes/ChipRow';
 import { AddressSearch } from './AddressSearch';
-import { aroundNotes } from './aroundText';
+import { AroundStatus } from './AroundStatus';
 import { distanceText, openText } from './eatText';
 import { PlaceMap } from './PlaceMap';
 import { PlaceSheet } from './PlaceSheet';
@@ -253,7 +253,8 @@ export function EatNow({ state, update, closeEntry, geo, locate, setManual, setR
   const hiddenClosed = ranked.filter((r) => isClosed(r) && (state.unknown || r.best)).length;
   const hiddenUnknown = ranked.filter((r) => !r.best && (state.closed || !isClosed(r))).length;
   const rows = useMemo(() => picks(visible, state.sort, ctx, needs.meal.kcal), [visible, state.sort, ctx, needs.meal.kcal]);
-  const top = rows.slice(0, TOP).map((r) => r.place.place.id);
+  // The same array while the rows are the same: the map rebuilds its pins whenever it changes.
+  const top = useMemo(() => rows.slice(0, TOP).map((r) => r.place.place.id), [rows]);
   const bestPick: EatPick | undefined = state.sort === 'best' ? rows[0] : picks(visible, 'best', ctx, needs.meal.kcal)[0];
   const shown = expanded ? rows : rows.slice(0, TOP);
   const selected = state.place ? ranked.find((r) => r.place.id === state.place) : undefined;
@@ -279,8 +280,6 @@ export function EatNow({ state, update, closeEntry, geo, locate, setManual, setR
     if (known === 0) return T.noneKnown(radiusLabel(state.radius));
     return T.found(radiusLabel(state.radius), known, fitting, ranked.length - known);
   })();
-  const clock = useSecondClock(placesState.status === 'loading' || placesState.retryAt !== null);
-  const server = aroundNotes(placesState, T.what, clock);
   const note = geo.source === 'saved' && geo.status === 'locating' ? T.savedLocating : null;
   const over = needs.remaining.kcal <= 50;
 
@@ -292,8 +291,7 @@ export function EatNow({ state, update, closeEntry, geo, locate, setManual, setR
           <AddressSearch onPick={setManual} />
           {note && <p className="fd-near-place-note">{note}</p>}
           <div className="fd-near-status">
-            <p role="status">{[status, geo.position && server.status].filter(Boolean).join(' ')}</p>
-            {geo.position && server.clock && <p className="fd-near-clock">{server.clock}</p>}
+            <AroundStatus state={placesState} what={T.what} status={status} showServer={geo.position !== null} />
             {placesState.status === 'error' && (
               <button type="button" className="btn sm ghost" onClick={retry}>
                 <RefreshCw size={16} strokeWidth={2} aria-hidden />

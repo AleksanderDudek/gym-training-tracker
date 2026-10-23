@@ -177,6 +177,7 @@ function SearchMode({ date, pool, products, dict, productsLoading, onDone, onLog
 
   // Kod spod kresek zamiast nazwy: znaleziony produkt od razu czeka na gramy, jak wybrany z listy.
   const onCode = async (code: string) => {
+    setScanNote(null);
     const result = await look(code);
     if (result.status !== 'found') return;
     const food = result.product ? productFood(result.product, dict) : scanFood(result.item);

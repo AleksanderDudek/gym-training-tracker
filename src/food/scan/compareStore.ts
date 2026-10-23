@@ -30,7 +30,16 @@ export interface CompareState {
 
 export const EMPTY_COMPARE: CompareState = { items: [], expiresAt: null };
 
+/**
+ * A list its storage could not hold (private browsing, a full disk, storage switched off), per
+ * storage: it then lives as long as the page instead of shrinking to the last scan.
+ */
+const unsaved = new WeakMap<object, SavedCompare | null>();
+const NO_STORAGE = {};
+const slot = (storage: CompareStorage | null): object => storage ?? NO_STORAGE;
+
 function load(storage: CompareStorage | null): SavedCompare | null {
+  if (unsaved.has(slot(storage))) return unsaved.get(slot(storage)) ?? null;
   try {
     const raw = storage?.getItem(COMPARE_KEY);
     const saved = raw ? (JSON.parse(raw) as Partial<SavedCompare>) : null;
@@ -42,11 +51,14 @@ function load(storage: CompareStorage | null): SavedCompare | null {
 }
 
 function save(storage: CompareStorage | null, saved: SavedCompare | null): void {
+  const kept = saved && saved.items.length > 0 ? saved : null;
   try {
-    if (!saved || saved.items.length === 0) storage?.removeItem(COMPARE_KEY);
-    else storage?.setItem(COMPARE_KEY, JSON.stringify(saved));
+    if (!storage) throw new Error('no storage');
+    if (kept) storage.setItem(COMPARE_KEY, JSON.stringify(kept));
+    else storage.removeItem(COMPARE_KEY);
+    unsaved.delete(slot(storage));
   } catch {
-    // Full or forbidden: the comparison lives as long as the page.
+    unsaved.set(slot(storage), kept);
   }
 }
 
