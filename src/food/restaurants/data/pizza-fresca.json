@@ -2,7 +2,7 @@
   "id": "pizza-fresca",
   "name": "Pizza Fresca",
   "kind": "pizzeria",
-  "osm": { "brands": ["Pizza Fresca"] },
+  "osm": { "brands": ["Pizza Fresca"], "near": { "lat": 50.0614, "lon": 19.9366, "km": 25 } },
   "market": "PL",
   "source": {
     "url": "https://pizzafresca.pl/",

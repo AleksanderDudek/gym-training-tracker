@@ -10,6 +10,7 @@
     "checked": "2026-10-23",
     "note": "Wartości na porcję przepisane z tabel „w porcji” na stronie sieci (bez przeliczeń). Pizze w rozmiarze 32 cm; tabela ma też 26, 42 i 57 cm (pominięte, żeby zmieścić się w limicie). Pizze, które tabela podaje tylko w 26 cm (Leśna Kurka, Mucząca krówka, Kurczak w polu kukurydzy, Wieprzek w kurniku, Frywolny rolnik), są w 26 cm; 4 pory roku ma liczby tylko dla 57 cm (w 26/32/42 cm są kreski). Tabela nie podaje masy porcji pizzy, zapiekanek i dań bez wagi w nazwie (gramy puste) ani błonnika; masa przy burgerach, lasagne, spaghetti, zupach i deserach pochodzi z nazwy pozycji. Tabela wymienia dwie różne pizze o prawie tej samej nazwie: „Kurczę blade” (alergeny 1,3,7) i „Kurcze blade” (1,2,3,8,10). Nazwy jak w tabelach „w porcji” (tabela na 100 g pisze „Rybak w śmietanie” i „Lis wkurniku”). Pominięto: Zupa krem marchew-dynia (tylko na 100 g, dwa razy z różnymi liczbami) i Burger Wegetariański (tylko na 100 g). W wielu pozycjach cukry są niemal równe węglowodanom (np. pizze 32 cm ok. 225 g cukrów na 255 g węglowodanów, zapiekanki, frytki) – tak podaje sieć. Pucharek lodowy: sól 4,3 g na porcję przy 0,001 g na 100 g – tak w źródle. Niezgodność w źródle: Mucząca krówka 26 cm – tłuszcz 954,13 g na porcję (na 100 g 9,58 g, więc ok. 54 g; energia z makro ≈ 8990 kcal przy podanych 885 kcal); zostawiono liczby ze źródła.",
     "inconsistent": [
+      "Pucharek lodowy 200g",
       "Mucząca krówka"
     ]
   },

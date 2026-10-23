@@ -130,7 +130,14 @@ export interface ChainData {
    * written there. Matched folded and from the start of the tag (`brandOf` in brands.ts), so "Orlen"
    * also finds "ORLEN Stop Cafe". Absent: the chain is never placed on the map.
    */
-  osm?: { brands: string[] };
+  osm?: {
+    brands: string[];
+    /**
+     * A local chain with a common name („Pizza Fresca”): only venues within `km` of this point are
+     * it - a pizzeria of the same name in another city gets no menu from here.
+     */
+    near?: { lat: number; lon: number; km: number };
+  };
   /** Whose menu the numbers are from: "PL", or another market when the Polish one publishes none. */
   market: string;
   source: {
