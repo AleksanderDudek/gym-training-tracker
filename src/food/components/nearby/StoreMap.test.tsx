@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 import { describe, expect, test, vi } from 'vitest';
 import type { PlacedShop } from '../../nearby/types';
+import type L from 'leaflet';
+import { popupKeeper } from './baseMap';
 import { popupFor, SafeCanvas, watchOneFingerPan } from './StoreMap';
 
 const SHOP: PlacedShop = {
@@ -96,5 +98,55 @@ describe('podpowiedź „dwoma palcami”', () => {
     el.dispatchEvent(touch('touchmove', [[100, 140]]));
     expect(onHint).toHaveBeenLastCalledWith(true);
     stop();
+  });
+});
+
+describe('dymek przy rysowaniu pinezek od nowa', () => {
+  /** Pinezka na niby: tyle z warstwy Leafleta, ile używa `popupKeeper`. */
+  function pin() {
+    const handlers = new Map<string, () => void>();
+    const layer = {
+      on: (event: string, fn: () => void) => void handlers.set(event, fn),
+      openPopup: vi.fn(() => handlers.get('popupopen')?.()),
+      fire: (event: string) => handlers.get(event)?.(),
+    };
+    return layer as typeof layer & L.Layer;
+  }
+
+  test('otwarty dymek zostaje otwarty, gdy przyjdą nowe dane i pinezki rysują się od nowa', () => {
+    const openId = { current: null as string | null };
+    const first = popupKeeper(openId);
+    const a = pin();
+    const b = pin();
+    first.track('a', a);
+    first.track('b', b);
+    first.restore();
+    b.fire('popupopen');
+    expect(openId.current).toBe('b');
+    // Nowe rysowanie: najpierw keeper, potem clearLayers (zamyka dymek), potem nowe pinezki.
+    const second = popupKeeper(openId);
+    b.fire('popupclose');
+    const a2 = pin();
+    const b2 = pin();
+    second.track('a', a2);
+    second.track('b', b2);
+    second.restore();
+    expect(b2.openPopup).toHaveBeenCalledOnce();
+    expect(a2.openPopup).not.toHaveBeenCalled();
+    expect(openId.current).toBe('b');
+  });
+
+  test('zamknięty przez użytkownika dymek nie wraca', () => {
+    const openId = { current: null as string | null };
+    const keeper = popupKeeper(openId);
+    const a = pin();
+    keeper.track('a', a);
+    a.fire('popupopen');
+    a.fire('popupclose');
+    const next = popupKeeper(openId);
+    const a2 = pin();
+    next.track('a', a2);
+    next.restore();
+    expect(a2.openPopup).not.toHaveBeenCalled();
   });
 });

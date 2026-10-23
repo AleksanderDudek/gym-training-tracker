@@ -308,3 +308,25 @@ export const POPUP_OPTIONS: L.PopupOptions = {
   autoPanPaddingTopLeft: [60, 12],
   autoPanPaddingBottomRight: [12, 12],
 };
+
+/**
+ * Pins are redrawn whenever more data arrives (the app's data comes in pieces, nearest first): this
+ * keeps the popup the user is reading open across a redraw. Create it BEFORE `clearLayers()` (which
+ * closes the popup), `track` every new pin, then `restore`.
+ */
+export function popupKeeper(openId: { current: string | null }) {
+  const reopen = openId.current;
+  const byId = new Map<string, L.Layer>();
+  return {
+    track(id: string, layer: L.Layer) {
+      byId.set(id, layer);
+      layer.on('popupopen', () => (openId.current = id));
+      layer.on('popupclose', () => {
+        if (openId.current === id) openId.current = null;
+      });
+    },
+    restore() {
+      if (reopen) byId.get(reopen)?.openPopup();
+    },
+  };
+}

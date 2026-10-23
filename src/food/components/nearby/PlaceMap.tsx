@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react';
 import { text } from '../../../i18n';
 import type { RankedPlace } from '../../nearby/eat';
 import type { LatLon } from '../../nearby/types';
-import { MapFrame, POPUP_OPTIONS, useBaseMap } from './baseMap';
+import { MapFrame, POPUP_OPTIONS, popupKeeper, useBaseMap } from './baseMap';
 
 const T = text({
   pl: { map: 'Mapa lokali w pobliżu', card: 'Karta miejsca' },
@@ -64,11 +64,14 @@ export function PlaceMap(props: Props) {
   useEffect(() => {
     latest.current = props;
   });
+  /** The place whose popup is open: it stays open when the pins are redrawn. */
+  const openId = useRef<string | null>(null);
 
   useEffect(() => {
     const group = pins.current;
     const c = colors.current;
     if (!group || !c) return;
+    const keeper = popupKeeper(openId);
     group.clearLayers();
     const popup = (p: RankedPlace) => () => placePopup(p, latest.current, () => map.current?.closePopup());
     const numbered = new Map(top.map((id, i) => [id, i + 1]));
@@ -77,7 +80,7 @@ export function PlaceMap(props: Props) {
       if (numbered.has(p.place.id)) continue;
       const level = p.best?.fit.level;
       const chosen = p.place.id === selected;
-      L.circleMarker([p.place.lat, p.place.lon], {
+      const pin = L.circleMarker([p.place.lat, p.place.lon], {
         radius: chosen ? 9 : p.best ? 7 : 5,
         color: chosen ? c.ink : c.edge,
         weight: chosen ? 2.5 : 2,
@@ -86,12 +89,13 @@ export function PlaceMap(props: Props) {
       })
         .bindPopup(popup(p), POPUP_OPTIONS)
         .addTo(group);
+      keeper.track(p.place.id, pin);
     }
     for (const p of places) {
       const n = numbered.get(p.place.id);
       if (!n) continue;
       const level = p.best?.fit.level ?? 'none';
-      L.marker([p.place.lat, p.place.lon], {
+      const pin = L.marker([p.place.lat, p.place.lon], {
         // A number only: the place's name goes in as an attribute (`title`), never as HTML.
         icon: L.divIcon({
           className: `fd-near-pin fd-near-pin-${level}${p.place.id === selected ? ' fd-near-pin-on' : ''}`,
@@ -105,8 +109,10 @@ export function PlaceMap(props: Props) {
       })
         .bindPopup(popup(p), POPUP_OPTIONS)
         .addTo(group);
+      keeper.track(p.place.id, pin);
     }
     you.current?.bringToFront();
+    keeper.restore();
   }, [places, top, selected, pins, colors, map, you]);
 
   return <MapFrame boxRef={box} twoFingers={twoFingers} label={T.map} describedBy={describedBy} />;
