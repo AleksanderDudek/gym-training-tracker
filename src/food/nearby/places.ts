@@ -1,5 +1,6 @@
 import { storeKey } from '../lib/stores';
-import { address, elementsOf, fetchOverpass, type FetchOptions } from './overpass';
+import { AMENITIES, FOOD_SHOPS, SHOP_TYPES, address, labelOf } from './osmTags';
+import { elementsOf, fetchOverpass, type Element, type FetchOptions } from './overpass';
 import type { LatLon } from './types';
 
 /**
@@ -28,11 +29,7 @@ export interface Place {
   cuisine: string | null;
 }
 
-const AMENITIES = ['fast_food', 'restaurant', 'cafe', 'fuel', 'food_court', 'ice_cream'] as const;
-/** Grocery shops: their chain's ready products are on offer. */
-const SHOP_TYPES = ['supermarket', 'convenience', 'discount', 'grocery'];
-/** Shops that are food places of their own: bakery and café chains (Tchibo is a `shop=coffee`). */
-const FOOD_SHOPS: Record<string, PlaceKind> = { bakery: 'bakery', pastry: 'bakery', coffee: 'cafe' };
+const FOOD_SHOP_KIND: Record<string, PlaceKind> = FOOD_SHOPS;
 
 export function buildPlacesQuery(center: LatLon, radius: number): string {
   const around = `around:${Math.round(radius)},${center.lat},${center.lon}`;
@@ -49,21 +46,26 @@ const isAmenity = (v: string | undefined): v is (typeof AMENITIES)[number] =>
 
 /** Overpass JSON -> places; an element without a position or a name is dropped. */
 export function parsePlaces(json: unknown): Place[] {
+  return placesOf(elementsOf(json));
+}
+
+/** The places to eat among OpenStreetMap elements; cash & carry halls belong to the shops view only. */
+export function placesOf(elements: readonly Element[]): Place[] {
   const seen = new Set<string>();
   const places: Place[] = [];
-  for (const element of elementsOf(json)) {
+  for (const element of elements) {
     const id = `${element.type}/${element.id}`;
     const lat = element.lat ?? element.center?.lat;
     const lon = element.lon ?? element.center?.lon;
     const tags = element.tags ?? {};
-    const brand = tags.brand ?? tags.name;
+    const brand = labelOf(tags);
     if (seen.has(id) || lat === undefined || lon === undefined || !brand) continue;
-    const grocery = SHOP_TYPES.includes(tags.shop ?? '');
+    const grocery = (SHOP_TYPES as readonly string[]).includes(tags.shop ?? '');
     const kind: PlaceKind | null = isAmenity(tags.amenity)
       ? tags.amenity
       : grocery
         ? 'shop'
-        : (FOOD_SHOPS[tags.shop ?? ''] ?? null);
+        : (FOOD_SHOP_KIND[tags.shop ?? ''] ?? null);
     if (!kind) continue;
     seen.add(id);
     places.push({

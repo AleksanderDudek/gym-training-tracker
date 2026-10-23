@@ -1,6 +1,9 @@
 import { text } from '../../i18n';
 import { storeKey } from '../lib/stores';
+import { SHOP_TYPES, WHOLESALE_BRANDS, address, labelOf, matchesShopsQuery } from './osmTags';
 import type { LatLon, Shop } from './types';
+
+export { address } from './osmTags';
 
 /**
  * Public Overpass servers, tried in order. They are busy and flaky: measured
@@ -24,20 +27,12 @@ const BUDGET_MS = 120_000;
 /** A server's own `Retry-After` is honoured up to this; a longer wait is the page's to schedule. */
 const MAX_WAIT_MS = 30_000;
 
-const SHOP_TYPES = ['supermarket', 'convenience', 'discount', 'grocery'];
-
 export class OverpassUnavailable extends Error {
   constructor() {
     super(text({ pl: 'Serwer map (OpenStreetMap) jest teraz przeciążony.', en: 'The map server (OpenStreetMap) is overloaded right now.' }));
     this.name = 'OverpassUnavailable';
   }
 }
-
-/**
- * Cash & carry halls of the chains with product data (OpenStreetMap tags them `shop=wholesale`):
- * named by brand, so a builders' merchant or a furniture wholesaler stays out.
- */
-const WHOLESALE_BRANDS = ['Selgros', 'Makro'];
 
 /** Food shops around a point; `out center` gives buildings (ways) a position too. */
 export function buildQuery(center: LatLon, radius: number): string {
@@ -57,12 +52,6 @@ export interface Element {
   lon?: number;
   center?: { lat: number; lon: number };
   tags?: Record<string, string>;
-}
-
-export function address(tags: Record<string, string>): string | null {
-  const street = tags['addr:street'] ?? tags['addr:place'];
-  if (!street) return null;
-  return [street, tags['addr:housenumber']].filter(Boolean).join(' ');
 }
 
 /**
@@ -88,8 +77,14 @@ export function elementsOf(json: unknown): Element[] {
  * and be cached for a day.
  */
 export function parseShops(json: unknown): Shop[] {
-  const elements = elementsOf(json);
+  return shopsOf(elementsOf(json));
+}
 
+/**
+ * The shops among OpenStreetMap elements — grocery shops and cash & carry halls, the rest left out:
+ * the same elements also carry the restaurants of „Zjedz teraz”.
+ */
+export function shopsOf(elements: readonly Element[]): Shop[] {
   const seen = new Set<string>();
   const shops: Shop[] = [];
   for (const element of elements) {
@@ -98,8 +93,8 @@ export function parseShops(json: unknown): Shop[] {
     const lon = element.lon ?? element.center?.lon;
     const tags = element.tags ?? {};
     // A chain is named by its brand tag; an independent shop only by its name.
-    const raw = tags.brand ?? tags.name;
-    if (seen.has(id) || lat === undefined || lon === undefined || !raw) continue;
+    const raw = labelOf(tags);
+    if (seen.has(id) || lat === undefined || lon === undefined || !raw || !matchesShopsQuery(tags)) continue;
     seen.add(id);
     shops.push({
       id,
