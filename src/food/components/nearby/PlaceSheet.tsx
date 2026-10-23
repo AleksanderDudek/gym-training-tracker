@@ -32,6 +32,7 @@ const T = text({
       `Sieć ${name} nie publikuje wartości odżywczych${partial} (sprawdzone ${checked}).`,
     onlyKcal: ' — podaje tylko kalorie, bez makroskładników',
     onlyAllergens: ' — podaje tylko alergeny',
+    onlyPer100: ' — podaje wartości tylko na 100 g, bez wagi porcji',
     cuisine: (c: string) => `Kuchnia według OpenStreetMap: ${c}.`,
     tip: 'Na cel najprościej: porcja białka (mięso, ryba, jajka, ser, strączki), do tego warzywa; sosy i smażone ostrożnie.',
     source: (chain: string, title: string, checked: string) => `Wartości z tabeli sieci ${chain} (${title}), sprawdzone ${checked}.`,
@@ -57,6 +58,7 @@ const T = text({
       `${name} doesn’t publish nutrition values${partial} (checked ${checked}).`,
     onlyKcal: ' — only calories, no macros',
     onlyAllergens: ' — only allergens',
+    onlyPer100: ' — values only per 100 g, without portion weights',
     cuisine: (c: string) => `Cuisine according to OpenStreetMap: ${c}.`,
     tip: 'Simplest for your goal: a portion of protein (meat, fish, eggs, cheese, pulses) with vegetables; go easy on sauces and fried food.',
     source: (chain: string, title: string, checked: string) => `Values from ${chain}’s own table (${title}), checked ${checked}.`,
@@ -170,7 +172,13 @@ export function PlaceSheet({ place, menu, unpublished, ctx, mealKcal, today, now
             {unpublished
               ? T.unpublished(
                   unpublished.name,
-                  unpublished.partial === 'kcal' ? T.onlyKcal : unpublished.partial === 'allergens' ? T.onlyAllergens : '',
+                  unpublished.partial === 'kcal'
+                    ? T.onlyKcal
+                    : unpublished.partial === 'allergens'
+                      ? T.onlyAllergens
+                      : unpublished.partial === 'per100'
+                        ? T.onlyPer100
+                        : '',
                   unpublished.checked.split('-').reverse().join('.'),
                 )
               : T.noData}
