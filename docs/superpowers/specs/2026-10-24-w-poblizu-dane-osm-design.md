@@ -56,4 +56,20 @@ decisions follow, with the changes made while implementing.
 
 ## Checked
 
-(Filled in after the end-to-end run.)
+End-to-end in Chromium (Playwright, 360 px, the built app with the real data; Overpass and map
+tiles blocked unless said):
+
+| Case | Result |
+| --- | --- |
+| Warsaw 1 km, cold, "4G" (50 ms, 15 Mbit/s) | answer **0.29 s** after the status line says „Szukam lokali” (1.2 s from opening the page, app start included); 5 files, 90 kB; **0 Overpass requests**; switching to „Zakupy i przepisy” loads nothing new (73 shops with data) |
+| Same, "slow" (300 ms, 2 Mbit/s, CPU ×4) | **2.0 s** after „Szukam” (7.4 s from opening, mostly the app start) |
+| Warm (service worker) | 0.6 s from opening the page |
+| Kraków 1 km / Warsaw 10 km | 9 files, 89 kB, 1.2 s / 34 files, 391 kB, 1.9 s from opening |
+| Offline | an area seen before works offline — also right after the very first visit (files fetched before the service worker took over are fetched again through it); a new area says „Bez internetu nie mam jeszcze danych tej okolicy — pobiorę je, gdy wróci połączenie.” and loads at once when the connection is back |
+| Berlin | one Overpass request; credit „na żywo z serwera Overpass” |
+| Słubice 10 km | 2 files + 1 Overpass request; credit „… stan z 22 października 2026 · przy granicy na żywo z serwera Overpass” |
+| Open popup, 34 files arriving on the slow profile | stays open |
+| Data-only rebuild (one row removed) | `dist/assets` and `sw.js` byte-identical; one leaf file renamed |
+| Build | 587 leaves (depths 6–12), median 4.1 kB, p90 10.8 kB, max 14.5 kB, 3.04 MB in all; index 20.6 kB (9.4 kB gzipped); +1 s build time |
+
+Before: the same Warsaw circle took 3–35 s from Overpass (462 kB), or failed with 502.

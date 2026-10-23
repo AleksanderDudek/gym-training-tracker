@@ -238,6 +238,19 @@ export function loadLeaf(leaf: LeafRef): Promise<LoadedLeaf> {
   return request;
 }
 
+/**
+ * The very first visit fetches before the service worker controls the page, so those files would
+ * be missing offline. When it takes over, what is already known is fetched once more through it
+ * (from the browser's HTTP cache, mostly) and lands in its copy.
+ */
+function cacheThroughWorker(): void {
+  if (osmPlaces.index === null) return;
+  if (index) void fetch(indexUrl()).catch(() => {});
+  for (const url of memory.keys()) void fetch(url).catch(() => {});
+}
+if (typeof navigator !== 'undefined' && navigator.serviceWorker && !navigator.serviceWorker.controller)
+  navigator.serviceWorker.addEventListener('controllerchange', cacheThroughWorker, { once: true });
+
 /** Forgets everything in memory (tests). */
 export function __resetStaticData(): void {
   index = null;
