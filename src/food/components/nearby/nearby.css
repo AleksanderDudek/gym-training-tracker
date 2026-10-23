@@ -34,6 +34,8 @@
 .fd-near-status{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
 .fd-near-controls .fd-near-status p{font-size:14px;line-height:1.45;color:var(--ink)}
 .fd-near-status .btn{gap:6px}
+/* Odliczanie do kolejnej próby: poza regionem `status`, żeby czytnik nie czytał go co sekundę. */
+.fd-near-controls .fd-near-status .fd-near-clock{font-size:13.5px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
 
 /* ---------------- Mapa ---------------- */
 

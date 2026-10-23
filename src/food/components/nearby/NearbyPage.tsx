@@ -4,7 +4,7 @@ import { useCallback, useId, useMemo, useRef, useState } from 'react';
 import { pluralEn, text } from '../../../i18n';
 import { useDataset } from '../../hooks/useDataset';
 import { useGeolocation, type GeoState } from '../../hooks/useGeolocation';
-import { useNearbyShops, type ShopsState } from '../../hooks/useNearbyShops';
+import { useNearbyShops, useSecondClock, type ShopsState } from '../../hooks/useNearbyShops';
 import { useUrlState } from '../../hooks/useUrlState';
 import { formatNumber, plural } from '../../lib/format';
 import type { Dataset, IndexedProduct } from '../../lib/types';
@@ -24,6 +24,7 @@ import { ChipRow } from '../recipes/ChipRow';
 import { ReadyProducts } from '../recipes/ReadyProducts';
 import { RecipeCard } from '../recipes/RecipeCard';
 import { Segmented } from '../../../components/ui';
+import { aroundNotes } from './aroundText';
 import { EatNow } from './EatNow';
 import { RadiusSlider } from './RadiusSlider';
 import { StoreMap } from './StoreMap';
@@ -41,6 +42,7 @@ const T = text({
     failed: 'Nie udało się ustalić lokalizacji. Kliknij na mapie miejsce, w którym jesteś.',
     loading: (radius: string, partial: string) => `Szukam sklepów w promieniu ${radius}…${partial}`,
     fetchFailed: 'Nie udało się pobrać sklepów.',
+    what: 'sklepy',
     noneKnown: (radius: string, other: number) =>
       `W promieniu ${radius} nie ma sklepów, z których da się coś ułożyć${
         other ? ` (${plural(other, 'jest 1 inny', `są ${other} inne`, `jest ${other} innych`)})` : ''
@@ -80,6 +82,7 @@ const T = text({
     failed: 'Couldn’t find your location. Click the place on the map where you are.',
     loading: (radius: string, partial: string) => `Looking for shops within ${radius}…${partial}`,
     fetchFailed: 'Couldn’t fetch the shops.',
+    what: 'shops',
     noneKnown: (radius: string, other: number) =>
       `Within ${radius} there are no shops to make anything from${
         other ? ` (${other === 1 ? 'there’s 1 other' : `there are ${other} others`})` : ''
@@ -299,6 +302,8 @@ function Nearby({
   const open = useCallback((code: string) => update({ product: code }, { push: true }), [update]);
   const mapCenter = useRef<LatLon | null>(null);
   const note = placeNote(geo);
+  const clock = useSecondClock(shopsState.status === 'loading' || shopsState.retryAt !== null);
+  const server = aroundNotes({ ...shopsState, items: shopsState.shops }, T.what, clock);
   // „Pokaż te przepisy” z dymka na mapie: wybór sieci i przejście do listy, która się właśnie zmieniła.
   const showChain = (chain: string | null) => {
     update({ store: chain });
@@ -317,8 +322,11 @@ function Nearby({
           {note && <p className="fd-near-place-note">{note}</p>}
           <div className="fd-near-status">
             <p role="status">
-              {statusLine(geo, shopsState, state.radius, placement.known.length, placement.otherCount)}
+              {[statusLine(geo, shopsState, state.radius, placement.known.length, placement.otherCount), geo.position && server.status]
+                .filter(Boolean)
+                .join(' ')}
             </p>
+            {geo.position && server.clock && <p className="fd-near-clock">{server.clock}</p>}
             {shopsState.status === 'error' && (
               <button type="button" className="btn sm ghost" onClick={retry}>
                 <RefreshCw size={16} strokeWidth={2} aria-hidden />

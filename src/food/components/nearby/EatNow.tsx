@@ -7,7 +7,7 @@ import { useFavorites } from '../../hooks/useDiet';
 import { useDataset } from '../../hooks/useDataset';
 import { useEatNow } from '../../hooks/useEatNow';
 import type { GeoState } from '../../hooks/useGeolocation';
-import { useNearbyPlaces } from '../../hooks/useNearbyShops';
+import { useNearbyPlaces, useSecondClock } from '../../hooks/useNearbyShops';
 import { useRestaurants } from '../../hooks/useRestaurants';
 import { formatNumber, plural } from '../../lib/format';
 import { storeKey } from '../../lib/stores';
@@ -29,6 +29,7 @@ import { COMMON } from '../common/text';
 import { FIT_LABEL, FitBadge, MacroLine } from '../diet/SuggestionList';
 import { ChipRow } from '../recipes/ChipRow';
 import { AddressSearch } from './AddressSearch';
+import { aroundNotes } from './aroundText';
 import { distanceText, openText } from './eatText';
 import { PlaceMap } from './PlaceMap';
 import { PlaceSheet } from './PlaceSheet';
@@ -45,6 +46,7 @@ const T = text({
     loading: (radius: string) => `Szukam lokali w promieniu ${radius}…`,
     menus: 'Wczytuję menu sieci…',
     fetchFailed: 'Nie udało się pobrać lokali.',
+    what: 'lokale',
     found: (radius: string, known: number, fitting: number, other: number) =>
       `W promieniu ${radius}: ${known} ${plural(known, 'miejsce', 'miejsca', 'miejsc')} z menu, w tym ${fitting} z czymś na teraz` +
       (other ? `, i ${other} bez danych o menu.` : '.'),
@@ -92,6 +94,7 @@ const T = text({
     loading: (radius: string) => `Looking for places within ${radius}…`,
     menus: 'Loading the chains’ menus…',
     fetchFailed: 'Couldn’t fetch the places.',
+    what: 'places',
     found: (radius: string, known: number, fitting: number, other: number) =>
       `Within ${radius}: ${known} ${pluralEn(known, 'place', 'places')} with a menu, ${fitting} with something for now` +
       (other ? `, and ${other} without menu data.` : '.'),
@@ -276,6 +279,8 @@ export function EatNow({ state, update, closeEntry, geo, locate, setManual, setR
     if (known === 0) return T.noneKnown(radiusLabel(state.radius));
     return T.found(radiusLabel(state.radius), known, fitting, ranked.length - known);
   })();
+  const clock = useSecondClock(placesState.status === 'loading' || placesState.retryAt !== null);
+  const server = aroundNotes(placesState, T.what, clock);
   const note = geo.source === 'saved' && geo.status === 'locating' ? T.savedLocating : null;
   const over = needs.remaining.kcal <= 50;
 
@@ -287,7 +292,8 @@ export function EatNow({ state, update, closeEntry, geo, locate, setManual, setR
           <AddressSearch onPick={setManual} />
           {note && <p className="fd-near-place-note">{note}</p>}
           <div className="fd-near-status">
-            <p role="status">{status}</p>
+            <p role="status">{[status, geo.position && server.status].filter(Boolean).join(' ')}</p>
+            {geo.position && server.clock && <p className="fd-near-clock">{server.clock}</p>}
             {placesState.status === 'error' && (
               <button type="button" className="btn sm ghost" onClick={retry}>
                 <RefreshCw size={16} strokeWidth={2} aria-hidden />

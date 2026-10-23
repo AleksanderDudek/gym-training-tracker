@@ -34,6 +34,16 @@ vi.mock('./StoreMap', () => ({
   ),
 }));
 
+// Ponowienia bez przerw: test mówi o tym, co strona pokazuje, a nie o tym, ile czeka zajęty serwer.
+vi.mock('../../nearby/overpass', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../nearby/overpass')>();
+  return {
+    ...actual,
+    fetchShops: (...[center, radius, options]: Parameters<typeof actual.fetchShops>) =>
+      actual.fetchShops(center, radius, { ...options, retryDelayMs: 0 }),
+  };
+});
+
 vi.mock('../../data', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../data')>()),
   loadDataset: vi.fn(),
@@ -183,6 +193,24 @@ describe('W pobliżu', () => {
     overpassFails = false;
     await user.click(screen.getByRole('button', { name: /Spróbuj ponownie/ }));
     expect(await screen.findByText(/2 sklepy z danymi/, {}, { timeout: 4000 })).toBeInTheDocument();
+  }, 15_000);
+
+  test('przy zajętym serwerze zostają sklepy zapisane wcześniej na tym urządzeniu — z ich wiekiem i ponowieniem', async () => {
+    // Odpowiedź sprzed dwóch dni dla tego miejsca (zaokrąglony środek i margines, jak zapisuje strona).
+    const twoDaysAgo = Date.now() - 2 * 24 * 3600 * 1000;
+    const shops = [
+      { id: 'node/1', name: 'Biedronka', chain: 'biedronka', lat: HERE.lat + 0.0027, lon: HERE.lon, address: 'Marszałkowska 10', openingHours: null },
+    ];
+    window.localStorage.setItem(
+      'produkty-pl:shops',
+      JSON.stringify([{ lat: 52.23, lon: 21.012, radius: 1250, fetchedAt: twoDaysAgo, shops }]),
+    );
+    overpassFails = true;
+    render(<NearbyPage />);
+    expect(await screen.findByText(/przeciążony\. Pokazuję sklepy zapisane przedwczoraj\./, {}, { timeout: 4000 })).toBeInTheDocument();
+    expect(screen.getByTestId('map')).toHaveTextContent(/^biedronka/);
+    expect(await screen.findByText(/^Ponowię sam za (30|29) s\.$/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Spróbuj ponownie/ })).toBeInTheDocument();
   }, 15_000);
 
   test('żeton sieci zawęża przepisy do tej sieci', async () => {
