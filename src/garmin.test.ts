@@ -1,6 +1,41 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { readPull, whenText } from './garmin';
 import { deriveKeys, newKey, seal } from './watchseal';
+
+/** Adresy liczone przy imporcie modułu: każdy przypadek wczytuje go od nowa z własnym buildem. */
+async function garminWith(env: { api?: string; app?: string | undefined }) {
+  vi.resetModules();
+  vi.stubEnv('VITE_API_URL', env.api ?? '');
+  vi.stubEnv('VITE_GARMIN_APP_URL', env.app);
+  return import('./garmin');
+}
+
+describe('adres aplikacji w Connect IQ Store', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('bez zmiennej buildu: strona wersji publicznej, nigdy beta', async () => {
+    // Bez zmiennej i z pustą — tak workflow wdrożenia podaje nieustawioną zmienną repozytorium.
+    for (const app of [undefined, '']) {
+      const { GARMIN_APP_URL, GARMIN_STORE_URL } = await garminWith({ app });
+      expect(GARMIN_APP_URL).toBe(GARMIN_STORE_URL);
+      expect(GARMIN_APP_URL).toBe('https://apps.garmin.com/apps/681b79f1-3575-4375-9836-a5ec600abab4');
+      expect(GARMIN_APP_URL).not.toContain('c08428fa');
+    }
+  });
+
+  it('zmienna buildu tylko nadpisuje adres', async () => {
+    const { GARMIN_APP_URL } = await garminWith({ app: 'https://apps.garmin.com/apps/x' });
+    expect(GARMIN_APP_URL).toBe('https://apps.garmin.com/apps/x');
+  });
+
+  it('karta zegarka jest, gdy build zna serwer — adresu sklepu nie trzeba ustawiać', async () => {
+    expect((await garminWith({ api: 'https://api.example' })).garminConfigured()).toBe(true);
+    expect((await garminWith({ api: 'https://api.example', app: '' })).garminConfigured()).toBe(true);
+    expect((await garminWith({ app: 'https://apps.garmin.com/apps/x' })).garminConfigured()).toBe(false);
+  });
+});
 
 /** Odpowiedź serwera na odbiór paczki — bez sieci: koperta, jej treść i jej brak. */
 

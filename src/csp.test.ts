@@ -37,6 +37,8 @@ const NAVIGATION = new Set([
   'www.instagram.com',
   'instagram.com',
   'aleksanderdudek.github.io',
+  // Zegarek Garmin: strona aplikacji w Connect IQ Store (`garmin.ts`) — otwiera ją sklep, nic nie pobieramy.
+  'apps.garmin.com',
   // Przepisy klasyczne: strona w Książce kucharskiej (Wikibooks), na której motywach powstały, i licencja.
   'pl.wikibooks.org',
   'en.wikibooks.org',
