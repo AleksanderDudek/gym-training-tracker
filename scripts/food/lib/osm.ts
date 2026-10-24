@@ -351,18 +351,20 @@ const sameLabelKey = (tags: Record<string, string>) => labelOf(tags)?.trim().toL
 
 /**
  * The member row that already stands for a relation osmium export never builds: the first member
- * node or way that is a row of the same kind (`kindOf`) with the same label — the Makro hall's
- * building inside its `type=site`. A row of the relation's own would put the place on the map twice:
- * that site's centre is 56 m from its building's, past the 30 m within which the shops view takes a
- * chain's two points for one. `tags` are the relation's by `rowTags`; `null` when no member is such a
- * row (member relations do not count). A building's untagged outline and parts are no rows, so such a
- * relation is still placed.
+ * that is a row of the same kind (`kindOf`) with the same label — the Makro hall's building inside
+ * its `type=site`, or a hall whose building is a multipolygon (osmium builds that one, so it is a
+ * row too). A row of the relation's own would put the place on the map twice: that site's centre is
+ * 56 m from its building's, past the 30 m within which the shops view takes a chain's two points for
+ * one. Member relations count here, unlike for the centre (`relationRows`: in Overpass they add
+ * nothing to it) — this asks only whether the place already is a row. `tags` are the relation's by
+ * `rowTags`; `null` when no member is such a row. A building's untagged outline and parts are no
+ * rows, so such a relation is still placed.
  */
 function memberRow(relation: OplRelation, tags: Record<string, string>, rows: ReadonlyMap<string, OsmRow>): string | null {
   const kind = kindOf(tags);
   const label = sameLabelKey(tags);
   for (const member of relation.members) {
-    const row = member.startsWith('r') ? undefined : rows.get(member);
+    const row = rows.get(member);
     if (row && kindOf(row.tags) === kind && sameLabelKey(row.tags) === label) return member;
   }
   return null;
@@ -481,7 +483,8 @@ export function completeness(objects: Iterable<OplObject>, rows: readonly OsmRow
       continue;
     }
     result.expected++;
-    if (!present) result.missing.push({ id: object.key, label: labelOf(tags) ?? '' });
+    // On one line too: the refresh prints each missing object's label.
+    if (!present) result.missing.push({ id: object.key, label: (labelOf(tags) ?? '').replace(ONE_LINE, ' ') });
   }
   result.missing.sort((a, b) => compareIds(a.id, b.id));
   return result;

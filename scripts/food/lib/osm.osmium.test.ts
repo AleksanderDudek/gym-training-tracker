@@ -192,4 +192,33 @@ describe.skipIf(!hasOsmium)('a refresh through osmium itself', () => {
     for (const row of rows) expect(listedTags.get(row.id)).toEqual(row.tags);
     expect(rows.find((row) => row.id === 'n104')?.tags.name).toBe('„Kawa = 100% @dom, 🍕” na wynos');
   });
+
+  test('a hall whose building is a multipolygon (osmium builds it) stands for its site: one row, not two pins', () => {
+    const [source, filtered, exportFile, listed, members] = ['hall.opl', 'hall.osm.pbf', 'hall.geojsonseq', 'hall-listed.opl', 'hall-members.opl'].map((name) =>
+      join(dir, name),
+    );
+    // A Selgros hall with an inner courtyard, inside its type=site with an entrance outside it.
+    const hall = [
+      ...['n1 x19.000 y50.000', 'n2 x19.004 y50.000', 'n3 x19.004 y50.002', 'n4 x19.000 y50.002'],
+      ...['n5 x19.001 y50.0005', 'n6 x19.002 y50.0005', 'n7 x19.002 y50.001', 'n8 x19.001 y50.001'],
+      `n9 ${t({ entrance: 'yes' })} x19.006 y49.999`,
+      'w10 Nn1,n2,n3,n4,n1',
+      'w11 Nn5,n6,n7,n8,n5',
+      `r20 ${t({ type: 'multipolygon', building: 'retail', shop: 'wholesale', brand: 'Selgros', name: 'Selgros' })} Mw10@outer,w11@inner`,
+      `r21 ${t({ type: 'site', shop: 'wholesale', brand: 'Selgros', name: 'Selgros' })} Mr20@,n9@entrance`,
+    ];
+    writeFileSync(source!, `${hall.join('\n')}\n`);
+    run(osmiumArgs.filter(source!, filtered!));
+    run(osmiumArgs.export(filtered!, exportFile!));
+    run(osmiumArgs.list(filtered!, listed!));
+    const exported = readFeatures(splitRecords(readFileSync(exportFile!, 'utf8')));
+    const objects = readOpl(splitRecords(readFileSync(listed!, 'utf8')));
+    const unbuilt = unbuiltRelations(objects, exported.rows);
+    expect(unbuilt).toEqual({ place: [], represented: [{ id: 'r21', by: 'r20' }] });
+    // Nothing to place: the refresh runs no getid then (osmium refuses one without ids).
+    const placed = unbuilt.place.length ? (run(osmiumArgs.members(filtered!, unbuilt.place, members!)), relationRows(readOpl(splitRecords(readFileSync(members!, 'utf8'))), unbuilt.place)) : [];
+    const { rows } = withRows(exported, placed);
+    expect(rows.map((row) => row.id)).toEqual(['r20']);
+    expect(completeness(objects, rows)).toEqual({ expected: 2, missing: [], knownGap: {} });
+  });
 });

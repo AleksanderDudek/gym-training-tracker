@@ -572,30 +572,37 @@ describe('a relation a member row already stands for: one place, one row', () =>
     // The same label in any case and trimmed, the brand standing for a name: whichever the label is.
     'r11 Tbrand=MAKRO,shop=wholesale,type=site Mw2@',
     'r16 Tamenity=cafe,brand=%20%KAWA%20%,type=site Mw9@,n3@',
-    // A different kind, a different label, a member relation: placed by their members.
+    // A different kind, a different label: placed by their members.
     'r12 Tamenity=restaurant,name=Kawa,type=building Mn3@',
     'r13 Tamenity=cafe,name=Inna%20%kawa,type=building Mn3@',
+    // A site whose café osmium built from a multipolygon: that relation is the row standing for it.
     'r14 Tamenity=cafe,name=Kawa,type=site Mr15@,w9@',
     'r15 Tamenity=cafe,name=Kawa,type=multipolygon Mw9@outer',
   ]);
 
-  test('a member node or way that is a row of the same kind and label stands for the relation; anything else is placed', () => {
+  test('a member that is a row of the same kind and label — a node, a way or a built multipolygon — stands for the relation; anything else is placed', () => {
     expect(unbuiltRelations(listing, rows)).toEqual({
-      place: ['r12', 'r13', 'r14'],
+      place: ['r12', 'r13'],
       represented: [
         { id: 'r10', by: 'w2' },
         { id: 'r11', by: 'w2' },
+        { id: 'r14', by: 'r15' },
         { id: 'r16', by: 'n3' },
       ],
     });
   });
 
   test('the completeness check counts a represented relation as present: not missing, not the known gap', () => {
-    // n3, w2, r15 as rows; r10, r11, r16 through their member rows; the rest not placed yet.
-    expect(completeness(listing, rows)).toEqual({ expected: 6, missing: [], knownGap: { building: 2, site: 1 } });
-    expect(completeness(listing, [...rows, ...['r12', 'r13', 'r14'].map((id) => at(id, {}))])).toEqual({ expected: 9, missing: [], knownGap: {} });
+    // n3, w2, r15 as rows; r10, r11, r14, r16 through their member rows; r12, r13 not placed yet.
+    expect(completeness(listing, rows)).toEqual({ expected: 7, missing: [], knownGap: { building: 2 } });
+    expect(completeness(listing, [...rows, ...['r12', 'r13'].map((id) => at(id, {}))])).toEqual({ expected: 9, missing: [], knownGap: {} });
     // Without its member row, the hall's site is no longer stood for: the known gap.
-    expect(completeness(listing, rows.filter((r) => r.id !== 'w2')).knownGap).toEqual({ building: 2, site: 3 });
+    expect(completeness(listing, rows.filter((r) => r.id !== 'w2')).knownGap).toEqual({ building: 2, site: 2 });
+  });
+
+  test('a missing object’s label is printed on one line too', () => {
+    const lost = readOpl(['w40 Tamenity=cafe,name=Kawa%2028%::error%85%x%1b%y Nn1,n2,n3,n1']);
+    expect(completeness(lost, []).missing).toEqual([{ id: 'w40', label: 'Kawa ::error x y' }]);
   });
 });
 
