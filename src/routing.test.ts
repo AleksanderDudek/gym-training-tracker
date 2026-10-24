@@ -300,9 +300,9 @@ describe('trasy', () => {
 
   it('#/zegarek to ustawienia z kartą zegarka — także z modelem w zapytaniu', () => {
     // Dawniej nieznany adres lądował na ekranie Dziś.
-    expect(WATCH_PATH).toBe('#/zegarek');
     expect(parseHash('#/zegarek')).toEqual({ kind: 'tab', tab: 'set' });
     expect(parseHash('#/zegarek?model=fr265')).toEqual({ kind: 'tab', tab: 'set' });
+    expect(WATCH_PATH).toBe('#/zegarek');
     expect(screenOf(parseHash(WATCH_PATH))).toEqual({ title: 'Ustawienia', parent: '#/profil' });
     expect(activeTab(parseHash(WATCH_PATH))).toBe('set' as TabKey);
     expect(isTabRoot(WATCH_PATH)).toBe(false);
