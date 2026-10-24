@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { minimalWorkbook } from '../test/workbook';
 import { DietDb, type ProfileRow } from './db';
 import { planFood } from './foods';
@@ -10,6 +10,7 @@ import {
   endPause,
   exportAll,
   importWorkbook,
+  latestKg,
   logFood,
   logPlanItem,
   logQuick,
@@ -30,6 +31,7 @@ import {
 } from './store';
 import { targetOn } from './target';
 import type { Profile } from './types';
+import { newProfile } from './validate';
 
 let db: DietDb;
 beforeEach(() => {
@@ -57,17 +59,51 @@ const LEGACY = {
   adaptWeekly: true,
   preferredStore: null,
 };
-/** The same row as the partial the old `useProfile` hands to `completeProfile`. */
+/** The same row as the partial the old `useProfile` handed to `completeProfile`. */
 const legacyPartial = LEGACY as unknown as Partial<Profile>;
 
-describe('profile version 2: the contract', () => {
-  test('completeProfile: version 2, a setup goal at its dailyKcal, the start settle and a setup check', () => {
+const M = '2026-10-26'; // a Monday
+const at = (offset: number) => addDays(M, offset);
+const START = '2026-08-03';
+
+/** A version-2 row: M 35 y, 175 cm, inactive, −0,5 kg a week, 2100, started in August. */
+const stored = (over: Partial<Profile> = {}): ProfileRow => ({
+  ...newProfile(
+    { sex: 'M', age: 35, heightCm: 175, startWeightKg: 80, targetWeightKg: 70, startDate: START, goalPace: 0.5, dailyKcal: 2100, ...over },
+    START,
+  ),
+  id: 'me',
+});
+
+/** Example F: 28 daily weigh-ins 80 − 0,025·i up to last Sunday. */
+const EXAMPLE_F = Array.from({ length: 28 }, (_, i) => ({ day: at(-28 + i), kg: 80 - 0.025 * i }));
+
+/** The same kcal logged on every day of the 4 weeks before M. */
+async function logEvery(kcal: number, database: DietDb) {
+  for (let d = -28; d <= -1; d++) await logQuick(at(d), 'Obiad', kcal, {}, database);
+}
+
+describe('profile version 2', () => {
+  test('A20 completeProfile({}): the starting estimate — 2100 for the default man — with a setup goal and the start settle', () => {
     const today = now().date;
-    const p = completeProfile({ startDate: '2026-10-01', dailyKcal: 1950 });
+    const p = completeProfile({});
     expect(p).toMatchObject({
       version: 2,
+      dailyKcal: 2100,
       activityLevel: 'inactive',
       goalPace: 0.5,
+      goals: [{ from: today, kcal: 2100, by: 'setup' }],
+      settle: { from: addDays(today, 14), why: 'start' },
+      lastCheck: { week: mondayOf(today), status: 'setup', from: 2100, to: 2100, goalPace: 0.5, answer: null },
+    });
+    // A woman (K 30 y, 165 cm, 65 kg) gets 1550; a given target is kept.
+    expect(completeProfile({ sex: 'K', age: 30, heightCm: 165, startWeightKg: 65, targetWeightKg: 60 }).dailyKcal).toBe(1550);
+    expect(completeProfile({ dailyKcal: 1950 }).goals).toEqual([{ from: today, kcal: 1950, by: 'setup' }]);
+  });
+
+  test('completeProfile: the defaults of the other fields', () => {
+    const p = completeProfile({ startDate: '2026-10-01', dailyKcal: 1950 });
+    expect(p).toMatchObject({
       burnOffset: 0,
       anchored: false,
       autoAdjust: true,
@@ -78,18 +114,14 @@ describe('profile version 2: the contract', () => {
       hold: null,
       reached: null,
       notice: null,
-      goals: [{ from: today, kcal: 1950, by: 'setup' }],
       settle: { from: '2026-10-15', why: 'start' },
-      lastCheck: { week: mondayOf(today), status: 'setup', from: 1950, to: 1950, goalPace: 0.5, answer: null },
-      // The old screens still read the old model's keys.
+      // The old screens still read the old model's keys until I2.
       activityMultiplier: 1.28,
       targetSteps: 10_000,
       kcalCorrection: 0,
       adaptWeekly: true,
     });
-    expect(targetOn(p, today)).toBe(1950);
-    // The default target is still 2000 (package A switches it to the estimate).
-    expect(completeProfile({}).dailyKcal).toBe(2000);
+    expect(targetOn(p, now().date)).toBe(1950);
   });
 
   test('the first pace follows the goal, lowered to what is safe; a given one is kept', () => {
@@ -98,13 +130,8 @@ describe('profile version 2: the contract', () => {
     expect(completeProfile({ heightCm: 150, startWeightKg: 45, targetWeightKg: 42 }).goalPace).toBe(0.45);
     expect(completeProfile({ age: 16 }).goalPace).toBe(0);
     expect(completeProfile({ goalPace: 0.25 }).goalPace).toBe(0.25);
-  });
-
-  test('a legacy row read through completeProfile has its own target as today’s', () => {
-    const p = completeProfile(legacyPartial);
-    expect(p.goals).toEqual([{ from: now().date, kcal: 1860, by: 'setup' }]);
-    expect(targetOn(p, '2026-09-01')).toBe(1860);
-    expect(p.settle).toEqual({ from: '2026-09-15', why: 'start' });
+    // Keeping the weight: the default target is maintenance.
+    expect(completeProfile({ startWeightKg: 80, targetWeightKg: 80 }).dailyKcal).toBe(2650);
   });
 
   test('a stored start date that is not a date does not break reading the profile', () => {
@@ -117,18 +144,6 @@ describe('profile version 2: the contract', () => {
     expect(await db.profile.get('me')).toMatchObject({ age: 36, goalSince: '2026-09-20', later: 1, version: 2 });
   });
 
-  test('a legacy row stays legacy until the upgrade reads it; a new row is version 2', async () => {
-    await db.profile.put({ ...LEGACY, id: 'me' } as unknown as ProfileRow);
-    await saveProfile(completeProfile({ ...legacyPartial, age: 36 }), db);
-    const row = (await db.profile.get('me'))!;
-    expect(row).not.toHaveProperty('version');
-    expect(row).toMatchObject({ age: 36, dailyKcal: 1860, activityMultiplier: 1.28, goalSince: '2026-09-20' });
-
-    const fresh = new DietDb(`test-${Math.random()}`);
-    await saveProfile(completeProfile({}), fresh);
-    expect((await fresh.profile.get('me'))?.version).toBe(2);
-  });
-
   test('a target changed alone (the old screens) becomes today’s entry, so dailyKcal mirrors today', async () => {
     const today = now().date;
     const p = completeProfile({ startDate: '2026-01-01', dailyKcal: 2000 });
@@ -137,15 +152,6 @@ describe('profile version 2: the contract', () => {
     expect(row.dailyKcal).toBe(1850);
     expect(row.goals).toEqual([{ from: today, kcal: 1850, by: 'user' }]);
     expect(targetOn(row, today)).toBe(1850);
-  });
-
-  test('an old backup and a workbook keep their dailyKcal as the target', async () => {
-    await restoreAll({ app: 'produkty-pl', version: 1, profile: LEGACY, days: [], entries: [], plans: [], foods: [] }, db);
-    expect(targetOn((await db.profile.get('me'))!, now().date)).toBe(1860);
-    const fresh = new DietDb(`test-${Math.random()}`);
-    await importWorkbook(minimalWorkbook(), fresh);
-    const row = (await fresh.profile.get('me'))!;
-    expect([row.dailyKcal, targetOn(row, now().date)]).toEqual([1800, 1800]);
   });
 
   test('dismissNotice: „show” becomes „seen”; no notice or no profile — nothing', async () => {
@@ -180,17 +186,260 @@ describe('profile version 2: the contract', () => {
     expect((await db.entries.get(id!))?.name).toBe('Większy posiłek');
   });
 
-  test('the Monday check, its answers, breaks and the upgrade are inert until package A', async () => {
-    await db.profile.put({ ...completeProfile({ dailyKcal: 2000 }), id: 'me' });
+  test('the latest weigh-in is the newest day’s, whatever the order', () => {
+    expect(latestKg([{ day: '2026-10-20', kg: 80 }, { day: '2026-10-22', kg: 79.5 }, { day: '2026-10-21', kg: 81 }])).toBe(79.5);
+    expect(latestKg([])).toBeUndefined();
+    expect(latestKg(undefined)).toBeUndefined();
+  });
+});
+
+describe('the upgrade, written once', () => {
+  test('persistUpgrade writes the upgraded row while it is legacy, keeping every old key and unknown keys', async () => {
+    await db.profile.put({ ...LEGACY, id: 'me', later: 1 } as unknown as ProfileRow);
+    await persistUpgrade({ weightKg: 80, today: '2026-10-24' }, db);
+    const row = (await db.profile.get('me'))!;
+    expect(row).toMatchObject({
+      ...LEGACY,
+      later: 1,
+      version: 2,
+      dailyKcal: 1860,
+      burnOffset: -241,
+      goalPace: 0.5,
+      notice: 'show',
+      goals: [{ from: '2026-09-01', kcal: 1860, by: 'migration' }],
+      lastCheck: { week: '2026-10-26', status: 'migrated' },
+    });
+    // Once: a second call on another day (another weight) changes nothing.
+    await persistUpgrade({ weightKg: 70, today: '2026-11-03' }, db);
+    expect(await db.profile.get('me')).toEqual(row);
+  });
+
+  test('a version-2 row or no row: nothing to write', async () => {
+    await persistUpgrade({ weightKg: 80, today: '2026-10-24' }, db);
+    expect(await db.profile.count()).toBe(0);
+    const row = stored();
+    await db.profile.put(row);
+    await persistUpgrade({ weightKg: 80, today: '2026-10-24' }, db);
+    expect(await db.profile.get('me')).toEqual(row);
+  });
+
+  test('the profile from an upgraded read, saved, is the upgrade — no legacy guard any more', async () => {
+    await db.profile.put({ ...LEGACY, id: 'me' } as unknown as ProfileRow);
+    await saveProfile({ ...completeProfile(legacyPartial), burnOffset: -241, age: 36 }, db);
+    expect(await db.profile.get('me')).toMatchObject({ version: 2, age: 36, burnOffset: -241, activityMultiplier: 1.28 });
+  });
+
+  test('A23 importWorkbook on a fresh database: version 2 with the workbook’s target, a setup, no notice', async () => {
+    const today = now().date;
+    await importWorkbook(minimalWorkbook(), db);
+    const row = (await db.profile.get('me'))!;
+    expect(row).toMatchObject({ version: 2, dailyKcal: 1800, startWeightKg: 95, notice: null, anchored: false });
+    expect(row.goals[0]).toMatchObject({ kcal: 1800, by: 'setup' });
+    expect(row.lastCheck).toMatchObject({ week: mondayOf(today), status: 'setup', from: 1800, to: 1800 });
+    expect(targetOn(row, today)).toBe(1800);
+  });
+
+  test('restoreAll of an old backup upgrades its profile, with the notice', async () => {
+    await restoreAll({ app: 'produkty-pl', version: 1, profile: LEGACY, days: [], entries: [], plans: [], foods: [] }, db);
+    const row = (await db.profile.get('me'))!;
+    expect(row).toMatchObject({ version: 2, dailyKcal: 1860, notice: 'show', burnOffset: -241, goalSince: '2026-09-20' });
+    expect(targetOn(row, now().date)).toBe(1860);
+  });
+
+  test('A19 a version-2 backup keeps its history and its check (the old normaliser rebuilt them from defaults)', async () => {
+    const profile = stored({
+      dailyKcal: 1950,
+      goals: [
+        { from: START, kcal: 2100, by: 'setup' },
+        { from: '2026-10-19', kcal: 1950, by: 'check' },
+      ],
+      burnOffset: -150,
+      anchored: true,
+      hold: { dir: 1, until: '2026-11-16' },
+    });
+    const { id: _id, ...backupProfile } = profile;
+    await restoreAll({ app: 'produkty-pl', version: 1, profile: { ...backupProfile, later: 1 }, days: [], entries: [], plans: [], foods: [] }, db);
+    const row = (await db.profile.get('me'))!;
+    expect(row).toMatchObject({ burnOffset: -150, anchored: true, hold: { dir: 1, until: '2026-11-16' }, goals: profile.goals });
+    expect(row).not.toHaveProperty('later');
+  });
+});
+
+describe('the Monday check in the store', () => {
+  test('A1 a diary user gets the Monday check: example F is asked, stored, and „Tak” sets 2000', async () => {
+    await db.profile.put(stored());
+    await logEvery(2100, db);
+    const c = await runWeeklyCheck({ weighIns: EXAMPLE_F, today: M, hour: 9 }, db);
+    expect(c).toMatchObject({ week: M, status: 'ask', from: 2100, to: 2000, reason: 'burn', offsetAfter: -150 });
+    expect(await db.profile.get('me')).toMatchObject({ dailyKcal: 2100, burnOffset: 0, lastCheck: c });
+
+    await answerCheck('yes', { today: M, kgNow: 79.4 }, db);
+    const row = (await db.profile.get('me'))!;
+    expect(row).toMatchObject({ dailyKcal: 2000, burnOffset: -150, hold: { dir: 1, until: at(28) }, lastCheck: { answer: 'yes' } });
+    expect(row.goals.at(-1)).toEqual({ from: M, kcal: 2000, by: 'check' });
+  });
+
+  test('A6 two parallel checks (two tabs) apply it once; the same week again does nothing', async () => {
+    // Loses 0,5 kg a week on 2450 kcal: a raise from 2000 to 2100.
+    await db.profile.put(stored({ dailyKcal: 2000 }));
+    await logEvery(2450, db);
+    const weighIns = Array.from({ length: 28 }, (_, i) => ({ day: at(-28 + i), kg: 79.3 + (0.5 / 7) * (27 - i) }));
+    const results = await Promise.all([
+      runWeeklyCheck({ weighIns, today: M, hour: 9 }, db),
+      runWeeklyCheck({ weighIns, today: M, hour: 9 }, db),
+    ]);
+    expect(results.filter((r) => r !== null)).toHaveLength(1);
+    const row = (await db.profile.get('me'))!;
+    expect(row.dailyKcal).toBe(2100);
+    expect(row.goals.filter((g) => g.by === 'check')).toHaveLength(1);
+    expect(await runWeeklyCheck({ weighIns, today: at(2), hour: 9 }, db)).toBeNull();
+  });
+
+  test('A16 Monday 03:00: nothing runs; a day marked incomplete is read from the day rows', async () => {
+    await db.profile.put(stored());
+    await logEvery(2100, db);
+    expect(await runWeeklyCheck({ weighIns: EXAMPLE_F, today: M, hour: 3 }, db)).toBeNull();
+    for (let d = -20; d <= -1; d++) await markDay(at(d), true, db);
+    const c = await runWeeklyCheck({ weighIns: EXAMPLE_F, today: M, hour: 4 }, db);
+    // 7 of 27 days left: under ¾ → not enough data.
+    expect(c).toMatchObject({ status: 'data', missing: { weighIns: 28, completeDays: 8 } });
+  });
+
+  test('no profile: no check', async () => {
+    expect(await runWeeklyCheck({ weighIns: EXAMPLE_F, today: M, hour: 9 }, db)).toBeNull();
+  });
+
+  test('an old row is not checked before its upgrade’s first check week', async () => {
+    await db.profile.put({ ...LEGACY, id: 'me' } as unknown as ProfileRow);
+    expect(await runWeeklyCheck({ weighIns: EXAMPLE_F, today: M, hour: 9 }, db)).toBeNull();
+    expect((await db.profile.get('me'))?.version).toBeUndefined();
+  });
+
+  test('a stale answer (the target changed since) changes nothing', async () => {
+    await db.profile.put(stored());
+    await logEvery(2100, db);
+    await runWeeklyCheck({ weighIns: EXAMPLE_F, today: M, hour: 9 }, db);
+    await saveProfile({ ...(await db.profile.get('me'))!, dailyKcal: 2200 }, db);
     const before = await db.profile.get('me');
-    const ctx = { today: '2026-10-26', kgNow: 80 };
-    expect(await runWeeklyCheck({ weighIns: [{ day: '2026-10-25', kg: 80 }], today: ctx.today, hour: 9 }, db)).toBeNull();
-    await answerCheck('ok', ctx, db);
-    await resolveFloor('raise', ctx, db);
-    await startPause(7, ctx, db);
-    await endPause(ctx, db);
-    await persistUpgrade({ weightKg: 80, today: ctx.today }, db);
+    await answerCheck('yes', { today: M, kgNow: 79.4 }, db);
     expect(await db.profile.get('me')).toEqual(before);
+  });
+});
+
+describe('the owner’s upgrade, rehearsed (spec I5 in miniature)', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  test('restored on Saturday 24 October: 1860 on day one, no check that Monday, the first one on 2 November — same or 100 with a reason', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-24T10:00:00'));
+    // Eight weeks before the upgrade and the week after it: ~1900 kcal logged, weighed every morning,
+    // losing what the old model's burn (2398 at 80 kg) predicts, with ±0,3 kg of water on top.
+    const first = '2026-08-29';
+    const entries: unknown[] = [];
+    const weighIns: { day: string; kg: number }[] = [];
+    for (let i = 0; i < 65; i++) {
+      const day = addDays(first, i);
+      entries.push({ date: day, time: '13:00', name: 'Obiad', amountLabel: '', kcal: 1880 + (i % 3) * 20, protein: 120, carbs: null, fat: null, source: 'quick', id: i + 1 });
+      weighIns.push({ day, kg: Math.round((84.2 - (0.465 / 7) * i + 0.3 * Math.sin(i * 1.7)) * 10) / 10 });
+    }
+    await restoreAll({ app: 'produkty-pl', version: 1, profile: LEGACY, days: [], entries, plans: [], foods: [] }, db);
+    const upgraded = (await db.profile.get('me'))!;
+    expect(upgraded).toMatchObject({ ...LEGACY, version: 2, dailyKcal: 1860, lastCheck: { week: '2026-10-26', status: 'migrated' } });
+
+    expect(await runWeeklyCheck({ weighIns, today: '2026-10-26', hour: 9 }, db)).toBeNull();
+    const c = (await runWeeklyCheck({ weighIns, today: '2026-11-02', hour: 9 }, db))!;
+    expect(c.week).toBe('2026-11-02');
+    expect(['same', 'changed', 'ask']).toContain(c.status);
+    expect([0, 100]).toContain(Math.abs(c.to - c.from));
+    if (c.status !== 'same') expect(['burn', 'weight']).toContain(c.reason);
+    // Eating to the old model's burn: the data agrees with the estimate, the target stays.
+    expect(c).toMatchObject({ status: 'same', from: 1860, to: 1860 });
+    expect(await db.entries.count()).toBe(65);
+  });
+});
+
+describe('A18 — the notice’s floor choice', () => {
+  /** The upgraded man at 1600: above the hard minimum, under his BMR floor (1750). */
+  const below = () => db.profile.put({ ...LEGACY, dailyKcal: 1600, id: 'me' } as unknown as ProfileRow);
+
+  test('„Podnieś do 1750 kcal” → 1750 from today, as the safe minimum', async () => {
+    await below();
+    await persistUpgrade({ weightKg: 80, today: '2026-10-24' }, db);
+    expect((await db.profile.get('me'))?.dailyKcal).toBe(1600);
+    await resolveFloor('raise', { today: '2026-10-24', kgNow: 80 }, db);
+    const row = (await db.profile.get('me'))!;
+    expect(row.dailyKcal).toBe(1750);
+    expect(row.goals.at(-1)).toEqual({ from: '2026-10-24', kcal: 1750, by: 'safety' });
+  });
+
+  test('„Zostaw — ustalony z lekarzem albo dietetykiem” → the target stays, agreed', async () => {
+    await below();
+    await resolveFloor('keep', { today: '2026-10-24', kgNow: 80 }, db);
+    expect(await db.profile.get('me')).toMatchObject({ dailyKcal: 1600, belowFloorOk: true, version: 2 });
+    // Nothing left to choose: another tap changes nothing.
+    const row = await db.profile.get('me');
+    await resolveFloor('raise', { today: '2026-10-24', kgNow: 80 }, db);
+    expect(await db.profile.get('me')).toEqual(row);
+  });
+});
+
+describe('A25 — a break', () => {
+  test('a week’s break for the default man at 80 kg: maintenance 2650 from today, 2100 back on day 8', async () => {
+    const today = '2026-10-28';
+    await db.profile.put(stored());
+    await startPause(7, { today, kgNow: 80 }, db);
+    const row = (await db.profile.get('me'))!;
+    expect(row).toMatchObject({
+      dailyKcal: 2650,
+      pauses: [{ from: today, to: '2026-11-03', kcal: 2100 }],
+      settle: { from: '2026-11-18', why: 'pause' },
+    });
+    expect(row.goals.slice(-2)).toEqual([
+      { from: today, kcal: 2650, by: 'break' },
+      { from: '2026-11-04', kcal: 2100, by: 'break' },
+    ]);
+    expect([targetOn(row, '2026-11-03'), targetOn(row, '2026-11-04')]).toEqual([2650, 2100]);
+    // A second tap while it is on changes nothing.
+    await startPause(14, { today, kgNow: 80 }, db);
+    expect(await db.profile.get('me')).toEqual(row);
+  });
+
+  test('„Zakończ przerwę” on day 3: the old target today, the planned return gone, the break ends yesterday', async () => {
+    await db.profile.put(stored());
+    await startPause(7, { today: '2026-10-28', kgNow: 80 }, db);
+    await endPause({ today: '2026-10-30', kgNow: 80 }, db);
+    const row = (await db.profile.get('me'))!;
+    expect(row).toMatchObject({
+      dailyKcal: 2100,
+      pauses: [{ from: '2026-10-28', to: '2026-10-29', kcal: 2100 }],
+      settle: { from: '2026-11-13', why: 'pause' },
+    });
+    expect(row.goals.slice(-2)).toEqual([
+      { from: '2026-10-28', kcal: 2650, by: 'break' },
+      { from: '2026-10-30', kcal: 2100, by: 'break' },
+    ]);
+    // Past days keep the break's target.
+    expect(targetOn(row, '2026-10-29')).toBe(2650);
+  });
+
+  test('ended the day it started: no break left, the target as it was', async () => {
+    await db.profile.put(stored());
+    await startPause(14, { today: '2026-10-28', kgNow: 80 }, db);
+    await endPause({ today: '2026-10-28', kgNow: 80 }, db);
+    const row = (await db.profile.get('me'))!;
+    expect(row).toMatchObject({ dailyKcal: 2100, pauses: [] });
+    expect(row.goals).toEqual(stored().goals);
+  });
+
+  test('no break on: „Zakończ przerwę” changes nothing; the Monday check pauses during one', async () => {
+    await db.profile.put(stored());
+    const before = await db.profile.get('me');
+    await endPause({ today: '2026-10-28', kgNow: 80 }, db);
+    expect(await db.profile.get('me')).toEqual(before);
+    await startPause(7, { today: at(-2), kgNow: 80 }, db);
+    expect(await runWeeklyCheck({ weighIns: EXAMPLE_F, today: M, hour: 9 }, db)).toMatchObject({ status: 'paused' });
   });
 });
 
@@ -342,9 +591,11 @@ describe('store', () => {
     );
     expect(result.dropped).toBe(3);
     expect(await db.profile.get('me')).toMatchObject({
+      version: 2,
       age: 40,
       kcalPerKg: 3000,
-      dailyKcal: 2000,
+      // No readable target: the starting estimate (M 40 y at 80 kg, −0,5 kg a week at 3000 kcal a kg).
+      dailyKcal: 2350,
       dietProfile: 'redukcja',
     });
     expect(await db.entries.toArray()).toMatchObject([
