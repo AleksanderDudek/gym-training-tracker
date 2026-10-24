@@ -22,8 +22,8 @@ export const FOOD_KEYS = [
 
 /**
  * Kopie service workera (`src/sw.ts`), które mówią coś o człowieku: kafelki mapy i kawałki danych OSM
- * zdradzają, jakie okolice oglądał, a zdjęcia — jakie produkty. Baza produktów i indeks danych OSM
- * zostają: są takie same dla wszystkich.
+ * zdradzają, jakie okolice oglądał, a zdjęcia — jakie produkty. Baza produktów, paczka sklepów oraz
+ * indeks i licencja danych OSM zostają: są takie same dla wszystkich.
  */
 export const FOOD_CACHES = ['osm-tiles', 'off-images', 'gt-osm'] as const;
 

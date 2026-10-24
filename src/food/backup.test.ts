@@ -156,6 +156,14 @@ describe('kopia jedzenia', () => {
 });
 
 describe('zapis Workboxa o użytych plikach', () => {
+  // Każdy test zaczyna bez tej bazy, jak przeglądarka, w której service worker jeszcze nic nie zapisał.
+  beforeEach(async () => {
+    await new Promise<void>((resolve) => {
+      const del = indexedDB.deleteDatabase('workbox-expiration');
+      del.onsuccess = del.onerror = () => resolve();
+    });
+  });
+
   /** Baza `workbox-expiration` taka, jaką zakłada Workbox: magazyn `cache-entries` z indeksem `cacheName`. */
   async function workboxDb(rows: { id: string; cacheName: string; url: string; timestamp: number }[]) {
     await new Promise<void>((resolve, reject) => {
@@ -196,6 +204,28 @@ describe('zapis Workboxa o użytych plikach', () => {
     ]);
     await forgetCacheEntries(FOOD_CACHES);
     expect(await remaining()).toEqual(['gt-food-data']);
+  });
+
+  /** Wpisy po wizycie w „W pobliżu”: dwa oglądane kawałki i paczka sklepów (wspólna dla wszystkich). */
+  const afterNearby = [
+    { id: 'gt-osm|a', cacheName: 'gt-osm', url: 'https://app.example/kb/data/osm/v1/t/11-412-391.168d29f8c3.json.gz', timestamp: 1 },
+    { id: 'gt-osm|b', cacheName: 'gt-osm', url: 'https://app.example/kb/data/osm/v1/t/11-413-391.5e67253ddd.json.gz', timestamp: 2 },
+    { id: 'gt-shop-data|c', cacheName: 'gt-shop-data', url: 'https://app.example/kb/assets/shopData-CPHrJmUd.js', timestamp: 3 },
+  ];
+
+  it('„Usuń wszystkie dane” zapomina wpisy oglądanych kawałków razem z ich kopią', async () => {
+    await workboxDb(afterNearby);
+    const { remove } = stubCaches();
+    await clearFood(database);
+    expect(remove).toHaveBeenCalledWith('gt-osm');
+    expect(await remaining()).toEqual(['gt-shop-data']);
+  });
+
+  it('gdy baza dziennika odmówi, wpisy oglądanych kawałków i tak znikają', async () => {
+    await workboxDb(afterNearby);
+    stubCaches();
+    await expect(clearFood(brokenDb())).rejects.toThrow();
+    expect(await remaining()).toEqual(['gt-shop-data']);
   });
 
   it('bazy, której nie ma, nie zakłada', async () => {

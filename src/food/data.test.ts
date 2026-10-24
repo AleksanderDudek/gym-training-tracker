@@ -174,3 +174,68 @@ describe('loadDataset', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });
+
+describe('pierwsza wizyta: baza i paczka sklepów trafiają do kopii service workera', () => {
+  const DB = `${import.meta.env.BASE_URL}data/products.abc123def456.json.gz`;
+  const PAGES = 'https://aleksanderdudek.github.io/gym-training-tracker/';
+  const CHUNK = `${PAGES}assets/shopData-CPHrJmUd.js`;
+
+  /** `navigator.serviceWorker` (node go nie ma) z kontrolerem albo bez — wtedy strona jeszcze nie jest pod jego opieką. */
+  function serviceWorker(controller: object | null) {
+    const sw = Object.assign(new EventTarget(), { controller });
+    Object.defineProperty(navigator, 'serviceWorker', { value: sw, configurable: true });
+    const takeOver = () => {
+      sw.controller = {};
+      sw.dispatchEvent(new Event('controllerchange'));
+    };
+    return { sw, takeOver };
+  }
+
+  /** Pliki wczytane przez przeglądarkę (Resource Timing), wśród nich paczka sklepów z builda. */
+  const loadedFiles = () =>
+    vi
+      .spyOn(performance, 'getEntriesByType')
+      .mockReturnValue([{ name: `${PAGES}assets/index-Po8H3kux.js` }, { name: CHUNK }] as PerformanceEntryList);
+
+  afterEach(() => {
+    delete (navigator as { serviceWorker?: unknown }).serviceWorker;
+  });
+
+  it('gdy service worker przejmie stronę, pobiera je jeszcze raz przez niego — bazę dopiero po jej pierwszej próbie', async () => {
+    loadedFiles();
+    const calls: string[] = [];
+    let arrive = () => {};
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) => {
+        calls.push(url);
+        if (calls.length > 1) return Promise.resolve(new Response('kopia'));
+        return new Promise<Response>((resolve) => {
+          arrive = () => resolve(new Response(gz(TEXT)));
+        });
+      }),
+    );
+    const { takeOver } = serviceWorker(null);
+    const { loadDataset } = await load();
+    const loading = loadDataset();
+    // Service worker przejmuje stronę, kiedy baza jest jeszcze w drodze.
+    takeOver();
+    await vi.waitFor(() => expect(calls).toContain(CHUNK));
+    expect(calls).toEqual([DB, CHUNK]);
+    arrive();
+    await loading;
+    await vi.waitFor(() => expect(calls).toEqual([DB, CHUNK, DB]));
+  });
+
+  it('strona już pod opieką service workera: wszystko poszło przez niego, nic nie jest pobierane drugi raz', async () => {
+    loadedFiles();
+    const fetchMock = vi.fn(async () => new Response(gz(TEXT)));
+    vi.stubGlobal('fetch', fetchMock);
+    const { sw } = serviceWorker({});
+    const { loadDataset } = await load();
+    await loadDataset();
+    sw.dispatchEvent(new Event('controllerchange'));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+});

@@ -1,0 +1,188 @@
+// @vitest-environment jsdom
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+
+/**
+ * Files fetched before the service worker took over the page. `navigator.serviceWorker` (jsdom has
+ * none) is a small imitation: no controller until the test hands the page over. The module keeps
+ * what it waits for at module level, so each test loads it afresh.
+ */
+
+const BASE = 'https://aleksanderdudek.github.io/gym-training-tracker/';
+const INDEX = `${BASE}data/osm/v1/index.json`;
+const LEAF = `${BASE}data/osm/v1/t/11-412-391.168d29f8c3.json.gz`;
+const PRODUCTS = `${BASE}data/products.19a087023af2.json.gz`;
+const CHUNK = `${BASE}assets/shopData-CPHrJmUd.js`;
+
+class FakeContainer extends EventTarget {
+  controller: object | null = null;
+}
+
+let sw: FakeContainer;
+let fetched: string[];
+let responses: Response[];
+
+async function load() {
+  vi.resetModules();
+  return import('./swWarm');
+}
+
+/** The worker claims the page, as `clientsClaim()` does on the first visit. */
+function takeOver() {
+  sw.controller = {};
+  sw.dispatchEvent(new Event('controllerchange'));
+}
+
+/** Lets the promise chains run: no timers are involved. */
+const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+/** A request of the page still on its way, settled by the test. */
+function onItsWay() {
+  let resolve = () => {};
+  let reject: (error: unknown) => void = () => {};
+  const promise = new Promise<void>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
+}
+
+beforeEach(() => {
+  sw = new FakeContainer();
+  Object.defineProperty(navigator, 'serviceWorker', { value: sw, configurable: true });
+  fetched = [];
+  responses = [];
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (url: string) => {
+      fetched.push(url);
+      const response = new Response('x');
+      responses.push(response);
+      return response;
+    }),
+  );
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+  delete (navigator as { serviceWorker?: unknown }).serviceWorker;
+});
+
+describe('files fetched before the service worker controlled the page', () => {
+  test('are fetched again once it takes over, each after its own request settled — a failed one too', async () => {
+    const { refetchWhenControlled } = await load();
+    const leaf = onItsWay();
+    const products = onItsWay();
+    refetchWhenControlled(INDEX);
+    refetchWhenControlled(LEAF, leaf.promise);
+    refetchWhenControlled(PRODUCTS, products.promise);
+    await flush();
+    expect(fetched).toEqual([]);
+
+    takeOver();
+    await flush();
+    // The leaf and the products are still on their way: fetching them now would download them twice.
+    expect(fetched).toEqual([INDEX]);
+
+    leaf.reject(new TypeError('Failed to fetch'));
+    await flush();
+    expect(fetched).toEqual([INDEX, LEAF]);
+
+    products.resolve();
+    await flush();
+    expect(fetched).toEqual([INDEX, LEAF, PRODUCTS]);
+    // Read to the end, nothing left hanging between the worker and the page.
+    expect(responses.every((r) => r.bodyUsed)).toBe(true);
+
+    // Only the first takeover: a new version taking over later fetches nothing more.
+    takeOver();
+    await flush();
+    expect(fetched).toHaveLength(3);
+  });
+
+  test('an address asked for twice is fetched once, after both its requests', async () => {
+    const { refetchWhenControlled } = await load();
+    const first = onItsWay();
+    const second = onItsWay();
+    refetchWhenControlled(LEAF, first.promise);
+    refetchWhenControlled(LEAF, second.promise);
+    takeOver();
+    first.resolve();
+    await flush();
+    expect(fetched).toEqual([]);
+    second.reject(new TypeError('Failed to fetch'));
+    await flush();
+    expect(fetched).toEqual([LEAF]);
+  });
+
+  test('a file whose name the build chose is looked up after its request, among the files the page loaded', async () => {
+    const entries = vi
+      .spyOn(performance, 'getEntriesByType')
+      .mockReturnValue([{ name: `${BASE}assets/index-Po8H3kux.js` }, { name: CHUNK }] as PerformanceEntryList);
+    const { loadedUrl, refetchWhenControlled } = await load();
+    const chunk = onItsWay();
+    refetchWhenControlled(() => loadedUrl(/\/assets\/shopData-[\w-]+\.js$/), chunk.promise);
+    takeOver();
+    await flush();
+    expect(entries).not.toHaveBeenCalled();
+    chunk.resolve();
+    await flush();
+    expect(entries).toHaveBeenCalledWith('resource');
+    expect(fetched).toEqual([CHUNK]);
+  });
+
+  test('a file the page cannot find among the loaded ones is skipped', async () => {
+    vi.spyOn(performance, 'getEntriesByType').mockReturnValue([{ name: `${BASE}src/food/online/shopData.ts` }] as PerformanceEntryList);
+    const { loadedUrl, refetchWhenControlled } = await load();
+    expect(loadedUrl(/\/assets\/shopData-[\w-]+\.js$/)).toBeUndefined();
+    refetchWhenControlled(() => loadedUrl(/\/assets\/shopData-[\w-]+\.js$/));
+    refetchWhenControlled(INDEX);
+    takeOver();
+    await flush();
+    expect(fetched).toEqual([INDEX]);
+  });
+
+  test('a fetch that fails again is let go: no error, the others still come', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        fetched.push(url);
+        if (url === LEAF) throw new TypeError('Failed to fetch');
+        return new Response('x');
+      }),
+    );
+    const { refetchWhenControlled } = await load();
+    refetchWhenControlled(LEAF);
+    refetchWhenControlled(INDEX);
+    takeOver();
+    await flush();
+    expect(fetched).toEqual([LEAF, INDEX]);
+  });
+
+  test('nothing when the worker already controls the page: the request went through it', async () => {
+    sw.controller = {};
+    const listen = vi.spyOn(sw, 'addEventListener');
+    const { refetchWhenControlled } = await load();
+    refetchWhenControlled(PRODUCTS);
+    sw.dispatchEvent(new Event('controllerchange'));
+    await flush();
+    expect(listen).not.toHaveBeenCalled();
+    expect(fetched).toEqual([]);
+  });
+
+  test('nothing without service workers (plain http, an old browser), and no error where reading them throws', async () => {
+    delete (navigator as { serviceWorker?: unknown }).serviceWorker;
+    const { refetchWhenControlled } = await load();
+    expect(() => refetchWhenControlled(PRODUCTS)).not.toThrow();
+    // A sandboxed frame: the browser refuses to say.
+    Object.defineProperty(navigator, 'serviceWorker', {
+      get: () => {
+        throw new DOMException('The document is sandboxed', 'SecurityError');
+      },
+      configurable: true,
+    });
+    expect(() => refetchWhenControlled(PRODUCTS)).not.toThrow();
+    await flush();
+    expect(fetched).toEqual([]);
+  });
+});
