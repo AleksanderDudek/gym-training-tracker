@@ -69,6 +69,11 @@ describe('kopia jedzenia', () => {
     try {
       await restoreDiet(backup, other);
       expect(await other.entries.count()).toBe(1);
+      // Profil w wersji 2 wraca taki sam — bez kluczy starego modelu, których nigdy nie miał.
+      const restored = await other.profile.get('me');
+      expect(restored).toEqual(await database.profile.get('me'));
+      expect(restored).not.toHaveProperty('activityMultiplier');
+      expect(restored).not.toHaveProperty('adaptWeekly');
       expect(hasDiet()).toBe(true);
     } finally {
       other.close();
@@ -164,6 +169,70 @@ describe('kopia jedzenia', () => {
     const days = await database.days.toArray();
     expect(days.map((d) => d.weightKg)).toEqual([undefined, undefined]);
     expect(days.map((d) => d.steps)).toEqual([9000, 4000]);
+  });
+});
+
+describe('A24 — kopia właściciela sprzed nowego liczenia', () => {
+  /** Profil, jak zapisał go stary model: ×1,28, 10 000 kroków, korekta 0, cel 1860. */
+  const OWNER = {
+    sex: 'M',
+    age: 35,
+    heightCm: 175,
+    startWeightKg: 80,
+    targetWeightKg: 75,
+    startDate: '2026-09-01',
+    activityMultiplier: 1.28,
+    baseSteps: 4000,
+    targetSteps: 10_000,
+    kcalPer1000StepsPerKg: 0.4,
+    extraWeeklyKcal: 0,
+    kcalPerKg: 7500,
+    dailyKcal: 1860,
+    kcalCorrection: 0,
+    goalSince: '2026-09-20',
+    dietProfile: 'redukcja',
+    adaptWeekly: true,
+    preferredStore: null,
+  };
+
+  /** Osiem tygodni wpisów, jak je zapisuje dziennik (z kluczem jedzenia albo linią planu). */
+  const entries = Array.from({ length: 112 }, (_, i) => {
+    const day = new Date(Date.UTC(2026, 8, 1 + Math.floor(i / 2))).toISOString().slice(0, 10);
+    return i % 2
+      ? { date: day, time: '19:30', name: 'Obiad z planu', amountLabel: 'z planu', kcal: 980, protein: 80, carbs: 80, fat: 40, source: 'plan', key: 'plan:Obiad', planIndex: 1, id: i + 1 }
+      : { date: day, time: '08:05', name: 'Skyr', amountLabel: '150 g', kcal: 95, protein: 16, carbs: null, fat: null, source: 'product', key: 'product:590', id: i + 1 };
+  });
+
+  /** Dni w kształtach, jakie zostawia aplikacja: wybór planu, notatka z krokami, słowo o dniu, zaplanowany posiłek. */
+  const days = [
+    { date: '2026-09-02', choices: { variant: 2 } },
+    { date: '2026-09-10', note: 'wesele', steps: 12_000 },
+    { date: '2026-10-14', partial: true },
+    { date: '2026-10-15', choices: { skipped: [0] }, partial: false },
+    { date: '2026-10-25', cheat: { name: 'Pizza', kcal: 1200, protein: 45, carbs: null, fat: 50 } },
+  ];
+
+  it('po przywróceniu: profil w wersji 2 z tym samym celem i starymi kluczami, wpisy i dni bez jednej zmiany', async () => {
+    const backup = { app: 'produkty-pl', version: 1, exportedAt: '2026-10-24T08:00:00.000Z', profile: OWNER, days, entries, plans: [], foods: [] };
+    const result = await restoreDiet(JSON.parse(JSON.stringify(backup)), database);
+    expect(result.dropped).toBe(0);
+    const row = (await database.profile.get('me'))!;
+    expect(row).toMatchObject({
+      ...OWNER,
+      version: 2,
+      dailyKcal: 1860,
+      burnOffset: -241,
+      goalPace: 0.5,
+      notice: 'show',
+      goals: [{ from: '2026-09-01', kcal: 1860, by: 'migration' }],
+    });
+    expect(await database.entries.toArray()).toStrictEqual(entries);
+    expect(await database.days.toArray()).toStrictEqual(days);
+    // I z powrotem: kopia zrobiona po przywróceniu niesie te same wpisy i dni, a profil — nowe pola.
+    const again = await dietBackup(database);
+    expect(again?.entries).toStrictEqual(entries);
+    expect(again?.days).toStrictEqual(days);
+    expect(again?.profile).toMatchObject({ version: 2, burnOffset: -241, kcalCorrection: 0 });
   });
 });
 

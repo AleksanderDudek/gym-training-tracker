@@ -33,8 +33,11 @@ import {
 import { phoneWeightOffer, recentPhoneDays } from '../engine/phone';
 import { PHONE_NOTE, WATCH_NOTE } from './Health';
 import { DeviceLine, LateNotes, onAnyCheck, useNow } from './DeviceStatus';
-import { watchConnected, watchStatus } from '../garmin';
+import { garminConfigured, watchConnected, watchStatus } from '../garmin';
 import { phoneConnected, phoneStatus } from '../phone';
+import { hasDiet } from '../food/dietFlag';
+import { rememberedWatch } from '../watches/remember';
+import { lacksText } from './WatchCheck.words';
 import { XP, cardioXp } from '../engine/xp';
 import {
   DANCE_SHARE,
@@ -48,7 +51,7 @@ import {
 import { CARDIO_EMPTY, daySeed, pick } from '../engine/quips';
 import { LOCALE } from '../i18n';
 import { addDays, dayKey, weekdayOf } from '../engine/schedule';
-import { cardioAddPath, cardioPath, go, goBack } from '../routing';
+import { WATCH_PATH, cardioAddPath, cardioPath, go, goBack } from '../routing';
 import { Segmented, Trendline } from './ui';
 import type { AppState, Cardio, CardioInput, CardioSport, DanceMix, DanceStyle, WatchHealth } from '../types';
 import { T } from './Cardio.text';
@@ -185,6 +188,47 @@ function WhoWeek({ state, today }: { state: AppState; today: string }) {
   );
 }
 
+/* ---------------- Link do sprawdzenia zegarka ---------------- */
+
+/** Schowany „Nie pokazuj więcej” — tylko w tej przeglądarce. */
+const LINK_HIDDEN = 'gt-watch-link-hidden';
+
+const linkHidden = (): boolean => {
+  try {
+    return localStorage.getItem(LINK_HIDDEN) === '1';
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * Cichy link do „Czy mój zegarek jest obsługiwany?” — tam, gdzie ktoś przepisuje kroki. Tylko gdy
+ * build zna serwer (jest karta zegarka), a ani zegarek, ani telefon nie są połączone; raz schowany
+ * nie wraca. Bez pamięci przeglądarki chowa się do końca wizyty.
+ */
+function WatchLink() {
+  const [hidden, setHidden] = useState(linkHidden);
+  if (hidden || !garminConfigured() || watchConnected() || phoneConnected()) return null;
+  const hide = () => {
+    try {
+      localStorage.setItem(LINK_HIDDEN, '1');
+    } catch {
+      // Tryb prywatny albo zablokowana pamięć — link zniknie tylko na tę wizytę.
+    }
+    setHidden(true);
+  };
+  return (
+    <p className="wc-entry">
+      <a className="vidlink" href={WATCH_PATH}>
+        {T.watchCheck}
+      </a>
+      <button type="button" className="wc-entry-x" aria-label={T.watchCheckHide} onClick={hide}>
+        ×
+      </button>
+    </p>
+  );
+}
+
 /* ---------------- Skróty ---------------- */
 
 const SHORTCUTS: { sport: CardioSport; name: string; sub: string }[] = (
@@ -228,12 +272,17 @@ function CardioShortcuts({ state, today }: { state: AppState; today: string }) {
  * Karta pod przekąską. Licznik dnia wchodzi dopiero z pierwszym wpisem — zero kroków przy
  * pustym dniu to wyrzut, a nie zaproszenie; tak samo jak przy przekąskach. O połączeniu
  * z zegarkiem i telefonem mówi tylko wtedy, gdy dane się spóźniają.
+ *
+ * Kto prowadzi dziennik jedzenia, nie widzi tu kalorii: na ekranie Dziś jest wtedy jeden
+ * rachunek kalorii — jedzenia, a ruch go nie zmienia. Kalorie ruchu zostają na ekranie kroków.
  */
 export function CardioCard({ state }: { state: AppState }) {
   const now = useNow(onAnyCheck);
   const today = dayKey(now);
   const n = cardioOn(state, today).length;
-  const d = dayBurn(state, today);
+  const diet = hasDiet();
+  // Bez kalorii przy diecie: nagłówek jak bez wagi — kroki albo liczba wpisów.
+  const d = diet ? null : dayBurn(state, today);
   const steps = stepsOn(state, today);
 
   return (
@@ -248,7 +297,7 @@ export function CardioCard({ state }: { state: AppState }) {
                 ? T.cardKcal(kcalText(d.cardio))
                 : T.cardEntries(n)}
           </h2>
-          <p className="tight">{d ? T.cardBurn(d.workouts ? kcalText(d.workouts) : null) : T.cardNoKg}</p>
+          {!diet && <p className="tight">{d ? T.cardBurn(d.workouts ? kcalText(d.workouts) : null) : T.cardNoKg}</p>}
           <p className="tight">{moveLine(state, today)}</p>
         </>
       ) : (
@@ -482,6 +531,8 @@ export function CardioEntry({
             />
           </label>
         )}
+        {/* Kto przepisuje kroki, ten najpewniej ma zegarek, który mógłby wysyłać je sam. */}
+        {kind === 'steps' && <WatchLink />}
 
         {kind === 'dance' && (
           <label className="fld cardio-main">
@@ -682,12 +733,19 @@ function WatchHealthDays({ state, today, now }: { state: AppState; today: string
   if (!rows.length && !linked) return null;
   const range = (a: number | null, b: number | null): string =>
     a === null || b === null ? String(a ?? b) : a === b ? String(a) : `${a}–${b}`;
+  // Model wybrany w sprawdzaniu, który części danych nie udostępnia — zanim ktoś zacznie ich szukać.
+  const mine = rememberedWatch();
   return (
     <>
       <div className="sect-label">{T.fromWatch}</div>
       {linked && (
         <div className="wrap">
           <DeviceLine device="watch" status={watchStatus(state, now)} now={now} />
+        </div>
+      )}
+      {mine?.lacks && (
+        <div className="wrap">
+          <p className="hint">{T.watchGaps(mine.name, lacksText(mine.lacks))}</p>
         </div>
       )}
       {rows.map((h) => (
@@ -826,12 +884,14 @@ export function CardioPage({
     <>
       <div className="wrap">
         <p className="lead">{T.pageLead}</p>
+        {hasDiet() && <p className="lead">{T.notFood}</p>}
       </div>
 
       <div className="grp">
         <h2>{T.log}</h2>
         <p className="tight">{T.logHint}</p>
         <CardioShortcuts state={state} today={today} />
+        <WatchLink />
         <p className="tight" style={{ marginTop: 8 }}>
           {latest ? T.kgFor(decimal(latest.kg), dm(latest.day)) : T.noKg}
         </p>

@@ -12,11 +12,13 @@ import { planName } from '../../prep/store';
 import type { PrepMeal, PrepPlan } from '../../prep/types';
 import { planHref, shoppingHref } from './links';
 import { COMMON } from '../common/text';
+import { useKcalShown } from '../diet/kcalShown';
 import './prep.css';
 
 const T = text({
   pl: {
     saved: (name: string, kcal: string) => `Zapisane: ${name} · ${kcal} kcal.`,
+    savedPlain: (name: string) => `Zapisane: ${name}.`,
     title: 'Plan na ten dzień',
     day: (day: number, days: number) => `· dzień ${day} z ${days}`,
     cooking: 'Dziś gotujesz',
@@ -28,14 +30,15 @@ const T = text({
     fromBox: ' · z pudełka',
     undoLabel: (name: string) => `Cofnij: ${name}`,
     undo: 'Cofnij',
-    eatLabel: (name: string) => `Zjadłem: ${name}`,
-    eat: 'Zjadłem',
+    eatLabel: (name: string) => `Zjedzone: ${name}`,
+    eat: 'Zjedzone',
     plan: (kcal: string) => `Plan: ${kcal} kcal`,
     left: (kcal: string) => ` · do zjedzenia z planu jeszcze ${kcal} kcal`,
     list: 'Lista zakupów',
   },
   en: {
     saved: (name: string, kcal: string) => `Saved: ${name} · ${kcal} kcal.`,
+    savedPlain: (name: string) => `Saved: ${name}.`,
     title: 'Plan for this day',
     day: (day: number, days: number) => `· day ${day} of ${days}`,
     cooking: 'Cooking today',
@@ -75,6 +78,7 @@ interface Props {
  */
 export function PrepDayCard({ plan, date, entries }: Props) {
   const bridge = useBridge();
+  const shown = useKcalShown();
   const meals = mealsOn(plan, date);
   const day = daysBetween(plan.settings.start, date) + 1;
   const cooking = plan.batches.filter((b) => b.date === date);
@@ -85,7 +89,7 @@ export function PrepDayCard({ plan, date, entries }: Props) {
   const eat = (meal: PrepMeal) => {
     const food = mealFood(meal);
     void logFood(date, food, { planIndex: meal.slot }).then(() =>
-      bridge.toast(T.saved(food.name, formatNumber(food.nutrients.kcal, 0))),
+      bridge.toast(shown ? T.saved(food.name, formatNumber(food.nutrients.kcal, 0)) : T.savedPlain(food.name)),
     );
   };
 
@@ -140,8 +144,16 @@ export function PrepDayCard({ plan, date, entries }: Props) {
                   {meal.box !== null && T.fromBox}
                 </p>
                 <p className="fd-prep-meta fd-prep-nums">
-                  {formatNumber(meal.total.kcal, 0)} kcal · {COMMON.p} {formatNumber(meal.total.protein, 0)} · {COMMON.c}{' '}
-                  {formatNumber(meal.total.carbs, 0)} · {COMMON.f} {formatNumber(meal.total.fat, 0)}
+                  {shown ? (
+                    <>
+                      {formatNumber(meal.total.kcal, 0)} kcal · {COMMON.p} {formatNumber(meal.total.protein, 0)} · {COMMON.c}{' '}
+                      {formatNumber(meal.total.carbs, 0)} · {COMMON.f} {formatNumber(meal.total.fat, 0)}
+                    </>
+                  ) : (
+                    <>
+                      {COMMON.p} {formatNumber(meal.total.protein, 0)} g
+                    </>
+                  )}
                 </p>
               </div>
               {entry ? (
@@ -162,10 +174,12 @@ export function PrepDayCard({ plan, date, entries }: Props) {
           );
         })}
       </ul>
-      <p className="tight">
-        {T.plan(formatNumber(total.kcal, 0))}
-        {left > 0 && left < total.kcal && T.left(formatNumber(left, 0))}
-      </p>
+      {shown && (
+        <p className="tight">
+          {T.plan(formatNumber(total.kcal, 0))}
+          {left > 0 && left < total.kcal && T.left(formatNumber(left, 0))}
+        </p>
+      )}
       <a className="btn ghost sm fd-prep-listlink" href={shoppingHref(plan)}>
         <ListChecks {...ICON} /> {T.list}
       </a>

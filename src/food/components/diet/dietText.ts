@@ -18,17 +18,21 @@ export const DT = text({
     carbsG: 'Węglowodany (g)',
     fatG: 'Tłuszcz (g)',
     kcalField: 'Kalorie (kcal)',
-    /** The button that logs a meal, and its accessible name. */
-    ate: 'Zjadłem',
-    ateFood: (name: string) => `Zjadłem: ${name}`,
+    /** The button that logs a meal, and its accessible name — the same word for everyone. */
+    ate: 'Zjedzone',
+    ateFood: (name: string) => `Zjedzone: ${name}`,
     /** The tick beside a meal already logged. */
     eaten: 'zjedzone',
     addEaten: 'Dodaj zjedzone',
     favorites: 'Ulubione',
+    /** A meal bigger than usual, planned or eaten („cheat meal” before). */
+    bigMeal: 'Większy posiłek',
     /** „1 posiłek”, „2 posiłki”, „5 posiłków”. */
     meals: (n: number) => `${n} ${n === 1 ? 'posiłek' : n < 5 ? 'posiłki' : 'posiłków'}`,
     /** The toast after a log: „Zapisane: Skyr · 120 kcal.” */
     saved: (name: string, kcal: number) => `Zapisane: ${name} · ${formatNumber(kcal, 0)} kcal.`,
+    /** The same toast without calories („Bez liczenia kalorii”). */
+    savedPlain: (name: string) => `Zapisane: ${name}.`,
   },
   en: {
     p: 'P',
@@ -46,7 +50,13 @@ export const DT = text({
     eaten: 'eaten',
     addEaten: 'Add food',
     favorites: 'Favourites',
+    bigMeal: 'Bigger meal',
     meals: (n: number) => `${n} ${pluralEn(n, 'meal', 'meals')}`,
     saved: (name: string, kcal: number) => `Saved: ${name} · ${formatNumber(kcal, 0)} kcal.`,
+    savedPlain: (name: string) => `Saved: ${name}.`,
   },
 });
+
+/** The toast after a log: with the calories, or only the name when they are off screen. */
+export const savedText = (name: string, kcal: number, shown: boolean): string =>
+  shown ? DT.saved(name, kcal) : DT.savedPlain(name);

@@ -22,7 +22,6 @@ import {
   sportOf,
   stepsDayOf,
   stepsOn,
-  stepsWorthOn,
   validCardio,
 } from './cardio';
 import {
@@ -35,7 +34,6 @@ import {
   weightOn,
 } from './body';
 import {
-  beyondStepsBurn,
   cardioBurn,
   cardioDays,
   dayBurn,
@@ -43,7 +41,6 @@ import {
   plannedBurn,
   rowBurn,
   snackBurn,
-  typicalWorkoutBurn,
   workoutBurn,
 } from './burn';
 import { cardioEnergy, setsEnergy, strideM } from './energy';
@@ -322,28 +319,6 @@ describe('kalorie z zapisów', () => {
     expect(snackBurn(s, s.snacks[0]!)).toBeCloseTo(d.snacks, 6);
   });
 
-  it('ruch poza krokami: bieżnia, rower, taniec i przekąski — kroki liczy dieta swoim wzorem', () => {
-    const s = withWeight();
-    const day = '2026-09-28';
-    addCardio(s, { kind: 'steps', steps: 7000 }, day);
-    addCardio(s, { kind: 'bike', kmh: 20, min: 30 }, day);
-    addSnack(s, 'squat_air', 20, null, at(`${day}T10:00:00Z`));
-    const d = dayBurn(s, day)!;
-    const steps = cardioOn(s, day).find((c) => c.kind === 'steps')!;
-    expect(beyondStepsBurn(s, day)).toBeCloseTo(d.cardio - cardioBurn(s, steps)!.active + d.snacks, 6);
-    expect(beyondStepsBurn(freshState(), day)).toBeNull();
-  });
-
-  it('typowy trening: średnia z ostatnich, nie starszych niż trzy miesiące; bez historii nic', () => {
-    const s = withWeight();
-    expect(typicalWorkoutBurn(s, '2026-09-30')).toBeNull();
-    s.log.push(entry('2026-09-20T18:00:00Z'), entry('2026-09-27T18:00:00Z'));
-    const one = workoutBurn(s, s.log[0]!)!.active;
-    expect(typicalWorkoutBurn(s, '2026-09-30')).toBeCloseTo(one, 6);
-    // Pół roku później te treningi już nic o „typowym” nie mówią.
-    expect(typicalWorkoutBurn(s, '2027-03-30')).toBeNull();
-  });
-
   it('szacunek przed treningiem idzie z poziomu z progresji i ostatniej wagi', () => {
     const s = withWeight(70);
     const w = BUILTIN.find((x) => x.id === 'A')!;
@@ -481,16 +456,11 @@ describe('kroki dnia z danymi urządzenia', () => {
     });
   });
 
-  it('bieg podnosi kalorie kroków i ich „wartość” w zwykłych krokach', () => {
+  it('bieg podnosi kalorie kroków', () => {
     const plainState = withWatch([], 14_000 * strideM());
     const runState = withWatch([{ sport: 1, sec: 1800, m: 6000 }], 14_000 * strideM());
     const plainKcal = cardioBurn(plainState, stepsEntry(plainState))!.active;
     expect(cardioBurn(runState, stepsEntry(runState))!.active).toBeGreaterThan(plainKcal + 150);
-    // Bez biegu wartość to same kroki plus piętra; z biegiem wyraźnie więcej.
-    expect(stepsWorthOn(plainState, day)).toBeGreaterThan(14_000);
-    expect(stepsWorthOn(plainState, day)).toBeLessThan(15_000);
-    expect(stepsWorthOn(runState, day)).toBeGreaterThan(17_000);
-    expect(stepsWorthOn(freshState(), day)).toBeNull();
   });
 
   it('bieżnia wpisana ręcznie schodzi z kroków urządzenia, a jej duplikat z zegarka znika', () => {

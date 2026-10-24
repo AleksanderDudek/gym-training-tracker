@@ -8,15 +8,10 @@ export const testMove = (over: Partial<MoveDay> = {}): MoveDay => ({
   trained: false,
   workoutKcal: null,
   cardioKcal: null,
-  otherKcal: null,
-  planned: null,
-  planActive: false,
-  typicalWorkoutKcal: null,
   workouts: 0,
   snacks: 0,
   outings: 0,
   activeMin: 0,
-  stepsWorth: null,
   ...over,
 });
 
@@ -31,6 +26,8 @@ export function testBridge(over: Partial<GymBridge> = {}): GymBridge {
     setSteps: vi.fn(),
     moveOn: () => testMove(),
     toast: vi.fn(),
+    weighSkipped: () => false,
+    skipWeigh: vi.fn(),
     ...over,
   };
 }

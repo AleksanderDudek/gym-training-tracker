@@ -6,7 +6,7 @@ import { createContext, useContext } from 'react';
  * Dieta potrzebuje wagi, wzrostu, kroków i tego, czy był trening — a to wszystko gym tracker
  * już zapisuje (`state.body`, `cfg.height`, wpisy kroków i zegarek, dziennik treningów). Zamiast
  * drugiej kopii w IndexedDB ekrany jedzenia czytają i piszą przez ten most, a App buduje go
- * ze swojego stanu. Moduły diety zostają czyste: scalone dni podaje `useMergedHistory`.
+ * ze swojego stanu. Moduły diety zostają czyste: scalony dzień podaje `useMergedDay`.
  *
  * Plik leży w głównej paczce (App podaje kontekst), więc nie importuje niczego z jedzenia
  * poza typami — Dexie, Leaflet i baza produktów zostają w paczce zakładki Jedzenie.
@@ -25,12 +25,18 @@ export interface GymBridge {
   setSteps(day: string, steps: number): void;
   /**
    * Ruch dnia z treningów. Kalorie są `null`, dopóki nie ma żadnego ważenia — bez wagi aplikacja
-   * ich nie liczy. Cel diety zakłada ruch z planu, więc dieta dolicza tylko różnicę między ruchem
-   * zaplanowanym a zrobionym (`diet/activity.ts`) — nigdy całych spalonych kalorii.
+   * ich nie liczy. Ruch nie zmienia celu jedzenia: dieta go pokazuje (tabela tygodni), nic nie dolicza.
    */
   moveOn(day: string): MoveDay;
   /** Krótka wiadomość na dole ekranu — ta sama, co po zapisie w treningach. */
   toast(message: string): void;
+  /**
+   * Czy dziś ktoś odpowiedział „Nie dziś” na pytanie o wagę — w dzienniku albo na ekranie Dziś:
+   * jedno pytanie, jedno pominięcie. Opcjonalne: brak to „nie pominięto”.
+   */
+  weighSkipped?(): boolean;
+  /** „Nie dziś” w karcie wagi dziennika: zapamiętuje pominięcie na dziś, jak karta na ekranie Dziś. */
+  skipWeigh?(): void;
 }
 
 export interface MoveDay {
@@ -38,16 +44,8 @@ export interface MoveDay {
   trained: boolean;
   /** Aktywne kalorie treningów siłowych tego dnia. */
   workoutKcal: number | null;
-  /** Aktywne kalorie kroków i cardio razem — do zdania „Ruch dziś”. */
+  /** Aktywne kalorie kroków i cardio razem. */
   cardioKcal: number | null;
-  /** Ruch poza krokami: bieżnia, rower, taniec i przekąski ruchowe. Kroki dieta liczy sama. */
-  otherKcal: number | null;
-  /** Trening, który plan treningowy wyznaczył na ten dzień, i jego szacunek; `null` — bez treningu w planie. */
-  planned: { name: string; kcal: number | null } | null;
-  /** Czy jest aktywny plan treningowy. Bez niego dieta porównuje z założeniem profilu. */
-  planActive: boolean;
-  /** Typowy trening tej osoby (średnia z ostatnich), kcal; `null` bez historii albo ważenia. */
-  typicalWorkoutKcal: number | null;
   /** Treningi siłowe zapisane tego dnia. */
   workouts: number;
   /** Przekąski ruchowe tego dnia. */
@@ -56,11 +54,6 @@ export interface MoveDay {
   outings: number;
   /** Minuty ruchu w przeliczeniu na umiarkowany, tak jak liczą je treningi. */
   activeMin: number;
-  /**
-   * Ile kroków zwykłego marszu spaliłoby tyle, co kroki dnia z drogą z urządzenia, biegami
-   * i piętrami — w tej walucie dieta liczy chodzenie. `null` w dniu bez kroków.
-   */
-  stepsWorth: number | null;
 }
 
 export const BridgeContext = createContext<GymBridge | null>(null);

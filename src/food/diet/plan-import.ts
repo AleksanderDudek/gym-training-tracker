@@ -2,7 +2,7 @@ import { text } from '../../i18n';
 import { storeKey } from '../lib/stores';
 import { normalizeForSearch } from '../lib/text';
 import type { Plan, PlanItem, PlanVariant } from './plan';
-import type { Nutrients, Profile, Sex } from './types';
+import type { LegacyFields, Nutrients, Profile, Sex } from './types';
 import { cell, excelDate, lastRow, type Cell, type Sheet, type Workbook } from './xlsx';
 
 /**
@@ -20,8 +20,17 @@ export interface LoggedDay {
   extraKcal?: number;
 }
 
+/**
+ * The workbook's parameters: the old model's (multiplier, steps, exercise), so the import turns
+ * them into a profile the way the upgrade turns an old row (`cleanProfile(…, { fresh: true })`).
+ */
+export type WorkbookProfile = Partial<
+  Pick<Profile, 'sex' | 'age' | 'heightCm' | 'startWeightKg' | 'targetWeightKg' | 'startDate' | 'kcalPerKg' | 'dailyKcal'> &
+    LegacyFields
+>;
+
 export interface ImportedPlan {
-  profile: Partial<Profile>;
+  profile: WorkbookProfile;
   plan: Plan;
   days: LoggedDay[];
   /** Things the importer could not reconcile, for the user to see. */
@@ -64,13 +73,13 @@ function panelValue(panel: Sheet, label: string): Cell | undefined {
   return undefined;
 }
 
-function readProfile(panel: Sheet | null): Partial<Profile> {
+function readProfile(panel: Sheet | null): WorkbookProfile {
   if (!panel) return {};
   const n = (label: string) => num(panelValue(panel, label));
-  const profile: Partial<Profile> = {};
+  const profile: WorkbookProfile = {};
   const start = n('Data startu');
   if (start !== null) profile.startDate = excelDate(start);
-  const set = <K extends keyof Profile>(key: K, value: Profile[K] | null) => {
+  const set = <K extends keyof WorkbookProfile>(key: K, value: WorkbookProfile[K] | null) => {
     if (value !== null) profile[key] = value;
   };
   // The workbook's own Polish labels, matched as they are written in the file.

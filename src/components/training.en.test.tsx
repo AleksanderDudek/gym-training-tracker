@@ -9,6 +9,7 @@ vi.hoisted(() => {
 
 import { BUILTIN, ex } from '../data/exercises';
 import { GOAL_PLANS, planById, planId } from '../data/plans';
+import { setBodyWeight } from '../engine/body';
 import { freshState } from '../engine/plan';
 import type { AppState, Session } from '../types';
 import { AtlasView, ExercisePage } from './atlas';
@@ -25,6 +26,9 @@ import { WorkoutBuilder, WorkoutLibrary, WorkoutPreview } from './Workouts';
  * inny, więc test nie szuka zera polskich liter na całej stronie — sprawdza teksty z katalogów
  * tych ekranów: angielskie są, polskich nie ma.
  */
+
+// Karta jedzenia na ekranie Dziś (przy `gt:diet`) ma własne testy — tu nie wczytuje dziennika.
+vi.mock('../food/TodayFoodCard', () => ({ default: () => null }));
 
 const noop = () => {};
 const A = BUILTIN.find((w) => w.id === 'A')!;
@@ -152,6 +156,19 @@ describe('training screens in English', () => {
     expect(screen.getByText('Done today, it counts in full. 10 pts up for grabs.')).toBeInTheDocument();
     expect(screen.getByText(/^\d+ exercises? · /)).toBeInTheDocument();
     expectNoPolish();
+  });
+
+  it('Today with a workout due: calories without a food diary, the time only with one', () => {
+    const state = freshState();
+    setBodyWeight(state, 80, '2026-10-14');
+    const props = { today: { kind: 'due' as const, workout: A, late: 0, points: 10 }, statsLine: '', onStart: noop, onWeigh: noop, onWeighSkip: noop };
+    const plain = render(<SessionHome state={state} {...props} />);
+    expect(screen.getByText(/^At your level that’s about \d+ min of sets with rests and ≈ \d+ kcal above resting\.$/)).toBeInTheDocument();
+    plain.unmount();
+    localStorage.setItem('gt:diet', '1');
+    render(<SessionHome state={state} {...props} />);
+    expect(screen.getByText(/^At your level that’s about \d+ min of sets with rests\.$/)).toBeInTheDocument();
+    expect(screen.queryByText(/Na Twoim poziomie/)).not.toBeInTheDocument();
   });
 
   it('workout library, preview and builder', () => {

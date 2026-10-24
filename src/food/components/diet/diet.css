@@ -2,8 +2,8 @@
  * Dziennik jedzenia i jego podstrony (plan posiłków, postęp, profil diety) oraz karta jedzenia
  * na ekranie Dziś. Wszystko z tokenów i klocków aplikacji: karty `.grp`, przyciski `.btn`,
  * pola `.fld`, kafelki `.tiles`, uwagi `.dnote`; arkusz od dołu jest wspólny (`common.css`). Tu
- * tylko to, czego w treningach nie ma: paski bilansu, wiersze jedzenia, treść arkuszy, wykresy.
- * Kolor stanu (brak, w normie, nadmiar) zawsze idzie razem ze słowem — nigdy sam.
+ * tylko to, czego w treningach nie ma: paski dnia, wiersze jedzenia, treść arkuszy, wykresy.
+ * Kolor nie ocenia dnia: paski mają jedno neutralne wypełnienie, a co znaczą — mówią słowa.
  *
  * Każda klasa ma przedrostek `fd-diet-`, a reguły dla klas wspólnych (`.sr-only`, `.fd-sheet-body`)
  * stoją pod klasą dziennika. Arkusz CSS leniwej paczki zostaje na stronie, gdy już się wczyta,
@@ -54,35 +54,32 @@
 .fd-diet-daynav-title p{margin:1px 0 0;font-size:12.5px;color:var(--ink-soft)}
 .fd-diet-daynav .fd-diet-today{grid-column:1 / -1;justify-self:center;margin-top:4px}
 
-/* ---------------- Bilans dnia ---------------- */
+/* ---------------- Karta dnia ---------------- */
 
-.fd-diet-balance-top{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:2px 12px}
-.grp p.fd-diet-kcal{margin:0;font-family:var(--display);font-weight:600;font-size:34px;line-height:1.05;color:var(--ink);
-  font-variant-numeric:tabular-nums}
-.fd-diet-kcal small{font-size:16px;font-weight:500;color:var(--ink-soft)}
-.grp .fd-diet-note,.fd-diet-note{margin:0;font-size:13px;font-weight:600}
-.fd-diet-note.fd-diet-ok{color:var(--ok)}
-.fd-diet-note.fd-diet-brak{color:var(--warn)}
-.fd-diet-note.fd-diet-nadmiar{color:var(--c-orange-ink)}
+/* Jedno zdanie o dniu nad paskami („Zostało ok. 650 kcal i 54 g białka”) — to samo co na ekranie Dziś. */
+.grp h2.fd-diet-headline{margin:0 0 4px;font-size:19px;line-height:1.3;text-wrap:balance}
 
-/* Pasek jak paski rangi i doświadczenia: płaski, bez zaokrągleń, tło `--surface-2`. */
+/* Pasek jak paski rangi i doświadczenia: płaski, bez zaokrągleń, tło `--surface-2`. Jedno neutralne
+   wypełnienie dla wszystkiego: białko po prostu dochodzi do pełna, a kalorie zatrzymują się na celu. */
 .fd-diet-bar{height:9px;background:var(--surface-2);margin:7px 0 6px;overflow:hidden}
-.fd-diet-bar i{display:block;height:100%;background:var(--c-green)}
-.fd-diet-bar.fd-diet-brak i{background:var(--c-gold)}
-.fd-diet-bar.fd-diet-nadmiar i{background:var(--c-orange)}
+.fd-diet-bar i{display:block;height:100%;background:var(--steel)}
 @media (prefers-reduced-motion:no-preference){.fd-diet-bar i{transition:width .3s ease-out}}
 
-/* Na telefonie makro jedno pod drugim (dwa plus jedno rozbijało rząd), od 480 px — trzy obok siebie. */
-.fd-diet-macros{display:grid;grid-template-columns:1fr;gap:6px 16px;margin-top:10px}
-@media (min-width:480px){.fd-diet-macros{grid-template-columns:repeat(3,minmax(0,1fr))}}
+/* Białko i kalorie jedno pod drugim; węglowodany i tłuszcz zwinięte, od 480 px obok siebie. */
+.fd-diet-macros{display:grid;grid-template-columns:1fr;gap:6px 16px;margin-top:8px}
+@media (min-width:480px){.fd-diet-carbsfat .fd-diet-macros{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .fd-diet-macro{min-width:0}
 .fd-diet-macro .fd-diet-bar{height:7px;margin:5px 0 4px}
 .fd-diet-macro-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:14px}
 .fd-diet-macro-head span:first-child{font-weight:600}
 .fd-diet-macro-head span:last-child{font-family:var(--display);color:var(--ink-soft)}
-.fd-diet-macro .fd-diet-note{display:block;font-weight:500;font-size:12.5px}
+.fd-diet-carbsfat{margin:4px 0 0}
+.fd-diet-carbsfat .fd-diet-macros{margin-top:0}
+.fd-diet-carbsfat summary,.fd-diet-weekdetails summary{cursor:pointer;color:var(--steel);font-weight:600;font-size:14px;
+  padding:10px 0;min-height:44px;box-sizing:border-box}
+.fd-diet-carbsfat summary:focus-visible,.fd-diet-weekdetails summary:focus-visible{outline:2px solid var(--steel);outline-offset:2px}
 .fd-diet-balance .actions{margin:14px 0 2px}
-/* „Dodaj zjedzone” i „Ulubione” obok siebie, póki się mieszczą; na najwęższych — jeden pod drugim. */
+/* „Dodaj zjedzone”, „Ulubione” i „Większy posiłek” obok siebie, póki się mieszczą; na najwęższych — jeden pod drugim. */
 .fd-diet-balance .fd-diet-dayacts{display:flex;flex-wrap:wrap;gap:8px}
 .fd-diet-dayacts .btn{flex:1 1 auto;padding-inline:14px}
 .fd-diet-macros + p.tight{margin-top:8px}
@@ -208,6 +205,8 @@
 .fd-diet-empty{padding:14px 4px;font-size:13.5px;color:var(--ink-soft)}
 .fd-diet-chosen{margin-top:12px;padding:12px;background:var(--surface-2);border-left:3px solid var(--steel);border-radius:var(--r)}
 .fd-diet-chosen .fd-diet-meta{margin-top:4px}
+/* Pod wybraną pozycją: ile zostanie z celu dnia po niej. */
+p.fd-diet-after{margin:6px 0 0;font-size:13.5px;color:var(--ink)}
 .fd-diet-grams{margin:10px 0 4px;max-width:160px}
 .fd-diet-quick{display:grid;gap:10px}
 /* Zestaw w „Dodaj zjedzone”: nazwa, części z gramaturą, suma, wyszukiwanie kolejnej rzeczy. */
@@ -242,7 +241,6 @@ p.fd-diet-favstatus.fd-diet-ok{color:var(--ok);font-weight:600}
 .fd-diet-week tbody th a{display:inline-flex;align-items:center;min-height:44px;color:var(--steel);font-weight:600;
   text-decoration:underline;text-underline-offset:2px}
 .fd-diet-week .soft{color:var(--ink-soft)}
-.fd-diet-week .over{color:var(--c-orange-ink);font-weight:600}
 .fd-diet-week tr.today{background:var(--surface-2)}
 .fd-diet-week tr.today th{box-shadow:inset 3px 0 0 var(--steel)}
 .fd-diet-week tr.today th a{padding-left:8px}
@@ -264,15 +262,10 @@ p.fd-diet-favstatus.fd-diet-ok{color:var(--ok);font-weight:600}
 .fd-diet-chart .fd-diet-goal{stroke:var(--c-gold-ink);stroke-width:1.2;stroke-dasharray:2 3}
 .fd-diet-chart .now{stroke:var(--edge);stroke-width:1;stroke-dasharray:3 3}
 .fd-diet-chart path{fill:none}
-.fd-diet-chart path.fd-diet-plan{stroke:var(--steel);stroke-width:1.2;stroke-dasharray:5 3}
 .fd-diet-chart path.fd-diet-proj{stroke:var(--c-blue-ink);stroke-width:1.6;stroke-dasharray:3 2}
-.fd-diet-chart path.fd-diet-real{stroke:var(--c-green-ink);stroke-width:1.8;stroke-linejoin:round}
-.fd-diet-chart .dot{fill:var(--c-green-ink)}
 .fd-diet-legend{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:6px;font-size:12px;color:var(--ink-soft)}
 .fd-diet-legend span{display:inline-flex;align-items:center;gap:6px}
 .fd-diet-legend i{display:inline-block;width:18px;height:0;border-top:2px solid}
-.fd-diet-legend i.fd-diet-real{border-top-color:var(--c-green-ink)}
-.fd-diet-legend i.fd-diet-plan{border-top:2px dashed var(--steel)}
 .fd-diet-legend i.fd-diet-proj{border-top:2px dashed var(--c-blue-ink)}
 .fd-diet-legend i.fd-diet-goal{border-top:2px dotted var(--c-gold-ink)}
 
@@ -283,16 +276,8 @@ p.fd-diet-favstatus.fd-diet-ok{color:var(--ok);font-weight:600}
 .fd-diet-fortnight i{display:block}
 .fd-diet-fortnight i.fd-diet-goal{position:absolute;left:0;right:0;height:0;border-top:1.5px dashed var(--steel)}
 .fd-diet-fortnight i.fd-diet-fbar{background:var(--c-green);border-radius:2px 2px 0 0}
-.fd-diet-fortnight i.fd-diet-fbar.over{background:var(--c-orange)}
 .fd-diet-fortnight i.fd-diet-fbar.fd-diet-none{height:3px;background:var(--line)}
 .fd-diet-axis{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-soft)}
-
-.fd-diet-avg{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:8px 0 4px}
-.fd-diet-avg > div{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r);padding:8px 10px;min-width:0}
-.fd-diet-avg dt{font-size:12px;color:var(--ink-soft)}
-.fd-diet-avg dd{margin:0}
-.fd-diet-avg .fd-diet-avg-val{font-family:var(--display);font-size:18px;font-variant-numeric:tabular-nums}
-.fd-diet-avg .fd-diet-note{font-weight:500;font-size:12.5px}
 
 /* ---------------- Profil diety ---------------- */
 
@@ -304,18 +289,6 @@ p.fd-diet-favstatus.fd-diet-ok{color:var(--ok);font-weight:600}
 .fd-diet-unit{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:12.5px;color:var(--ink-soft);
   pointer-events:none;max-width:52px;text-align:right;line-height:1.1}
 .grp p.fd-diet-err,.fd-diet-err{margin:3px 0 0;font-size:12px;color:var(--warn);font-weight:600}
-.fd-diet-advanced{margin:6px 0 0}
-.fd-diet-advanced .fd-diet-grid2{margin-top:0}
-
-.fd-diet-energy{margin:8px 0 8px}
-.fd-diet-energy .tile{text-align:left;padding:8px 10px}
-.fd-diet-energy dt{font-size:11px;color:var(--ink-soft);line-height:1.25}
-.fd-diet-energy dd{margin:3px 0 0;font-family:var(--display);font-size:17px;line-height:1.15}
-.fd-diet-energy dd.fd-diet-soft{font-family:var(--body);font-size:11.5px}
-@media (max-width:400px){.fd-diet-energy{grid-template-columns:repeat(2,1fr)}}
-.fd-diet-kcal-goal{max-width:200px;margin:6px 0 8px}
-.fd-diet-warnings{margin:12px 0 4px}
-.fd-diet-warnings .fd-diet-bullets{margin-bottom:0;color:var(--ink)}
 .fd-diet-check{align-items:flex-start;margin-top:12px;font-size:13.5px;line-height:1.45}
 .fd-diet-check input{margin-top:1px}
 
@@ -344,25 +317,54 @@ fieldset.fd-diet-styles legend{float:left;width:100%;padding:0;margin:0 0 2px;fo
   -webkit-tap-highlight-color:transparent}
 .fd-diet-foodcard-link:active{background:var(--surface-2)}
 .fd-diet-foodcard-link:focus-visible{outline:2px solid var(--steel);outline-offset:-2px}
-.fd-diet-foodcard .fd-diet-macro-head{margin-top:6px}
-.fd-diet-foodcard .fd-diet-macro-head + .fd-diet-bar{height:7px;margin-top:5px}
+/* Dwa paski z nazwą po lewej: białko, potem kalorie — liczby są w zdaniu i dla czytnika ekranu. */
+.fd-diet-barrow{display:grid;grid-template-columns:5.5em minmax(0,1fr);align-items:center;gap:10px;margin-top:6px;font-size:13.5px;
+  font-weight:600}
+.fd-diet-barrow .fd-diet-bar{height:7px;margin:0}
 .fd-diet-foodcard .btn{margin-top:8px}
+/* Jedna linijka, gdy dziennik na coś czeka (zmiany, poniedziałkowe sprawdzenie, przerwa). */
+.fd-diet-notice-link{display:block;box-sizing:border-box;min-height:44px;padding:12px 0;margin-top:2px;font-size:13.5px;
+  font-weight:600;line-height:1.4;color:var(--steel);text-decoration:underline;text-underline-offset:2px}
+.fd-diet-notice-link:focus-visible{outline:2px solid var(--steel);outline-offset:2px}
 
-/* ---------------- Cheat meal ---------------- */
+/* ---------------- Na co dziennik czeka: zmiany, poniedziałek, przerwa, dzień niepełny ---------------- */
 
-/* Zaplanowany cheat meal pod bilansem: złoty pasek z boku — plan, nie wpis. */
+/* Zmiany w liczeniu po przejściu na jeden cel: punkty i „Rozumiem”. */
+.fd-diet-notice{border-left:3px solid var(--c-blue-ink)}
+.fd-diet-notice .fd-diet-bullets{font-size:13.5px;color:var(--ink)}
+.fd-diet-floorchoice{margin:6px 0 4px;padding:10px 12px;background:var(--surface-2);border-radius:var(--r)}
+.fd-diet-floorchoice .actions,.fd-diet-noticeacts,.fd-diet-weekacts{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin:10px 0 2px}
+
+/* Poniedziałkowa karta: nowy cel, co pokazały ostatnie tygodnie, jeden powód i dwie odpowiedzi. */
+.fd-diet-weekcard{border-left:3px solid var(--steel)}
+.grp p.fd-diet-ask{font-weight:600;color:var(--ink)}
+.fd-diet-weekdetails{margin:2px 0 0}
+.fd-diet-weekdetails dl{margin:0 0 6px;display:grid;gap:3px;font-size:13px;color:var(--ink-soft)}
+.fd-diet-weekdetails dl > div{display:flex;flex-wrap:wrap;gap:0 4px}
+.fd-diet-weekdetails dt{font-weight:600;color:var(--ink)}
+.fd-diet-weekdetails dd{margin:0;font-variant-numeric:tabular-nums}
+/* Cicha linijka w poniedziałek i wtorek: cel bez zmian i dlaczego — bez karty, bez przycisków. */
+.fd-diet-weekline{margin:0 auto 10px}
+.fd-diet-weekline p.tight{margin:0;font-size:13px;line-height:1.45}
+
+/* Przerwa w liczeniu: zdanie z datą końca i „Zakończ przerwę”. */
+.fd-diet-pause{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 12px;padding-block:10px}
+.fd-diet-pause p.tight{flex:1 1 220px;margin:0;font-size:13.5px}
+
+/* „Zjedzone”: słowo osoby o dniu pod wpisami — dzień niepełny nie liczy się do dopasowania. */
+.fd-diet-partial{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;margin-top:6px;padding-top:8px;
+  border-top:1px solid var(--surface-2)}
+.fd-diet-partial p.tight{flex:1 1 220px;margin:0;font-size:13px;color:var(--ink-soft)}
+
+/* ---------------- Większy posiłek ---------------- */
+
+/* Zaplanowany większy posiłek pod kartą dnia: złoty pasek z boku — plan, nie wpis. */
 .fd-diet-cheat{border-left:3px solid var(--c-gold)}
 .fd-diet-cheat h2{display:flex;align-items:center;gap:8px}
 .fd-diet-cheat .fd-diet-name{margin:6px 0 0;font-weight:600}
 .fd-diet-cheat .fd-diet-meta{margin:2px 0 6px}
 .fd-diet-cheatacts{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
-/* Arkusz: pola, ruch do końca dnia, symulacja. */
-.fd-diet-cheatmove{margin:4px 0 0;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r)}
-.fd-diet-cheatmove legend{padding:0 4px;font-size:13px;font-weight:600;color:var(--ink-soft)}
-.fd-diet-radios{display:grid;gap:4px;margin:2px 0 8px}
-.fd-diet-radios .check-row{margin:0;min-height:40px}
-p.fd-diet-radiohead{margin:4px 0 0;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft)}
-.fd-diet-cheatsteps{max-width:200px;margin:2px 0 0 28px}
+/* Arkusz: pola i symulacja. */
 .fd-diet-sim{margin-top:4px;padding:12px;background:var(--surface-2);border-radius:var(--r)}
 .fd-diet-sim h3{margin:0 0 8px;font-size:15px}
 .fd-diet-simrows{display:grid;gap:2px;margin:0 0 8px}
@@ -372,9 +374,6 @@ p.fd-diet-radiohead{margin:4px 0 0;font-size:12px;font-weight:600;letter-spacing
 .fd-diet-simrows .fd-diet-simsum{padding-top:4px;border-top:1px solid var(--line);font-weight:600}
 .fd-diet-simrows .fd-diet-simsum dt{color:var(--ink)}
 p.fd-diet-verdict{margin:6px 0 8px;font-size:15px;font-weight:600}
-p.fd-diet-v-fits{color:var(--ok)}
-p.fd-diet-v-tight,p.fd-diet-v-edge{color:var(--c-gold-ink)}
-p.fd-diet-v-over{color:var(--c-orange-ink)}
 .fd-diet-simideas{margin:0 0 8px;padding-left:18px;font-size:13.5px}
 .fd-diet-simideas li{margin:2px 0}
 
@@ -385,7 +384,7 @@ p.fd-diet-resthead{margin:0 0 2px;font-size:13.5px;color:var(--ink-soft)}
 p.fd-diet-resthead b{color:var(--ink)}
 .fd-diet-sim .fd-diet-restvar{background:var(--surface)}
 
-/* ---------------- Co działa u ciebie: tygodnie ---------------- */
+/* ---------------- Tydzień po tygodniu ---------------- */
 
 .fd-diet-weeks{width:100%;min-width:620px;border-collapse:separate;border-spacing:0;font-size:13px}
 .fd-diet-weeks th,.fd-diet-weeks td{padding:7px 10px 7px 0;text-align:left;vertical-align:middle;border-top:1px solid var(--surface-2)}
@@ -393,36 +392,74 @@ p.fd-diet-resthead b{color:var(--ink)}
 .fd-diet-weeks .n{text-align:right;font-family:var(--display);font-variant-numeric:tabular-nums}
 .fd-diet-weeks td:last-child,.fd-diet-weeks th:last-child{padding-right:0}
 .fd-diet-weeks td small{display:block;font-family:var(--body);font-size:11px;color:var(--ink-soft);white-space:nowrap}
-/* Tydzień z siatką dni zostaje na miejscu, liczby przewijają się obok. */
+/* Tydzień zostaje na miejscu, liczby przewijają się obok. */
 .fd-diet-weeks th:first-child{position:sticky;left:0;z-index:1;min-width:104px;background:var(--surface);font-weight:400}
-.fd-diet-wlabel{display:block;margin-bottom:4px;font-size:12px;font-weight:600;white-space:nowrap}
-.fd-diet-wchange{font-weight:600}
-.fd-diet-wgood{color:var(--ok)}
-.fd-diet-wbad{color:var(--c-orange-ink)}
-.fd-diet-wflat{color:var(--ink-soft)}
-/* Siatka dni: komórka to jedzenie, pod nią znaki — trening (kwadrat), cel kroków (kropka),
-   przekąska ruchowa (trójkąt), cardio (romb). Kształty, nie same kolory. */
-.fd-diet-wgrid{display:grid;grid-template-columns:repeat(7,12px);gap:2px}
-.fd-diet-wday{display:flex;flex-direction:column;align-items:center;gap:2px}
-.fd-diet-wfood{display:block;width:12px;height:9px;border-radius:2px}
-.fd-diet-wf-ok{background:var(--c-green)}
-.fd-diet-wf-off{background:var(--c-orange)}
-.fd-diet-wf-none{box-shadow:inset 0 0 0 1px var(--line)}
-.fd-diet-wfuture{visibility:hidden}
-.fd-diet-wm{display:block;width:6px;height:6px}
-.fd-diet-wtrain{background:var(--steel)}
-.fd-diet-wsteps{border-radius:50%;background:var(--c-green-ink)}
-.fd-diet-wsnack{width:0;height:0;border-left:3.5px solid transparent;border-right:3.5px solid transparent;border-bottom:6px solid var(--c-gold-ink)}
-.fd-diet-wcardio{width:5px;height:5px;margin:0.5px 0;background:var(--c-blue-ink);transform:rotate(45deg)}
-.fd-diet-wm-off{visibility:hidden}
-.fd-diet-wlegend{display:flex;flex-wrap:wrap;gap:4px 12px;margin:2px 0 6px;padding:0;list-style:none;font-size:12px;color:var(--ink-soft)}
-.fd-diet-wlegend li{display:inline-flex;align-items:center;gap:5px}
 .grp h3.fd-diet-wsub{margin:14px 0 2px}
 .fd-diet-findings{margin:4px 0 8px;padding:0;list-style:none}
 .fd-diet-finding{padding:8px 0;border-top:1px solid var(--surface-2)}
 .grp p.fd-diet-fhead{margin:0;font-size:13.5px;line-height:1.4}
 .grp p.fd-diet-fbody{margin:3px 0 0;font-size:13px;line-height:1.45;color:var(--ink-soft);max-width:62ch}
-.fd-diet-fchip{display:inline-block;padding:0 6px;border:1px solid currentColor;border-radius:9px;font-size:11.5px;font-weight:600;white-space:nowrap}
 /* „Poza domem?” pod „Co teraz?” — wejście do „Zjedz teraz” w W pobliżu. */
 .fd-diet-eatout{display:inline-flex;align-items:center;gap:6px;min-height:44px;font-weight:600;color:var(--steel);
   text-decoration:underline;text-underline-offset:2px}
+
+/* — C: profil, większy posiłek — */
+
+/* Profil: trzy cele jeden pod drugim — cały wiersz to cel dotykowy, kropka radia dla klawiatury i czytników. */
+.fd-diet-goalpick{display:grid;gap:6px;margin:8px 0 6px;max-width:420px}
+.fd-diet-goalpick label{display:flex;align-items:center;gap:10px;min-height:44px;padding:6px 12px;border:1px solid var(--edge);
+  border-radius:var(--r);background:var(--surface);font-size:14.5px;font-weight:600;color:var(--ink);cursor:pointer;
+  -webkit-tap-highlight-color:transparent}
+.fd-diet-goalpick input{width:20px;height:20px;margin:0;flex:none;accent-color:var(--steel)}
+.fd-diet-goalpick label:has(input:checked){border-color:var(--steel);box-shadow:inset 3px 0 0 var(--steel);background:var(--surface-2)}
+.fd-diet-goalpick label:has(input:disabled){opacity:.45;cursor:default}
+.fd-diet-goalpick label:has(input:focus-visible){outline:2px solid var(--steel);outline-offset:2px}
+.fd-diet-goalweight,.fd-diet-manual .fd-diet-num{margin:8px 0 6px}
+.fd-diet-goalweight .fd-diet-num-box,.fd-diet-manual .fd-diet-num-box{max-width:200px}
+
+/* Zwykły tydzień: cztery karty jak sposoby odżywiania — tytuł i jedno zdanie, zaznaczona ma pasek z boku. */
+fieldset.fd-diet-levels{margin:0;padding:0;border:0;min-width:0;display:grid;gap:8px}
+fieldset.fd-diet-levels legend{float:left;width:100%;padding:0;margin:0 0 2px;font-size:15px;font-weight:600}
+.fd-diet-level{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:var(--surface);border:1px solid var(--edge);
+  border-radius:var(--r);font-size:13.5px;line-height:1.4;color:var(--ink);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.fd-diet-level input{width:20px;height:20px;margin:0;flex:none;accent-color:var(--steel)}
+.fd-diet-level > span{display:grid;gap:2px;min-width:0}
+.fd-diet-level b{font-size:15px}
+.fd-diet-level span span{color:var(--ink-soft)}
+.fd-diet-level:has(input:checked){border-color:var(--steel);box-shadow:inset 3px 0 0 var(--steel);background:var(--surface-2)}
+.fd-diet-level:has(input:focus-visible){outline:2px solid var(--steel);outline-offset:2px}
+.fd-diet-anchored fieldset.fd-diet-levels{margin-top:8px}
+.fd-diet-dietstart .fd-diet-grid2{margin-top:0}
+
+/* Tempo: zamknięte tempo jest wyłączone (powód pod spodem); wynik to jedna wyraźna linijka. */
+.fd-diet-profile .chips button:disabled{opacity:.45;cursor:default}
+.grp p.fd-diet-paceline{margin:10px 0 2px;font-size:16px;font-weight:600;color:var(--ink)}
+
+/* „Jak liczę cel”: zwinięta karta; `?jak=1` ją rozwija i przewija do niej. */
+details.fd-diet-how > summary{display:flex;align-items:center;min-height:44px;font-size:15px;font-weight:600;color:var(--steel);
+  cursor:pointer;-webkit-tap-highlight-color:transparent}
+.fd-diet-how ol{margin:4px 0 8px;padding-left:20px;font-size:13.5px;line-height:1.5;color:var(--ink);max-width:62ch}
+.fd-diet-how li{margin:4px 0}
+
+/* Ustawienia liczenia: przerwa pod przełącznikami. */
+.fd-diet-breaks{margin-top:10px;padding-top:10px;border-top:1px solid var(--surface-2)}
+.fd-diet-breaks .actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+
+/* — D: postęp, tygodnie, plan — */
+
+/* Trzy kafelki postępu w jednym rzędzie, także na telefonie. */
+.tiles.fd-diet-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+/* Wykres wagi: pomiary blado, trend linią ciągłą; prognoza i waga docelowa mają reguły wyżej. */
+.fd-diet-chart .fd-diet-raw{fill:var(--c-green-ink);opacity:.35}
+.fd-diet-chart path.fd-diet-trend{stroke:var(--c-green-ink);stroke-width:2;stroke-linejoin:round}
+.fd-diet-legend i.fd-diet-raw{width:7px;height:7px;border:0;border-radius:50%;background:var(--c-green-ink);opacity:.5}
+.fd-diet-legend i.fd-diet-trend{border-top-color:var(--c-green-ink)}
+/* Historia celu kalorii: data, cel i kto go zmienił — wiersz pod wierszem. */
+.fd-diet-history{margin:4px 0 0;padding:0;list-style:none;font-size:13.5px}
+.fd-diet-history li{padding:7px 0;border-top:1px solid var(--surface-2);font-variant-numeric:tabular-nums}
+.fd-diet-history li:first-child{border-top:0}
+/* Kalorie z 14 dni: jeden kolor słupków, dzień niepełny jaśniej. */
+.fd-diet-fortnight i.fd-diet-fbar.fd-diet-part{opacity:.35}
+/* Tabela tygodni ma pięć kolumn: na telefonie mieści się bez przewijania. */
+table.fd-diet-weeks{min-width:0}
+table.fd-diet-weeks th:first-child{min-width:84px;white-space:nowrap}

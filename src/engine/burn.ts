@@ -128,37 +128,6 @@ export function dayBurn(state: AppState, day: string): DayBurn | null {
   return { cardio, workouts, snacks, total: cardio + workouts + snacks, steps: stepsOn(state, day) };
 }
 
-/**
- * Ruch dnia poza krokami: bieżnia, rower, taniec i przekąski ruchowe. Kroki dieta liczy sama, swoim
- * wzorem na chodzenie — tu ich nie ma, żeby nie policzyły się dwa razy. `null` bez ważenia.
- */
-export function beyondStepsBurn(state: AppState, day: string): number | null {
-  if (weightOn(state, day) === null) return null;
-  const cardio = cardioOn(state, day)
-    .filter((c) => c.kind !== 'steps')
-    .reduce((s, c) => s + (cardioBurn(state, c)?.active ?? 0), 0);
-  const snacks = snacksOn(state, day).reduce((s, x) => s + (snackBurn(state, x) ?? 0), 0);
-  return cardio + snacks;
-}
-
-/** Ile treningów bierze średnia „typowego” — ostatnie dziesięć, nie starsze niż trzy miesiące. */
-const TYPICAL_COUNT = 10;
-const TYPICAL_DAYS = 90;
-
-/**
- * Typowy trening tej osoby: średnie aktywne kalorie ostatnich treningów. Dieta bez planu
- * treningowego zakłada tyle za każdy trening z profilu. `null` bez ważenia albo bez historii.
- */
-export function typicalWorkoutBurn(state: AppState, today: string = dayKey(Date.now())): number | null {
-  const from = Date.parse(`${today}T00:00:00Z`) - TYPICAL_DAYS * 86_400_000;
-  const recent = state.log
-    .filter((e) => Date.parse(e.date) >= from)
-    .slice(-TYPICAL_COUNT)
-    .map((e) => workoutBurn(state, e)?.active)
-    .filter((k): k is number => k !== undefined && k > 0);
-  return recent.length ? recent.reduce((a, b) => a + b, 0) / recent.length : null;
-}
-
 /** Dni z jakimkolwiek ruchem wpisanym ręcznie, od najnowszego. */
 export const cardioDays = (state: AppState): string[] =>
   [...new Set(cardioOf(state).map((c) => c.day))].sort().reverse();

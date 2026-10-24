@@ -29,6 +29,7 @@ import {
   forgetSections,
   go,
   goBack,
+  isDeviceLink,
   isFoodRoute,
   isTabRoot,
   screenOf,
@@ -59,7 +60,6 @@ import {
   outingsOn,
   removeCardio,
   stepsOn,
-  stepsWorthOn,
   typedStepsOn,
   validCardio,
 } from './engine/cardio';
@@ -87,7 +87,7 @@ import { GuidedSession } from './components/Guided';
 import { PromoPage } from './components/Promo';
 import type { WatchPayload } from './engine/watch';
 import { HEIGHT_RANGE, WEIGHT_RANGE, bodyOf, removeBodyWeight, setBodyWeight, validBody, validHeight, validWeight } from './engine/body';
-import { beyondStepsBurn, cardioBurn, dayBurn, plannedBurn, typicalWorkoutBurn, workoutBurn } from './engine/burn';
+import { cardioBurn, dayBurn, workoutBurn } from './engine/burn';
 import { LevelUp, avatarOf } from './components/Character';
 import type { Avatar } from './components/Character';
 import type {
@@ -115,6 +115,7 @@ import { forgetWatch, garminConfigured, garminKey, pullWatch } from './garmin';
 import type { PullResult } from './garmin';
 import { forgetPhone, phoneConfigured, phoneKey, pullPhone } from './phone';
 import type { PhonePull } from './phone';
+import { forgetWatchModel } from './watches/remember';
 import { attachTrail, trail } from './trail';
 import { FeedbackDialog } from './components/Feedback';
 import { ContactDialog } from './components/Contact';
@@ -133,9 +134,16 @@ import { LOCALE, pluralEn, text } from './i18n';
 const FoodRoot = lazy(() => import('./food/FoodRoot'));
 
 /** Zapisy, które ekrany jedzenia robią w danych treningowych. Podmieniane co render — zawsze ze świeżym stanem. */
-type BridgeWrites = Pick<GymBridge, 'setWeight' | 'setHeight' | 'setSteps'>;
+type BridgeWrites = Pick<GymBridge, 'setWeight' | 'setHeight' | 'setSteps'> & Required<Pick<GymBridge, 'skipWeigh'>>;
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * Dzień pominięcia ważenia („Nie dziś”, `cfg.weighSkip`) — dzień treningów w chwili wywołania.
+ * Poza komponentem: most woła to z obsługi zdarzeń, a reguła czystości renderu widzi zegar w każdym
+ * domknięciu komponentu.
+ */
+const weighDay = (): string => dayKey(Date.now());
 
 const clone = (s: AppState): AppState => JSON.parse(JSON.stringify(s)) as AppState;
 
@@ -690,6 +698,9 @@ export default function App() {
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [saveBroken, setSaveBroken] = useState(false);
   const [replayIntro, setReplayIntro] = useState(false);
+  // Wejście linkiem do karty urządzenia (`#/zegarek?model=…` z opisu w Connect IQ Store,
+  // `#/ustawienia?karta=…`): adres z chwili otwarcia, raz na wizytę.
+  const [deviceLink] = useState(() => isDeviceLink(window.location.hash));
   // iPhone poza aplikacją z ikony — to się nie zmienia, dopóki karta jest otwarta.
   const [installPlace] = useState(currentInstallPlace);
   const medalBox = useRef<HTMLDivElement>(null);
@@ -751,9 +762,11 @@ export default function App() {
 
   // Wprowadzenie wchodzi samo tylko przy pierwszym uruchomieniu i nigdy w trakcie sesji —
   // kto już trenuje, ten nie potrzebuje wycieczki po ekranach. Z ustawień da się je otworzyć
-  // ponownie w dowolnym momencie.
+  // ponownie w dowolnym momencie. Kto przyszedł linkiem do karty zegarka albo telefonu, przyszedł
+  // po jedną odpowiedź: w tej wizycie wprowadzenie nie wchodzi, a `introSeen` zostaje nietknięte,
+  // więc pokaże się przy następnym zwykłym starcie.
   const showIntro =
-    replayIntro || (!!state && !state.introSeen && !state.log.length && !state.session);
+    replayIntro || (!!state && !deviceLink && !state.introSeen && !state.log.length && !state.session);
   // Pasek „dodaj do ekranu początkowego” (iPhone w Safari): na tych samych zasadach co pasek
   // wsparcia, ale przed nim — dane, które Safari może skasować po tygodniu, są ważniejsze niż kawa.
   const installStrip = !!state && !!installPlace && !state.session && !showIntro && !state.installHidden;
@@ -787,10 +800,6 @@ export default function App() {
   const bridgeWrites = useRef<BridgeWrites | null>(null);
   const bridge = useMemo<GymBridge | null>(() => {
     if (!state) return null;
-    // Kalendarz planu treningowego i typowy trening liczone raz na stan, nie przy każdym dniu.
-    const snap = snapshot(state);
-    const typical = typicalWorkoutBurn(state);
-    const workouts = [...BUILTIN, ...state.workouts];
     return {
       weights: bodyOf(state),
       setWeight: (kg, day) => bridgeWrites.current?.setWeight(kg, day),
@@ -801,25 +810,21 @@ export default function App() {
       setSteps: (day, steps) => bridgeWrites.current?.setSteps(day, steps),
       moveOn: (day) => {
         const burn = dayBurn(state, day);
-        const slot = snap?.schedule.days.find((d) => d.date === day);
-        const workout = slot ? workouts.find((w) => w.id === slot.workout) : undefined;
         return {
-          // Ten sam dzień co w kaloriach dnia (`dayBurn`) i w kalendarzu planu.
+          // Ten sam dzień co w kaloriach dnia (`dayBurn`).
           trained: state.log.some((e) => dayKey(e.date) === day),
           workoutKcal: burn ? burn.workouts : null,
           cardioKcal: burn ? burn.cardio : null,
-          otherKcal: beyondStepsBurn(state, day),
-          planned: workout ? { name: workout.name, kcal: plannedBurn(state, workout)?.active ?? null } : null,
-          planActive: snap !== null,
-          typicalWorkoutKcal: typical,
           workouts: state.log.filter((e) => dayKey(e.date) === day).length,
           snacks: snacksOn(state, day).length,
           outings: outingsOn(state, day),
           activeMin: minutesOn(state, day),
-          stepsWorth: stepsWorthOn(state, day),
         };
       },
       toast: setToastMsg,
+      // To samo pominięcie co karta ważenia na ekranie Dziś (`cfg.weighSkip`, dzień jak w `Weigh`).
+      weighSkipped: () => state.cfg.weighSkip === weighDay(),
+      skipWeigh: () => bridgeWrites.current?.skipWeigh(),
     };
   }, [state]);
 
@@ -1332,6 +1337,11 @@ export default function App() {
       } catch (e) {
         setToastMsg(e instanceof Error ? e.message : T.stepsFailed);
       }
+    },
+    skipWeigh: () => {
+      const next = clone(live.current ?? state);
+      next.cfg.weighSkip = weighDay();
+      commit(next);
     },
   };
 
@@ -1920,6 +1930,8 @@ export default function App() {
     await store.clear();
     if (watch) await forgetWatch();
     if (phone) await forgetPhone();
+    // Model zegarka wybrany w sprawdzaniu — też dane tej osoby, choć nie trafia do kopii.
+    forgetWatchModel();
     // Jedzenie też: inaczej stare ważenia z diety wróciłyby do dziennika wagi przy następnym wejściu.
     await import('./food/backup').then((m) => m.clearFood()).catch(() => undefined);
     forgetSections();

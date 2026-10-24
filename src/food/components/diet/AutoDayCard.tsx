@@ -5,6 +5,7 @@ import type { Food } from '../../diet/foods';
 import { slotLabel, type AutoMeal } from '../../diet/suggest';
 import { formatNumber } from '../../lib/format';
 import { DT } from './dietText';
+import { useKcalShown } from './kcalShown';
 import { FitBadge, MacroLine } from './SuggestionList';
 
 const T = text({
@@ -12,6 +13,8 @@ const T = text({
     title: 'Propozycja dnia',
     lead: (hasPlan: boolean, kcal: string, protein: string) =>
       `${hasPlan ? 'Plan nie obejmuje tego dnia – ' : 'Bez planu – '}zestaw z tego, co masz w pobliżu i w domu: ${kcal} kcal, ${protein} g białka.`,
+    leadPlain: (hasPlan: boolean, protein: string) =>
+      `${hasPlan ? 'Plan nie obejmuje tego dnia – ' : 'Bez planu – '}zestaw z tego, co masz w pobliżu i w domu: ${protein} g białka.`,
     loading: 'Wczytuję przepisy i produkty…',
     noData: 'Za mało danych, żeby ułożyć dzień – dodaj swoje jedzenie albo otwórz „W pobliżu”.',
     reroll: 'Inny zestaw',
@@ -20,6 +23,8 @@ const T = text({
     title: 'Suggested day',
     lead: (hasPlan: boolean, kcal: string, protein: string) =>
       `${hasPlan ? 'Your plan doesn’t cover this day – ' : 'No plan – '}a set from what’s nearby and at home: ${kcal} kcal, ${protein} g protein.`,
+    leadPlain: (hasPlan: boolean, protein: string) =>
+      `${hasPlan ? 'Your plan doesn’t cover this day – ' : 'No plan – '}a set from what’s nearby and at home: ${protein} g protein.`,
     loading: 'Loading recipes and products…',
     noData: 'Not enough data to plan the day – add your own food or open “Nearby”.',
     reroll: 'Another set',
@@ -42,12 +47,15 @@ interface Props {
  * dopóki ktoś nie poprosi o inny.
  */
 export function AutoDayCard({ meals, entries, hasPlan, loading, onLog, onReroll }: Props) {
+  const shown = useKcalShown();
   const kcal = meals.reduce((sum, m) => sum + m.suggestion.food.nutrients.kcal, 0);
   const protein = meals.reduce((sum, m) => sum + (m.suggestion.food.nutrients.protein ?? 0), 0);
   return (
     <section className="grp" aria-labelledby="fd-diet-auto-title">
       <h2 id="fd-diet-auto-title">{T.title}</h2>
-      <p className="tight">{T.lead(hasPlan, formatNumber(kcal, 0), formatNumber(protein, 0))}</p>
+      <p className="tight">
+        {shown ? T.lead(hasPlan, formatNumber(kcal, 0), formatNumber(protein, 0)) : T.leadPlain(hasPlan, formatNumber(protein, 0))}
+      </p>
       {meals.length === 0 ? (
         <p className="tight">
           {loading ? T.loading : T.noData}

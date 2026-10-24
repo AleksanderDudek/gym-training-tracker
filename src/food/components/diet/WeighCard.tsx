@@ -16,7 +16,12 @@ const T = text({
     changeWeight: 'Zmień wagę',
     change: 'Zmień',
     askToday: 'Ile dziś ważysz?',
-    askPast: 'Ile ważyłeś tego dnia?',
+    pastTitle: 'Waga tego dnia',
+    pastNone: 'Waga tego dnia: bez ważenia.',
+    addPast: 'Dodaj',
+    skip: 'Nie dziś',
+    skipped: 'Bez ważenia dziś.',
+    addToday: 'Dodaj wagę',
     field: 'Waga, kg',
     saveWeight: 'Zapisz wagę',
     save: 'Zapisz',
@@ -32,7 +37,12 @@ const T = text({
     changeWeight: 'Change weight',
     change: 'Change',
     askToday: 'What do you weigh today?',
-    askPast: 'What did you weigh that day?',
+    pastTitle: 'Weight that day',
+    pastNone: 'Weight that day: no weigh-in.',
+    addPast: 'Add',
+    skip: 'Not today',
+    skipped: 'No weigh-in today.',
+    addToday: 'Add weight',
     field: 'Weight, kg',
     saveWeight: 'Save weight',
     save: 'Save',
@@ -71,32 +81,41 @@ function lastBefore(weights: readonly { day: string; kg: number }[], date: strin
   return T.lastBefore(kg, gap);
 }
 
+/** Dokąd ma pójść fokus, gdy pole zniknie albo się pojawi — przycisk, który go miał, znika ze strony. */
+type Focus = 'field' | 'change' | 'add' | null;
+
 /**
  * Pytanie o wagę na samej górze dziennika. Ważenie rano, w tych samych warunkach, to jedyne, co
- * czyni trend wagi czytelnym (i z czego korzysta korekta celu), więc dzień bez ważenia zaczyna się
- * od pytania. Po odpowiedzi zostaje jedna linijka z „Zmień” — pytanie raz na dzień nie zajmuje góry
- * ekranu do wieczora. Na dzień, który jeszcze nie nadszedł, nic: nie ma czego ważyć.
+ * czyni trend wagi czytelnym (i z czego korzysta poniedziałkowe sprawdzenie celu), więc dzień bez
+ * ważenia zaczyna się od pytania — ale jednego: „Nie dziś” tu albo na ekranie Dziś pomija je w obu
+ * miejscach (most, `skipWeigh`). Po odpowiedzi zostaje jedna linijka z „Zmień” albo „Dodaj wagę”.
+ * Dzień z przeszłości bez ważenia mówi to jednym zdaniem i pozwala dopisać wagę; na dzień, który
+ * jeszcze nie nadszedł, nic: nie ma czego ważyć.
  *
- * Zapis idzie przez most do dziennika wagi z treningów (z dniem oglądanym w dzienniku), jak dotąd
- * w karcie wagi i kroków — jedno ciało, jedna lista ważeń.
+ * Zapis idzie przez most do dziennika wagi z treningów (z dniem oglądanym w dzienniku) — jedno
+ * ciało, jedna lista ważeń.
  */
 export function WeighCard({ date, today, weightKg }: Props) {
   const bridge = useBridge();
+  // Pole otwarte z linijki („Zmień”, „Dodaj”, „Dodaj wagę”) — z „Anuluj” zamiast „Nie dziś”.
   const [editing, setEditing] = useState(false);
+  // „Nie dziś” w tej karcie: most zapamiętuje pominięcie, karta zwija się od razu.
+  const [skippedHere, setSkippedHere] = useState(false);
   const [text, setText] = useState('');
   const field = useRef<HTMLInputElement>(null);
-  const change = useRef<HTMLButtonElement>(null);
-  // Dokąd ma pójść fokus, gdy pole zniknie albo się pojawi — przycisk, który go miał, znika ze strony.
-  const refocus = useRef<'field' | 'change' | null>(null);
+  const button = useRef<HTMLButtonElement>(null);
+  const refocus = useRef<Focus>(null);
 
   useEffect(() => {
     const want = refocus.current;
     refocus.current = null;
     if (want === 'field') field.current?.focus();
-    else if (want === 'change') change.current?.focus();
-  }, [editing, weightKg]);
+    else if (want) button.current?.focus();
+  }, [editing, weightKg, skippedHere]);
 
   if (date > today) return null;
+  const isToday = date === today;
+  const skipped = isToday && (skippedHere || (bridge.weighSkipped?.() ?? false));
 
   const progress = (
     <a className="fd-diet-weigh-link" href={dietPath('progress')}>
@@ -104,28 +123,30 @@ export function WeighCard({ date, today, weightKg }: Props) {
     </a>
   );
 
-  if (weightKg !== null && !editing)
-    return (
-      <section className="grp fd-diet-weigh" aria-labelledby="fd-diet-weigh-title">
-        <div className="fd-diet-weigh-head">
-          <h2 id="fd-diet-weigh-title">{T.weight(formatNumber(weightKg, 1))}</h2>
-          <button
-            ref={change}
-            type="button"
-            className="btn ghost sm"
-            aria-label={T.changeWeight}
-            onClick={() => {
-              setText(kgText(weightKg));
-              setEditing(true);
-              refocus.current = 'field';
-            }}
-          >
-            {T.change}
-          </button>
-          {progress}
-        </div>
-      </section>
-    );
+  const open = (value: string) => {
+    setText(value);
+    setEditing(true);
+    refocus.current = 'field';
+  };
+
+  /** One line instead of the question: the weight with „Zmień”, or no weigh-in with a way to add one. */
+  const line = (title: string, action: string, label: string | undefined, onClick: () => void) => (
+    <section className="grp fd-diet-weigh" aria-labelledby="fd-diet-weigh-title">
+      <div className="fd-diet-weigh-head">
+        <h2 id="fd-diet-weigh-title">{title}</h2>
+        <button ref={button} type="button" className="btn ghost sm" aria-label={label} onClick={onClick}>
+          {action}
+        </button>
+        {progress}
+      </div>
+    </section>
+  );
+
+  if (!editing) {
+    if (weightKg !== null) return line(T.weight(formatNumber(weightKg, 1)), T.change, T.changeWeight, () => open(kgText(weightKg)));
+    if (!isToday) return line(T.pastNone, T.addPast, undefined, () => open(''));
+    if (skipped) return line(T.skipped, T.addToday, undefined, () => open(''));
+  }
 
   const kg = kgOrNull(text);
   const bad = text.trim() !== '' && !validWeight(kg);
@@ -144,7 +165,7 @@ export function WeighCard({ date, today, weightKg }: Props) {
   return (
     <section className="grp fd-diet-weigh" aria-labelledby="fd-diet-weigh-title">
       <div className="fd-diet-weigh-head">
-        <h2 id="fd-diet-weigh-title">{date === today ? T.askToday : T.askPast}</h2>
+        <h2 id="fd-diet-weigh-title">{isToday ? T.askToday : T.pastTitle}</h2>
         {progress}
       </div>
       <form className="fd-diet-body" onSubmit={save} noValidate>
@@ -166,23 +187,33 @@ export function WeighCard({ date, today, weightKg }: Props) {
         <button type="submit" className="btn sm" disabled={!fresh} aria-label={T.saveWeight}>
           {T.save}
         </button>
-        {editing && (
+        {editing ? (
           <button
             type="button"
             className="btn ghost sm"
             onClick={() => {
               setEditing(false);
-              refocus.current = 'change';
+              refocus.current = 'add';
             }}
           >
             {T.cancel}
           </button>
+        ) : (
+          <button
+            type="button"
+            className="btn ghost sm"
+            onClick={() => {
+              bridge.skipWeigh?.();
+              setSkippedHere(true);
+              refocus.current = 'add';
+            }}
+          >
+            {T.skip}
+          </button>
         )}
       </form>
       <p className={`tight${bad ? ' fd-diet-warn' : ''}`} id="fd-diet-weigh-hint">
-        {bad
-          ? T.range(WEIGHT_RANGE.min, WEIGHT_RANGE.max)
-          : `${hint ? `${hint} ` : ''}${T.tip}`}
+        {bad ? T.range(WEIGHT_RANGE.min, WEIGHT_RANGE.max) : `${hint ? `${hint} ` : ''}${T.tip}`}
       </p>
     </section>
   );

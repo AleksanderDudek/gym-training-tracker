@@ -112,4 +112,22 @@ describe('Eat now (English visit)', () => {
     // UI text in English; dish names are the chain's own Polish menu.
     for (const polish of ['Prowadź', 'Co tu zjesz', 'Zjadłem', 'pieszo', 'otwarte']) expect(card.textContent).not.toContain(polish);
   }, 15_000);
+
+  test('enough for today, and the answer without calorie counting, in English', async () => {
+    await logQuick('2026-10-22', 'Obiad', 1390, { protein: 60, carbs: 150, fat: 40 });
+    const enough = renderWithBridge(<NearbyPage />);
+    const answer = await screen.findByRole('region', { name: 'For now' });
+    expect(
+      await within(answer).findByText(
+        /^That’s enough calories for today \(1,990 of 2,000 kcal\)\. If you’d like something more, pick something light\./,
+      ),
+    ).toBeInTheDocument();
+    enough.unmount();
+
+    await saveProfile(completeProfile({ startDate: '2026-10-01', dailyKcal: 2000, targetWeightKg: 75, hideKcal: true }));
+    renderWithBridge(<NearbyPage />);
+    const plain = await screen.findByRole('region', { name: 'For now' });
+    expect(await within(plain).findByText(/^That’s enough for today — if you’d like something more, pick something light\./)).toBeInTheDocument();
+    expect(plain).not.toHaveTextContent(/kcal|Na dziś/);
+  }, 15_000);
 });

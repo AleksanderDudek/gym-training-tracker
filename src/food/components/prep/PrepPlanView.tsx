@@ -4,6 +4,7 @@ import { pluralEn, text } from '../../../i18n';
 import { Modal, useModal } from '../../../components/ui';
 import { useBridge } from '../../bridge';
 import { addDays } from '../../diet/model';
+import { targetOn } from '../../diet/target';
 import type { Profile } from '../../diet/types';
 import { useDataset } from '../../hooks/useDataset';
 import { useFavorites } from '../../hooks/useDiet';
@@ -182,6 +183,12 @@ const ROLE_ORDER: Role[] = ['breakfast', 'lunchBox', 'lunch', 'snack', 'dinnerBo
 const kcal = (n: number) => `${formatNumber(Math.round(n), 0)} kcal`;
 const g = (n: number) => formatNumber(Math.round(n), 0);
 
+/**
+ * The profile's target moved this far from the plan's before the plan is called stale: the Monday
+ * check moves it by 100 at a time, and a plan bought for one such step is still the plan.
+ */
+const STALE_KCAL = 200;
+
 interface Props {
   plan: PrepPlan & { id: number };
   /** Every plan on the device: which of them the diary follows on this plan's days. */
@@ -213,7 +220,8 @@ export function PrepPlanView({ plan, plans, profile, today, onNext }: Props) {
   const physical = plan.shops.find((s) => !s.online);
   const order = plan.shops.find((s) => s.online);
   const progress = shoppingProgress(plan, new Set(plan.bought));
-  const stale = plan.goal.kcal !== profile.dailyKcal || plan.goal.dietProfile !== profile.dietProfile;
+  const target = targetOn(profile, today);
+  const stale = Math.abs(plan.goal.kcal - target) >= STALE_KCAL || plan.goal.dietProfile !== profile.dietProfile;
   // A change touches only what is ahead: from today (or the plan's first day, when it starts later).
   const from = plan.settings.start > today ? plan.settings.start : today;
   const ready = useMemo(
@@ -328,7 +336,7 @@ export function PrepPlanView({ plan, plans, profile, today, onNext }: Props) {
         )}
         {stale && (
           <p className="tight fd-prep-warn">
-            {T.stale(kcal(profile.dailyKcal), profile.dietProfile === plan.goal.dietProfile)}
+            {T.stale(kcal(target), profile.dietProfile === plan.goal.dietProfile)}
           </p>
         )}
         {short.length > 0 && <p className="tight fd-prep-warn">{T.short(short.length, plan.dayTargets.length)}</p>}

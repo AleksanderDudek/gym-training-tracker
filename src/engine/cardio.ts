@@ -247,20 +247,6 @@ export const entryEnergy = (state: AppState, c: Cardio, kg: number): Burn =>
   c.kind === 'steps' ? stepsEnergy(stepsDayOf(state, c), kg, heightOf(state)) : cardioEnergy(c, kg, heightOf(state));
 
 /**
- * Ile kroków zwykłego marszu spaliłoby tyle, co kroki dnia z drogą z urządzenia, biegami,
- * szybkimi marszami i piętrami — w tej walucie dieta liczy chodzenie (`diet/activity.ts`). Koszt
- * marszu, biegu i wznoszenia rośnie z wagą tak samo, więc stosunek od wagi nie zależy i liczy
- * się także przed pierwszym ważeniem. `null` w dniu bez kroków.
- */
-export function stepsWorthOn(state: AppState, day: string): number | null {
-  const c = cardioOn(state, day).find((x): x is Steps => x.kind === 'steps');
-  if (!c) return null;
-  const plain = cardioEnergy(c, INTENSITY_KG, heightOf(state)).active;
-  if (plain <= 0) return c.steps;
-  return Math.round((c.steps * entryEnergy(state, c, INTENSITY_KG).active) / plain / 10) * 10;
-}
-
-/**
  * Wyjścia na cardio w danym dniu: bieżnia, rower i zajęcia tańca od dziesięciu minut oraz biegi,
  * marsze i wędrówki z zegarka tej samej długości (te nie są osobnymi wpisami — siedzą w krokach).
  */

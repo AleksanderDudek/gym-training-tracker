@@ -3,13 +3,13 @@ import { Modal, useModal } from '../../../components/ui';
 import { FOOD_PATH } from '../../../routing';
 import { hashWith } from '../../hash';
 import { db } from '../../diet/db';
-import { addDays, dayGoal, mondayOf, shortDay } from '../../diet/model';
-import { activityKcalOf, useActivity } from '../../hooks/useActivity';
+import { addDays, mondayOf, shortDay } from '../../diet/model';
 import { plannedDay, plannedKcal, type Plan } from '../../diet/plan';
 import { ACTIVE_PLAN } from '../../diet/store';
+import { hidesKcal, targetOn } from '../../diet/target';
 import type { Profile } from '../../diet/types';
 import { diaryToParams, planPageFromParams, planPageToParams } from '../../diet/url';
-import { useMergedHistory, type History } from '../../hooks/useDiet';
+import { useHistory, type History } from '../../hooks/useDiet';
 import { usePrepPlans } from '../../hooks/usePrep';
 import { useUrlState } from '../../hooks/useUrlState';
 import { formatDate, formatNumber } from '../../lib/format';
@@ -43,7 +43,6 @@ const T = text({
     goal: 'Cel',
     eaten: 'Zjedzone',
     templateVariant: (template: string, variant: number) => `${template} · wariant ${variant}`,
-    overGoal: ' – ponad cel',
     tapDay: 'Stuknij dzień, żeby go otworzyć: odhaczyć, zamienić pozycje albo wybrać inny wariant.',
     notes: 'Uwagi z planu',
     templates: 'Dni wzorcowe i warianty',
@@ -69,7 +68,6 @@ const T = text({
     goal: 'Goal',
     eaten: 'Eaten',
     templateVariant: (template: string, variant: number) => `${template} · option ${variant}`,
-    overGoal: ' – over the goal',
     tapDay: 'Tap a day to open it: tick items off, swap them or pick another option.',
     notes: 'Notes from the plan',
     templates: 'Template days and options',
@@ -95,7 +93,7 @@ export default function DietPlanPage() {
   const today = clock.date;
   const date = state.date ?? today;
   const from = profile ? [mondayOf(date), mondayOf(today)].sort()[0]! : null;
-  const history = useMergedHistory(from);
+  const history = useHistory(from);
 
   if (profile === undefined || plan === undefined || prepPlans === undefined) return <Loading />;
   if (!profile) return <Onboarding what={T.mealPlan} />;
@@ -147,10 +145,14 @@ interface Props {
   onDate: (date: string) => void;
 }
 
-/** Plan jako tydzień: czym każdy dzień miał być, czym był, i wejście w każdy z nich. */
+/**
+ * Plan jako tydzień: czym każdy dzień miał być, czym był, i wejście w każdy z nich. Cel dnia to cel
+ * z historii celu (`targetOn`) — ten sam dla każdego dnia tygodnia, aż zmieni go poniedziałkowe
+ * sprawdzenie, Ty albo przerwa; bez liczenia kalorii kolumny celu nie ma.
+ */
 function PlanView({ profile, plan, date, today, history, onDate }: Props) {
   const { req, ask } = useModal();
-  const activity = useActivity(profile, today);
+  const showGoal = !hidesKcal(profile);
   const monday = mondayOf(date);
   const week = Array.from({ length: 7 }, (_, i) => addDays(monday, i));
   const end = addDays(plan.startDate, plan.days.length - 1);
@@ -203,9 +205,11 @@ function PlanView({ profile, plan, date, today, history, onDate }: Props) {
                 <th scope="col" className="n">
                   Plan
                 </th>
-                <th scope="col" className="n">
-                  {T.goal}
-                </th>
+                {showGoal && (
+                  <th scope="col" className="n">
+                    {T.goal}
+                  </th>
+                )}
                 <th scope="col" className="n">
                   {T.eaten}
                 </th>
@@ -216,8 +220,6 @@ function PlanView({ profile, plan, date, today, history, onDate }: Props) {
                 const choices = history.days.get(d)?.choices;
                 const planned = plannedDay(plan, d, choices);
                 const eaten = history.eaten.get(d);
-                const goal = dayGoal(profile, history.eaten, d, today, activityKcalOf(activity)).kcal;
-                const over = eaten !== undefined && eaten > goal * 1.05;
                 return (
                   <tr
                     key={d}
@@ -229,11 +231,8 @@ function PlanView({ profile, plan, date, today, history, onDate }: Props) {
                     </th>
                     <td>{planned ? T.templateVariant(planned.template, planned.variant) : '–'}</td>
                     <td className="n">{planned ? formatNumber(plannedKcal(planned) ?? 0, 0) : '–'}</td>
-                    <td className="n soft">{d >= today ? formatNumber(goal, 0) : ''}</td>
-                    <td className={`n${over ? ' over' : ''}`}>
-                      {eaten !== undefined ? formatNumber(eaten, 0) : ''}
-                      {over && <span className="sr-only">{T.overGoal}</span>}
-                    </td>
+                    {showGoal && <td className="n soft">{d >= today ? formatNumber(targetOn(profile, d), 0) : ''}</td>}
+                    <td className="n">{eaten !== undefined ? formatNumber(eaten, 0) : ''}</td>
                   </tr>
                 );
               })}

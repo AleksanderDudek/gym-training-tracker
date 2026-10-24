@@ -34,7 +34,8 @@ export interface GenerateInput {
   dict: Dictionaries;
   dayTargets: { date: string; targets: MacroTargets }[];
   goal: PrepGoal;
-  checkIn: CheckIn | null;
+  /** A stored plan's check-in, carried through a remake; a new plan has none (absent: `null`). */
+  checkIn?: CheckIn | null;
   /** Starred recipes (ids): a nudge in the selection. */
   favorites?: ReadonlySet<string>;
   /** The catalog (tests pass their own). */
@@ -386,7 +387,7 @@ export function generatePlan(input: GenerateInput): GenerateResult {
       settings,
       shops,
       goal: input.goal,
-      checkIn: input.checkIn,
+      checkIn: input.checkIn ?? null,
       dayTargets,
       slots,
       choices,

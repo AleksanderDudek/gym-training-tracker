@@ -5,15 +5,18 @@ import { db } from '../../diet/db';
 import { autoSetName, productFood, setFood, setTotals, type Food, type FoodSet } from '../../diet/foods';
 import { searchFoods } from '../../diet/search';
 import { logFood, logQuick } from '../../diet/store';
+import { BAND, r10 } from '../../diet/target';
 import { useCodeLookup, type Lookup } from '../../hooks/useCodeLookup';
 import { text } from '../../../i18n';
+import { formatNumber } from '../../lib/format';
 import type { Dictionaries, IndexedProduct } from '../../lib/types';
 import { scanFood } from '../../scan/compare';
 import { BarcodeCamera } from '../common/BarcodeCamera';
 import { CodeEntry } from '../common/CodeEntry';
 import { Sheet } from '../common/Sheet';
 import { StarButton } from '../common/StarButton';
-import { DT } from './dietText';
+import { DT, savedText } from './dietText';
+import { useKcalShown } from './kcalShown';
 import { FoodResults, PartsPicker, atGrams, badGrams, numberOrNull, partsOf, useMenus, type Part } from './PartsPicker';
 import { MacroLine } from './SuggestionList';
 
@@ -53,6 +56,11 @@ const T = text({
     scanInStore: (code: string) => `${code} to kod sklepowy (towar ważony w sklepie) — wyszukaj produkt po nazwie.`,
     scanFailed: (code: string) => `Kodu ${code} nie ma w bazie aplikacji, a Open Food Facts teraz nie odpowiada.`,
     scanPartial: (name: string) => `${name}: etykieta nie podaje wszystkich makroskładników — dodaj go jako „Tylko kalorie”.`,
+    scanPartialPlain: (name: string) => `${name}: etykieta nie podaje wszystkich makroskładników — wyszukaj go po nazwie.`,
+    afterLeft: (kcal: string, past: boolean, reserved: boolean) =>
+      `Po tym zostanie ok. ${kcal} kcal na ${past ? 'ten dzień' : 'dziś'}${reserved ? ' — po zaplanowanym większym posiłku' : ''}.`,
+    afterFull: 'To wypełni cel na dziś.',
+    afterOver: (kcal: string) => `To ok. ${kcal} kcal ponad cel na dziś.`,
   },
   en: {
     how: 'How to add',
@@ -87,6 +95,11 @@ const T = text({
     scanInStore: (code: string) => `${code} is a shop’s own code (goods weighed in the shop) — search for the product by name.`,
     scanFailed: (code: string) => `Code ${code} isn’t in the app’s database, and Open Food Facts isn’t answering right now.`,
     scanPartial: (name: string) => `${name}: the label doesn’t give all the macros — add it as “Calories only”.`,
+    scanPartialPlain: (name: string) => `${name}: the label doesn’t give all the macros — search for it by name.`,
+    afterLeft: (kcal: string, past: boolean, reserved: boolean) =>
+      `After this, about ${kcal} kcal left for ${past ? 'that day' : 'today'}${reserved ? ', after the planned bigger meal' : ''}.`,
+    afterFull: 'That fills today’s target.',
+    afterOver: (kcal: string) => `That’s about ${kcal} kcal over today’s target.`,
   },
 });
 
@@ -98,9 +111,26 @@ interface Props {
   dict: Dictionaries;
   /** Baza produktów jeszcze się wczytuje: wyszukiwanie zna na razie plan, przepisy, lokale i własne jedzenie. */
   productsLoading: boolean;
+  /**
+   * Ile kcal zostało z celu dnia (`needs.remaining.kcal`, z odłożonym już zaplanowanym większym
+   * posiłkiem) — pod wybraną pozycją zdanie, ile zostanie po niej. `null`: bez tego zdania.
+   */
+  left: number | null;
+  /** Zaplanowany większy posiłek jest już odłożony w `left`. */
+  reserved: boolean;
+  /** Dzień inny niż dziś: „na ten dzień” zamiast „na dziś”. */
+  past?: boolean;
   onClose: () => void;
   /** Po zapisie: krótka wiadomość na dole ekranu (most do treningów). */
   onLogged: (text: string) => void;
+}
+
+/** What the chosen food leaves of the day, on the ±100 band: kcal left, the target filled, or over it. */
+function afterText(left: number, kcal: number, past: boolean, reserved: boolean): string {
+  const after = left - kcal;
+  if (after > BAND) return T.afterLeft(formatNumber(r10(after), 0), past, reserved);
+  if (after >= -BAND) return T.afterFull;
+  return T.afterOver(formatNumber(r10(-after), 0));
 }
 
 /**
@@ -125,20 +155,19 @@ type Mode = 'search' | 'set' | 'quick';
 const QUICK = { name: '', kcal: '', protein: '', carbs: '', fat: '', save: false };
 
 function PickerBody(props: BodyProps) {
+  const shown = useKcalShown();
   const [mode, setMode] = useState<Mode>('search');
+  // Bez liczenia kalorii nie ma „Tylko kalorie”: wpis z samymi kaloriami nic by tu nie powiedział.
+  const options: { key: Mode; label: string }[] = [
+    { key: 'search', label: T.search },
+    { key: 'set', label: T.set },
+    ...(shown ? [{ key: 'quick' as const, label: T.quick }] : []),
+  ];
+  const current: Mode = mode === 'quick' && !shown ? 'search' : mode;
   return (
     <>
-      <Segmented
-        label={T.how}
-        options={[
-          { key: 'search', label: T.search },
-          { key: 'set', label: T.set },
-          { key: 'quick', label: T.quick },
-        ]}
-        value={mode}
-        onChange={setMode}
-      />
-      {mode === 'search' ? <SearchMode {...props} /> : mode === 'set' ? <SetBuilder {...props} /> : <QuickMode {...props} />}
+      <Segmented label={T.how} options={options} value={current} onChange={setMode} />
+      {current === 'search' ? <SearchMode {...props} /> : current === 'set' ? <SetBuilder {...props} /> : <QuickMode {...props} />}
     </>
   );
 }
@@ -160,7 +189,8 @@ function useOnce(onLogged: (text: string) => void, onDone: () => void) {
   return { busy, once };
 }
 
-function SearchMode({ date, pool, products, dict, productsLoading, onDone, onLogged }: BodyProps) {
+function SearchMode({ date, pool, products, dict, productsLoading, left, reserved, past = false, onDone, onLogged }: BodyProps) {
+  const shown = useKcalShown();
   const chains = useMenus();
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState<Food | null>(null);
@@ -182,7 +212,7 @@ function SearchMode({ date, pool, products, dict, productsLoading, onDone, onLog
     if (result.status !== 'found') return;
     const food = result.product ? productFood(result.product, dict) : scanFood(result.item);
     if (!food) {
-      setScanNote(T.scanPartial(result.item.name));
+      setScanNote(shown ? T.scanPartial(result.item.name) : T.scanPartialPlain(result.item.name));
       return;
     }
     setScanning(false);
@@ -197,10 +227,11 @@ function SearchMode({ date, pool, products, dict, productsLoading, onDone, onLog
   const chosen = selected ? atGrams(selected, grams) : null;
 
   const log = (food: Food) =>
-    void once(() => logFood(date, food), DT.saved(food.name, food.nutrients.kcal));
+    void once(() => logFood(date, food), savedText(food.name, food.nutrients.kcal, shown));
   const add = () => {
     if (chosen) log(chosen);
   };
+  const after = shown && chosen && left !== null ? afterText(left, chosen.nutrients.kcal, past, reserved) : null;
 
   return (
     <div className="fd-diet-picker">
@@ -264,6 +295,7 @@ function SearchMode({ date, pool, products, dict, productsLoading, onDone, onLog
           <p className="fd-diet-meta">
             <MacroLine food={chosen} /> · {chosen.amountLabel}
           </p>
+          {after && <p className="fd-diet-after">{after}</p>}
           <div className="fd-diet-acts">
             <button type="button" className="btn" onClick={add} disabled={busy}>
               {T.add}
@@ -307,6 +339,7 @@ function ScanMessage({ lookup, note }: { lookup: Lookup; note: string | null }) 
  * dziennika), więc zestaw nie zmienia się razem z bazą produktów.
  */
 function SetBuilder({ date, pool, products, dict, productsLoading, onDone, onLogged }: BodyProps) {
+  const shown = useKcalShown();
   const [name, setName] = useState('');
   const [parts, setParts] = useState<Part[]>([]);
   const [save, setSave] = useState(true);
@@ -327,7 +360,7 @@ function SetBuilder({ date, pool, products, dict, productsLoading, onDone, onLog
           const id = save ? await db.sets.add(set) : undefined;
           await logFood(date, setFood(id === undefined ? set : { ...set, id }));
         }),
-      `${DT.saved(finalName, total.kcal)}${save ? T.setWaits : ''}`,
+      `${savedText(finalName, total.kcal, shown)}${save ? T.setWaits : ''}`,
     );
   };
 

@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { totals, type DayTotals } from '../diet/day';
-import { dayGoal, mealsLeftAt, mondayOf } from '../diet/model';
+import { mealsLeftAt } from '../diet/model';
 import { dayNeeds, type DayNeeds } from '../diet/now';
 import { completeProfile } from '../diet/store';
+import { hidesKcal, targetOn } from '../diet/target';
 import type { Profile } from '../diet/types';
-import { activityKcalOf, useActivity } from './useActivity';
-import { useClock, useDay, useEntries, useMergedHistory, useProfile } from './useDiet';
+import { useClock, useDay, useEntries, useProfile } from './useDiet';
+import { useWeeklyCheck } from './useWeeklyCheck';
 
 export interface EatNow {
   today: string;
@@ -15,7 +16,12 @@ export interface EatNow {
   profile: Profile | null;
   needs: DayNeeds;
   eaten: DayTotals;
-  /** Still loading the diary: the numbers would say "nothing eaten" for a moment. */
+  /** „Bez liczenia kalorii” (`hidesKcal`): the screens say protein, not calories. */
+  hidesKcal: boolean;
+  /**
+   * Still loading the diary, or this week's Monday check may still change today's target: the
+   * numbers would say "nothing eaten" or an old target for a moment.
+   */
   loading: boolean;
 }
 
@@ -25,9 +31,10 @@ const AVERAGE = completeProfile({ dailyKcal: 2000, dietProfile: 'zbilansowana', 
 const NOTHING: DayTotals = { kcal: 0, protein: 0, carbs: 0, fat: 0, unknownMacros: 0 };
 
 /**
- * What is left of today for the next meal, the way the diary counts it: today's goal (the week and
- * the activity corrections), what is eaten, a planned cheat meal reserved, the meals still ahead by
- * the hour. Without a diet profile, an average day with nothing eaten.
+ * What is left of today for the next meal, the way the diary counts it (spec 2026-10-24 §4.8):
+ * today's target from the goals history (`targetOn` — activity never changes it), what is eaten, a
+ * planned bigger meal set aside, the meals still ahead by the hour. It triggers this week's Monday
+ * check. Without a diet profile, an average day with nothing eaten.
  */
 export function useEatNow(): EatNow {
   const row = useProfile();
@@ -36,8 +43,7 @@ export function useEatNow(): EatNow {
   const today = clock.date;
   const entries = useEntries(today);
   const day = useDay(today);
-  const history = useMergedHistory(profile ? mondayOf(today) : null);
-  const activity = useActivity(profile, today);
+  const check = useWeeklyCheck(row, clock);
   // Opening hours need the minute, not the hour `useClock` settles for.
   const [nowMs, setNowMs] = useState(() => Date.now());
   useEffect(() => {
@@ -46,7 +52,6 @@ export function useEatNow(): EatNow {
   }, []);
 
   const base = useMemo(() => {
-    const eaten = entries ? totals(entries) : NOTHING;
     const mealsAhead = mealsLeftAt(clock.hour);
     if (!profile) {
       return {
@@ -54,17 +59,19 @@ export function useEatNow(): EatNow {
         profile: null,
         eaten: NOTHING,
         needs: dayNeeds({ profile: AVERAGE, goalKcal: AVERAGE.dailyKcal, eaten: NOTHING, cheat: null, mealsAhead }),
+        hidesKcal: false,
         loading: row === undefined,
       };
     }
-    const goal = history ? dayGoal(profile, history.eaten, today, today, activityKcalOf(activity)).kcal : profile.dailyKcal;
+    const eaten = entries ? totals(entries) : NOTHING;
     return {
       today,
       profile,
       eaten,
-      needs: dayNeeds({ profile, goalKcal: goal, eaten, cheat: day?.cheat ?? null, mealsAhead }),
-      loading: entries === undefined || history === undefined,
+      needs: dayNeeds({ profile, goalKcal: targetOn(profile, today), eaten, cheat: day?.cheat ?? null, mealsAhead }),
+      hidesKcal: hidesKcal(profile),
+      loading: entries === undefined || day === undefined || check === 'pending',
     };
-  }, [profile, row, entries, day, history, activity, clock.hour, today]);
+  }, [profile, row, entries, day, check, clock.hour, today]);
   return useMemo(() => ({ ...base, nowMs }), [base, nowMs]);
 }

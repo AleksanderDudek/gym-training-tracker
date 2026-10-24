@@ -2,14 +2,15 @@ import Dexie, { type Table } from 'dexie';
 import type { CustomFood, Food, FoodSet, FoodSource } from './foods';
 import type { PrepPlan } from '../prep/types';
 import type { DayChoices, Plan } from './plan';
-import type { Profile } from './types';
+import type { LegacyFields, Profile } from './types';
 
 /**
  * Everything the diet tab knows, on this device only (IndexedDB). Health data
  * does not leave it; a JSON export is the backup.
  */
 
-export interface ProfileRow extends Profile {
+/** The stored profile: the profile plus the old model's keys, which stay in the row untouched. */
+export interface ProfileRow extends Profile, LegacyFields {
   id: 'me';
 }
 
@@ -26,6 +27,11 @@ export interface DayRow {
   note?: string;
   /** A cheat meal planned for this day: the rest of the day is planned around it until it is eaten. */
   cheat?: PlannedCheat;
+  /**
+   * The person's word on the day's log: `true` — incomplete („Nie wszystko zapisane”), `false` —
+   * the whole day („To był cały dzień”); absent — 60 % of the day's target decides (`isComplete`).
+   */
+  partial?: boolean;
 }
 
 /** A planned cheat meal: calories always, macros when known (unknown is not zero). */

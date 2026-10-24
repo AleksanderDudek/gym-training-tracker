@@ -4,9 +4,8 @@ import type { DayRow } from './db';
 /**
  * Jedno ciało, jedno źródło prawdy. Waga i kroki mieszkają w danych treningowych (dziennik wagi,
  * wpisy kroków, zegarek); dieta ma w `DayRow` własne, starsze pola z czasów Produktów PL. Tu
- * jedno nakłada się na drugie, zanim cokolwiek policzy prognozę czy postęp — same moduły diety
- * (`model.ts`, `weightOn`, `lastWeighing`, `forecastInputs`) czytają dalej `weightKg` i `steps`
- * i nie muszą wiedzieć, skąd przyszły.
+ * jedno nakłada się na drugie (dzień dziennika z `useMergedDay`), a dawne ważenia diety
+ * przechodzą do dziennika wagi.
  */
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
@@ -35,23 +34,6 @@ export function mergeBody(
     if (steps !== null) row.steps = steps;
   }
   return [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
-}
-
-/**
- * Wejście prognozy z krokami z treningów w KAŻDYM dniu, który je ma. `mergeBody` celowo nie tworzy
- * wierszy tylko dla kroków, więc dzień bez wpisu diety i bez ważenia — a z krokami z zegarka — nie
- * trafiłby do `forecastInputs` i prognoza przyjęłaby plan kroków. Tu kroki z treningów nadpisują
- * to, co dało `forecastInputs`; dni, w których treningi nic nie mają, zostają bez zmian. Wejście
- * zostaje nietknięte, sama `forecastInputs` też — dalej czyta tylko dni diety.
- */
-export function withGymSteps<T extends { date: string; steps?: number | null }>(
-  inputs: readonly T[],
-  stepsOn: (day: string) => number | null,
-): T[] {
-  return inputs.map((input) => {
-    const steps = stepsOn(input.date);
-    return steps === null ? input : { ...input, steps };
-  });
 }
 
 /**

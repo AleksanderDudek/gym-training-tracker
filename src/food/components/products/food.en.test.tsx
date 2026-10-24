@@ -144,7 +144,7 @@ describe('Barcode scanner in English', () => {
     const card = await within(sheet).findByRole('article', { name: 'Skyr' });
     expect(within(card).getByRole('rowheader', { name: 'per 100 g' })).toBeInTheDocument();
     expect(within(card).getByRole('rowheader', { name: 'pack 150 g' })).toBeInTheDocument();
-    expect(within(card).getByText(/^For today: it fits — [\d,]+ kcal left\.$/)).toBeInTheDocument();
+    expect(within(card).getByText(/^For today: it fits — about [\d,]+ kcal left\.$/)).toBeInTheDocument();
     expect(within(card).getByRole('button', { name: /I ate 150 g/ })).toBeInTheDocument();
     expect(within(sheet).getByRole('heading', { name: 'Comparison (1)' })).toBeInTheDocument();
     expect(within(sheet).getByText('Scan another product to compare.')).toBeInTheDocument();

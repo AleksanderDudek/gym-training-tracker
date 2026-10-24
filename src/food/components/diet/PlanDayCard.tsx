@@ -6,6 +6,7 @@ import { plannedKcal, type Plan, type PlannedDay, type PlannedItem } from '../..
 import { logPlanItem, updateChoices } from '../../diet/store';
 import { formatNumber } from '../../lib/format';
 import { DT } from './dietText';
+import { useKcalShown } from './kcalShown';
 import { MacroLine } from './SuggestionList';
 
 const T = text({
@@ -72,6 +73,7 @@ const ICON = { size: 20, strokeWidth: 2, 'aria-hidden': true } as const;
  * trzy przyciski i nazwa potrawy w jednym rzędzie by się nie zmieściły.
  */
 export function PlanDayCard({ plan, planned, date, entries, onSwap }: Props) {
+  const shown = useKcalShown();
   const variants = plan.templates[planned.template] ?? [];
   const left = planned.items.filter((i) => !i.skipped && !eatenEntry(entries, i));
   const leftKcal = left.reduce((sum, i) => sum + i.kcal, 0);
@@ -90,7 +92,7 @@ export function PlanDayCard({ plan, planned, date, entries, onSwap }: Props) {
         >
           {variants.map((v) => (
             <option key={v.index} value={v.index}>
-              {v.index} · {formatNumber(v.totals.kcal, 0)} kcal · {DT.p} {formatNumber(v.totals.protein ?? 0, 0)} g
+              {`${v.index} · ${shown ? `${formatNumber(v.totals.kcal, 0)} kcal · ` : ''}${DT.p} ${formatNumber(v.totals.protein ?? 0, 0)} g`}
             </option>
           ))}
         </select>
@@ -191,10 +193,12 @@ export function PlanDayCard({ plan, planned, date, entries, onSwap }: Props) {
           );
         })}
       </ul>
-      <p className="tight">
-        {T.total(formatNumber(plannedKcal(planned) ?? 0, 0))}
-        {left.length > 0 && T.left(formatNumber(leftKcal, 0))}
-      </p>
+      {shown && (
+        <p className="tight">
+          {T.total(formatNumber(plannedKcal(planned) ?? 0, 0))}
+          {left.length > 0 && T.left(formatNumber(leftKcal, 0))}
+        </p>
+      )}
     </section>
   );
 }

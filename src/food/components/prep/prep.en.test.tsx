@@ -8,13 +8,10 @@ vi.hoisted(() => {
   globalThis.__KB_LANG__ = 'en';
 });
 
-import type { DayRow } from '../../diet/db';
 import { db } from '../../diet/db';
-import { addDays } from '../../diet/model';
 import { clearAll, saveProfile } from '../../diet/store';
 import { AISLE_LABELS } from '../../prep/aisles';
 import { EXCLUSION_LABELS } from '../../prep/candidates';
-import { checkIn } from '../../prep/checkin';
 import { goalName, portionLabel } from '../../prep/format';
 import { noSwapMessage } from '../../prep/generate';
 import { PLAN_WORDS } from '../../prep/meals';
@@ -85,12 +82,10 @@ async function makePlan(): Promise<PrepPlan & { id: number }> {
   expect(within(form).getByRole('group', { name: 'Meals a day' })).toBeInTheDocument();
   expect(within(form).getByRole('button', { name: 'Lunch from a box' })).toBeInTheDocument();
   expect(within(form).getByRole('button', { name: 'No meat' })).toBeInTheDocument();
-  expect(
-    await within(form).findByText(
-      'To fit your goal I need at least 5 weigh-ins over 14 days and full food logs on ¾ of those days (now: 0 weigh-ins). The plan uses the goal from your profile.',
-    ),
-  ).toBeInTheDocument();
-  absent('Od kiedy', 'Ułóż plan', 'Bez mięsa', /Do dopasowania/, 'Cel planu');
+  const goal = within(form).getByRole('region', { name: 'Plan goal' });
+  expect(goal).toHaveTextContent(/Losing weight · −0\.5 kg\/wk · 2,200 kcal a day · .+ · protein 152 g\./);
+  expect(within(goal).getByText('The target from your diet profile. It’s fitted on Mondays — the plan uses today’s.')).toBeInTheDocument();
+  absent('Od kiedy', 'Ułóż plan', 'Bez mięsa', /Do dopasowania/, 'Cel planu', /Cel z profilu diety/, /To fit your goal/);
   await user.click(within(form).getByRole('button', { name: 'Make the plan' }));
   await vi.waitFor(() => expect(bridge.toast).toHaveBeenCalledWith('Your 7-day plan is ready — the shopping list is waiting.'));
   unmount();
@@ -154,30 +149,9 @@ describe('Plan & shopping in English', () => {
   }, 30_000);
 });
 
-describe('check-in and planner labels in English', () => {
-  test('reasons with numbers, aisles, exclusions, slots, sides and words', () => {
-    const profile = prepProfile({ dailyKcal: 2200, startWeightKg: 84, targetWeightKg: 76 });
-    const few = checkIn({ profile, days: [{ date: '2026-10-18', weightKg: 82 }], eaten: new Map(), today: TODAY });
-    expect(few.reason).toBe(
-      'To fit your goal I need at least 5 weigh-ins over 14 days and full food logs on ¾ of those days (now: 1 weigh-in). The plan uses the goal from your profile.',
-    );
-
-    // Four weeks standing still on 2200 kcal: the model expected a loss, so the goal comes down.
-    const days: DayRow[] = [];
-    const eaten = new Map<string, number>();
-    for (let i = 28; i >= 1; i--) {
-      const date = addDays(TODAY, -i);
-      if ((28 - i) % 3 === 0) days.push({ date, weightKg: 82 });
-      eaten.set(date, 2200);
-    }
-    const lower = checkIn({ profile, days, eaten, today: TODAY });
-    expect(lower.status).toBe('korekta');
-    expect(lower.reason).toContain(`I suggest ${lower.suggestedKcal.toLocaleString('en-GB')} kcal instead of 2,200 kcal`);
-    expect(lower.reason).toMatch(/^Over the last \d+ days your weight moved at .+; the plan assumed .+\. Your diary and weight say/);
-
+describe('planner labels in English', () => {
+  test('aisles, exclusions, slots, sides and words', () => {
     const texts = [
-      few.reason,
-      lower.reason,
       ...Object.values(AISLE_LABELS),
       ...Object.values(EXCLUSION_LABELS),
       ...Object.values(PLAN_WORDS),

@@ -532,7 +532,7 @@ export function SettingsView({
         </div>
       )}
       <RemindersCard state={state} onPrefs={onReminders} onToast={onToast} />
-      <GarminCard state={state} onSync={onWatchSync} onToast={onToast} />
+      <GarminCard state={state} onSync={onWatchSync} onToast={onToast} onFeedback={onFeedback} />
       <PhoneCard state={state} onSync={onPhoneSync} onToast={onToast} />
 
       <div className="grp">

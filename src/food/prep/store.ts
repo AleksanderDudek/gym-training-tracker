@@ -1,7 +1,5 @@
 import { db, type DietDb } from '../diet/db';
 import { addDays } from '../diet/model';
-import { saveProfile } from '../diet/store';
-import type { Profile } from '../diet/types';
 import { shiftPlan } from './dates';
 import { cleanName, type PrepPlan } from './types';
 
@@ -95,18 +93,6 @@ export async function savePrepPlan(plan: PrepPlan, database: DietDb = db): Promi
     const unnamed = (await database.prep.toArray()).filter((p) => !p.name).sort(byNewest);
     const extra = unnamed.slice(KEEP_PLANS).map((p) => p.id!);
     if (extra.length) await database.prep.bulkDelete(extra);
-    return id;
-  });
-}
-
-/**
- * A new plan and, when the check-in changed the goal, the profile with it: both or neither. A plan
- * saved without its goal (or the goal without its plan) would make the diary and the plan disagree.
- */
-export async function startPlan(plan: PrepPlan, profile: Profile | null, database: DietDb = db): Promise<number> {
-  return database.transaction('rw', database.prep, database.profile, async () => {
-    const id = await savePrepPlan(plan, database);
-    if (profile) await saveProfile(profile, database);
     return id;
   });
 }
