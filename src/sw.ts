@@ -3,10 +3,10 @@ import { clientsClaim } from 'workbox-core';
 import { cleanupOutdatedCaches, createHandlerBoundToURL, precacheAndRoute } from 'workbox-precaching';
 import { NavigationRoute, registerRoute } from 'workbox-routing';
 import { CacheFirst, StaleWhileRevalidate } from 'workbox-strategies';
-import { ExpirationPlugin } from 'workbox-expiration';
+import { CacheExpiration, ExpirationPlugin } from 'workbox-expiration';
 import { CacheableResponsePlugin } from 'workbox-cacheable-response';
 import { navigationDenylist } from './swNavigation';
-import { withoutDateHeader } from './swPlugins';
+import { forgetTrail, fromAfterReset, withoutDateHeader } from './swPlugins';
 
 declare const self: ServiceWorkerGlobalScope;
 
@@ -37,10 +37,18 @@ declare const self: ServiceWorkerGlobalScope;
  *
  * Overpass, Open Food Facts, serwer aplikacji i filmy z YouTube'a idą prosto do sieci: offline i tak
  * by nie ruszyły.
+ *
+ * „Usuń wszystkie dane” (wiadomość `FORGET_TRAIL` z `src/food/backup.ts`): kopie, które mówią, gdzie
+ * ktoś patrzył i co oglądał — kawałki danych OSM, kafelki mapy, zdjęcia produktów — znikają razem
+ * z zapisem, kiedy ich użyto, a to, o co poproszono przed resetem, nie trafia do nich, nawet gdy
+ * przyjdzie później (strona mogła się w tym czasie przeładować albo zamknąć).
  * W trybie deweloperskim ten plik nie jest rejestrowany.
  */
 
 const DAY = 24 * 3600;
+
+/** Kopie, które zdradzają, gdzie ktoś patrzył i co oglądał — te usuwa reset (`FOOD_CACHES` w `src/food/backup.ts`). */
+const TRAIL = ['gt-osm', 'osm-tiles', 'off-images'];
 
 precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
@@ -48,7 +56,7 @@ cleanupOutdatedCaches();
 // wcześniej. Przy aktualizacji niczego to nie przyspiesza: nowa wersja i tak czeka na zgodę.
 // To, co strona pobrała przed przejęciem (baza produktów, paczka sklepów, indeks i kawałki danych
 // OSM), poszło obok kopii — strona pobiera to wtedy jeszcze raz, już przez service worker
-// (`src/swWarm.ts`).
+// (`src/swWarm.ts`); kawałki tylko wtedy, gdy w międzyczasie nie było „Usuń wszystkie dane”.
 clientsClaim();
 
 registerRoute(
@@ -83,8 +91,11 @@ registerRoute(
   new CacheFirst({
     cacheName: 'gt-osm',
     plugins: [
-      new ExpirationPlugin({ maxEntries: 400, maxAgeSeconds: 90 * DAY, purgeOnQuotaError: true }),
       new CacheableResponsePlugin({ statuses: [200] }),
+      // Nic, o co poproszono przed „Usuń wszystkie dane” — przed wygasaniem, bo ono notuje każde
+      // użycie kopii.
+      fromAfterReset,
+      new ExpirationPlugin({ maxEntries: 400, maxAgeSeconds: 90 * DAY, purgeOnQuotaError: true }),
       // A leaf never changes under its name, so its age is how long ago it was LAST USED (what the
       // expiration keeps track of), not its `Date` header.
       withoutDateHeader,
@@ -123,8 +134,9 @@ registerRoute(
   new CacheFirst({
     cacheName: 'off-images',
     plugins: [
-      new ExpirationPlugin({ maxEntries: 400, maxAgeSeconds: 30 * DAY }),
       new CacheableResponsePlugin({ statuses: [200] }),
+      fromAfterReset,
+      new ExpirationPlugin({ maxEntries: 400, maxAgeSeconds: 30 * DAY }),
     ],
   }),
 );
@@ -134,8 +146,9 @@ registerRoute(
   new CacheFirst({
     cacheName: 'osm-tiles',
     plugins: [
-      new ExpirationPlugin({ maxEntries: 500, maxAgeSeconds: 7 * DAY }),
       new CacheableResponsePlugin({ statuses: [200] }),
+      fromAfterReset,
+      new ExpirationPlugin({ maxEntries: 500, maxAgeSeconds: 7 * DAY }),
     ],
   }),
 );
@@ -154,9 +167,23 @@ self.addEventListener('activate', (event) => {
 /**
  * „Odśwież” na pasku nowej wersji albo na ekranie awarii: nowa wersja przejmuje stronę, a ta się
  * przeładowuje.
+ *
+ * „Usuń wszystkie dane”: od tej chwili nic, o co poproszono wcześniej, nie trafia do kopii z `TRAIL`
+ * (`fromAfterReset`), a same kopie znikają razem z wpisami w bazie wygasania — Workbox trzyma tam
+ * adresy użytych plików. Wpisy usuwa jego własny `CacheExpiration`, także w workerze, który dopiero
+ * wstał dla tej wiadomości. Strona dostaje odpowiedź, gdy wszystko zniknie.
  */
 self.addEventListener('message', (event) => {
   if (event.data?.type === 'SKIP_WAITING') void self.skipWaiting();
+  if (event.data?.type === 'FORGET_TRAIL') {
+    const reply = event.ports[0];
+    event.waitUntil(
+      // Limit tylko dlatego, że konstruktor go wymaga: `delete()` usuwa wszystkie wpisy tej kopii.
+      forgetTrail(TRAIL, (name) => new CacheExpiration(name, { maxEntries: 1 }).delete())
+        .catch(() => undefined)
+        .then(() => reply?.postMessage('done')),
+    );
+  }
 });
 
 /*

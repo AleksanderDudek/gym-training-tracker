@@ -81,28 +81,32 @@ function fakeCaches() {
 
 /**
  * The service worker and the browser's HTTP cache, as Chromium has them: the worker fetches a file
- * itself, and the page giving up does not end that request. Until it ends it is writing the file's
- * cache entry, and a request in the default mode for the same file joins it — and waits with it.
- * `cache: 'reload'` goes past the entry to `server`, and its own request writes the entry from then
- * on (Chromium drops the old one).
+ * itself, and the page giving up does not end that request. Until its whole body is in it is writing
+ * the file's cache entry, and a request in the default mode for the same file joins it — and waits
+ * with it. `cache: 'reload'` goes past the entry to `server`, and its own request writes the entry
+ * from then on (Chromium drops the old one). The worker's own copy is never read here: each page
+ * request gets a clone of it.
  */
 function throughWorker(server: (url: string) => Promise<Response>) {
   const writing = new Map<string, Promise<Response>>();
   return (url: string, init?: RequestInit): Promise<Response> => {
     const open = writing.get(url);
-    if (open && init?.cache !== 'reload') return open.then((response) => response.clone());
+    if (open && init?.cache !== 'reload') return open.then((copy) => copy.clone());
     const request = server(url);
     writing.set(url, request);
     const written = () => {
       if (writing.get(url) === request) writing.delete(url);
     };
-    request.then(written, written);
-    return request;
+    request.then((copy) => copy.clone().arrayBuffer()).then(written, written);
+    return request.then((copy) => copy.clone());
   };
 }
 
 /** A request that never answers: the server or the link stalls, and the worker's request stays open. */
 const stall = () => new Promise<Response>(() => {});
+
+/** The headers at once, then not a byte of the body: the link stalls once the answer has begun. */
+const silentBody = () => new Response(new ReadableStream<Uint8Array>(), { headers: { 'content-type': 'application/gzip' } });
 
 beforeEach(() => {
   data = osmTestData(ROWS, WARSAW, 4);
@@ -149,7 +153,7 @@ describe('the app’s own OSM data', () => {
     await vi.waitFor(() => expect(requests.some((u) => /index\.json\?r=\d+/.test(u))).toBe(true));
   });
 
-  test('a network failure is tried once more, then reported as „network”', async () => {
+  test('a network failure is tried once more, then reported as „network”; with no connection at all there is no cache entry to go past', async () => {
     vi.useFakeTimers();
     const s = await load();
     const index = await s.loadIndex();
@@ -162,6 +166,10 @@ describe('the app’s own OSM data', () => {
     await vi.advanceTimersByTimeAsync(2500);
     await failed;
     expect(requests.filter((u) => u.includes('/t/'))).toHaveLength(2);
+    // Offline or refused: nothing is being written, so the retry and the next ask keep the default mode.
+    respond = async (url) => osmResponse(data, url)!;
+    await s.loadLeaf(leaf!);
+    expect(modesOf('/t/')).toEqual([undefined, undefined, undefined]);
   });
 
   test('a slow but steady download finishes however long it takes: only silence is cut, not the total time', async () => {
@@ -236,10 +244,10 @@ describe('the app’s own OSM data', () => {
     respond = throughWorker(async (url) => {
       if (!url.includes('/t/') || stalled) return osmResponse(data, url)!;
       stalled = true;
-      return stall();
+      return silentBody();
     });
     const loading = track(s.loadLeaf(leaf!));
-    await vi.advanceTimersByTimeAsync(20_100); // the header deadline gives up on the first request
+    await vi.advanceTimersByTimeAsync(10_100); // 10 s of silence end the first request's body
     expect(loading.done).toBe(false);
     await vi.advanceTimersByTimeAsync(2100); // the retry, 2 s later
     expect(loading.value?.elements).toHaveLength(leaf!.rows);
@@ -253,10 +261,10 @@ describe('the app’s own OSM data', () => {
     let indexStalled = false;
     let leavesStuck = true;
     respond = throughWorker(async (url) => {
-      if (url.includes('/t/')) return leavesStuck ? stall() : osmResponse(data, url)!;
+      if (url.includes('/t/')) return leavesStuck ? silentBody() : osmResponse(data, url)!;
       if (indexStalled) return osmResponse(data, url)!;
       indexStalled = true;
-      return stall();
+      return silentBody();
     });
 
     const firstIndex = track(s.loadIndex());
@@ -279,6 +287,102 @@ describe('the app’s own OSM data', () => {
 
     expect(modesOf('index.json')).toEqual([undefined, 'reload']);
     expect(modesOf('/t/')).toEqual([undefined, 'reload', 'reload']);
+  });
+
+  test('no answer within the deadline: the retry joins the worker’s request and takes its late answer — one download, not two', async () => {
+    vi.useFakeTimers();
+    const s = await load();
+    const [leaf] = s.leafRefs(await s.loadIndex());
+    // A saturated link: every answer takes 25 s, just past the page's 20 s, but it comes.
+    let downloads = 0;
+    respond = throughWorker(async (url) => {
+      if (!url.includes('/t/')) return osmResponse(data, url)!;
+      downloads++;
+      await new Promise((headers) => setTimeout(headers, 25_000));
+      return osmResponse(data, url)!;
+    });
+    const loading = track(s.loadLeaf(leaf!));
+    await vi.advanceTimersByTimeAsync(20_100); // the page gives up on its first request
+    expect(loading.done).toBe(false);
+    await vi.advanceTimersByTimeAsync(5000); // the retry (at 22 s) gets the worker's answer at 25 s
+    expect(loading.value?.elements).toHaveLength(leaf!.rows);
+    expect(downloads).toBe(1);
+    expect(modesOf('/t/')).toEqual([undefined, undefined]);
+  });
+
+  test('no answer within the deadline twice in a row: then the next ask goes past the entry', async () => {
+    vi.useFakeTimers();
+    const s = await load();
+    const [leaf] = s.leafRefs(await s.loadIndex());
+    let stuck = true;
+    let downloads = 0;
+    respond = throughWorker(async (url) => {
+      if (!url.includes('/t/')) return osmResponse(data, url)!;
+      downloads++;
+      return stuck ? stall() : osmResponse(data, url)!;
+    });
+    const failed = track(s.loadLeaf(leaf!));
+    await vi.advanceTimersByTimeAsync(42_300); // cut at 20 s; the retry at 22 s joins, cut at 42 s
+    expect(failed.error).toMatchObject({ kind: 'network' });
+    stuck = false;
+    const again = track(s.loadLeaf(leaf!));
+    await vi.advanceTimersByTimeAsync(10);
+    expect(again.value?.elements).toHaveLength(leaf!.rows);
+    expect(modesOf('/t/')).toEqual([undefined, undefined, 'reload']);
+    // The joined retry never reached the server; the one past the entry did.
+    expect(downloads).toBe(2);
+  });
+
+  test('a successful answer ends the mark: the index read again after an unreadable answer goes in the default mode', async () => {
+    vi.useFakeTimers();
+    const s = await load();
+    let n = 0;
+    respond = async (url) => {
+      if (!url.endsWith('index.json')) return osmResponse(data, url)!;
+      n++;
+      if (n === 1) return silentBody();
+      if (n === 2) return new Response('{not json', { headers: { 'content-type': 'application/json' } });
+      return osmResponse(data, url)!;
+    };
+    const stalled = track(s.loadIndex());
+    await vi.advanceTimersByTimeAsync(10_100);
+    expect(stalled.error).toMatchObject({ kind: 'network' });
+    const unreadable = track(s.loadIndex());
+    await vi.advanceTimersByTimeAsync(100);
+    expect(unreadable.error).toMatchObject({ kind: 'unavailable' });
+    const read = track(s.loadIndex());
+    await vi.advanceTimersByTimeAsync(100);
+    expect(read.value).toMatchObject({ f: 1 });
+    expect(modesOf('index.json')).toEqual([undefined, 'reload', undefined]);
+  });
+
+  test('a successful answer ends the mark: a leaf pushed out of memory and asked again goes in the default mode', async () => {
+    vi.useFakeTimers();
+    data = osmTestData(
+      Array.from({ length: 120 }, (_, k) => osmRow(`n${k + 1}`, 52 + Math.floor(k / 12) * 0.02, 20.5 + (k % 12) * 0.03, { amenity: 'cafe', name: `Kawiarnia ${k + 1}` })),
+      WARSAW,
+      1,
+    );
+    const s = await load();
+    const [target, ...others] = s.leafRefs(await s.loadIndex());
+    expect(others.length).toBeGreaterThan(s.MEMORY_LEAVES);
+    const cell = `/t/${target!.d}-${target!.i}-${target!.j}.`;
+    let first = true;
+    respond = async (url) => {
+      if (url.includes(cell) && first) {
+        first = false;
+        return silentBody();
+      }
+      return osmResponse(data, url)!;
+    };
+    const loaded = track(s.loadLeaf(target!));
+    await vi.advanceTimersByTimeAsync(12_200); // the body cut at 10 s, the retry past the entry at 12 s
+    expect(loaded.value?.elements).toHaveLength(target!.rows);
+    // Newer leaves fill the memory (nothing pinned): the target, least recently used, goes.
+    for (const leaf of others.slice(0, s.MEMORY_LEAVES + 1)) await s.loadLeaf(leaf);
+    expect(s.leafNow(target!)).toBeUndefined();
+    await s.loadLeaf(target!);
+    expect(modesOf(cell)).toEqual([undefined, 'reload', undefined]);
   });
 
   test('offline after a data update: an older version of the same cell on the device stands in, marked older', async () => {
@@ -423,7 +527,7 @@ describe('the app’s own OSM data', () => {
     await vi.waitFor(() => expect(asked(onWayUrl)).toBe(2));
   });
 
-  test('„Usuń wszystkie dane”: the leaves and the index are forgotten; one still on its way is not kept, and the reset hears when it has ended', async () => {
+  test('„Usuń wszystkie dane”: the leaves and the index are forgotten; one still on its way is not kept, and a view asking again starts its own request', async () => {
     const s = await load();
     const [done, onWay] = s.leafRefs(await s.loadIndex());
     await s.loadLeaf(done!);
@@ -435,15 +539,15 @@ describe('the app’s own OSM data', () => {
     const late = s.loadLeaf(onWay!);
     await vi.waitFor(() => expect(answers).toHaveLength(1));
 
-    const forgot = track(s.forgetStaticData());
+    s.forgetStaticData();
     expect(s.leafNow(done!)).toBeUndefined();
+    // Not on its way any more as far as the page knows: no slow-connection count from before the reset.
+    expect(s.leafStartedAt(onWay!)).toBeUndefined();
     // A view asking after the reset starts its own request, and that one is tracked as on its way.
     const fresh = s.loadLeaf(onWay!);
     await vi.waitFor(() => expect(answers).toHaveLength(2));
     answers[0]!();
     expect((await late).elements).toHaveLength(onWay!.rows);
-    await vi.waitFor(() => expect(forgot.done).toBe(true));
-    expect(forgot.value).toBe(true);
     expect(s.leafNow(onWay!)).toBeUndefined();
     expect(s.leafStartedAt(onWay!)).toBeDefined();
     expect(s.loadLeaf(onWay!)).toBe(fresh);
@@ -451,9 +555,199 @@ describe('the app’s own OSM data', () => {
     await fresh;
     expect(s.leafNow(onWay!)).toBeDefined();
 
-    // The index is read again; with nothing on its way there is nothing to wait for.
+    // The index is read again.
     await s.loadIndex();
     expect(requests.filter((u) => u.endsWith('index.json'))).toHaveLength(2);
-    expect(await s.forgetStaticData()).toBe(false);
+  });
+
+  test('„Usuń wszystkie dane” forgets which files failed: a stalled leaf, and a missed answer for the index, count for nothing after it', async () => {
+    vi.useFakeTimers();
+    const s = await load();
+    const [leaf] = s.leafRefs(await s.loadIndex());
+    respond = async (url) => (url.includes('/t/') ? silentBody() : stall());
+    // The leaf's body stalls twice: the next ask for it would go past the HTTP cache.
+    const failed = track(s.loadLeaf(leaf!));
+    await vi.advanceTimersByTimeAsync(22_300);
+    expect(failed.error).toMatchObject({ kind: 'network' });
+    // The index read again gets no answer within its deadline: once before a reset, once after it.
+    s.forgetStaticData();
+    const before = track(s.loadIndex());
+    await vi.advanceTimersByTimeAsync(10_100);
+    expect(before.error).toMatchObject({ kind: 'network' });
+    s.forgetStaticData();
+    const after = track(s.loadIndex());
+    await vi.advanceTimersByTimeAsync(10_100);
+    expect(after.error).toMatchObject({ kind: 'network' });
+
+    respond = async (url) => osmResponse(data, url)!;
+    await s.loadIndex();
+    await s.loadLeaf(leaf!);
+    expect(modesOf('/t/')).toEqual([undefined, 'reload', undefined]);
+    // Not two missed answers in a row: the reset came between them.
+    expect(modesOf('index.json')).toEqual([undefined, undefined, undefined, undefined]);
+  });
+
+  test('a leaf on its way at the reset that fails after it: no retry, and nothing of it is remembered — a view asking again gets the default mode', async () => {
+    vi.useFakeTimers();
+    const s = await load();
+    const [leaf] = s.leafRefs(await s.loadIndex());
+    respond = async (url) => (url.includes('/t/') ? silentBody() : osmResponse(data, url)!);
+    const old = track(s.loadLeaf(leaf!));
+    await vi.advanceTimersByTimeAsync(100);
+    s.forgetStaticData();
+    // Its body stalls and is cut at 10 s; a retry would go out at 12 s.
+    await vi.advanceTimersByTimeAsync(13_000);
+    expect(old.error).toMatchObject({ kind: 'network' });
+    expect(requests.filter((u) => u.includes('/t/'))).toHaveLength(1);
+    expect(s.leafStartedAt(leaf!)).toBeUndefined();
+
+    respond = async (url) => osmResponse(data, url)!;
+    expect((await s.loadLeaf(leaf!)).elements).toHaveLength(leaf!.rows);
+    expect(modesOf('/t/')).toEqual([undefined, undefined]);
+  });
+
+  test('„Usuń wszystkie dane” with leaves in line for a slot: nothing is asked for them after the reset; a view asking for one again gets one request', async () => {
+    data = osmTestData(
+      Array.from({ length: 20 }, (_, k) => osmRow(`n${k + 1}`, 52 + k * 0.01, 21, { amenity: 'cafe', name: `Kawiarnia ${k + 1}` })),
+      WARSAW,
+      1,
+    );
+    const s = await load();
+    const refs = s.leafRefs(await s.loadIndex()).slice(0, 12);
+    const held: (() => void)[] = [];
+    respond = (url) =>
+      url.includes('/t/') ? new Promise<Response>((answer) => held.push(() => answer(osmResponse(data, url)!))) : Promise.resolve(osmResponse(data, url)!);
+    const leafRequests = () => requests.filter((u) => u.includes('/t/'));
+    const loads = refs.map((leaf) => track(s.loadLeaf(leaf)));
+    await vi.waitFor(() => expect(leafRequests()).toHaveLength(8));
+
+    s.forgetStaticData();
+    const fresh = s.loadLeaf(refs[11]!);
+    // The leaves on their way end one by one; each frees a slot.
+    while (held.length > 0) {
+      held.shift()!();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+    await fresh;
+    const cell = (k: number) => `/t/${refs[k]!.d}-${refs[k]!.i}-${refs[k]!.j}.`;
+    // After the reset: the fresh ask only, once.
+    expect(leafRequests().slice(8)).toHaveLength(1);
+    expect(leafRequests().filter((u) => u.includes(cell(11)))).toHaveLength(1);
+    // The dropped ones end: three as a lost connection, the one asked again with the fresh request.
+    await vi.waitFor(() => expect(loads.every((load) => load.done)).toBe(true));
+    expect(loads.slice(8, 11).map((load) => load.error)).toEqual(Array(3).fill(expect.objectContaining({ kind: 'network' })));
+    expect(loads[11]!.value?.elements).toHaveLength(refs[11]!.rows);
+  });
+
+  test('a leaf in the pause before its retry at the reset is not asked again', async () => {
+    vi.useFakeTimers();
+    const s = await load();
+    const [leaf] = s.leafRefs(await s.loadIndex());
+    respond = async (url) => {
+      if (url.includes('/t/')) throw new TypeError('Failed to fetch');
+      return osmResponse(data, url)!;
+    };
+    const loading = track(s.loadLeaf(leaf!));
+    await vi.advanceTimersByTimeAsync(500);
+    s.forgetStaticData();
+    await vi.advanceTimersByTimeAsync(3000);
+    expect(loading.error).toMatchObject({ kind: 'network' });
+    expect(requests.filter((u) => u.includes('/t/'))).toHaveLength(1);
+  });
+
+  test('a retry keeps its place in line: the nearest leaf failing once is the next request out once a slot frees', async () => {
+    vi.useFakeTimers();
+    data = osmTestData(
+      Array.from({ length: 20 }, (_, k) => osmRow(`n${k + 1}`, 52 + k * 0.01, 21, { amenity: 'cafe', name: `Kawiarnia ${k + 1}` })),
+      WARSAW,
+      1,
+    );
+    const s = await load();
+    const refs = s.leafRefs(await s.loadIndex());
+    expect(refs).toHaveLength(20);
+    const cell = (leaf: { d: number; i: number; j: number }) => `/t/${leaf.d}-${leaf.i}-${leaf.j}.`;
+    const held = new Map<string, () => void>();
+    let failOnce = true;
+    respond = (url) => {
+      if (!url.includes('/t/')) return Promise.resolve(osmResponse(data, url)!);
+      // The view asks nearest first: refs[0] is the user's own cell, and its first try fails at once.
+      if (failOnce && url.includes(cell(refs[0]!))) {
+        failOnce = false;
+        return Promise.reject(new TypeError('Failed to fetch'));
+      }
+      return new Promise<Response>((answer) => held.set(url, () => answer(osmResponse(data, url)!)));
+    };
+    const order = () => requests.filter((u) => u.includes('/t/')).map((u) => refs.findIndex((leaf) => u.includes(cell(leaf))));
+    refs.forEach((leaf) => void s.loadLeaf(leaf).catch(() => {}));
+    await vi.advanceTimersByTimeAsync(2500); // the failed slot went to refs[8]; the retry pause is over
+    expect(order()).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8]);
+    // One leaf on its way ends: its slot goes to the retry, not to refs[9].
+    held.get(requests.find((u) => u.includes(cell(refs[1]!)))!)!();
+    await vi.waitFor(() => expect(order()).toHaveLength(10));
+    expect(order().at(-1)).toBe(0);
+    for (const go of held.values()) go();
+  });
+
+  test('a free slot goes to the leaves on screen first: after a move the new place’s leaves do not wait behind the old place’s line', async () => {
+    data = osmTestData(
+      Array.from({ length: 40 }, (_, k) => osmRow(`n${k + 1}`, 52 + k * 0.01, 21, { amenity: 'cafe', name: `Kawiarnia ${k + 1}` })),
+      WARSAW,
+      1,
+    );
+    const s = await load();
+    const refs = s.leafRefs(await s.loadIndex());
+    const viewA = refs.slice(0, 20);
+    const viewB = refs.slice(20, 30);
+    const cell = (leaf: { d: number; i: number; j: number }) => `/t/${leaf.d}-${leaf.i}-${leaf.j}.`;
+    const held: (() => void)[] = [];
+    respond = (url) =>
+      url.includes('/t/') ? new Promise<Response>((answer) => held.push(() => answer(osmResponse(data, url)!))) : Promise.resolve(osmResponse(data, url)!);
+    const leafRequests = () => requests.filter((u) => u.includes('/t/'));
+    // The saved position: its view pins its leaves and asks for them; 12 wait in line.
+    const releaseA = s.pinLeaves(viewA);
+    viewA.forEach((leaf) => void s.loadLeaf(leaf).catch(() => {}));
+    await vi.waitFor(() => expect(leafRequests()).toHaveLength(8));
+    // The GPS fix far away: the old view lets go, the new one pins and asks.
+    releaseA();
+    const releaseB = s.pinLeaves(viewB);
+    viewB.forEach((leaf) => void s.loadLeaf(leaf).catch(() => {}));
+    held.shift()!();
+    await vi.waitFor(() => expect(leafRequests()).toHaveLength(9));
+    held.shift()!();
+    await vi.waitFor(() => expect(leafRequests()).toHaveLength(10));
+    // In the order the new view asked: its nearest first.
+    expect(leafRequests().slice(8)).toEqual([expect.stringContaining(cell(viewB[0]!)), expect.stringContaining(cell(viewB[1]!))]);
+    releaseB();
+    while (held.length > 0) {
+      held.shift()!();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+  });
+
+  test('the tests’ reset with leaves on their way and in line: every load ends, and the next batch still gets 8 slots, not more', async () => {
+    data = osmTestData(
+      Array.from({ length: 40 }, (_, k) => osmRow(`n${k + 1}`, 52 + k * 0.01, 21, { amenity: 'cafe', name: `Kawiarnia ${k + 1}` })),
+      WARSAW,
+      1,
+    );
+    const s = await load();
+    const refs = s.leafRefs(await s.loadIndex());
+    const held: (() => void)[] = [];
+    respond = (url) =>
+      url.includes('/t/') ? new Promise<Response>((answer) => held.push(() => answer(osmResponse(data, url)!))) : Promise.resolve(osmResponse(data, url)!);
+    const leafRequests = () => requests.filter((u) => u.includes('/t/'));
+    const loads = refs.slice(0, 12).map((leaf) => track(s.loadLeaf(leaf)));
+    await vi.waitFor(() => expect(leafRequests()).toHaveLength(8));
+    s.__resetStaticData();
+    while (held.length > 0) {
+      held.shift()!();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+    await vi.waitFor(() => expect(loads.every((load) => load.done)).toBe(true));
+
+    respond = (url) => (url.includes('/t/') ? new Promise<Response>(() => {}) : Promise.resolve(osmResponse(data, url)!));
+    refs.slice(20, 40).forEach((leaf) => void s.loadLeaf(leaf).catch(() => {}));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(leafRequests()).toHaveLength(8 + 8);
   });
 });

@@ -188,49 +188,52 @@ describe('files fetched before the service worker controlled the page', () => {
     }
   });
 
-  test('„Usuń wszystkie dane” before the takeover: nothing waiting for it is fetched — what is asked for after the reset is', async () => {
+  test('„Usuń wszystkie dane” before the takeover: the trail waiting for it (the leaves) is not fetched — the shared files are, and so is what is asked for after the reset', async () => {
     const { forgetRefetches, refetchWhenControlled } = await load();
     const leaf = onItsWay();
+    const chunk = onItsWay();
     refetchWhenControlled(INDEX);
-    refetchWhenControlled(LEAF, leaf.promise);
+    refetchWhenControlled(LEAF, leaf.promise, { trail: true });
     refetchWhenControlled(PRODUCTS);
-    expect(await forgetRefetches()).toBe(false);
+    refetchWhenControlled(() => CHUNK, chunk.promise);
+    forgetRefetches();
     // The person opens „W pobliżu” again before the worker takes over: that area is fetched into its copy.
-    refetchWhenControlled(INDEX);
+    const SEEN_AFTER = `${BASE}data/osm/v1/t/11-413-391.5e67253ddd.json.gz`;
+    refetchWhenControlled(SEEN_AFTER, Promise.resolve(), { trail: true });
     takeOver();
     leaf.resolve();
+    chunk.resolve();
     await flush();
-    expect(fetched).toEqual([INDEX]);
+    // The products, the shop chunk and the index are the same for everyone: still saved for offline.
+    expect([...fetched].sort()).toEqual([CHUNK, INDEX, PRODUCTS, SEEN_AFTER].sort());
   });
 
-  test('a reset after the takeover: a fetch still waiting for its request is not made, one on its way is waited for', async () => {
-    const answers: (() => void)[] = [];
-    vi.stubGlobal(
-      'fetch',
-      vi.fn((url: string) => {
-        fetched.push(url);
-        return new Promise<Response>((answer) => answers.push(() => answer(new Response('x'))));
-      }),
-    );
+  test('a reset after the takeover: the trail still waiting for its request is not fetched, the shared files still are', async () => {
     const { forgetRefetches, refetchWhenControlled } = await load();
     const leaf = onItsWay();
-    refetchWhenControlled(INDEX);
-    refetchWhenControlled(LEAF, leaf.promise);
+    const products = onItsWay();
+    refetchWhenControlled(LEAF, leaf.promise, { trail: true });
+    refetchWhenControlled(PRODUCTS, products.promise);
     takeOver();
     await flush();
-    expect(fetched).toEqual([INDEX]);
+    expect(fetched).toEqual([]);
 
-    let ended: boolean | undefined;
-    void forgetRefetches().then((wereOnWay) => (ended = wereOnWay));
+    forgetRefetches();
     leaf.resolve();
+    products.resolve();
     await flush();
-    // The leaf's fetch was waiting for the page's request: not made after the reset.
-    expect(fetched).toEqual([INDEX]);
-    // The index is on its way: the reset hears when it has ended (what the worker saves of it is swept then).
-    expect(ended).toBeUndefined();
-    answers[0]!();
+    // The leaf's fetch was planned before the reset: not made.
+    expect(fetched).toEqual([PRODUCTS]);
+  });
+
+  test('an address asked for as the trail once is the trail: a reset drops it', async () => {
+    const { forgetRefetches, refetchWhenControlled } = await load();
+    refetchWhenControlled(LEAF);
+    refetchWhenControlled(LEAF, Promise.resolve(), { trail: true });
+    forgetRefetches();
+    takeOver();
     await flush();
-    expect(ended).toBe(true);
+    expect(fetched).toEqual([]);
   });
 
   test('nothing without service workers (plain http, an old browser), and no error where reading them throws', async () => {
