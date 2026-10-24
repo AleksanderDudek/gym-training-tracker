@@ -2,8 +2,8 @@
  * Dziennik jedzenia i jego podstrony (plan posiłków, postęp, profil diety) oraz karta jedzenia
  * na ekranie Dziś. Wszystko z tokenów i klocków aplikacji: karty `.grp`, przyciski `.btn`,
  * pola `.fld`, kafelki `.tiles`, uwagi `.dnote`; arkusz od dołu jest wspólny (`common.css`). Tu
- * tylko to, czego w treningach nie ma: paski bilansu, wiersze jedzenia, treść arkuszy, wykresy.
- * Kolor stanu (brak, w normie, nadmiar) zawsze idzie razem ze słowem — nigdy sam.
+ * tylko to, czego w treningach nie ma: paski dnia, wiersze jedzenia, treść arkuszy, wykresy.
+ * Kolor nie ocenia dnia: paski mają jedno neutralne wypełnienie, a co znaczą — mówią słowa.
  *
  * Każda klasa ma przedrostek `fd-diet-`, a reguły dla klas wspólnych (`.sr-only`, `.fd-sheet-body`)
  * stoją pod klasą dziennika. Arkusz CSS leniwej paczki zostaje na stronie, gdy już się wczyta,
@@ -54,35 +54,33 @@
 .fd-diet-daynav-title p{margin:1px 0 0;font-size:12.5px;color:var(--ink-soft)}
 .fd-diet-daynav .fd-diet-today{grid-column:1 / -1;justify-self:center;margin-top:4px}
 
-/* ---------------- Bilans dnia ---------------- */
+/* ---------------- Karta dnia ---------------- */
 
-.fd-diet-balance-top{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:2px 12px}
-.grp p.fd-diet-kcal{margin:0;font-family:var(--display);font-weight:600;font-size:34px;line-height:1.05;color:var(--ink);
-  font-variant-numeric:tabular-nums}
-.fd-diet-kcal small{font-size:16px;font-weight:500;color:var(--ink-soft)}
+/* Jedno zdanie o dniu nad paskami („Zostało ok. 650 kcal i 54 g białka”) — to samo co na ekranie Dziś. */
+.grp h2.fd-diet-headline{margin:0 0 4px;font-size:19px;line-height:1.3;text-wrap:balance}
 .grp .fd-diet-note,.fd-diet-note{margin:0;font-size:13px;font-weight:600}
-.fd-diet-note.fd-diet-ok{color:var(--ok)}
-.fd-diet-note.fd-diet-brak{color:var(--warn)}
-.fd-diet-note.fd-diet-nadmiar{color:var(--c-orange-ink)}
 
-/* Pasek jak paski rangi i doświadczenia: płaski, bez zaokrągleń, tło `--surface-2`. */
+/* Pasek jak paski rangi i doświadczenia: płaski, bez zaokrągleń, tło `--surface-2`. Jedno neutralne
+   wypełnienie dla wszystkiego: białko po prostu dochodzi do pełna, a kalorie zatrzymują się na celu. */
 .fd-diet-bar{height:9px;background:var(--surface-2);margin:7px 0 6px;overflow:hidden}
-.fd-diet-bar i{display:block;height:100%;background:var(--c-green)}
-.fd-diet-bar.fd-diet-brak i{background:var(--c-gold)}
-.fd-diet-bar.fd-diet-nadmiar i{background:var(--c-orange)}
+.fd-diet-bar i{display:block;height:100%;background:var(--steel)}
 @media (prefers-reduced-motion:no-preference){.fd-diet-bar i{transition:width .3s ease-out}}
 
-/* Na telefonie makro jedno pod drugim (dwa plus jedno rozbijało rząd), od 480 px — trzy obok siebie. */
-.fd-diet-macros{display:grid;grid-template-columns:1fr;gap:6px 16px;margin-top:10px}
-@media (min-width:480px){.fd-diet-macros{grid-template-columns:repeat(3,minmax(0,1fr))}}
+/* Białko i kalorie jedno pod drugim; węglowodany i tłuszcz zwinięte, od 480 px obok siebie. */
+.fd-diet-macros{display:grid;grid-template-columns:1fr;gap:6px 16px;margin-top:8px}
+@media (min-width:480px){.fd-diet-carbsfat .fd-diet-macros{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .fd-diet-macro{min-width:0}
 .fd-diet-macro .fd-diet-bar{height:7px;margin:5px 0 4px}
 .fd-diet-macro-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:14px}
 .fd-diet-macro-head span:first-child{font-weight:600}
 .fd-diet-macro-head span:last-child{font-family:var(--display);color:var(--ink-soft)}
-.fd-diet-macro .fd-diet-note{display:block;font-weight:500;font-size:12.5px}
+.fd-diet-carbsfat{margin:4px 0 0}
+.fd-diet-carbsfat .fd-diet-macros{margin-top:0}
+.fd-diet-carbsfat summary,.fd-diet-weekdetails summary{cursor:pointer;color:var(--steel);font-weight:600;font-size:14px;
+  padding:10px 0;min-height:44px;box-sizing:border-box}
+.fd-diet-carbsfat summary:focus-visible,.fd-diet-weekdetails summary:focus-visible{outline:2px solid var(--steel);outline-offset:2px}
 .fd-diet-balance .actions{margin:14px 0 2px}
-/* „Dodaj zjedzone” i „Ulubione” obok siebie, póki się mieszczą; na najwęższych — jeden pod drugim. */
+/* „Dodaj zjedzone”, „Ulubione” i „Większy posiłek” obok siebie, póki się mieszczą; na najwęższych — jeden pod drugim. */
 .fd-diet-balance .fd-diet-dayacts{display:flex;flex-wrap:wrap;gap:8px}
 .fd-diet-dayacts .btn{flex:1 1 auto;padding-inline:14px}
 .fd-diet-macros + p.tight{margin-top:8px}
@@ -208,6 +206,8 @@
 .fd-diet-empty{padding:14px 4px;font-size:13.5px;color:var(--ink-soft)}
 .fd-diet-chosen{margin-top:12px;padding:12px;background:var(--surface-2);border-left:3px solid var(--steel);border-radius:var(--r)}
 .fd-diet-chosen .fd-diet-meta{margin-top:4px}
+/* Pod wybraną pozycją: ile zostanie z celu dnia po niej. */
+p.fd-diet-after{margin:6px 0 0;font-size:13.5px;color:var(--ink)}
 .fd-diet-grams{margin:10px 0 4px;max-width:160px}
 .fd-diet-quick{display:grid;gap:10px}
 /* Zestaw w „Dodaj zjedzone”: nazwa, części z gramaturą, suma, wyszukiwanie kolejnej rzeczy. */
@@ -344,13 +344,48 @@ fieldset.fd-diet-styles legend{float:left;width:100%;padding:0;margin:0 0 2px;fo
   -webkit-tap-highlight-color:transparent}
 .fd-diet-foodcard-link:active{background:var(--surface-2)}
 .fd-diet-foodcard-link:focus-visible{outline:2px solid var(--steel);outline-offset:-2px}
-.fd-diet-foodcard .fd-diet-macro-head{margin-top:6px}
-.fd-diet-foodcard .fd-diet-macro-head + .fd-diet-bar{height:7px;margin-top:5px}
+/* Dwa paski z nazwą po lewej: białko, potem kalorie — liczby są w zdaniu i dla czytnika ekranu. */
+.fd-diet-barrow{display:grid;grid-template-columns:5.5em minmax(0,1fr);align-items:center;gap:10px;margin-top:6px;font-size:13.5px;
+  font-weight:600}
+.fd-diet-barrow .fd-diet-bar{height:7px;margin:0}
 .fd-diet-foodcard .btn{margin-top:8px}
+/* Jedna linijka, gdy dziennik na coś czeka (zmiany, poniedziałkowe sprawdzenie, przerwa). */
+.fd-diet-notice-link{display:block;box-sizing:border-box;min-height:44px;padding:12px 0;margin-top:2px;font-size:13.5px;
+  font-weight:600;line-height:1.4;color:var(--steel);text-decoration:underline;text-underline-offset:2px}
+.fd-diet-notice-link:focus-visible{outline:2px solid var(--steel);outline-offset:2px}
 
-/* ---------------- Cheat meal ---------------- */
+/* ---------------- Na co dziennik czeka: zmiany, poniedziałek, przerwa, dzień niepełny ---------------- */
 
-/* Zaplanowany cheat meal pod bilansem: złoty pasek z boku — plan, nie wpis. */
+/* Zmiany w liczeniu po przejściu na jeden cel: punkty i „Rozumiem”. */
+.fd-diet-notice{border-left:3px solid var(--c-blue-ink)}
+.fd-diet-notice .fd-diet-bullets{font-size:13.5px;color:var(--ink)}
+.fd-diet-floorchoice{margin:6px 0 4px;padding:10px 12px;background:var(--surface-2);border-radius:var(--r)}
+.fd-diet-floorchoice .actions,.fd-diet-noticeacts,.fd-diet-weekacts{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin:10px 0 2px}
+
+/* Poniedziałkowa karta: nowy cel, co pokazały ostatnie tygodnie, jeden powód i dwie odpowiedzi. */
+.fd-diet-weekcard{border-left:3px solid var(--steel)}
+.grp p.fd-diet-ask{font-weight:600;color:var(--ink)}
+.fd-diet-weekdetails{margin:2px 0 0}
+.fd-diet-weekdetails dl{margin:0 0 6px;display:grid;gap:3px;font-size:13px;color:var(--ink-soft)}
+.fd-diet-weekdetails dl > div{display:flex;flex-wrap:wrap;gap:0 4px}
+.fd-diet-weekdetails dt{font-weight:600;color:var(--ink)}
+.fd-diet-weekdetails dd{margin:0;font-variant-numeric:tabular-nums}
+/* Cicha linijka w poniedziałek i wtorek: cel bez zmian i dlaczego — bez karty, bez przycisków. */
+.fd-diet-weekline{margin:0 auto 10px}
+.fd-diet-weekline p.tight{margin:0;font-size:13px;line-height:1.45}
+
+/* Przerwa w liczeniu: zdanie z datą końca i „Zakończ przerwę”. */
+.fd-diet-pause{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 12px;padding-block:10px}
+.fd-diet-pause p.tight{flex:1 1 220px;margin:0;font-size:13.5px}
+
+/* „Zjedzone”: słowo osoby o dniu pod wpisami — dzień niepełny nie liczy się do dopasowania. */
+.fd-diet-partial{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;margin-top:6px;padding-top:8px;
+  border-top:1px solid var(--surface-2)}
+.fd-diet-partial p.tight{flex:1 1 220px;margin:0;font-size:13px;color:var(--ink-soft)}
+
+/* ---------------- Większy posiłek ---------------- */
+
+/* Zaplanowany większy posiłek pod kartą dnia: złoty pasek z boku — plan, nie wpis. */
 .fd-diet-cheat{border-left:3px solid var(--c-gold)}
 .fd-diet-cheat h2{display:flex;align-items:center;gap:8px}
 .fd-diet-cheat .fd-diet-name{margin:6px 0 0;font-weight:600}

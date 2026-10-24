@@ -5,6 +5,7 @@ import type { Fit, FitLevel } from '../../diet/profiles';
 import { isPair, type Suggestion } from '../../diet/suggest';
 import { formatNumber } from '../../lib/format';
 import { DT } from './dietText';
+import { useKcalShown } from './kcalShown';
 
 const T = text({
   pl: {
@@ -37,10 +38,20 @@ export function FitBadge({ fit }: { fit: Fit }) {
   );
 }
 
-/** „640 kcal · B 41 · W 43 · T 31”; nieznane makro to „?”, nigdy zero. */
+/**
+ * „640 kcal · B 41 · W 43 · T 31”; nieznane makro to „?”, nigdy zero. Bez liczenia kalorii
+ * (`KcalShown`) zostaje samo białko: „B 41 g” — w każdej liście diety, także w arkuszach.
+ */
 export function MacroLine({ food }: { food: Food }) {
+  const shown = useKcalShown();
   const n = food.nutrients;
   const g = (v: number | null) => (v === null ? '?' : formatNumber(v, 0));
+  if (!shown)
+    return (
+      <span className="fd-diet-nums">
+        {DT.p} {g(n.protein)} g
+      </span>
+    );
   return (
     <span className="fd-diet-nums">
       {formatNumber(n.kcal, 0)} kcal · {DT.p} {g(n.protein)} · {DT.c} {g(n.carbs)} · {DT.f} {g(n.fat)}
@@ -54,8 +65,15 @@ interface Props {
   onPick: (food: Food) => void;
 }
 
-/** Propozycje w kolejności, z powodami; gwiazdka przy najlepszych na tę chwilę. */
+/** A reason about the calorie budget („450 z 600 kcal, które zostały”): left out without calories on screen. */
+const KCAL_REASON = /\bkcal\b/;
+
+/**
+ * Propozycje w kolejności, z powodami; gwiazdka przy najlepszych na tę chwilę. Bez liczenia kalorii
+ * powody o budżecie kalorii odpadają, zostają te o białku i o sposobie odżywiania.
+ */
 export function SuggestionList({ suggestions, actionLabel, onPick }: Props) {
+  const shown = useKcalShown();
   if (suggestions.length === 0) return <p className="tight">{T.none}</p>;
   return (
     <ul className="fd-diet-list">
@@ -80,7 +98,9 @@ export function SuggestionList({ suggestions, actionLabel, onPick }: Props) {
                   <MacroLine food={s.food} /> · {s.food.amountLabel}
                   {s.where && <> · {s.where}</>}
                 </p>
-                <p className="fd-diet-why">{s.reasons.slice(0, 3).join(' · ')}</p>
+                <p className="fd-diet-why">
+                  {(shown ? s.reasons : s.reasons.filter((r) => !KCAL_REASON.test(r))).slice(0, 3).join(' · ')}
+                </p>
               </div>
               <button
                 type="button"

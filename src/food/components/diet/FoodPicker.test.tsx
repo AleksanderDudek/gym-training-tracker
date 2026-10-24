@@ -10,6 +10,7 @@ import { indexProducts } from '../../lib/search';
 import { normalizeChain } from '../../restaurants/normalize';
 import { DATASET, makeProduct } from '../../test/fixtures';
 import { FoodPicker } from './FoodPicker';
+import { KcalShown } from './kcalShown';
 
 vi.mock('../../restaurants/catalog', () => ({
   CHAINS: [
@@ -61,20 +62,39 @@ const POOL = [
   customFood({ id: 9, name: 'Owsianka mamy', amountLabel: '1 miska', kcal: 420, protein: 18, carbs: 60, fat: 11 }),
 ];
 
-function open(onLogged = vi.fn(), pool = POOL) {
+interface Day {
+  left?: number | null;
+  reserved?: boolean;
+  past?: boolean;
+  /** „Bez liczenia kalorii”: the diary provides `KcalShown` false. */
+  shown?: boolean;
+}
+
+function open(onLogged = vi.fn(), pool = POOL, { left = null, reserved = false, past = false, shown = true }: Day = {}) {
   render(
-    <FoodPicker
-      open
-      date="2026-10-12"
-      pool={pool}
-      products={PRODUCTS}
-      dict={DATASET.dictionaries}
-      productsLoading={false}
-      onClose={vi.fn()}
-      onLogged={onLogged}
-    />,
+    <KcalShown.Provider value={shown}>
+      <FoodPicker
+        open
+        date="2026-10-12"
+        pool={pool}
+        products={PRODUCTS}
+        dict={DATASET.dictionaries}
+        productsLoading={false}
+        left={left}
+        reserved={reserved}
+        past={past}
+        onClose={vi.fn()}
+        onLogged={onLogged}
+      />
+    </KcalShown.Provider>,
   );
   return within(screen.getByRole('dialog', { name: 'Dodaj zjedzone' }));
+}
+
+/** Picks the KFC strips (290 kcal, a menu portion: no grams to change). */
+async function pickStrips(user: ReturnType<typeof userEvent.setup>, dialog: ReturnType<typeof open>) {
+  await user.type(dialog.getByRole('searchbox', { name: 'Szukaj jedzenia' }), 'strips');
+  await user.click(await dialog.findByRole('button', { name: /^Strips \(KFC\)/ }));
 }
 
 beforeEach(async () => {
@@ -220,6 +240,8 @@ describe('„Dodaj zjedzone”', () => {
           products={PRODUCTS}
           dict={DATASET.dictionaries}
           productsLoading={false}
+          left={null}
+          reserved={false}
           onClose={vi.fn()}
           onLogged={vi.fn()}
         />
@@ -237,5 +259,58 @@ describe('„Dodaj zjedzone”', () => {
     expect(items[1]).toMatch(/^Owsianka mamy/);
     expect(document.activeElement).toBe(dialog.getByRole('button', { name: 'Ulubione: Owsianka mamy' }));
     expect(document.activeElement).toHaveAttribute('aria-pressed', 'true');
+  });
+});
+
+describe('„Dodaj zjedzone” wobec celu dnia', () => {
+  const sandwich = customFood({ id: 7, name: 'Kanapka z serem', amountLabel: '1 sztuka', kcal: 260, protein: 12, carbs: 30, fat: 9 });
+
+  test('pod wybraną pozycją: ile zostanie z dnia po niej (★)', async () => {
+    const user = userEvent.setup();
+    const dialog = open(vi.fn(), [sandwich, ...POOL], { left: 800 });
+    await user.type(dialog.getByRole('searchbox', { name: 'Szukaj jedzenia' }), 'kanapka');
+    await user.click(await dialog.findByRole('button', { name: /^Kanapka z serem/ }));
+    expect(dialog.getByText('Po tym zostanie ok. 540 kcal na dziś.')).toBeInTheDocument();
+  });
+
+  test('±100 kcal wypełnia cel', async () => {
+    const user = userEvent.setup();
+    const dialog = open(vi.fn(), POOL, { left: 350 });
+    await pickStrips(user, dialog);
+    expect(dialog.getByText('To wypełni cel na dziś.')).toBeInTheDocument();
+  });
+
+  test('ponad pasmem: o ile ponad cel', async () => {
+    const user = userEvent.setup();
+    const dialog = open(vi.fn(), POOL, { left: 100 });
+    await pickStrips(user, dialog);
+    expect(dialog.getByText('To ok. 190 kcal ponad cel na dziś.')).toBeInTheDocument();
+  });
+
+  test('inny dzień i zaplanowany większy posiłek mówią o sobie', async () => {
+    const user = userEvent.setup();
+    const dialog = open(vi.fn(), POOL, { left: 1000, past: true, reserved: true });
+    await pickStrips(user, dialog);
+    expect(dialog.getByText('Po tym zostanie ok. 710 kcal na ten dzień — po zaplanowanym większym posiłku.')).toBeInTheDocument();
+  });
+
+  test('bez celu dnia nie ma tego zdania', async () => {
+    const user = userEvent.setup();
+    const dialog = open();
+    await pickStrips(user, dialog);
+    expect(dialog.queryByText(/Po tym zostanie|wypełni cel|ponad cel/)).not.toBeInTheDocument();
+  });
+
+  test('bez liczenia kalorii: bez zdania, bez „Tylko kalorie”, samo białko i zapis bez kcal', async () => {
+    const user = userEvent.setup();
+    const onLogged = vi.fn();
+    const dialog = open(onLogged, POOL, { left: 800, shown: false });
+    expect(dialog.queryByRole('button', { name: 'Tylko kalorie' })).not.toBeInTheDocument();
+    await pickStrips(user, dialog);
+    expect(dialog.getByText('B 27 g')).toBeInTheDocument();
+    expect(dialog.queryByText(/Po tym zostanie/)).not.toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Dodaj zjedzone' }).textContent).not.toMatch(/kcal/);
+    await user.click(dialog.getByRole('button', { name: 'Dodaj' }));
+    await waitFor(() => expect(onLogged).toHaveBeenCalledWith('Zapisane: Strips (KFC).'));
   });
 });

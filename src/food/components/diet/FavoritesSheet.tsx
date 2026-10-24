@@ -9,6 +9,7 @@ import { formatNumber } from '../../lib/format';
 import { normalizeForSearch, tokenize } from '../../lib/text';
 import { Sheet } from '../common/Sheet';
 import { DT } from './dietText';
+import { useKcalShown } from './kcalShown';
 import { MacroLine } from './SuggestionList';
 
 const T = text({
@@ -20,14 +21,16 @@ const T = text({
     future: 'Ten dzień jeszcze nie nadszedł — zjedzone zapiszesz tego dnia.',
     saved: (day: string, name: string, kcal: string, times: number) =>
       `Zapisane ${day}: ${name} · ${kcal} kcal${times > 1 ? ` (${times}×)` : ''}.`,
-    hint: (day: string) => `„Zjadłem” zapisuje od razu ${day}, w ilości z gwiazdki.`,
+    savedPlain: (day: string, name: string, times: number) =>
+      `Zapisane ${day}: ${name}${times > 1 ? ` (${times}×)` : ''}.`,
+    hint: (day: string) => `„Zjedzone” zapisuje od razu ${day}, w ilości z gwiazdki.`,
     top: 'Najczęściej jedzone na górze',
     empty:
       'To, co jesz najczęściej, oznacz gwiazdką — w „Dodaj zjedzone”, w produktach, w lokalach albo przy tym, co już zjedzone. Pojawi się tutaj do dodania jednym stuknięciem.',
     searchPlaceholder: 'Szukaj w ulubionych…',
     search: 'Szukaj w ulubionych',
     serving: 'porcja',
-    ateFav: (name: string) => `Zjadłem z ulubionych: ${name}`,
+    ateFav: (name: string) => `Zjedzone z ulubionych: ${name}`,
     noMatch: (query: string) => `Nic z ulubionych nie pasuje do „${query}”.`,
   },
   en: {
@@ -38,6 +41,7 @@ const T = text({
     future: 'This day hasn’t come yet — you’ll log what you eat on the day.',
     saved: (day: string, name: string, kcal: string, times: number) =>
       `Saved ${day}: ${name} · ${kcal} kcal${times > 1 ? ` (${times}×)` : ''}.`,
+    savedPlain: (day: string, name: string, times: number) => `Saved ${day}: ${name}${times > 1 ? ` (${times}×)` : ''}.`,
     hint: (day: string) => `“Eaten” logs it straight away ${day}, in the amount you starred.`,
     top: 'Most eaten at the top',
     empty:
@@ -80,7 +84,7 @@ function forDay(date: string, today: string): string {
 
 /**
  * „Ulubione”: pełna lista szybkiego wyboru w arkuszu od dołu, zamiast listy na stronie, która
- * spychała w dół resztę dnia. „+ Zjadłem” zapisuje jednym stuknięciem, w ilości z gwiazdki, na
+ * spychała w dół resztę dnia. „+ Zjedzone” zapisuje jednym stuknięciem, w ilości z gwiazdki, na
  * oglądany dzień — i arkusz zostaje otwarty, bo śniadanie to zwykle dwie, trzy rzeczy naraz.
  *
  * Komunikat aplikacji na dole ekranu stoi pod arkuszem (modalny `<dialog>` jest nad wszystkim),
@@ -88,6 +92,7 @@ function forDay(date: string, today: string): string {
  * żyje tylko w otwartym arkuszu: każde otwarcie zaczyna od pustego pola i od świeżej kolejności.
  */
 export function FavoritesSheet({ open, date, today, favorites, onLog, onClose }: Props) {
+  const shown = useKcalShown();
   const [done, setDone] = useState<Done | null>(null);
   // Nowe otwarcie — bez potwierdzenia z poprzedniego (stan poprawiany w renderze, nie w efekcie).
   const [wasOpen, setWasOpen] = useState(open);
@@ -105,7 +110,9 @@ export function FavoritesSheet({ open, date, today, favorites, onLog, onClose }:
       {future
         ? T.future
         : done
-          ? T.saved(forDay(date, today), done.food.name, formatNumber(done.food.nutrients.kcal, 0), done.times)
+          ? shown
+            ? T.saved(forDay(date, today), done.food.name, formatNumber(done.food.nutrients.kcal, 0), done.times)
+            : T.savedPlain(forDay(date, today), done.food.name, done.times)
           : T.hint(forDay(date, today))}
     </p>
   );

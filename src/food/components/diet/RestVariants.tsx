@@ -5,18 +5,21 @@ import type { Food } from '../../diet/foods';
 import { slotLabel, type RestVariant } from '../../diet/suggest';
 import { formatNumber } from '../../lib/format';
 import { DT } from './dietText';
+import { useKcalShown } from './kcalShown';
 import { FitBadge, MacroLine } from './SuggestionList';
 
 const T = text({
   pl: {
     variant: (n: number) => `Wariant ${n}`,
     of: (kcal: string, left: string, protein: string) => ` · ${kcal} z ${left} · ${protein} g białka`,
+    ofPlain: (protein: string) => ` · ${protein} g białka`,
     ofProtein: (left: string) => ` (z ${left})`,
     reroll: 'Inne warianty',
   },
   en: {
     variant: (n: number) => `Option ${n}`,
     of: (kcal: string, left: string, protein: string) => ` · ${kcal} of ${left} · ${protein} g protein`,
+    ofPlain: (protein: string) => ` · ${protein} g protein`,
     ofProtein: (left: string) => ` (of ${left})`,
     reroll: 'Other options',
   },
@@ -28,7 +31,7 @@ interface Props {
   left: { kcal: number; protein: number };
   /** Already eaten today: a meal of a variant that was logged shows „zjedzone”. */
   entries?: Entry[];
-  /** „Zjadłem” on a meal; without it the list is only to read (the cheat-meal sheet). */
+  /** „Zjedzone” on a meal; without it the list is only to read (the bigger-meal sheet). */
   onLog?: (food: Food) => void;
   onReroll?: () => void;
 }
@@ -38,9 +41,11 @@ const kcal = (n: number) => `${formatNumber(Math.round(n), 0)} kcal`;
 /**
  * „Reszta dnia”: kilka zestawów posiłków na to, co zostało — każdy z porami dnia i sumą wobec
  * reszty („980 z 1000 kcal, 85 g białka”). Posiłki w zestawie są dobrane tak, żeby suma trafiła
- * w resztę: każdy kolejny dostaje to, co zostało po poprzednich (`restOfDay`).
+ * w resztę: każdy kolejny dostaje to, co zostało po poprzednich (`restOfDay`). Bez liczenia
+ * kalorii suma mówi tylko o białku.
  */
 export function RestVariants({ variants, left, entries = [], onLog, onReroll }: Props) {
+  const shown = useKcalShown();
   if (!variants.length) return null;
   return (
     <div className="fd-diet-rest">
@@ -48,7 +53,7 @@ export function RestVariants({ variants, left, entries = [], onLog, onReroll }: 
         <section key={v.meals.map((m) => m.suggestion.food.key).join('|')} className="fd-diet-restvar" aria-label={T.variant(i + 1)}>
           <p className="fd-diet-resthead">
             <b>{T.variant(i + 1)}</b>
-            {T.of(kcal(v.kcal), kcal(left.kcal), formatNumber(v.protein, 0))}
+            {shown ? T.of(kcal(v.kcal), kcal(left.kcal), formatNumber(v.protein, 0)) : T.ofPlain(formatNumber(v.protein, 0))}
             {left.protein > 0 && T.ofProtein(formatNumber(Math.round(left.protein), 0))}
           </p>
           <ul className="fd-diet-list">
