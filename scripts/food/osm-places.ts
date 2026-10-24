@@ -39,8 +39,11 @@ import {
   parsePoly,
   readFeatures,
   readOpl,
+  relationRows,
   simplifyCoverage,
   splitRecords,
+  unbuiltRelations,
+  withRows,
   type Meta,
 } from './lib/osm.ts';
 
@@ -148,21 +151,31 @@ if (!sourceMd5) console.log('source md5 unknown: the run starts from a filtered 
 const count = (n: number) => n.toLocaleString('en-US');
 
 console.log(`osmium export ${filtered}`);
-const { rows, stats, errors } = await exportRows(filtered);
+const exported = await exportRows(filtered);
 // osmium's geometry errors cannot say what the copy lacks (see `geometryErrors`): the objects that
 // should be rows can, listed from the same extract and judged by the same rule.
 console.log(`osmium tags-filter -R ${filtered} (the objects that should be rows)`);
-const check = await checkCompleteness(filtered, rows);
+const listed = await listObjects(filtered);
+// osmium export writes nothing for a relation other than a multipolygon or a boundary (a Makro hall
+// mapped as `type=site`, a restaurant as `type=building`); Overpass places one by its members with
+// `out center`, and so does the copy, from the members in the filtered extract.
+const unbuilt = unbuiltRelations(listed, exported.rows);
+const placed = await placeRelations(filtered, unbuilt);
+if (unbuilt.length) {
+  console.log(`relations osmium export does not build: ${count(unbuilt.length)}; placed by their members, as Overpass's out center places them: ${count(placed.length)}`);
+}
+const { rows, stats } = withRows(exported, placed);
+const check = completeness(listed, rows);
 const missing = check.missing.length;
 const lost = missing ? `${count(missing)} are not, osmium could not build them` : 'all are';
-console.log(`completeness: ${count(check.expected)} objects should be rows; ${lost} (geometry errors reported: ${count(errors)})${missing ? ':' : ''}`);
+console.log(`completeness: ${count(check.expected)} objects should be rows; ${lost} (geometry errors reported: ${count(exported.errors)})${missing ? ':' : ''}`);
 for (const { id, label } of check.missing.slice(0, LIST_MISSING)) console.log(`    ${id} „${label}” ${osmLink(id)}`);
 if (missing > LIST_MISSING) console.log(`    … and ${count(missing - LIST_MISSING)} more`);
 const gap = Object.entries(check.knownGap).sort(([a, m], [b, n]) => n - m || (a < b ? -1 : 1));
 if (gap.length) {
   const relations = gap.reduce((sum, [, n]) => sum + n, 0);
   const types = gap.map(([type, n]) => `${type ? `type=${type}` : 'no type'} ${count(n)}`).join(', ');
-  console.log(`known gap: ${count(relations)} relations osmium export never builds (only multipolygons and boundaries become areas): ${types}`);
+  console.log(`known gap: ${count(relations)} relations osmium export does not build, without a member node or way in the extract to place them by: ${types}`);
 }
 const coverage = simplifyCoverage(poly);
 const meta = buildMeta({ dataAsOf, sourceMd5, osmium, rows, stats, coverage });
@@ -341,11 +354,20 @@ async function exportRows(file: string) {
   return { ...orFail(file, () => readFeatures(splitRecords(text))), errors: geometryErrors(messages).length };
 }
 
-/** What the export lost: the objects of the filtered extract that should be rows (OPL), against the rows. */
-async function checkCompleteness(file: string, rows: readonly OsmRow[]) {
+/** The objects of the filtered extract that should be rows (OPL): what the completeness check holds the rows against. */
+async function listObjects(file: string) {
   const out = join(CACHE, 'poland-food.opl');
   const { text } = await osmiumOutput(osmiumArgs.list(file, out), out);
-  return orFail(file, () => completeness(readOpl(splitRecords(text)), rows));
+  return orFail(file, () => readOpl(splitRecords(text)));
+}
+
+/** Rows for the relations osmium export does not build, placed by their members (OPL from `osmium getid -r`); osmium is not run for none. */
+async function placeRelations(file: string, keys: readonly string[]): Promise<OsmRow[]> {
+  if (!keys.length) return [];
+  console.log(`osmium getid -r ${file} (the members of ${count(keys.length)} relations osmium export does not build)`);
+  const out = join(CACHE, 'poland-food-relations.opl');
+  const { text } = await osmiumOutput(osmiumArgs.members(file, keys, out), out);
+  return orFail(file, () => relationRows(readOpl(splitRecords(text)), keys));
 }
 
 /** The object on openstreetmap.org, for a missing one: what to look at, or fix in the map. */

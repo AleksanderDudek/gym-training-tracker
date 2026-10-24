@@ -4,26 +4,26 @@
   "source": "https://download.geofabrik.de/europe/poland-latest.osm.pbf",
   "sourceMd5": null,
   "osmium": "1.19.1",
-  "rows": 99144,
+  "rows": 99148,
   "types": {
     "node": 71123,
     "way": 27974,
-    "relation": 47
+    "relation": 51
   },
   "kinds": {
     "bakery": 6317,
     "cafe": 5510,
     "coffee": 159,
-    "convenience": 26630,
-    "fast_food": 11682,
+    "convenience": 26631,
+    "fast_food": 11683,
     "food_court": 184,
     "fuel": 7521,
     "grocery": 86,
     "ice_cream": 2201,
     "pastry": 1876,
-    "restaurant": 21485,
+    "restaurant": 21486,
     "supermarket": 15456,
-    "wholesale": 37
+    "wholesale": 38
   },
   "dropped": {
     "duplicates": 32720,
@@ -31,7 +31,7 @@
     "unnamed": 14245
   },
   "warsaw": 8785,
-  "halls": 37,
+  "halls": 38,
   "coverage": {
     "source": "https://download.geofabrik.de/europe/poland.poly",
     "eps": 300,

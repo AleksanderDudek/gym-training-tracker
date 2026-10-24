@@ -49,10 +49,16 @@ i do 20 brakujących z nazwą i linkiem do openstreetmap.org. Ponad 50 brakując
 odświeżenie, 1–50 to ostrzeżenie (w GitHub Actions także adnotacja przebiegu); błędy geometrii osmium
 skrypt tylko liczy.
 
-Znana różnica wobec zapytań Overpass: z relacji osmium buduje obszary tylko z multipoligonów i granic
-(`type=multipolygon`, `type=boundary`), innych relacji w kopii nie ma — skrypt liczy je osobno, jednym
-wierszem. W całej Polsce to kilka obiektów (w październiku 2026: 3 relacje `type=building` i hala Makro
-jako `type=site`).
+**Relacje, z których osmium nie robi obszarów.** Z relacji osmium export buduje obszary tylko
+z multipoligonów i granic (`type=multipolygon`, `type=boundary`); o innych (`type=site`,
+`type=building`, bez `type`) nie pisze nic. Overpass podaje je ze środkiem (`out center`), więc skrypt
+robi to samo: bierze ich składowe z przefiltrowanego wyciągu (`osmium getid -r`) i stawia każdą taką
+relację w środku prostokąta obejmującego jej punkty i wszystkie punkty jej dróg — jak Overpass, który
+też pomija składowe będące relacjami (relacja z samych relacji nie ma u niego środka). W kontroli
+kompletności liczą się jak każdy wiersz. Poza kopią zostaje tylko relacja, której nie ma po czym
+ustawić: żadnej z jej składowych nie ma w wyciągu (np. wszystkie są za granicą) albo wszystkie są
+relacjami — skrypt liczy takie osobno, wierszem „known gap”. W październiku 2026 takich nie było:
+wszystkie 4 (3 relacje `type=building` i hala Makro w Sosnowcu jako `type=site`) są w kopii.
 
 ## In English
 
@@ -93,7 +99,13 @@ same rule as the copy's rows (`rowTags`) and compares: it prints how many are mi
 them with their name and an openstreetmap.org link. More than 50 missing stop the refresh, 1–50 are a
 warning (on GitHub Actions also an annotation on the run); osmium's geometry errors are only counted.
 
-Known difference from the Overpass queries: of relations, osmium builds areas only from multipolygons
-and boundaries (`type=multipolygon`, `type=boundary`); other relations are not in the copy — the script
-counts them apart, on one line. A handful of objects in all of Poland (in October 2026: 3
-`type=building` relations and a Makro hall mapped as `type=site`).
+**Relations osmium makes no area of.** Of relations, osmium export builds areas only from
+multipolygons and boundaries (`type=multipolygon`, `type=boundary`) and writes nothing for the others
+(`type=site`, `type=building`, no `type`). Overpass returns them with a centre (`out center`), so the
+script does the same: it takes their members from the filtered extract (`osmium getid -r`) and places
+each such relation at the centre of the bounding box of its member nodes and every node of its member
+ways — as Overpass does, which also leaves member relations out (a relation of relations gets no centre
+there). The completeness check counts them like any other row. Only a relation with nothing to place
+it by stays out — none of its members is in the extract (all beyond the border, say), or all are
+relations; the script counts those apart, on its "known gap" line. In October 2026 there were none: all
+4 (3 `type=building` relations and the Makro hall in Sosnowiec mapped as `type=site`) are in the copy.

@@ -47,6 +47,15 @@ describe('the committed OSM data', () => {
     expect(meta.license).toBe('ODbL-1.0');
   });
 
+  test('relations osmium export does not build are in, placed by their members: the Makro hall in Sosnowiec, a type=site', () => {
+    const makro = rows.find((r) => r.id === 'r2223594');
+    expect(makro?.tags).toMatchObject({ shop: 'wholesale', brand: 'Makro' });
+    expect(isWholesaleHall(makro!.tags)).toBe(true);
+    // Where Overpass's `out center` puts it: 50.3093774, 19.1809905.
+    expect(makro!.latE5 / 1e5).toBeCloseTo(50.31, 2);
+    expect(makro!.lonE5 / 1e5).toBeCloseTo(19.18, 2);
+  });
+
   test('cut as the build cuts it: small leaves, at most 500 places each (except the finest cells)', () => {
     const { index, files } = buildOsmFiles(tsv, meta);
     // The busiest 10 km view needs far fewer leaves than the memory keeps (pinned ones never drop):

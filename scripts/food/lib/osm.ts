@@ -1,5 +1,6 @@
 // The app's own copy of the OpenStreetMap places in Poland (`data/osm/places-pl.tsv`): reading
-// osmium's GeoJSON export of the Geofabrik extract into its rows, the polygon the copy covers, and
+// osmium's GeoJSON export of the Geofabrik extract into its rows (with the relations the export does
+// not build, placed by their members as Overpass places them), the polygon the copy covers, and
 // the checks a new copy must pass before it replaces the committed one — the export's completeness
 // among them. Pure, so it is tested without osmium or the network (one test does run osmium, on a
 // small file); `scripts/food/osm-places.ts` downloads, runs osmium and writes.
@@ -21,7 +22,7 @@ type Point = [number, number];
 export const SOURCE_URL = 'https://download.geofabrik.de/europe/poland-latest.osm.pbf';
 export const POLY_URL = 'https://download.geofabrik.de/europe/poland.poly';
 
-/** Rows a first copy must have: the extract of October 2026 gave 99,144. */
+/** Rows a first copy must have: the extract of October 2026 gave 99,148. */
 const FIRST_RUN_MIN_ROWS = 90_000;
 /** A small kind (under 500 rows) may move this many rows either way whatever the percentage. */
 const SMALL_KIND_ROWS = 25;
@@ -33,7 +34,7 @@ const NEW_KIND_ROWS = 50;
  */
 const WARSAW = { south: 5_209_000, north: 5_237_000, west: 2_085_000, east: 2_127_000 };
 const WARSAW_MIN_ROWS = 7_000;
-/** Selgros and Makro halls a copy must have (37 in October 2026): the shops view depends on them. */
+/** Selgros and Makro halls a copy must have (38 in October 2026): the shops view depends on them. */
 const MIN_HALLS = 20;
 /** The coverage polygon is simplified this much, more when that still leaves too many points. */
 const COVERAGE_EPS_M = 300;
@@ -88,6 +89,12 @@ export function bboxCentre(geometry: Geometry): { lat: number; lon: number } {
   return { lat: (box.south + box.north) / 2, lon: (box.west + box.east) / 2 };
 }
 
+/** An object's row: at the centre of its geometry's bounding box, in 1e-5 degrees — every row rounded alike. */
+function rowAt(id: string, geometry: Geometry, tags: Record<string, string>): OsmRow {
+  const centre = bboxCentre(geometry);
+  return { id, latE5: Math.round(centre.lat * 1e5), lonE5: Math.round(centre.lon * 1e5), tags };
+}
+
 export interface FeatureStats {
   /** Lines read: every object osmium wrote, the areas of closed ways (duplicates) included. */
   features: number;
@@ -106,6 +113,13 @@ export interface FeatureStats {
 export function kindOf(tags: Record<string, string>): string {
   const amenity = tags.amenity;
   return amenity !== undefined && (AMENITIES as readonly string[]).includes(amenity) ? amenity : (tags.shop ?? 'other');
+}
+
+/** One more row in the counts: by type and by kind. */
+function tally(stats: FeatureStats, type: OsmType, tags: Record<string, string>) {
+  stats.types[type]++;
+  const kind = kindOf(tags);
+  stats.kinds[kind] = (stats.kinds[kind] ?? 0) + 1;
 }
 
 /** Why an object is not a row: neither view asks for it, or it has nothing a list could call it. */
@@ -189,11 +203,8 @@ export function readFeatures(lines: Iterable<string>): { rows: OsmRow[]; stats: 
         stats[tags]++;
         continue;
       }
-      const centre = bboxCentre(feature.geometry);
-      rows.push({ id: decoded.key, latE5: Math.round(centre.lat * 1e5), lonE5: Math.round(centre.lon * 1e5), tags });
-      stats.types[decoded.type]++;
-      const kind = kindOf(tags);
-      stats.kinds[kind] = (stats.kinds[kind] ?? 0) + 1;
+      rows.push(rowAt(decoded.key, feature.geometry, tags));
+      tally(stats, decoded.type, tags);
     } catch (error) {
       throw new Error(`osmium export, line ${lineNumber}: ${(error as Error).message}`);
     }
@@ -214,16 +225,64 @@ export const osmiumArgs = {
   /** Only the objects that match the filter themselves (`-R`: not the nodes and members they pulled in), as OPL. */
   list: (filtered: string, out: string) =>
     ['tags-filter', '-R', '-f', 'opl,add_metadata=false', '-O', '-o', out, filtered, ...osmiumFilterExpressions()],
+  /**
+   * The given objects and everything they reference, recursively (members, the nodes of member ways),
+   * as OPL. `-H` reads the extract as a history file, which changes nothing in one without history but
+   * skips the check that every id was found: without it getid exits 1 — a failure's code — whenever a
+   * member is not in the extract (cut off at the border), though it still writes everything else.
+   */
+  members: (filtered: string, ids: readonly string[], out: string) =>
+    ['getid', '-r', '-H', '-f', 'opl,add_metadata=false', '-O', '-o', out, filtered, ...ids],
 };
 
-/** An object of an OPL listing: its id as the copy writes it (`n123`) and all of its tags. */
-export interface OplObject {
-  type: OsmType;
-  key: string;
-  tags: Record<string, string>;
+/** A position as GeoJSON writes it, `[lon, lat]`: what `bboxCentre` reads. */
+type Position = [number, number];
+
+/**
+ * An object of an OPL listing: its id as the copy writes it (`n123`), all of its tags, and what
+ * places it — a node's position (`null` when it has none), a way's nodes, a relation's members (both
+ * by id as the copy writes it, roles left out).
+ */
+export type OplObject = { key: string; tags: Record<string, string> } & (
+  | { type: 'node'; location: Position | null }
+  | { type: 'way'; nodes: string[] }
+  | { type: 'relation'; members: string[] }
+);
+
+/** An id as osmium writes it, `n123`, `w456` or `r789` → the same as the copy writes it; `null` for anything else. */
+function oplKey(text: string): string | null {
+  const match = text.match(/^([nwr])(\d+)$/);
+  const id = Number(match?.[2]);
+  return match && Number.isSafeInteger(id) && id >= 1 ? `${match[1]}${id}` : null;
 }
 
-const OPL_TYPES: Record<string, OsmType> = { n: 'node', w: 'way', r: 'relation' };
+const OPL_COORDINATE = /^-?\d+(?:\.\d+)?$/;
+
+/** A node's `x` and `y` fields → its position; both empty is how osmium writes a node without one. */
+function oplLocation(x: string, y: string): Position | null {
+  if (x === '' && y === '') return null;
+  if (!OPL_COORDINATE.test(x) || !OPL_COORDINATE.test(y)) throw new Error(`not a position: "x${x} y${y}"`);
+  return [Number(x), Number(y)];
+}
+
+/** A way's `N` field (`n1,n2,…`) → its nodes. */
+function oplNodes(text: string): string[] {
+  return (text === '' ? [] : text.split(',')).map((ref) => {
+    const key = oplKey(ref);
+    if (!key?.startsWith('n')) throw new Error(`not a node of a way: "${ref}"`);
+    return key;
+  });
+}
+
+/** A relation's `M` field (`w1@outer,n2@`, the role escaped like a tag) → its members. */
+function oplMembers(text: string): string[] {
+  return (text === '' ? [] : text.split(',')).map((member) => {
+    const at = member.indexOf('@');
+    const key = at < 0 ? null : oplKey(member.slice(0, at));
+    if (!key) throw new Error(`not a member: "${member}"`);
+    return key;
+  });
+}
 
 /**
  * OPL's escapes undone: osmium writes a space, `,`, `=`, `@`, `%`, control characters and most of
@@ -239,8 +298,9 @@ export function unescapeOpl(text: string): string {
 
 /**
  * `osmium … -f opl` → its objects, one per line. Fields are separated by spaces (osmium escapes a
- * space inside a value); the first is the type and id, the one starting with `T` holds the tags as
- * `key=value` pairs joined by commas. Throws, with the line number, on a line osmium would not write.
+ * space inside a value), each named by its first letter: the first is the type and id, `T` holds the
+ * tags as `key=value` pairs joined by commas, then a node has `x` and `y`, a way `N` (its nodes), a
+ * relation `M` (its members). Throws, with the line number, on a line osmium would not write.
  */
 export function readOpl(lines: Iterable<string>): OplObject[] {
   const objects: OplObject[] = [];
@@ -250,18 +310,24 @@ export function readOpl(lines: Iterable<string>): OplObject[] {
     if (!line.trim()) continue;
     try {
       const fields = line.split(' ');
-      const match = fields[0]!.match(/^([nwr])(\d+)$/);
-      const id = Number(match?.[2]);
-      if (!match || !Number.isSafeInteger(id) || id < 1) throw new Error(`no object id in "${fields[0]}"`);
-      const field = fields.find((f) => f.startsWith('T'));
-      if (field === undefined) throw new Error('no tags field');
+      const key = oplKey(fields[0]!);
+      if (!key) throw new Error(`no object id in "${fields[0]}"`);
+      /** The value of the field named by `letter` (the letter cut off). */
+      const field = (letter: string, name: string) => {
+        const found = fields.find((f) => f.startsWith(letter));
+        if (found === undefined) throw new Error(`no ${name} field`);
+        return found.slice(1);
+      };
+      const tagField = field('T', 'tags');
       const tags: Record<string, string> = {};
-      for (const pair of field === 'T' ? [] : field.slice(1).split(',')) {
+      for (const pair of tagField === '' ? [] : tagField.split(',')) {
         const parts = pair.split('=');
         if (parts.length !== 2) throw new Error(`not a tag: "${pair}"`);
         tags[unescapeOpl(parts[0]!)] = unescapeOpl(parts[1]!);
       }
-      objects.push({ type: OPL_TYPES[match[1]!]!, key: `${match[1]}${id}`, tags });
+      if (key.startsWith('n')) objects.push({ type: 'node', key, tags, location: oplLocation(field('x', 'x'), field('y', 'y')) });
+      else if (key.startsWith('w')) objects.push({ type: 'way', key, tags, nodes: oplNodes(field('N', 'nodes')) });
+      else objects.push({ type: 'relation', key, tags, members: oplMembers(field('M', 'members')) });
     } catch (error) {
       throw new Error(`osmium listing, line ${lineNumber}: ${(error as Error).message}`);
     }
@@ -271,16 +337,79 @@ export function readOpl(lines: Iterable<string>): OplObject[] {
 
 /**
  * The relations osmium export builds areas of (by the exact `type` value); it writes nothing at all
- * for any other relation — `type=site`, `type=building`, none.
+ * for any other relation — `type=site`, `type=building`, none — so `relationRows` places those.
  */
 const AREA_RELATIONS = ['multipolygon', 'boundary'];
+
+/** A relation osmium export writes nothing for, whatever its members. */
+const neverBuilt = (object: OplObject) => object.type === 'relation' && !AREA_RELATIONS.includes(object.tags.type ?? '');
+
+/**
+ * The relations of the listing (the `list` run) that should be rows but that osmium export never
+ * writes, by id, sorted: what `relationRows` is to place. One already among `rows` stays out — no
+ * object is two rows.
+ */
+export function unbuiltRelations(objects: Iterable<OplObject>, rows: readonly OsmRow[]): string[] {
+  const ids = new Set(rows.map((row) => row.id));
+  const keys: string[] = [];
+  for (const object of objects) {
+    if (neverBuilt(object) && !ids.has(object.key) && typeof rowTags(object.tags) !== 'string') keys.push(object.key);
+  }
+  return keys.sort(compareIds);
+}
+
+/**
+ * Rows for relations osmium export never writes (`unbuiltRelations`), placed as Overpass places them
+ * with `out center`: at the centre of the bounding box of their member nodes and of every node of
+ * their member ways. A member relation adds nothing, as in Overpass ("relations as members have no
+ * effect": a relation of relations gets no centre there), so a cycle of relations is no matter.
+ * `objects` lists the relations with all they reference (the `members` run); a member or a node it
+ * lacks — cut off at the border — is skipped, and a relation with nothing left to place it by gets
+ * no row: it stays the known gap. Tags by `rowTags`, positions rounded as every other row's.
+ */
+export function relationRows(objects: Iterable<OplObject>, keys: Iterable<string>): OsmRow[] {
+  const byKey = new Map<string, OplObject>();
+  for (const object of objects) byKey.set(object.key, object);
+  const rows: OsmRow[] = [];
+  for (const key of new Set(keys)) {
+    const relation = byKey.get(key);
+    if (relation?.type !== 'relation') continue;
+    const tags = rowTags(relation.tags);
+    if (typeof tags === 'string') continue;
+    const positions: Position[] = [];
+    const add = (nodeKey: string) => {
+      const node = byKey.get(nodeKey);
+      if (node?.type === 'node' && node.location) positions.push(node.location);
+    };
+    for (const member of relation.members) {
+      const object = byKey.get(member);
+      if (object?.type === 'node') add(member);
+      else if (object?.type === 'way') for (const nodeKey of object.nodes) add(nodeKey);
+    }
+    if (positions.length) rows.push(rowAt(key, { type: 'MultiPoint', coordinates: positions }, tags));
+  }
+  return rows.sort((a, b) => compareIds(a.id, b.id));
+}
+
+/** The export's rows and counts with `more` put in (the placed relations): sorted again, counted as `readFeatures` counts. */
+export function withRows(
+  exported: { rows: readonly OsmRow[]; stats: FeatureStats },
+  more: readonly OsmRow[],
+): { rows: OsmRow[]; stats: FeatureStats } {
+  const stats: FeatureStats = { ...exported.stats, types: { ...exported.stats.types }, kinds: { ...exported.stats.kinds } };
+  for (const row of more) tally(stats, decodeId(row.id)!.type, row.tags);
+  return { rows: [...exported.rows, ...more].sort((a, b) => compareIds(a.id, b.id)), stats };
+}
 
 export interface Completeness {
   /** Objects that should be rows: they match the filter themselves and pass `rowTags`, the known gap aside. */
   expected: number;
   /** Expected, yet not a row — osmium could not build them. Sorted by id; the label as the lists show it. */
   missing: { id: string; label: string }[];
-  /** Relations that pass `rowTags` but that osmium export never writes, by `type` (`''`: none). */
+  /**
+   * Relations that pass `rowTags` but that osmium export never writes and that no member placed
+   * (`relationRows`: the extract has none to place them by), by `type` (`''`: none).
+   */
   knownGap: Record<string, number>;
 }
 
@@ -289,8 +418,8 @@ export interface Completeness {
  * themselves (the `list` run) — not the nodes and members it pulled in for them; each is judged by
  * the same `rowTags` as the export, and those that are not rows are missing. osmium leaves out what
  * it cannot build, often without an error: a broken multipolygon, one with a member the extract
- * lacks, a closed area way of three nodes. The relations it never builds are the known gap, counted
- * apart.
+ * lacks, a closed area way of three nodes. A relation it never builds counts once its members placed
+ * it (`relationRows`); one they could not place is the known gap, counted apart.
  */
 export function completeness(objects: Iterable<OplObject>, rows: readonly OsmRow[]): Completeness {
   const ids = new Set(rows.map((row) => row.id));
@@ -298,8 +427,8 @@ export function completeness(objects: Iterable<OplObject>, rows: readonly OsmRow
   for (const object of objects) {
     const tags = rowTags(object.tags);
     if (typeof tags === 'string') continue;
-    const type = object.tags.type ?? '';
-    if (object.type === 'relation' && !AREA_RELATIONS.includes(type)) {
+    if (neverBuilt(object) && !ids.has(object.key)) {
+      const type = object.tags.type ?? '';
       result.knownGap[type] = (result.knownGap[type] ?? 0) + 1;
       continue;
     }
