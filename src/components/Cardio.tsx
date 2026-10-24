@@ -35,6 +35,7 @@ import { PHONE_NOTE, WATCH_NOTE } from './Health';
 import { DeviceLine, LateNotes, onAnyCheck, useNow } from './DeviceStatus';
 import { garminConfigured, watchConnected, watchStatus } from '../garmin';
 import { phoneConnected, phoneStatus } from '../phone';
+import { hasDiet } from '../food/dietFlag';
 import { rememberedWatch } from '../watches/remember';
 import { lacksText } from './WatchCheck.words';
 import { XP, cardioXp } from '../engine/xp';
@@ -271,12 +272,17 @@ function CardioShortcuts({ state, today }: { state: AppState; today: string }) {
  * Karta pod przekąską. Licznik dnia wchodzi dopiero z pierwszym wpisem — zero kroków przy
  * pustym dniu to wyrzut, a nie zaproszenie; tak samo jak przy przekąskach. O połączeniu
  * z zegarkiem i telefonem mówi tylko wtedy, gdy dane się spóźniają.
+ *
+ * Kto prowadzi dziennik jedzenia, nie widzi tu kalorii: na ekranie Dziś jest wtedy jeden
+ * rachunek kalorii — jedzenia, a ruch go nie zmienia. Kalorie ruchu zostają na ekranie kroków.
  */
 export function CardioCard({ state }: { state: AppState }) {
   const now = useNow(onAnyCheck);
   const today = dayKey(now);
   const n = cardioOn(state, today).length;
-  const d = dayBurn(state, today);
+  const diet = hasDiet();
+  // Bez kalorii przy diecie: nagłówek jak bez wagi — kroki albo liczba wpisów.
+  const d = diet ? null : dayBurn(state, today);
   const steps = stepsOn(state, today);
 
   return (
@@ -291,7 +297,7 @@ export function CardioCard({ state }: { state: AppState }) {
                 ? T.cardKcal(kcalText(d.cardio))
                 : T.cardEntries(n)}
           </h2>
-          <p className="tight">{d ? T.cardBurn(d.workouts ? kcalText(d.workouts) : null) : T.cardNoKg}</p>
+          {!diet && <p className="tight">{d ? T.cardBurn(d.workouts ? kcalText(d.workouts) : null) : T.cardNoKg}</p>}
           <p className="tight">{moveLine(state, today)}</p>
         </>
       ) : (
@@ -878,6 +884,7 @@ export function CardioPage({
     <>
       <div className="wrap">
         <p className="lead">{T.pageLead}</p>
+        {hasDiet() && <p className="lead">{T.notFood}</p>}
       </div>
 
       <div className="grp">

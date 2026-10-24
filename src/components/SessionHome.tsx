@@ -33,6 +33,8 @@ const T = text({
     deload:
       'Tydzień lżejszy: mniej serii (z trzech zostają dwie) i bez serii „ile dasz radę”. Zostaw 2–3 powtórzenia zapasu — wynik trafi do historii, ale nie zmieni poziomów.',
     burn: (min: number, kcal: string) => `Na twoim poziomie to ok. ${min} min serii z przerwami i ${kcal} ponad spoczynek.`,
+    /** Przy dzienniku jedzenia: sam czas, bez kalorii — ruch nie zmienia celu jedzenia. */
+    burnTime: (min: number) => `Na Twoim poziomie to ok. ${min} min serii z przerwami.`,
     start: (name: string) => `Zacznij: ${name}`,
     restDay: 'Dzień bez terminu',
     next: (when: string) => `Następny termin ${when}`,
@@ -62,6 +64,7 @@ const T = text({
     deload:
       'Lighter week: fewer sets (two instead of three) and no “as many as you can” set. Leave 2–3 reps in reserve — the result goes into your history but won’t change your levels.',
     burn: (min: number, kcal: string) => `At your level that’s about ${min} min of sets with rests and ${kcal} above resting.`,
+    burnTime: (min: number) => `At your level that’s about ${min} min of sets with rests.`,
     start: (name: string) => `Start: ${name}`,
     restDay: 'No deadline today',
     next: (when: string) => `Next deadline ${when}`,
@@ -185,7 +188,10 @@ export function SessionHome({
           )}
           {burn && (
             <p className="tight" style={{ marginTop: 6 }}>
-              {T.burn(Math.round(burn.secs / 60), kcalText(burn.active))}
+              {/* Kto prowadzi dziennik jedzenia, ma na tym ekranie jeden rachunek kalorii — jedzenia. */}
+              {hasDiet()
+                ? T.burnTime(Math.round(burn.secs / 60))
+                : T.burn(Math.round(burn.secs / 60), kcalText(burn.active))}
             </p>
           )}
           <div className="actions">

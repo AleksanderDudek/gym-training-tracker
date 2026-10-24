@@ -134,6 +134,9 @@ export const T = text({
     noMove: 'bez ruchu',
     pageLead:
       'Ruch zmierzony telefonem, zegarkiem, bieżnią albo rowerem i zajęcia tańca — przepisane tutaj. Kalorie liczą się z twojej wagi i są szacunkiem: aktywne, czyli ponad to, co ciało spaliłoby w tym czasie w spoczynku.',
+    /** Pod wstępem, gdy ktoś prowadzi dziennik jedzenia: ruch nie zmienia celu jedzenia. */
+    notFood:
+      'Te kalorie to szacunek (±20–30%). Dziennik jedzenia ich nie dolicza — cel jedzenia dopasowuje się co tydzień do Twojej wagi.',
     watchCheck: 'Masz zegarek? Sprawdź, czy kroki mogą przychodzić same →',
     watchCheckHide: 'Nie pokazuj więcej',
     watchGaps: (name: string, list: string) => `${name} nie udostępnia aplikacjom ${list} — dlatego ich tu nie ma.`,
@@ -207,7 +210,8 @@ export const T = text({
         </p>
         <p className="tight">
           To szacunek. Pomiar tlenu u konkretnej osoby potrafi odbiec o 20–30% — w obie strony.
-          Kalorie nie są zaleceniem żywieniowym — ile i co jeść, ustala się z dietetykiem.
+          Kalorie nie są zaleceniem żywieniowym. Dziennik jedzenia nie dolicza ich do celu — cel jedzenia
+          dopasowuje się co tydzień do wagi i zapisów.
         </p>
       </>
     ),
@@ -362,6 +366,8 @@ export const T = text({
     noMove: 'no movement',
     pageLead:
       'Movement measured by your phone, watch, treadmill or bike, and dance classes — copied in here. Calories are worked out from your weight and are an estimate: active calories, meaning above what your body would burn at rest in the same time.',
+    notFood:
+      'These calories are an estimate (±20–30%). The food diary doesn’t add them — your food target adjusts weekly to your weight.',
     watchCheck: 'Got a watch? Check whether your steps can arrive by themselves →',
     watchCheckHide: 'Don’t show again',
     watchGaps: (name: string, list: string) => `${name} doesn’t share ${list} with apps — that’s why they’re missing here.`,
@@ -436,7 +442,8 @@ export const T = text({
         </p>
         <p className="tight">
           This is an estimate. Measuring a particular person’s oxygen use can differ by 20–30% — either way.
-          Calories aren’t dietary advice — how much and what to eat is something to settle with a dietitian.
+          Calories are not nutrition advice. The food diary doesn’t add them to your target — the food target adjusts
+          weekly to your weight and logs.
         </p>
       </>
     ),
