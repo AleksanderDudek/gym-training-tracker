@@ -1047,15 +1047,17 @@ sklepy w podpowiedziach bierze z ostatniego wyszukiwania (każda pełna odpowied
 **Skąd lokale i sklepy — dane OpenStreetMap w aplikacji.** W Polsce oba widoki biorą je z kopii
 danych OpenStreetMap dołączonej do aplikacji, a nie z serwera Overpass: odpowiedź jest od razu, nawet
 gdy Overpass leży, działa bez sieci dla oglądanych okolic, a pozycja nie trafia do żadnej obcej
-usługi (tylko zaokrąglone kawałki do hostingu aplikacji, GitHub Pages). Kopia to
+usługi (tylko zaokrąglone kawałki do hostingu aplikacji, GitHub Pages) — chyba że danych aplikacji
+nie da się odczytać z jej serwera: wtedy, jak za granicą, szukane miejsce zaokrąglone do ok. 100 m
+dostaje Overpass. Kopia to
 `data/osm/places-pl.tsv` (99 tys. nazwanych lokali i sklepów: tagi `amenity`, `shop`, `name`, `brand`,
 `opening_hours`, `cuisine` i adres, środek każdego obiektu) z `meta.json` (data danych, liczby,
 uproszczona granica Polski). Build (`vite/osmPlaces.ts`) tnie ją na drzewo czwórkowe — najwyżej 500
 miejsc w kawałku, ok. 590 kawałków po kilka kB — pod `data/osm/v1/t/<komórka>.<hasz>.json.gz`, z indeksem
 pod stałym adresem i `LICENSE.txt`. Telefon pobiera tylko kawałki wokół pozycji zaokrąglonej do
 0,001° (ok. 100 m; serwer aplikacji nie dowie się więcej niż kiedyś Overpass), najbliższe najpierw:
-promień 1 km w centrum Warszawy to 5 kawałków i ok. 90 kB zamiast odpowiedzi Overpass 462 kB po
-kilkudziesięciu sekundach. Service worker trzyma kawałki (400 na 90 dni) i indeks (odświeżany w tle);
+promień 1 km w centrum Warszawy to 5 kawałków i ok. 50 kB (z indeksem ok. 60 kB) zamiast odpowiedzi
+Overpass 462 kB po kilkudziesięciu sekundach. Service worker trzyma kawałki (400 na 90 dni) i indeks (odświeżany w tle);
 nowe dane po wdrożeniu nie zmieniają kodu, więc nie ma paska „Nowa wersja”, a kawałek, który zniknął,
 każe przeczytać indeks od nowa. Przełączenie widoków nic nie pobiera; jedne dane wczytują się od
 wejścia na stronę, nie po bazie produktów. Za granicą, dla części koła za granicą i gdy danych

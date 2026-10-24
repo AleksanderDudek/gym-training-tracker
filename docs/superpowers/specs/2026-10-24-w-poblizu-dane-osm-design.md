@@ -30,7 +30,7 @@ decisions follow, with the changes made while implementing.
 
 | Topic | Decision | Why |
 | --- | --- | --- |
-| Source in Poland | The app's own copy of OSM data for **both views**; no Overpass request at all | The only way the first answer in a new place stops depending on overloaded volunteer servers; complete counts („bez danych”, „i N innych”) at once; works offline for areas seen |
+| Source in Poland | The app's own copy of OSM data for **both views**; no Overpass request at all while that copy can be read (when the app's server cannot give it, Overpass as abroad) | The only way the first answer in a new place stops depending on overloaded volunteer servers; complete counts („bez danych”, „i N innych”) at once; works offline for areas seen |
 | Source abroad / at the border | Overpass as before (pauses, retries, saved answers), **one union query and one cache for both views**; at the border the Polish side at once and the rest live | Abroad cannot be prebuilt for every country; one question serves both views |
 | Data in the repo | `data/osm/places-pl.tsv` (sorted raw tags, 9 columns, centre of each object) + `meta.json`, from `npm run food:osm` (Geofabrik extract → osmium tags-filter → export → normaliser) | Text with sorted rows gives small git deltas on refresh; no chain or menu matching in the data, so new chains never need a data rebuild |
 | One rule | `src/food/nearby/osmTags.ts` (no imports) defines which objects count; queries, parsers, the osmium filter and the script all use it; golden test of the query strings | Poland (copy) and abroad (Overpass) can never disagree |

@@ -3,6 +3,7 @@ import type { OsmRow } from '../../../src/food/nearby/osmFormat';
 import {
   bboxCentre,
   buildMeta,
+  completeness,
   decodeId,
   diffRows,
   gates,
@@ -10,9 +11,12 @@ import {
   kindOf,
   parsePoly,
   readFeatures,
+  readOpl,
+  rowTags,
   simplify,
   simplifyCoverage,
   splitRecords,
+  unescapeOpl,
   type FeatureStats,
   type Meta,
 } from './osm';
@@ -23,6 +27,13 @@ type Point = [number, number];
 const line = (id: string, geometry: object, properties: Record<string, string>) =>
   `\x1e${JSON.stringify({ type: 'Feature', id, geometry, properties })}`;
 const point = (lon: number, lat: number) => ({ type: 'Point', coordinates: [lon, lat] });
+/** One line of `osmium tags-filter -f opl,add_metadata=false`: a space, `,`, `=`, `@` and `%` escaped as osmium does. */
+const oplLine = (id: string, tags: Record<string, string>) => {
+  const escape = (text: string) => text.replace(/[\s,=@%]/g, (c) => `%${c.codePointAt(0)!.toString(16).padStart(2, '0')}%`);
+  return `${id} T${Object.entries(tags)
+    .map(([key, value]) => `${escape(key)}=${escape(value)}`)
+    .join(',')} ${id.startsWith('n') ? 'x21 y52' : id.startsWith('w') ? 'Nn1,n2,n3,n1' : 'Mw1@outer'}`;
+};
 /** A closed way: the same ring as a LineString (its `w` line) and as a MultiPolygon (its `a` area). */
 const RING = [
   [21.0, 52.2],
@@ -379,5 +390,109 @@ describe('osmium output', () => {
     const output = 'Geometry error: Could not build area geometry\nsomething else\nGeometry error: duplicate node\n';
     expect(geometryErrors(output)).toHaveLength(2);
     expect(geometryErrors('')).toEqual([]);
+  });
+});
+
+describe('one rule for the rows, in the export and in the completeness check', () => {
+  test('asked for by either view and named; only the tags the app reads, on one line, none empty; else why not', () => {
+    expect(rowTags({ amenity: 'bar', name: 'Pub' })).toBe('notMatching');
+    expect(rowTags({ shop: 'wholesale', name: 'Hurtownia Budowlana' })).toBe('notMatching');
+    expect(rowTags({ amenity: 'restaurant' })).toBe('unnamed');
+    expect(rowTags({ shop: 'convenience', 'name:en': 'Shop' })).toBe('unnamed');
+    expect(rowTags({ amenity: 'fuel', shop: 'convenience', brand: 'Orlen', operator: 'PKN Orlen' })).toEqual({ amenity: 'fuel', shop: 'convenience', brand: 'Orlen' });
+    expect(rowTags({ amenity: 'cafe', name: 'Kawa\tna\nwynos\r', cuisine: '' })).toEqual({ amenity: 'cafe', name: 'Kawa na wynos ' });
+  });
+
+  test('an object the export makes a row is expected by the listing, and one it drops is not', () => {
+    const objects: [string, Record<string, string>][] = [
+      ['n1', { amenity: 'bar', name: 'Pub' }],
+      ['n2', { amenity: 'restaurant' }],
+      ['n3', { shop: 'wholesale', brand: 'Selgros', name: 'Selgros Cash & Carry' }],
+      ['n4', { shop: 'wholesale', brand: 'Bricomarché' }],
+      ['n5', { amenity: 'cafe', name: 'Kawa\tna\nwynos', website: 'https://example.pl' }],
+    ];
+    const { rows } = readFeatures(objects.map(([id, tags]) => line(id, point(21, 52), tags)));
+    const listing = readOpl(objects.map(([id, tags]) => oplLine(id, tags)));
+    expect(rows.map((row) => row.id)).toEqual(['n3', 'n5']);
+    expect(completeness(listing, rows)).toEqual({ expected: 2, missing: [], knownGap: {} });
+    // The same tags from both: what the listing reads is what the export wrote.
+    expect(listing.map((object) => rowTags(object.tags)).filter((tags) => typeof tags !== 'string')).toEqual(rows.map((row) => row.tags));
+  });
+});
+
+describe('the listing of the objects that should be rows (OPL)', () => {
+  test('nodes, ways and relations as osmium writes them, with metadata or without, no tags too', () => {
+    expect(
+      readOpl([
+        'n14 Tshop=bakery,name=Corner%20%node x21.02 y52.231',
+        'w1001 v3 dV c42 t2026-10-01T10:00:00Z i7 uJan%20%K. Tshop=bakery,name=Putka Nn11,n12,n13,n14,n11',
+        'r2006 Ttype=multipolygon,shop=supermarket,name=Hala Mw1006@outer,w1007@inner',
+        'n15 T x21 y52',
+        '',
+      ]),
+    ).toEqual([
+      { type: 'node', key: 'n14', tags: { shop: 'bakery', name: 'Corner node' } },
+      { type: 'way', key: 'w1001', tags: { shop: 'bakery', name: 'Putka' } },
+      { type: 'relation', key: 'r2006', tags: { type: 'multipolygon', shop: 'supermarket', name: 'Hala' } },
+      { type: 'node', key: 'n15', tags: {} },
+    ]);
+  });
+
+  test('escapes: a space, the separators, control characters, code points of any length; an empty value', () => {
+    // As osmium 1.19.1 wrote it.
+    const [cafe] = readOpl(['n105 Tamenity=cafe,name=%201e%Café%20%%3d%%20%Bar%2c%%20%100%25%%20%%40%home%201d%%20%%1f355%%2028%end,note= x21 y52']);
+    expect(cafe?.tags).toEqual({ amenity: 'cafe', name: '„Café = Bar, 100% @home” 🍕 end', note: '' });
+    expect(unescapeOpl('Kawa%09%na%0a%wynos%0d%!')).toBe('Kawa\tna\nwynos\r!');
+    expect(unescapeOpl('%20ac%%2713%%5496%%5561%')).toBe('€✓咖啡');
+  });
+
+  test('a line osmium would not write stops the run, with its number', () => {
+    const cafe = 'n1 Tamenity=cafe,name=Kawa x21 y52';
+    expect(() => readOpl([cafe, 'n2 Tamenity=cafe,name=50%off x21 y52'])).toThrow(/line 2: a broken escape/);
+    expect(() => readOpl(['n3 Tname=%110000% x21 y52'])).toThrow(/line 1:/);
+    for (const odd of ['x1 Tamenity=cafe x21 y52', 'n0 Tamenity=cafe x21 y52', 'n-1 Tamenity=cafe x21 y52']) {
+      expect(() => readOpl([odd])).toThrow(/no object id/);
+    }
+    expect(() => readOpl(['n1 x21 y52'])).toThrow(/no tags field/);
+    expect(() => readOpl(['n1 Tamenity x21 y52'])).toThrow(/not a tag/);
+    expect(() => readOpl(['n1 Tname=a=b x21 y52'])).toThrow(/not a tag/);
+  });
+});
+
+describe('what the export lost', () => {
+  const row = (id: string): OsmRow => ({ id, latE5: 5_223_000, lonE5: 2_101_000, tags: {} });
+  const listing = readOpl([
+    oplLine('n1', { amenity: 'cafe', name: 'Kawa' }),
+    oplLine('w3', { shop: 'bakery', name: 'Bow-tie', area: 'yes' }),
+    oplLine('w2', { shop: 'supermarket', brand: 'Biedronka', name: 'Biedronka Plac Bankowy' }),
+    oplLine('n4', { amenity: 'bar', name: 'Pub' }),
+    oplLine('n5', { amenity: 'restaurant' }),
+    oplLine('r6', { type: 'multipolygon', shop: 'supermarket', name: 'Hala Mirowska' }),
+    oplLine('r7', { type: 'boundary', amenity: 'food_court', name: 'Strefa' }),
+    oplLine('r8', { type: 'site', shop: 'supermarket', name: 'Centrum' }),
+    oplLine('r9', { type: 'building', amenity: 'restaurant', name: 'Dom' }),
+    oplLine('r10', { amenity: 'cafe', name: 'Bez typu' }),
+    oplLine('r11', { type: 'site', shop: 'bakery' }),
+    oplLine('r12', { type: 'Multipolygon', shop: 'bakery', name: 'Wielka litera' }),
+  ]);
+
+  test('what the rule keeps but the rows lack, by id, labelled as the lists label it; other relations are the known gap', () => {
+    expect(completeness(listing, [row('n1'), row('r7')])).toEqual({
+      // n1, w2, w3, r6, r7: not the bar, the unnamed, nor the relations osmium never builds.
+      expected: 5,
+      missing: [
+        { id: 'w2', label: 'Biedronka' },
+        { id: 'w3', label: 'Bow-tie' },
+        { id: 'r6', label: 'Hala Mirowska' },
+      ],
+      // osmium compares the type as it is: `Multipolygon` is no multipolygon to it.
+      knownGap: { site: 1, building: 1, '': 1, Multipolygon: 1 },
+    });
+  });
+
+  test('nothing lost, nothing missing; a row for something the rule drops changes nothing', () => {
+    expect(completeness(listing, ['n1', 'w2', 'w3', 'r6', 'r7'].map(row)).missing).toEqual([]);
+    expect(completeness(listing, ['n1', 'w2', 'w3', 'r6', 'r7', 'n4', 'r8'].map(row))).toEqual(completeness(listing, ['n1', 'w2', 'w3', 'r6', 'r7'].map(row)));
+    expect(completeness([], [row('n1')])).toEqual({ expected: 0, missing: [], knownGap: {} });
   });
 });
