@@ -37,7 +37,7 @@ decisions follow, with the changes made while implementing.
 | Build | `vite/osmPlaces.ts` cuts the TSV into gzipped leaves named by content hash under `data/osm/v1/t/`, an index at a fixed URL and `LICENSE.txt`; `virtual:osm-places` gives only the index URL | A data-only deploy changes no JS and no `sw.js`: no update prompt; unchanged cells keep their URL and stay cached |
 | Which cells a position asks for | Chosen from the position **rounded to 0.001°** with radius + ~85 m; what is complete measured from the exact position on the device | The server learns no more than Overpass did (the rounded circle); privacy invariant tested |
 | Cell size | At most 500 places, depth ≤ 12 (finest ≈ 0.57 × 0.73 km) | Small files in cities, few files in the countryside |
-| Caching | SW: leaves CacheFirst (`gt-osm`, 400 entries, 90 days, purge on quota), index StaleWhileRevalidate; memory LRU of 40 decoded leaves; one request per leaf however many ask | Instant on return; bounded trail of viewed areas |
+| Caching | SW: leaves CacheFirst (`gt-osm`, 400 entries, 90 days since last use — the `Date` header is stripped, purge on quota), index and `LICENSE.txt` StaleWhileRevalidate (`gt-osm-index`); memory LRU of 96 decoded leaves, the leaves on screen pinned; one request per leaf however many ask; the first visit's files re-fetched through the SW once it takes over (`src/swWarm.ts`) | Instant on return; bounded trail of viewed areas; offline right after the first visit |
 | New data version | A leaf 404 re-reads the index past the SW and selects again; offline, an older cached version of the same cell is used and said so | A deploy never leaves a known area empty |
 | Loading | The page asks at mount, before the products gate, nearest leaves first, never aborted, rendered in 30 ms batches; „na razie: N miejsc w promieniu …” while incomplete | The answer appears in a fraction of a second, without the map flickering |
 | Map | An open popup survives pin redraws (`popupKeeper`) | Data now arrives in pieces |
@@ -47,6 +47,23 @@ decisions follow, with the changes made while implementing.
 | ODbL | Credit „© autorzy OpenStreetMap · licencja ODbL · stan z …” in both views; `LICENSE.txt` beside the leaves; `data/osm/README.md` offers the whole database and the script in the public repo | Attribution and the offer of the derived database |
 | Reset | „Usuń dane jedzenia” also clears `gt-osm`, `produkty-pl:osm` and the legacy `produkty-pl:places` (missing before) | No forgotten trail |
 | Tests | The static layer is off under Vitest (`virtual:osm-places` → `{index:null}`): existing page tests keep testing the live path; static behaviour tested with explicit mocks | The rarely-run live path does not rot |
+
+## Round 3 — after verifying the fixes (2026-10-24)
+
+A verification workflow (one agent per earlier finding plus a regression hunter) confirmed all 18
+fixes of the second round and found five regressions and some leftovers. Decisions:
+
+| Topic | Decision | Why |
+| --- | --- | --- |
+| Overpass side of the privacy invariant | `useAround` too decides from the rounded centre: its effect depends on it, a saved answer counts only if it holds the radius + rounding reach around it, the retry count is per rounded place | Whether a request goes out no longer depends on where inside the ~100 m cell the user stands; GPS jitter neither cancels nor repeats a search |
+| Automatic tries | Every static failure (index or leaf, network or server error) is tried again by itself 30 s, 1 min, 2 min later; **one try per failure** (a try still running is not counted as a new failure); none while hidden or offline; at once on `online`; a failure belongs to its place | One 503 no longer keeps a visit on Overpass; a locked phone no longer fires all tries at once; a reconnect no longer spends a slot (Chromium renders the `online` store change before the handler's state) |
+| Handing over | „Spróbuj ponownie” retries both sides after an index failure; a READY Overpass list stays on screen for the same place until the app's data is ready | The button could only re-ask Overpass; the list vanished when the index came back |
+| Slow links | Deadline for the headers only (10 s index, 20 s leaf), then 10 s of silence ends a body; error bodies are not read | A 10 km view on EDGE (~250 kB) used to be cut and restarted forever |
+| Border band | Coverage from the rounded circle + reach may say „partial” while the exact circle is complete: then the app's state is shown as ready (Overpass is still asked — the privacy rule) | No Overpass error, countdown or „Szukam…” over a complete list |
+| Progress and credit | „Na razie: N … w promieniu R” counts only within R (floored); the credit follows what is on screen: „stan z …” for the app's data, „z serwera Overpass” for Overpass's (fresh or saved) | The note overstated; „na żywo” stood next to a days-old saved answer |
+| Service worker | Navigation denylist relative to the worker's scope (privacy.html with a query, `data/`); `LICENSE.txt` cached beside the index | Works under any base path; the licence opens offline after one view |
+| First visit | Shared `src/swWarm.ts`: products database, the shop chunk (its address from `import.meta.url`) and the OSM files fetched before the takeover are fetched again through the worker | Products and „Zjedz teraz” menus were missing offline after a first visit |
+| Data completeness | The refresh lists the extract's objects that themselves match and compares them with the rows (same keep-rule); more than 50 missing fails the refresh, 1–50 warns (also as GitHub annotations); osmium's geometry errors are only context | Errors were counted for objects that were not missing, and some losses printed no error at all |
 
 ## Not done now
 
@@ -66,8 +83,8 @@ tiles blocked unless said):
 | Warm (service worker) | 0.6 s from opening the page |
 | Kraków 1 km / Warsaw 10 km | 9 files, 89 kB, 1.2 s / 34 files, 391 kB, 1.9 s from opening |
 | Offline | an area seen before works offline — also right after the very first visit (files fetched before the service worker took over are fetched again through it); a new area says „Bez internetu nie mam jeszcze danych tej okolicy — pobiorę je, gdy wróci połączenie.” and loads at once when the connection is back |
-| Berlin | one Overpass request; credit „na żywo z serwera Overpass” |
-| Słubice 10 km | 2 files + 1 Overpass request; credit „… stan z 22 października 2026 · przy granicy na żywo z serwera Overpass” |
+| Berlin | one Overpass request; credit „… · z serwera Overpass” (round 3 wording; was „na żywo z serwera Overpass”) |
+| Słubice 10 km | 2 files + 1 Overpass request; credit „… stan z 22 października 2026” while the Polish side is shown, „… · z serwera Overpass” once Overpass's whole circle is (round 3 wording) |
 | Open popup, 34 files arriving on the slow profile | stays open |
 | Data-only rebuild (one row removed) | `dist/assets` and `sw.js` byte-identical; one leaf file renamed |
 | Build | 587 leaves (depths 6–12), median 4.1 kB, p90 10.8 kB, max 14.5 kB, 3.04 MB in all; index 20.6 kB (9.4 kB gzipped); +1 s build time |

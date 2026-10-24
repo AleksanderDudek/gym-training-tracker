@@ -1059,10 +1059,19 @@ pod stałym adresem i `LICENSE.txt`. Telefon pobiera tylko kawałki wokół pozy
 promień 1 km w centrum Warszawy to 5 kawałków i ok. 50 kB (z indeksem ok. 60 kB) zamiast odpowiedzi
 Overpass 462 kB po kilkudziesięciu sekundach. Service worker trzyma kawałki (400 na 90 dni) i indeks (odświeżany w tle);
 nowe dane po wdrożeniu nie zmieniają kodu, więc nie ma paska „Nowa wersja”, a kawałek, który zniknął,
-każe przeczytać indeks od nowa. Przełączenie widoków nic nie pobiera; jedne dane wczytują się od
+każe przeczytać indeks od nowa. Przy pierwszej wizycie to, co przyszło, zanim service worker przejął
+stronę, idzie potem jeszcze raz przez niego — okolica działa bez sieci już przy następnym otwarciu.
+Wolne łącze: kawałek, który wciąż przychodzi, nie jest przerywany (10 km na EDGE to ok. 250 kB);
+przerywa go dopiero 10 s ciszy. Nieudane pobranie — indeksu albo kawałka, także błąd serwera — wraca
+samo po 30 s, minucie i dwóch (nie przy zablokowanym telefonie ani bez sieci; po powrocie sieci od
+razu), a w tym czasie odpowiada Overpass; jego gotowa lista zostaje na ekranie, aż dane aplikacji
+będą kompletne. Przełączenie widoków nic nie pobiera; jedne dane wczytują się od
 wejścia na stronę, nie po bazie produktów. Za granicą, dla części koła za granicą i gdy danych
-aplikacji nie da się odczytać z jej serwera, pyta Overpass — jednym zapytaniem dla obu widoków. Pod mapą: „Lokale i sklepy: © autorzy OpenStreetMap · licencja ODbL
-· stan z 22 października 2026”. Reguła, które obiekty się liczą (`src/food/nearby/osmTags.ts`), jest
+aplikacji nie da się odczytać z jej serwera, pyta Overpass — jednym zapytaniem dla obu widoków; co
+wysłać i czy pytać, liczy z pozycji zaokrąglonej, więc drganie GPS w obrębie ok. 100 m nie przerywa
+ani nie powtarza zapytania. Pod mapą: „Lokale i sklepy: © autorzy OpenStreetMap · licencja ODbL
+· stan z 22 października 2026”, a gdy na ekranie są miejsca z Overpass (także zapisane) — „… · z serwera
+Overpass”. Reguła, które obiekty się liczą (`src/food/nearby/osmTags.ts`), jest
 jedna dla zapytań Overpass, parserów, filtra osmium i skryptu.
 
 Odświeżenie danych: `npm run food:osm` (osmium-tool z brew albo apt; pobiera wyciąg Geofabrik dla
@@ -1635,7 +1644,10 @@ src/
   phone.test.ts             3 testy wspólnego wektora, cudzej paczki w skrzynce i rozpoznania telefonu
   pwa.ts                    service worker od strony aplikacji: rejestracja, „nowa wersja czeka”, wpuszczenie poprawki z ekranu awarii
   pwa.test.ts               12 testów rejestracji, pytań o nową wersję i obu „Odśwież” — bez service workera
-  sw.ts                     service worker (Workbox, injectManifest): powłoka offline, baza produktów, zdjęcia, kafelki mapy, Web Push
+  sw.ts                     service worker (Workbox, injectManifest): powłoka offline, baza produktów, zdjęcia, kafelki mapy, dane OSM, Web Push
+  swNavigation.ts           które nawigacje nie dostają index.html (polityka prywatności, pliki spod data/) — od zakresu service workera
+  swPlugins.ts              wtyczka kopii kawałków OSM bez nagłówka Date (wiek od ostatniego użycia)
+  swWarm.ts                 pierwsza wizyta: pliki pobrane przed przejęciem strony jeszcze raz przez service worker
   csp.test.ts               5 testów polityki bezpieczeństwa: każdy obcy adres z kodu przepuszczony, serwer aplikacji, miejsce znacznika
   styles.css                arkusz stylów
   styles.contrast.test.ts   10 testów kontrastu tokenów (także kropki stanu połączenia), liczonych wprost z arkusza
@@ -2312,11 +2324,19 @@ GYM TRACKER instaluje się na ekranie głównym telefonu i działa bez sieci od 
   (`src/sw.ts`, moduły Workboxa), a build dopisuje do niego tylko listę plików powłoki z haszami.
   Zastąpił ręczny `public/sw.js` i skrypt, który po buildzie wpisywał do niego listę plików.
 - **Co gdzie leży.** Powłoka — skrypty, style, strona, ikony i kroje pisma w alfabecie łacińskim —
-  jest zapisana przy instalacji, a każda nawigacja dostaje zapisaną stronę. Baza produktów: kopia
+  jest zapisana przy instalacji, a każda nawigacja dostaje zapisaną stronę — poza polityką
+  prywatności i plikami spod `data/` (liczonymi od zakresu service workera, więc aplikacja działa pod
+  dowolną ścieżką, także w folderze o nazwie `data`). Baza produktów: kopia
   na zawsze, jedna (nowa wersja ma nowy hasz w nazwie). Zdjęcia produktów: 400 ostatnich na 30 dni.
   Kafelki mapy: tylko oglądane, 500 na 7 dni. Dane OSM „W pobliżu”: kawałki tylko oglądanych okolic,
-  400 na 90 dni, indeks odświeżany w tle. Czytnik kodów (WebAssembly): przy pierwszym skanie,
-  jedna kopia. Overpass, Open Food Facts i serwer przypomnień idą prosto do sieci.
+  400 na 90 dni (wiek liczony od ostatniego użycia), indeks odświeżany w tle, a obok niego licencja
+  danych — po jednym otwarciu otwiera się też offline. Czytnik kodów (WebAssembly): przy pierwszym
+  skanie, jedna kopia. Overpass, Open Food Facts i serwer przypomnień idą prosto do sieci.
+- **Pierwsza wizyta bez dziur.** Service worker instaluje się po wczytaniu strony, więc to, co
+  przyszło wcześniej (baza produktów, paczka sklepów, indeks i kawałki danych OSM), ominęło jego
+  kopię. Gdy przejmie stronę (`controllerchange`), te pliki są pobierane jeszcze raz przez niego —
+  każdy po swojej pierwszej próbie, zwykle z pamięci podręcznej przeglądarki (`src/swWarm.ts`);
+  Produkty i „W pobliżu” działają offline już przy następnym otwarciu.
 - **Rejestracja w `main.tsx`, poza Reactem** (`registerSW` z `virtual:pwa-register`, stan w `src/pwa.ts`):
   ustawiona przed pierwszym renderem, a nie w komponencie, który montuje się dopiero po wczytaniu
   danych; sama rejestracja rusza po wczytaniu strony, żeby nie konkurować z pierwszym ekranem.
