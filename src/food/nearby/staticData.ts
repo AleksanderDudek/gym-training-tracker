@@ -53,6 +53,14 @@ const LEAF_TIMEOUT_MS = 20_000;
 const STALL_MS = 10_000;
 /** A failed leaf is tried once more after this pause: one dropped packet should not cost a city. */
 const RETRY_PAUSE_MS = 2000;
+/**
+ * Leaves on their way at once; the rest wait their turn, nearest first. A 10 km view is ~34 leaves:
+ * asked all at once, a browser on HTTP/1.1 (6 connections per server) queues most of them with their
+ * header deadline already running, and on a slow link the last ones were cut before they started
+ * (EDGE: 9 of 34 cut and fetched again, the answer after a minute). A few at a time, each deadline
+ * counts from its own start, and the nearest finish first.
+ */
+const LEAF_SLOTS = 8;
 /** The index is re-read from the server at most this often (after a 404 for a leaf). */
 const REFRESH_EVERY_MS = 60_000;
 /**
@@ -195,6 +203,22 @@ const pending = new Map<string, Promise<LoadedLeaf>>();
 const started = new Map<string, number>();
 /** How many views hold each leaf on screen. */
 const pins = new Map<string, number>();
+/** Leaf requests on their way, and those waiting for one of the `LEAF_SLOTS`, first come first. */
+let leavesOnWay = 0;
+const waitingForSlot: (() => void)[] = [];
+
+/** Runs a leaf request in one of the slots; a slot that frees goes straight to the next in line. */
+async function inSlot<T>(task: () => Promise<T>): Promise<T> {
+  if (leavesOnWay < LEAF_SLOTS) leavesOnWay++;
+  else await new Promise<void>((go) => waitingForSlot.push(go));
+  try {
+    return await task();
+  } finally {
+    const next = waitingForSlot.shift();
+    if (next) next();
+    else leavesOnWay--;
+  }
+}
 
 /** When a leaf still on its way started loading; `undefined` when it is not loading. */
 export function leafStartedAt(leaf: LeafRef): number | undefined {
@@ -284,7 +308,8 @@ async function fetchLeaf(leaf: LeafRef, url: string): Promise<LoadedLeaf> {
   for (let attempt = 0; ; attempt++) {
     let got: { response: Response; body: Uint8Array };
     try {
-      got = await fetchWithin(url, LEAF_TIMEOUT_MS);
+      // The slot is held for the request only, not for the pause before a retry.
+      got = await inSlot(() => fetchWithin(url, LEAF_TIMEOUT_MS));
     } catch (error) {
       if (attempt === 0) {
         await sleep(RETRY_PAUSE_MS);
@@ -353,4 +378,6 @@ export function __resetStaticData(): void {
   pending.clear();
   started.clear();
   pins.clear();
+  leavesOnWay = 0;
+  waitingForSlot.length = 0;
 }

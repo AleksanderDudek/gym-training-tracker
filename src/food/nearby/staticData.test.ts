@@ -229,6 +229,43 @@ describe('the app’s own OSM data', () => {
     release();
   });
 
+  test('a few leaves at a time: the rest wait their turn in the order asked, so each deadline counts from its own start', async () => {
+    data = osmTestData(
+      Array.from({ length: 20 }, (_, k) => osmRow(`n${k + 1}`, 52 + k * 0.01, 21, { amenity: 'cafe', name: `Kawiarnia ${k + 1}` })),
+      WARSAW,
+      1,
+    );
+    const s = await load();
+    const refs = s.leafRefs(await s.loadIndex()).slice(0, 12);
+    const held = new Map<string, () => void>();
+    respond = (url) =>
+      url.includes('/t/') ? new Promise<Response>((answer) => held.set(url, () => answer(osmResponse(data, url)!))) : Promise.resolve(osmResponse(data, url)!);
+    const leafRequests = () => requests.filter((u) => u.includes('/t/'));
+    const loads = refs.map((leaf) => s.loadLeaf(leaf));
+    await vi.waitFor(() => expect(leafRequests()).toHaveLength(8));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    // The other four have not even started: no request, no deadline running.
+    expect(leafRequests()).toHaveLength(8);
+    const [first, second] = leafRequests();
+    held.get(first!)!();
+    held.get(second!)!();
+    await vi.waitFor(() => expect(leafRequests()).toHaveLength(10));
+    // In the order asked: the ninth and the tenth leaf, nothing jumps the queue.
+    const order = refs.map((leaf) => `/t/${leaf.d}-${leaf.i}-${leaf.j}.`);
+    expect(leafRequests().map((u) => order.findIndex((cell) => u.includes(cell)))).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    for (;;) {
+      const waiting = leafRequests().filter((u) => held.has(u));
+      if (waiting.length === 0) break;
+      for (const url of waiting) {
+        held.get(url)!();
+        held.delete(url);
+      }
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+    await Promise.all(loads);
+    expect(leafRequests()).toHaveLength(12);
+  });
+
   test('an index the app cannot read means „unavailable” (Overpass answers instead), not a crash', async () => {
     respond = async () => new Response(JSON.stringify({ f: 2 }), { headers: { 'content-type': 'application/json' } });
     const s = await load();
