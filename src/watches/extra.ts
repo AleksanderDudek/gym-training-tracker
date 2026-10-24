@@ -1,7 +1,8 @@
 // The hand-kept part of the watch list: what the SDK cannot know (spec 2026-10-24 §4.11).
-// Names are product names (never translated). Reasons are codes; the UI turns them into sentences.
-// Copied from the prototype; the two descriptive labels („1. generacja”) still stay Polish here
-// (package W1 moves them to say()).
+// Names are product names (never translated) — apart from the two „first generation” labels, which
+// say it in the page's language. Reasons are codes; the UI turns them into sentences. An item's
+// first name is the one a brand-only query is titled with („samsung” → „Samsung Galaxy Watch”).
+import { say } from '../i18n';
 
 export type ExtraReason = 'noCiq' | 'notWatch' | 'notYet' | 'regional' | 'otherBrand';
 
@@ -43,18 +44,18 @@ export const EXTRA: ExtraItem[] = [
     key: 'instinct1',
     series: 'Instinct',
     reason: 'noCiq',
-    names: ['Instinct® (1. generacja)', 'Instinct®', 'Instinct® Solar', 'Instinct® Tactical', 'Instinct® Solar Tactical', 'Instinct® Esports', 'Instinct® Solar Surf', 'Instinct® Camo'],
+    names: [say('Instinct® (1. generacja)', 'Instinct® (1st gen)'), 'Instinct®', 'Instinct® Solar', 'Instinct® Tactical', 'Instinct® Solar Tactical', 'Instinct® Esports', 'Instinct® Solar Surf', 'Instinct® Camo'],
   },
   { key: 'vivomove', series: 'vívomove', reason: 'noCiq', names: ['vívomove®', 'vívomove® HR', 'vívomove® 3', 'vívomove® Style', 'vívomove® Luxe', 'vívomove® Sport', 'vívomove® Trend'], open: ['vívomove®'] },
   { key: 'lily', series: 'Lily', reason: 'noCiq', names: ['Lily®', 'Lily® 2', 'Lily® 2 Active'], open: ['Lily®'] },
   { key: 'fr-basic', series: 'Forerunner', reason: 'noCiq', names: ['Forerunner® 10', 'Forerunner® 15', 'Forerunner® 25', 'Forerunner® 30', 'Forerunner® 35'] },
   { key: 'approach-basic', series: 'Approach', reason: 'noCiq', names: ['Approach® S10', 'Approach® S12', 'Approach® S20', 'Approach® S40', 'Approach® S42', 'Approach® S44'] },
   { key: 'bounce', series: 'Bounce', reason: 'noCiq', names: ['Bounce™', 'Bounce™ 2'], open: ['Bounce™'] },
-  { key: 'swim1', series: 'Swim', reason: 'noCiq', names: ['Garmin Swim™ (1. generacja)'] },
+  { key: 'swim1', series: 'Swim', reason: 'noCiq', names: [say('Garmin Swim™ (1. generacja)', 'Garmin Swim™ (1st gen)')] },
   // Not watches.
   { key: 'vivosmart', series: 'vívosmart', reason: 'notWatch', kind: 'band', names: ['vívosmart®', 'vívosmart® 3', 'vívosmart® 4', 'vívosmart® 5', 'vívosmart® HR', 'vívosmart® HR+'], open: ['vívosmart®'] },
   { key: 'vivofit', series: 'vívofit', reason: 'notWatch', kind: 'band', names: ['vívofit®', 'vívofit® 3', 'vívofit® 4', 'vívofit® jr. 3'], open: ['vívofit®'] },
-  { key: 'index', series: 'Index', reason: 'notWatch', kind: 'scale', names: ['Index™ S2', 'Index™ Smart Scale', 'Index™ BPM'], open: ['Index™'] },
+  { key: 'index', series: 'Index', reason: 'notWatch', kind: 'scale', names: ['Index™ S2', 'Index™ Smart Scale', 'Index™ BPM', 'Index™'], open: ['Index™'] },
   { key: 'edge-any', series: 'Edge', reason: 'notWatch', kind: 'bike', names: ['Edge® 1060', 'Edge®'], open: ['Edge®'] },
   // In the store catalog, newer than the SDK device files used for the build.
   { key: 'marq3', series: 'MARQ', reason: 'notYet', names: ['MARQ® Adventurer (Gen 3)', 'MARQ® Athlete (Gen 3)', 'MARQ® Aviator (Gen 3)', 'MARQ® Commander (Gen 3)', 'MARQ® Diver (Gen 3)', 'MARQ® Golfer (Gen 3)', 'MARQ® (Gen 3)'] },
@@ -68,10 +69,10 @@ export const EXTRA: ExtraItem[] = [
   { key: 'samsung', reason: 'otherBrand', kind: 'watch', app: 'Samsung Health', names: ['Samsung Galaxy Watch', 'Galaxy Watch', 'Galaxy Fit', 'Samsung Gear'], open: true },
   { key: 'pixel', reason: 'otherBrand', kind: 'watch', app: 'Fitbit', names: ['Google Pixel Watch', 'Pixel Watch'], open: true },
   { key: 'fitbit', reason: 'otherBrand', kind: 'watch', app: 'Fitbit', names: ['Fitbit', 'Fitbit Charge', 'Fitbit Versa', 'Fitbit Sense', 'Fitbit Inspire', 'Fitbit Luxe', 'Fitbit Ace'], open: true },
-  { key: 'xiaomi', reason: 'otherBrand', kind: 'watch', app: 'Mi Fitness', names: ['Xiaomi', 'Xiaomi Mi Band', 'Mi Band', 'Xiaomi Smart Band', 'Redmi Watch', 'Xiaomi Watch'], open: true },
+  { key: 'xiaomi', reason: 'otherBrand', kind: 'watch', app: 'Mi Fitness', names: ['Xiaomi', 'Xiaomi Mi Band', 'Mi Band', 'Xiaomi Smart Band', 'Mi Smart Band', 'Smart Band', 'Redmi Watch', 'Xiaomi Watch'], open: true },
   { key: 'amazfit', reason: 'otherBrand', kind: 'watch', app: 'Zepp', names: ['Amazfit', 'Amazfit GTR', 'Amazfit GTS', 'Amazfit Bip', 'Amazfit T-Rex', 'Amazfit Balance', 'Amazfit Active', 'Amazfit Cheetah', 'Amazfit Falcon', 'Amazfit Helio'], open: true },
   { key: 'huawei', reason: 'otherBrand', kind: 'watch', app: 'Huawei Health', names: ['Huawei', 'Huawei Watch', 'Huawei Watch GT', 'Huawei Watch Fit', 'Huawei Band'], open: true },
-  { key: 'honor', reason: 'otherBrand', kind: 'watch', names: ['Honor Band', 'Honor Watch'], open: true },
+  { key: 'honor', reason: 'otherBrand', kind: 'watch', names: ['Honor Watch', 'Honor Band'], open: true },
   { key: 'polar', reason: 'otherBrand', kind: 'watch', app: 'Polar Flow', names: ['Polar', 'Polar Vantage', 'Polar Grit X', 'Polar Pacer', 'Polar Ignite', 'Polar Unite', 'Polar Vertex', 'Polar Loop'], open: true },
   { key: 'suunto', reason: 'otherBrand', kind: 'watch', app: 'Suunto', names: ['Suunto', 'Suunto Race', 'Suunto Vertical', 'Suunto Ocean', 'Suunto Run', 'Suunto 9', 'Suunto 5'], open: true },
   { key: 'coros', reason: 'otherBrand', kind: 'watch', app: 'COROS', names: ['COROS', 'COROS Pace', 'COROS Apex', 'COROS Vertix', 'COROS Dura', 'COROS Nomad'], open: true },

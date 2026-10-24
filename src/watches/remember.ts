@@ -31,7 +31,7 @@ export function rememberedWatch(): RememberedWatch | null {
     const raw: unknown = JSON.parse(localStorage.getItem(KEY) ?? 'null');
     if (typeof raw !== 'object' || raw === null) return null;
     const r = raw as Record<string, unknown>;
-    if (typeof r.key !== 'string' || !r.key || typeof r.name !== 'string') return null;
+    if (typeof r.key !== 'string' || !r.key || typeof r.name !== 'string' || !r.name) return null;
     if (!SHORTS.includes(r.v as Short)) return null;
     const lacks = caps(r.lacks);
     const newest = caps(r.newest);
