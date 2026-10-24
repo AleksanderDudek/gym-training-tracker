@@ -31,6 +31,13 @@ export interface GymBridge {
   moveOn(day: string): MoveDay;
   /** Krótka wiadomość na dole ekranu — ta sama, co po zapisie w treningach. */
   toast(message: string): void;
+  /**
+   * Czy dziś ktoś odpowiedział „Nie dziś” na pytanie o wagę — w dzienniku albo na ekranie Dziś:
+   * jedno pytanie, jedno pominięcie. Opcjonalne: brak to „nie pominięto”.
+   */
+  weighSkipped?(): boolean;
+  /** „Nie dziś” w karcie wagi dziennika: zapamiętuje pominięcie na dziś, jak karta na ekranie Dziś. */
+  skipWeigh?(): void;
 }
 
 export interface MoveDay {

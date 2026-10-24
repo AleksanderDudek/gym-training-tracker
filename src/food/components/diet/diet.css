@@ -426,3 +426,7 @@ p.fd-diet-resthead b{color:var(--ink)}
 /* „Poza domem?” pod „Co teraz?” — wejście do „Zjedz teraz” w W pobliżu. */
 .fd-diet-eatout{display:inline-flex;align-items:center;gap:6px;min-height:44px;font-weight:600;color:var(--steel);
   text-decoration:underline;text-underline-offset:2px}
+
+/* — C: profil, większy posiłek — */
+
+/* — D: postęp, tygodnie, plan — */

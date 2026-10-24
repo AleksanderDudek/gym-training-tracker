@@ -1,11 +1,15 @@
 import { say } from '../../i18n';
 import { cleanPrepPlan } from '../prep/validate';
-import { db, type DayRow, type DietDb, type Entry, type PlannedCheat } from './db';
+import { db, type DayRow, type DietDb, type Entry, type PlannedCheat, type ProfileRow } from './db';
+import { goalDirection } from './energy';
 import { bumpFavorite } from './favorites';
 import type { Food } from './foods';
+import { addDays, mondayOf } from './model';
 import type { DayChoices, Plan, PlanItem } from './plan';
 import { importPlan, type ImportedPlan } from './plan-import';
-import { MODEL_DEFAULTS, type Profile } from './types';
+import { safePace, setTarget, targetOn } from './target';
+import type { WeighIn } from './trend';
+import { MODEL_DEFAULTS, type Profile, type WeekCheck } from './types';
 import {
   cleanCustomFood,
   cleanDay,
@@ -15,6 +19,7 @@ import {
   cleanProfile,
   cleanRows,
   cleanSet,
+  isCalendarDate,
 } from './validate';
 import { readWorkbook } from './xlsx';
 
@@ -30,27 +35,176 @@ export function now(): { date: string; time: string } {
   };
 }
 
-/** A complete profile from a partial one: the model's defaults for what is missing. */
+/** The first pace by the goal's direction (spec §3.1), lowered to what is safe. */
+const FIRST_PACE = { loss: 0.5, keep: 0, gain: -0.25 } as const;
+
+/** The check of a new profile: nothing to look at yet, its week is this week. */
+const setupCheck = (today: string, kcal: number, goalPace: number): WeekCheck => ({
+  week: mondayOf(today),
+  status: 'setup',
+  from: kcal,
+  to: kcal,
+  reason: null,
+  note: null,
+  settle: null,
+  facts: null,
+  missing: null,
+  floor: null,
+  offsetAfter: null,
+  goalPace,
+  answer: null,
+});
+
+/**
+ * A complete profile (version 2) from a partial one: the defaults for what is missing. The target
+ * history starts from the merged `dailyKcal`, so `targetOn(profile, today)` is that number.
+ * The default `dailyKcal` is still 2000; package A switches it to `targetFor` (tests pass it).
+ */
 export function completeProfile(partial: Partial<Profile>): Profile {
-  return {
-    sex: 'M',
+  const today = now().date;
+  const merged = {
+    sex: 'M' as const,
     age: 35,
     heightCm: 175,
     startWeightKg: 80,
     targetWeightKg: 75,
-    startDate: now().date,
+    startDate: today,
+    activityLevel: 'inactive' as const,
     ...MODEL_DEFAULTS,
     dailyKcal: 2000,
     kcalCorrection: 0,
-    dietProfile: 'redukcja',
+    burnOffset: 0,
+    anchored: false,
+    autoAdjust: true,
+    hideKcal: false,
+    pregnancy: false,
+    belowFloorOk: false,
+    pauses: [],
+    hold: null,
+    reached: null,
+    notice: null,
+    dietProfile: 'redukcja' as const,
     adaptWeekly: true,
     preferredStore: null,
     ...partial,
   };
+  const goalPace = partial.goalPace ?? safePace(merged, merged.startWeightKg, FIRST_PACE[goalDirection(merged)]);
+  // Every read of the profile comes through here: a malformed start date must not throw in `addDays`.
+  const start = isCalendarDate(merged.startDate) ? merged.startDate : today;
+  return {
+    ...merged,
+    version: 2,
+    goalPace,
+    goals: partial.goals ?? [{ from: today, kcal: merged.dailyKcal, by: 'setup' }],
+    settle: partial.settle ?? { from: addDays(start, 14), why: 'start' },
+    lastCheck: partial.lastCheck !== undefined ? partial.lastCheck : setupCheck(today, merged.dailyKcal, goalPace),
+  };
 }
 
+/**
+ * Every write keeps `dailyKcal` the mirror of today's target (§2.2). The old screens, the workbook
+ * and old backups set `dailyKcal` alone; their number becomes the target from today.
+ */
+function inStep(profile: Profile, today: string): Profile {
+  return profile.dailyKcal === targetOn(profile, today)
+    ? profile
+    : setTarget(profile, profile.dailyKcal, today, 'user', today);
+}
+
+/**
+ * Merges the profile into the stored row in one transaction (`{...stored, ...profile}`), so no write
+ * path drops a key it does not know — the old model's keys stay in the row untouched.
+ */
 export async function saveProfile(profile: Profile, database: DietDb = db): Promise<void> {
-  await database.profile.put({ ...profile, id: 'me' });
+  const next = inStep(profile, now().date);
+  await database.transaction('rw', database.profile, async () => {
+    const stored = await database.profile.get('me');
+    const row: ProfileRow = { ...stored, ...next, id: 'me' };
+    if (stored && stored.version !== 2) {
+      // Until package A upgrades rows on read, `useProfile` hands out a legacy row completed with
+      // the defaults and stamped version 2. Saved as such, the row would skip the upgrade for good;
+      // without the stamp the upgrade still runs and recomputes the new keys from the old ones.
+      // Package A drops this once `useProfile` goes through `cleanProfile` + `persistUpgrade`.
+      const { version: _stamp, ...legacy } = row;
+      await database.profile.put(legacy as ProfileRow);
+    } else await database.profile.put(row);
+  });
+}
+
+/** The profile page's save (package C: after `applyProfileEdit`). */
+export const saveProfileEdit = (next: Profile, database: DietDb = db): Promise<void> => saveProfile(next, database);
+
+/** „Rozumiem” on the upgrade notice: shown once, never again. */
+export async function dismissNotice(database: DietDb = db): Promise<void> {
+  await database.transaction('rw', database.profile, async () => {
+    const stored = await database.profile.get('me');
+    if (stored?.notice === 'show') await database.profile.put({ ...stored, notice: 'seen' });
+  });
+}
+
+/**
+ * The person's word on a day's log (`DayRow.partial`): `true` incomplete, `false` the whole day,
+ * `undefined` takes it back (the 60 % rule decides again). The rest of the day row is untouched.
+ */
+export async function markDay(date: string, partial: boolean | undefined, database: DietDb = db): Promise<void> {
+  await database.transaction('rw', database.days, async () => {
+    const current = await database.days.get(date);
+    if (partial !== undefined) await database.days.put({ ...(current ?? { date }), partial, date });
+    else if (current && current.partial !== undefined) {
+      const { partial: _taken, ...rest } = current;
+      await database.days.put(rest);
+    }
+  });
+}
+
+/*
+ * Package A: the Monday check, its answers, breaks and the upgrade (spec §2.4, §3.4, §3.6). The
+ * signatures are final; until A lands these change nothing, so the app keeps today's behaviour.
+ */
+
+/** Writes the upgraded profile once, only while the stored row is still legacy. Stub: nothing. */
+export async function persistUpgrade(_ctx: { weightKg: number; today: string }, _database: DietDb = db): Promise<void> {
+  // Package A.
+}
+
+/** Runs this week's check once (null: nothing to do this time). Stub: never runs. */
+export async function runWeeklyCheck(
+  _input: { weighIns: readonly WeighIn[]; today: string; hour: number },
+  _database: DietDb = db,
+): Promise<WeekCheck | null> {
+  return null;
+}
+
+/** An answer to the Monday card, with its effect, in one transaction. Stub: nothing. */
+export async function answerCheck(
+  _answer: NonNullable<WeekCheck['answer']>,
+  _ctx: { today: string; kgNow: number },
+  _database: DietDb = db,
+): Promise<void> {
+  // Package A.
+}
+
+/** The notice's floor choice: raise to the BMR floor, or keep a doctor- or dietitian-agreed target. Stub: nothing. */
+export async function resolveFloor(
+  _choice: 'raise' | 'keep',
+  _ctx: { today: string; kgNow: number },
+  _database: DietDb = db,
+): Promise<void> {
+  // Package A.
+}
+
+/** „Przerwa”: maintenance for 7 or 14 days, the old target back afterwards. Stub: nothing. */
+export async function startPause(
+  _days: 7 | 14,
+  _ctx: { today: string; kgNow: number },
+  _database: DietDb = db,
+): Promise<void> {
+  // Package A.
+}
+
+/** „Zakończ przerwę”: the old target from today. Stub: nothing. */
+export async function endPause(_ctx: { today: string; kgNow: number }, _database: DietDb = db): Promise<void> {
+  // Package A.
 }
 
 export async function logFood(
@@ -128,7 +282,8 @@ export async function eatCheat(
 ): Promise<number | null> {
   return database.transaction('rw', database.entries, database.days, async () => {
     if (planned && !(await database.days.get(date))?.cheat) return null;
-    const id = await logQuick(date, cheat.name.trim() || 'Cheat meal', cheat.kcal, cheat, database);
+    const name = cheat.name.trim() || say('Większy posiłek', 'Bigger meal');
+    const id = await logQuick(date, name, cheat.kcal, cheat, database);
     await dropCheat(date, database);
     return id;
   });
@@ -199,7 +354,7 @@ export async function importWorkbook(bytes: Uint8Array, database: DietDb = db): 
   await database.transaction('rw', [database.profile, database.plans, database.days, database.entries], async () => {
     const existing = await database.profile.get('me');
     if (!existing) {
-      await database.profile.put({ ...cleanProfile(imported.profile, completeProfile({})), id: 'me' });
+      await database.profile.put({ ...inStep(cleanProfile(imported.profile, completeProfile({})), today), id: 'me' });
       profileApplied = true;
     }
     const previous = await database.plans.get(ACTIVE_PLAN);
@@ -313,7 +468,8 @@ export async function restoreAll(backup: unknown, database: DietDb = db): Promis
         database.favorites.clear(),
         database.prep.clear(),
       ]);
-      if (b.profile) await database.profile.put({ ...cleanProfile(b.profile, completeProfile({})), id: 'me' });
+      if (b.profile)
+        await database.profile.put({ ...inStep(cleanProfile(b.profile, completeProfile({})), now().date), id: 'me' });
       await database.days.bulkPut(days.rows);
       await database.entries.bulkPut(entries.rows);
       await database.plans.bulkPut(plans.rows);

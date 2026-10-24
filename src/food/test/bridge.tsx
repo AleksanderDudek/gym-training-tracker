@@ -31,6 +31,8 @@ export function testBridge(over: Partial<GymBridge> = {}): GymBridge {
     setSteps: vi.fn(),
     moveOn: () => testMove(),
     toast: vi.fn(),
+    weighSkipped: () => false,
+    skipWeigh: vi.fn(),
     ...over,
   };
 }

@@ -128,9 +128,10 @@ interface Props {
   profile: Profile;
   /** What is already logged on the day. */
   eaten: DayTotals;
-  /** Eaten kcal by date - this week's balance. */
-  eatenByDate: Map<string, number>;
-  activity: ActivityOf | null;
+  /** Eaten kcal by date - this week's balance. Optional: the one-target diary no longer passes it. */
+  eatenByDate?: Map<string, number>;
+  /** Optional: the one-target diary no longer passes it. */
+  activity?: ActivityOf | null;
   /** The day's plan in kcal (meal prep or workbook); `null` without a plan. */
   plannedKcal: number | null;
   /** The cheat meal already planned on this day — the sheet edits it. */
@@ -151,6 +152,9 @@ interface Props {
 }
 
 const kcalText = (n: number) => `${formatNumber(Math.round(n), 0)} kcal`;
+
+/** No days logged: what the sheet works with when the diary passes no week. */
+const NO_DAYS: Map<string, number> = new Map();
 
 /** Liczba z polskim przecinkiem albo kropką; `null`, gdy pole puste albo to nie liczba. */
 function numberOrNull(text: string): number | null {
@@ -185,8 +189,8 @@ function CheatBody({
   hour,
   profile,
   eaten,
-  eatenByDate,
-  activity,
+  eatenByDate = NO_DAYS,
+  activity = null,
   plannedKcal,
   planned,
   ideasFor,

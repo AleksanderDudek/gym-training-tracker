@@ -1,11 +1,12 @@
 import { describe, expect, test } from 'vitest';
 import { bmr, dayReaching, forecast, goalDirection, paceKgPerWeek, suggestedKcal, tdee } from './energy';
+import { completeProfile } from './store';
 import { MODEL_DEFAULTS, type Profile } from './types';
 
 // A made-up person on the workbook's model: 84 -> 70 kg, 168 cm, 41 y, K, with
 // the workbook's constants (multiplier 1.28, 4000 base steps, 10 000 goal,
 // 0.4 kcal / 1000 steps / kg, 7500 kcal / kg).
-const P: Profile = {
+const P: Profile = completeProfile({
   sex: 'K',
   age: 41,
   heightCm: 168,
@@ -18,7 +19,7 @@ const P: Profile = {
   dietProfile: 'redukcja',
   adaptWeekly: true,
   preferredStore: null,
-};
+});
 
 // 10·84 + 6.25·168 − 5·41 − 161
 const BMR = 1524;

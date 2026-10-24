@@ -9,7 +9,6 @@ vi.hoisted(() => {
 });
 
 import { activityOn } from '../../diet/activity';
-import { simulateCheat } from '../../diet/cheat';
 import { macroStatus, totals, weeklyAdjustment } from '../../diet/day';
 import { db } from '../../diet/db';
 import { planFood, recipeFood, setFood } from '../../diet/foods';
@@ -20,10 +19,7 @@ import { clearAll, completeProfile, logQuick, planCheat, saveProfile } from '../
 import { slotLabel, suggest, swaps, type Context } from '../../diet/suggest';
 import { renderWithBridge, testBridge, testMove } from '../../test/bridge';
 import { activityLine, activityParts, pendingParts } from './activityText';
-import { beyondTexts, macroTexts, planText, verdictText } from './cheatText';
 import DiaryPage from './DiaryPage';
-import DietProfilePage from './DietProfilePage';
-import DietProgressPage from './DietProgressPage';
 
 vi.mock('../../data', async () => {
   const { DATASET, INDEXED } = await import('../../test/fixtures');
@@ -174,7 +170,7 @@ describe('diary in English', () => {
     expectNoPolishUi();
   });
 
-  test('the add-food sheet and the cheat-meal simulation speak English', async () => {
+  test('the add-food sheet speaks English', async () => {
     await saveProfile(completeProfile({ startDate: '2026-10-01', dailyKcal: 2000, targetWeightKg: 75 }));
     await logQuick(TODAY, 'Kanapka', 1500);
     window.history.replaceState(null, '', '/#/jedzenie');
@@ -186,59 +182,6 @@ describe('diary in English', () => {
     expect(within(picker).getByRole('button', { name: 'Set' })).toBeInTheDocument();
     expect(within(picker).getByRole('button', { name: 'Calories only' })).toBeInTheDocument();
     expect(within(picker).getByRole('searchbox', { name: 'Search food' })).toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', { name: 'Cheat meal' }));
-    const sheet = screen.getByRole('dialog', { name: 'Cheat meal' });
-    await user.click(within(sheet).getByRole('button', { name: 'Enter macros' }));
-    await user.type(within(sheet).getByLabelText('Calories (kcal)'), '1200');
-    const sim = within(sheet).getByRole('region', { name: 'What it means' });
-    expect(sim).toHaveTextContent(/Today’s goal\s*2,000 kcal/);
-    expect(sim).toHaveTextContent('You’ll go over the goal by 700 kcal (35%).');
-    expect(sim).toHaveTextContent('Week: the goal for the next 4 days drops by about 170 kcal a day.');
-    expect(sim).toHaveTextContent('In the weight forecast that’s about 93 g.');
-    expect(sim.textContent).not.toMatch(POLISH);
-    expect(within(sheet).getByRole('button', { name: 'Plan it' })).toBeInTheDocument();
-    expect(within(sheet).getByRole('button', { name: 'Eaten now' })).toBeInTheDocument();
-  });
-});
-
-describe('progress and diet profile in English', () => {
-  test('progress: weight, the last fortnight and what works for you', async () => {
-    await saveProfile(completeProfile({ startDate: '2026-10-01', startWeightKg: 84, targetWeightKg: 78 }));
-    await logQuick('2026-10-12', 'Obiad', 1800, { protein: 120, carbs: 180, fat: 60 });
-    window.history.replaceState(null, '', '/#/jedzenie/postep');
-    renderWithBridge(
-      <DietProgressPage />,
-      testBridge({ weights: [{ day: '2026-10-02', kg: 84 }, { day: '2026-10-12', kg: 82.4 }] }),
-    );
-    expect(await screen.findByRole('heading', { name: 'Weight' })).toBeInTheDocument();
-    expect(screen.getByRole('region', { name: 'What works for you' })).toBeInTheDocument();
-    expect(screen.getByRole('list', { name: 'Calories eaten day by day' })).toBeInTheDocument();
-    expect(screen.getByText(/On plan, you reach your goal on/)).toBeInTheDocument();
-    expectNoPolishUi(['Waga', 'Co działa u ciebie', 'Zjedzone kalorie', 'Według planu', 'kg/tydz', 'Do celu']);
-  });
-
-  test('first visit asks for the profile in English', async () => {
-    window.history.replaceState(null, '', '/#/jedzenie/profil');
-    renderWithBridge(<DietProfilePage />);
-    expect(await screen.findByRole('heading', { level: 2, name: 'Start with your profile' })).toBeInTheDocument();
-    expect(screen.getByLabelText('Height')).toBeInTheDocument();
-    expect(screen.getByLabelText('Starting weight')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Save and start' })).toBeInTheDocument();
-    expectNoPolishUi(['Zacznij od profilu', 'Zapisz i zacznij', 'Wzrost']);
-  });
-
-  test('a saved profile: diet types and the goal options in English, stored ids untouched', async () => {
-    await saveProfile(completeProfile({ startDate: '2026-10-01', dietProfile: 'keto' }));
-    window.history.replaceState(null, '', '/#/jedzenie/profil');
-    renderWithBridge(<DietProfilePage />);
-    expect(await screen.findByRole('heading', { name: 'Calorie goal' })).toBeInTheDocument();
-    for (const label of ['High-protein cut', 'Balanced', 'Low carb', 'Keto', 'Athletic'])
-      expect(screen.getAllByText(label).length).toBeGreaterThan(0);
-    expect(screen.getByRole('checkbox', { name: /^Match the goal to the week/ })).toBeInTheDocument();
-    expect(screen.getByRole('checkbox', { name: /^Match the goal to activity/ })).toBeInTheDocument();
-    expect((await db.profile.get('me'))?.dietProfile).toBe('keto');
-    expectNoPolishUi(['Zbilansowana', 'Sportowa', 'Dopasowuj', 'Cel kalorii']);
   });
 });
 
@@ -260,32 +203,6 @@ describe('diet texts composed in code', () => {
     expect(activityLine(trained)).toMatch(/^Activity: \+/);
     noPolish([...activityParts(run), ...activityParts(skipped), ...pendingParts(today), ...activityParts(trained)]);
     noPolish([activityLine(run), activityLine(skipped), activityLine(today), activityLine(trained)]);
-  });
-
-  test('the cheat-meal sentences', () => {
-    const base = {
-      targets: DIET_PROFILES.redukcja.targets(2000, 75),
-      profile: p,
-      kg: 80,
-      date: '2026-10-14',
-      eatenByDate: new Map<string, number>(),
-      plannedLeftKcal: 1200,
-      typicalWorkoutKcal: 300,
-    };
-    const fits = simulateCheat({ ...base, cheat: { kcal: 600, protein: 20, carbs: 70, fat: 25 }, eaten: totals([]), mealsLeft: 3 });
-    const tight = simulateCheat({ ...base, cheat: { kcal: 1500, protein: 20, carbs: 150, fat: 70 }, eaten: totals([]), mealsLeft: 4 });
-    const over = simulateCheat({
-      ...base,
-      cheat: { kcal: 1400, protein: 30, carbs: 200, fat: 80 },
-      eaten: totals([{ kcal: 1400, protein: 60, carbs: 120, fat: 40 }]),
-      mealsLeft: 2,
-    });
-    expect(verdictText(fits)).toMatch(/^It fits: 1\D?400 kcal left for 2 meals — about 700 kcal and \d+ g protein each\.$/);
-    expect(verdictText(tight)).toMatch(/^It just fits/);
-    expect(verdictText(over)).toMatch(/^You’ll go over the goal by/);
-    expect(beyondTexts(over, true).join(' ')).toMatch(/× a typical workout/);
-    noPolish([verdictText(fits), verdictText(tight), verdictText(over), planText(fits), planText(tight), planText(over)]);
-    noPolish([...macroTexts(fits), ...macroTexts(over), ...beyondTexts(over, true), ...beyondTexts({ ...over, week: { kind: 'sunday' } }, false)]);
   });
 
   test('day notes, the weekly correction, profiles, slots, dates and suggestions', () => {

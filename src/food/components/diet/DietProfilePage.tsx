@@ -237,7 +237,8 @@ const STILL = 0.05;
 
 function sameProfile(a: Profile, b: Profile): boolean {
   const keys = new Set([...Object.keys(a), ...Object.keys(b)].filter((k) => k !== 'id'));
-  return [...keys].every((k) => a[k as keyof Profile] === b[k as keyof Profile]);
+  // Po wartości: historia celu i ostatnie sprawdzenie to tablice i obiekty, a z IndexedDB wracają kopie.
+  return [...keys].every((k) => JSON.stringify(a[k as keyof Profile]) === JSON.stringify(b[k as keyof Profile]));
 }
 
 /** Co w tych liczbach jest ryzykowne, w kolejności, w jakiej ma znaczenie. */

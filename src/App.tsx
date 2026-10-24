@@ -133,9 +133,16 @@ import { LOCALE, pluralEn, text } from './i18n';
 const FoodRoot = lazy(() => import('./food/FoodRoot'));
 
 /** Zapisy, które ekrany jedzenia robią w danych treningowych. Podmieniane co render — zawsze ze świeżym stanem. */
-type BridgeWrites = Pick<GymBridge, 'setWeight' | 'setHeight' | 'setSteps'>;
+type BridgeWrites = Pick<GymBridge, 'setWeight' | 'setHeight' | 'setSteps'> & Required<Pick<GymBridge, 'skipWeigh'>>;
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * Dzień pominięcia ważenia („Nie dziś”, `cfg.weighSkip`) — dzień treningów w chwili wywołania.
+ * Poza komponentem: most woła to z obsługi zdarzeń, a reguła czystości renderu widzi zegar w każdym
+ * domknięciu komponentu.
+ */
+const weighDay = (): string => dayKey(Date.now());
 
 const clone = (s: AppState): AppState => JSON.parse(JSON.stringify(s)) as AppState;
 
@@ -820,6 +827,9 @@ export default function App() {
         };
       },
       toast: setToastMsg,
+      // To samo pominięcie co karta ważenia na ekranie Dziś (`cfg.weighSkip`, dzień jak w `Weigh`).
+      weighSkipped: () => state.cfg.weighSkip === weighDay(),
+      skipWeigh: () => bridgeWrites.current?.skipWeigh(),
     };
   }, [state]);
 
@@ -1332,6 +1342,11 @@ export default function App() {
       } catch (e) {
         setToastMsg(e instanceof Error ? e.message : T.stepsFailed);
       }
+    },
+    skipWeigh: () => {
+      const next = clone(live.current ?? state);
+      next.cfg.weighSkip = weighDay();
+      commit(next);
     },
   };
 
