@@ -5,7 +5,8 @@ import { NavigationRoute, registerRoute } from 'workbox-routing';
 import { CacheFirst, StaleWhileRevalidate } from 'workbox-strategies';
 import { ExpirationPlugin } from 'workbox-expiration';
 import { CacheableResponsePlugin } from 'workbox-cacheable-response';
-import { NAVIGATION_DENYLIST } from './swNavigation';
+import { navigationDenylist } from './swNavigation';
+import { withoutDateHeader } from './swPlugins';
 
 declare const self: ServiceWorkerGlobalScope;
 
@@ -20,6 +21,8 @@ declare const self: ServiceWorkerGlobalScope;
  *   działa więc już po pierwszej wizycie, a kopie poprzedniej wersji znikają po aktywacji nowej.
  * - Strona (nawigacja) — zawsze `index.html` z tej listy, poza polityką prywatności
  *   (`privacy.html`) i plikami spod `data/` (licencja danych OSM), które mają się otwierać same.
+ *   Obie ścieżki liczone od zakresu service workera, nie od korzenia serwera: aplikacja działa pod
+ *   dowolną ścieżką, także pod folderem `data/`.
  *   Nowa wersja nie wchodzi sama: czeka, aż ktoś stuknie „Odśwież” na pasku (`UpdateBar`) albo na
  *   ekranie awarii (`RootBoundary`), a do tego czasu stare pliki zostają ważne.
  * - Baza produktów — najpierw kopia. Nazwa pliku ma hasz, więc nowa baza to nowy adres; trzymamy
@@ -29,7 +32,8 @@ declare const self: ServiceWorkerGlobalScope;
  * - Czytnik kodów kreskowych (WebAssembly) — najpierw kopia, pobrany przy pierwszym skanie.
  * - Dane OSM „W pobliżu” (`data/osm/v1/`) — kawałki mapy najpierw z kopii (nazwa ma hasz treści,
  *   tylko oglądane okolice, 400 na 90 dni), indeks z kopii od razu i odświeżany w tle: nowe dane
- *   po wdrożeniu przychodzą same, bez paska „Nowa wersja”.
+ *   po wdrożeniu przychodzą same, bez paska „Nowa wersja”. Tak samo licencja danych
+ *   (`LICENSE.txt`, odnośnik z „W pobliżu”): raz otwarta, otwiera się też bez sieci.
  *
  * Overpass, Open Food Facts, serwer aplikacji i filmy z YouTube'a idą prosto do sieci: offline i tak
  * by nie ruszyły.
@@ -42,9 +46,16 @@ precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
 // Pierwsza wizyta: strona przechodzi pod opiekę od razu, nie dopiero po przeładowaniu — tak jak
 // wcześniej. Przy aktualizacji niczego to nie przyspiesza: nowa wersja i tak czeka na zgodę.
+// To, co strona pobrała przed przejęciem (baza produktów, paczka sklepów, kawałki danych OSM),
+// poszło obok kopii — strona pobiera to wtedy jeszcze raz, już przez service worker
+// (`src/swWarm.ts`, kawałki: `src/food/nearby/staticData.ts`).
 clientsClaim();
 
-registerRoute(new NavigationRoute(createHandlerBoundToURL('index.html'), { denylist: NAVIGATION_DENYLIST }));
+registerRoute(
+  new NavigationRoute(createHandlerBoundToURL('index.html'), {
+    denylist: navigationDenylist(new URL(self.registration.scope).pathname),
+  }),
+);
 
 registerRoute(
   ({ url, sameOrigin }) =>
@@ -75,26 +86,23 @@ registerRoute(
       new ExpirationPlugin({ maxEntries: 400, maxAgeSeconds: 90 * DAY, purgeOnQuotaError: true }),
       new CacheableResponsePlugin({ statuses: [200] }),
       // A leaf never changes under its name, so its age is how long ago it was LAST USED (what the
-      // expiration keeps track of), not its `Date` header: without the header Workbox never calls a
-      // kept copy too old, and a cell visited every few months still works offline.
-      {
-        cacheWillUpdate: async ({ response }) => {
-          const headers = new Headers(response.headers);
-          headers.delete('date');
-          return new Response(await response.blob(), { status: response.status, statusText: response.statusText, headers });
-        },
-      },
+      // expiration keeps track of), not its `Date` header.
+      withoutDateHeader,
     ],
   }),
 );
 
-// Indeks danych OSM pod stałym adresem: od razu z kopii, nowy w tle. Adres z `?r=` (odświeżenie po
-// zniknięciu kawałka po wdrożeniu) idzie prosto do sieci.
+// Indeks danych OSM i ich licencja (`LICENSE.txt`, odnośnik z „W pobliżu”) pod stałymi adresami:
+// od razu z kopii, nowe w tle — licencja raz otwarta otwiera się też bez sieci. Adres z `?r=`
+// (odświeżenie indeksu po zniknięciu kawałka po wdrożeniu) idzie prosto do sieci.
 registerRoute(
-  ({ url, sameOrigin }) => sameOrigin && url.pathname.endsWith('/data/osm/v1/index.json') && url.search === '',
+  ({ url, sameOrigin }) =>
+    sameOrigin &&
+    url.search === '' &&
+    (url.pathname.endsWith('/data/osm/v1/index.json') || url.pathname.endsWith('/data/osm/v1/LICENSE.txt')),
   new StaleWhileRevalidate({
     cacheName: 'gt-osm-index',
-    plugins: [new ExpirationPlugin({ maxEntries: 1 }), new CacheableResponsePlugin({ statuses: [200] })],
+    plugins: [new ExpirationPlugin({ maxEntries: 2 }), new CacheableResponsePlugin({ statuses: [200] })],
   }),
 );
 

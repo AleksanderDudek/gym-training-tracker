@@ -7,6 +7,7 @@ import type { ChainData } from './chains/types';
 import { mergeOnline } from './online/merge';
 import type { ShopData } from './online/types';
 import { text } from '../i18n';
+import { loadedUrl, refetchWhenControlled } from '../swWarm';
 
 const T = text({
   pl: {
@@ -33,27 +34,38 @@ export const MISSING_DATA_MESSAGE = T.missing;
 /** Re-exported: the products dataset and the OSM leaves unpack the same way. */
 export { inflate };
 
+/** Paczka sklepów w buildzie (`assets/shopData-<hasz>.js`) — ta sama, którą service worker trzyma w kopii. */
+const SHOP_CHUNK = /\/assets\/shopData-[\w-]+\.js$/;
+
+/** Adres bazy produktów albo `null`, gdy tę wersję aplikacji zbudowano bez niej. */
+const datasetUrl = (): string | null => (foodData.url ? import.meta.env.BASE_URL + foodData.url : null);
+
 /**
  * Produkty sklepów internetowych i sieci z własnymi danymi (Selgros) — osobna paczka, wczytywana
  * razem z bazą. Gdy się nie wczyta (np. offline przed pierwszym zapisaniem paczki), baza przychodzi
  * bez nich: to dodatek, nie powód, żeby nie pokazać 29 tysięcy produktów.
  */
 function loadShops(): Promise<{ shops: ShopData[]; chains: ChainData[] }> {
-  return import('./online/shopData').then(
+  const loading = import('./online/shopData');
+  // Pierwsza wizyta: paczka przyszła obok service workera, więc gdy ten przejmie stronę, jest
+  // pobierana jeszcze raz — do jego kopii. Jej nazwę zna tylko build: adres z listy plików, które
+  // przeglądarka wczytała.
+  refetchWhenControlled(() => loadedUrl(SHOP_CHUNK), loading);
+  return loading.then(
     (m) => ({ shops: m.SHOPS, chains: m.CHAIN_DATA }),
     () => ({ shops: [], chains: [] }),
   );
 }
 
 async function fetchDataset(): Promise<LoadedDataset> {
-  const { url } = foodData;
+  const url = datasetUrl();
   if (!url) throw new Error(MISSING_DATA_MESSAGE);
   const shops = loadShops();
   // Zerwane połączenie wychodzi z `fetch` albo dopiero w trakcie czytania treści.
   const offline = () => {
     throw new Error(T.offline);
   };
-  const response = await fetch(import.meta.env.BASE_URL + url).catch(offline);
+  const response = await fetch(url).catch(offline);
   if (!response.ok) throw new Error(T.http(response.status));
   const bytes = new Uint8Array(await response.arrayBuffer().catch(offline));
   let dataset: Dataset;
@@ -95,6 +107,11 @@ export function loadedDataset(): LoadedDataset | null {
 export function loadDataset(): Promise<LoadedDataset> {
   if (!pending) {
     pending = fetchDataset();
+    // Pierwsza wizyta: baza przyszła obok service workera, więc bez sieci by jej nie było. Gdy ten
+    // przejmie stronę, jest pobierana jeszcze raz — po tej próbie, zwykle z pamięci podręcznej
+    // przeglądarki — do jego kopii.
+    const url = datasetUrl();
+    if (url) refetchWhenControlled(url, pending);
     pending.then(
       (result) => {
         loaded = result;
