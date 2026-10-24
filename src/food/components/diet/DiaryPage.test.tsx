@@ -776,7 +776,7 @@ describe('Zmiany w liczeniu', () => {
       'Jeden cel na każdy dzień: 1860 kcal. Nie zmienia się w ciągu dnia ani po północy.',
       'Kroki i treningi nie zmieniają już celu. Kalorie z ruchu to szacunek z dużym błędem, a Twój zwykły ruch jest już w celu.',
       'Nadwyżka z jednego dnia nie obniża kolejnych, a ±100 kcal to wciąż cel — jeden dzień nie zmienia trendu.',
-      'W poniedziałki sprawdzam wagę i zapisy z ostatnich 4 tygodni. Gdy się nie zgadzają, zmieniam cel o 100 kcal i mówię dlaczego — a zanim cel obniżę, pytam.',
+      'W poniedziałki sprawdzam wagę i zapisy z ostatnich 4 tygodni. Gdy się nie zgadzają, zmieniam cel o 100 kcal i mówię dlaczego. Gdy wychodzi, że spalasz mniej, niż liczyłem, zanim obniżę cel, pytam.',
       '„Cheat meal” to teraz „Większy posiłek”, a porównanie tygodni na stronie Postęp pokazuje tylko pewne wnioski.',
     ]);
     expect(within(notice).getByRole('link', { name: 'Ustawienia w profilu diety' })).toHaveAttribute('href', '#/jedzenie/profil');
@@ -798,7 +798,7 @@ describe('Zmiany w liczeniu', () => {
     const bullets = within(notice).getAllByRole('listitem').map((li) => li.textContent);
     expect(bullets[0]).toBe('Jeden cel na każdy dzień. Nie zmienia się w ciągu dnia ani po północy.');
     expect(bullets[3]).toBe(
-      'W poniedziałki sprawdzam wagę i zapisy z ostatnich 4 tygodni. Gdy się nie zgadzają, zmieniam cel i mówię dlaczego — a zanim cel obniżę, pytam.',
+      'W poniedziałki sprawdzam wagę i zapisy z ostatnich 4 tygodni. Gdy się nie zgadzają, podnoszę cel i mówię dlaczego — nigdy go nie obniżam.',
     );
     expect(bullets.at(-1)).toBe(
       'Poniżej 18 lat nie liczę kalorii ani nie ustawiam deficytu — dziennik pokazuje białko i podpowiada posiłki.',

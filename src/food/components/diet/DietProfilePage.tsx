@@ -116,7 +116,7 @@ const T = text({
       gain: (pace: string, kcal: string) =>
         `Do tego dodaję tyle, ile wymaga tempo: ${pace} tygodniowo to ok. ${kcal} kcal dziennie.`,
       monday:
-        'W poniedziałki porównuję zapisane jedzenie z trendem wagi z ostatnich 4 tygodni. Wierzę tylko tej części różnicy, której waga i zapisy są pewne, i zmieniam cel najwyżej o 100 kcal na tydzień. Zanim cel obniżę, pytam, czy zapisujesz prawie wszystko, a nie obniżam go, gdy chudniesz szybciej, niż zakłada plan.',
+        'W poniedziałki porównuję zapisane jedzenie z trendem wagi z ostatnich 4 tygodni. Wierzę tylko tej części różnicy, której waga i zapisy są pewne, i zmieniam cel najwyżej o 100 kcal na tydzień. Gdy ważysz mniej, obniżam cel od razu — tyle mniej spalasz. Gdy wychodzi, że spalasz mniej, niż liczyłem, najpierw pytam, czy zapisujesz prawie wszystko. Nie obniżam go, gdy chudniesz szybciej, niż zakłada plan.',
       settle:
         'Pierwsze 2 tygodnie po starcie, po dużej zmianie celu i po przerwie pomijam — waga zmienia się wtedy głównie przez wodę.',
       move: 'Kroki, treningi i zegarek nie zmieniają celu: kalorie z ruchu to szacunek z błędem 20–30% i większym, a ciało część z nich oddaje, oszczędzając gdzie indziej. Więcej ruchu na dłużej widać w wadze — i stamtąd trafia do celu.',
@@ -127,7 +127,7 @@ const T = text({
     },
     settingsTitle: 'Ustawienia liczenia',
     autoAdjust:
-      'Dopasowuj cel co tydzień — w poniedziałki, o 100 kcal, zawsze z wyjaśnieniem; obniżenie najpierw proponuję. Wyłączone: tylko podpowiadam.',
+      'Dopasowuj cel co tydzień — w poniedziałki, o 100 kcal, zawsze z wyjaśnieniem; zanim obniżę cel z powodu niższego spalania, pytam. Wyłączone: tylko podpowiadam.',
     hideKcal: 'Bez liczenia kalorii — dziennik pokaże białko i podpowie posiłki, ale bez kalorii.',
     pause: 'Przerwa',
     pauseText: 'Na urlop albo chorobę: cel to utrzymanie wagi, a dopasowanie czeka.',
@@ -220,7 +220,7 @@ const T = text({
       keep: 'For maintenance I take nothing off.',
       gain: (pace: string, kcal: string) => `To that I add what your pace needs: ${pace} a week is about ${kcal} kcal a day.`,
       monday:
-        'On Mondays I compare your logged food with your weight trend over the last 4 weeks. I only trust the part of the difference your weight and logs are sure of, and I change the target by at most 100 kcal a week. Before lowering it I ask whether you log almost everything, and I don’t lower it while you’re losing faster than planned.',
+        'On Mondays I compare your logged food with your weight trend over the last 4 weeks. I only trust the part of the difference your weight and logs are sure of, and I change the target by at most 100 kcal a week. When you weigh less, I lower it straight away — you burn that much less. When it looks like you burn less than I assumed, I first ask whether you log almost everything. I don’t lower it while you’re losing faster than planned.',
       settle:
         'I skip the first 2 weeks after the start, a big change of target and a break — weight then changes mostly through water.',
       move: 'Steps, workouts and the watch don’t change the target: activity calories are an estimate that’s 20–30% off or more, and the body gives some of them back by saving elsewhere. More activity over time shows on the scale — and reaches the target from there.',
@@ -231,7 +231,7 @@ const T = text({
     },
     settingsTitle: 'Counting settings',
     autoAdjust:
-      'Fit the target every week — on Mondays, by 100 kcal, always with an explanation; I suggest any lowering first. Off: I only suggest.',
+      'Fit the target every week — on Mondays, by 100 kcal, always with an explanation; I ask before lowering it because you seem to burn less. Off: I only suggest.',
     hideKcal: 'No calorie counting — the diary shows protein and suggests meals, but no calories.',
     pause: 'Break',
     pauseText: 'For a holiday or illness: your target is maintenance and fitting waits.',

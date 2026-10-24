@@ -16,9 +16,9 @@ const T = text({
     onePlain: 'Jeden cel na każdy dzień. Nie zmienia się w ciągu dnia ani po północy.',
     two: 'Kroki i treningi nie zmieniają już celu. Kalorie z ruchu to szacunek z dużym błędem, a Twój zwykły ruch jest już w celu.',
     three: 'Nadwyżka z jednego dnia nie obniża kolejnych, a ±100 kcal to wciąż cel — jeden dzień nie zmienia trendu.',
-    four: 'W poniedziałki sprawdzam wagę i zapisy z ostatnich 4 tygodni. Gdy się nie zgadzają, zmieniam cel o 100 kcal i mówię dlaczego — a zanim cel obniżę, pytam.',
+    four: 'W poniedziałki sprawdzam wagę i zapisy z ostatnich 4 tygodni. Gdy się nie zgadzają, zmieniam cel o 100 kcal i mówię dlaczego. Gdy wychodzi, że spalasz mniej, niż liczyłem, zanim obniżę cel, pytam.',
     fourPlain:
-      'W poniedziałki sprawdzam wagę i zapisy z ostatnich 4 tygodni. Gdy się nie zgadzają, zmieniam cel i mówię dlaczego — a zanim cel obniżę, pytam.',
+      'W poniedziałki sprawdzam wagę i zapisy z ostatnich 4 tygodni. Gdy się nie zgadzają, podnoszę cel i mówię dlaczego — nigdy go nie obniżam.',
     five: '„Cheat meal” to teraz „Większy posiłek”, a porównanie tygodni na stronie Postęp pokazuje tylko pewne wnioski.',
     age: 'Poniżej 18 lat nie liczę kalorii ani nie ustawiam deficytu — dziennik pokazuje białko i podpowiada posiłki.',
     bmi: (target: string) => `Przy BMI poniżej 18,5 nie prowadzę deficytu — cel to teraz utrzymanie: ${target} kcal.`,
@@ -35,9 +35,9 @@ const T = text({
     onePlain: 'One target for every day. It doesn’t change during the day or after midnight.',
     two: 'Steps and workouts no longer change the target. Calories from activity are a rough estimate, and your usual activity is already in the target.',
     three: 'A surplus on one day no longer lowers the next ones, and ±100 kcal is still on target — one day doesn’t change the trend.',
-    four: 'On Mondays I look at your weight and logs from the last 4 weeks. If they don’t match, I change the target by 100 kcal and tell you why — and I ask before lowering it.',
+    four: 'On Mondays I look at your weight and logs from the last 4 weeks. If they don’t match, I change the target by 100 kcal and tell you why. If it looks like you burn less than I assumed, I ask before lowering it.',
     fourPlain:
-      'On Mondays I look at your weight and logs from the last 4 weeks. If they don’t match, I change the target and tell you why — and I ask before lowering it.',
+      'On Mondays I look at your weight and logs from the last 4 weeks. If they don’t match, I raise the target and tell you why — I never lower it.',
     five: '“Cheat meal” is now “Bigger meal”, and the week comparison on the Progress page shows only clear findings.',
     age: 'Under 18 I don’t count calories or set a deficit — the diary shows protein and suggests meals.',
     bmi: (target: string) => `With a BMI under 18.5 I don’t keep a deficit — your target is now maintenance: ${target} kcal.`,

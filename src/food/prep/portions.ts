@@ -43,7 +43,7 @@ const rel = (x: number, ref: number) => x / Math.max(ref, 1);
  */
 export function dayScore(m: Macros, t: MacroTargets, meals: readonly { kcal: number; share: number }[]): number {
   const energy = rel(m.kcal - t.kcal, t.kcal);
-  // More than 5 % over is what the diary calls "ponad cel": a step, as for the other limits.
+  // More than 5 % over breaks the plan's promise: a step, as for the other limits.
   let s = 50 * energy ** 2 + (energy > OVER ? 0.5 : 0);
   const p = rel(m.protein - t.protein.target, t.protein.target);
   if (p < 0) s += 20 * p ** 2;

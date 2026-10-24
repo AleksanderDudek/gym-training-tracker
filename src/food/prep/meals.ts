@@ -81,9 +81,9 @@ export interface DayCheck {
 }
 
 /**
- * How a planned day meets its targets, by the plan's own promise: energy at most 5 % over (the
- * diary's "ponad cel") and 7 % under, protein at its minimum, carbohydrates within a limit (or not
- * a quarter over the target), fat between its minimum and maximum.
+ * How a planned day meets its targets, by the plan's own promise: energy at most 5 % over and 7 %
+ * under, protein at its minimum, carbohydrates within a limit (or not a quarter over the target),
+ * fat between its minimum and maximum.
  */
 export function dayCheck(total: DayTotals, t: MacroTargets): DayCheck {
   const energy = (total.kcal - t.kcal) / t.kcal;
