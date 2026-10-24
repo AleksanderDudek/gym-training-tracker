@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { BridgeContext } from '../../bridge';
-import { loadDataset, loadedDataset, type LoadedDataset } from '../../data';
+import { MISSING_DATA_MESSAGE, loadDataset, loadedDataset, type LoadedDataset } from '../../data';
 import { clearAll } from '../../diet/store';
 import type { OsmState } from '../../hooks/useOsmAround';
 import type { RestaurantsResult } from '../../hooks/useRestaurants';
@@ -114,6 +114,32 @@ function holdProducts(): (loaded: LoadedDataset) => void {
   return (loaded) => arrive(loaded);
 }
 
+/** Baza produktów nie jest wczytana, a jej pobieranie zawodzi z tym komunikatem. */
+function failProducts(message: string) {
+  vi.mocked(loadedDataset).mockReturnValue(null);
+  vi.mocked(loadDataset).mockRejectedValue(new Error(message));
+}
+
+/** `location.reload` jako szpieg (jsdom strony nie przeładowuje); reszta adresu jak była. */
+function spyReload() {
+  const reload = vi.fn();
+  const real = window.location;
+  vi.stubGlobal(
+    'location',
+    new Proxy(
+      {},
+      {
+        get: (_, key) => {
+          if (key === 'reload') return reload;
+          const value: unknown = Reflect.get(real, key);
+          return typeof value === 'function' ? value.bind(real) : value;
+        },
+      },
+    ),
+  );
+  return reload;
+}
+
 beforeEach(async () => {
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(new Date(2026, 9, 22, 13, 0));
@@ -133,6 +159,9 @@ beforeEach(async () => {
 
 afterEach(() => {
   vi.useRealTimers();
+  vi.unstubAllGlobals();
+  // Z powrotem getter jsdom, jeśli test odciął internet.
+  delete (navigator as { onLine?: boolean }).onLine;
 });
 
 /**
@@ -230,6 +259,18 @@ describe('„Zjedz teraz”: baza produktów czeka na lokale', () => {
     await waitFor(() => expect(loadDataset).toHaveBeenCalledTimes(1));
   });
 
+  test.each<[string, Partial<OsmState>]>([
+    ['za granicą', { source: 'live', shown: 'live', coverage: 'none' }],
+    ['przy granicy', { source: 'mixed', shown: 'static', coverage: 'partial' }],
+    ['gdy Overpass zastępuje dane aplikacji', { source: 'live', shown: 'live', coverage: 'unknown' }],
+  ])('%s rusza od razu: czeka się tam na szukanie serwera map, nie na pliki aplikacji — czekanie odsunęłoby ją o całe szukanie', async (_, where) => {
+    holdProducts();
+    osm.state = osmState(where);
+    renderWithBridge(<NearbyPage />);
+    expect(await screen.findByText(/^Szukam lokali w promieniu 1 km…/)).toBeInTheDocument();
+    await waitFor(() => expect(loadDataset).toHaveBeenCalledTimes(1));
+  });
+
   test('póki produkty sklepów w drodze, wiersz stanu mówi to, zamiast liczyć sklepy jako bez menu', async () => {
     const products = holdProducts();
     osm.state = osmState({ status: 'ready', items: [...PLACES, ...SHOPS], completeWithin: 1000 });
@@ -267,10 +308,57 @@ describe('„Zjedz teraz”: baza produktów czeka na lokale', () => {
     renderWithBridge(<NearbyPage />);
     expect(await screen.findByText(/^W promieniu 1 km: 2 miejsca z menu, w tym \d z czymś na teraz, i 1 bez danych o menu\.$/)).toBeInTheDocument();
   });
+
+  test.each([
+    ['w drodze', 'Wczytuję produkty sklepów…', () => void holdProducts()],
+    ['nieudane', 'Nie udało się wczytać produktów sklepów.', () => failProducts('Nie udało się pobrać danych produktów.')],
+  ])('w pobliżu same sklepy, ich produkty %s: pod pustą listą nikt nie radzi większego promienia', async (_, status, products) => {
+    products();
+    osm.state = osmState({ status: 'ready', items: SHOPS, completeWithin: 1000 });
+    renderWithBridge(<NearbyPage />);
+    expect(await screen.findByText(status)).toHaveAttribute('role', 'status');
+    expect(screen.queryByText(/zwiększ promień/i)).toBeNull();
+  });
+
+  test('…a gdy produkty są i lista jest ostateczna, a pusta (sklep bez danych), radzi', async () => {
+    osm.state = osmState({ status: 'ready', items: [SHOPS[2]!], completeWithin: 1000 });
+    renderWithBridge(<NearbyPage />);
+    expect(await screen.findByText('Nic do pokazania — zwiększ promień albo pokaż zamknięte i lokale bez danych.')).toBeInTheDocument();
+  });
+
+  test('produkty zawiodły, a menu sieci jeszcze się wczytują: wiersz stanu mówi o menu — bez „Spróbuj ponownie”, póki nie nazwie błędu', async () => {
+    menus.status = 'loading';
+    failProducts('Nie udało się pobrać danych produktów (HTTP 404).');
+    osm.state = osmState({ status: 'ready', items: [...PLACES, ...SHOPS], completeWithin: 1000 });
+    const view = renderWithBridge(<NearbyPage />);
+    expect(await screen.findByText('Wczytuję menu sieci…')).toHaveAttribute('role', 'status');
+    await waitFor(() => expect(loadDataset).toHaveBeenCalled());
+    await act(async () => {}); // nieudana baza już na stronie
+    expect(screen.queryByRole('button', { name: 'Spróbuj ponownie' })).toBeNull();
+    // Menu przyszły: teraz wiersz stanu nazywa błąd produktów, a przycisk jest.
+    menus.status = 'ready';
+    renderAgain(view);
+    expect(await screen.findByText('Nie udało się wczytać produktów sklepów.')).toHaveAttribute('role', 'status');
+    expect(screen.getByRole('button', { name: 'Spróbuj ponownie' })).toBeInTheDocument();
+  });
+
+  test('wersja aplikacji bez bazy produktów: sklepy po prostu bez gotowego jedzenia — liczby od razu, bez błędu i bez „Spróbuj ponownie”', async () => {
+    failProducts(MISSING_DATA_MESSAGE);
+    osm.state = osmState({ status: 'ready', items: [...PLACES, ...SHOPS], completeWithin: 1000 });
+    renderWithBridge(<NearbyPage />);
+    // McDonald's i Salad Story z menu; Bar u Zdzisia, Biedronka, Lidl i Sklep u Ani bez danych.
+    expect(
+      await screen.findByText(/^W promieniu 1 km: 2 miejsca z menu, w tym \d z czymś na teraz, i 4 bez danych o menu\.$/),
+    ).toHaveAttribute('role', 'status');
+    expect(screen.queryByText('Nie udało się wczytać produktów sklepów.')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Spróbuj ponownie' })).toBeNull();
+  });
 });
 
 describe('„Zjedz teraz”, gdy menu sieci się nie wczytały', () => {
-  test('wiersz stanu mówi to, zamiast radzić większy promień, a „Spróbuj ponownie” ponawia menu', async () => {
+  // Chromium i WebKit pamiętają nieudany import paczki menu do końca życia strony: ponowny import
+  // odrzuca od razu, bez pytania serwera. Pomaga tylko przeładowanie — widok stoi w adresie.
+  test('wiersz stanu mówi to, zamiast radzić większy promień, a „Spróbuj ponownie” przeładowuje stronę', async () => {
     const user = userEvent.setup();
     menus.status = 'error';
     osm.state = osmState({ status: 'ready', completeWithin: 1000 });
@@ -278,12 +366,14 @@ describe('„Zjedz teraz”, gdy menu sieci się nie wczytały', () => {
     expect(await screen.findByText('Nie udało się wczytać menu sieci.')).toHaveAttribute('role', 'status');
     // Ani w wierszu stanu, ani pod pustą listą: bez menu sieci większy promień nic nie da.
     expect(screen.queryByText(/zwiększ promień/i)).toBeNull();
+    const reload = spyReload();
     await user.click(screen.getByRole('button', { name: 'Spróbuj ponownie' }));
-    expect(menus.retry).toHaveBeenCalledTimes(1);
+    expect(reload).toHaveBeenCalledTimes(1);
+    expect(menus.retry).not.toHaveBeenCalled();
     expect(osm.retry).not.toHaveBeenCalled();
   });
 
-  test('zawiodły i lokale, i menu: wiersz stanu mówi o lokalach, a jeden przycisk ponawia oba', async () => {
+  test('zawiodły i lokale, i menu: wiersz stanu mówi o lokalach, a jeden przycisk przeładowuje stronę — to ponawia oba', async () => {
     const user = userEvent.setup();
     menus.status = 'error';
     osm.state = osmState({ status: 'error', error: 'Nie udało się pobrać danych okolicy.', items: [], completeWithin: 0 });
@@ -291,9 +381,53 @@ describe('„Zjedz teraz”, gdy menu sieci się nie wczytały', () => {
     expect(await screen.findByText('Nie udało się pobrać danych okolicy.')).toHaveAttribute('role', 'status');
     const retries = screen.getAllByRole('button', { name: 'Spróbuj ponownie' });
     expect(retries).toHaveLength(1);
+    const reload = spyReload();
     await user.click(retries[0]!);
+    expect(reload).toHaveBeenCalledTimes(1);
+  });
+
+  test('bez internetu przycisk strony nie przeładowuje (strona bez service workera skończyłaby na błędzie przeglądarki): ponawia jak dotąd', async () => {
+    const user = userEvent.setup();
+    menus.status = 'error';
+    osm.state = osmState({ status: 'error', error: 'Nie udało się pobrać danych okolicy.', items: [], completeWithin: 0 });
+    renderWithBridge(<NearbyPage />);
+    await screen.findByText('Nie udało się pobrać danych okolicy.');
+    Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => false });
+    const reload = spyReload();
+    await user.click(screen.getByRole('button', { name: 'Spróbuj ponownie' }));
+    expect(reload).not.toHaveBeenCalled();
     expect(osm.retry).toHaveBeenCalledTimes(1);
     expect(menus.retry).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('„Zakupy i przepisy”: pod pustą listą przepisów', () => {
+  const empty = () => within(screen.getByRole('region', { name: 'Przepisy z najbliższych sklepów' }));
+
+  test('póki sklepy się wczytują: poczekać — bez rady o promieniu, której jeszcze nie ma po co dawać', async () => {
+    window.history.replaceState(null, '', '#/w-poblizu?widok=sklepy');
+    osm.state = osmState({ items: [], completeWithin: 0 });
+    renderWithBridge(<NearbyPage />);
+    expect(await screen.findByText('Tu jeszcze nic – poczekaj na sklepy.')).toBeInTheDocument();
+    expect(screen.queryByText(/zwiększ promień/i)).toBeNull();
+  });
+
+  test('po błędzie: nic — mówią o nim wiersz stanu i „Spróbuj ponownie”', async () => {
+    window.history.replaceState(null, '', '#/w-poblizu?widok=sklepy');
+    osm.state = osmState({ status: 'error', error: 'Nie udało się pobrać danych okolicy.', items: [], completeWithin: 0 });
+    renderWithBridge(<NearbyPage />);
+    expect(await screen.findByText('Nie udało się pobrać danych okolicy.')).toHaveAttribute('role', 'status');
+    expect(screen.getByRole('button', { name: 'Spróbuj ponownie' })).toBeInTheDocument();
+    expect(empty().queryByText(/poczekaj|zwiększ promień/i)).toBeNull();
+  });
+
+  test('lista ostateczna: większy promień', async () => {
+    window.history.replaceState(null, '', '#/w-poblizu?widok=sklepy');
+    osm.state = osmState({ status: 'ready', items: [], completeWithin: 1000 });
+    renderWithBridge(<NearbyPage />);
+    await screen.findByTestId('shops');
+    expect(empty().getByText('Nic do pokazania – zwiększ promień.')).toBeInTheDocument();
+    expect(screen.queryByText(/poczekaj na sklepy/)).toBeNull();
   });
 });
 

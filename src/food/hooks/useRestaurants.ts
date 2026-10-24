@@ -13,7 +13,10 @@ let pending: Promise<Chain[]> | null = null;
  * Menu sieci leżą we własnej paczce (`restaurants/catalog`): dziennik rysuje się bez nich, a ich
  * kilkadziesiąt kilobajtów przychodzi przy pierwszym wyszukiwaniu albo wejściu w Lokale — raz na
  * życie strony. Nieudane wczytanie (np. offline przed pierwszym zapisaniem paczki) nie zostaje
- * zapamiętane, więc „Spróbuj ponownie” pyta jeszcze raz.
+ * zapamiętane tutaj, ale pamięta je przeglądarka: Chromium i WebKit trzymają nieudany import paczki
+ * do końca życia strony, więc kolejny `import()` odrzuca od razu, bez pytania serwera (Firefox pyta
+ * jeszcze raz). Pomaga dopiero przeładowanie strony — „Zjedz teraz” przeładowuje ją swoim
+ * „Spróbuj ponownie”.
  */
 export function loadRestaurants(): Promise<Chain[]> {
   if (loaded) return Promise.resolve(loaded);

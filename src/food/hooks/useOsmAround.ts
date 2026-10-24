@@ -5,7 +5,7 @@ import { OSM_KEY, dropLegacyCaches, fetchOsm } from '../nearby/live';
 import { shopsOf, type Element } from '../nearby/overpass';
 import { queryCircle } from '../nearby/query';
 import type { GeoState } from './useGeolocation';
-import { useAround, type AroundState } from './useNearbyShops';
+import { useAround, useOnline, type AroundState } from './useNearbyShops';
 import { useStaticAround, type Coverage } from './useStaticAround';
 
 /**
@@ -24,6 +24,12 @@ export interface OsmState extends AroundState<Element> {
   dataAsOf: string | null;
   /** Some of the area is from the previous data version (the new one could not be fetched). */
   olderLeaves: boolean;
+  /**
+   * At the border, while the Polish side is what is shown: what Overpass does for the rest of the
+   * circle — still asking, failed (offline too: nothing can be asked), or done (it answered, and its
+   * answer adds nothing to the screen).
+   */
+  rest?: 'asking' | 'failed' | 'done';
 }
 
 const FAILED = say(
@@ -104,27 +110,31 @@ export function useOsmAround(geo: GeoState, radius: number): [OsmState, () => vo
     pruneCache(s, now, SHOPS_KEY);
   }, []);
 
+  // Read as a store, so that going offline or back changes the words below at once.
+  const online = useOnline();
+
   const state = useMemo<OsmState>(() => {
     const extra = { coverage: stat.coverage, dataAsOf: stat.dataAsOf, olderLeaves: stat.olderLeaves };
     /** The app's data alone, in its own words: no server to wait for, only the connection. */
-    const own = (): OsmState => {
-      const offline = globalThis.navigator?.onLine === false;
-      return {
-        status: stat.status,
-        items: stat.items,
-        completeWithin: stat.completeWithin,
-        error: stat.status === 'error' ? (offline ? (stat.items.length > 0 ? OFFLINE_REST : OFFLINE) : NETWORK) : null,
-        savedAt: null,
-        since: stat.status === 'loading' ? stat.since : null,
-        retryAt: stat.retryAt,
-        ...extra,
-        source: 'static',
-        shown: 'static',
-      };
-    };
+    const own = (): OsmState => ({
+      status: stat.status,
+      items: stat.items,
+      completeWithin: stat.completeWithin,
+      error: stat.status === 'error' ? (online ? NETWORK : stat.items.length > 0 ? OFFLINE_REST : OFFLINE) : null,
+      savedAt: null,
+      since: stat.status === 'loading' ? stat.since : null,
+      retryAt: stat.retryAt,
+      ...extra,
+      source: 'static',
+      shown: 'static',
+    });
     if (stat.coverage === 'partial' && stat.failure !== 'unavailable') {
       // At the border: the Polish side at once, the whole circle once Overpass has answered it.
-      const useLive = live.completeWithin >= stat.completeWithin && live.items.length > 0;
+      // Overpass's ready answer for this very place, out to the radius: when the Polish side failed,
+      // even an empty one says what is there — nothing, on either side (the same rules over the same
+      // map), not a failure to fetch.
+      const whole = live.status === 'ready' && liveHere && live.completeWithin >= radius;
+      const useLive = live.completeWithin >= stat.completeWithin && (live.items.length > 0 || (whole && stat.status === 'error'));
       if (!(useLive && live.status === 'ready') && stat.status === 'ready' && stat.completeWithin >= radius) {
         // Overpass is asked when the ROUNDED circle comes near the border, but around the exact
         // position the app's data may already be complete: then nothing is missing, whatever
@@ -145,7 +155,8 @@ export function useOsmAround(geo: GeoState, radius: number): [OsmState, () => vo
       // Overpass's answer (or a saved one, with its age) covers at least as much: it is what is shown.
       if (useLive) return { ...live, ...extra, source: 'mixed', shown: 'live' };
       // The Polish side itself failed: that is what is wrong here, said as away from the border —
-      // not that the Polish side is on screen. The button tries both sides again.
+      // not that the Polish side is on screen. The button tries it again (and Overpass, if its
+      // search has failed too).
       if (stat.status === 'error') return own();
       // The Polish side, whatever Overpass does meanwhile: still looking while it loads (Overpass's
       // countdown may show under it), then Overpass's state for the rest of the circle.
@@ -162,11 +173,13 @@ export function useOsmAround(geo: GeoState, radius: number): [OsmState, () => vo
         ...extra,
         source: 'mixed',
         shown: 'static',
+        // While the Polish side loads, the words say whether the map server is still being asked.
+        rest: live.status === 'ready' && liveHere ? 'done' : !online || live.status === 'error' ? 'failed' : 'asking',
       };
     }
     if (goLive || holding) return { ...live, ...extra, source: 'live', shown: 'live' };
     return own();
-  }, [stat, live, goLive, holding, radius]);
+  }, [stat, live, liveHere, goLive, holding, radius, online]);
 
   // The diary's digest: the shops of a complete answer, for the circle it covers.
   const complete = state.status === 'ready' && state.completeWithin >= radius;
@@ -182,11 +195,15 @@ export function useOsmAround(geo: GeoState, radius: number): [OsmState, () => vo
   }, [complete, cLat, cLon, cRadius, items]);
 
   // „Spróbuj ponownie” tries whatever failed: the app's data (its index too — Overpass may be
-  // standing in for it) and Overpass when it is asked.
+  // standing in for it) and Overpass once its search has ended in failure. Not a search still
+  // running or waiting out a pause the server asked for — at the border the button shows for a
+  // failed Polish side meanwhile: a new search would throw away the answer on its way, or ask a busy
+  // server again before its pause is over.
   const staticSide = stat.failure !== null || state.source === 'static';
+  const liveFailed = goLive && live.status === 'error';
   const retry = useCallback(() => {
     if (staticSide) retryStatic();
-    if (goLive) retryLive();
-  }, [staticSide, goLive, retryStatic, retryLive]);
+    if (liveFailed) retryLive();
+  }, [staticSide, liveFailed, retryStatic, retryLive]);
   return [state, retry];
 }

@@ -32,6 +32,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
@@ -168,6 +169,49 @@ describe('loadDataset', () => {
       vi.fn(async () => new Response(gz('{"products": ['))),
     );
     await expect(loadDataset()).rejects.toThrow('Dane produktów są uszkodzone.');
+  });
+
+  it.each([
+    [
+      'nagłówki i pół pliku, potem cisza',
+      () => {
+        const file = gz(TEXT);
+        return Promise.resolve(new Response(new ReadableStream<Uint8Array>({ start: (body) => body.enqueue(file.slice(0, file.length >> 1)) })));
+      },
+    ],
+    ['nawet bez nagłówków', () => new Promise<Response>(() => {})],
+  ])('zawieszone pobieranie (%s) po minucie ciszy staje się błędem połączenia — nie „Wczytuję…” bez końca', async (_, answer) => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    vi.stubGlobal('fetch', vi.fn(answer));
+    const { loadDataset, DATASET_STALL_MS } = await load();
+    let failure: unknown = null;
+    loadDataset().catch((error: unknown) => (failure = error));
+    await vi.advanceTimersByTimeAsync(DATASET_STALL_MS - 1000);
+    expect(failure).toBeNull();
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(failure).toEqual(new Error('Nie udało się pobrać danych produktów. Sprawdź połączenie z internetem.'));
+  });
+
+  it('…a powolne, ale równe kończy się, choćby szło minutami: liczy się tylko cisza, nie całość', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    const file = gz(TEXT);
+    const { loadDataset, DATASET_STALL_MS } = await load();
+    const parts = 4;
+    const size = Math.ceil(file.length / parts);
+    // Każda część chwilę przed końcem ciszy po poprzedniej: razem prawie cztery minuty.
+    const slow = new ReadableStream<Uint8Array>({
+      start: (body) => {
+        for (let k = 0; k < parts; k++)
+          setTimeout(() => {
+            body.enqueue(file.slice(k * size, (k + 1) * size));
+            if (k === parts - 1) body.close();
+          }, (k + 1) * (DATASET_STALL_MS - 1000));
+      },
+    });
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(slow)));
+    const loading = loadDataset();
+    await vi.advanceTimersByTimeAsync(parts * DATASET_STALL_MS);
+    await expect(loading).resolves.toMatchObject({ dataset: { generatedAt: DATASET.generatedAt } });
   });
 
   it('błąd serwera to polski komunikat z kodem, a nieudana próba nie zostaje w pamięci', async () => {

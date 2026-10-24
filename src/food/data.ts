@@ -38,6 +38,15 @@ export { inflate };
 const datasetUrl = (): string | null => (foodData.url ? import.meta.env.BASE_URL + foodData.url : null);
 
 /**
+ * Tyle pobieranie bazy może milczeć — bez nagłówków odpowiedzi, potem bez kolejnego kawałka treści —
+ * zanim uzna się je za zawieszone. Liczy się tylko cisza, nie całość: 3,3 MB na wolnym łączu idą
+ * minutami, ale idą. Dłużej niż przy małych plikach OSM (10 s): pobierana z niskim priorytetem baza
+ * może nie dostać nic, póki serwer, który pilnuje priorytetów, wysyła przed nią paczkę sklepów
+ * (783 kB, na EDGE ok. pół minuty) i kawałki mapy.
+ */
+export const DATASET_STALL_MS = 60_000;
+
+/**
  * Produkty sklepów internetowych i sieci z własnymi danymi (Selgros) — osobna paczka, wczytywana
  * razem z bazą. Gdy się nie wczyta (np. offline przed pierwszym zapisaniem paczki), baza przychodzi
  * bez nich: to dodatek, nie powód, żeby nie pokazać 29 tysięcy produktów.
@@ -64,21 +73,63 @@ function loadShops(): Promise<{ shops: ShopData[]; chains: ChainData[] }> {
   );
 }
 
-async function fetchDataset(): Promise<LoadedDataset> {
-  const url = datasetUrl();
-  if (!url) throw new Error(MISSING_DATA_MESSAGE);
-  const shops = loadShops();
+/**
+ * Plik bazy, czytany kawałek po kawałku z zegarem, który każdy znak życia nastawia od nowa
+ * (`DATASET_STALL_MS`): powolne, ale równe pobieranie kończy się, ile by nie trwało, a zawieszone
+ * staje się błędem połączenia — z „Spróbuj ponownie” zamiast „Wczytuję…” bez końca.
+ */
+async function download(url: string): Promise<Uint8Array<ArrayBuffer>> {
+  const controller = new AbortController();
+  // Przerwanie kończy zapytanie; wyścig z nim kończy też czytanie, które przeglądarka zostawiłaby zawieszone.
+  const stalled = new Promise<never>((_, reject) => controller.signal.addEventListener('abort', () => reject(new Error(T.offline))));
+  stalled.catch(() => {});
+  const within = <V>(step: Promise<V>) => Promise.race([step, stalled]);
+  let timer = setTimeout(() => controller.abort(), DATASET_STALL_MS);
+  /** Coś przyszło: następny kawałek ma znów cały czas. */
+  const alive = () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => controller.abort(), DATASET_STALL_MS);
+  };
   // Zerwane połączenie wychodzi z `fetch` albo dopiero w trakcie czytania treści.
   const offline = () => {
     throw new Error(T.offline);
   };
-  // Niski priorytet (Chromium): na wolnym łączu baza (3 MB) idzie za indeksem i kawałkami danych OSM
-  // „W pobliżu” (`nearby/staticData`, pytanymi w tym samym czasie z wysokim). Przy równych serwer
-  // wysyła odpowiedzi po kolei, a te małe pliki czekałyby za bazą, aż ich limit czasu uznałby to
-  // za brak połączenia.
-  const response = await fetch(url, { priority: 'low' }).catch(offline);
-  if (!response.ok) throw new Error(T.http(response.status));
-  const bytes = new Uint8Array(await response.arrayBuffer().catch(offline));
+  try {
+    // Niski priorytet (Chromium): na wolnym łączu baza (3 MB) idzie za indeksem i kawałkami danych OSM
+    // „W pobliżu” (`nearby/staticData`, pytanymi w tym samym czasie z wysokim). Przy równych serwer
+    // wysyła odpowiedzi po kolei, a te małe pliki czekałyby za bazą, aż ich limit czasu uznałby to
+    // za brak połączenia.
+    const response = await within(fetch(url, { priority: 'low', signal: controller.signal })).catch(offline);
+    if (!response.ok) throw new Error(T.http(response.status));
+    alive();
+    if (!response.body) return new Uint8Array(await within(response.arrayBuffer()).catch(offline));
+    const reader = response.body.getReader();
+    const chunks: Uint8Array[] = [];
+    let size = 0;
+    for (;;) {
+      const { done, value } = await within(reader.read()).catch(offline);
+      if (done) break;
+      chunks.push(value);
+      size += value.length;
+      alive();
+    }
+    const bytes = new Uint8Array(size);
+    let at = 0;
+    for (const chunk of chunks) {
+      bytes.set(chunk, at);
+      at += chunk.length;
+    }
+    return bytes;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function fetchDataset(): Promise<LoadedDataset> {
+  const url = datasetUrl();
+  if (!url) throw new Error(MISSING_DATA_MESSAGE);
+  const shops = loadShops();
+  const bytes = await download(url);
   let dataset: Dataset;
   try {
     dataset = JSON.parse(await inflate(bytes)) as Dataset;

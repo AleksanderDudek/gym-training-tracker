@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { ageText, aroundNotes } from './aroundText';
+import { dataDate } from './nearbyText';
 
 const NOW = Date.UTC(2026, 9, 23, 12, 0, 0);
 const HOUR = 3600 * 1000;
@@ -54,15 +55,30 @@ describe('przy granicy', () => {
     expect(aroundNotes({ ...polish, status: 'ready', since: null }, 'lokale', NOW)).toEqual({ status: '', clock: null });
   });
 
+  test('póki polska strona się wczytuje: „o resztę pytam serwer map” tylko wtedy, gdy serwer map jest pytany', () => {
+    const polish = { ...border, shown: 'static' as const };
+    expect(aroundNotes({ ...polish, rest: 'asking' }, 'lokale', NOW).status).toBe(
+      'Przy granicy: lokale po polskiej stronie mam w aplikacji, o resztę pytam serwer map…',
+    );
+    // Odpowiedział (to, co dał, niczego na ekranie nie dodaje): nikogo już nie pytam.
+    expect(aroundNotes({ ...polish, rest: 'done' }, 'sklepy', NOW).status).toBe('Przy granicy: sklepy po polskiej stronie wczytuję z aplikacji…');
+    // Zawiódł albo nie ma internetu: też nikogo nie pytam, a reszty nie będzie.
+    expect(aroundNotes({ ...polish, rest: 'failed' }, 'lokale', NOW).status).toBe(
+      'Przy granicy: lokale po polskiej stronie wczytuję z aplikacji, po drugiej stronie nie udało się pobrać danych.',
+    );
+  });
+
   test('polska strona to dane aplikacji: ich stara data i część z poprzedniej aktualizacji jak z dala od granicy — póki to je widać', () => {
-    // W południe UTC: ta sama data w każdej strefie czasowej.
     const old = { status: 'ready' as const, since: null, dataAsOf: '2026-07-01T12:00:00Z', olderLeaves: true };
-    const notes = 'Część danych okolicy jest z poprzedniej aktualizacji. Dane okolicy są z 1 lipca 2026 — część miejsc mogła się zmienić.';
+    // Data w strefie urządzenia, jak na stronie: od UTC+12 to już 2 lipca.
+    const stale = `Dane okolicy są z ${dataDate(old.dataAsOf)} — część miejsc mogła się zmienić.`;
+    expect(stale).toMatch(/^Dane okolicy są z [12] lipca 2026 /);
+    const notes = `Część danych okolicy jest z poprzedniej aktualizacji. ${stale}`;
     expect(aroundNotes({ ...base, ...old, source: 'static', shown: 'static' }, 'lokale', NOW).status).toBe(notes);
     const polish = { ...border, ...old, shown: 'static' as const };
     expect(aroundNotes(polish, 'lokale', NOW).status).toBe(notes);
     expect(aroundNotes({ ...polish, dataAsOf: '2026-10-22T12:00:00Z' }, 'lokale', NOW).status).toBe('Część danych okolicy jest z poprzedniej aktualizacji.');
-    expect(aroundNotes({ ...polish, olderLeaves: false }, 'lokale', NOW).status).toBe('Dane okolicy są z 1 lipca 2026 — część miejsc mogła się zmienić.');
+    expect(aroundNotes({ ...polish, olderLeaves: false }, 'lokale', NOW).status).toBe(stale);
     expect(aroundNotes({ ...polish, status: 'loading', since: NOW }, 'lokale', NOW).status).toBe(
       `Przy granicy: lokale po polskiej stronie mam w aplikacji, o resztę pytam serwer map… ${notes}`,
     );

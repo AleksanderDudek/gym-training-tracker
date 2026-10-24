@@ -13,15 +13,16 @@ import { useOsmAround, type OsmState } from './useOsmAround';
 
 vi.mock('virtual:osm-places', () => ({ default: { index: 'data/osm/v1/index.json' } }));
 
-// Overpass's tries without pauses (a busy server fails at once), and how many searches were asked.
-const overpassSearches = vi.hoisted(() => ({ count: 0 }));
+// Overpass's tries without pauses (a busy server fails at once) unless a test gives the pauses back,
+// and how many searches were asked.
+const overpassSearches = vi.hoisted(() => ({ count: 0, retryDelayMs: 0 }));
 vi.mock('../nearby/live', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../nearby/live')>();
   return {
     ...actual,
     fetchOsm: (...[center, radius, options]: Parameters<typeof actual.fetchOsm>) => {
       overpassSearches.count++;
-      return actual.fetchOsm(center, radius, { ...options, retryDelayMs: 0 });
+      return actual.fetchOsm(center, radius, { ...options, retryDelayMs: overpassSearches.retryDelayMs });
     },
   };
 });
@@ -47,14 +48,26 @@ const BORDER_ROWS = [
   ),
   osmRow('n9', NEAR_BORDER.lat + 0.001, NEAR_BORDER.lon, { shop: 'supermarket', brand: 'Biedronka', name: 'Biedronka' }),
 ];
+/** What Overpass knows around the border position: a place on the Polish side and one across the edge. */
+const ACROSS = {
+  elements: [
+    { type: 'node', id: 31, lat: AT_BORDER.lat - 0.002, lon: AT_BORDER.lon, tags: { amenity: 'restaurant', name: 'Lokal PL' } },
+    { type: 'node', id: 32, lat: AT_BORDER.lat + 0.008, lon: AT_BORDER.lon, tags: { amenity: 'restaurant', name: 'Za granicą' } },
+  ],
+};
 const DAY = 24 * 3600 * 1000;
 
 let data: OsmTestData;
 let index: 'ok' | 'offline' | '503';
 let leaves: 'ok' | 'offline' | '503' | 'hold';
-/** `hold`: a busy server that answers nothing until the search is called off; `empty`: nothing around. */
-let overpass: 'ok' | '504' | 'hold' | 'empty';
+/**
+ * `hold`: a busy server that answers nothing until the search is called off; `slow`: a busy but
+ * working one, its answer (`ACROSS`) 20 s after the request; `empty`: nothing around.
+ */
+let overpass: 'ok' | '504' | 'hold' | 'slow' | 'empty';
 let requests: string[];
+/** Overpass requests called off before their answer. */
+let aborted: number;
 let held: (() => void)[];
 
 beforeEach(() => {
@@ -67,17 +80,35 @@ beforeEach(() => {
   leaves = 'ok';
   overpass = 'ok';
   requests = [];
+  aborted = 0;
   held = [];
   overpassSearches.count = 0;
+  overpassSearches.retryDelayMs = 0;
   vi.stubGlobal(
     'fetch',
     vi.fn(async (url: string, init?: RequestInit) => {
       requests.push(url);
       if (url.includes('overpass')) {
         if (overpass === '504') return new Response('<html>busy</html>', { status: 504 });
-        if (overpass === 'hold')
-          return new Promise<Response>((_, fail) => init?.signal?.addEventListener('abort', () => fail(new DOMException('aborted', 'AbortError'))));
-        return new Response(JSON.stringify(overpass === 'empty' ? { elements: [] } : OVERPASS), { headers: { 'content-type': 'application/json' } });
+        const json = (body: object) => new Response(JSON.stringify(body), { headers: { 'content-type': 'application/json' } });
+        if (overpass === 'hold' || overpass === 'slow')
+          return new Promise<Response>((ok, fail) => {
+            let answered = false;
+            const answer =
+              overpass === 'slow'
+                ? setTimeout(() => {
+                    answered = true;
+                    ok(json(ACROSS));
+                  }, 20_000)
+                : undefined;
+            init?.signal?.addEventListener('abort', () => {
+              if (answered) return;
+              aborted++;
+              clearTimeout(answer);
+              fail(new DOMException('aborted', 'AbortError'));
+            });
+          });
+        return json(overpass === 'empty' ? { elements: [] } : OVERPASS);
       }
       const isIndex = url.includes('index.json');
       if (isIndex && index === 'offline') throw new TypeError('Failed to fetch');
@@ -325,10 +356,12 @@ describe('useOsmAround', () => {
     expect(aroundNotes(result.current[0], 'lokale', Date.now())).toEqual({ status: '', clock: null });
   });
 
-  test('…and online while Overpass is busy: the same — what failed is the app’s data, retried by itself, and the button tries both sides', async () => {
+  test('…and online while Overpass waits out a busy server’s pause: the same — the app’s data failed, retried by itself; the button tries it again, leaves Overpass’s search and its pause alone, and tries Overpass too once that search has failed', async () => {
     data = osmTestData(BORDER_ROWS, BORDER, 3);
     leaves = 'offline';
     overpass = '504';
+    // The pauses as on the real servers: both answer 504 at once (0.4 s), each is asked again 6 s later.
+    overpassSearches.retryDelayMs = 2000;
     const { result } = mount(AT_BORDER);
     await settle(3000);
     expect(result.current[0]).toMatchObject({
@@ -340,14 +373,91 @@ describe('useOsmAround', () => {
     });
     expect(result.current[0].retryAt).toBeGreaterThan(Date.now());
     expect(aroundNotes(result.current[0], 'lokale', Date.now()).status).toBe('');
-    const before = { leaves: requests.filter((u) => u.includes('/t/')).length, overpass: overpassSearches.count };
+    const before = { leaves: requests.filter((u) => u.includes('/t/')).length, overpass: asked('overpass') };
+    expect(before.overpass).toBe(2);
+    act(() => result.current[1]()); // 3 s: inside the pause, which ends at 6.4 s
+    await settle(3000);
+    expect(requests.filter((u) => u.includes('/t/')).length).toBeGreaterThan(before.leaves);
+    expect(overpassSearches.count).toBe(1);
+    expect(asked('overpass')).toBe(before.overpass);
+    // The same search goes on after the pause, then fails (the second server at 8.4 s).
+    await settle(3000);
+    expect(asked('overpass')).toBe(before.overpass + 2);
+    expect(overpassSearches.count).toBe(1);
+    expect(result.current[0].status).toBe('error');
     act(() => result.current[1]());
     await settle(500);
-    expect(requests.filter((u) => u.includes('/t/')).length).toBeGreaterThan(before.leaves);
-    expect(overpassSearches.count).toBe(before.overpass + 1);
+    expect(overpassSearches.count).toBe(2);
   });
 
-  test('at the border, while the Polish side still loads, a failing Overpass is no failure yet: still looking; once the Polish side is in, it is said to be what is shown', async () => {
+  test('at the border, pressing „Spróbuj ponownie” for the failed Polish side whenever it shows never calls off Overpass’s search: its one answer arrives and is shown', async () => {
+    data = osmTestData(BORDER_ROWS, BORDER, 3);
+    leaves = 'offline'; // the Polish side: a dropped connection
+    overpass = 'slow'; // a busy but working server: its answer 20 s after the request
+    const { result } = mount(AT_BORDER);
+    let presses = 0;
+    for (let passed = 0; passed < 30_000; passed += 100) {
+      await settle(100, 100);
+      if (result.current[0].status !== 'error') continue;
+      presses++;
+      act(() => result.current[1]());
+    }
+    expect(presses).toBeGreaterThan(1);
+    expect(asked('overpass')).toBe(1);
+    expect(aborted).toBe(0);
+    expect(result.current[0]).toMatchObject({ source: 'mixed', shown: 'live', status: 'ready', error: null });
+    expect(names(result.current[0])).toEqual(['Lokal PL', 'Za granicą']);
+  }, 30_000);
+
+  test('at the border, the Polish side failed and Overpass answered the whole circle with nothing: that answer is shown — nothing here, no failure to fetch', async () => {
+    data = osmTestData(BORDER_ROWS, BORDER, 3);
+    leaves = 'offline';
+    overpass = 'empty';
+    const { result } = mount(AT_BORDER);
+    await settle(3000); // each leaf tried twice, 2 s apart
+    expect(result.current[0]).toMatchObject({
+      source: 'mixed',
+      shown: 'live',
+      coverage: 'partial',
+      status: 'ready',
+      items: [],
+      completeWithin: 1000,
+      error: null,
+      savedAt: null,
+      retryAt: null,
+    });
+    expect(aroundNotes(result.current[0], 'lokale', Date.now())).toEqual({ status: '', clock: null });
+  });
+
+  test.each([
+    ['still asks', 'hold', true, 'asking', 'Przy granicy: lokale po polskiej stronie mam w aplikacji, o resztę pytam serwer map…'],
+    ['has answered (nothing across the border)', 'empty', true, 'done', 'Przy granicy: lokale po polskiej stronie wczytuję z aplikacji…'],
+    [
+      'has failed',
+      '504',
+      true,
+      'failed',
+      'Przy granicy: lokale po polskiej stronie wczytuję z aplikacji, po drugiej stronie nie udało się pobrać danych.',
+    ],
+    [
+      'cannot be asked (offline)',
+      'hold',
+      false,
+      'failed',
+      'Przy granicy: lokale po polskiej stronie wczytuję z aplikacji, po drugiej stronie nie udało się pobrać danych.',
+    ],
+  ] as const)('at the border, while the Polish side loads and Overpass %s: „o resztę pytam serwer map” only while it is asked', async (_, mode, online, rest, words) => {
+    data = osmTestData(BORDER_ROWS, BORDER, 3);
+    leaves = 'hold';
+    overpass = mode;
+    if (!online) Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => false });
+    const { result } = mount(AT_BORDER);
+    await settle(3000);
+    expect(result.current[0]).toMatchObject({ source: 'mixed', shown: 'static', status: 'loading', rest });
+    expect(aroundNotes(result.current[0], 'lokale', Date.now()).status).toBe(words);
+  });
+
+  test('at the border, while the Polish side still loads, a failed Overpass is no failure of the page yet: still looking, the rest said to have failed; once the Polish side is in, it is said to be what is shown', async () => {
     data = osmTestData(BORDER_ROWS, BORDER, 3);
     leaves = 'hold';
     overpass = '504';
@@ -356,7 +466,7 @@ describe('useOsmAround', () => {
     expect(asked('overpass')).toBeGreaterThan(0);
     expect(result.current[0]).toMatchObject({ source: 'mixed', shown: 'static', coverage: 'partial', status: 'loading', error: null });
     expect(aroundNotes(result.current[0], 'lokale', Date.now()).status).toBe(
-      'Przy granicy: lokale po polskiej stronie mam w aplikacji, o resztę pytam serwer map…',
+      'Przy granicy: lokale po polskiej stronie wczytuję z aplikacji, po drugiej stronie nie udało się pobrać danych.',
     );
     leaves = 'ok';
     for (const go of held.splice(0)) go();
