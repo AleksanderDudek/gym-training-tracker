@@ -193,13 +193,14 @@ describe('„Na razie”, póki odpowiedź przychodzi kawałkami', () => {
     },
   );
 
-  test('„Zjedz teraz” bez uwagi, póki nie ma produktów sklepów: Biedronka i Lidl wyglądałyby na takie bez menu', async () => {
+  test('„Zjedz teraz”, póki nie ma produktów sklepów (przychodzą po lokalach): uwaga liczy miejsca z menu, jakie już są', async () => {
     holdProducts();
     window.history.replaceState(null, '', '#/w-poblizu?r=5000');
     osm.state = osmState({ items: [...PLACES, ...SHOPS] });
     renderWithBridge(<NearbyPage />);
-    expect(await screen.findByText('Szukam lokali w promieniu 5 km…')).toBeInTheDocument();
-    expect(screen.queryByText(/^Na razie:/)).toBeNull();
+    // McDonald's i Salad Story; sklepy dojdą z produktami — „na razie” tylko rośnie, nie kłamie w dół.
+    expect(await screen.findByText(/^Na razie:/)).toHaveTextContent('Na razie: 2 miejsca z menu w promieniu 1,2 km.');
+    expect(loadDataset).not.toHaveBeenCalled();
   });
 
   test('„Zjedz teraz” z bazą produktów wczytaną wcześniej: liczy od razu i sklepy z gotowym jedzeniem', async () => {
@@ -237,6 +238,24 @@ describe('„Zjedz teraz”: baza produktów czeka na lokale', () => {
     expect(screen.queryByText(/bez danych o menu\./)).toBeNull();
     products(LOADED);
     // McDonald's, Salad Story, Biedronka i Lidl; Bar u Zdzisia i Sklep u Ani bez danych — liczby raz, już ostateczne.
+    expect(
+      await screen.findByText(/^W promieniu 1 km: 4 miejsca z menu, w tym \d z czymś na teraz, i 2 bez danych o menu\.$/),
+    ).toHaveAttribute('role', 'status');
+  });
+
+  test('produkty sklepów się nie wczytały: wiersz stanu to mówi, a „Spróbuj ponownie” pobiera je jeszcze raz', async () => {
+    const user = userEvent.setup();
+    vi.mocked(loadedDataset).mockReturnValue(null);
+    vi.mocked(loadDataset).mockRejectedValueOnce(new Error('Nie udało się pobrać danych produktów.'));
+    osm.state = osmState({ status: 'ready', items: [...PLACES, ...SHOPS], completeWithin: 1000 });
+    renderWithBridge(<NearbyPage />);
+    expect(await screen.findByText('Nie udało się wczytać produktów sklepów.')).toHaveAttribute('role', 'status');
+    // Sklepy nie liczą się jako bez menu, a pod listą nikt nie radzi większego promienia.
+    expect(screen.queryByText(/bez danych o menu\./)).toBeNull();
+    expect(screen.queryByText(/zwiększ promień/i)).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Spróbuj ponownie' }));
+    await waitFor(() => expect(loadDataset).toHaveBeenCalledTimes(2));
+    expect(osm.retry).not.toHaveBeenCalled();
     expect(
       await screen.findByText(/^W promieniu 1 km: 4 miejsca z menu, w tym \d z czymś na teraz, i 2 bez danych o menu\.$/),
     ).toHaveAttribute('role', 'status');

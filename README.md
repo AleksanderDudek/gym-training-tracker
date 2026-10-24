@@ -1063,7 +1063,12 @@ każe przeczytać indeks od nowa. Przy pierwszej wizycie to, co przyszło, zanim
 stronę, idzie potem jeszcze raz przez niego — okolica działa bez sieci już przy następnym otwarciu.
 Wolne łącze: najwyżej 8 kawałków naraz, najbliższe pierwsze (reszta czeka, więc nikt nie traci
 terminu w kolejce przeglądarki), a kawałek, który wciąż przychodzi, nie jest przerywany (10 km na
-EDGE to ok. 265 kB); przerywa go dopiero 10 s ciszy. Nieudane pobranie — indeksu albo kawałka, także błąd serwera — wraca
+EDGE to ok. 265 kB); przerywa go dopiero 10 s ciszy, a ponowienie omija wtedy niedokończony wpis
+w pamięci podręcznej przeglądarki (`cache: 'reload'` — inaczej czekałoby na zawieszone pobranie
+service workera). „Zjedz teraz” prosi o bazę produktów (3,3 MB, gotowe jedzenie w sklepach) dopiero
+po lokalach, a baza idzie z niskim priorytetem: na wolnym łączu nie staje przed indeksem i kawałkami.
+Póki jej nie ma, wiersz stanu mówi „Wczytuję produkty sklepów…” zamiast liczyć sklepy jako bez menu,
+a gdy się nie wczyta (albo menu sieci), mówi to i daje „Spróbuj ponownie”. Nieudane pobranie — indeksu albo kawałka, także błąd serwera — wraca
 samo po 30 s, minucie i dwóch (nie przy zablokowanym telefonie ani bez sieci; po powrocie sieci od
 razu), a w tym czasie odpowiada Overpass; jego gotowa lista zostaje na ekranie, aż dane aplikacji
 będą kompletne. Przełączenie widoków nic nie pobiera; jedne dane wczytują się od
@@ -2487,8 +2492,11 @@ wejściu w Jedzenie przechodzą do dziennika wagi i znikają z diety; kroki diet
 i zegarka. Eksport z Ustawień zapisuje jeden plik — trening, a gdy dziennik jedzenia ma cokolwiek
 (rozstrzyga zawartość bazy, nie to, czy jest profil diety), także jego kopię pod `diet`; gdy bazy nie
 da się odczytać, plik i tak powstaje, a komunikat mówi, że jest bez dziennika. Import odtwarza oba,
-a „Usuń wszystkie dane” czyści oba, razem z zapamiętanym miejscem sklepów i kopiami kafelków mapy
-i zdjęć produktów (kafelki zdradzają, jakie okolice ktoś oglądał). Baza ma tę samą nazwę co
+a „Usuń wszystkie dane” czyści oba, razem z zapamiętanym miejscem sklepów i kopiami kafelków mapy,
+kawałków danych OSM i zdjęć produktów (kafelki i kawałki zdradzają, jakie okolice ktoś oglądał) —
+także z tym, co dopiero miało trafić do kopii: zapomina pobrania czekające na przejęcie strony przez
+service worker i kawałki w pamięci, a kawałki, które były jeszcze w drodze, po ich nadejściu sprząta
+drugi raz. Baza ma tę samą nazwę co
 w Produktach PL — na tej samej domenie dawny dziennik pojawia się w aplikacji sam.
 
 ## Zastrzeżenie

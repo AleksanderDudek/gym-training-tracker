@@ -89,9 +89,10 @@ export function useOsmAround(geo: GeoState, radius: number): [OsmState, () => vo
   // taken over — so the very render in which the app's data returns already knows it. Only an answer
   // asked for THIS place: right after a move `live` still holds the last place's, and holding it would
   // let the new place's search go out to Overpass although the app's data is back — or not, by where
-  // in the rounding cell the user stands. And only a list with something on it: an empty one held
-  // while the app's data loads would say that nothing is here.
-  const readyLive = (goLive || holding) && liveHere && live.items.length > 0 ? place : null;
+  // in the rounding cell the user stands. An empty answer is an answer too: the same rules over the
+  // same map give the app's copy nothing there either (only a place deleted since the copy differs, and
+  // there Overpass is the right one), so it stays instead of a „Szukam…” flash or a failing download.
+  const readyLive = (goLive || holding) && liveHere ? place : null;
   if (readyLive !== heldPlace) setHeldPlace(readyLive);
 
   // Keep the device's trail within its week, whichever source this visit uses.

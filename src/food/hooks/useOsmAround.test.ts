@@ -181,7 +181,7 @@ describe('useOsmAround', () => {
     expect(asked('overpass')).toBe(1);
   });
 
-  test('…but an empty Overpass answer is not held: while the app’s data loads the page says it is looking, not that nothing is here', async () => {
+  test('…an empty Overpass answer for this place is an answer too: it stays until the app’s data is ready — no „Szukam…” flash in between', async () => {
     index = 'offline';
     overpass = 'empty';
     const { result } = mount(WARSAW);
@@ -191,7 +191,27 @@ describe('useOsmAround', () => {
     leaves = 'hold';
     await settle(AUTO_RETRY_MS[0]!); // the index's automatic try
     expect(asked('index')).toBe(2);
-    expect(result.current[0]).toMatchObject({ source: 'static', status: 'loading' });
+    expect(held.length).toBeGreaterThan(0);
+    expect(result.current[0]).toMatchObject({ source: 'live', status: 'ready', items: [] });
+    leaves = 'ok';
+    for (const go of held.splice(0)) go();
+    await settle();
+    // (The fixture's copy has places Overpass did not return: in real data only a place deleted since
+    // the copy would differ.)
+    expect(result.current[0]).toMatchObject({ source: 'static', status: 'ready' });
+    expect(asked('overpass')).toBe(1);
+  });
+
+  test('…and an empty one stays too when the leaves then fail: a working answer is not traded for an error', async () => {
+    index = 'offline';
+    overpass = 'empty';
+    const { result } = mount(WARSAW);
+    await settle();
+    index = 'ok';
+    leaves = 'offline';
+    await settle(AUTO_RETRY_MS[0]! + 5000);
+    expect(result.current[0]).toMatchObject({ source: 'live', status: 'ready', error: null, items: [] });
+    expect(asked('overpass')).toBe(1);
   });
 
   test('…nor the answer of the place just left: moving to another rounding cell as the app’s data comes back asks Overpass nothing for it — wherever in the cell', async () => {

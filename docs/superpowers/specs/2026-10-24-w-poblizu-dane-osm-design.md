@@ -67,6 +67,19 @@ fixes of the second round and found five regressions and some leftovers. Decisio
 | Leaves at once | At most 8 leaf requests on their way, nearest first; a slot is not held during the retry pause | Beyond 6 per host a browser on HTTP/1.1 queues requests with their header deadline already running: on EDGE 9 of 34 leaves were cut and fetched again |
 | Relations osmium does not build | Matching `site`/`building` relations become rows at the bbox centre of their member nodes and member ways' nodes — Overpass's `out center` (member relations count for nothing there either); a relation already represented by a member row of the same kind and label (brand, else name) is skipped | 3 places were missing from the copy (now 99,147 rows, the known gap empty); the Makro hall in Sosnowiec stays one pin, not two |
 
+A second adversarial review of round 3 (7 lenses; every finding then given to a reproducer and a
+skeptic) confirmed 19 findings, all reproduced. Decisions from it:
+
+| Topic | Decision | Why |
+| --- | --- | --- |
+| Retry after a stall | A URL whose request failed on its way is fetched next with `cache: 'reload'` (the in-load retry, a later automatic try, the button, the index too) until it succeeds; first requests and the first-visit re-fetch keep the default mode | Chromium joins a default-mode request to the HTTP-cache entry the service worker's stalled fetch is still writing: retries never reached the server for minutes |
+| Products after places | „Zjedz teraz” asks for the products database only once the places are in (`useDataset(enabled)`), and the database is fetched at priority `low`; „Zakupy i przepisy” still loads it at once | On a slow link the 3.3 MB went first and the 9 kB index and the leaves queued behind it; in Chromium `priority: 'high'` alone is the default and gave nothing |
+| Words while the products load or fail | „Wczytuję produkty sklepów…” instead of counting chain shops as without menu; „Nie udało się wczytać produktów sklepów.” / „…menu sieci.” with „Spróbuj ponownie”; „Na razie” counts the places with a menu so far | The status line is read out: counts that change by themselves after the page looks finished, or advice to widen the radius that cannot help, were wrong |
+| Border words from both sides | When the Polish side itself failed, the page shows the app's own failure words; „po polskiej stronie” only while that side is on screen; the stale-data and older-version notes also at the border | The notes claimed a Polish side that had not loaded |
+| Hold only this place's answer | The ready Overpass answer held while the app's data comes back must be one fetched for the current rounded place (`useAround` returns `readyHere`); an empty answer counts too | Right after a move the previous place's answer started a new Overpass search — or not, by where in the cell the user stood; an empty answer is genuine (same rules, same map) |
+| Reset leaves no trail | „Usuń wszystkie dane” forgets the first visit's queued re-fetches and the in-memory leaves, and sweeps `gt-osm` and its expiration rows again once the leaves still on their way have landed | The worker saved the viewed area right after the reset |
+| Pipeline log | A relation `type` from the map is one line before it is printed | A line break in it could inject a GitHub Actions workflow command |
+
 ## Not done now
 
 - Request caps per hour and holding a stale saved position while GPS locates (abroad only; little gain).
