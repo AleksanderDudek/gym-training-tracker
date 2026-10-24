@@ -12,11 +12,14 @@ import {
   parsePoly,
   readFeatures,
   readOpl,
+  relationRows,
   rowTags,
   simplify,
   simplifyCoverage,
   splitRecords,
+  unbuiltRelations,
   unescapeOpl,
+  withRows,
   type FeatureStats,
   type Meta,
 } from './osm';
@@ -431,10 +434,28 @@ describe('the listing of the objects that should be rows (OPL)', () => {
         '',
       ]),
     ).toEqual([
-      { type: 'node', key: 'n14', tags: { shop: 'bakery', name: 'Corner node' } },
-      { type: 'way', key: 'w1001', tags: { shop: 'bakery', name: 'Putka' } },
-      { type: 'relation', key: 'r2006', tags: { type: 'multipolygon', shop: 'supermarket', name: 'Hala' } },
-      { type: 'node', key: 'n15', tags: {} },
+      { type: 'node', key: 'n14', tags: { shop: 'bakery', name: 'Corner node' }, location: [21.02, 52.231] },
+      { type: 'way', key: 'w1001', tags: { shop: 'bakery', name: 'Putka' }, nodes: ['n11', 'n12', 'n13', 'n14', 'n11'] },
+      { type: 'relation', key: 'r2006', tags: { type: 'multipolygon', shop: 'supermarket', name: 'Hala' }, members: ['w1006', 'w1007'] },
+      { type: 'node', key: 'n15', tags: {}, location: [21, 52] },
+    ]);
+  });
+
+  test('what places an object: a position (none when osmium writes `x y`), nodes, members of any type and role', () => {
+    expect(
+      readOpl([
+        'n1 T x y',
+        'n2 T x-0.5 y-12.0000001',
+        'w3 T N',
+        'r4 Ttype=site Mw3@a%20%role%2c%x,n1@,r4@entrance',
+        'r5 T M',
+      ]),
+    ).toEqual([
+      { type: 'node', key: 'n1', tags: {}, location: null },
+      { type: 'node', key: 'n2', tags: {}, location: [-0.5, -12.0000001] },
+      { type: 'way', key: 'w3', tags: {}, nodes: [] },
+      { type: 'relation', key: 'r4', tags: { type: 'site' }, members: ['w3', 'n1', 'r4'] },
+      { type: 'relation', key: 'r5', tags: {}, members: [] },
     ]);
   });
 
@@ -456,6 +477,13 @@ describe('the listing of the objects that should be rows (OPL)', () => {
     expect(() => readOpl(['n1 x21 y52'])).toThrow(/no tags field/);
     expect(() => readOpl(['n1 Tamenity x21 y52'])).toThrow(/not a tag/);
     expect(() => readOpl(['n1 Tname=a=b x21 y52'])).toThrow(/not a tag/);
+    // Cut short, or not what osmium writes for a position, a way's nodes or a relation's members.
+    expect(() => readOpl([cafe, 'n2 Tamenity=cafe,name=Kawa x21'])).toThrow(/line 2: no y field/);
+    for (const odd of ['n1 T x21 y', 'n1 T x y52', 'n1 T x21,5 y52', 'n1 T x1e3 y52']) expect(() => readOpl([odd])).toThrow(/not a position/);
+    expect(() => readOpl(['w1 Tshop=bakery'])).toThrow(/no nodes field/);
+    for (const odd of ['w1 T Nn1,w2', 'w1 T Nn1,,n2', 'w1 T Nn0']) expect(() => readOpl([odd])).toThrow(/not a node of a way/);
+    expect(() => readOpl(['r1 Ttype=site'])).toThrow(/no members field/);
+    for (const odd of ['r1 T Mw1', 'r1 T Mx1@', 'r1 T M@outer', 'r1 T Mw1@,']) expect(() => readOpl([odd])).toThrow(/not a member/);
   });
 });
 
@@ -492,7 +520,163 @@ describe('what the export lost', () => {
 
   test('nothing lost, nothing missing; a row for something the rule drops changes nothing', () => {
     expect(completeness(listing, ['n1', 'w2', 'w3', 'r6', 'r7'].map(row)).missing).toEqual([]);
-    expect(completeness(listing, ['n1', 'w2', 'w3', 'r6', 'r7', 'n4', 'r8'].map(row))).toEqual(completeness(listing, ['n1', 'w2', 'w3', 'r6', 'r7'].map(row)));
+    // The bar, and a site without a name.
+    expect(completeness(listing, ['n1', 'w2', 'w3', 'r6', 'r7', 'n4', 'r11'].map(row))).toEqual(completeness(listing, ['n1', 'w2', 'w3', 'r6', 'r7'].map(row)));
     expect(completeness([], [row('n1')])).toEqual({ expected: 0, missing: [], knownGap: {} });
+  });
+
+  test('a relation osmium never builds counts once its members placed it; the known gap is only what they could not', () => {
+    expect(completeness(listing, ['n1', 'w2', 'w3', 'r6', 'r7', 'r8', 'r9'].map(row))).toEqual({
+      expected: 7,
+      missing: [],
+      knownGap: { '': 1, Multipolygon: 1 },
+    });
+  });
+
+  test('what is to be placed: the relations osmium never builds that should be rows and are not yet, sorted', () => {
+    // Not the multipolygon and the boundary (osmium builds them), the unnamed site, nor r9, a row already.
+    expect(unbuiltRelations(listing, [row('n1'), row('r9')])).toEqual({ place: ['r8', 'r10', 'r12'], represented: [] });
+    expect(unbuiltRelations(listing, ['r8', 'r9', 'r10', 'r12'].map(row))).toEqual({ place: [], represented: [] });
+  });
+});
+
+describe('a relation a member row already stands for: one place, one row', () => {
+  /** A row of the export, with the tags the app reads. */
+  const at = (id: string, tags: Record<string, string>): OsmRow => ({ id, latE5: 5_031_000, lonE5: 1_918_000, tags });
+  const rows = [
+    // The Makro hall's building, a café, and a café osmium built from a multipolygon.
+    at('n3', { amenity: 'cafe', name: 'Kawa' }),
+    at('w2', { shop: 'wholesale', name: 'Makro', brand: 'Makro' }),
+    at('r15', { amenity: 'cafe', name: 'Kawa' }),
+  ];
+  // The listing (the `list` run): the objects that match the filter themselves, members and all.
+  const listing = readOpl([
+    'n3 Tamenity=cafe,name=Kawa x21 y52',
+    'w2 Tbrand=Makro,name=Makro,shop=wholesale Nn20,n21,n22,n20',
+    // The hall's site: its building is a member, beside a fence and an entrance that are no rows.
+    'r10 Tbrand=Makro,name=Makro,shop=wholesale,type=site Mw9@perimeter,w2@,n5@entrance',
+    // The same label in any case and trimmed, the brand standing for a name: whichever the label is.
+    'r11 Tbrand=MAKRO,shop=wholesale,type=site Mw2@',
+    'r16 Tamenity=cafe,brand=%20%KAWA%20%,type=site Mw9@,n3@',
+    // A different kind, a different label, a member relation: placed by their members.
+    'r12 Tamenity=restaurant,name=Kawa,type=building Mn3@',
+    'r13 Tamenity=cafe,name=Inna%20%kawa,type=building Mn3@',
+    'r14 Tamenity=cafe,name=Kawa,type=site Mr15@,w9@',
+    'r15 Tamenity=cafe,name=Kawa,type=multipolygon Mw9@outer',
+  ]);
+
+  test('a member node or way that is a row of the same kind and label stands for the relation; anything else is placed', () => {
+    expect(unbuiltRelations(listing, rows)).toEqual({
+      place: ['r12', 'r13', 'r14'],
+      represented: [
+        { id: 'r10', by: 'w2' },
+        { id: 'r11', by: 'w2' },
+        { id: 'r16', by: 'n3' },
+      ],
+    });
+  });
+
+  test('the completeness check counts a represented relation as present: not missing, not the known gap', () => {
+    // n3, w2, r15 as rows; r10, r11, r16 through their member rows; the rest not placed yet.
+    expect(completeness(listing, rows)).toEqual({ expected: 6, missing: [], knownGap: { building: 2, site: 1 } });
+    expect(completeness(listing, [...rows, ...['r12', 'r13', 'r14'].map((id) => at(id, {}))])).toEqual({ expected: 9, missing: [], knownGap: {} });
+    // Without its member row, the hall's site is no longer stood for: the known gap.
+    expect(completeness(listing, rows.filter((r) => r.id !== 'w2')).knownGap).toEqual({ building: 2, site: 3 });
+  });
+});
+
+describe('relations osmium export never builds, placed by their members as Overpass places them', () => {
+  // As `osmium getid -r -f opl,add_metadata=false` lists them: the relations and all they reference.
+  const objects = readOpl([
+    // A site like the Makro hall: its fence, an entrance outside it, members cut off at the border.
+    'n1 T x19.17 y50.3',
+    'n2 T x19.19 y50.3',
+    'n3 T x19.19 y50.32',
+    'n4 T x19.17 y50.32',
+    'n5 Tentrance=yes x19.165 y50.31',
+    // A building's outline and a part that reaches past it; a multipolygon far away.
+    'n11 T x21.95 y49.58',
+    'n12 T x21.96 y49.58',
+    'n13 T x21.96 y49.59',
+    'n14 T x21.965 y49.59',
+    'n21 T x16.5 y52.6',
+    'n22 T x16.6 y52.6',
+    'n23 T x16.6 y52.7',
+    // A node without a position.
+    'n31 T x y',
+    'w10 Tbarrier=fence Nn1,n2,n3,n4,n1',
+    'w12 Tbuilding=yes Nn11,n12,n13,n11',
+    'w13 Tbuilding:part=yes Nn12,n14,n13,n12',
+    'w14 Tbuilding=yes Nn21,n22,n23,n21',
+    'w15 T Nn31,n9999',
+    'r100 Tbrand=Makro,brand:wikidata=Q704606,name=Makro,shop=wholesale,type=site Mw10@perimeter,n5@entrance,w9999@,n9998@entrance',
+    'r101 Tamenity=restaurant,name=Zajazd,type=building Mw12@outline,w13@part,r102@',
+    'r102 Tbuilding=yes,type=multipolygon Mw14@outer',
+    'r103 Tname=Tylko%20%relacje,shop=supermarket,type=site Mr102@',
+    // Relations that list each other, and themselves.
+    'r104 Tamenity=cafe,name=Cykl Mn11@,r105@,r104@',
+    'r105 Tname=Druga,shop=bakery,type=site Mr104@,n13@',
+    'r106 Tname=Gdzie%20%indziej,shop=convenience,type=building Mw9999@,n9998@,w15@,n31@',
+    'r107 Tshop=bakery,type=site Mw10@',
+  ]);
+  const at = (rows: OsmRow[]) => rows.map(({ id, latE5, lonE5 }) => ({ id, latE5, lonE5 }));
+
+  test('the centre of the bounding box of the member nodes and the nodes of member ways; what the listing lacks is skipped', () => {
+    const rows = relationRows(objects, ['r100', 'r101']);
+    expect(rows).toEqual([
+      // The fence (19.17–19.19, 50.30–50.32) widened west by the entrance.
+      { id: 'r100', latE5: 5_031_000, lonE5: 1_917_750, tags: { shop: 'wholesale', name: 'Makro', brand: 'Makro' } },
+      // The outline and its part — not the multipolygon member: in Overpass a member relation adds nothing.
+      { id: 'r101', latE5: 4_958_500, lonE5: 2_195_750, tags: { amenity: 'restaurant', name: 'Zajazd' } },
+    ]);
+  });
+
+  test('a member relation adds nothing, so a cycle is no matter; a relation of relations gets no row, as it gets no centre in Overpass', () => {
+    expect(at(relationRows(objects, ['r103', 'r104', 'r105']))).toEqual([
+      { id: 'r104', latE5: 4_958_000, lonE5: 2_195_000 },
+      { id: 'r105', latE5: 4_959_000, lonE5: 2_196_000 },
+    ]);
+  });
+
+  test('no row with nothing to place it by, without a brand or a name, or unasked; each asked once', () => {
+    // r106: its members are not in the listing, or are nodes without a position (also as a way's only nodes).
+    expect(relationRows(objects, ['r106', 'r107', 'r9999', 'w10', 'n1'])).toEqual([]);
+    expect(at(relationRows(objects, ['r104', 'r104']))).toEqual([{ id: 'r104', latE5: 4_958_000, lonE5: 2_195_000 }]);
+    expect(relationRows(objects, [])).toEqual([]);
+  });
+
+  test('rounded as the export’s rows are: the Makro hall where Overpass’s out center puts it (50.3093774, 19.1809905)', () => {
+    // The hall's southernmost, north-easternmost and westernmost nodes, as the extract has them.
+    const corners: [number, number][] = [
+      [19.1808784, 50.3076471],
+      [19.1836535, 50.3111076],
+      [19.1783276, 50.3087781],
+    ];
+    const nodes = corners.map(([x, y], k) => `n${k + 1} T x${x} y${y}`);
+    const relation = relationRows(readOpl([...nodes, 'w4 T Nn1,n2', 'r5 Tshop=wholesale,brand=Makro Mw4@,n3@entrance']), ['r5']);
+    // a11: the area of relation 5, the same positions in osmium's export.
+    const ring = [...corners, corners[0]!];
+    const exported = readFeatures([line('a11', { type: 'MultiPolygon', coordinates: [[ring]] }, { shop: 'wholesale', brand: 'Makro' })]).rows;
+    expect(at(relation)).toEqual([{ id: 'r5', latE5: 5_030_938, lonE5: 1_918_099 }]);
+    expect(relation).toEqual(exported);
+  });
+
+  test('put in with the export’s rows: sorted again and counted by type and kind, the export’s counts left as they were', () => {
+    const exported = readFeatures([
+      line('n10', point(21, 52), { amenity: 'cafe', name: 'Kawa' }),
+      line('w20', point(21, 52), { shop: 'wholesale', brand: 'Makro' }),
+      line('a61', point(21, 52), { shop: 'supermarket', name: 'Hala' }),
+    ]);
+    const placed = relationRows(objects, ['r100', 'r101']);
+    const { rows, stats } = withRows(exported, placed);
+    expect(rows.map((r) => r.id)).toEqual(['n10', 'w20', 'r30', 'r100', 'r101']);
+    expect(stats).toEqual({
+      ...exported.stats,
+      types: { node: 1, way: 1, relation: 3 },
+      kinds: { cafe: 1, wholesale: 2, supermarket: 1, restaurant: 1 },
+    });
+    expect(exported.stats.types.relation).toBe(1);
+    expect(exported.stats.kinds).toEqual({ cafe: 1, wholesale: 1, supermarket: 1 });
+    expect(withRows(exported, [])).toEqual({ rows: exported.rows, stats: exported.stats });
   });
 });
