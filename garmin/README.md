@@ -74,6 +74,7 @@ cd garmin
 ./build.sh run fr265      # aplikacja w symulatorze (ustawienia: File → Edit Persistent Storage)
 ./build.sh store          # bin/gymtracker.iq — publikacja w sklepie (wszystkie zegarki z manifestu)
 ./build.sh beta           # bin/gymtracker-beta.iq — ta sama paczka z identyfikatorem bety
+                          # (store i beta najpierw sprawdzają listę zegarków — niżej „Lista zegarków”)
 ./build.sh shots fr265    # symulator z jednorazowym kluczem — zrzuty do sklepu
 ./build.sh prg fr265      # bin/gymtracker-fr265.prg — do wgrania przez USB
 ```
@@ -94,8 +95,10 @@ telefonie — strona sklepu już nie instaluje.
    `https://apps.garmin.com/apps/<identyfikator>` — link otworzy aplikację Connect IQ Store
    z przyciskiem instalacji. (Linki z nowego panelu jeszcze jej nie otwierają — błąd zgłoszony
    Garminowi, CIQQA-3722.)
-3. Ustaw ten adres w GitHubie i wdroż stronę — dopiero wtedy GYM TRACKER pokaże kartę
-   „Zegarek Garmin”, w której powstaje klucz:
+3. Karta „Zegarek Garmin”, w której powstaje klucz, jest w GYM TRACKER zawsze, gdy build zna
+   serwer. Jej link do sklepu prowadzi do wersji publicznej — adres stoi w kodzie
+   (`GARMIN_STORE_URL` w `src/garmin.ts`). Żeby na czas testów link prowadził do bety, nadpisz go
+   zmienną w GitHubie i wdroż stronę (pusta zmienna niczego nie zmienia):
 
    ```bash
    gh variable set GARMIN_APP_URL --body "https://apps.garmin.com/apps/<identyfikator>"
@@ -110,11 +113,51 @@ telefonie — strona sklepu już nie instaluje.
 6. Publikacja dla wszystkich: przewodnik po angielsku w `store/README.md` — teksty do formularza,
    notatka dla recenzentów, obraz hero, zrzuty, lista kontrolna. Wersja publiczna ma **inny
    identyfikator** niż beta (Garmin nie zamienia bety w aplikację publiczną): `./build.sh store`
-   bierze go z `manifest.xml`, `./build.sh beta` podmienia na identyfikator bety. Po akceptacji
-   `GARMIN_APP_URL` trzeba przestawić na adres wersji publicznej.
+   bierze go z `manifest.xml`, `./build.sh beta` podmienia na identyfikator bety. Adres wersji
+   publicznej jest już w kodzie, więc po testach bety wystarczy usunąć nadpisanie:
+   `gh variable delete GARMIN_APP_URL`.
 
 Bez sklepu, tylko na swój zegarek: `./build.sh prg <zegarek>` i plik do `GARMIN/APPS/` przez USB.
 Ustawień takiej aplikacji nie zmienisz w Garmin Connect, więc do testów lepsza jest beta.
+
+## Lista zegarków w GYM TRACKER
+
+„Czy mój zegarek jest obsługiwany?” (Ustawienia → Zegarek Garmin, `#/zegarek`) czyta
+`src/watches/garmin.json`: obsługiwane zegarki, to, co każdy z nich wysyła (stres, Body Battery,
+przejazdy — według API i wersji Connect IQ jego oprogramowania), wersje azjatyckie (APAC), pamięć
+na pracę w tle i zegarki z SDK, na których aplikacja nie działa, z powodem. Ten plik powstaje
+skryptem, nie ręcznie:
+
+```bash
+npm run garmin:watches               # z manifest.xml i urządzeń z SDK Managera → src/watches/garmin.json
+npm run garmin:watches -- --check    # tylko sprawdza, czy zapisana lista jest aktualna (robi to build.sh store i beta)
+npm run garmin:watches -- --store    # najpierw odświeża garmin/store-devices.json z katalogu Connect IQ Store
+```
+
+- **Źródła:** `manifest.xml`, pliki urządzeń z SDK Managera (`compiler.json` i `<id>.api.debug.xml`
+  w `~/Library/Application Support/Garmin/ConnectIQ/Devices`, inny katalog: `CIQ_DEVICES`) oraz
+  przycięty katalog urządzeń sklepu `garmin/store-devices.json` (inne nazwy tych samych zegarków,
+  np. „Forerunner® 158”). Wersja SDK w liście bierze się z `current-sdk.cfg` (albo z `CIQ_SDK`).
+- **Ręczna część** jest w `src/watches/extra.ts`: zegarki bez Connect IQ (Instinct 1. generacji,
+  vívomove, Lily…), opaski, wagi i liczniki, zegarki nowsze niż SDK („jeszcze nie”: MARQ Gen 3),
+  odrzucone wersje azjatyckie i inne marki.
+- **CI nie ma SDK**, więc `src/watches/garmin.test.ts` sprawdza tylko, że manifest i lista mają
+  te same zegarki, ten sam identyfikator aplikacji i to samo minimum Connect IQ. Pełne
+  sprawdzenie (`--check`) robi `./build.sh store` i `./build.sh beta` przed kompilacją.
+
+**Nowy zegarek Garmina:**
+
+1. Pobierz go w SDK Managerze (Devices) i uruchom `npm run garmin:watches -- --store`.
+2. Skrypt ostrzega: „… spełnia warunki listy … a nie ma go w manifest.xml” — dopisz
+   `<iq:product id="…"/>` do `manifest.xml` (lista jest alfabetyczna) i zmień liczbę zegarków
+   w komentarzu na górze manifestu.
+3. Jeszcze raz `npm run garmin:watches`, potem `npm test` i commit `manifest.xml` razem
+   z `src/watches/garmin.json` (i `garmin/store-devices.json`, jeśli się zmienił).
+4. `./build.sh store` i nowa wersja w sklepie — dopiero ona dochodzi do nowych zegarków.
+
+Zegarek, który sklep już ma, a SDK Manager jeszcze nie (ostrzeżenie przy `--store`: „nowy
+w sklepie, a nie ma go w SDK”), dostaje wpis `notYet` w `src/watches/extra.ts` — sprawdzenie
+odpowie „Jeszcze nieobsługiwany”, dopóki nie przejdzie kroków wyżej.
 
 ## Do sprawdzenia przy pierwszym buildzie
 
@@ -159,4 +202,5 @@ Stan na 21.10.2026 — Connect IQ SDK 9.2.0 z urządzeniami z SDK Managera:
 | `source/NextSendTest.mc` | test: następna wysyłka pół godziny po ostatnim przebiegu, „wkrótce”, „w ciągu 30 min” |
 | `resources/settings/` | `key` (dla użytkownika) i `api` (ukryty adres serwera) |
 | `build.sh` | testy, symulator, `.prg` na jeden zegarek, `.iq` do sklepu; klucz dewelopera |
+| `store-devices.json` | przycięty katalog urządzeń Connect IQ Store: inne nazwy zegarków dla listy w GYM TRACKER (`npm run garmin:watches -- --store`) |
 | `store/listing.md` | opis do sklepu po polsku i angielsku, wyjaśnienie uprawnień |
