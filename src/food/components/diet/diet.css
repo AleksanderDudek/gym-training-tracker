@@ -429,6 +429,46 @@ p.fd-diet-resthead b{color:var(--ink)}
 
 /* — C: profil, większy posiłek — */
 
+/* Profil: trzy cele jeden pod drugim — cały wiersz to cel dotykowy, kropka radia dla klawiatury i czytników. */
+.fd-diet-goalpick{display:grid;gap:6px;margin:8px 0 6px;max-width:420px}
+.fd-diet-goalpick label{display:flex;align-items:center;gap:10px;min-height:44px;padding:6px 12px;border:1px solid var(--edge);
+  border-radius:var(--r);background:var(--surface);font-size:14.5px;font-weight:600;color:var(--ink);cursor:pointer;
+  -webkit-tap-highlight-color:transparent}
+.fd-diet-goalpick input{width:20px;height:20px;margin:0;flex:none;accent-color:var(--steel)}
+.fd-diet-goalpick label:has(input:checked){border-color:var(--steel);box-shadow:inset 3px 0 0 var(--steel);background:var(--surface-2)}
+.fd-diet-goalpick label:has(input:disabled){opacity:.45;cursor:default}
+.fd-diet-goalpick label:has(input:focus-visible){outline:2px solid var(--steel);outline-offset:2px}
+.fd-diet-goalweight,.fd-diet-manual .fd-diet-num{margin:8px 0 6px}
+.fd-diet-goalweight .fd-diet-num-box,.fd-diet-manual .fd-diet-num-box{max-width:200px}
+
+/* Zwykły tydzień: cztery karty jak sposoby odżywiania — tytuł i jedno zdanie, zaznaczona ma pasek z boku. */
+fieldset.fd-diet-levels{margin:0;padding:0;border:0;min-width:0;display:grid;gap:8px}
+fieldset.fd-diet-levels legend{float:left;width:100%;padding:0;margin:0 0 2px;font-size:15px;font-weight:600}
+.fd-diet-level{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:var(--surface);border:1px solid var(--edge);
+  border-radius:var(--r);font-size:13.5px;line-height:1.4;color:var(--ink);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.fd-diet-level input{width:20px;height:20px;margin:0;flex:none;accent-color:var(--steel)}
+.fd-diet-level > span{display:grid;gap:2px;min-width:0}
+.fd-diet-level b{font-size:15px}
+.fd-diet-level span span{color:var(--ink-soft)}
+.fd-diet-level:has(input:checked){border-color:var(--steel);box-shadow:inset 3px 0 0 var(--steel);background:var(--surface-2)}
+.fd-diet-level:has(input:focus-visible){outline:2px solid var(--steel);outline-offset:2px}
+.fd-diet-anchored fieldset.fd-diet-levels{margin-top:8px}
+.fd-diet-dietstart .fd-diet-grid2{margin-top:0}
+
+/* Tempo: zamknięte tempo jest wyłączone (powód pod spodem); wynik to jedna wyraźna linijka. */
+.fd-diet-profile .chips button:disabled{opacity:.45;cursor:default}
+.grp p.fd-diet-paceline{margin:10px 0 2px;font-size:16px;font-weight:600;color:var(--ink)}
+
+/* „Jak liczę cel”: zwinięta karta; `?jak=1` ją rozwija i przewija do niej. */
+details.fd-diet-how > summary{display:flex;align-items:center;min-height:44px;font-size:15px;font-weight:600;color:var(--steel);
+  cursor:pointer;-webkit-tap-highlight-color:transparent}
+.fd-diet-how ol{margin:4px 0 8px;padding-left:20px;font-size:13.5px;line-height:1.5;color:var(--ink);max-width:62ch}
+.fd-diet-how li{margin:4px 0}
+
+/* Ustawienia liczenia: przerwa pod przełącznikami. */
+.fd-diet-breaks{margin-top:10px;padding-top:10px;border-top:1px solid var(--surface-2)}
+.fd-diet-breaks .actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+
 /* — D: postęp, tygodnie, plan — */
 
 /* Trzy kafelki postępu w jednym rzędzie, także na telefonie. */

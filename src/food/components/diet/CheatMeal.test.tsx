@@ -1,17 +1,21 @@
 // @vitest-environment jsdom
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { ComponentProps } from 'react';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import type { MoveDay } from '../../bridge';
 import { db } from '../../diet/db';
+import { totals } from '../../diet/day';
 import { clearAll, completeProfile, logQuick, planCheat, saveProfile } from '../../diet/store';
-import { renderWithBridge, testBridge } from '../../test/bridge';
+import { DATASET } from '../../test/fixtures';
+import { renderWithBridge, testBridge, testMove } from '../../test/bridge';
+import { CheatMealSheet } from './CheatMealSheet';
 import DiaryPage from './DiaryPage';
+import { KcalShown } from './kcalShown';
 
 /**
- * Cheat meal w dzienniku: arkusz z symulacją pod polami, zaplanowany posiłek na górze dnia, który
- * rezerwuje swoje kalorie, i ruch do końca dnia, który zmienia dostępne kalorie. Środa, południe:
- * przed nami trzy posiłki, a cel to 2000 kcal (białko 150 g).
+ * „Większy posiłek” (spec §4.4): arkusz z symulacją dnia pod polami — cel dnia z historii celu,
+ * werdykt na paśmie ±100 kcal, bez tygodnia, wagi i odrabiania ruchem. Środa, południe: przed nami
+ * trzy posiłki, a cel to 2000 kcal (białko 150 g).
  */
 
 vi.mock('../../data', async () => {
@@ -26,6 +30,12 @@ vi.mock('../../data', async () => {
 
 const WEDNESDAY = new Date('2026-10-14T12:00:00');
 const TODAY = '2026-10-14';
+const PROFILE = completeProfile({
+  startDate: '2026-10-01',
+  dailyKcal: 2000,
+  targetWeightKg: 75,
+  goals: [{ from: '2026-10-01', kcal: 2000, by: 'setup' }],
+});
 
 beforeEach(async () => {
   vi.useFakeTimers({ toFake: ['Date'] });
@@ -33,85 +43,170 @@ beforeEach(async () => {
   await clearAll();
   window.localStorage.clear();
   window.history.replaceState(null, '', '/#/jedzenie');
-  await saveProfile(completeProfile({ startDate: '2026-10-01', dailyKcal: 2000, targetWeightKg: 75 }));
+  await saveProfile(PROFILE);
 });
 
 afterEach(() => {
   vi.useRealTimers();
 });
 
-const openSheet = async (user: ReturnType<typeof userEvent.setup>, mode: 'list' | 'macros' = 'macros') => {
-  await user.click(await screen.findByRole('button', { name: 'Cheat meal' }));
-  const dialog = screen.getByRole('dialog', { name: 'Cheat meal' });
-  if (mode === 'macros') await user.click(within(dialog).getByRole('button', { name: 'Wpisz makro' }));
+type SheetProps = ComponentProps<typeof CheatMealSheet>;
+
+/** Już zjedzone tego dnia. */
+const ate = (kcal: number, protein = 0) => totals([{ kcal, protein, carbs: 0, fat: 0 }]);
+
+/** Arkusz tak, jak otwiera go dziennik — z tygodniem i ruchem, które dziennik jeszcze podaje, a arkusz pomija. */
+function renderSheet(over: Partial<SheetProps> = {}) {
+  const props: SheetProps = {
+    open: true,
+    date: TODAY,
+    today: TODAY,
+    hour: 12,
+    profile: PROFILE,
+    eaten: ate(0),
+    eatenByDate: new Map(),
+    activity: null,
+    plannedKcal: null,
+    planned: null,
+    ideasFor: () => ({ variants: [], singles: [] }),
+    pool: [],
+    products: [],
+    dict: DATASET.dictionaries,
+    productsLoading: false,
+    onClose: vi.fn(),
+    onSaved: vi.fn(),
+    ...over,
+  };
+  return { props, ...renderWithBridge(<CheatMealSheet {...props} />) };
+}
+
+async function enterMacros(user: ReturnType<typeof userEvent.setup>, kcal: string, protein?: string) {
+  const dialog = screen.getByRole('dialog', { name: 'Większy posiłek' });
+  await user.click(within(dialog).getByRole('button', { name: 'Wpisz makro' }));
+  await user.type(within(dialog).getByLabelText('Kalorie (kcal)'), kcal);
+  if (protein) await user.type(within(dialog).getByLabelText('Białko (g)'), protein);
   return dialog;
-};
+}
 
 const sim = (dialog: HTMLElement) => within(dialog).getByRole('region', { name: 'Co z tego wynika' });
 
-describe('arkusz cheat mealu', () => {
-  test('mieści się: zostaje na pozostałe posiłki, a „Zaplanuj” rezerwuje go w dniu', async () => {
-    const user = userEvent.setup();
-    const { bridge } = renderWithBridge(<DiaryPage />);
-    const dialog = await openSheet(user);
-    expect(sim(dialog)).toHaveTextContent('Wpisz kalorie');
-    await user.type(within(dialog).getByLabelText('Co to będzie'), 'Pizza ze znajomymi');
-    await user.type(within(dialog).getByLabelText('Kalorie (kcal)'), '900');
-    await user.type(within(dialog).getByLabelText('Białko (g)'), '30');
+/** The diary's button: „Większy posiłek” once the diary is rewritten, „Cheat meal” before that. */
+const DIARY_BUTTON = /^(Większy posiłek|Cheat meal)$/;
+const PLANNED_CARD = /Zaplanowany (większy posiłek|cheat meal)/i;
 
+async function openFromDiary(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(await screen.findByRole('button', { name: DIARY_BUTTON }));
+  return screen.getByRole('dialog', { name: 'Większy posiłek' });
+}
+
+describe('arkusz „Większy posiłek”', () => {
+  test('ponad cel: o ile, jedno spokojne zdanie i nic o tygodniu, prognozie wagi ani odrabianiu', async () => {
+    const user = userEvent.setup();
+    renderSheet({ eaten: ate(1500, 60) });
+    const dialog = await enterMacros(user, '1200');
     expect(sim(dialog)).toHaveTextContent(/Cel na dziś\s*2000 kcal/);
-    expect(sim(dialog)).toHaveTextContent(/Razem\s*900 kcal/);
-    // Bez wpisanych kroków „zostanę przy obecnych” nic nie znaczy — tej opcji nie ma.
-    expect(within(dialog).getByRole('radio', { name: /Dojdę do celu/ })).toBeChecked();
-    expect(within(dialog).queryByRole('radio', { name: /Zostanę przy obecnych/ })).not.toBeInTheDocument();
-    expect(sim(dialog)).toHaveTextContent('Mieścisz się: zostaje 1100 kcal na 2 posiłki — po ok. 550 kcal i 60 g białka.');
+    expect(sim(dialog)).toHaveTextContent(/Większy posiłek\s*1200 kcal/);
+    expect(sim(dialog)).toHaveTextContent(/Razem\s*2700 kcal/);
+    expect(sim(dialog)).toHaveTextContent(
+      'To ok. 700 kcal ponad cel dnia. Jeden taki dzień nie zmienia trendu — jutro jedz po prostu jak zwykle.',
+    );
+    expect(sim(dialog)).toHaveTextContent('Waga przez dzień–dwa może pokazać więcej — to woda i sól, nie tłuszcz.');
+    for (const gone of ['Ruch do końca dnia', 'odrobić', 'Tydzień:', 'W prognozie wagi', 'Cheat meal', 'Przekroczysz'])
+      expect(dialog, gone).not.toHaveTextContent(gone);
+    // Werdykt bez koloru oceny: tylko słowa.
+    expect(within(dialog).getByText(/^To ok\. 700 kcal/)).toHaveClass('fd-diet-verdict');
+    expect(within(dialog).getByText(/^To ok\. 700 kcal/).className).not.toMatch(/fd-diet-v-/);
+  });
+
+  test('80 kcal ponad cel to wciąż cel: „Mieści się — to wypełnia cel dnia.”', async () => {
+    const user = userEvent.setup();
+    renderSheet({ eaten: ate(1500, 60) });
+    const dialog = await enterMacros(user, '580');
+    expect(sim(dialog)).toHaveTextContent('Mieści się — to wypełnia cel dnia.');
+    expect(sim(dialog)).not.toHaveTextContent('ponad cel');
+    expect(sim(dialog)).not.toHaveTextContent('Waga przez dzień–dwa');
+  });
+
+  test('mieści się: „ok.” na pozostałe posiłki, a „Zaplanuj” rezerwuje go w dniu', async () => {
+    const user = userEvent.setup();
+    const { props } = renderSheet();
+    const dialog = screen.getByRole('dialog', { name: 'Większy posiłek' });
+    expect(within(dialog).getByText('Wybierz z listy albo wpisz makro — zobaczysz, ile zostaje na resztę dnia')).toBeInTheDocument();
+    await user.type(within(dialog).getByLabelText('Co to będzie'), 'Pizza ze znajomymi');
+    await enterMacros(user, '900', '30');
+    expect(sim(dialog)).toHaveTextContent('Mieści się: zostaje ok. 1100 kcal na 2 posiłki — po ok. 550 kcal i 60 g białka.');
     expect(sim(dialog)).toHaveTextContent('Białka brakuje jeszcze 120 g');
 
     await user.click(within(dialog).getByRole('button', { name: 'Zaplanuj' }));
-    await waitFor(() => expect(dialog).not.toHaveAttribute('open'));
-    expect(bridge.toast).toHaveBeenCalledWith(
-      'Cheat meal zaplanowany: Pizza ze znajomymi · 900 kcal. Reszta dnia liczy się już z nim.',
+    await waitFor(() =>
+      expect(props.onSaved).toHaveBeenCalledWith(
+        'Większy posiłek zaplanowany: Pizza ze znajomymi · 900 kcal. Reszta dnia liczy się już z nim.',
+      ),
     );
-    const card = await screen.findByRole('region', { name: /Zaplanowany cheat meal/ });
-    expect(card).toHaveTextContent('Pizza ze znajomymi');
-    expect(card).toHaveTextContent('900 kcal · B 30 · W ? · T ?');
-    // „Co teraz?” liczy już z nim: zostaje 1100 kcal na dwa posiłki.
-    expect(screen.getByRole('region', { name: 'Co teraz?' })).toHaveTextContent(
-      'Zostało 1100 kcal i 120 g białka na 2 posiłki — po odjęciu zaplanowanego cheat mealu.',
-    );
-    // Zjedzone jeszcze nic — plan to nie wpis.
-    expect(screen.getByRole('region', { name: /^Zjedzone/ })).toHaveTextContent('Nic jeszcze nie zapisane');
+    expect((await db.days.get(TODAY))?.cheat).toMatchObject({ name: 'Pizza ze znajomymi', kcal: 900, protein: 30 });
   });
 
-  test('ponad cel: o ile, co to robi z tygodniem i wagą, i co by to odrobiło', async () => {
-    await logQuick(TODAY, 'Śniadanie i obiad', 1500);
+  test('po południu zostaje jeden posiłek: bez „po …” na posiłek, ta sama liczba nie pada dwa razy', async () => {
     const user = userEvent.setup();
-    renderWithBridge(<DiaryPage />);
-    const dialog = await openSheet(user);
-    await user.type(within(dialog).getByLabelText('Kalorie (kcal)'), '1200');
-    // 2700 wobec 2000: 700 ponad cel. Środa: nadwyżka rozkłada się na czwartek–niedzielę.
-    expect(sim(dialog)).toHaveTextContent('Przekroczysz cel o 700 kcal (35%).');
-    expect(sim(dialog)).toHaveTextContent('Tydzień: cel na kolejne 4 dni spadnie o ok. 170 kcal dziennie.');
-    expect(sim(dialog)).toHaveTextContent('W prognozie wagi to ok. 93 g.');
-    // Bez zapisanych treningów nie ma „typowego treningu” do zaproponowania — tylko kroki.
-    expect(sim(dialog)).toHaveTextContent(/ok\. 22\s000 kroków więcej\./);
+    renderSheet({ hour: 16 });
+    const dialog = await enterMacros(user, '900', '30');
+    expect(within(dialog).getByText(/^Mieści się:/)).toHaveTextContent(/^Mieści się: zostaje ok\. 1100 kcal na 1 posiłek\.$/);
   });
 
-  test('ruch do końca dnia: opuszczony trening z planu i mniej kroków zabierają kalorie', async () => {
-    const move: MoveDay = {
-      trained: false,
-      workoutKcal: 0,
-      cardioKcal: 0,
-      otherKcal: 0,
-      planned: { name: 'Trening A', kcal: 320 },
-      planActive: true,
-      typicalWorkoutKcal: 300,
-      workouts: 0,
-      snacks: 0,
-      outings: 0,
-      activeMin: 0,
-      stepsWorth: null,
+  test('bez nazwy: „Zjedzone teraz” zapisuje „Większy posiłek”', async () => {
+    const user = userEvent.setup();
+    const { props } = renderSheet();
+    const dialog = await enterMacros(user, '900');
+    await user.click(within(dialog).getByRole('button', { name: 'Zjedzone teraz' }));
+    await waitFor(() => expect(props.onSaved).toHaveBeenCalledWith('Zapisane: Większy posiłek · 900 kcal.'));
+    expect(await db.entries.where('date').equals(TODAY).toArray()).toEqual([
+      expect.objectContaining({ name: 'Większy posiłek', kcal: 900 }),
+    ]);
+  });
+
+  test('cel to cel tego dnia z historii celu; przyszły dzień można zaplanować, zjeść jeszcze nie', async () => {
+    const user = userEvent.setup();
+    const profile = {
+      ...PROFILE,
+      goals: [...PROFILE.goals, { from: '2026-10-17', kcal: 1800, by: 'user' as const }],
     };
+    renderSheet({ profile, date: '2026-10-17' });
+    const dialog = await enterMacros(user, '1000');
+    expect(sim(dialog)).toHaveTextContent(/Cel tego dnia\s*1800 kcal/);
+    expect(within(dialog).getByRole('button', { name: 'Zjedzone teraz' })).toBeDisabled();
+    expect(within(dialog).getByRole('button', { name: 'Zaplanuj' })).toBeEnabled();
+  });
+
+  test('w trybie bez liczenia kalorii arkusza nie ma', () => {
+    renderWithBridge(
+      <KcalShown.Provider value={false}>
+        <CheatMealSheet
+          open
+          date={TODAY}
+          today={TODAY}
+          hour={12}
+          profile={PROFILE}
+          eaten={ate(0)}
+          plannedKcal={null}
+          planned={null}
+          ideasFor={() => ({ variants: [], singles: [] })}
+          pool={[]}
+          products={[]}
+          dict={DATASET.dictionaries}
+          productsLoading={false}
+          onClose={vi.fn()}
+          onSaved={vi.fn()}
+        />
+      </KcalShown.Provider>,
+    );
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(document.body).not.toHaveTextContent('Większy posiłek');
+  });
+});
+
+describe('większy posiłek w dzienniku', () => {
+  test('ruch nie zmienia celu: kroki i opuszczony trening z planu zostają poza arkuszem', async () => {
+    const move = testMove({ planned: { name: 'Trening A', kcal: 320 }, planActive: true, typicalWorkoutKcal: 300 });
     const bridge = testBridge({
       weights: [{ day: '2026-10-01', kg: 80 }],
       stepsOn: (day) => (day === TODAY ? 3000 : null),
@@ -119,34 +214,15 @@ describe('arkusz cheat mealu', () => {
     });
     const user = userEvent.setup();
     renderWithBridge(<DiaryPage />, bridge);
-    const dialog = await openSheet(user);
+    const dialog = await openFromDiary(user);
+    await user.click(within(dialog).getByRole('button', { name: 'Wpisz makro' }));
     await user.type(within(dialog).getByLabelText('Kalorie (kcal)'), '800');
-    // Domyślnie: dojdziesz do celu kroków i trening z planu będzie — cel bez zmian.
-    expect(within(dialog).getByRole('radio', { name: /Trening z planu będzie \(„Trening A”, ok\. 320 kcal\)/ })).toBeChecked();
     expect(sim(dialog)).toHaveTextContent(/Cel na dziś\s*2000 kcal/);
-
-    await user.click(within(dialog).getByRole('radio', { name: 'Dziś treningu nie będzie' }));
-    expect(sim(dialog)).toHaveTextContent(/Cel na dziś\s*1680 kcal/);
-    expect(sim(dialog)).toHaveTextContent('−320 kcal: „Trening A” z planu bez wykonania');
-
-    // 3000 kroków to mniej niż 4000 w mnożniku: całe 192 kcal chodzenia z celu znikają.
-    await user.click(within(dialog).getByRole('radio', { name: 'Zostanę przy obecnych (3000)' }));
-    expect(sim(dialog)).toHaveTextContent(/Cel na dziś\s*1490 kcal/);
-  });
-
-  test('przyszły dzień: zaplanować można, zjeść jeszcze nie', async () => {
-    window.history.replaceState(null, '', '/#/jedzenie?dzien=2026-10-17');
-    const user = userEvent.setup();
-    renderWithBridge(<DiaryPage />);
-    const dialog = await openSheet(user);
-    await user.type(within(dialog).getByLabelText('Kalorie (kcal)'), '1000');
-    expect(within(dialog).getByRole('button', { name: 'Zjedzone teraz' })).toBeDisabled();
     expect(within(dialog).queryByRole('group', { name: 'Ruch do końca dnia' })).not.toBeInTheDocument();
-    expect(sim(dialog)).toHaveTextContent(/Cel tego dnia\s*2000 kcal/);
+    expect(within(dialog).queryByRole('radio')).not.toBeInTheDocument();
+    expect(dialog).not.toHaveTextContent(/Ruch w celu|Trening A/);
   });
-});
 
-describe('cheat meal z listy', () => {
   test('z ulubionych i z wyszukiwania: kilka rzeczy składa się w jeden posiłek, a suma idzie do symulacji', async () => {
     await db.favorites.put({
       key: 'custom:pizza',
@@ -169,15 +245,14 @@ describe('cheat meal z listy', () => {
     });
     const user = userEvent.setup();
     renderWithBridge(<DiaryPage />);
-    const dialog = await openSheet(user, 'list');
+    const dialog = await openFromDiary(user);
     // Ulubione widać, zanim cokolwiek się wpisze.
     await user.click(await within(dialog).findByRole('button', { name: /^Pizza z Biesiady/ }));
-    await user.type(within(dialog).getByRole('searchbox', { name: 'Szukaj do cheat mealu' }), 'pepsi');
+    await user.type(within(dialog).getByRole('searchbox', { name: 'Szukaj do większego posiłku' }), 'pepsi');
     await user.click((await within(dialog).findAllByRole('button', { name: /^Pepsi/ }))[0]!);
-    const parts = within(dialog).getAllByRole('button', { name: /^Usuń z cheat mealu/ });
-    expect(parts).toHaveLength(2);
+    expect(within(dialog).getAllByRole('button', { name: /^Usuń z większego posiłku/ })).toHaveLength(2);
     expect(within(dialog).getByLabelText('Co to będzie')).toHaveAttribute('placeholder', 'Pizza z Biesiady + Pepsi');
-    expect(sim(dialog)).toHaveTextContent(/Cheat meal\s*1\s?\d{3} kcal/);
+    expect(sim(dialog)).toHaveTextContent(/Większy posiłek\s*1\s?\d{3} kcal/);
     expect(sim(dialog)).not.toHaveTextContent('Wpisz kalorie');
 
     // „Wpisz makro” zaczyna od sumy z listy.
@@ -186,30 +261,14 @@ describe('cheat meal z listy', () => {
     expect(within(dialog).getByLabelText('Co to będzie')).toHaveValue('Pizza z Biesiady + Pepsi');
   });
 
-  test('zaplanowany z listy pokazuje na karcie, z czego jest', async () => {
-    await planCheat(TODAY, {
-      name: 'Kebab i cola',
-      kcal: 1150,
-      protein: 50,
-      carbs: 120,
-      fat: 45,
-      items: ['Kebab duży (1 szt.)', 'Cola (0,5 l)'],
-    });
-    renderWithBridge(<DiaryPage />);
-    const card = await screen.findByRole('region', { name: /Zaplanowany cheat meal/ });
-    expect(card).toHaveTextContent('Kebab duży (1 szt.) · Cola (0,5 l)');
-  });
-});
-
-describe('zaplanowany cheat meal w dzienniku', () => {
-  test('„Zjedzone” zapisuje go w zjedzonych i zdejmuje z planu', async () => {
+  test('zaplanowany posiłek: karta mówi to samo co arkusz, „Zjedzone” zapisuje go i zdejmuje z planu', async () => {
     await planCheat(TODAY, { name: 'Burger', kcal: 950, protein: 40, carbs: 80, fat: 50 });
     const user = userEvent.setup();
     const { bridge } = renderWithBridge(<DiaryPage />);
-    const card = await screen.findByRole('region', { name: /Zaplanowany cheat meal/ });
-    expect(card).toHaveTextContent('Mieścisz się: zostaje 1050 kcal na 2 posiłki');
+    const card = await screen.findByRole('region', { name: PLANNED_CARD });
+    expect(card).toHaveTextContent('Mieści się: zostaje ok. 1050 kcal na 2 posiłki');
     await user.click(within(card).getByRole('button', { name: 'Zjedzone' }));
-    await waitFor(() => expect(screen.queryByRole('region', { name: /Zaplanowany cheat meal/ })).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByRole('region', { name: PLANNED_CARD })).not.toBeInTheDocument());
     expect(await db.entries.where('date').equals(TODAY).toArray()).toEqual([
       expect.objectContaining({ name: 'Burger', kcal: 950, protein: 40 }),
     ]);
@@ -218,16 +277,19 @@ describe('zaplanowany cheat meal w dzienniku', () => {
 
   test('„Zmień” otwiera arkusz z jego liczbami, „Usuń” zdejmuje go z dnia', async () => {
     await planCheat(TODAY, { name: 'Burger', kcal: 950, protein: 40, carbs: null, fat: null });
+    await logQuick(TODAY, 'Śniadanie', 400);
     const user = userEvent.setup();
     renderWithBridge(<DiaryPage />);
-    const card = await screen.findByRole('region', { name: /Zaplanowany cheat meal/ });
+    const card = await screen.findByRole('region', { name: PLANNED_CARD });
     await user.click(within(card).getByRole('button', { name: 'Zmień' }));
-    const dialog = screen.getByRole('dialog', { name: 'Cheat meal' });
+    const dialog = screen.getByRole('dialog', { name: 'Większy posiłek' });
     expect(within(dialog).getByLabelText('Kalorie (kcal)')).toHaveValue('950');
     expect(within(dialog).getByRole('button', { name: 'Zapisz zmiany' })).toBeEnabled();
+    // Zaplanowany posiłek nie liczy się dwa razy: zjedzone 400 + 950 wobec 2000.
+    expect(sim(dialog)).toHaveTextContent(/Razem\s*1350 kcal/);
     await user.click(within(dialog).getByRole('button', { name: 'Zamknij' }));
     await user.click(within(card).getByRole('button', { name: 'Usuń' }));
-    await waitFor(() => expect(screen.queryByRole('region', { name: /Zaplanowany cheat meal/ })).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByRole('region', { name: PLANNED_CARD })).not.toBeInTheDocument());
     expect((await db.days.get(TODAY))?.cheat).toBeUndefined();
   });
 });
