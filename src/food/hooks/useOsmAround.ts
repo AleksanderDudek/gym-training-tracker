@@ -84,10 +84,14 @@ export function useOsmAround(geo: GeoState, radius: number): [OsmState, () => vo
   // ready answer is held: no automatic tries of Overpass run meanwhile.
   const [heldPlace, setHeldPlace] = useState<string | null>(null);
   const holding = !goLive && place !== null && heldPlace === place && stat.status !== 'ready';
-  const [live, retryLive] = useAround<Element>(goLive || holding ? position : null, radius, fetchOsm, OSM_KEY, FAILED);
+  const [live, retryLive, liveHere] = useAround<Element>(goLive || holding ? position : null, radius, fetchOsm, OSM_KEY, FAILED);
   // Kept up to date during render — noted, or forgotten for another place or once the app's data has
-  // taken over — so the very render in which the app's data returns already knows it.
-  const readyLive = (goLive || holding) && live.status === 'ready' && live.items.length > 0 ? place : null;
+  // taken over — so the very render in which the app's data returns already knows it. Only an answer
+  // asked for THIS place: right after a move `live` still holds the last place's, and holding it would
+  // let the new place's search go out to Overpass although the app's data is back — or not, by where
+  // in the rounding cell the user stands. And only a list with something on it: an empty one held
+  // while the app's data loads would say that nothing is here.
+  const readyLive = (goLive || holding) && liveHere && live.items.length > 0 ? place : null;
   if (readyLive !== heldPlace) setHeldPlace(readyLive);
 
   // Keep the device's trail within its week, whichever source this visit uses.
@@ -101,6 +105,22 @@ export function useOsmAround(geo: GeoState, radius: number): [OsmState, () => vo
 
   const state = useMemo<OsmState>(() => {
     const extra = { coverage: stat.coverage, dataAsOf: stat.dataAsOf, olderLeaves: stat.olderLeaves };
+    /** The app's data alone, in its own words: no server to wait for, only the connection. */
+    const own = (): OsmState => {
+      const offline = globalThis.navigator?.onLine === false;
+      return {
+        status: stat.status,
+        items: stat.items,
+        completeWithin: stat.completeWithin,
+        error: stat.status === 'error' ? (offline ? (stat.items.length > 0 ? OFFLINE_REST : OFFLINE) : NETWORK) : null,
+        savedAt: null,
+        since: stat.status === 'loading' ? stat.since : null,
+        retryAt: stat.retryAt,
+        ...extra,
+        source: 'static',
+        shown: 'static',
+      };
+    };
     if (stat.coverage === 'partial' && stat.failure !== 'unavailable') {
       // At the border: the Polish side at once, the whole circle once Overpass has answered it.
       const useLive = live.completeWithin >= stat.completeWithin && live.items.length > 0;
@@ -121,31 +141,30 @@ export function useOsmAround(geo: GeoState, radius: number): [OsmState, () => vo
           shown: 'static',
         };
       }
+      // Overpass's answer (or a saved one, with its age) covers at least as much: it is what is shown.
+      if (useLive) return { ...live, ...extra, source: 'mixed', shown: 'live' };
+      // The Polish side itself failed: that is what is wrong here, said as away from the border —
+      // not that the Polish side is on screen. The button tries both sides again.
+      if (stat.status === 'error') return own();
+      // The Polish side, whatever Overpass does meanwhile: still looking while it loads (Overpass's
+      // countdown may show under it), then Overpass's state for the rest of the circle.
+      const loading = stat.status === 'loading';
       return {
-        ...live,
-        ...extra,
-        items: useLive ? live.items : stat.items,
-        completeWithin: useLive ? live.completeWithin : stat.completeWithin,
+        status: loading ? 'loading' : live.status,
+        items: stat.items,
+        completeWithin: stat.completeWithin,
+        error: loading ? null : live.error,
         // A saved Overpass answer's age belongs to its items only.
-        savedAt: useLive ? live.savedAt : null,
+        savedAt: null,
+        since: live.since,
+        retryAt: live.retryAt,
+        ...extra,
         source: 'mixed',
-        shown: useLive ? 'live' : 'static',
+        shown: 'static',
       };
     }
     if (goLive || holding) return { ...live, ...extra, source: 'live', shown: 'live' };
-    const offline = globalThis.navigator?.onLine === false;
-    return {
-      status: stat.status,
-      items: stat.items,
-      completeWithin: stat.completeWithin,
-      error: stat.status === 'error' ? (offline ? (stat.items.length > 0 ? OFFLINE_REST : OFFLINE) : NETWORK) : null,
-      savedAt: null,
-      since: stat.status === 'loading' ? stat.since : null,
-      retryAt: stat.retryAt,
-      ...extra,
-      source: 'static',
-      shown: 'static',
-    };
+    return own();
   }, [stat, live, goLive, holding, radius]);
 
   // The diary's digest: the shops of a complete answer, for the circle it covers.

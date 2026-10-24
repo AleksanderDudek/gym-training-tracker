@@ -4,7 +4,7 @@ import { createElement, useEffect, useLayoutEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { wantedLeaves } from '../nearby/osmGrid';
-import { __resetStaticData, leafNow, leafRefs, loadIndex, loadLeaf, MEMORY_LEAVES } from '../nearby/staticData';
+import { __resetStaticData, leafNow, leafRefs, leafStartedAt, loadIndex, loadLeaf, MEMORY_LEAVES } from '../nearby/staticData';
 import type { LatLon } from '../nearby/types';
 import { boxCoverage, osmResponse, osmRow, osmTestData, type OsmTestData } from '../test/osm';
 import { AUTO_RETRY_MS } from './useNearbyShops';
@@ -169,6 +169,37 @@ describe('useStaticAround', () => {
     release();
     await settle();
     expect(result.current[0]).toMatchObject({ status: 'loading', coverage: 'full', since: start });
+  });
+
+  test.each(['the button', 'another rounding cell', 'another radius'] as const)(
+    '"since when" starts again with %s: a new lookup is not called slow for the wait before it',
+    async (what) => {
+      mode = 'leaves-offline';
+      const { result, rerender } = renderHook(({ at, radius }) => useStaticAround(at, radius), { initialProps: { at: HERE, radius: 1000 } });
+      await settle(3000); // each leaf tried twice, 2 s apart
+      expect(result.current[0]).toMatchObject({ status: 'error', failure: 'network' });
+      await settle(10_000);
+      mode = 'hold'; // the connection is back, but slow
+      const start = Date.now();
+      if (what === 'the button') act(() => result.current[1]());
+      else rerender(what === 'another radius' ? { at: HERE, radius: 1500 } : { at: { lat: HERE.lat + 0.002, lon: HERE.lon }, radius: 1000 });
+      await settle();
+      expect(result.current[0]).toMatchObject({ status: 'loading', since: start });
+    },
+  );
+
+  test('"since when" goes on from a leaf the view waits for that set out before it (a walk on a slow link)', async () => {
+    mode = 'hold';
+    const { result, rerender } = renderHook(({ at }) => useStaticAround(at, 1000), { initialProps: { at: HERE } });
+    await settle(3000);
+    // Another rounding cell, the same leaves: on their way for 3 s, since the first view asked for them.
+    const next = { lat: HERE.lat + 0.002, lon: HERE.lon };
+    const shared = wantedLeaves(leafRefs(data.index), next, 1000).leaves;
+    const setOut = Math.min(...shared.map((leaf) => leafStartedAt(leaf)!));
+    expect(Date.now() - setOut).toBeGreaterThan(2500);
+    rerender({ at: next });
+    await settle();
+    expect(result.current[0]).toMatchObject({ status: 'loading', since: setOut });
   });
 
   test('a server error on the index is tried again by itself too: one 503 does not keep the visit off the app’s data', async () => {

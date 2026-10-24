@@ -72,23 +72,27 @@ export type AroundNotesState = Pick<AroundState<unknown>, 'status' | 'items' | '
 export function aroundNotes(state: AroundNotesState, what: string, now: number): AroundNotes {
   const left = state.retryAt ? Math.ceil((state.retryAt - now) / 1000) : 0;
   const elapsed = state.since === null ? 0 : now - state.since;
+  // What the app's own data says of itself whenever it is on screen — the Polish side at the border
+  // too: part of it from the previous update, its date once it is old.
+  const asOf = state.dataAsOf ? Date.parse(state.dataAsOf) : NaN;
+  const date = now - asOf > STALE_DATA_MS ? dataDate(state.dataAsOf ?? null) : null;
+  const own = state.shown === 'static' ? [state.olderLeaves ? T.older : null, date ? T.stale(date) : null] : [];
+  const words = (...parts: (string | null)[]) => parts.filter(Boolean).join(' ');
   if (state.source === 'static') {
     // The app's own data: no server to wait for, only the connection.
     if (state.status === 'loading') return { status: '', clock: elapsed >= SLOW_DATA_MS ? T.slowData(Math.round(elapsed / 1000)) : null };
     if (state.status === 'error') return { status: '', clock: left > 0 ? T.again(left) : null };
-    const asOf = state.dataAsOf ? Date.parse(state.dataAsOf) : NaN;
-    const date = now - asOf > STALE_DATA_MS ? dataDate(state.dataAsOf ?? null) : null;
-    return { status: [state.olderLeaves ? T.older : null, date ? T.stale(date) : null].filter(Boolean).join(' '), clock: null };
+    return { status: words(...own), clock: null };
   }
   const live = liveNotes(state, what, now, left, elapsed);
   // At the border, while the Polish side is what is shown; once Overpass's answer (or a saved one)
   // is on screen, its own notes apply — with its age.
   if (state.source === 'mixed' && state.shown !== 'live') {
-    if (state.status === 'loading') return { status: T.border(what), clock: live.clock };
-    if (state.status === 'error') return { status: T.borderFailed(what), clock: live.clock };
-    return live;
+    if (state.status === 'loading') return { status: words(T.border(what), ...own), clock: live.clock };
+    if (state.status === 'error') return { status: words(T.borderFailed(what), ...own), clock: live.clock };
+    return { status: words(...own), clock: live.clock };
   }
-  if (state.coverage === 'none' && state.status === 'loading') return { status: [T.abroad(what), live.status].filter(Boolean).join(' '), clock: live.clock };
+  if (state.coverage === 'none' && state.status === 'loading') return { status: words(T.abroad(what), live.status), clock: live.clock };
   return live;
 }
 
