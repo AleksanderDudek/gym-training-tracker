@@ -2,15 +2,14 @@ import { describe, expect, test } from 'vitest';
 import { simulateCheat, type CheatInput } from './cheat';
 import type { DayTotals } from './day';
 import { DIET_PROFILES } from './profiles';
-import { completeProfile } from './store';
 
 /**
- * The cheat-meal simulation: do I fit, by how much do I go over, what is left for the other meals,
- * what it costs the week and the scale. 2026-10-21 is a Wednesday; the goal is 2000 kcal.
+ * The bigger-meal simulation (spec §4.4, C14): only the day — does it fit on the ±100 band, what is
+ * left for the other meals, protein, carbs over a diet's limit, the day's plan. The day's target is
+ * 2000 kcal (protein 150 g, carbs 200 g with no limit, fat 67 g).
  */
 
-const profile = completeProfile({ dailyKcal: 2000 });
-const targets = DIET_PROFILES.redukcja.targets(2000, 75); // protein 150 g, carbs 200 g, fat 67 g (max 87)
+const targets = DIET_PROFILES.redukcja.targets(2000, 75);
 const eaten = (kcal: number, protein = 0, carbs = 0, fat = 0): DayTotals => ({ kcal, protein, carbs, fat, unknownMacros: 0 });
 
 const input = (over: Partial<CheatInput> = {}): CheatInput => ({
@@ -18,55 +17,55 @@ const input = (over: Partial<CheatInput> = {}): CheatInput => ({
   targets,
   eaten: eaten(800, 60, 80, 30),
   mealsLeft: 3,
-  profile,
-  kg: 80,
-  date: '2026-10-21',
-  eatenByDate: new Map([
-    ['2026-10-19', 2000],
-    ['2026-10-20', 2000],
-  ]),
   plannedLeftKcal: null,
-  typicalWorkoutKcal: 300,
   ...over,
 });
 
-describe('the day', () => {
+/** A meal that brings the day to `after` kcal. */
+const to = (after: number, mealsLeft = 3) =>
+  simulateCheat(input({ eaten: eaten(1000), cheat: { kcal: after - 1000, protein: null, carbs: null, fat: null }, mealsLeft }));
+
+describe('the day on the ±100 band', () => {
   test('it fits: what is left is split over the other meals, protein too', () => {
     const s = simulateCheat(input());
     expect(s).toMatchObject({ goal: 2000, eatenBefore: 800, after: 1400, left: 600, over: 0, verdict: 'fits', restMeals: 2 });
     expect(s.perMeal).toEqual({ kcal: 300, protein: 33 });
     expect(s.protein).toBe(65);
-    expect(s.week).toEqual({ kind: 'none' });
-    expect(s.offset).toBeNull();
   });
 
-  test('it fits, but tightly: little per remaining meal', () => {
-    const s = simulateCheat(input({ eaten: eaten(1100), cheat: { kcal: 600, protein: null, carbs: null, fat: null } }));
-    expect(s.left).toBe(300);
-    expect(s.verdict).toBe('tight');
-    expect(s.perMeal?.kcal).toBe(150);
+  test('the result says nothing beyond the day: no week, no scale, no making up for it', () => {
+    const s = simulateCheat(input({ eaten: eaten(1500), cheat: { kcal: 1200, protein: null, carbs: null, fat: null } }));
+    expect(s.verdict).toBe('over');
+    expect(s).not.toHaveProperty('week');
+    expect(s).not.toHaveProperty('kg');
+    expect(s).not.toHaveProperty('offset');
   });
 
-  test('a little over the goal is the edge, more than 5 % is over', () => {
-    expect(simulateCheat(input({ eaten: eaten(1450) })).verdict).toBe('edge');
-    const s = simulateCheat(input({ eaten: eaten(1200), cheat: { kcal: 1400, protein: 50, carbs: 150, fat: 60 } }));
-    expect(s).toMatchObject({ after: 2600, left: -600, over: 600, verdict: 'over', perMeal: null });
-    expect(s.overShare).toBeCloseTo(0.3);
+  test('more than 100 over is over (rounded to 10); up to 100 over and up to 100 left fills the target', () => {
+    expect(to(2101)).toMatchObject({ verdict: 'over', over: 100, left: -101 });
+    expect(to(2150)).toMatchObject({ verdict: 'over', over: 150 });
+    // The old sheet said „Lekko ponad cel” from +1 kcal and „Przekroczysz” from +5 %.
+    expect(to(2080)).toMatchObject({ verdict: 'full', over: 0 });
+    expect(to(2100).verdict).toBe('full');
+    expect(to(1900).verdict).toBe('full');
   });
 
-  test('the cheat meal as the last meal of the day leaves no other meals', () => {
-    const s = simulateCheat(input({ mealsLeft: 1 }));
-    expect(s.restMeals).toBe(0);
-    expect(s.perMeal).toBeNull();
-    expect(s.verdict).toBe('fits');
+  test('beyond the band: tight below 250 kcal per remaining meal, fits from there, the last meal fits', () => {
+    // 101 left for two more meals: snacks.
+    expect(to(1899).verdict).toBe('tight');
+    expect(to(1501).verdict).toBe('tight');
+    expect(to(1500).verdict).toBe('fits');
+    // The bigger meal is the last one of the day: whatever is left beyond the band, it fits.
+    expect(to(1899, 1)).toMatchObject({ verdict: 'fits', restMeals: 0, perMeal: null });
   });
 
-  test('carbohydrates over a keto limit and fat over its ceiling are flagged', () => {
+  test('carbs over a limit only for a diet style that has one', () => {
     const keto = DIET_PROFILES.keto.targets(2000, 75); // carbs max 30 g
-    const s = simulateCheat(input({ targets: keto, eaten: eaten(800, 60, 10, 60), cheat: { kcal: 900, protein: 30, carbs: 80, fat: 40 } }));
-    expect(s.carbs.over).toBe(60);
-    const fat = simulateCheat(input({ eaten: eaten(800, 60, 80, 70), cheat: { kcal: 600, protein: 20, carbs: 20, fat: 40 } }));
-    expect(fat.fat.over).toBe(23);
+    const k = simulateCheat(input({ targets: keto, eaten: eaten(800, 60, 10, 60), cheat: { kcal: 900, protein: 30, carbs: 80, fat: 40 } }));
+    expect(k.carbsOver).toBe(60);
+    // Redukcja has a carb target, not a limit: 400 g is a lot, but no „ponad limit”.
+    const r = simulateCheat(input({ eaten: eaten(800, 60, 300, 30), cheat: { kcal: 600, protein: 20, carbs: 100, fat: 10 } }));
+    expect(r.carbsOver).toBe(0);
   });
 
   test('a planned day: how much of the remaining planned portions still fits', () => {
@@ -74,36 +73,18 @@ describe('the day', () => {
     expect(simulateCheat(input({ plannedLeftKcal: 400 })).planShare).toBe(1);
     expect(simulateCheat(input({ eaten: eaten(1800), plannedLeftKcal: 500 })).planShare).toBe(0);
   });
-});
 
-describe('beyond the day', () => {
-  const big = { cheat: { kcal: 1400, protein: 50, carbs: 150, fat: 60 }, eaten: eaten(1200) };
-
-  test('the weekly balance spreads the surplus over the days left: Thursday to Sunday', () => {
-    const s = simulateCheat(input(big));
-    expect(s.week).toEqual({ kind: 'spread', perDay: -150, days: 4, unpaid: 0 });
-    expect(s.kg).toBeCloseTo(0.08);
-  });
-
-  test('a large surplus hits the 10 % cap: the rest stays unpaid', () => {
-    const s = simulateCheat(input({ ...big, cheat: { kcal: 2300, protein: null, carbs: null, fat: null } }));
-    expect(s.over).toBe(1500);
-    expect(s.week).toEqual({ kind: 'spread', perDay: -200, days: 4, unpaid: 700 });
-  });
-
-  test('on Sunday nothing carries over; without the weekly correction it stays in the balance', () => {
-    expect(simulateCheat(input({ ...big, date: '2026-10-25' })).week).toEqual({ kind: 'sunday' });
-    expect(simulateCheat(input({ ...big, profile: { ...profile, adaptWeekly: false } })).week).toEqual({ kind: 'off' });
-  });
-
-  test('a day before the cheat meal that was itself over makes tomorrow lower anyway: only the cheat meal’s part is reported', () => {
-    const s = simulateCheat(input({ ...big, eatenByDate: new Map([['2026-10-20', 2400]]) }));
-    expect(s.week).toMatchObject({ kind: 'spread', perDay: -100, days: 4 });
-  });
-
-  test('what would offset the surplus: extra steps (to 500) or trainings', () => {
-    const s = simulateCheat(input(big));
-    // 600 kcal / (80 kg × 0.4 kcal per 1000 steps per kg) = 18 750 steps
-    expect(s.offset).toEqual({ steps: 19_000, trainings: 2 });
+  test('the old input keys (week, weight, activity) are accepted and change nothing', () => {
+    const plain = simulateCheat(input({ eaten: eaten(1500), cheat: { kcal: 1200, protein: null, carbs: null, fat: null } }));
+    const old = simulateCheat({
+      ...input({ eaten: eaten(1500), cheat: { kcal: 1200, protein: null, carbs: null, fat: null } }),
+      profile: {},
+      kg: 80,
+      date: '2026-10-21',
+      eatenByDate: new Map([['2026-10-20', 2600]]),
+      goalOf: () => 1500,
+      typicalWorkoutKcal: 300,
+    });
+    expect(old).toEqual(plain);
   });
 });
