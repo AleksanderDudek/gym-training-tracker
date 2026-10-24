@@ -4,11 +4,11 @@
   "source": "https://download.geofabrik.de/europe/poland-latest.osm.pbf",
   "sourceMd5": null,
   "osmium": "1.19.1",
-  "rows": 99148,
+  "rows": 99147,
   "types": {
     "node": 71123,
     "way": 27974,
-    "relation": 51
+    "relation": 50
   },
   "kinds": {
     "bakery": 6317,
@@ -23,7 +23,7 @@
     "pastry": 1876,
     "restaurant": 21486,
     "supermarket": 15456,
-    "wholesale": 38
+    "wholesale": 37
   },
   "dropped": {
     "duplicates": 32720,
@@ -31,7 +31,7 @@
     "unnamed": 14245
   },
   "warsaw": 8785,
-  "halls": 38,
+  "halls": 37,
   "coverage": {
     "source": "https://download.geofabrik.de/europe/poland.poly",
     "eps": 300,

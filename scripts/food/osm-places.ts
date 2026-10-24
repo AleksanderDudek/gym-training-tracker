@@ -158,11 +158,18 @@ console.log(`osmium tags-filter -R ${filtered} (the objects that should be rows)
 const listed = await listObjects(filtered);
 // osmium export writes nothing for a relation other than a multipolygon or a boundary (a Makro hall
 // mapped as `type=site`, a restaurant as `type=building`); Overpass places one by its members with
-// `out center`, and so does the copy, from the members in the filtered extract.
+// `out center`, and so does the copy, from the members in the filtered extract — unless a member is
+// a row of the same kind and label already (the hall's building): one place, one row.
 const unbuilt = unbuiltRelations(listed, exported.rows);
-const placed = await placeRelations(filtered, unbuilt);
-if (unbuilt.length) {
-  console.log(`relations osmium export does not build: ${count(unbuilt.length)}; placed by their members, as Overpass's out center places them: ${count(placed.length)}`);
+const placed = await placeRelations(filtered, unbuilt.place);
+const relationCount = unbuilt.place.length + unbuilt.represented.length;
+if (relationCount) {
+  const { represented } = unbuilt;
+  const pairs = represented.slice(0, LIST_MISSING).map(({ id, by }) => `${id} by ${by}`);
+  const list = pairs.length ? ` (${pairs.join(', ')}${represented.length > LIST_MISSING ? ', …' : ''})` : '';
+  console.log(
+    `relations osmium export does not build: ${count(relationCount)}; placed by their members: ${count(placed.length)}; represented by a member row: ${count(represented.length)}${list}`,
+  );
 }
 const { rows, stats } = withRows(exported, placed);
 const check = completeness(listed, rows);

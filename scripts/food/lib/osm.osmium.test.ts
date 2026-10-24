@@ -112,6 +112,12 @@ const EXTRACT = [
   // which gives no centre in Overpass either.
   `r2017 ${t({ type: 'site', shop: 'supermarket', name: 'Members elsewhere' })} Mw9997@,n9996@`,
   `r2018 ${t({ type: 'site', shop: 'supermarket', name: 'Relations only' })} Mr2006@`,
+  // Its member w1001 is a row of the same kind and label (any case): it stands for the site, which
+  // gets no row of its own, like a Makro hall's building inside its site. A different kind or label
+  // is another place: placed.
+  `r2019 ${t({ type: 'site', shop: 'bakery', name: 'SQUARE' })} Mw1001@,n96@entrance`,
+  `r2020 ${t({ type: 'site', amenity: 'cafe', name: 'Square' })} Mw1001@`,
+  `r2021 ${t({ type: 'site', shop: 'bakery', name: 'Other bakery' })} Mw1001@`,
 ];
 
 const dir = mkdtempSync(join(tmpdir(), 'osm-osmium-'));
@@ -135,26 +141,34 @@ describe.skipIf(!hasOsmium)('a refresh through osmium itself', () => {
     const objects = readOpl(splitRecords(readFileSync(listed!, 'utf8')));
     const unbuilt = unbuiltRelations(objects, exported.rows);
     // Members cut off at the border (w9998, w9997, n9996) do not fail the run.
-    run(osmiumArgs.members(filtered!, unbuilt, members!));
-    const placed = relationRows(readOpl(splitRecords(readFileSync(members!, 'utf8'))), unbuilt);
+    run(osmiumArgs.members(filtered!, unbuilt.place, members!));
+    const placed = relationRows(readOpl(splitRecords(readFileSync(members!, 'utf8'))), unbuilt.place);
     const { rows } = withRows(exported, placed);
 
     // osmium export writes nothing for a relation other than a multipolygon or a boundary.
     expect(exported.rows.map((row) => row.id)).toEqual(['n14', 'n103', 'n104', 'w1001', 'w1002', 'w1004', 'w1008', 'w1011', 'r2006', 'r2014']);
-    expect(unbuilt).toEqual(['r2011', 'r2012', 'r2013', 'r2017', 'r2018']);
+    expect(unbuilt).toEqual({
+      place: ['r2011', 'r2012', 'r2013', 'r2017', 'r2018', 'r2020', 'r2021'],
+      represented: [{ id: 'r2019', by: 'w1001' }],
+    });
+    // The square w1001 (21.02–21.021, 52.23–52.231) places the café and the other bakery.
+    const square = { latE5: 5_223_050, lonE5: 2_102_050 };
     expect(placed).toEqual([
       // The perimeter (21.04–21.041, 52.23–52.231) widened by the entrance to 21.043 E, 52.229 N.
       { id: 'r2011', latE5: 5_223_000, lonE5: 2_104_150, tags: { shop: 'supermarket', name: 'Site' } },
       // The outline and its part.
       { id: 'r2012', latE5: 5_224_150, lonE5: 2_106_150, tags: { amenity: 'restaurant', name: 'Building' } },
       { id: 'r2013', latE5: 5_223_000, lonE5: 2_102_000, tags: { amenity: 'cafe', name: 'No type' } },
+      { id: 'r2020', ...square, tags: { amenity: 'cafe', name: 'Square' } },
+      { id: 'r2021', ...square, tags: { shop: 'bakery', name: 'Other bakery' } },
     ]);
     expect(rows.map((row) => row.id)).toEqual([
       ...['n14', 'n103', 'n104', 'w1001', 'w1002', 'w1004', 'w1008', 'w1011'],
-      ...['r2006', 'r2011', 'r2012', 'r2013', 'r2014'],
+      ...['r2006', 'r2011', 'r2012', 'r2013', 'r2014', 'r2020', 'r2021'],
     ]);
     expect(completeness(objects, rows)).toEqual({
-      expected: 20,
+      // r2019 too, through w1001.
+      expected: 23,
       missing: [
         { id: 'w1003', label: 'Bow-tie area' },
         { id: 'w1010', label: 'Three-node area' },
@@ -171,7 +185,7 @@ describe.skipIf(!hasOsmium)('a refresh through osmium itself', () => {
     expect(objects.map((object) => object.key)).toEqual([
       ...['n14', 'n100', 'n102', 'n103', 'n104'],
       ...['w1001', 'w1002', 'w1003', 'w1004', 'w1008', 'w1010', 'w1011', 'w1015', 'w1016'],
-      ...['r2005', 'r2006', 'r2008', 'r2009', 'r2011', 'r2012', 'r2013', 'r2014', 'r2015', 'r2017', 'r2018'],
+      ...['r2005', 'r2006', 'r2008', 'r2009', 'r2011', 'r2012', 'r2013', 'r2014', 'r2015', 'r2017', 'r2018', 'r2019', 'r2020', 'r2021'],
     ]);
     // The listing reads as the export wrote: by the same rule, the same tags, every escape undone.
     const listedTags = new Map(objects.map((object) => [object.key, rowTags(object.tags)]));

@@ -55,10 +55,16 @@ z multipoligonów i granic (`type=multipolygon`, `type=boundary`); o innych (`ty
 robi to samo: bierze ich składowe z przefiltrowanego wyciągu (`osmium getid -r`) i stawia każdą taką
 relację w środku prostokąta obejmującego jej punkty i wszystkie punkty jej dróg — jak Overpass, który
 też pomija składowe będące relacjami (relacja z samych relacji nie ma u niego środka). W kontroli
-kompletności liczą się jak każdy wiersz. Poza kopią zostaje tylko relacja, której nie ma po czym
-ustawić: żadnej z jej składowych nie ma w wyciągu (np. wszystkie są za granicą) albo wszystkie są
-relacjami — skrypt liczy takie osobno, wierszem „known gap”. W październiku 2026 takich nie było:
-wszystkie 4 (3 relacje `type=building` i hala Makro w Sosnowcu jako `type=site`) są w kopii.
+kompletności liczą się jak każdy wiersz. Wyjątek: gdy któraś składowa (punkt albo droga) jest już
+wierszem tego samego rodzaju i z tą samą etykietą (marka, a bez niej nazwa; bez względu na wielkość
+liter i spacje na końcach) — jak budynek hali Makro wewnątrz jej terenu (`type=site`) — relacja nie
+dostaje własnego wiersza, bo to samo miejsce byłoby w kopii dwa razy, kilkadziesiąt metrów od siebie.
+Kontrola kompletności liczy ją jako obecną, a skrypt wypisuje ją razem ze składową, która ją zastępuje.
+Relacja budynku, którego obrys i części nie mają tagów sklepu ani lokalu, dostaje własny wiersz jak
+dotąd. Poza kopią zostaje tylko relacja, której nie ma po czym ustawić: żadnej z jej składowych nie ma
+w wyciągu (np. wszystkie są za granicą) albo wszystkie są relacjami — skrypt liczy takie osobno,
+wierszem „known gap”. W październiku 2026 takich nie było: 3 relacje `type=building` są w kopii, a halę
+Makro w Sosnowcu (`type=site`) zastępuje jej budynek (`w63945714`).
 
 ## In English
 
@@ -105,7 +111,13 @@ multipolygons and boundaries (`type=multipolygon`, `type=boundary`) and writes n
 script does the same: it takes their members from the filtered extract (`osmium getid -r`) and places
 each such relation at the centre of the bounding box of its member nodes and every node of its member
 ways — as Overpass does, which also leaves member relations out (a relation of relations gets no centre
-there). The completeness check counts them like any other row. Only a relation with nothing to place
-it by stays out — none of its members is in the extract (all beyond the border, say), or all are
-relations; the script counts those apart, on its "known gap" line. In October 2026 there were none: all
-4 (3 `type=building` relations and the Makro hall in Sosnowiec mapped as `type=site`) are in the copy.
+there). The completeness check counts them like any other row. One exception: when a member node or
+way already is a row of the same kind with the same label (the brand, else the name; any case,
+trimmed) — like the Makro hall's building inside the hall's `type=site` — the relation gets no row of
+its own, or the one place would be in the copy twice, tens of metres apart. The completeness check
+counts it as present, and the script lists it with the member row that stands for it. A building
+relation whose outline and parts carry no shop or amenity tags still gets its own row. Only a relation
+with nothing to place it by stays out — none of its members is in the extract (all beyond the border,
+say), or all are relations; the script counts those apart, on its "known gap" line. In October 2026
+there were none: the 3 `type=building` relations are in the copy, and the Makro hall in Sosnowiec
+(`type=site`) is there as its building (`w63945714`).

@@ -1,8 +1,8 @@
 // The app's own copy of the OpenStreetMap places in Poland (`data/osm/places-pl.tsv`): reading
 // osmium's GeoJSON export of the Geofabrik extract into its rows (with the relations the export does
-// not build, placed by their members as Overpass places them), the polygon the copy covers, and
-// the checks a new copy must pass before it replaces the committed one — the export's completeness
-// among them. Pure, so it is tested without osmium or the network (one test does run osmium, on a
+// not build, placed by their members as Overpass places them unless a member row already stands for
+// them), the polygon the copy covers, and the checks a new copy must pass before it replaces the
+// committed one — the export's completeness among them. Pure, so it is tested without osmium or the network (one test does run osmium, on a
 // small file); `scripts/food/osm-places.ts` downloads, runs osmium and writes.
 // With extensions: these two files import nothing, so this one loads under Node's own loader too.
 import { compareIds, type OsmRow } from '../../../src/food/nearby/osmFormat.ts';
@@ -22,7 +22,7 @@ type Point = [number, number];
 export const SOURCE_URL = 'https://download.geofabrik.de/europe/poland-latest.osm.pbf';
 export const POLY_URL = 'https://download.geofabrik.de/europe/poland.poly';
 
-/** Rows a first copy must have: the extract of October 2026 gave 99,148. */
+/** Rows a first copy must have: the extract of October 2026 gave 99,147. */
 const FIRST_RUN_MIN_ROWS = 90_000;
 /** A small kind (under 500 rows) may move this many rows either way whatever the percentage. */
 const SMALL_KIND_ROWS = 25;
@@ -34,7 +34,7 @@ const NEW_KIND_ROWS = 50;
  */
 const WARSAW = { south: 5_209_000, north: 5_237_000, west: 2_085_000, east: 2_127_000 };
 const WARSAW_MIN_ROWS = 7_000;
-/** Selgros and Makro halls a copy must have (38 in October 2026): the shops view depends on them. */
+/** Selgros and Makro halls a copy must have (37 in October 2026): the shops view depends on them. */
 const MIN_HALLS = 20;
 /** The coverage polygon is simplified this much, more when that still leaves too many points. */
 const COVERAGE_EPS_M = 300;
@@ -341,28 +341,67 @@ export function readOpl(lines: Iterable<string>): OplObject[] {
  */
 const AREA_RELATIONS = ['multipolygon', 'boundary'];
 
+type OplRelation = Extract<OplObject, { type: 'relation' }>;
+
 /** A relation osmium export writes nothing for, whatever its members. */
-const neverBuilt = (object: OplObject) => object.type === 'relation' && !AREA_RELATIONS.includes(object.tags.type ?? '');
+const neverBuilt = (object: OplObject): object is OplRelation => object.type === 'relation' && !AREA_RELATIONS.includes(object.tags.type ?? '');
+
+/** A label as compared for "the same place": `labelOf`, trimmed, in any case. */
+const sameLabelKey = (tags: Record<string, string>) => labelOf(tags)?.trim().toLowerCase();
 
 /**
- * The relations of the listing (the `list` run) that should be rows but that osmium export never
- * writes, by id, sorted: what `relationRows` is to place. One already among `rows` stays out — no
- * object is two rows.
+ * The member row that already stands for a relation osmium export never builds: the first member
+ * node or way that is a row of the same kind (`kindOf`) with the same label — the Makro hall's
+ * building inside its `type=site`. A row of the relation's own would put the place on the map twice:
+ * that site's centre is 56 m from its building's, past the 30 m within which the shops view takes a
+ * chain's two points for one. `tags` are the relation's by `rowTags`; `null` when no member is such a
+ * row (member relations do not count). A building's untagged outline and parts are no rows, so such a
+ * relation is still placed.
  */
-export function unbuiltRelations(objects: Iterable<OplObject>, rows: readonly OsmRow[]): string[] {
-  const ids = new Set(rows.map((row) => row.id));
-  const keys: string[] = [];
-  for (const object of objects) {
-    if (neverBuilt(object) && !ids.has(object.key) && typeof rowTags(object.tags) !== 'string') keys.push(object.key);
+function memberRow(relation: OplRelation, tags: Record<string, string>, rows: ReadonlyMap<string, OsmRow>): string | null {
+  const kind = kindOf(tags);
+  const label = sameLabelKey(tags);
+  for (const member of relation.members) {
+    const row = member.startsWith('r') ? undefined : rows.get(member);
+    if (row && kindOf(row.tags) === kind && sameLabelKey(row.tags) === label) return member;
   }
-  return keys.sort(compareIds);
+  return null;
+}
+
+/** The relations osmium export never writes that should be rows, as `unbuiltRelations` splits them. */
+export interface Unbuilt {
+  /** For `relationRows` to place by their members, by id, sorted. */
+  place: string[];
+  /** Stood for by a member row (`memberRow`), so no row of their own; sorted by id. */
+  represented: { id: string; by: string }[];
 }
 
 /**
- * Rows for relations osmium export never writes (`unbuiltRelations`), placed as Overpass places them
- * with `out center`: at the centre of the bounding box of their member nodes and of every node of
- * their member ways. A member relation adds nothing, as in Overpass ("relations as members have no
- * effect": a relation of relations gets no centre there), so a cycle of relations is no matter.
+ * The relations of the listing (the `list` run) that should be rows but that osmium export never
+ * writes: those to place by their members, and those a member row already stands for. One already
+ * among `rows` stays out of both — no object is two rows.
+ */
+export function unbuiltRelations(objects: Iterable<OplObject>, rows: readonly OsmRow[]): Unbuilt {
+  const byId = new Map(rows.map((row) => [row.id, row]));
+  const result: Unbuilt = { place: [], represented: [] };
+  for (const object of objects) {
+    if (!neverBuilt(object) || byId.has(object.key)) continue;
+    const tags = rowTags(object.tags);
+    if (typeof tags === 'string') continue;
+    const by = memberRow(object, tags, byId);
+    if (by) result.represented.push({ id: object.key, by });
+    else result.place.push(object.key);
+  }
+  result.place.sort(compareIds);
+  result.represented.sort((a, b) => compareIds(a.id, b.id));
+  return result;
+}
+
+/**
+ * Rows for relations osmium export never writes (`place` of `unbuiltRelations`), placed as Overpass
+ * places them with `out center`: at the centre of the bounding box of their member nodes and of every
+ * node of their member ways. A member relation adds nothing, as in Overpass ("relations as members
+ * have no effect": a relation of relations gets no centre there), so a cycle of relations is no matter.
  * `objects` lists the relations with all they reference (the `members` run); a member or a node it
  * lacks — cut off at the border — is skipped, and a relation with nothing left to place it by gets
  * no row: it stays the known gap. Tags by `rowTags`, positions rounded as every other row's.
@@ -407,8 +446,9 @@ export interface Completeness {
   /** Expected, yet not a row — osmium could not build them. Sorted by id; the label as the lists show it. */
   missing: { id: string; label: string }[];
   /**
-   * Relations that pass `rowTags` but that osmium export never writes and that no member placed
-   * (`relationRows`: the extract has none to place them by), by `type` (`''`: none).
+   * Relations that pass `rowTags` but that osmium export never writes, that no member placed
+   * (`relationRows`: the extract has none to place them by) and no member row stands for
+   * (`memberRow`), by `type` (`''`: none).
    */
   knownGap: Record<string, number>;
 }
@@ -418,22 +458,25 @@ export interface Completeness {
  * themselves (the `list` run) — not the nodes and members it pulled in for them; each is judged by
  * the same `rowTags` as the export, and those that are not rows are missing. osmium leaves out what
  * it cannot build, often without an error: a broken multipolygon, one with a member the extract
- * lacks, a closed area way of three nodes. A relation it never builds counts once its members placed
- * it (`relationRows`); one they could not place is the known gap, counted apart.
+ * lacks, a closed area way of three nodes. A relation it never builds is present as its own row
+ * (placed by `relationRows`) or as the member row that stands for it (`memberRow`, the rule
+ * `unbuiltRelations` splits by); one neither is the known gap, counted apart.
  */
 export function completeness(objects: Iterable<OplObject>, rows: readonly OsmRow[]): Completeness {
-  const ids = new Set(rows.map((row) => row.id));
+  const byId = new Map(rows.map((row) => [row.id, row]));
   const result: Completeness = { expected: 0, missing: [], knownGap: {} };
   for (const object of objects) {
     const tags = rowTags(object.tags);
     if (typeof tags === 'string') continue;
-    if (neverBuilt(object) && !ids.has(object.key)) {
+    const unbuilt = neverBuilt(object);
+    const present = byId.has(object.key) || (unbuilt && memberRow(object, tags, byId) !== null);
+    if (unbuilt && !present) {
       const type = object.tags.type ?? '';
       result.knownGap[type] = (result.knownGap[type] ?? 0) + 1;
       continue;
     }
     result.expected++;
-    if (!ids.has(object.key)) result.missing.push({ id: object.key, label: labelOf(tags) ?? '' });
+    if (!present) result.missing.push({ id: object.key, label: labelOf(tags) ?? '' });
   }
   result.missing.sort((a, b) => compareIds(a.id, b.id));
   return result;

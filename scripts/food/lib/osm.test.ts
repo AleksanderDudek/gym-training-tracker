@@ -535,8 +535,53 @@ describe('what the export lost', () => {
 
   test('what is to be placed: the relations osmium never builds that should be rows and are not yet, sorted', () => {
     // Not the multipolygon and the boundary (osmium builds them), the unnamed site, nor r9, a row already.
-    expect(unbuiltRelations(listing, [row('n1'), row('r9')])).toEqual(['r8', 'r10', 'r12']);
-    expect(unbuiltRelations(listing, ['r8', 'r9', 'r10', 'r12'].map(row))).toEqual([]);
+    expect(unbuiltRelations(listing, [row('n1'), row('r9')])).toEqual({ place: ['r8', 'r10', 'r12'], represented: [] });
+    expect(unbuiltRelations(listing, ['r8', 'r9', 'r10', 'r12'].map(row))).toEqual({ place: [], represented: [] });
+  });
+});
+
+describe('a relation a member row already stands for: one place, one row', () => {
+  /** A row of the export, with the tags the app reads. */
+  const at = (id: string, tags: Record<string, string>): OsmRow => ({ id, latE5: 5_031_000, lonE5: 1_918_000, tags });
+  const rows = [
+    // The Makro hall's building, a café, and a café osmium built from a multipolygon.
+    at('n3', { amenity: 'cafe', name: 'Kawa' }),
+    at('w2', { shop: 'wholesale', name: 'Makro', brand: 'Makro' }),
+    at('r15', { amenity: 'cafe', name: 'Kawa' }),
+  ];
+  // The listing (the `list` run): the objects that match the filter themselves, members and all.
+  const listing = readOpl([
+    'n3 Tamenity=cafe,name=Kawa x21 y52',
+    'w2 Tbrand=Makro,name=Makro,shop=wholesale Nn20,n21,n22,n20',
+    // The hall's site: its building is a member, beside a fence and an entrance that are no rows.
+    'r10 Tbrand=Makro,name=Makro,shop=wholesale,type=site Mw9@perimeter,w2@,n5@entrance',
+    // The same label in any case and trimmed, the brand standing for a name: whichever the label is.
+    'r11 Tbrand=MAKRO,shop=wholesale,type=site Mw2@',
+    'r16 Tamenity=cafe,brand=%20%KAWA%20%,type=site Mw9@,n3@',
+    // A different kind, a different label, a member relation: placed by their members.
+    'r12 Tamenity=restaurant,name=Kawa,type=building Mn3@',
+    'r13 Tamenity=cafe,name=Inna%20%kawa,type=building Mn3@',
+    'r14 Tamenity=cafe,name=Kawa,type=site Mr15@,w9@',
+    'r15 Tamenity=cafe,name=Kawa,type=multipolygon Mw9@outer',
+  ]);
+
+  test('a member node or way that is a row of the same kind and label stands for the relation; anything else is placed', () => {
+    expect(unbuiltRelations(listing, rows)).toEqual({
+      place: ['r12', 'r13', 'r14'],
+      represented: [
+        { id: 'r10', by: 'w2' },
+        { id: 'r11', by: 'w2' },
+        { id: 'r16', by: 'n3' },
+      ],
+    });
+  });
+
+  test('the completeness check counts a represented relation as present: not missing, not the known gap', () => {
+    // n3, w2, r15 as rows; r10, r11, r16 through their member rows; the rest not placed yet.
+    expect(completeness(listing, rows)).toEqual({ expected: 6, missing: [], knownGap: { building: 2, site: 1 } });
+    expect(completeness(listing, [...rows, ...['r12', 'r13', 'r14'].map((id) => at(id, {}))])).toEqual({ expected: 9, missing: [], knownGap: {} });
+    // Without its member row, the hall's site is no longer stood for: the known gap.
+    expect(completeness(listing, rows.filter((r) => r.id !== 'w2')).knownGap).toEqual({ building: 2, site: 3 });
   });
 });
 

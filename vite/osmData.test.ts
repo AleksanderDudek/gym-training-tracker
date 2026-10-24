@@ -47,13 +47,14 @@ describe('the committed OSM data', () => {
     expect(meta.license).toBe('ODbL-1.0');
   });
 
-  test('relations osmium export does not build are in, placed by their members: the Makro hall in Sosnowiec, a type=site', () => {
-    const makro = rows.find((r) => r.id === 'r2223594');
-    expect(makro?.tags).toMatchObject({ shop: 'wholesale', brand: 'Makro' });
-    expect(isWholesaleHall(makro!.tags)).toBe(true);
-    // Where Overpass's `out center` puts it: 50.3093774, 19.1809905.
-    expect(makro!.latE5 / 1e5).toBeCloseTo(50.31, 2);
-    expect(makro!.lonE5 / 1e5).toBeCloseTo(19.18, 2);
+  test('relations osmium export does not build are in, placed by their members, unless a member row stands for them', () => {
+    // Three places mapped as type=building relations (their outlines and parts carry no shop or amenity).
+    const ids = new Set(rows.map((r) => r.id));
+    for (const id of ['r6947617', 'r9039127', 'r9108982']) expect(ids.has(id), id).toBe(true);
+    // The Makro hall in Sosnowiec once, as its building: not also as its type=site relation r2223594.
+    const near = rows.filter((r) => isWholesaleHall(r.tags) && Math.abs(r.latE5 / 1e5 - 50.31) < 0.01 && Math.abs(r.lonE5 / 1e5 - 19.18) < 0.01);
+    expect(near.map((r) => r.id)).toEqual(['w63945714']);
+    expect(near[0]?.tags.brand).toBe('Makro');
   });
 
   test('cut as the build cuts it: small leaves, at most 500 places each (except the finest cells)', () => {
