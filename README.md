@@ -1061,8 +1061,9 @@ Overpass 462 kB po kilkudziesięciu sekundach. Service worker trzyma kawałki (4
 nowe dane po wdrożeniu nie zmieniają kodu, więc nie ma paska „Nowa wersja”, a kawałek, który zniknął,
 każe przeczytać indeks od nowa. Przy pierwszej wizycie to, co przyszło, zanim service worker przejął
 stronę, idzie potem jeszcze raz przez niego — okolica działa bez sieci już przy następnym otwarciu.
-Wolne łącze: kawałek, który wciąż przychodzi, nie jest przerywany (10 km na EDGE to ok. 250 kB);
-przerywa go dopiero 10 s ciszy. Nieudane pobranie — indeksu albo kawałka, także błąd serwera — wraca
+Wolne łącze: najwyżej 8 kawałków naraz, najbliższe pierwsze (reszta czeka, więc nikt nie traci
+terminu w kolejce przeglądarki), a kawałek, który wciąż przychodzi, nie jest przerywany (10 km na
+EDGE to ok. 265 kB); przerywa go dopiero 10 s ciszy. Nieudane pobranie — indeksu albo kawałka, także błąd serwera — wraca
 samo po 30 s, minucie i dwóch (nie przy zablokowanym telefonie ani bez sieci; po powrocie sieci od
 razu), a w tym czasie odpowiada Overpass; jego gotowa lista zostaje na ekranie, aż dane aplikacji
 będą kompletne. Przełączenie widoków nic nie pobiera; jedne dane wczytują się od

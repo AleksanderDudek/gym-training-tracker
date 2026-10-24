@@ -64,6 +64,8 @@ fixes of the second round and found five regressions and some leftovers. Decisio
 | Service worker | Navigation denylist relative to the worker's scope (privacy.html with a query, `data/`); `LICENSE.txt` cached beside the index | Works under any base path; the licence opens offline after one view |
 | First visit | Shared `src/swWarm.ts`: products database, the shop chunk (its address from `import.meta.url`) and the OSM files fetched before the takeover are fetched again through the worker | Products and „Zjedz teraz” menus were missing offline after a first visit |
 | Data completeness | The refresh lists the extract's objects that themselves match and compares them with the rows (same keep-rule); more than 50 missing fails the refresh, 1–50 warns (also as GitHub annotations); osmium's geometry errors are only context | Errors were counted for objects that were not missing, and some losses printed no error at all |
+| Leaves at once | At most 8 leaf requests on their way, nearest first; a slot is not held during the retry pause | Beyond 6 per host a browser on HTTP/1.1 queues requests with their header deadline already running: on EDGE 9 of 34 leaves were cut and fetched again |
+| Relations osmium does not build | Matching `site`/`building` relations become rows at the bbox centre of their member nodes and member ways' nodes — Overpass's `out center` (member relations count for nothing there either); a relation already represented by a member row of the same kind and label (brand, else name) is skipped | 3 places were missing from the copy (now 99,147 rows, the known gap empty); the Makro hall in Sosnowiec stays one pin, not two |
 
 ## Not done now
 
@@ -78,10 +80,11 @@ tiles blocked unless said):
 
 | Case | Result |
 | --- | --- |
-| Warsaw 1 km, cold, "4G" (50 ms, 15 Mbit/s) | answer **0.29 s** after the status line says „Szukam lokali” (1.2 s from opening the page, app start included); 5 files, 90 kB; **0 Overpass requests**; switching to „Zakupy i przepisy” loads nothing new (73 shops with data) |
-| Same, "slow" (300 ms, 2 Mbit/s, CPU ×4) | **2.0 s** after „Szukam” (7.4 s from opening, mostly the app start) |
+| Warsaw 1 km, cold, "4G" (50 ms, 15 Mbit/s) | answer **0.27 s** after the status line says „Szukam lokali” (1.26 s from opening the page, app start included); 5 files, **52 kB on the wire** + the index 9.4 kB (round 3 re-measured with CDP `encodedDataLength`; the first run's „90 kB” was not wire bytes); **0 Overpass requests**; switching to „Zakupy i przepisy” loads nothing new (73 shops with data) |
+| Same, "slow" (300 ms, 2 Mbit/s, CPU ×4) | **1.8 s** after „Szukam” (7.1 s from opening, mostly the app start) |
 | Warm (service worker) | 0.6 s from opening the page |
-| Kraków 1 km / Warsaw 10 km | 9 files, 89 kB, 1.2 s / 34 files, 391 kB, 1.9 s from opening |
+| Kraków 1 km / Warsaw 10 km | 9 files, 55 kB, 1.3 s / 34 files, 265 kB, 1.8–1.9 s from opening (0.83–0.89 s after „Szukam”) |
+| Warsaw 10 km on "EDGE" (400 ms, 200 kbit/s) | before round 3: 9 of 34 files cut by the header deadline while queued (HTTP/1.1, 6 connections) and fetched again; with 8 files at a time: **none cut or repeated**, ~28 s after „Szukam” (the link shared with the 3 MB products database) |
 | Offline | an area seen before works offline — also right after the very first visit (files fetched before the service worker took over are fetched again through it); a new area says „Bez internetu nie mam jeszcze danych tej okolicy — pobiorę je, gdy wróci połączenie.” and loads at once when the connection is back |
 | Berlin | one Overpass request; credit „… · z serwera Overpass” (round 3 wording; was „na żywo z serwera Overpass”) |
 | Słubice 10 km | 2 files + 1 Overpass request; credit „… stan z 22 października 2026” while the Polish side is shown, „… · z serwera Overpass” once Overpass's whole circle is (round 3 wording) |
