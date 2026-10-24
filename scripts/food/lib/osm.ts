@@ -448,10 +448,13 @@ export interface Completeness {
   /**
    * Relations that pass `rowTags` but that osmium export never writes, that no member placed
    * (`relationRows`: the extract has none to place them by) and no member row stands for
-   * (`memberRow`), by `type` (`''`: none).
+   * (`memberRow`), by `type` (`''`: none; a control character or a line separator in it as a space).
    */
   knownGap: Record<string, number>;
 }
+
+/** What could end a line of the log: control characters (line breaks among them) and the Unicode line and paragraph separators. */
+const ONE_LINE = /[\p{Cc}\u2028\u2029]/gu;
 
 /**
  * What osmium's export lost. `objects` are the objects of the filtered extract that match the filter
@@ -471,7 +474,9 @@ export function completeness(objects: Iterable<OplObject>, rows: readonly OsmRow
     const unbuilt = neverBuilt(object);
     const present = byId.has(object.key) || (unbuilt && memberRow(object, tags, byId) !== null);
     if (unbuilt && !present) {
-      const type = object.tags.type ?? '';
+      // On one line, whatever a mapper typed: the refresh prints these keys, and a line break in a
+      // tag value would let it start a GitHub Actions workflow command of its own (`::stop-commands::`).
+      const type = (object.tags.type ?? '').replace(ONE_LINE, ' ');
       result.knownGap[type] = (result.knownGap[type] ?? 0) + 1;
       continue;
     }

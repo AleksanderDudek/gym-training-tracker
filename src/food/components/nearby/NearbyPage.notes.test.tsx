@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { BridgeContext } from '../../bridge';
 import { loadDataset, loadedDataset, type LoadedDataset } from '../../data';
 import { clearAll } from '../../diet/store';
 import type { OsmState } from '../../hooks/useOsmAround';
@@ -12,21 +13,23 @@ import type { PlacedShop } from '../../nearby/types';
 import { renderWithBridge } from '../../test/bridge';
 import { DATASET, INDEXED } from '../../test/fixtures';
 import NearbyPage from './NearbyPage';
+import { dataDate } from './nearbyText';
 
 // Stan danych okolicy jest dany, a nie pobierany: te testy są o tym, co strona z nim mówi (uwaga
-// „Na razie” i przypis pod mapą), a nie o tym, jak powstaje — to sprawdzają testy `useOsmAround`.
-const osm = vi.hoisted(() => ({ state: null as unknown as OsmState }));
-vi.mock('../../hooks/useOsmAround', () => ({ useOsmAround: () => [osm.state, () => {}] }));
+// „Na razie”, wiersz stanu i przypis pod mapą) i kiedy „Zjedz teraz” prosi o bazę produktów, a nie
+// o tym, jak ten stan powstaje — to sprawdzają testy `useOsmAround`. Ponowienie to szpieg.
+const osm = vi.hoisted(() => ({ state: null as unknown as OsmState, retry: vi.fn() }));
+vi.mock('../../hooks/useOsmAround', () => ({ useOsmAround: () => [osm.state, osm.retry] }));
 
-// Menu sieci prawdziwe, chyba że test każe im się dalej wczytywać albo zawieść.
-const menus = vi.hoisted(() => ({ status: 'ready' as 'ready' | 'loading' | 'error' }));
+// Menu sieci prawdziwe, chyba że test każe im się dalej wczytywać albo zawieść (z ponowieniem-szpiegiem).
+const menus = vi.hoisted(() => ({ status: 'ready' as 'ready' | 'loading' | 'error', retry: vi.fn() }));
 vi.mock('../../hooks/useRestaurants', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../hooks/useRestaurants')>();
   return {
     ...actual,
     useRestaurants: (): RestaurantsResult => {
       const real = actual.useRestaurants();
-      return menus.status === 'ready' ? real : { status: menus.status, retry: real.retry };
+      return menus.status === 'ready' ? real : { status: menus.status, retry: menus.retry };
     },
   };
 });
@@ -50,6 +53,8 @@ vi.mock('../../data', async (importOriginal) => ({
 const LOADED: LoadedDataset = { dataset: DATASET, products: INDEXED };
 const HERE = { lat: 52.2297, lon: 21.0122 };
 const DAY = 24 * 3600 * 1000;
+/** Chwila danych aplikacji: późny wieczór UTC, więc jej dzień zależy od strefy urządzenia. */
+const AS_OF = '2026-10-22T20:21:33Z';
 const node = (id: number, metres: number, tags: Record<string, string>): Element => ({
   type: 'node',
   id,
@@ -86,10 +91,27 @@ function osmState(over: Partial<OsmState> = {}): OsmState {
     source: 'static',
     shown: 'static',
     coverage: 'full',
-    dataAsOf: '2026-10-22T20:21:33Z',
+    dataAsOf: AS_OF,
     olderLeaves: false,
     ...over,
   };
+}
+
+/** Rysuje stronę jeszcze raz — z tym, co teraz zwraca `useOsmAround` (`osm.state`). */
+function renderAgain(view: ReturnType<typeof renderWithBridge>) {
+  view.rerender(
+    <BridgeContext.Provider value={view.bridge}>
+      <NearbyPage />
+    </BridgeContext.Provider>,
+  );
+}
+
+/** Baza produktów nie jest jeszcze wczytana, a jej pobieranie (gdy ruszy) trwa, aż test ją wpuści. */
+function holdProducts(): (loaded: LoadedDataset) => void {
+  let arrive!: (loaded: LoadedDataset) => void;
+  vi.mocked(loadedDataset).mockReturnValue(null);
+  vi.mocked(loadDataset).mockReturnValue(new Promise((resolve) => (arrive = resolve)));
+  return (loaded) => arrive(loaded);
 }
 
 beforeEach(async () => {
@@ -99,8 +121,10 @@ beforeEach(async () => {
   window.localStorage.clear();
   window.history.replaceState(null, '', '#/w-poblizu');
   vi.mocked(loadedDataset).mockReturnValue(LOADED);
-  vi.mocked(loadDataset).mockResolvedValue(LOADED);
+  vi.mocked(loadDataset).mockClear().mockResolvedValue(LOADED);
+  osm.retry.mockClear();
   menus.status = 'ready';
+  menus.retry.mockClear();
   Object.defineProperty(navigator, 'geolocation', {
     configurable: true,
     value: { getCurrentPosition: (ok: PositionCallback) => ok({ coords: { latitude: HERE.lat, longitude: HERE.lon } } as GeolocationPosition) },
@@ -122,15 +146,27 @@ function expectOutsideLiveRegions(note: HTMLElement, status: string) {
 }
 
 describe('„Na razie”, póki odpowiedź przychodzi kawałkami', () => {
-  test('„Zakupy i przepisy”: liczy tylko sklepy z promienia, który podaje', async () => {
+  test('„Zakupy i przepisy”: liczy tylko sklepy z danymi o produktach z promienia, który podaje — i tak je nazywa', async () => {
     window.history.replaceState(null, '', '#/w-poblizu?widok=sklepy&r=5000');
     osm.state = osmState({ items: SHOPS });
     renderWithBridge(<NearbyPage />);
     const note = await screen.findByText(/^Na razie:/);
-    // Lidl dalej jest w pełnej części listy (na mapie też), ale nie w 1,2 km.
+    // Lidl dalej jest w pełnej części listy (na mapie też), ale nie w 1,2 km; Sklep u Ani jest w nich,
+    // ale bez danych o produktach — jak w wierszu stanu, gdy lista jest pełna („2 sklepy z danymi
+    // o produktach i 1 inny”).
     expect(screen.getByTestId('shops')).toHaveTextContent('Lidl dalej');
-    expect(note).toHaveTextContent('Na razie: 2 sklepy w promieniu 1,2 km.');
+    expect(note).toHaveTextContent('Na razie: 2 sklepy z danymi o produktach w promieniu 1,2 km.');
     expectOutsideLiveRegions(note, 'Szukam sklepów w promieniu 5 km…');
+  });
+
+  test.each([
+    [500, 'Na razie: 1 sklep z danymi o produktach w promieniu 500 m.'],
+    [200, 'Na razie: 0 sklepów z danymi o produktach w promieniu 200 m.'],
+  ])('„Zakupy i przepisy”: liczba sklepów odmieniona (pełne do %i m)', async (completeWithin, expected) => {
+    window.history.replaceState(null, '', '#/w-poblizu?widok=sklepy&r=5000');
+    osm.state = osmState({ items: SHOPS, completeWithin });
+    renderWithBridge(<NearbyPage />);
+    expect(await screen.findByText(/^Na razie:/)).toHaveTextContent(expected);
   });
 
   test('„Zjedz teraz”: liczy tylko miejsca z menu z promienia, który podaje', async () => {
@@ -156,6 +192,90 @@ describe('„Na razie”, póki odpowiedź przychodzi kawałkami', () => {
       expect(screen.queryByText(/^Na razie:/)).toBeNull();
     },
   );
+
+  test('„Zjedz teraz” bez uwagi, póki nie ma produktów sklepów: Biedronka i Lidl wyglądałyby na takie bez menu', async () => {
+    holdProducts();
+    window.history.replaceState(null, '', '#/w-poblizu?r=5000');
+    osm.state = osmState({ items: [...PLACES, ...SHOPS] });
+    renderWithBridge(<NearbyPage />);
+    expect(await screen.findByText('Szukam lokali w promieniu 5 km…')).toBeInTheDocument();
+    expect(screen.queryByText(/^Na razie:/)).toBeNull();
+  });
+
+  test('„Zjedz teraz” z bazą produktów wczytaną wcześniej: liczy od razu i sklepy z gotowym jedzeniem', async () => {
+    window.history.replaceState(null, '', '#/w-poblizu?r=5000');
+    osm.state = osmState({ items: [...PLACES, ...SHOPS] });
+    renderWithBridge(<NearbyPage />);
+    // McDonald's, Salad Story, Biedronka i Lidl; Bar u Zdzisia i Sklep u Ani są bez danych, oba „dalej” poza 1,2 km.
+    expect(await screen.findByText(/^Na razie:/)).toHaveTextContent('Na razie: 4 miejsca z menu w promieniu 1,2 km.');
+    // Lokale wciąż przychodzą, więc o bazę nikt jeszcze nie prosił: wczytana wcześniej, jest od razu.
+    expect(loadDataset).not.toHaveBeenCalled();
+  });
+});
+
+describe('„Zjedz teraz”: baza produktów czeka na lokale', () => {
+  test.each<[string, Partial<OsmState>]>([
+    ['gotowe', { status: 'ready', completeWithin: 1000 }],
+    ['nieudane', { status: 'error', error: 'Nie udało się pobrać danych okolicy.', items: [], completeWithin: 0 }],
+  ])('nie rusza, póki lokale się wczytują, a rusza, gdy są (%s)', async (_, done) => {
+    holdProducts();
+    osm.state = osmState();
+    const view = renderWithBridge(<NearbyPage />);
+    expect(await screen.findByText('Szukam lokali w promieniu 1 km…')).toBeInTheDocument();
+    // Jej 3,3 MB nie staną na wolnym łączu przed indeksem i kawałkami danych okolicy.
+    expect(loadDataset).not.toHaveBeenCalled();
+    osm.state = osmState(done);
+    renderAgain(view);
+    await waitFor(() => expect(loadDataset).toHaveBeenCalledTimes(1));
+  });
+
+  test('póki produkty sklepów w drodze, wiersz stanu mówi to, zamiast liczyć sklepy jako bez menu', async () => {
+    const products = holdProducts();
+    osm.state = osmState({ status: 'ready', items: [...PLACES, ...SHOPS], completeWithin: 1000 });
+    renderWithBridge(<NearbyPage />);
+    expect(await screen.findByText('Wczytuję produkty sklepów…')).toHaveAttribute('role', 'status');
+    expect(screen.queryByText(/bez danych o menu\./)).toBeNull();
+    products(LOADED);
+    // McDonald's, Salad Story, Biedronka i Lidl; Bar u Zdzisia i Sklep u Ani bez danych — liczby raz, już ostateczne.
+    expect(
+      await screen.findByText(/^W promieniu 1 km: 4 miejsca z menu, w tym \d z czymś na teraz, i 2 bez danych o menu\.$/),
+    ).toHaveAttribute('role', 'status');
+  });
+
+  test('bez sklepu sieci w pobliżu produkty niczego nie zmieniają: liczby od razu', async () => {
+    holdProducts();
+    osm.state = osmState({ status: 'ready', completeWithin: 1000 });
+    renderWithBridge(<NearbyPage />);
+    expect(await screen.findByText(/^W promieniu 1 km: 2 miejsca z menu, w tym \d z czymś na teraz, i 1 bez danych o menu\.$/)).toBeInTheDocument();
+  });
+});
+
+describe('„Zjedz teraz”, gdy menu sieci się nie wczytały', () => {
+  test('wiersz stanu mówi to, zamiast radzić większy promień, a „Spróbuj ponownie” ponawia menu', async () => {
+    const user = userEvent.setup();
+    menus.status = 'error';
+    osm.state = osmState({ status: 'ready', completeWithin: 1000 });
+    renderWithBridge(<NearbyPage />);
+    expect(await screen.findByText('Nie udało się wczytać menu sieci.')).toHaveAttribute('role', 'status');
+    // Ani w wierszu stanu, ani pod pustą listą: bez menu sieci większy promień nic nie da.
+    expect(screen.queryByText(/zwiększ promień/i)).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Spróbuj ponownie' }));
+    expect(menus.retry).toHaveBeenCalledTimes(1);
+    expect(osm.retry).not.toHaveBeenCalled();
+  });
+
+  test('zawiodły i lokale, i menu: wiersz stanu mówi o lokalach, a jeden przycisk ponawia oba', async () => {
+    const user = userEvent.setup();
+    menus.status = 'error';
+    osm.state = osmState({ status: 'error', error: 'Nie udało się pobrać danych okolicy.', items: [], completeWithin: 0 });
+    renderWithBridge(<NearbyPage />);
+    expect(await screen.findByText('Nie udało się pobrać danych okolicy.')).toHaveAttribute('role', 'status');
+    const retries = screen.getAllByRole('button', { name: 'Spróbuj ponownie' });
+    expect(retries).toHaveLength(1);
+    await user.click(retries[0]!);
+    expect(osm.retry).toHaveBeenCalledTimes(1);
+    expect(menus.retry).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('przypis pod mapą nazywa, czyje lokale i sklepy są na ekranie', () => {
@@ -177,8 +297,11 @@ describe('przypis pod mapą nazywa, czyje lokale i sklepy są na ekranie', () =>
     ['przy granicy, póki na ekranie polska strona z danych aplikacji', { source: 'mixed', shown: 'static', coverage: 'partial' }],
   ] as const)('%s: ich data', async (_, over) => {
     osm.state = osmState({ ...over, items: [...PLACES, ...SHOPS], completeWithin: 1000 });
+    // Dzień tej chwili tam, gdzie jest urządzenie: od UTC+4 to już 23 października.
+    const day = dataDate(AS_OF);
+    expect(day).toMatch(/^2[23] października 2026$/);
     await inBothViews(() => {
-      expect(credit()).toHaveTextContent('stan z 22 października 2026');
+      expect(credit()).toHaveTextContent(`stan z ${day}`);
       expect(credit()).not.toHaveTextContent('Overpass');
       expect(within(credit()).getByRole('link', { name: 'licencja ODbL' })).toBeInTheDocument();
     });

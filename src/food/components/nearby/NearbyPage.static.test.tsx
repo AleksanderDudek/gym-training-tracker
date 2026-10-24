@@ -10,6 +10,7 @@ import { renderWithBridge } from '../../test/bridge';
 import { DATASET, INDEXED } from '../../test/fixtures';
 import { boxCoverage, osmResponse, osmRow, osmTestData, type OsmTestData } from '../../test/osm';
 import NearbyPage from './NearbyPage';
+import { dataDate } from './nearbyText';
 
 // Ta kompilacja „ma” dane OSM — pod Vitestem domyślnie ich nie ma, żeby reszta testów sprawdzała Overpass.
 vi.mock('virtual:osm-places', () => ({ default: { index: 'data/osm/v1/index.json' } }));
@@ -107,6 +108,11 @@ afterEach(() => {
 });
 
 const overpassAsked = () => requests.filter((u) => u.includes('overpass')).length;
+/**
+ * „stan z …” z datą danych w teście, zapisaną tak jak strona: dzień tej chwili w strefie urządzenia
+ * (to późny wieczór UTC — od UTC+4 już następny dzień).
+ */
+const asOf = () => `stan z ${dataDate(data.index.dataAsOf)}`;
 
 describe('„W pobliżu” z danych OSM dołączonych do aplikacji', () => {
   test('w Polsce oba widoki z danych aplikacji, bez jednego zapytania do Overpass; data danych w stopce', async () => {
@@ -114,7 +120,7 @@ describe('„W pobliżu” z danych OSM dołączonych do aplikacji', () => {
     renderWithBridge(<NearbyPage />);
     expect(await screen.findByText(/W promieniu 1 km: \d+ (miejsce|miejsca|miejsc) z menu/)).toBeInTheDocument();
     expect(screen.getByTestId('pins')).toHaveTextContent("McDonald's");
-    expect(screen.getByText(/Lokale i sklepy:/)).toHaveTextContent('stan z 22 października 2026');
+    expect(screen.getByText(/Lokale i sklepy:/)).toHaveTextContent(asOf());
     expect(screen.getByRole('link', { name: '© autorzy OpenStreetMap' })).toHaveAttribute('href', 'https://www.openstreetmap.org/copyright');
     expect(screen.getByRole('link', { name: 'licencja ODbL' })).toHaveAttribute('href', expect.stringMatching(/data\/osm\/v1\/LICENSE\.txt$/));
     await user.click(screen.getByRole('button', { name: 'Zakupy i przepisy' }));
@@ -150,7 +156,7 @@ describe('„W pobliżu” z danych OSM dołączonych do aplikacji', () => {
     await waitFor(() => expect(overpassAsked()).toBe(1));
     await waitFor(() => expect(screen.getByTestId('pins')).toHaveTextContent("McDonald's Polska strona"));
     const credit = screen.getByText(/Lokale i sklepy:/);
-    expect(credit).toHaveTextContent('stan z 22 października 2026');
+    expect(credit).toHaveTextContent(asOf());
     expect(credit).not.toHaveTextContent('Overpass');
     expect(within(credit).getByRole('link', { name: 'licencja ODbL' })).toBeInTheDocument();
     // Odpowiedź Overpass zastępuje polską stronę: data danych aplikacji już do niczego na ekranie nie pasuje.

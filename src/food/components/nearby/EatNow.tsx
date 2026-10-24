@@ -48,6 +48,8 @@ const T = text({
     loading: (radius: string) => `Szukam lokali w promieniu ${radius}…`,
     partial: (n: number, radius: string) => `Na razie: ${n} ${plural(n, 'miejsce', 'miejsca', 'miejsc')} z menu w promieniu ${radius}.`,
     menus: 'Wczytuję menu sieci…',
+    menusFailed: 'Nie udało się wczytać menu sieci.',
+    products: 'Wczytuję produkty sklepów…',
     fetchFailed: 'Nie udało się pobrać lokali.',
     what: 'lokale',
     found: (radius: string, known: number, fitting: number, other: number) =>
@@ -95,6 +97,8 @@ const T = text({
     loading: (radius: string) => `Looking for places within ${radius}…`,
     partial: (n: number, radius: string) => `So far: ${n} ${pluralEn(n, 'place', 'places')} with a menu within ${radius}.`,
     menus: 'Loading the chains’ menus…',
+    menusFailed: 'Couldn’t load the chains’ menus.',
+    products: 'Loading the shops’ products…',
     fetchFailed: 'Couldn’t fetch the places.',
     what: 'places',
     found: (radius: string, known: number, fitting: number, other: number) =>
@@ -174,7 +178,10 @@ export function EatNow({ state, update, closeEntry, geo, locate, setManual, setR
   const placesState = { ...osm, items: places };
   const menus = useRestaurants();
   const chains = menus.status === 'ready' ? menus.chains : NO_CHAINS;
-  const data = useDataset();
+  // The products only add the shops' ready food here, so they wait for the places: on a slow link
+  // their 3.3 MB went first and the 9 kB index and the nearest leaves queued behind them. Already
+  // loaded (another food screen, the other view), they are there at once.
+  const data = useDataset(osm.status === 'ready' || osm.status === 'error');
   const products = data.status === 'ready' ? data.products : NO_PRODUCTS;
   const dict = data.status === 'ready' ? data.dataset.dictionaries : NO_DICT;
   const favorites = useFavorites();
@@ -276,20 +283,37 @@ export function EatNow({ state, update, closeEntry, geo, locate, setManual, setR
     ],
   });
 
+  // A shop's ready food comes with the products: until they are in, every Żabka and Biedronka around
+  // would count as a place without menu data. Without a chain's shop around they change no count.
+  const shopsWait = data.status === 'loading' && ranked.some((r) => r.place.shop !== null);
+  // Everything that gives a place its menu is here: what is counted (or found missing) is final.
+  const settled = menus.status === 'ready' && !shopsWait;
+  // Counts only once they are final, before then what is still loading — said once, not numbers
+  // that change by themselves after the page looks finished (the status line is read out).
   const status = (() => {
     if (!geo.position) return geo.status === 'locating' ? T.locating : geo.status === 'denied' ? T.denied : T.failed;
     if (placesState.status === 'loading' || placesState.status === 'idle') return T.loading(radiusLabel(state.radius));
     if (placesState.status === 'error') return placesState.error ?? T.fetchFailed;
     if (menus.status === 'loading') return T.menus;
+    // Without the menus every place looks menu-less: a wider radius would not help, another try may.
+    if (menus.status === 'error') return T.menusFailed;
+    if (shopsWait) return T.products;
     if (known === 0) return T.noneKnown(radiusLabel(state.radius));
     return T.found(radiusLabel(state.radius), known, fitting, ranked.length - known);
   })();
+  // „Spróbuj ponownie” whenever the status line says something failed — the places, or the menus
+  // with the places in — and it tries again whatever failed.
+  const menusFailed = geo.position !== null && placesState.status === 'ready' && menus.status === 'error';
+  const retryFailed = () => {
+    if (placesState.status === 'error') retry();
+    if (menus.status === 'error') menus.retry();
+  };
   // The app's data arrives in pieces, nearest first: what is complete so far is said, not hidden —
-  // counted only once the chains' menus are here (while they load, or when they failed, every place
-  // looks menu-less), and only out to the radius the note names.
+  // counted only once the chains' menus and the shops' products are here (while either loads, or
+  // when the menus failed, places look menu-less), and only out to the radius the note names.
   const sure = Math.floor(within / 100) * 100;
   const progress =
-    geo.position && placesState.status !== 'ready' && sure >= 100 && within < state.radius && menus.status === 'ready'
+    geo.position && placesState.status !== 'ready' && sure >= 100 && within < state.radius && settled
       ? T.partial(ranked.filter((r) => r.best && r.distance <= sure).length, radiusLabel(sure))
       : null;
   const note = geo.source === 'saved' && geo.status === 'locating' ? T.savedLocating : null;
@@ -304,8 +328,8 @@ export function EatNow({ state, update, closeEntry, geo, locate, setManual, setR
           {note && <p className="fd-near-place-note">{note}</p>}
           <div className="fd-near-status">
             <AroundStatus state={placesState} what={T.what} status={status} showServer={geo.position !== null} progress={progress} />
-            {placesState.status === 'error' && (
-              <button type="button" className="btn sm ghost" onClick={retry}>
+            {(placesState.status === 'error' || menusFailed) && (
+              <button type="button" className="btn sm ghost" onClick={retryFailed}>
                 <RefreshCw size={16} strokeWidth={2} aria-hidden />
                 {COMMON.retry}
               </button>
@@ -430,7 +454,9 @@ export function EatNow({ state, update, closeEntry, geo, locate, setManual, setR
             </div>
           )}
           {rows.length === 0 ? (
-            geo.position && placesState.status === 'ready' && <p className="empty fd-near-empty">{T.empty}</p>
+            // „Widen the radius” only for a final list: not while the menus or the products load, nor
+            // after the menus failed (the status line says so and offers another try).
+            geo.position && placesState.status === 'ready' && settled && <p className="empty fd-near-empty">{T.empty}</p>
           ) : (
             <ol className="fd-near-pick-list">
               {shown.map((row, i) => (
