@@ -185,7 +185,7 @@ describe('Ekran Dziś', () => {
   });
 
   test('ze znacznikiem karta staje pod ważeniem, przed przekąską', async () => {
-    await saveProfile(completeProfile({ startDate: '2026-10-01' }));
+    await saveProfile(completeProfile({ startDate: '2026-10-01', dailyKcal: 2000 }));
     window.localStorage.setItem('gt:diet', '1');
     const { container } = render(home());
     // Paczka karty jeszcze idzie: jej miejsce już stoi zajęte, ukryte przed czytnikiem ekranu.

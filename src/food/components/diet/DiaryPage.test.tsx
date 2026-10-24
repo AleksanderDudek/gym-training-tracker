@@ -159,7 +159,7 @@ describe('Dziennik', () => {
   });
 
   test('kolejność od góry: dzień, waga, karta dnia z akcjami, zjedzone, plan dnia, „Co teraz?”, kroki, a na dole wejścia', async () => {
-    await saveProfile(completeProfile({ startDate: '2026-10-01' }));
+    await saveProfile(completeProfile({ startDate: '2026-10-01', dailyKcal: 2000 }));
     renderWithBridge(<DiaryPage />);
     const blocks = [
       await screen.findByRole('heading', { name: 'Dziś' }),

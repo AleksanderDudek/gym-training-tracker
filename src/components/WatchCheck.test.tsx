@@ -462,6 +462,7 @@ describe('karty odpowiedzi', () => {
       name: 'D2™ Air',
       v: 'part',
       lacks: ['stress', 'bodyBattery', 'rides'],
+      bg: 64,
     });
   });
 
