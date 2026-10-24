@@ -86,11 +86,14 @@ describe('kopia jedzenia', () => {
     await saveProfile(completeProfile({}), database);
     window.localStorage.setItem(DIET_FLAG, '1');
     window.localStorage.setItem('produkty-pl:position', '{"lat":52,"lon":21}');
+    // Miejsce wybrane ręcznie w tej karcie przetrwałoby przeładowanie — reset nie może go zostawić.
+    window.sessionStorage.setItem('produkty-pl:position-picked', '{"lat":50.06,"lon":19.94}');
     window.localStorage.setItem('kb-trener-v3', '{}');
     await clearFood(database);
     expect(await database.profile.count()).toBe(0);
     expect(hasDiet()).toBe(false);
     expect(window.localStorage.getItem('produkty-pl:position')).toBeNull();
+    expect(window.sessionStorage.getItem('produkty-pl:position-picked')).toBeNull();
     // Zapis treningu czyści aplikacja osobno — tu zostaje nietknięty.
     expect(window.localStorage.getItem('kb-trener-v3')).toBe('{}');
   });

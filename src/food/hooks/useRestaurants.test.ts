@@ -56,7 +56,7 @@ describe('useRestaurants: „Spróbuj ponownie” po nieudanej paczce menu', () 
     act(() => result.current.retry());
     await waitFor(() => expect(reload).toHaveBeenCalledTimes(1));
     // Strona spoza service workera przeładowuje się dopiero, gdy serwer odpowiada.
-    expect(head).toHaveBeenCalledWith(expect.any(String), { method: 'HEAD', cache: 'no-store' });
+    expect(head).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ method: 'HEAD', cache: 'no-store' }));
   });
 
   test('serwer nie odpowiada (łącze martwe, choć przeglądarka mówi, że jest sieć): bez przeładowania, które skończyłoby na stronie błędu', async () => {
@@ -69,6 +69,31 @@ describe('useRestaurants: „Spróbuj ponownie” po nieudanej paczce menu', () 
     await waitFor(() => expect(result.current.status).toBe('error'));
     await new Promise((settled) => setTimeout(settled, 20));
     expect(reload).not.toHaveBeenCalled();
+  });
+
+  test('serwer przyjmuje połączenie, ale milczy: po chwili przycisk wraca, bez przeładowania — nie „Wczytuję…” bez końca', async () => {
+    const reload = spyReload();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        (_url: string, init?: RequestInit) =>
+          new Promise<Response>((_, reject) => init?.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')))),
+      ),
+    );
+    const { useRestaurants } = await withFailingCatalog();
+    const { result } = renderHook(() => useRestaurants());
+    await waitFor(() => expect(result.current.status).toBe('error'));
+    vi.useFakeTimers();
+    try {
+      act(() => result.current.retry());
+      await act(() => vi.advanceTimersByTimeAsync(4000));
+      expect(result.current.status).toBe('loading');
+      await act(() => vi.advanceTimersByTimeAsync(1500));
+      expect(result.current.status).toBe('error');
+      expect(reload).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   test('prawdziwa, nieudana próba przez sieć (nie od ręki): błąd na miejscu, bez przeładowania — Firefox pyta naprawdę', async () => {

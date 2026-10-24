@@ -22,6 +22,9 @@ export const FOOD_KEYS = [
   'produkty-pl:places',
 ] as const;
 
+/** To samo w pamięci karty (`sessionStorage`): miejsce wybrane ręcznie, które przetrwałoby przeładowanie. */
+export const FOOD_TAB_KEYS = ['produkty-pl:position-picked'] as const;
+
 /**
  * Kopie service workera (`src/sw.ts`), które mówią coś o człowieku: kafelki mapy i kawałki danych OSM
  * zdradzają, jakie okolice oglądał, a zdjęcia — jakie produkty. Baza produktów, paczka sklepów oraz
@@ -174,6 +177,13 @@ export async function clearFood(database: DietDb = defaultDb): Promise<void> {
       window.localStorage.removeItem(key);
     } catch {
       // Zablokowana pamięć przeglądarki: nie ma czego czyścić.
+    }
+  });
+  FOOD_TAB_KEYS.forEach((key) => {
+    try {
+      window.sessionStorage.removeItem(key);
+    } catch {
+      // Zablokowana pamięć karty: nie ma czego czyścić.
     }
   });
   // Najpierw ślad w pamięci strony: pliki czekające na service worker i to, co pamiętają wczytane

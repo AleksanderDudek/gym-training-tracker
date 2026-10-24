@@ -439,17 +439,11 @@ describe('useOsmAround', () => {
     expect([...seen]).toEqual(['mixed/live/ready']);
   });
 
-  test('at the border, while the Polish side loads, Overpass’s answer for the whole circle — nothing — is shown at once: nothing on either side', async () => {
-    data = osmTestData(BORDER_ROWS, BORDER, 3);
-    leaves = 'hold';
-    overpass = 'empty';
-    const { result } = mount(AT_BORDER);
-    await settle(3000);
-    expect(result.current[0]).toMatchObject({ source: 'mixed', shown: 'live', status: 'ready', items: [], error: null });
-  });
-
   test.each([
     ['still asks', 'hold', true, 'asking', 'Przy granicy: lokale po polskiej stronie mam w aplikacji, o resztę pytam serwer map…'],
+    // On the first load the app's own side is awaited, even when Overpass found nothing: only once it
+    // has failed does Overpass's empty answer stand for the whole circle.
+    ['has answered (nothing across the border)', 'empty', true, 'done', 'Przy granicy: lokale po polskiej stronie wczytuję z aplikacji…'],
     [
       'has failed',
       '504',

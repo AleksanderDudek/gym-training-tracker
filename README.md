@@ -2506,7 +2506,7 @@ da się odczytać, plik i tak powstaje, a komunikat mówi, że jest bez dziennik
 a „Usuń wszystkie dane” czyści oba, razem z zapamiętanym miejscem sklepów i kopiami kafelków mapy,
 kawałków danych OSM i zdjęć produktów (kafelki i kawałki zdradzają, jakie okolice ktoś oglądał) —
 także z tym, co dopiero miało trafić do kopii: zapomina kawałki w pamięci i w kolejce oraz ich
-pobrania czekające na przejęcie strony przez service worker, a sam service worker (wiadomość
+pobrania czekające na przejęcie strony przez service worker, i miejsce wybrane ręcznie w karcie, a sam service worker (wiadomość
 `FORGET_TRAIL`) kasuje te kopie i nie zapisuje już niczego, o co poproszono przed resetem — także gdy
 strona zaraz się przeładuje albo zamknie. Reset nie pobiera przy tym niczego z sieci. Baza ma tę samą nazwę co
 w Produktach PL — na tej samej domenie dawny dziennik pojawia się w aplikacji sam.

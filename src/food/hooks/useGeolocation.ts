@@ -12,23 +12,28 @@ export interface GeoState {
 
 const KEY = 'produkty-pl:position';
 /**
- * Whether the saved spot was picked by hand — for this tab only (`sessionStorage`): reloaded (also by
- * „Spróbuj ponownie” after the menus failed), the page keeps the pick instead of the GPS fix; a new
- * tab asks the browser again.
+ * The spot picked by hand in this tab (`sessionStorage`, rounded like the saved one): reloaded (also
+ * by „Spróbuj ponownie” after the menus failed), the page keeps the pick instead of the GPS fix — the
+ * pick itself, not the device's last position, which another tab's GPS may have moved. A new tab
+ * asks the browser again.
  */
-const SOURCE_KEY = 'produkty-pl:position-source';
+const PICK_KEY = 'produkty-pl:position-picked';
 
-function pickedByHand(): boolean {
+function loadPicked(): LatLon | null {
   try {
-    return window.sessionStorage.getItem(SOURCE_KEY) === 'manual';
+    const raw = window.sessionStorage.getItem(PICK_KEY);
+    const p = raw ? (JSON.parse(raw) as Partial<LatLon>) : null;
+    return p && Number.isFinite(p.lat) && Number.isFinite(p.lon) ? { lat: p.lat!, lon: p.lon! } : null;
   } catch {
-    return false;
+    return null;
   }
 }
 
-function noteSource(source: 'gps' | 'manual'): void {
+/** Notes the hand-picked spot for this tab, or forgets it (`null`: the browser's answer came since). */
+function notePicked(position: LatLon | null): void {
   try {
-    window.sessionStorage.setItem(SOURCE_KEY, source);
+    if (position) window.sessionStorage.setItem(PICK_KEY, JSON.stringify({ lat: rounded(position.lat), lon: rounded(position.lon) }));
+    else window.sessionStorage.removeItem(PICK_KEY);
   } catch {
     // Blocked: a reload asks the browser again, as a new tab does.
   }
@@ -45,11 +50,12 @@ function loadSaved(): LatLon | null {
   }
 }
 
+/** ~10 m: plenty for "shops near me", and no more precise than it needs to be. */
+const rounded = (n: number) => Math.round(n * 1e4) / 1e4;
+
 function save(position: LatLon): void {
   try {
-    // ~10 m: plenty for "shops near me", and no more precise than it needs to be.
-    const round = (n: number) => Math.round(n * 1e4) / 1e4;
-    window.localStorage.setItem(KEY, JSON.stringify({ lat: round(position.lat), lon: round(position.lon) }));
+    window.localStorage.setItem(KEY, JSON.stringify({ lat: rounded(position.lat), lon: rounded(position.lon) }));
   } catch {
     // Private mode or full: the next visit just asks again.
   }
@@ -64,9 +70,10 @@ function save(position: LatLon): void {
 export function useGeolocation(): [GeoState, { locate: () => void; setManual: (position: LatLon) => void }] {
   const supported = typeof navigator !== 'undefined' && 'geolocation' in navigator;
   const [state, setState] = useState<GeoState>(() => {
-    const saved = loadSaved();
     // Picked by hand in this tab before a reload: still the place asked about.
-    if (saved && pickedByHand()) return { status: 'ready', position: saved, source: 'manual' };
+    const picked = loadPicked();
+    if (picked) return { status: 'ready', position: picked, source: 'manual' };
+    const saved = loadSaved();
     return { status: supported ? 'locating' : 'unavailable', position: saved, source: saved ? 'saved' : null };
   });
   /** The first render already had a hand-picked place: the browser is not asked by itself. */
@@ -87,7 +94,7 @@ export function useGeolocation(): [GeoState, { locate: () => void; setManual: (p
         if (mine !== sequence.current) return;
         const position = { lat: coords.latitude, lon: coords.longitude };
         save(position);
-        noteSource('gps');
+        notePicked(null);
         setState({ status: 'ready', position, source: 'gps' });
       },
       (error) => {
@@ -107,7 +114,7 @@ export function useGeolocation(): [GeoState, { locate: () => void; setManual: (p
   const setManual = useCallback((position: LatLon) => {
     sequence.current++;
     save(position);
-    noteSource('manual');
+    notePicked(position);
     setState({ status: 'ready', position, source: 'manual' });
   }, []);
 

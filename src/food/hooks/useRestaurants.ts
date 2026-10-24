@@ -14,6 +14,8 @@ let pending: Promise<Chain[]> | null = null;
  * answered with the import it keeps failed (Chromium, WebKit) — a real attempt takes a round trip.
  */
 const KEPT_FAILURE_MS = 250;
+/** How long the server has to answer before a reload is worth it. */
+const REACH_MS = 5000;
 
 /**
  * Reloads the page if that can work: a page the service worker serves reloads even offline; any
@@ -22,10 +24,16 @@ const KEPT_FAILURE_MS = 250;
  */
 async function reloadIfReachable(): Promise<boolean> {
   if (!globalThis.navigator?.serviceWorker?.controller) {
+    // A server that takes the connection but never answers counts as unreachable too: the button
+    // comes back instead of „Wczytuję…” for good.
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), REACH_MS);
     try {
-      await fetch(location.href.split('#')[0]!, { method: 'HEAD', cache: 'no-store' });
+      await fetch(location.href.split('#')[0]!, { method: 'HEAD', cache: 'no-store', signal: controller.signal });
     } catch {
       return false;
+    } finally {
+      clearTimeout(timer);
     }
   }
   location.reload();
