@@ -58,7 +58,7 @@ describe('bigger meal in English', () => {
     renderWithBridge(<DiaryPage />);
 
     // The diary's button reads „Bigger meal” once the diary is rewritten, „Cheat meal” before that.
-    await user.click(await screen.findByRole('button', { name: /^(Bigger meal|Cheat meal)$/ }));
+    await user.click(await screen.findByRole('button', { name: 'Bigger meal' }));
     const sheet = screen.getByRole('dialog', { name: 'Bigger meal' });
     expect(within(sheet).getByText('Pick from the list or enter the macros — you’ll see what’s left for the rest of the day')).toBeInTheDocument();
     await user.click(within(sheet).getByRole('button', { name: 'Enter macros' }));

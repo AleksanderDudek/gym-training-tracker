@@ -33,7 +33,6 @@ afterEach(() => {
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
-  vi.doUnmock('../watches/find');
   vi.doUnmock('./WatchCheck');
   if (ua) Object.defineProperty(window.navigator, 'userAgent', ua);
   else delete (window.navigator as { userAgent?: string }).userAgent;
@@ -422,12 +421,6 @@ describe('karty odpowiedzi', () => {
   });
 
   it('„nie wiem” otwiera „Gdzie znajdę nazwę modelu?” i przenosi tam fokus', async () => {
-    const real = await vi.importActual<typeof import('../watches/find')>('../watches/find');
-    // Odpowiedź „help” daje wyszukiwarka (pakiet W1); tu ekran dostaje ją wprost.
-    vi.doMock('../watches/find', () => ({
-      ...real,
-      answer: (q: string) => (q.trim() === 'nie wiem' ? { kind: 'help' } : real.answer(q)),
-    }));
     const user = userEvent.setup();
     await check();
     const where = screen.getByText('Gdzie znajdę nazwę modelu?');

@@ -73,18 +73,4 @@ describe('the day on the ±100 band', () => {
     expect(simulateCheat(input({ plannedLeftKcal: 400 })).planShare).toBe(1);
     expect(simulateCheat(input({ eaten: eaten(1800), plannedLeftKcal: 500 })).planShare).toBe(0);
   });
-
-  test('the old input keys (week, weight, activity) are accepted and change nothing', () => {
-    const plain = simulateCheat(input({ eaten: eaten(1500), cheat: { kcal: 1200, protein: null, carbs: null, fat: null } }));
-    const old = simulateCheat({
-      ...input({ eaten: eaten(1500), cheat: { kcal: 1200, protein: null, carbs: null, fat: null } }),
-      profile: {},
-      kg: 80,
-      date: '2026-10-21',
-      eatenByDate: new Map([['2026-10-20', 2600]]),
-      goalOf: () => 1500,
-      typicalWorkoutKcal: 300,
-    });
-    expect(old).toEqual(plain);
-  });
 });

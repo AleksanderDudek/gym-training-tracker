@@ -9,9 +9,11 @@ describe('day targets of a plan', () => {
   test('every day of a plan has the same targets: a surplus earlier in the week is spread over no day ahead', () => {
     const profile = prepProfile({ dailyKcal: 2000 });
     // Monday 19 Oct: 2600 eaten, 600 over the target. Today is Tuesday 20 Oct — the old weekly
-    // spread (on by default) took 100 a day off the rest of this week.
+    // spread (on by default) took 100 a day off the rest of this week. What the old callers passed
+    // (what was eaten, today) is no part of the input any more and changes nothing.
     const dates = ['2026-10-20', '2026-10-21', '2026-10-25', '2026-10-26'];
-    const t = planTargets({ profile, kcal: 2000, eaten: new Map([['2026-10-19', 2600]]), today: TODAY, dates });
+    const oldCall = { profile, kcal: 2000, eaten: new Map([['2026-10-19', 2600]]), today: TODAY, dates };
+    const t = planTargets(oldCall);
     expect(t.map((d) => d.date)).toEqual(dates);
     expect(t.map((d) => d.targets)).toEqual(Array(dates.length).fill(DIET_PROFILES.redukcja.targets(2000, profile.targetWeightKg)));
   });

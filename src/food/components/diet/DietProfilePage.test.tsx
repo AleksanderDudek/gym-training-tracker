@@ -21,7 +21,7 @@ vi.mock('../../data', async () => {
   };
 });
 
-// Przerwa to zapis w magazynie (pakiet A): tu tylko to, że profil woła ją z dzisiejszą datą i wagą.
+// Przerwa to zapis w magazynie (testy w `store.test`): tu tylko to, że profil woła ją z dzisiejszą datą i wagą.
 vi.mock('../../diet/store', async (importOriginal) => {
   const real = await importOriginal<typeof import('../../diet/store')>();
   return { ...real, startPause: vi.fn(async () => {}), endPause: vi.fn(async () => {}) };

@@ -4,7 +4,7 @@ import type { PlannedCheat } from '../../diet/db';
 import { dayNeeds } from '../../diet/now';
 import { completeProfile } from '../../diet/store';
 import type { WeekCheck } from '../../diet/types';
-import { dayLines, gramsOf, kcalOf, overLine, todayLink, waitingCheck } from './dayText';
+import { dayLines, gramsOf, kcalOf, overLine, shownCheck, todayLink } from './dayText';
 
 // Redukcja at a 75 kg target weight: 150 g protein; the target is 2000 kcal.
 const linesOf = (eaten: { kcal: number; protein: number }, cheat: PlannedCheat | null = null, shown = true) => {
@@ -99,24 +99,25 @@ const check = (over: Partial<WeekCheck>): WeekCheck => ({
 describe('a Monday check waiting for an answer', () => {
   test('changed while the target is still its new one; answered or changed since — gone', () => {
     const p = completeProfile({ dailyKcal: 2050, lastCheck: check({}) });
-    expect(waitingCheck(p, true)?.status).toBe('changed');
-    expect(waitingCheck({ ...p, lastCheck: check({ answer: 'ok' }) }, true)).toBeNull();
-    expect(waitingCheck({ ...p, dailyKcal: 2000 }, true)).toBeNull();
+    expect(shownCheck(p, true)?.status).toBe('changed');
+    expect(shownCheck({ ...p, lastCheck: check({ answer: 'ok' }) }, true)).toBeNull();
+    expect(shownCheck({ ...p, dailyKcal: 2000 }, true)).toBeNull();
   });
 
   test('a proposal waits while the target is still the old one', () => {
     const p = completeProfile({ dailyKcal: 1950, lastCheck: check({ status: 'ask', to: 1850 }) });
-    expect(waitingCheck(p, true)?.status).toBe('ask');
-    expect(waitingCheck({ ...p, lastCheck: check({ status: 'suggested', to: 2050 }) }, true)?.status).toBe('suggested');
-    expect(waitingCheck({ ...p, dailyKcal: 1850 }, true)).toBeNull();
+    expect(shownCheck(p, true)?.status).toBe('ask');
+    expect(shownCheck({ ...p, lastCheck: check({ status: 'suggested', to: 2050 }) }, true)?.status).toBe('suggested');
+    expect(shownCheck({ ...p, dailyKcal: 1850 }, true)).toBeNull();
   });
 
   test('quiet weeks put no card up; without calories only the numberless reached card', () => {
     const p = completeProfile({ dailyKcal: 2050, lastCheck: check({ status: 'same', from: 2050, to: 2050 }) });
-    expect(waitingCheck(p, true)).toBeNull();
-    expect(waitingCheck({ ...p, lastCheck: check({}) }, false)).toBeNull();
-    const reached = { ...p, lastCheck: check({ status: 'reached', reason: 'reached', from: 1860, to: 2050 }) };
-    expect(waitingCheck(reached, false)?.status).toBe('reached');
+    expect(shownCheck(p, true)).toBeNull();
+    expect(shownCheck({ ...p, lastCheck: check({}) }, false)).toBeNull();
+    // Applied by the check: maintenance from Monday, the pace 0.
+    const reached = { ...p, lastCheck: check({ status: 'reached', reason: 'reached', from: 1860, to: 2050, goalPace: 0 }) };
+    expect(shownCheck(reached, false)?.status).toBe('reached');
   });
 });
 
@@ -133,7 +134,7 @@ describe('the Today card’s notice line', () => {
     expect(todayLink({ ...base, lastCheck: check({ status: 'ask', to: 1950, from: 2050 }) }, '2026-10-14', true)).toBe(
       'Propozycja nowego celu czeka w dzienniku',
     );
-    expect(todayLink({ ...base, lastCheck: check({ status: 'reached', from: 1860, to: 2050 }) }, '2026-10-14', false)).toBe(
+    expect(todayLink({ ...base, lastCheck: check({ status: 'reached', from: 1860, to: 2050, goalPace: 0 }) }, '2026-10-14', false)).toBe(
       'Waga docelowa osiągnięta',
     );
     expect(todayLink(base, '2026-10-14', true)).toBeNull();

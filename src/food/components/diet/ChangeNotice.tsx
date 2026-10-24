@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { text } from '../../../i18n';
 import { dietPath } from '../../../routing';
 import { dismissNotice, resolveFloor } from '../../diet/store';
-import { floorOf, hardMinOf, safety } from '../../diet/target';
 import type { Profile } from '../../diet/types';
+import { noticeNotes } from '../../diet/upgrade';
 import { formatNumber } from '../../lib/format';
 import { useKcalShown } from './kcalShown';
 
@@ -51,23 +51,16 @@ const T = text({
 });
 
 /**
- * What the upgrade changed for this person, beyond the five bullets everyone gets: a safety rule
- * that moved the target (under 18, a BMI under 18.5, the hard minimum — each left a `safety` entry
- * in the goals history), and a kept target under the BMR floor, which needs a choice.
+ * What the upgrade changed for this person, beyond the five bullets everyone gets (`noticeNotes`):
+ * a safety rule that moved the target (under 18, a BMI under 18.5, the hard minimum), and a kept
+ * target under the BMR floor, which needs a choice. Without calories only the age line is left.
  */
 function personal(p: Profile, kgNow: number, shown: boolean): { bullet: string | null; floor: number | null } {
-  if (p.age < 18) return { bullet: T.age, floor: null };
+  const notes = noticeNotes(p, kgNow);
+  if (notes.age) return { bullet: T.age, floor: null };
   if (!shown) return { bullet: null, floor: null };
-  const safetyEntry = [...p.goals].reverse().find((g) => g.by === 'safety') ?? null;
-  const bullet =
-    safetyEntry && safety(p, kgNow).noLoss === 'bmi'
-      ? T.bmi(n(p.dailyKcal))
-      : safetyEntry && safetyEntry.kcal === hardMinOf(p)
-        ? T.hardMin(n(hardMinOf(p)))
-        : null;
-  const floor = floorOf(p, kgNow);
-  const belowFloor = !p.belowFloorOk && p.dailyKcal >= hardMinOf(p) && p.dailyKcal < floor;
-  return { bullet, floor: belowFloor ? floor : null };
+  const bullet = notes.bmi ? T.bmi(n(p.dailyKcal)) : notes.hardMin !== null ? T.hardMin(n(notes.hardMin)) : null;
+  return { bullet, floor: notes.floor };
 }
 
 interface Props {

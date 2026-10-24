@@ -55,7 +55,7 @@ type SheetProps = ComponentProps<typeof CheatMealSheet>;
 /** Już zjedzone tego dnia. */
 const ate = (kcal: number, protein = 0) => totals([{ kcal, protein, carbs: 0, fat: 0 }]);
 
-/** Arkusz tak, jak otwiera go dziennik — z tygodniem i ruchem, które dziennik jeszcze podaje, a arkusz pomija. */
+/** Arkusz tak, jak otwiera go dziennik. */
 function renderSheet(over: Partial<SheetProps> = {}) {
   const props: SheetProps = {
     open: true,
@@ -64,8 +64,6 @@ function renderSheet(over: Partial<SheetProps> = {}) {
     hour: 12,
     profile: PROFILE,
     eaten: ate(0),
-    eatenByDate: new Map(),
-    activity: null,
     plannedKcal: null,
     planned: null,
     ideasFor: () => ({ variants: [], singles: [] }),
@@ -90,9 +88,9 @@ async function enterMacros(user: ReturnType<typeof userEvent.setup>, kcal: strin
 
 const sim = (dialog: HTMLElement) => within(dialog).getByRole('region', { name: 'Co z tego wynika' });
 
-/** The diary's button: „Większy posiłek” once the diary is rewritten, „Cheat meal” before that. */
-const DIARY_BUTTON = /^(Większy posiłek|Cheat meal)$/;
-const PLANNED_CARD = /Zaplanowany (większy posiłek|cheat meal)/i;
+/** The diary's button and its card for a planned bigger meal. */
+const DIARY_BUTTON = 'Większy posiłek';
+const PLANNED_CARD = 'Zaplanowany większy posiłek';
 
 async function openFromDiary(user: ReturnType<typeof userEvent.setup>) {
   await user.click(await screen.findByRole('button', { name: DIARY_BUTTON }));

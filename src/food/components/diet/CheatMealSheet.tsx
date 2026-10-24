@@ -90,13 +90,6 @@ interface Props {
   profile: Profile;
   /** What is already logged on the day. */
   eaten: DayTotals;
-  /**
-   * @deprecated Ignored: the weekly balance is gone (one target a day). Accepted until the diary
-   * stops passing it; removed at I2.
-   */
-  eatenByDate?: unknown;
-  /** @deprecated Ignored: activity never changes food. Accepted until the diary stops passing it; removed at I2. */
-  activity?: unknown;
   /** The day's plan in kcal (meal prep or workbook); `null` without a plan. */
   plannedKcal: number | null;
   /** The bigger meal already planned on this day — the sheet edits it. */

@@ -22,19 +22,6 @@ export interface CheatInput {
   plannedLeftKcal: number | null;
 }
 
-/**
- * Keys of the old input (the weekly balance, the scale and the activity offset). Callers written
- * before the one-target model may still pass them; they are ignored. Removed with them at I2.
- */
-interface RetiredInput {
-  profile?: unknown;
-  kg?: unknown;
-  date?: unknown;
-  eatenByDate?: unknown;
-  goalOf?: unknown;
-  typicalWorkoutKcal?: unknown;
-}
-
 export interface CheatSimulation {
   goal: number;
   eatenBefore: number;
@@ -63,7 +50,7 @@ export interface CheatSimulation {
 /** Below this per remaining meal the day still fits, but the meals are snacks. */
 export const TIGHT_MEAL_KCAL = 250;
 
-export function simulateCheat(input: CheatInput & RetiredInput): CheatSimulation {
+export function simulateCheat(input: CheatInput): CheatSimulation {
   const { cheat, targets, eaten } = input;
   const goal = targets.kcal;
   const after = eaten.kcal + cheat.kcal;

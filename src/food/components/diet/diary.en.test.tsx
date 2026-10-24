@@ -397,7 +397,7 @@ describe('one target a day, in English', () => {
       todayLink({ ...p, notice: 'show' }, TODAY, true),
       todayLink({ ...p, lastCheck: CHANGED }, TODAY, true),
       todayLink({ ...p, dailyKcal: 1950, lastCheck: { ...CHANGED, status: 'ask', to: 1850 } }, TODAY, true),
-      todayLink({ ...p, lastCheck: { ...CHANGED, status: 'reached', from: 1860 } }, TODAY, true),
+      todayLink({ ...p, lastCheck: { ...CHANGED, status: 'reached', from: 1860, goalPace: 0 } }, TODAY, true),
       todayLink({ ...p, pauses: [{ from: '2026-10-12', to: '2026-10-18', kcal: 2050 }] }, TODAY, true),
     ];
     expect(links).toEqual([
@@ -464,7 +464,7 @@ describe('one target a day, in English', () => {
           ...base,
           dailyKcal: 2550,
           reached,
-          lastCheck: { ...CHANGED, status: 'reached', reason: 'reached', from: 1860, to: 2550, facts: null },
+          lastCheck: { ...CHANGED, status: 'reached', reason: 'reached', from: 1860, to: 2550, facts: null, goalPace: 0 },
         },
         'Target weight reached',
         ['Weight trend: 74.9 kg, target weight: 75 kg. From today the target is maintenance: 2,550 kcal a day.', 'I want to keep losing'],

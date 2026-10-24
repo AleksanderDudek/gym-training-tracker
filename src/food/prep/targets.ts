@@ -6,14 +6,6 @@ export interface PlanTargetsInput {
   /** The daily target the plan is made for: today's from the diet profile (`targetOn`). */
   kcal: number;
   dates: readonly string[];
-  /**
-   * Ignored. The old weekly spread read what was eaten this week; callers written for it
-   * (`prep/store.test.ts`, `scripts/food/check-prep.ts`) still pass these until they are updated.
-   * @deprecated
-   */
-  eaten?: ReadonlyMap<string, number>;
-  /** Ignored, as `eaten`. @deprecated */
-  today?: string;
 }
 
 /**

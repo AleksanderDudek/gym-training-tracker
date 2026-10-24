@@ -49,7 +49,7 @@ for (const [store, online] of baskets) {
       settings: { start: START, days: 7, meals: 4, cooking: 'lunch', store, online, exclude: [], seed: 1, avoid: [] },
       index,
       dict,
-      dayTargets: planTargets({ profile: p, kcal: 2200, eaten: new Map(), today: START, dates: planDates(START, 7) }),
+      dayTargets: planTargets({ profile: p, kcal: 2200, dates: planDates(START, 7) }),
       goal: { kcal: 2200, source: 'profile', dietProfile: style, styleLabel: DIET_PROFILES[style].label, pace: 0.5, weightKg: 84 },
       checkIn: null,
     });

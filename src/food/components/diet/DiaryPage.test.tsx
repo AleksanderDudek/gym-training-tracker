@@ -27,7 +27,7 @@ vi.mock('../../data', async () => {
 
 /**
  * Poniedziałkowe sprawdzenie, jak je widzi dziennik: `pending`, póki może jeszcze zmienić dzisiejszy
- * cel, potem `ready`. Hak pakietu A jest tu zaślepką (zawsze `ready`), więc test sam steruje stanem.
+ * cel, potem `ready`. Stanem haka steruje sam test; hak ma własne testy (`useWeeklyCheck.test`).
  */
 const weekly = vi.hoisted(() => ({ state: 'ready' as 'ready' | 'pending', listeners: new Set<() => void>() }));
 vi.mock('../../hooks/useWeeklyCheck', async () => {
@@ -221,7 +221,7 @@ describe('Dziennik', () => {
     ] as const)
       expect(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(quiet).toHaveTextContent('teraz 3 ważenia i pełne zapisy z 8 dni.');
-    // „Zakończ przerwę” idzie do sklepu pakietu A (tu zaślepka) i mówi, do jakiego celu wraca.
+    // „Zakończ przerwę” kończy przerwę w magazynie i mówi, do jakiego celu wraca.
     await user.click(screen.getByRole('button', { name: 'Zakończ przerwę' }));
     await waitFor(() => expect(bridge.toast).toHaveBeenCalledWith('Przerwa zakończona. Cel: 2000 kcal.'));
     // Na inny dzień — nic z tego.

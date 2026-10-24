@@ -288,9 +288,6 @@ function asPlanItem(food: Food): PlanItem {
   };
 }
 
-/** No week to balance: the bigger-meal simulation's old input still asks for one (C narrows it). */
-const NO_WEEK: Map<string, number> = new Map();
-
 function TodayView({ profile, plan, date, today, hour, nowMs, pickerOpen, onPicker, onDate }: ViewProps) {
   const bridge = useBridge();
   const shown = useKcalShown();
@@ -384,23 +381,9 @@ function TodayView({ profile, plan, date, today, hour, nowMs, pickerOpen, onPick
               ? T.within
               : T.enough;
 
-  // The bigger meal's verdict. C narrows the simulation's input to the first five fields (spec
-  // §4.4); built as a variable, the call compiles against the old input and the new one alike.
-  const verdictOf = (meal: PlannedCheat) => {
-    const input = {
-      cheat: meal,
-      targets,
-      eaten,
-      mealsLeft: mealsAhead,
-      plannedLeftKcal: null,
-      profile,
-      kg: kgNow,
-      date,
-      eatenByDate: NO_WEEK,
-      typicalWorkoutKcal: 0,
-    };
-    return verdictText(simulateCheat(input));
-  };
+  // The bigger meal's verdict (spec §4.4): the day's targets at its own target (`targetOn(date)`).
+  const verdictOf = (meal: PlannedCheat) =>
+    verdictText(simulateCheat({ cheat: meal, targets, eaten, mealsLeft: mealsAhead, plannedLeftKcal: null }));
 
   return (
     <>

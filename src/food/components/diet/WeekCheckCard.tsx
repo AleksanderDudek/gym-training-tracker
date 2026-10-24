@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { pluralEn, text } from '../../../i18n';
 import { useBridge } from '../../bridge';
+import { keepAllowed, reachedApplied } from '../../diet/calibrate';
 import { daysBetween, mondayOf } from '../../diet/model';
 import { answerCheck } from '../../diet/store';
-import { hardMinOf, impliedPace, minTargetOf, safePace, snap05 } from '../../diet/target';
+import { hardMinOf, impliedPace, minTargetOf, snap05 } from '../../diet/target';
 import type { CheckFacts, Profile, WeekCheck } from '../../diet/types';
 import { formatNumber, plural } from '../../lib/format';
-import { waitingCheck } from './dayText';
+import { shownCheck } from './dayText';
 import { dayMonth, howHref, paceWord } from './dietFormat';
 import { useKcalShown } from './kcalShown';
 
@@ -270,9 +271,9 @@ function choicesOf(p: Profile, c: WeekCheck, kgNow: number, shown: boolean, appl
       if (c.reason === 'floor-up')
         return c.from >= hardMinOf(p) ? [ok, { answer: 'keep', label: T.keepDoctor, toast: T.kept(from) }] : [ok];
       // „Zostaw” only when the kept target is safe: within the pace limits and not under the floor.
+      if (!keepAllowed(p, c, kgNow)) return [ok];
       const pace = snap05(impliedPace(p, kgNow, c.from));
-      const safe = c.from >= minTargetOf(p, kgNow) && safePace(p, kgNow, pace) === pace;
-      return safe ? [ok, { answer: 'keep', label: T.keep(from), toast: T.keptPace(from, paceWord(pace)) }] : [ok];
+      return [ok, { answer: 'keep', label: T.keep(from), toast: T.keptPace(from, paceWord(pace)) }];
     }
     case 'ask':
       return [
@@ -310,7 +311,7 @@ function Card({ profile, check: c, today, kgNow }: { profile: Profile; check: We
   const bridge = useBridge();
   const shown = useKcalShown();
   const [busy, setBusy] = useState(false);
-  const applied = profile.dailyKcal === c.to;
+  const applied = reachedApplied(c);
   const floor = c.floor ?? minTargetOf(profile, kgNow);
   const reached = c.status === 'reached';
   const title =
@@ -382,7 +383,7 @@ interface Props {
  */
 export function WeekCheckCard({ profile, today, kgNow }: Props) {
   const shown = useKcalShown();
-  const check = waitingCheck(profile, shown);
+  const check = shownCheck(profile, shown);
   if (check) return <Card profile={profile} check={check} today={today} kgNow={kgNow} />;
   const quiet = shown ? quietLineOf(profile, today, kgNow) : null;
   if (!quiet) return null;

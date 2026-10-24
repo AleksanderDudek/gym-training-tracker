@@ -11,7 +11,7 @@ import TodayFoodCard from './TodayFoodCard';
 
 /**
  * The Monday check as the card sees it: `pending` while it may still change today's target, then
- * `ready`. Package A's hook is a stub here (always `ready`), so the test drives the state itself.
+ * `ready`. The test drives the hook's state itself; the hook has its own tests (`useWeeklyCheck.test`).
  */
 const weekly = vi.hoisted(() => ({ state: 'ready' as 'ready' | 'pending', listeners: new Set<() => void>() }));
 vi.mock('./hooks/useWeeklyCheck', async () => {

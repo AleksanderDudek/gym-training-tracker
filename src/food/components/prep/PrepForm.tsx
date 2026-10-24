@@ -19,7 +19,7 @@ import { planDates } from '../../prep/blocks';
 import { EXCLUSION_LABELS, planRecipes } from '../../prep/candidates';
 import { goalName, shortDate } from '../../prep/format';
 import { generatePlan, newSeed } from '../../prep/generate';
-import { latestPlan, planEnd, startPlan } from '../../prep/store';
+import { latestPlan, planEnd, savePrepPlan } from '../../prep/store';
 import { planTargets } from '../../prep/targets';
 import { MAX_DAYS, MIN_DAYS, NAME_MAX, cleanName, type Cooking, type Exclusion, type PrepPlan } from '../../prep/types';
 import { StatusScreen } from '../common/StatusScreen';
@@ -185,7 +185,7 @@ function Form({
     const own = cleanName(name);
     try {
       // The plan follows the profile's target; it never changes it.
-      await startPlan(own ? { ...result.plan, name: own } : result.plan, null);
+      await savePrepPlan(own ? { ...result.plan, name: own } : result.plan);
     } catch {
       setError(T.saveFailed);
       setBusy(false);

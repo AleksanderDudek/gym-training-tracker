@@ -39,7 +39,7 @@ function makePlan(start = '2026-10-20', days = 7, createdAt = '2026-10-20T08:00:
     settings: { start, days, meals: 4, cooking: 'lunch', store: 'biedronka', online: null, exclude: [], seed: 1, avoid: [] },
     index,
     dict: PREP_DICT,
-    dayTargets: planTargets({ profile, kcal: 2200, eaten: new Map(), today: start, dates: planDates(start, days) }),
+    dayTargets: planTargets({ profile, kcal: 2200, dates: planDates(start, days) }),
     goal: { kcal: 2200, source: 'profile', dietProfile: 'redukcja', styleLabel: DIET_PROFILES.redukcja.label, pace: 0.5, weightKg: 82 },
     checkIn: null,
     createdAt,

@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { db } from '../../diet/db';
 import { addDays } from '../../diet/model';
-import { answerCheck, clearAll, completeProfile, saveProfile } from '../../diet/store';
+import { clearAll, completeProfile, saveProfile } from '../../diet/store';
 import type { CheckFacts, Profile, WeekCheck } from '../../diet/types';
 import { renderWithBridge } from '../../test/bridge';
 import TodayFoodCard from '../../TodayFoodCard';
@@ -20,35 +20,6 @@ vi.mock('../../data', async () => {
     loadedDataset: () => loaded,
     loadDataset: () => Promise.resolve(loaded),
   };
-});
-
-/**
- * Package A's `answerCheck` is a stub in this worktree. This stand-in writes what spec §2.4 says
- * for the answers these tests give, so the card is seen reacting to the stored profile: the answer
- * is recorded, „Zostaw” sets the kept target from today (`user`) with its implied pace, and every
- * answer leaves a hold. At integration it can go, and the real function must pass the same tests.
- */
-vi.mock('../../diet/store', async (importOriginal) => {
-  const real = await importOriginal<typeof import('../../diet/store')>();
-  const answer = vi.fn(async (given: NonNullable<WeekCheck['answer']>, ctx: { today: string; kgNow: number }) => {
-    const { db: database } = await import('../../diet/db');
-    const { setTarget, snap05, impliedPace } = await import('../../diet/target');
-    const { addDays: plus } = await import('../../diet/model');
-    const row = await database.profile.get('me');
-    if (!row?.lastCheck) return;
-    const c = row.lastCheck;
-    let next = { ...row, lastCheck: { ...c, answer: given } };
-    if (given === 'keep' && c.reason !== 'floor-up')
-      next = {
-        ...setTarget(next, c.from, ctx.today, 'user'),
-        goalPace: snap05(impliedPace(row, ctx.kgNow, c.from)),
-        hold: { dir: c.to > c.from ? 1 : -1, until: plus(ctx.today, 28) },
-      };
-    if (given === 'no') next = { ...next, hold: { dir: -1, until: plus(c.week, 28) } };
-    if (given === 'yes' || given === 'set') next = setTarget(next, c.to, ctx.today, 'check');
-    await database.profile.put(next);
-  });
-  return { ...real, answerCheck: answer };
 });
 
 const TODAY = '2026-10-14';
@@ -108,7 +79,6 @@ const raised = (over: Partial<Profile> = {}) =>
 beforeEach(async () => {
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(new Date(`${TODAY}T12:00:00`));
-  vi.mocked(answerCheck).mockClear();
   await clearAll();
   window.localStorage.clear();
   window.history.replaceState(null, '', '/#/jedzenie');
@@ -150,12 +120,13 @@ describe('poniedziałkowa karta w dzienniku', () => {
     expect(week.compareDocumentPosition(weigh) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 
     await user.click(within(week).getByRole('button', { name: 'Zostaw 1950 kcal' }));
-    expect(answerCheck).toHaveBeenCalledWith('keep', { today: TODAY, kgNow: 80 });
     await waitFor(() => expect(bridge.toast).toHaveBeenCalledWith(expect.stringMatching(/^Cel zostaje: 1950 kcal\./)));
     expect(bridge.toast).toHaveBeenCalledWith('Cel zostaje: 1950 kcal. Przy nim tempo wyjdzie ok. −0,65 kg na tydzień.');
+    // The store's answer at today's weight (80 kg): the kept target from today, its pace, a hold upwards.
     const row = await db.profile.get('me');
     expect(row?.dailyKcal).toBe(1950);
     expect(row?.goals.at(-1)).toEqual({ from: TODAY, kcal: 1950, by: 'user' });
+    expect(row).toMatchObject({ goalPace: 0.65, hold: { dir: 1, until: addDays(TODAY, 28) }, lastCheck: { answer: 'keep' } });
     await waitFor(() => expect(screen.queryByRole('region', { name: /^Od dziś cel/ })).not.toBeInTheDocument());
     expect(screen.queryByRole('link', { name: /^Od dziś cel/ })).not.toBeInTheDocument();
   }, 15_000);
@@ -185,9 +156,14 @@ describe('poniedziałkowa karta w dzienniku', () => {
     expect(screen.getByRole('link', { name: 'Propozycja nowego celu czeka w dzienniku' })).toBeInTheDocument();
 
     await user.click(within(week).getByRole('button', { name: 'Nie zawsze — zostaw 1950 kcal' }));
-    expect(answerCheck).toHaveBeenCalledWith('no', { today: TODAY, kgNow: 80 });
     await waitFor(() => expect(bridge.toast).toHaveBeenCalledWith('Cel zostaje: 1950 kcal.'));
-    expect((await db.profile.get('me'))?.dailyKcal).toBe(1950);
+    // Nothing learned, no cut for 4 weeks from Monday.
+    expect(await db.profile.get('me')).toMatchObject({
+      dailyKcal: 1950,
+      burnOffset: 0,
+      hold: { dir: -1, until: addDays(MONDAY, 28) },
+      lastCheck: { answer: 'no' },
+    });
     await waitFor(() => expect(screen.queryByRole('region', { name: /^Propozycja: / })).not.toBeInTheDocument());
     expect(screen.queryByRole('link', { name: 'Propozycja nowego celu czeka w dzienniku' })).not.toBeInTheDocument();
   }, 15_000);
@@ -253,8 +229,8 @@ describe('karta: każdy stan swoje odpowiedzi', () => {
     const week = screen.getByRole('region', { name: 'Propozycja: 2050 kcal zamiast 1950' });
     expect(within(week).getByRole('button', { name: 'Nie teraz' })).toBeInTheDocument();
     await user.click(within(week).getByRole('button', { name: 'Ustaw 2050 kcal' }));
-    expect(answerCheck).toHaveBeenCalledWith('set', { today: TODAY, kgNow: 80 });
     await waitFor(() => expect(bridge.toast).toHaveBeenCalledWith('Nowy cel: 2050 kcal.'));
+    expect(await db.profile.get('me')).toMatchObject({ dailyKcal: 2050, lastCheck: { answer: 'set' } });
   });
 
   test('waga docelowa osiągnięta: utrzymanie od dziś albo „Chcę dalej chudnąć”', async () => {
@@ -274,10 +250,16 @@ describe('karta: każdy stan swoje odpowiedzi', () => {
     );
     expect(within(week).getByRole('button', { name: 'Dobrze' })).toBeInTheDocument();
     await user.click(within(week).getByRole('button', { name: 'Chcę dalej chudnąć' }));
-    expect(answerCheck).toHaveBeenCalledWith('continue', { today: TODAY, kgNow: 80 });
     await waitFor(() =>
       expect(bridge.toast).toHaveBeenCalledWith('Wracam do poprzedniego celu: 1860 kcal. Zapytam znowu za 4 tygodnie.'),
     );
+    // The previous pace and target back, asked again 4 weeks after the check's Monday.
+    expect(await db.profile.get('me')).toMatchObject({
+      dailyKcal: 1860,
+      goalPace: 0.5,
+      reached: { askAgain: addDays(MONDAY, 28) },
+      lastCheck: { answer: 'continue' },
+    });
   });
 
   test('osiągnięta przy wyłączonym dopasowywaniu: propozycja utrzymania; bez liczenia kalorii — bez liczb', () => {
@@ -294,7 +276,9 @@ describe('karta: każdy stan swoje odpowiedzi', () => {
     expect(screen.getByRole('button', { name: 'Jeszcze nie' })).toBeInTheDocument();
     cleanup();
 
-    const { container } = card({ ...proposal, dailyKcal: 2550 }, { shown: false });
+    // Applied by the check (autoAdjust on): maintenance from Monday, the pace 0.
+    const applied = { ...proposal, autoAdjust: true, dailyKcal: 2550, goalPace: 0, lastCheck: { ...proposal.lastCheck!, goalPace: 0 } };
+    const { container } = card(applied, { shown: false });
     expect(screen.getByRole('region', { name: 'Waga docelowa osiągnięta' })).toHaveTextContent(
       'Od dziś dziennik podpowiada posiłki na utrzymanie wagi.',
     );

@@ -300,9 +300,7 @@ describe('dziennik: plan na ten dzień', () => {
     expect(screen.queryByRole('heading', { name: 'Propozycja dnia' })).not.toBeInTheDocument();
 
     const breakfast = plan.meals.find((m) => m.date === '2026-10-20' && m.slotName === 'Śniadanie')!;
-    // „Zjadłem: …” becomes „Zjedzone: …” with the diary's new words (package B, `PrepDayCard`).
-    const eatLabels = [`Zjadłem: ${breakfast.name}`, `Zjedzone: ${breakfast.name}`];
-    await user.click(within(card).getByRole('button', { name: (n) => eatLabels.includes(n) }));
+    await user.click(within(card).getByRole('button', { name: `Zjedzone: ${breakfast.name}` }));
     await waitFor(async () => expect(await db.entries.count()).toBe(1));
     const [entry] = await db.entries.toArray();
     expect(entry).toMatchObject({ date: '2026-10-20', key: `recipe:${breakfast.recipeId}`, planIndex: 0, source: 'recipe', kcal: Math.round(breakfast.total.kcal) });

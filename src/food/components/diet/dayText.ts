@@ -1,4 +1,5 @@
 import { text } from '../../../i18n';
+import { waitingCheck } from '../../diet/calibrate';
 import type { DayState } from '../../diet/day';
 import { pauseOn } from '../../diet/target';
 import type { Profile, WeekCheck } from '../../diet/types';
@@ -103,23 +104,14 @@ export const gramsOf = (eaten: number, target: number): string => T.rowG(n(eaten
 /** A bar's value in words: „1240 z 2100 kcal”. */
 export const kcalOf = (eaten: number, target: number): string => T.rowKcal(n(eaten), n(target));
 
-/** Statuses of a Monday check that put a card on the diary (until it is answered). */
-const CARD_STATUSES: ReadonlySet<WeekCheck['status']> = new Set(['changed', 'ask', 'suggested', 'reached']);
-
 /**
- * The Monday check waiting for an answer, or null (spec §4.2): an unanswered `changed`, `ask`,
- * `suggested` or `reached`, while the target is still the one the card is about — a target changed
- * another way since (the profile, a break) hides it. Without calories on screen only the numberless
- * `reached` card is left. The diary's card and the Today card's link both read this.
+ * The Monday card the diary shows, or null (spec §4.2): the check still waiting for an answer
+ * (`waitingCheck`, the same rule its answers follow) — without calories on screen only the
+ * numberless `reached` card. The diary's card and the Today card's link both read this.
  */
-export function waitingCheck(p: Profile, shown: boolean): WeekCheck | null {
-  const c = p.lastCheck;
-  if (!c || c.answer !== null || !CARD_STATUSES.has(c.status)) return null;
-  if (!shown && c.status !== 'reached') return null;
-  if (c.status === 'changed' && p.dailyKcal !== c.to) return null;
-  if ((c.status === 'ask' || c.status === 'suggested') && p.dailyKcal !== c.from) return null;
-  if (c.status === 'reached' && p.dailyKcal !== c.to && p.dailyKcal !== c.from) return null;
-  return c;
+export function shownCheck(p: Profile, shown: boolean): WeekCheck | null {
+  const c = waitingCheck(p);
+  return c && (shown || c.status === 'reached') ? c : null;
 }
 
 /**
@@ -128,7 +120,7 @@ export function waitingCheck(p: Profile, shown: boolean): WeekCheck | null {
  */
 export function todayLink(p: Profile, today: string, shown: boolean): string | null {
   if (p.notice === 'show') return T.noticeLink;
-  const check = waitingCheck(p, shown);
+  const check = shownCheck(p, shown);
   if (check?.status === 'changed') return T.changedLink(n(check.to), n(check.from));
   if (check?.status === 'ask' || check?.status === 'suggested') return T.askLink;
   if (check?.status === 'reached') return T.reachedLink;
