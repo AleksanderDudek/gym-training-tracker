@@ -1,10 +1,14 @@
 // @vitest-environment jsdom
 import { act, renderHook } from '@testing-library/react';
+import { createElement, useEffect, useLayoutEffect } from 'react';
+import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { __resetStaticData } from '../nearby/staticData';
+import { wantedLeaves } from '../nearby/osmGrid';
+import { __resetStaticData, leafNow, leafRefs, loadIndex, loadLeaf, MEMORY_LEAVES } from '../nearby/staticData';
+import type { LatLon } from '../nearby/types';
 import { boxCoverage, osmResponse, osmRow, osmTestData, type OsmTestData } from '../test/osm';
 import { AUTO_RETRY_MS } from './useNearbyShops';
-import { useStaticAround } from './useStaticAround';
+import { useStaticAround, type StaticState } from './useStaticAround';
 
 vi.mock('virtual:osm-places', () => ({ default: { index: 'data/osm/v1/index.json' } }));
 
@@ -14,8 +18,11 @@ const ROWS = Array.from({ length: 9 }, (_, k) =>
 );
 
 let data: OsmTestData;
-let mode: 'ok' | 'leaves-offline' | 'index-offline' | 'hold';
+let mode: 'ok' | 'leaves-offline' | 'leaves-503' | 'index-offline' | 'index-503' | 'hold';
 let calls: { index: number; leaves: number };
+let urls: string[];
+/** While set, the index answers only once this settles (a slow first load). */
+let indexGate: Promise<void> | null;
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -23,15 +30,21 @@ beforeEach(() => {
   data = osmTestData(ROWS, boxCoverage(51.5, 20, 52.6, 22), 3);
   mode = 'ok';
   calls = { index: 0, leaves: 0 };
+  urls = [];
+  indexGate = null;
   vi.stubGlobal(
     'fetch',
     vi.fn(async (url: string) => {
       const isIndex = url.includes('index.json');
       if (isIndex) calls.index++;
       else calls.leaves++;
+      urls.push(url);
       if (mode === 'index-offline' && isIndex) throw new TypeError('Failed to fetch');
+      if (mode === 'index-503' && isIndex) return new Response('busy', { status: 503 });
       if (mode === 'leaves-offline' && !isIndex) throw new TypeError('Failed to fetch');
+      if (mode === 'leaves-503' && !isIndex) return new Response('busy', { status: 503 });
       if (mode === 'hold' && !isIndex) return new Promise<Response>(() => {});
+      if (isIndex && indexGate) await indexGate;
       return osmResponse(data, url)!;
     }),
   );
@@ -98,15 +111,140 @@ describe('useStaticAround', () => {
     expect(result.current[0].since).not.toBeNull();
   });
 
-  test('near the border, whether Overpass is needed is decided from the rounded position: the same for the whole rounding cell', async () => {
-    // The coverage ends at 52.6 N; these two points share the rounding cell 52.594.
-    const a = { lat: 52.5936, lon: 21.0122 };
-    const b = { lat: 52.5944, lon: 21.0124 };
-    const first = renderHook(() => useStaticAround(a, 500));
+  test('"since when" counts from the start of the lookup — a slow index too — and the index arriving does not restart it', async () => {
+    let release = () => {};
+    indexGate = new Promise<void>((go) => (release = go));
+    mode = 'hold'; // and then the leaves never come
+    const start = Date.now();
+    const { result } = renderHook(() => useStaticAround(HERE, 1000));
     await settle();
-    const second = renderHook(() => useStaticAround(b, 500));
+    expect(result.current[0]).toMatchObject({ status: 'loading', coverage: 'unknown', since: start });
+    await settle(3000);
+    release();
     await settle();
-    expect(first.result.current[0].coverage).toBe(second.result.current[0].coverage);
-    expect(first.result.current[0].coverage).toBe('partial');
+    expect(result.current[0]).toMatchObject({ status: 'loading', coverage: 'full', since: start });
+  });
+
+  test('a server error on the index is tried again by itself too: one 503 does not keep the visit off the app’s data', async () => {
+    mode = 'index-503';
+    const { result } = renderHook(() => useStaticAround(HERE, 1000));
+    await settle();
+    expect(result.current[0]).toMatchObject({ failure: 'unavailable' });
+    expect(result.current[0].retryAt).not.toBeNull();
+    mode = 'ok';
+    await settle(AUTO_RETRY_MS[0]! + 500);
+    expect(calls.index).toBe(2);
+    expect(result.current[0]).toMatchObject({ status: 'ready', coverage: 'full', failure: null, retryAt: null });
+    expect(result.current[0].items.length).toBeGreaterThan(0);
+  });
+
+  test('…and so is a server error on a leaf', async () => {
+    mode = 'leaves-503';
+    const { result } = renderHook(() => useStaticAround(HERE, 1000));
+    await settle(3000); // each leaf asked twice, 2 s apart
+    expect(result.current[0]).toMatchObject({ status: 'error', failure: 'unavailable' });
+    expect(result.current[0].retryAt).not.toBeNull();
+    mode = 'ok';
+    await settle(AUTO_RETRY_MS[0]!);
+    expect(result.current[0]).toMatchObject({ status: 'ready', failure: null, retryAt: null, completeWithin: 1000 });
+  });
+
+  test('near the border, whether Overpass is needed and which files are asked for come from the rounded position: the same for the whole rounding cell', async () => {
+    // The coverage ends at 52.6 N (300 m simplification); both points round to 52.588. Measured
+    // from the exact position a 1 km circle around the first stays inside the data and around the
+    // second it crosses the edge — the rounded position decides, the same for both.
+    data = osmTestData(
+      Array.from({ length: 6 }, (_, k) => osmRow(`n${k + 1}`, 52.584 + k * 0.0015, 21.0122, { amenity: 'restaurant', name: `Lokal ${k + 1}` })),
+      boxCoverage(51.5, 20, 52.6, 22),
+      3,
+    );
+    const look = async (lat: number) => {
+      __resetStaticData();
+      urls = [];
+      const { result, unmount } = renderHook(() => useStaticAround({ lat, lon: 21.0122 }, 1000));
+      await settle();
+      const seen = { coverage: result.current[0].coverage, leaves: urls.filter((u) => u.includes('/t/')).sort() };
+      unmount();
+      return seen;
+    };
+    const first = await look(52.5878);
+    expect(first.coverage).toBe('partial');
+    expect(first.leaves.length).toBeGreaterThan(0);
+    expect(await look(52.5884)).toEqual(first);
+  });
+
+  test('the view’s leaves stay in memory while newer ones crowd it: the view completes', async () => {
+    // A leaf per row, 1.1 km apart: more leaves than the memory keeps.
+    data = osmTestData(
+      Array.from({ length: 130 }, (_, k) => osmRow(`n${k + 1}`, 51.6 + k * 0.01, 21, { amenity: 'cafe', name: `Kawiarnia ${k + 1}` })),
+      boxCoverage(49, 14, 55, 24),
+      1,
+    );
+    const view = { lat: 52.2, lon: 21 };
+    const refs = leafRefs(await loadIndex());
+    const wanted = wantedLeaves(refs, view, 8000).leaves;
+    const old = wantedLeaves(refs, view, 1000).leaves;
+    const others = refs.filter((leaf) => !wanted.includes(leaf));
+    // The view's nearest leaves first (an earlier, smaller look), then others until the memory is
+    // all but full: the view's own are the oldest in it.
+    for (const leaf of [...old, ...others.slice(0, MEMORY_LEAVES - old.length - 1)]) await loadLeaf(leaf);
+    expect(wanted.length - old.length).toBeGreaterThanOrEqual(10);
+    const { result } = renderHook(() => useStaticAround(view, 8000));
+    await settle(1000);
+    expect(result.current[0]).toMatchObject({ status: 'ready', completeWithin: 8000 });
+    expect(wanted.every((leaf) => leafNow(leaf))).toBe(true);
+  });
+
+  test('the last leaf landing between the view’s render and its effect still completes the view', async () => {
+    // A position from the GPS is a timer-driven update: React runs its effects after the pending
+    // promises, so a leaf can land in between. Real timers and no act(), as in the browser.
+    vi.useRealTimers();
+    const react = globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean };
+    const actEnvironment = react.IS_REACT_ACT_ENVIRONMENT;
+    react.IS_REACT_ACT_ENVIRONMENT = false;
+    const refs = leafRefs(data.index);
+    const a = HERE;
+    const b = { lat: HERE.lat + 0.002, lon: HERE.lon }; // another rounding cell, the same leaves
+    const wantedA = wantedLeaves(refs, a, 1000).leaves;
+    const wantedB = wantedLeaves(refs, b, 1000).leaves;
+    expect(wantedB.length).toBeGreaterThan(0);
+    expect(wantedB.every((leaf) => wantedA.includes(leaf))).toBe(true);
+    const last = wantedB.at(-1)!;
+    const held: { release?: () => void } = {};
+    // Answers whose bodies are read in microtasks only, the last leaf held until B has rendered.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        const text = await osmResponse(data, url)!.text();
+        const response = { ok: true, status: 200, headers: new Headers(), body: null, arrayBuffer: async () => new TextEncoder().encode(text).buffer };
+        if (url.includes(`/t/${last.d}-${last.i}-${last.j}.`)) await new Promise<void>((go) => (held.release = go));
+        else await new Promise((go) => setTimeout(go, 5));
+        return response;
+      }),
+    );
+    const seen: { state?: StaticState } = {};
+    const onState = (state: StaticState) => (seen.state = state);
+    function View({ at }: { at: LatLon }) {
+      const [state] = useStaticAround(at, 1000);
+      // B is on screen: the held leaf lands now, before B's effect runs.
+      useLayoutEffect(() => {
+        if (at !== a) held.release?.();
+      }, [at]);
+      useEffect(() => void onState(state), [state]);
+      return null;
+    }
+    const root = createRoot(document.createElement('div'));
+    try {
+      root.render(createElement(View, { at: a }));
+      // A's leaves are in, all but the held one.
+      await vi.waitFor(() => expect(held.release && wantedA.every((leaf) => leaf === last || leafNow(leaf))).toBe(true));
+      expect(seen.state?.status).toBe('loading');
+      setTimeout(() => root.render(createElement(View, { at: b })), 0);
+      await vi.waitFor(() => expect(wantedB.every((leaf) => leafNow(leaf))).toBe(true));
+      await vi.waitFor(() => expect(seen.state?.status).toBe('ready'), { timeout: 1000 });
+    } finally {
+      root.unmount();
+      react.IS_REACT_ACT_ENVIRONMENT = actEnvironment;
+    }
   });
 });

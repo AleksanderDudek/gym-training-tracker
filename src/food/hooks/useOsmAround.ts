@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { say } from '../../i18n';
 import { SHOPS_KEY, pruneCache, writeCache, type ShopCache } from '../nearby/cache';
 import { OSM_KEY, dropLegacyCaches, fetchOsm } from '../nearby/live';
@@ -65,7 +65,8 @@ function storage(): (ShopCache & Pick<Storage, 'removeItem'>) | null {
  * (`produkty-pl:shops`, read by `useNearbyChains` without asking anyone).
  */
 export function useOsmAround(geo: GeoState, radius: number): [OsmState, () => void] {
-  const [stat, retryStatic] = useStaticAround(geo.position, radius);
+  const position = geo.position;
+  const [stat, retryStatic] = useStaticAround(position, radius);
   const goLive =
     stat.coverage === 'off' ||
     stat.coverage === 'none' ||
@@ -74,7 +75,20 @@ export function useOsmAround(geo: GeoState, radius: number): [OsmState, () => vo
     // No index at all (never cached, the connection failing): Overpass and its saved answers stand
     // in — abroad that is the right source anyway, and offline nothing is sent.
     (stat.coverage === 'unknown' && stat.failure !== null);
-  const [live, retryLive] = useAround<Element>(goLive ? geo.position : null, radius, fetchOsm, OSM_KEY, FAILED);
+  // The place as Overpass is asked about it: the rounded circle.
+  const asked = position ? queryCircle(position, radius) : null;
+  const place = asked ? `${asked.lat},${asked.lon},${asked.radius}` : null;
+  // The place whose READY Overpass answer is on screen. When the app's data comes back for it (the
+  // index read again), that answer stays until the data is ready — no empty list in between — and
+  // `useAround` keeps its position, so nothing changes for it and nothing is asked again. Only a
+  // ready answer is held: no automatic tries of Overpass run meanwhile.
+  const [heldPlace, setHeldPlace] = useState<string | null>(null);
+  const holding = !goLive && place !== null && heldPlace === place && stat.status !== 'ready';
+  const [live, retryLive] = useAround<Element>(goLive || holding ? position : null, radius, fetchOsm, OSM_KEY, FAILED);
+  // Kept up to date during render — noted, or forgotten for another place or once the app's data has
+  // taken over — so the very render in which the app's data returns already knows it.
+  const readyLive = (goLive || holding) && live.status === 'ready' && live.items.length > 0 ? place : null;
+  if (readyLive !== heldPlace) setHeldPlace(readyLive);
 
   // Keep the device's trail within its week, whichever source this visit uses.
   useEffect(() => {
@@ -90,6 +104,23 @@ export function useOsmAround(geo: GeoState, radius: number): [OsmState, () => vo
     if (stat.coverage === 'partial' && stat.failure !== 'unavailable') {
       // At the border: the Polish side at once, the whole circle once Overpass has answered it.
       const useLive = live.completeWithin >= stat.completeWithin && live.items.length > 0;
+      if (!(useLive && live.status === 'ready') && stat.status === 'ready' && stat.completeWithin >= radius) {
+        // Overpass is asked when the ROUNDED circle comes near the border, but around the exact
+        // position the app's data may already be complete: then nothing is missing, whatever
+        // Overpass does — no error, no countdown, no „Szukam…” over a whole list.
+        return {
+          status: 'ready',
+          items: stat.items,
+          completeWithin: stat.completeWithin,
+          error: null,
+          savedAt: null,
+          since: null,
+          retryAt: null,
+          ...extra,
+          source: 'mixed',
+          shown: 'static',
+        };
+      }
       return {
         ...live,
         ...extra,
@@ -101,7 +132,7 @@ export function useOsmAround(geo: GeoState, radius: number): [OsmState, () => vo
         shown: useLive ? 'live' : 'static',
       };
     }
-    if (goLive) return { ...live, ...extra, source: 'live', shown: 'live' };
+    if (goLive || holding) return { ...live, ...extra, source: 'live', shown: 'live' };
     const offline = globalThis.navigator?.onLine === false;
     return {
       status: stat.status,
@@ -115,12 +146,11 @@ export function useOsmAround(geo: GeoState, radius: number): [OsmState, () => vo
       source: 'static',
       shown: 'static',
     };
-  }, [stat, live, goLive]);
+  }, [stat, live, goLive, holding, radius]);
 
   // The diary's digest: the shops of a complete answer, for the circle it covers.
-  const position = geo.position;
   const complete = state.status === 'ready' && state.completeWithin >= radius;
-  const circle = state.source === 'static' ? stat.circle : position ? queryCircle(position, radius) : null;
+  const circle = state.shown === 'static' ? stat.circle : asked;
   // The circle's numbers, not its identity: a new object for the same place writes nothing new.
   const cLat = circle?.lat;
   const cLon = circle?.lon;
@@ -131,6 +161,12 @@ export function useOsmAround(geo: GeoState, radius: number): [OsmState, () => vo
     writeCache(storage(), { lat: cLat, lon: cLon, radius: cRadius }, shopsOf(items), Date.now(), SHOPS_KEY);
   }, [complete, cLat, cLon, cRadius, items]);
 
-  const retry = goLive ? retryLive : retryStatic;
+  // „Spróbuj ponownie” tries whatever failed: the app's data (its index too — Overpass may be
+  // standing in for it) and Overpass when it is asked.
+  const staticSide = stat.failure !== null || state.source === 'static';
+  const retry = useCallback(() => {
+    if (staticSide) retryStatic();
+    if (goLive) retryLive();
+  }, [staticSide, goLive, retryStatic, retryLive]);
   return [state, retry];
 }

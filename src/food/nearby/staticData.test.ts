@@ -11,12 +11,51 @@ const ROWS = Array.from({ length: 12 }, (_, k) =>
 
 let data: OsmTestData;
 let requests: string[];
-let respond: (url: string) => Promise<Response>;
+let respond: (url: string, init?: RequestInit) => Promise<Response>;
 
 /** A fresh module each test: its memory (index, leaves) must not carry over. */
 async function load() {
   vi.resetModules();
   return import('./staticData');
+}
+
+/**
+ * A download as a slow link gives it: the headers at once, then the body in `pieces` chunks a second
+ * apart — or only the first `stallAfter` of them, then silence. Aborting the request errors the body,
+ * as a browser does.
+ */
+function trickle(text: string, signal: AbortSignal | null | undefined, pieces: number, stallAfter = Infinity): Response {
+  const bytes = new TextEncoder().encode(text);
+  const size = Math.ceil(bytes.length / pieces);
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const body = new ReadableStream<Uint8Array>({
+    start(stream) {
+      signal?.addEventListener('abort', () => {
+        clearTimeout(timer);
+        stream.error(new DOMException('The operation was aborted.', 'AbortError'));
+      });
+      let sent = 0;
+      const push = () => {
+        if (sent >= bytes.length) return stream.close();
+        if (sent / size >= stallAfter) return;
+        stream.enqueue(bytes.slice(sent, sent + size));
+        sent += size;
+        timer = setTimeout(push, 1000);
+      };
+      timer = setTimeout(push, 1000);
+    },
+  });
+  return new Response(body, { headers: { 'content-type': 'application/gzip' } });
+}
+
+/** Where a promise is: still on its way, or how it ended. */
+function track<T>(promise: Promise<T>) {
+  const state: { done: boolean; value?: T; error?: unknown } = { done: false };
+  promise.then(
+    (value) => Object.assign(state, { done: true, value }),
+    (error: unknown) => Object.assign(state, { done: true, error }),
+  );
+  return state;
 }
 
 /** A Cache Storage on a Map: enough of it for the leaves' fallback and tidying. */
@@ -41,9 +80,9 @@ beforeEach(() => {
   respond = async (url) => osmResponse(data, url) ?? new Response('?', { status: 500 });
   vi.stubGlobal(
     'fetch',
-    vi.fn(async (url: string) => {
+    vi.fn(async (url: string, init?: RequestInit) => {
       requests.push(url);
-      return respond(url);
+      return respond(url, init);
     }),
   );
 });
@@ -51,6 +90,7 @@ beforeEach(() => {
 afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
+  delete (window.navigator as unknown as Record<string, unknown>).serviceWorker;
 });
 
 describe('the app’s own OSM data', () => {
@@ -90,6 +130,40 @@ describe('the app’s own OSM data', () => {
     await vi.advanceTimersByTimeAsync(2500);
     await failed;
     expect(requests.filter((u) => u.includes('/t/'))).toHaveLength(2);
+  });
+
+  test('a slow but steady download finishes however long it takes: only silence is cut, not the total time', async () => {
+    vi.useFakeTimers();
+    const s = await load();
+    const [leaf] = s.leafRefs(await s.loadIndex());
+    // A chunk a second for 25 s: a 10 km view sharing an EDGE link with its 30-odd neighbours.
+    respond = async (url, init) => (url.includes('/t/') ? trickle(await osmResponse(data, url)!.text(), init?.signal, 25) : osmResponse(data, url)!);
+    const loading = track(s.loadLeaf(leaf!));
+    await vi.advanceTimersByTimeAsync(24_000);
+    expect(loading.done).toBe(false);
+    await vi.advanceTimersByTimeAsync(3000);
+    expect(loading.error).toBeUndefined();
+    expect(loading.value?.elements).toHaveLength(leaf!.rows);
+    expect(requests.filter((u) => u.includes('/t/'))).toHaveLength(1);
+  });
+
+  test('a download that stalls is cut 10 s after its last byte, tried once more, then reported as „network”', async () => {
+    vi.useFakeTimers();
+    const s = await load();
+    const [leaf] = s.leafRefs(await s.loadIndex());
+    // The headers, three chunks (1–3 s), then nothing: cut at 13 s, asked again at 15 s, the same
+    // again (16–18 s), cut at 28 s — not left hanging, and not cut at a fixed 20 s either.
+    respond = async (url, init) => (url.includes('/t/') ? trickle(await osmResponse(data, url)!.text(), init?.signal, 25, 3) : osmResponse(data, url)!);
+    const loading = track(s.loadLeaf(leaf!));
+    await vi.advanceTimersByTimeAsync(12_900);
+    expect(requests.filter((u) => u.includes('/t/'))).toHaveLength(1);
+    await vi.advanceTimersByTimeAsync(2200); // 15.1 s
+    expect(requests.filter((u) => u.includes('/t/'))).toHaveLength(2);
+    await vi.advanceTimersByTimeAsync(12_800); // 27.9 s
+    expect(loading.done).toBe(false);
+    await vi.advanceTimersByTimeAsync(300); // 28.2 s
+    expect(loading.error).toMatchObject({ kind: 'network' });
+    expect(s.leafStartedAt(leaf!)).toBeUndefined();
   });
 
   test('offline after a data update: an older version of the same cell on the device stands in, marked older', async () => {
@@ -162,5 +236,38 @@ describe('the app’s own OSM data', () => {
     // The next ask tries again.
     respond = async (url) => osmResponse(data, url)!;
     await expect(s.loadIndex()).resolves.toMatchObject({ f: 1 });
+  });
+
+  test('the very first visit: when the service worker takes over, what was fetched before goes through it again — a leaf on its way once it has settled', async () => {
+    // Not controlled yet: the module listens for the takeover as it loads.
+    let takeOver = () => {};
+    const worker = {
+      controller: null as object | null,
+      addEventListener: (type: string, listener: () => void) => {
+        if (type === 'controllerchange') takeOver = listener;
+      },
+    };
+    Object.defineProperty(window.navigator, 'serviceWorker', { value: worker, configurable: true });
+    const s = await load();
+    const [done, onWay] = s.leafRefs(await s.loadIndex());
+    await s.loadLeaf(done!);
+    const held: { release?: () => void } = {};
+    respond = async (url) => {
+      if (!held.release && url.includes(`/t/${onWay!.d}-${onWay!.i}-${onWay!.j}.`)) await new Promise<void>((go) => (held.release = go));
+      return osmResponse(data, url)!;
+    };
+    const loading = s.loadLeaf(onWay!);
+    const [doneUrl, onWayUrl] = requests.filter((u) => u.includes('/t/'));
+    const asked = (url: string | undefined) => requests.filter((u) => u === url).length;
+
+    worker.controller = {};
+    takeOver();
+    await vi.waitFor(() => expect(asked(doneUrl)).toBe(2));
+    expect(requests.filter((u) => u.endsWith('index.json'))).toHaveLength(2);
+    // The leaf still on its way is not asked twice at once: once it has settled.
+    expect(asked(onWayUrl)).toBe(1);
+    held.release!();
+    await loading;
+    await vi.waitFor(() => expect(asked(onWayUrl)).toBe(2));
   });
 });
