@@ -16,6 +16,10 @@ export type WarmUrl = string | (() => string | undefined);
 /** What to fetch at the takeover, each after what it waits for (never rejects). */
 const waiting = new Map<WarmUrl, Promise<unknown>>();
 let listening = false;
+/** The takeover's fetches still on their way (each never rejects). */
+const fetching = new Set<Promise<void>>();
+/** Counts the resets: a fetch planned before one is not made. */
+let resets = 0;
 
 const ignore = () => {};
 
@@ -32,12 +36,21 @@ function container(): ServiceWorkerContainer | undefined {
 }
 
 function takeOver(): void {
+  const planned = resets;
   for (const [url, settled] of waiting)
     void settled
       .then(() => {
+        // „Usuń wszystkie dane” in the meantime: what the page saw is not fetched into the worker's
+        // copy any more.
+        if (resets !== planned) return undefined;
         const href = typeof url === 'function' ? url() : url;
+        if (!href) return undefined;
         // Read to the end: nothing is left half-read between the worker and the page.
-        return href ? fetch(href).then((response) => response.blob()) : undefined;
+        const fetched = fetch(href)
+          .then((response) => response.blob())
+          .then(ignore, ignore);
+        fetching.add(fetched);
+        return fetched.then(() => void fetching.delete(fetched));
       })
       .catch(ignore);
   waiting.clear();
@@ -51,13 +64,30 @@ function takeOver(): void {
  * asked for several times is fetched once, after all of them.
  */
 export function refetchWhenControlled(url: WarmUrl, settled: Promise<unknown> = Promise.resolve()): void {
+  // Handled before anything else: a failed request handed in here is never an unhandled rejection,
+  // whether the page needs the fetch again or not.
+  const done = settled.then(ignore, ignore);
   const sw = container();
   if (!sw || sw.controller) return;
   if (!listening) {
     listening = true;
     sw.addEventListener('controllerchange', takeOver, { once: true });
   }
-  const done = settled.then(ignore, ignore);
   const before = waiting.get(url);
   waiting.set(url, before ? Promise.all([before, done]) : done);
+}
+
+/**
+ * „Usuń wszystkie dane”: the files waiting for the takeover are not fetched — the worker would save
+ * the areas the person saw (`gt-osm`) right after the reset. Also those the takeover has planned but
+ * not started yet. The shared files among them (the products, the shop chunk, the index) are saved on
+ * the next visit instead. Settles when the takeover's fetches already on their way have ended, to whether there
+ * were any: what the worker saves of them comes after the reset and is swept again
+ * (`src/food/backup.ts`).
+ */
+export function forgetRefetches(): Promise<boolean> {
+  resets++;
+  waiting.clear();
+  const onWay = [...fetching];
+  return Promise.all(onWay).then(() => onWay.length > 0);
 }

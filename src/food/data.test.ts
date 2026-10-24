@@ -65,9 +65,17 @@ describe('loadDataset', () => {
     vi.stubGlobal('fetch', fetchMock);
     const { loadDataset } = await load();
     const { dataset, products } = await loadDataset();
-    expect(fetchMock).toHaveBeenCalledWith(`${import.meta.env.BASE_URL}data/products.abc123def456.json.gz`);
+    expect(fetchMock).toHaveBeenCalledWith(`${import.meta.env.BASE_URL}data/products.abc123def456.json.gz`, expect.anything());
     expect(dataset.products).toHaveLength(DATASET.products.length);
     expect(products[0]?.searchText).toBe('zolty ser gouda mlekovita 1');
+  });
+
+  it('pobiera bazę z niskim priorytetem: na wolnym łączu indeks i kawałki „W pobliżu” przychodzą przed nią', async () => {
+    const fetchMock = vi.fn(async (_url: string, _init?: RequestInit) => new Response(gz(TEXT)));
+    vi.stubGlobal('fetch', fetchMock);
+    const { loadDataset } = await load();
+    await loadDataset();
+    expect(fetchMock.mock.calls[0]?.[1]).toMatchObject({ priority: 'low' });
   });
 
   it('dokłada produkty sklepów internetowych — do wyszukiwania i ze sklepem w słowniku', async () => {
@@ -234,5 +242,42 @@ describe('pierwsza wizyta: baza i paczka sklepów trafiają do kopii service wor
     sw.dispatchEvent(new Event('controllerchange'));
     await new Promise((resolve) => setTimeout(resolve, 20));
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('paczka sklepów, która się nie wczyta (offline po aktualizacji, zanim trafiła do kopii)', () => {
+  // Obietnica bez obsługi to w aplikacji błąd w śladzie dla zgłoszeń (`src/trail.ts`).
+  let unhandled: unknown[];
+  const onUnhandled = (reason: unknown) => void unhandled.push(reason);
+
+  beforeEach(() => {
+    // Jak dynamiczny import w przeglądarce, gdy pobranie paczki zawiedzie (świeży moduł z `load()`).
+    vi.doMock('./online/shopData', () => {
+      throw new TypeError('Failed to fetch dynamically imported module');
+    });
+    unhandled = [];
+    process.on('unhandledRejection', onUnhandled);
+  });
+
+  afterEach(() => {
+    vi.doMock('./online/shopData', () => online);
+    process.off('unhandledRejection', onUnhandled);
+    delete (navigator as { serviceWorker?: unknown }).serviceWorker;
+  });
+
+  it.each([
+    ['bez service workera (zwykłe http, stara przeglądarka)', undefined],
+    ['strona już pod opieką service workera', {}],
+    ['pierwsza wizyta, zanim service worker przejmie stronę', null],
+  ])('%s: baza przychodzi bez sklepów, a błąd paczki nie zostaje bez obsługi', async (_, controller) => {
+    if (controller !== undefined)
+      Object.defineProperty(navigator, 'serviceWorker', { value: Object.assign(new EventTarget(), { controller }), configurable: true });
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(gz(TEXT))));
+    const { loadDataset } = await load();
+    const { dataset } = await loadDataset();
+    expect(dataset.products).toHaveLength(DATASET.products.length);
+    // Node zgłasza obietnicę bez obsługi dopiero po bieżącym zadaniu.
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(unhandled).toEqual([]);
   });
 });

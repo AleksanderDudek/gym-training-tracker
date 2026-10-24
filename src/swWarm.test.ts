@@ -169,6 +169,70 @@ describe('files fetched before the service worker controlled the page', () => {
     expect(fetched).toEqual([]);
   });
 
+  test('a failed request handed in is handled even when nothing is fetched again: a controlled page, no service worker', async () => {
+    const unhandled: unknown[] = [];
+    const onUnhandled = (reason: unknown) => void unhandled.push(reason);
+    process.on('unhandledRejection', onUnhandled);
+    try {
+      const { refetchWhenControlled } = await load();
+      sw.controller = {};
+      // The shop chunk failed to load (offline after an update, not in the worker's copy yet).
+      refetchWhenControlled(CHUNK, Promise.reject(new TypeError('Failed to fetch dynamically imported module')));
+      delete (navigator as { serviceWorker?: unknown }).serviceWorker;
+      refetchWhenControlled(CHUNK, Promise.reject(new TypeError('Failed to fetch dynamically imported module')));
+      // Node reports a rejection nobody handled once the current task is over.
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      expect(unhandled).toEqual([]);
+    } finally {
+      process.off('unhandledRejection', onUnhandled);
+    }
+  });
+
+  test('„Usuń wszystkie dane” before the takeover: nothing waiting for it is fetched — what is asked for after the reset is', async () => {
+    const { forgetRefetches, refetchWhenControlled } = await load();
+    const leaf = onItsWay();
+    refetchWhenControlled(INDEX);
+    refetchWhenControlled(LEAF, leaf.promise);
+    refetchWhenControlled(PRODUCTS);
+    expect(await forgetRefetches()).toBe(false);
+    // The person opens „W pobliżu” again before the worker takes over: that area is fetched into its copy.
+    refetchWhenControlled(INDEX);
+    takeOver();
+    leaf.resolve();
+    await flush();
+    expect(fetched).toEqual([INDEX]);
+  });
+
+  test('a reset after the takeover: a fetch still waiting for its request is not made, one on its way is waited for', async () => {
+    const answers: (() => void)[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) => {
+        fetched.push(url);
+        return new Promise<Response>((answer) => answers.push(() => answer(new Response('x'))));
+      }),
+    );
+    const { forgetRefetches, refetchWhenControlled } = await load();
+    const leaf = onItsWay();
+    refetchWhenControlled(INDEX);
+    refetchWhenControlled(LEAF, leaf.promise);
+    takeOver();
+    await flush();
+    expect(fetched).toEqual([INDEX]);
+
+    let ended: boolean | undefined;
+    void forgetRefetches().then((wereOnWay) => (ended = wereOnWay));
+    leaf.resolve();
+    await flush();
+    // The leaf's fetch was waiting for the page's request: not made after the reset.
+    expect(fetched).toEqual([INDEX]);
+    // The index is on its way: the reset hears when it has ended (what the worker saves of it is swept then).
+    expect(ended).toBeUndefined();
+    answers[0]!();
+    await flush();
+    expect(ended).toBe(true);
+  });
+
   test('nothing without service workers (plain http, an old browser), and no error where reading them throws', async () => {
     delete (navigator as { serviceWorker?: unknown }).serviceWorker;
     const { refetchWhenControlled } = await load();

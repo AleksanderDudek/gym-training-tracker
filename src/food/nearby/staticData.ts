@@ -97,7 +97,11 @@ async function fetchWithin(url: string, ms: number, init: RequestInit = {}): Pro
     timer = setTimeout(() => controller.abort(), STALL_MS);
   };
   try {
-    // `priority` (Chromium): the places beat the 3 MB products download that may run at the same time.
+    // `priority` (Chromium): 'high' alone gives the places no head start — every `fetch` gets it.
+    // They come before the 3 MB products download that may run at the same time because that one is
+    // asked at 'low' (`src/food/data.ts`): a server sends requests of equal priority one after
+    // another, in the order asked, and the deadlines here would take the wait behind the products
+    // for a lost connection.
     const response = await within(fetch(url, { ...init, signal: controller.signal, priority: 'high' } as RequestInit));
     if (!response.ok) {
       void response.body?.cancel().catch(() => {});
@@ -126,6 +130,30 @@ async function fetchWithin(url: string, ms: number, init: RequestInit = {}): Pro
     throw new StaticDataError('network');
   } finally {
     clearTimeout(timer);
+  }
+}
+
+/**
+ * Files whose last request failed on its way (no answer, a timeout, a stall). Through the service
+ * worker the page's abort ends only the page's side: the worker's own request for the file goes on,
+ * still writing the file's entry in the browser's HTTP cache, and in Chromium every later request in
+ * the default mode joins that entry and stalls with it — the retry, the automatic tries and the
+ * button alike, until the worker's request ends by itself. So the next request for such a file goes
+ * past the entry to the server (`reload`: the answer still goes into the cache), until one succeeds.
+ * A file's first request keeps the default mode: what was fetched before (the very first visit, the
+ * takeover's fetch again) comes from the HTTP cache.
+ */
+const failedOnWay = new Set<string>();
+
+/** `fetchWithin`, past the HTTP cache after a failed request for the same file (`failedOnWay`). */
+async function fetchFile(url: string, ms: number): Promise<{ response: Response; body: Uint8Array }> {
+  try {
+    const got = await fetchWithin(url, ms, failedOnWay.has(url) ? { cache: 'reload' } : {});
+    if (got.response.ok) failedOnWay.delete(url);
+    return got;
+  } catch (error) {
+    failedOnWay.add(url);
+    throw error;
   }
 }
 
@@ -161,7 +189,7 @@ function keep(request: Promise<OsmIndex>): Promise<OsmIndex> {
 /** The index, read once per page (the service worker serves it at once and refreshes it behind). */
 export function loadIndex(): Promise<OsmIndex> {
   if (index) return index;
-  const request = keep(fetchWithin(indexUrl(), INDEX_TIMEOUT_MS).then(({ response, body }) => readIndex(response, body)));
+  const request = keep(fetchFile(indexUrl(), INDEX_TIMEOUT_MS).then(({ response, body }) => readIndex(response, body)));
   // The very first visit asks before the service worker controls the page: once it takes over, the
   // index is fetched again through it, into its copy (the leaves the same way).
   refetchWhenControlled(indexUrl(), request);
@@ -206,6 +234,8 @@ const pins = new Map<string, number>();
 /** Leaf requests on their way, and those waiting for one of the `LEAF_SLOTS`, first come first. */
 let leavesOnWay = 0;
 const waitingForSlot: (() => void)[] = [];
+/** Counts the resets (`forgetStaticData`): a leaf asked for before one is not kept. */
+let resets = 0;
 
 /** Runs a leaf request in one of the slots; a slot that frees goes straight to the next in line. */
 async function inSlot<T>(task: () => Promise<T>): Promise<T> {
@@ -309,7 +339,7 @@ async function fetchLeaf(leaf: LeafRef, url: string): Promise<LoadedLeaf> {
     let got: { response: Response; body: Uint8Array };
     try {
       // The slot is held for the request only, not for the pause before a retry.
-      got = await inSlot(() => fetchWithin(url, LEAF_TIMEOUT_MS));
+      got = await inSlot(() => fetchFile(url, LEAF_TIMEOUT_MS));
     } catch (error) {
       if (attempt === 0) {
         await sleep(RETRY_PAUSE_MS);
@@ -355,19 +385,42 @@ export function loadLeaf(leaf: LeafRef): Promise<LoadedLeaf> {
   }
   let request = pending.get(url);
   if (!request) {
+    const asked = resets;
     started.set(url, Date.now());
-    request = fetchLeaf(leaf, url)
-      .then((loaded) => remember(url, loaded))
+    const loading: Promise<LoadedLeaf> = fetchLeaf(leaf, url)
+      .then((loaded) => (asked === resets ? remember(url, loaded) : loaded))
       .finally(() => {
+        // After a reset another request for the file may be on its way: that one stays tracked.
+        if (pending.get(url) !== loading) return;
         pending.delete(url);
         started.delete(url);
       });
+    request = loading;
     pending.set(url, request);
     // The very first visit: fetched past the service worker, so once it takes over the leaf is
     // fetched again through it (after this request), into its copy — the area works offline.
     refetchWhenControlled(url, request);
   }
   return request;
+}
+
+/**
+ * „Usuń wszystkie dane”: forgets what the page holds of the areas seen — the leaves, the index and
+ * which files are on their way or failed. The leaves still on their way are not stopped (each keeps
+ * its slot until it ends) but no longer kept, and a view asking again starts its own request. The
+ * returned promise settles when they have all ended, to whether there were any: the service worker
+ * saves each leaf as it arrives, after the reset, so its copy is swept once more then
+ * (`src/food/backup.ts`).
+ */
+export function forgetStaticData(): Promise<boolean> {
+  const onWay = [...pending.values()];
+  resets++;
+  index = null;
+  memory.clear();
+  pending.clear();
+  started.clear();
+  failedOnWay.clear();
+  return Promise.allSettled(onWay).then(() => onWay.length > 0);
 }
 
 /** Forgets everything in memory (tests). */
@@ -378,6 +431,7 @@ export function __resetStaticData(): void {
   pending.clear();
   started.clear();
   pins.clear();
+  failedOnWay.clear();
   leavesOnWay = 0;
   waitingForSlot.length = 0;
 }
