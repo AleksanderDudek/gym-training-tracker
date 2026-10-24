@@ -146,6 +146,9 @@ export function applyProfileEdit(prev: Profile | null, draft: Profile, ctx: Edit
   }
 
   const turned = directionOf(prev.goalPace) !== directionOf(goalPace);
+  // A new goal (another target weight or direction) is a new chance to reach it: the old record
+  // would otherwise hold the next „Waga docelowa osiągnięta” back until 1 kg past the old weight.
+  const goal: Profile = turned || prev.targetWeightKg !== next.targetWeightKg ? { ...next, reached: null } : next;
   const recompute =
     manual !== null ||
     turned ||
@@ -153,8 +156,8 @@ export function applyProfileEdit(prev: Profile | null, draft: Profile, ctx: Edit
     (!prev.anchored && (bodyChanged(prev, next) || prev.startWeightKg !== next.startWeightKg));
   const current = targetOn(prev, today);
   const kcal = recompute ? (manual ?? targetFor(next, kgNow)) : current;
-  if (kcal === current) return next;
-  const changed = setTarget(next, kcal, today, 'user');
+  if (kcal === current) return goal;
+  const changed = setTarget(goal, kcal, today, 'user');
   return {
     ...changed,
     hold: { dir: 0, until: addDays(today, USER_HOLD_DAYS) },

@@ -224,3 +224,15 @@ describe('checks that block a save', () => {
     expect(manualProblem(completeProfile({ sex: 'K', age: 60, heightCm: 155 }), 58, 1150)).toEqual({ kind: 'min', min: 1200 });
   });
 });
+
+describe('the reached record', () => {
+  const before = { ...owner, reached: { at: '2026-09-07', kg: 75, prevPace: 0.5, prevKcal: 1860, askAgain: null } };
+
+  test('a new target weight starts a new chance to reach it: the old record goes', () => {
+    expect(applyProfileEdit(before, { ...before, targetWeightKg: 77 }, ctx()).reached).toBeNull();
+  });
+
+  test('editing anything else keeps it', () => {
+    expect(applyProfileEdit(before, { ...before, age: 36 }, ctx()).reached).toEqual(before.reached);
+  });
+});

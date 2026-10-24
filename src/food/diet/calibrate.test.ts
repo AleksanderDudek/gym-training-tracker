@@ -346,6 +346,14 @@ describe('A9 — the target weight reached', () => {
     expect(c.status).not.toBe('reached');
   });
 
+  test('already at the target weight when the target was set („Zostaw” for a maintainer): not an arrival', () => {
+    const kept = { ...p, goals: [...p.goals, { from: at(-20), kcal: 2100, by: 'user' as const }] };
+    expect(ran(kept, flat(74.9), eatenEvery(2100)).check.status).not.toBe('reached');
+    // Above the target when it was set, then down to it: an arrival.
+    const crossed = ran(kept, weighIns(73.5, 0.7, { jitter: 0 }), eatenEvery(2100)).check;
+    expect(crossed.status).toBe('reached');
+  });
+
   test('gaining toward a higher target works the same way', () => {
     const gain = man({ startWeightKg: 70, targetWeightKg: 75, goalPace: -0.25, dailyKcal: 2700 });
     expect(ran(gain, flat(75.2), eatenEvery(2700)).check.status).toBe('reached');

@@ -132,6 +132,22 @@ function burnSe(slopeSe: number, kcalPerKg: number, intakes: readonly number[], 
   return Math.hypot(kcalPerKg * slopeSe, intakeSe);
 }
 
+/**
+ * The trend was on the far side of the target weight when the person last set the target (a `user`,
+ * `setup` or `migration` entry): only then is being there an arrival. A pace that came from a kept
+ * or typed target while already at the target weight („Zostaw” for a maintainer) is not one.
+ * Without a trend on that day there is nothing to contradict the arrival.
+ */
+function crossed(p: Profile, weighIns: readonly WeighIn[], losing: boolean): boolean {
+  const set = [...p.goals].reverse().find((g) => g.by === 'user' || g.by === 'setup' || g.by === 'migration');
+  const then = set ? trendOn(weighIns, set.from) : null;
+  if (then === null) return true;
+  return losing ? then > p.targetWeightKg + CROSS_KG : then < p.targetWeightKg - CROSS_KG;
+}
+
+/** How far on the far side the trend must have been when the target was set (kg). */
+const CROSS_KG = 0.05;
+
 /** The display trend has reached the target weight in the plan's direction (and may be asked about). */
 function reachedNow(p: Profile, weighIns: readonly WeighIn[], monday: string): number | null {
   const lastDay = addDays(monday, -1);
@@ -142,6 +158,7 @@ function reachedNow(p: Profile, weighIns: readonly WeighIn[], monday: string): n
   const there = (losing && trend <= p.targetWeightKg) || (p.goalPace < 0 && trend >= p.targetWeightKg);
   if (!there) return null;
   const before: Reached | null = p.reached;
+  if (before === null && !crossed(p, weighIns, losing)) return null;
   const further = before !== null && (losing ? before.kg - trend : trend - before.kg) >= CHECK.reachedBeyondKg - 1e-9;
   const allowed = before === null || (before.askAgain !== null && monday >= before.askAgain) || further;
   return allowed ? trend : null;

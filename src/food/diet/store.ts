@@ -60,11 +60,16 @@ export async function saveProfile(profile: Profile, database: DietDb = db): Prom
 /** The profile page's save, after `applyProfileEdit` (`diet/edit.ts`) worked out the target history. */
 export const saveProfileEdit = (next: Profile, database: DietDb = db): Promise<void> => saveProfile(next, database);
 
-/** „Rozumiem” on the upgrade notice: shown once, never again. */
-export async function dismissNotice(database: DietDb = db): Promise<void> {
+/**
+ * „Rozumiem” on the upgrade notice: shown once, never again. A row still legacy (the upgrade's own
+ * write not done yet, or failed) is upgraded here first, as `persistUpgrade` would.
+ */
+export async function dismissNotice(ctx: { weightKg: number; today: string }, database: DietDb = db): Promise<void> {
   await database.transaction('rw', database.profile, async () => {
-    const stored = await database.profile.get('me');
-    if (stored?.notice === 'show') await database.profile.put({ ...stored, notice: 'seen' });
+    const row = await database.profile.get('me');
+    if (!row) return;
+    const stored = row.version === 2 ? row : { ...row, ...cleanProfile(row, { ...ctx, fresh: false }) };
+    if (stored.notice === 'show') await database.profile.put({ ...stored, notice: 'seen', id: 'me' });
   });
 }
 

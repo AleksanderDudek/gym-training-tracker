@@ -112,7 +112,7 @@ export function ChangeNotice({ profile, today, kgNow }: Props) {
         </div>
       )}
       <div className="actions fd-diet-noticeacts">
-        <button type="button" className="btn sm" disabled={busy} onClick={() => act(() => dismissNotice())}>
+        <button type="button" className="btn sm" disabled={busy} onClick={() => act(() => dismissNotice({ weightKg: kgNow, today }))}>
           {T.gotIt}
         </button>
         <a className="fd-diet-link" href={dietPath('profile')}>

@@ -61,6 +61,8 @@ const LEGACY = {
 };
 /** The same row as the partial the old `useProfile` handed to `completeProfile`. */
 const legacyPartial = LEGACY as unknown as Partial<Profile>;
+/** The upgrade's context for the notice: today and the weight it is worked out at. */
+const CTX = { weightKg: 80, today: '2026-10-24' };
 /** Every key of the old model. */
 const LEGACY_KEYS = [
   'activityMultiplier',
@@ -155,14 +157,20 @@ describe('profile version 2', () => {
 
   test('dismissNotice: „show” becomes „seen”; no notice or no profile — nothing', async () => {
     await db.profile.put({ ...completeProfile({ notice: 'show' }), id: 'me' });
-    await dismissNotice(db);
+    await dismissNotice(CTX, db);
     expect((await db.profile.get('me'))?.notice).toBe('seen');
     await db.profile.put({ ...completeProfile({}), id: 'me' });
-    await dismissNotice(db);
+    await dismissNotice(CTX, db);
     expect((await db.profile.get('me'))?.notice).toBeNull();
     const empty = new DietDb(`test-${Math.random()}`);
-    await dismissNotice(empty);
+    await dismissNotice(CTX, empty);
     expect(await empty.profile.count()).toBe(0);
+  });
+
+  test('dismissNotice on a row still legacy (the upgrade write not done): upgraded, „seen”, old keys kept', async () => {
+    await db.profile.put({ ...LEGACY, id: 'me' } as unknown as ProfileRow);
+    await dismissNotice(CTX, db);
+    expect(await db.profile.get('me')).toMatchObject({ ...LEGACY, version: 2, dailyKcal: 1860, notice: 'seen' });
   });
 
   test('markDay: incomplete, the whole day, taken back — the rest of the day row untouched', async () => {
