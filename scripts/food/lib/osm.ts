@@ -1,10 +1,19 @@
 // The app's own copy of the OpenStreetMap places in Poland (`data/osm/places-pl.tsv`): reading
 // osmium's GeoJSON export of the Geofabrik extract into its rows, the polygon the copy covers, and
-// the checks a new copy must pass before it replaces the committed one. Pure, so it is tested
-// without osmium or the network; `scripts/food/osm-places.ts` downloads, runs osmium and writes.
+// the checks a new copy must pass before it replaces the committed one — the export's completeness
+// among them. Pure, so it is tested without osmium or the network (one test does run osmium, on a
+// small file); `scripts/food/osm-places.ts` downloads, runs osmium and writes.
 // With extensions: these two files import nothing, so this one loads under Node's own loader too.
 import { compareIds, type OsmRow } from '../../../src/food/nearby/osmFormat.ts';
-import { AMENITIES, OSM_COLUMNS, isWholesaleHall, labelOf, matchesPlacesQuery, matchesShopsQuery } from '../../../src/food/nearby/osmTags.ts';
+import {
+  AMENITIES,
+  OSM_COLUMNS,
+  isWholesaleHall,
+  labelOf,
+  matchesPlacesQuery,
+  matchesShopsQuery,
+  osmiumFilterExpressions,
+} from '../../../src/food/nearby/osmTags.ts';
 
 export type OsmType = 'node' | 'way' | 'relation';
 type Point = [number, number];
@@ -99,6 +108,28 @@ export function kindOf(tags: Record<string, string>): string {
   return amenity !== undefined && (AMENITIES as readonly string[]).includes(amenity) ? amenity : (tags.shop ?? 'other');
 }
 
+/** Why an object is not a row: neither view asks for it, or it has nothing a list could call it. */
+export type Dropped = 'notMatching' | 'unnamed';
+
+/**
+ * The one rule for what becomes a row and with which tags, shared by the export (`readFeatures`) and
+ * the completeness check (`completeness`): if they disagreed, the check would miss losses or report
+ * false ones. The same rule as the Overpass answers (`osmTags.ts`): an object counts when either
+ * view asks for it and it has a brand or a name, judged on all of its tags. The row keeps only the
+ * tags the app reads, each on one line (a tab or a line break would break the TSV) and none empty
+ * (an empty TSV field reads back as a missing tag).
+ */
+export function rowTags(all: Record<string, string>): Record<string, string> | Dropped {
+  if (!matchesPlacesQuery(all) && !matchesShopsQuery(all)) return 'notMatching';
+  if (!labelOf(all)) return 'unnamed';
+  const tags: Record<string, string> = {};
+  for (const column of OSM_COLUMNS) {
+    const value = all[column];
+    if (value) tags[column] = value.replace(/[\t\r\n]/g, ' ');
+  }
+  return tags;
+}
+
 interface Feature {
   id?: unknown;
   geometry?: Geometry | null;
@@ -114,20 +145,21 @@ export function splitRecords(text: string): string[] {
   return text.split('\n');
 }
 
-/** The geometry errors osmium reports with `-e`: objects it could not build, missing from the copy. */
+/**
+ * The geometry errors osmium reports with `-e` — context only, not a measure of what the copy lacks:
+ * most carry no id, a closed way whose area cannot be built is still exported as its line (an error,
+ * nothing missing), and some objects vanish without one. `completeness` is what finds the losses.
+ */
 export function geometryErrors(output: string): string[] {
   return output.split('\n').filter((line) => /geometry error/i.test(line));
 }
 
 /**
- * osmium's GeoJSON Text Sequence export → the rows of the copy, sorted by id.
+ * osmium's GeoJSON Text Sequence export → the rows of the copy, sorted by id, each by `rowTags`.
  *
- * The same rule as the Overpass answers (`osmTags.ts`): an object counts when either view asks for
- * it and it has a brand or a name, judged on all of its tags; only the tags the app reads are kept,
- * each on one line (a tab or a line break would break the TSV) and none empty (an empty TSV field
- * reads back as a missing tag). A closed way comes twice, as its `w` line and its `a` area, with the
- * same bounding box: the first one counts. Throws, with the line number, on a line that is not a
- * feature osmium writes — a cut-off stream ends in half a line, and that must not pass as data.
+ * A closed way comes twice, as its `w` line and its `a` area, with the same bounding box: the first
+ * one counts. Throws, with the line number, on a line that is not a feature osmium writes — a cut-off
+ * stream ends in half a line, and that must not pass as data.
  */
 export function readFeatures(lines: Iterable<string>): { rows: OsmRow[]; stats: FeatureStats } {
   const stats: FeatureStats = { features: 0, duplicates: 0, notMatching: 0, unnamed: 0, types: { node: 0, way: 0, relation: 0 }, kinds: {} };
@@ -152,18 +184,10 @@ export function readFeatures(lines: Iterable<string>): { rows: OsmRow[]; stats: 
       seen.add(decoded.key);
       const all: Record<string, string> = {};
       for (const [key, value] of Object.entries(feature.properties ?? {})) if (typeof value === 'string') all[key] = value;
-      if (!matchesPlacesQuery(all) && !matchesShopsQuery(all)) {
-        stats.notMatching++;
+      const tags = rowTags(all);
+      if (typeof tags === 'string') {
+        stats[tags]++;
         continue;
-      }
-      if (!labelOf(all)) {
-        stats.unnamed++;
-        continue;
-      }
-      const tags: Record<string, string> = {};
-      for (const column of OSM_COLUMNS) {
-        const value = all[column];
-        if (value) tags[column] = value.replace(/[\t\r\n]/g, ' ');
       }
       const centre = bboxCentre(feature.geometry);
       rows.push({ id: decoded.key, latE5: Math.round(centre.lat * 1e5), lonE5: Math.round(centre.lon * 1e5), tags });
@@ -176,6 +200,114 @@ export function readFeatures(lines: Iterable<string>): { rows: OsmRow[]; stats: 
   }
   rows.sort((a, b) => compareIds(a.id, b.id));
   return { rows, stats };
+}
+
+/**
+ * The osmium runs of a refresh, as arguments: the script runs them on Poland and a test on a small
+ * extract — the same commands, so what the test finds out about osmium holds for the refresh.
+ */
+export const osmiumArgs = {
+  /** Everything either view could ask for, with the nodes and members those objects need. */
+  filter: (source: string, out: string) => ['tags-filter', '-O', '-o', out, source, ...osmiumFilterExpressions()],
+  /** GeoJSON Text Sequence with `-u type_id` ids (`decodeId`); the geometry errors go to stderr. */
+  export: (filtered: string, out: string) => ['export', filtered, '-f', 'geojsonseq', '-u', 'type_id', '-e', '-O', '-o', out],
+  /** Only the objects that match the filter themselves (`-R`: not the nodes and members they pulled in), as OPL. */
+  list: (filtered: string, out: string) =>
+    ['tags-filter', '-R', '-f', 'opl,add_metadata=false', '-O', '-o', out, filtered, ...osmiumFilterExpressions()],
+};
+
+/** An object of an OPL listing: its id as the copy writes it (`n123`) and all of its tags. */
+export interface OplObject {
+  type: OsmType;
+  key: string;
+  tags: Record<string, string>;
+}
+
+const OPL_TYPES: Record<string, OsmType> = { n: 'node', w: 'way', r: 'relation' };
+
+/**
+ * OPL's escapes undone: osmium writes a space, `,`, `=`, `@`, `%`, control characters and most of
+ * Unicode past U+05FF as `%<code point in hex>%` — `%20%`, `%0a%`, `%201e%` for „, `%1f355%` for 🍕.
+ * Throws on a `%` that starts no escape: osmium never writes one.
+ */
+export function unescapeOpl(text: string): string {
+  return text.replace(/%([0-9a-f]+)%|%/gi, (_, hex: string | undefined) => {
+    if (hex === undefined) throw new Error(`a broken escape in "${text}"`);
+    return String.fromCodePoint(Number.parseInt(hex, 16));
+  });
+}
+
+/**
+ * `osmium … -f opl` → its objects, one per line. Fields are separated by spaces (osmium escapes a
+ * space inside a value); the first is the type and id, the one starting with `T` holds the tags as
+ * `key=value` pairs joined by commas. Throws, with the line number, on a line osmium would not write.
+ */
+export function readOpl(lines: Iterable<string>): OplObject[] {
+  const objects: OplObject[] = [];
+  let lineNumber = 0;
+  for (const line of lines) {
+    lineNumber++;
+    if (!line.trim()) continue;
+    try {
+      const fields = line.split(' ');
+      const match = fields[0]!.match(/^([nwr])(\d+)$/);
+      const id = Number(match?.[2]);
+      if (!match || !Number.isSafeInteger(id) || id < 1) throw new Error(`no object id in "${fields[0]}"`);
+      const field = fields.find((f) => f.startsWith('T'));
+      if (field === undefined) throw new Error('no tags field');
+      const tags: Record<string, string> = {};
+      for (const pair of field === 'T' ? [] : field.slice(1).split(',')) {
+        const parts = pair.split('=');
+        if (parts.length !== 2) throw new Error(`not a tag: "${pair}"`);
+        tags[unescapeOpl(parts[0]!)] = unescapeOpl(parts[1]!);
+      }
+      objects.push({ type: OPL_TYPES[match[1]!]!, key: `${match[1]}${id}`, tags });
+    } catch (error) {
+      throw new Error(`osmium listing, line ${lineNumber}: ${(error as Error).message}`);
+    }
+  }
+  return objects;
+}
+
+/**
+ * The relations osmium export builds areas of (by the exact `type` value); it writes nothing at all
+ * for any other relation — `type=site`, `type=building`, none.
+ */
+const AREA_RELATIONS = ['multipolygon', 'boundary'];
+
+export interface Completeness {
+  /** Objects that should be rows: they match the filter themselves and pass `rowTags`, the known gap aside. */
+  expected: number;
+  /** Expected, yet not a row — osmium could not build them. Sorted by id; the label as the lists show it. */
+  missing: { id: string; label: string }[];
+  /** Relations that pass `rowTags` but that osmium export never writes, by `type` (`''`: none). */
+  knownGap: Record<string, number>;
+}
+
+/**
+ * What osmium's export lost. `objects` are the objects of the filtered extract that match the filter
+ * themselves (the `list` run) — not the nodes and members it pulled in for them; each is judged by
+ * the same `rowTags` as the export, and those that are not rows are missing. osmium leaves out what
+ * it cannot build, often without an error: a broken multipolygon, one with a member the extract
+ * lacks, a closed area way of three nodes. The relations it never builds are the known gap, counted
+ * apart.
+ */
+export function completeness(objects: Iterable<OplObject>, rows: readonly OsmRow[]): Completeness {
+  const ids = new Set(rows.map((row) => row.id));
+  const result: Completeness = { expected: 0, missing: [], knownGap: {} };
+  for (const object of objects) {
+    const tags = rowTags(object.tags);
+    if (typeof tags === 'string') continue;
+    const type = object.tags.type ?? '';
+    if (object.type === 'relation' && !AREA_RELATIONS.includes(type)) {
+      result.knownGap[type] = (result.knownGap[type] ?? 0) + 1;
+      continue;
+    }
+    result.expected++;
+    if (!ids.has(object.key)) result.missing.push({ id: object.key, label: labelOf(tags) ?? '' });
+  }
+  result.missing.sort((a, b) => compareIds(a.id, b.id));
+  return result;
 }
 
 /**

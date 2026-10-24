@@ -16,7 +16,8 @@ razem z metodą, którą powstała — skryptem `scripts/food/osm-places.ts` (`n
 
 **W aplikacji:** build tnie plik na małe kawałki (`data/osm/v1/…`: indeks i pliki JSON spakowane
 gzipem, drobniejsze tam, gdzie lokali gęsto), a „W pobliżu” pobiera tylko te z okolicy szukanego
-miejsca. Za granicą i przy granicy dalej pyta serwery Overpass.
+miejsca. Za granicą, przy granicy i gdy danych aplikacji nie da się odczytać z jej serwera, dalej
+pyta serwery Overpass.
 
 ## Odświeżanie
 
@@ -30,14 +31,28 @@ npm run food:osm            # pobiera wyciąg (ok. 2 GB), filtruje go i zapisuje
 Opcje po `--` (dokładny opis w nagłówku skryptu): `--pbf=…` — wyciąg już pobrany, `--filtered=…` —
 wyciąg już przefiltrowany (`osmium tags-filter`), `--poly=…` — granica (plik `.poly`) z dysku,
 `--keep-pbf` — pobrany wyciąg zostaje na następny raz, `--force` — zapisuje mimo niezaliczonych
-kontroli (liczba miejsc, rodzaje, Warszawa, hale, data, granice — `gates` w `scripts/food/lib/osm.ts`),
-które najpierw wypisuje; bez niego skrypt przy niezaliczonej kontroli nie zapisuje niczego.
+kontroli (liczba miejsc, rodzaje, Warszawa, hale, data, granice — `gates` w `scripts/food/lib/osm.ts` —
+i kompletność eksportu, niżej), które najpierw wypisuje; bez niego skrypt przy niezaliczonej kontroli
+nie zapisuje niczego.
 `OSM_CACHE_DIR` — katalog na pobrane pliki. Na GitHubie: Actions → **Dane OSM** → Run workflow —
 odświeża dane, które mają co najmniej 156 h (opcja `force` workflow pomija tylko ten próg wieku,
 nigdy kontroli skryptu), sprawdza je testami, zapisuje commitem do `main` i wdraża stronę.
 
-Znana różnica wobec zapytań Overpass: kopia ma tylko relacje-multipoligony (budynki jako `type=building`
-osmium pomija) — w całej Polsce to kilka obiektów.
+**Kompletność eksportu.** osmium pomija obiekty, których geometrii nie umie zbudować (zepsuty
+multipoligon, multipoligon ze składową spoza wyciągu, zamknięta droga z `area=yes` z trzech punktów
+albo przecinająca samą siebie), często bez żadnego komunikatu; jego błędy geometrii zwykle nie mają
+identyfikatorów i dotyczą też obiektów, które w kopii są (zamknięta droga bez `area=yes`, której
+obszar się nie składa, zostaje jako linia). Dlatego skrypt wypisuje osobno (`osmium tags-filter -R`)
+obiekty przefiltrowanego wyciągu, które same pasują do filtra (bez punktów i składowych dobranych do
+nich), ocenia je tą samą regułą co wiersze kopii (`rowTags`) i porównuje z kopią: podaje, ilu brakuje,
+i do 20 brakujących z nazwą i linkiem do openstreetmap.org. Ponad 50 brakujących zatrzymuje
+odświeżenie, 1–50 to ostrzeżenie (w GitHub Actions także adnotacja przebiegu); błędy geometrii osmium
+skrypt tylko liczy.
+
+Znana różnica wobec zapytań Overpass: z relacji osmium buduje obszary tylko z multipoligonów i granic
+(`type=multipolygon`, `type=boundary`), innych relacji w kopii nie ma — skrypt liczy je osobno, jednym
+wierszem. W całej Polsce to kilka obiektów (w październiku 2026: 3 relacje `type=building` i hala Makro
+jako `type=site`).
 
 ## In English
 
@@ -57,14 +72,28 @@ together with the method that produced it: `scripts/food/osm-places.ts` (`npm ru
 
 **In the app:** the build cuts the file into small pieces (`data/osm/v1/…`: an index and gzipped
 JSON files, finer where places are dense), and "W pobliżu" (Nearby) downloads only those around the
-searched place. Abroad and near the border it still asks Overpass servers.
+searched place. Abroad, near the border and when the app's data cannot be read from its server, it
+still asks Overpass servers.
 
 **Refresh:** locally with osmium-tool (Homebrew or apt, as above) and `npm run food:osm` with the
 options above (details in the script's header), downloads in `OSM_CACHE_DIR`. The script checks the
 new copy against the previous one (row counts, kinds, Warsaw, the wholesale halls, the data date, the
-border box) and writes nothing when a check fails, unless `--force` (it prints the failures first).
+border box), checks the export's completeness (below) and writes nothing when a check fails, unless
+`--force` (it prints the failures first).
 On GitHub the **Dane OSM** workflow (run by hand) refreshes data at least 156 h old (its `force` only
 skips that age check, never the script's checks), tests it, commits it to `main` and deploys the site.
 
-Known difference from the Overpass queries: the copy holds only multipolygon relations (osmium skips
-`type=building` relations) — a handful of objects in all of Poland.
+**Export completeness.** osmium leaves out objects whose geometry it cannot build (a broken
+multipolygon, one with a member outside the extract, a closed `area=yes` way of three nodes or one that
+crosses itself), often without a message; its geometry errors mostly carry no ids and also concern
+objects that are in the copy (a closed way without `area=yes` whose area does not build stays as a
+line). So the script lists separately (`osmium tags-filter -R`) the objects of the filtered extract
+that match the filter themselves (not the nodes and members pulled in for them), judges them by the
+same rule as the copy's rows (`rowTags`) and compares: it prints how many are missing and up to 20 of
+them with their name and an openstreetmap.org link. More than 50 missing stop the refresh, 1–50 are a
+warning (on GitHub Actions also an annotation on the run); osmium's geometry errors are only counted.
+
+Known difference from the Overpass queries: of relations, osmium builds areas only from multipolygons
+and boundaries (`type=multipolygon`, `type=boundary`); other relations are not in the copy — the script
+counts them apart, on one line. A handful of objects in all of Poland (in October 2026: 3
+`type=building` relations and a Makro hall mapped as `type=site`).

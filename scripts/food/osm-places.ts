@@ -4,7 +4,8 @@
 // data/osm/meta.json (where the data came from, its counts and the polygon it covers). The build
 // cuts the TSV into small leaves, so the app reads the ones around the position instead of asking
 // the public Overpass servers. A new copy replaces the committed one only when it passes the checks
-// (`gates` in lib/osm.ts), and the same extract always gives the same bytes.
+// (`gates` in lib/osm.ts, and `completeness`: osmium's export lost at most a few of the objects it
+// should hold), and the same extract always gives the same bytes.
 // Big files go to OSM_CACHE_DIR (default ~/.cache/gym-tracker/osm), outside the repository.
 // Usage: npm run food:osm                       (download the extract, 2.1 GB, filter, export, write)
 //        npm run food:osm -- --pbf <file>       (a poland-latest.osm.pbf on disk; <file>.md5 checked when there)
@@ -17,23 +18,27 @@ import { createHash } from 'node:crypto';
 import { createReadStream, createWriteStream, existsSync } from 'node:fs';
 import { mkdir, readFile, rename, rm, statfs, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
-import { dirname, join, relative, resolve } from 'node:path';
+import { join, relative, resolve } from 'node:path';
 import { Readable, Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { gzipSync } from 'node:zlib';
 import { formatTsv, parseTsv, type OsmRow } from '../../src/food/nearby/osmFormat.ts';
-import { OSM_COLUMNS, osmiumFilterExpressions } from '../../src/food/nearby/osmTags.ts';
+import { OSM_COLUMNS } from '../../src/food/nearby/osmTags.ts';
 import {
   POLY_URL,
   SOURCE_URL,
   buildMeta,
+  completeness,
+  decodeId,
   diffRows,
   gates,
   geometryErrors,
+  osmiumArgs,
   parsePoly,
   readFeatures,
+  readOpl,
   simplifyCoverage,
   splitRecords,
   type Meta,
@@ -51,13 +56,22 @@ const OUT_DIR = join(ROOT, 'data/osm');
 const TSV_FILE = join(OUT_DIR, 'places-pl.tsv');
 const META_FILE = join(OUT_DIR, 'meta.json');
 const CACHE = resolve(process.env.OSM_CACHE_DIR || join(homedir(), '.cache/gym-tracker/osm'));
-/** More osmium geometry errors than this stop the refresh (a few broken areas in OSM are normal). */
-const MAX_GEOMETRY_ERRORS = 50;
+/** More objects missing from the export than this stop the refresh; fewer are a warning (a few broken areas in OSM are normal). */
+const MAX_MISSING = 50;
+/** Missing objects listed by id. */
+const LIST_MISSING = 20;
 const USAGE = 'usage: npm run food:osm -- [--pbf <file> | --filtered <file>] [--poly <file>] [--keep-pbf] [--force]';
 
 function fail(message: string): never {
   console.error(`✗ ${message}`);
   process.exit(1);
+}
+
+/** Under GitHub Actions a warning also goes out as a workflow command: an annotation on the run. */
+function warn(message: string) {
+  console.warn(`! ${message}`);
+  // The command's own escapes: a "%" or a line break would garble or cut the annotation.
+  if (process.env.GITHUB_ACTIONS === 'true') console.log(`::warning::${message.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A')}`);
 }
 
 function size(bytes: number): string {
@@ -94,6 +108,8 @@ const userPath = (file: string) => resolve(process.env.INIT_CWD ?? process.cwd()
 const shown = (file: string) => (file.startsWith(ROOT) ? relative(ROOT, file) : file);
 
 const osmium = osmiumVersion();
+// Every run writes to the cache, the export at least: one that cannot be made stops it here, in a sentence.
+await mkdir(CACHE, { recursive: true }).catch((error: Error) => fail(`no cache directory (OSM_CACHE_DIR): ${error.message}`));
 await warnIfLowOnDisk(CACHE);
 
 // The polygon first: it is small, and a bad one should stop the run before the long steps.
@@ -118,10 +134,9 @@ if (flags.filtered) {
   filtered = userPath(flags.filtered);
   if (!existsSync(filtered)) fail(`${filtered}: no such file`);
 } else {
-  await mkdir(CACHE, { recursive: true });
   filtered = join(CACHE, 'poland-food.osm.pbf');
   console.log(`osmium tags-filter → ${filtered}`);
-  run(['tags-filter', '-O', '-o', filtered, pbf!, ...osmiumFilterExpressions()]);
+  run(osmiumArgs.filter(pbf!, filtered));
   if (fromCache && !flags['keep-pbf']) await rm(pbf!, { force: true });
 }
 const dataAsOf = replicationTimestamp(filtered);
@@ -130,26 +145,41 @@ if (flags.filtered && pbf && replicationTimestamp(pbf) !== dataAsOf) {
 }
 if (!sourceMd5) console.log('source md5 unknown: the run starts from a filtered extract (add --pbf <source> to record it)');
 
+const count = (n: number) => n.toLocaleString('en-US');
+
 console.log(`osmium export ${filtered}`);
-const exported = await exportLines(filtered);
-const { rows, stats } = orFail(filtered, () => readFeatures(exported.lines));
-if (exported.errors.length) {
-  console.warn(`! osmium could not build ${exported.errors.length} object(s) — missing from the copy:`);
-  for (const error of exported.errors.slice(0, 10)) console.warn(`    ${error}`);
+const { rows, stats, errors } = await exportRows(filtered);
+// osmium's geometry errors cannot say what the copy lacks (see `geometryErrors`): the objects that
+// should be rows can, listed from the same extract and judged by the same rule.
+console.log(`osmium tags-filter -R ${filtered} (the objects that should be rows)`);
+const check = await checkCompleteness(filtered, rows);
+const missing = check.missing.length;
+const lost = missing ? `${count(missing)} are not, osmium could not build them` : 'all are';
+console.log(`completeness: ${count(check.expected)} objects should be rows; ${lost} (geometry errors reported: ${count(errors)})${missing ? ':' : ''}`);
+for (const { id, label } of check.missing.slice(0, LIST_MISSING)) console.log(`    ${id} „${label}” ${osmLink(id)}`);
+if (missing > LIST_MISSING) console.log(`    … and ${count(missing - LIST_MISSING)} more`);
+const gap = Object.entries(check.knownGap).sort(([a, m], [b, n]) => n - m || (a < b ? -1 : 1));
+if (gap.length) {
+  const relations = gap.reduce((sum, [, n]) => sum + n, 0);
+  const types = gap.map(([type, n]) => `${type ? `type=${type}` : 'no type'} ${count(n)}`).join(', ');
+  console.log(`known gap: ${count(relations)} relations osmium export never builds (only multipolygons and boundaries become areas): ${types}`);
 }
 const coverage = simplifyCoverage(poly);
 const meta = buildMeta({ dataAsOf, sourceMd5, osmium, rows, stats, coverage });
 
 const failures = gates(await readPreviousMeta(), meta, rows);
-// A few broken areas in OSM are normal; many mean the export itself went wrong.
-if (exported.errors.length > MAX_GEOMETRY_ERRORS)
-  failures.push(`osmium geometry errors: ${exported.errors.length}, at most ${MAX_GEOMETRY_ERRORS} expected`);
+// A few objects osmium cannot build are normal (broken areas in OSM); many mean the export itself went wrong.
+if (missing > MAX_MISSING) failures.push(`missing from the export: ${missing} objects, at most ${MAX_MISSING} expected`);
+else if (missing) {
+  const ids = check.missing.slice(0, LIST_MISSING).map(({ id }) => id);
+  warn(`${missing} object(s) missing from the export: ${ids.join(', ')}${missing > LIST_MISSING ? ', …' : ''}`);
+}
 if (failures.length) {
   console.error(`checks failed:\n${failures.map((failure) => `  ✗ ${failure}`).join('\n')}`);
   // The filtered extract stays in the cache: a rerun can start from it, without downloading or filtering again.
   const rerun = flags.filtered ? '' : `; --filtered ${filtered} reruns from the filtered extract`;
   if (!flags.force) fail(`nothing written (--force writes anyway${rerun})`);
-  console.warn('! --force: writing anyway');
+  warn('--force: writing anyway');
 } else console.log('checks passed');
 
 const previousRows = await readPreviousRows();
@@ -160,7 +190,6 @@ await writeAll([
   [META_FILE, metaText],
 ]);
 
-const count = (n: number) => n.toLocaleString('en-US');
 const points = (rings: readonly unknown[][]) => rings.reduce((sum, ring) => sum + ring.length, 0);
 console.log(`
 ${shown(TSV_FILE)}: ${count(meta.rows)} rows (${count(meta.types.node)} nodes, ${count(meta.types.way)} ways, ${count(meta.types.relation)} relations)
@@ -199,12 +228,10 @@ function replicationTimestamp(file: string): string {
 }
 
 async function warnIfLowOnDisk(dir: string) {
-  let probe = dir;
-  while (!existsSync(probe) && dirname(probe) !== probe) probe = dirname(probe);
   try {
-    const { bavail, bsize } = await statfs(probe);
+    const { bavail, bsize } = await statfs(dir);
     const free = bavail * bsize;
-    if (free < MIN_FREE_BYTES) console.warn(`! ${size(free)} free for ${dir}: the extract and its filtered copy need about ${size(MIN_FREE_BYTES)}`);
+    if (free < MIN_FREE_BYTES) warn(`${size(free)} free for ${dir}: the extract and its filtered copy need about ${size(MIN_FREE_BYTES)}`);
   } catch {
     // No free-space figure on this system: nothing to warn about.
   }
@@ -250,7 +277,6 @@ async function localPbfMd5(file: string): Promise<string> {
  */
 async function cachedOrDownloadedPbf(): Promise<{ file: string; md5: string }> {
   const expected = parseMd5(await (await get(`${SOURCE_URL}.md5`)).text(), `${SOURCE_URL}.md5`);
-  await mkdir(CACHE, { recursive: true });
   const file = join(CACHE, 'poland-latest.osm.pbf');
   if (existsSync(file)) {
     console.log(`checking the cached ${file}`);
@@ -292,21 +318,40 @@ async function cachedOrDownloadedPbf(): Promise<{ file: string; md5: string }> {
 }
 
 /**
- * osmium's GeoJSON export of the filtered extract, as records, and the geometry errors it reported:
- * the export goes to a file in the cache, so osmium's own output (`-e`) holds only the errors.
+ * One osmium run that writes `out` in the cache: the file read back and removed, and osmium's own
+ * output. A failed run removes it too — no partial file is left for anyone to take as whole.
  */
-async function exportLines(file: string): Promise<{ lines: string[]; errors: string[] }> {
-  await mkdir(CACHE, { recursive: true });
-  const out = join(CACHE, 'poland-food.geojsonseq');
-  const result = spawnSync('osmium', ['export', file, '-f', 'geojsonseq', '-u', 'type_id', '-e', '-O', '-o', out], {
-    encoding: 'utf8',
-    maxBuffer: 64 * 1024 * 1024,
-  });
-  if (result.error) fail(`osmium export: ${result.error.message}`);
-  if (result.status !== 0) fail(`osmium export ended with exit code ${result.status}: ${result.stderr.trim()}`);
-  const lines = splitRecords(await readFile(out, 'utf8'));
+async function osmiumOutput(args: string[], out: string): Promise<{ text: string; messages: string }> {
+  const result = spawnSync('osmium', args, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+  if (result.error || result.status !== 0) {
+    await rm(out, { force: true });
+    if (result.error) fail(`osmium ${args[0]}: ${result.error.message}`);
+    const ended = result.status === null ? `on ${result.signal}` : `with exit code ${result.status}`;
+    fail(`osmium ${args[0]} ended ${ended}: ${result.stderr.trim()}`);
+  }
+  const text = await readFile(out, 'utf8');
   await rm(out, { force: true });
-  return { lines, errors: geometryErrors(`${result.stdout}\n${result.stderr}`) };
+  return { text, messages: `${result.stdout}\n${result.stderr}` };
+}
+
+/** The rows from osmium's GeoJSON export of the filtered extract, and how many geometry errors it reported (`-e`). */
+async function exportRows(file: string) {
+  const out = join(CACHE, 'poland-food.geojsonseq');
+  const { text, messages } = await osmiumOutput(osmiumArgs.export(file, out), out);
+  return { ...orFail(file, () => readFeatures(splitRecords(text))), errors: geometryErrors(messages).length };
+}
+
+/** What the export lost: the objects of the filtered extract that should be rows (OPL), against the rows. */
+async function checkCompleteness(file: string, rows: readonly OsmRow[]) {
+  const out = join(CACHE, 'poland-food.opl');
+  const { text } = await osmiumOutput(osmiumArgs.list(file, out), out);
+  return orFail(file, () => completeness(readOpl(splitRecords(text)), rows));
+}
+
+/** The object on openstreetmap.org, for a missing one: what to look at, or fix in the map. */
+function osmLink(key: string): string {
+  const object = decodeId(key)!;
+  return `https://osm.org/${object.type}/${object.id}`;
 }
 
 /** The committed meta file the new copy is checked against; `null` when there is none (a first copy). */
@@ -318,7 +363,7 @@ async function readPreviousMeta(): Promise<Meta | null> {
   } catch {
     // Not JSON: the warning below.
   }
-  console.warn(`! ${shown(META_FILE)} is not a meta file this script wrote: checking the new copy as a first one`);
+  warn(`${shown(META_FILE)} is not a meta file this script wrote: checking the new copy as a first one`);
   return null;
 }
 
@@ -327,7 +372,7 @@ async function readPreviousRows(): Promise<OsmRow[] | null> {
   try {
     return parseTsv(await readFile(TSV_FILE, 'utf8')).rows;
   } catch (error) {
-    console.warn(`! the previous ${shown(TSV_FILE)} does not read (${(error as Error).message}): no comparison`);
+    warn(`the previous ${shown(TSV_FILE)} does not read (${(error as Error).message}): no comparison`);
     return null;
   }
 }

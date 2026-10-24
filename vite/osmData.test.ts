@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, test } from 'vitest';
-import { CAP, MAX_DEPTH, wantedLeaves } from '../src/food/nearby/osmGrid';
+import { CAP, MAX_DEPTH, cellBox, wantedLeaves } from '../src/food/nearby/osmGrid';
 import { compareIds, parseTsv } from '../src/food/nearby/osmFormat';
 import { OSM_COLUMNS, isWholesaleHall, labelOf, matchesPlacesQuery, matchesShopsQuery } from '../src/food/nearby/osmTags';
 import { OSM_DATA_FILE, OSM_META_FILE, buildOsmFiles } from './osmPlaces';
@@ -49,11 +49,17 @@ describe('the committed OSM data', () => {
 
   test('cut as the build cuts it: small leaves, at most 500 places each (except the finest cells)', () => {
     const { index, files } = buildOsmFiles(tsv, meta);
-    // The busiest 10 km views need far fewer leaves than the memory keeps (pinned ones never drop).
+    // The busiest 10 km view needs far fewer leaves than the memory keeps (pinned ones never drop):
+    // looked for around the centre of every leaf, so wherever the data is densest.
     const leaves = index.leaves.map(([d, i, j]) => ({ d, i, j }));
-    for (const city of [{ lat: 52.2297, lon: 21.0122 }, { lat: 50.0617, lon: 19.9373 }, { lat: 51.1079, lon: 17.0385 }]) {
-      expect(wantedLeaves(leaves, city, 10_000).leaves.length).toBeLessThanOrEqual(MEMORY_LEAVES / 2);
+    let busiest = { leaves: 0, lat: 0, lon: 0 };
+    for (const leaf of leaves) {
+      const box = cellBox(leaf);
+      const centre = { lat: (box.south + box.north) / 2e5, lon: (box.west + box.east) / 2e5 };
+      const wanted = wantedLeaves(leaves, centre, 10_000).leaves.length;
+      if (wanted > busiest.leaves) busiest = { leaves: wanted, ...centre };
     }
+    expect(busiest.leaves, `10 km around ${busiest.lat}, ${busiest.lon}`).toBeLessThanOrEqual(MEMORY_LEAVES / 2);
     expect(index.count).toBe(rows.length);
     for (const [d, , , count] of index.leaves) if (d < MAX_DEPTH) expect(count).toBeLessThanOrEqual(CAP);
     const biggest = Math.max(...[...files].filter(([path]) => path.endsWith('.json.gz')).map(([, bytes]) => bytes.length));
