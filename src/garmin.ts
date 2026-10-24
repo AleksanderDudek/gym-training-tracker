@@ -17,13 +17,20 @@ export { PULL_GAP_MS, whenText } from './mailbox';
  * schowek: ktoś wkleja go w ustawienia aplikacji GYM TRACKER na zegarku w Garmin Connect.
  * Do eksportu danych nie trafia — plik z kopią treningów nie ma otwierać danych o zdrowiu.
  *
- * Adres aplikacji w Connect IQ Store przychodzi z buildu (`VITE_GARMIN_APP_URL`). Bez niego
- * albo bez serwera karty zegarka nie ma, a aplikacja działa jak dotąd.
+ * Karta zegarka potrzebuje tylko serwera (`VITE_API_URL`) — bez niego karty nie ma, a aplikacja
+ * działa jak dotąd. Adres aplikacji w Connect IQ Store jest w kodzie: strona wersji publicznej.
+ * Zmienna buildu `VITE_GARMIN_APP_URL` (w GitHubie `GARMIN_APP_URL`) tylko go nadpisuje, np.
+ * adresem bety do testów; pusta niczego nie zmienia.
  */
 
-export const GARMIN_APP_URL = String(import.meta.env.VITE_GARMIN_APP_URL ?? '');
+/** Strona aplikacji GYM TRACKER w Connect IQ Store — wersja publiczna, nie beta. */
+export const GARMIN_STORE_URL = 'https://apps.garmin.com/apps/681b79f1-3575-4375-9836-a5ec600abab4';
 
-export const garminConfigured = (): boolean => apiConfigured() && GARMIN_APP_URL !== '';
+// `||`, nie `??`: workflow wdrożenia podaje nieustawioną zmienną repozytorium jako pusty tekst.
+export const GARMIN_APP_URL = String(import.meta.env.VITE_GARMIN_APP_URL || GARMIN_STORE_URL);
+
+/** Nazwa została, choć adres sklepu jest już zawsze: karta zegarka zależy tylko od serwera. */
+export const garminConfigured = (): boolean => apiConfigured();
 
 const slot = keySlot('gt-garmin-key');
 const box = mailbox(slot, garminConfigured, parsePayload);

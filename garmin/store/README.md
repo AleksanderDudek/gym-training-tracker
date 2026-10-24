@@ -30,7 +30,7 @@ Outside this folder:
 | Build | `./build.sh beta` | `./build.sh store` |
 | Upload | “Beta App” ticked | “Beta App” **not** ticked |
 | Who can install | only the developer account | everyone, after Garmin’s review |
-| Store link | https://apps.garmin.com/apps/c08428fa-5a13-4c1f-b333-35ef62721cb3 | given after approval |
+| Store link | https://apps.garmin.com/apps/c08428fa-5a13-4c1f-b333-35ef62721cb3 | https://apps.garmin.com/apps/681b79f1-3575-4375-9836-a5ec600abab4 (approved 2026-10) |
 
 Garmin cannot turn a beta into a public app, and it rejects the same app ID for both, so the
 production manifest has its own ID. `./build.sh beta` swaps in the beta ID for the beta package.
@@ -61,13 +61,11 @@ Submitting:
 After approval:
 
 1. Copy the store link of the **production** app.
-2. Point the web app’s Garmin card at it and redeploy:
-
-   ```bash
-   gh variable set GARMIN_APP_URL --body "https://apps.garmin.com/apps/<production id>"
-   gh workflow run Deploy
-   ```
-
+2. The web app’s Garmin card has that link in its code (`GARMIN_STORE_URL` in `src/garmin.ts`,
+   already the production page above), so a normal deploy of `main` is enough. The repository
+   variable `GARMIN_APP_URL` only overrides it — for example with the beta link while testing —
+   and can be deleted otherwise (`gh variable delete GARMIN_APP_URL`, then `gh workflow run Deploy`).
+   The card itself appears whenever the build knows the server (`API_URL`).
 3. From now on settings of the app are also in Garmin Connect (watch → Activities & Apps →
    GYM TRACKER → Settings), not only in the Connect IQ Store app.
 
