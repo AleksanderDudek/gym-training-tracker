@@ -13,12 +13,17 @@
  */
 export type WarmUrl = string | (() => string | undefined);
 
-/** What to fetch at the takeover, each after what it waits for (never rejects). */
-const waiting = new Map<WarmUrl, Promise<unknown>>();
+interface Planned {
+  /** What the fetch waits for (never rejects). */
+  settled: Promise<unknown>;
+  /** The file tells where someone looked (an OSM leaf): „Usuń wszystkie dane” drops it. */
+  trail: boolean;
+}
+
+/** What to fetch at the takeover, each after what it waits for. */
+const waiting = new Map<WarmUrl, Planned>();
 let listening = false;
-/** The takeover's fetches still on their way (each never rejects). */
-const fetching = new Set<Promise<void>>();
-/** Counts the resets: a fetch planned before one is not made. */
+/** Counts the resets: the trail planned before one is not fetched. */
 let resets = 0;
 
 const ignore = () => {};
@@ -37,20 +42,18 @@ function container(): ServiceWorkerContainer | undefined {
 
 function takeOver(): void {
   const planned = resets;
-  for (const [url, settled] of waiting)
+  for (const [url, { settled, trail }] of waiting)
     void settled
       .then(() => {
-        // „Usuń wszystkie dane” in the meantime: what the page saw is not fetched into the worker's
-        // copy any more.
-        if (resets !== planned) return undefined;
+        // „Usuń wszystkie dane” in the meantime: the areas the person saw are not fetched into the
+        // worker's copy any more.
+        if (trail && resets !== planned) return undefined;
         const href = typeof url === 'function' ? url() : url;
         if (!href) return undefined;
         // Read to the end: nothing is left half-read between the worker and the page.
-        const fetched = fetch(href)
+        return fetch(href)
           .then((response) => response.blob())
           .then(ignore, ignore);
-        fetching.add(fetched);
-        return fetched.then(() => void fetching.delete(fetched));
       })
       .catch(ignore);
   waiting.clear();
@@ -61,9 +64,14 @@ function takeOver(): void {
  * request, or whatever ends with it) settles either way; a failure is ignored. Call it when the
  * request STARTS: whether it went past the worker is decided now. Nothing when the browser has no
  * service worker or one already controls the page — then the request went through it. One address
- * asked for several times is fetched once, after all of them.
+ * asked for several times is fetched once, after all of them. `trail`: the file tells where someone
+ * looked (an OSM leaf), so „Usuń wszystkie dane” drops it (`forgetRefetches`).
  */
-export function refetchWhenControlled(url: WarmUrl, settled: Promise<unknown> = Promise.resolve()): void {
+export function refetchWhenControlled(
+  url: WarmUrl,
+  settled: Promise<unknown> = Promise.resolve(),
+  { trail = false }: { trail?: boolean } = {},
+): void {
   // Handled before anything else: a failed request handed in here is never an unhandled rejection,
   // whether the page needs the fetch again or not.
   const done = settled.then(ignore, ignore);
@@ -74,20 +82,18 @@ export function refetchWhenControlled(url: WarmUrl, settled: Promise<unknown> = 
     sw.addEventListener('controllerchange', takeOver, { once: true });
   }
   const before = waiting.get(url);
-  waiting.set(url, before ? Promise.all([before, done]) : done);
+  waiting.set(url, { settled: before ? Promise.all([before.settled, done]) : done, trail: trail || before?.trail === true });
 }
 
 /**
- * „Usuń wszystkie dane”: the files waiting for the takeover are not fetched — the worker would save
- * the areas the person saw (`gt-osm`) right after the reset. Also those the takeover has planned but
- * not started yet. The shared files among them (the products, the shop chunk, the index) are saved on
- * the next visit instead. Settles when the takeover's fetches already on their way have ended, to whether there
- * were any: what the worker saves of them comes after the reset and is swept again
- * (`src/food/backup.ts`).
+ * „Usuń wszystkie dane”: the trail waiting for the takeover (the leaves: the areas the person saw)
+ * is not fetched — the worker would save it right after the reset; nor is the trail the takeover has
+ * planned but not started yet. The shared files (the products, the shop chunk, the index) still are:
+ * they are the same for everyone, and the reset leaves their copies. A takeover fetch of the trail
+ * already on its way goes through the worker, which keeps no trail asked for before the reset
+ * (`src/swPlugins.ts`).
  */
-export function forgetRefetches(): Promise<boolean> {
+export function forgetRefetches(): void {
   resets++;
-  waiting.clear();
-  const onWay = [...fetching];
-  return Promise.all(onWay).then(() => onWay.length > 0);
+  for (const [url, { trail }] of waiting) if (trail) waiting.delete(url);
 }

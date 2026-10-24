@@ -3,7 +3,7 @@ import { act, renderHook } from '@testing-library/react';
 import { createElement, useEffect, useLayoutEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { wantedLeaves } from '../nearby/osmGrid';
+import { roundedCentre, wantedLeaves } from '../nearby/osmGrid';
 import { __resetStaticData, leafNow, leafRefs, leafStartedAt, loadIndex, loadLeaf, MEMORY_LEAVES } from '../nearby/staticData';
 import type { LatLon } from '../nearby/types';
 import { boxCoverage, osmResponse, osmRow, osmTestData, type OsmTestData } from '../test/osm';
@@ -270,6 +270,70 @@ describe('useStaticAround', () => {
     await settle(1000);
     expect(result.current[0]).toMatchObject({ status: 'ready', completeWithin: 8000 });
     expect(wanted.every((leaf) => leafNow(leaf))).toBe(true);
+  });
+
+  describe('a slow link with more leaves than slots (a leaf each, every one answering 3 s after it is asked)', () => {
+    /** 49 places on a grid around `c`, ~550 m apart: at 2 km about 35 leaves, many more than the 8 slots. */
+    const grid = (c: LatLon, first: number) =>
+      Array.from({ length: 49 }, (_, k) =>
+        osmRow(`n${first + k}`, c.lat + (Math.floor(k / 7) - 3) * 0.005, c.lon + ((k % 7) - 3) * 0.008, {
+          amenity: 'restaurant',
+          name: `Lokal ${first + k}`,
+        }),
+      );
+    const cell = (leaf: { d: number; i: number; j: number }) => `/t/${leaf.d}-${leaf.i}-${leaf.j}.`;
+    let leafUrls: string[];
+    let failOnce: string | null;
+
+    beforeEach(() => {
+      leafUrls = [];
+      failOnce = null;
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (url: string) => {
+          if (url.includes('index.json')) return osmResponse(data, url)!;
+          leafUrls.push(url);
+          if (failOnce && url.includes(failOnce)) {
+            failOnce = null;
+            throw new TypeError('Failed to fetch');
+          }
+          return new Promise<Response>((answer) => setTimeout(() => answer(osmResponse(data, url)!), 3000));
+        }),
+      );
+    });
+
+    test('the saved position, then the GPS fix far away while leaves wait in line: the new place’s nearest leaf is the next request out', async () => {
+      const there = { lat: HERE.lat + 0.2, lon: HERE.lon }; // ~22 km north
+      data = osmTestData([...grid(HERE, 1000), ...grid(there, 2000)], boxCoverage(51.5, 20, 53, 22), 1);
+      const refs = leafRefs(data.index);
+      expect(wantedLeaves(refs, roundedCentre(HERE), 2000).leaves.length).toBeGreaterThan(16);
+      const nearestThere = wantedLeaves(refs, roundedCentre(there), 2000).leaves[0]!;
+      const { rerender } = renderHook(({ at }: { at: LatLon }) => useStaticAround(at, 2000), { initialProps: { at: HERE } });
+      await settle(1000, 100);
+      expect(leafUrls).toHaveLength(8);
+      rerender({ at: there });
+      await settle(2500, 100); // the saved place's first leaves answer at 3 s and free their slots
+      expect(leafUrls.length).toBeGreaterThan(8);
+      expect(leafUrls[8]).toContain(cell(nearestThere));
+    });
+
+    test('the user’s own leaf failing once is asked again with the next free slot: complete around the user long before the whole line is in', async () => {
+      data = osmTestData(grid(HERE, 1000), boxCoverage(51.5, 20, 53, 22), 1);
+      failOnce = cell(wantedLeaves(leafRefs(data.index), roundedCentre(HERE), 2000).leaves[0]!);
+      const { result } = renderHook(() => useStaticAround(HERE, 2000));
+      let complete = -1;
+      let ready = -1;
+      for (let t = 100; t <= 30_000 && ready < 0; t += 100) {
+        await act(() => vi.advanceTimersByTimeAsync(100));
+        if (complete < 0 && result.current[0].completeWithin > 0) complete = t;
+        if (result.current[0].status === 'ready') ready = t;
+      }
+      expect(ready).toBeGreaterThan(0);
+      // The retry (after its 2 s pause) takes the first slot that frees, at 3 s, and lands at 6 s;
+      // the whole line takes about 15 s.
+      expect(complete).toBeLessThanOrEqual(6500);
+      expect(ready - complete).toBeGreaterThan(5000);
+    });
   });
 
   test('the last leaf landing between the view’s render and its effect still completes the view', async () => {

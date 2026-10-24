@@ -103,8 +103,10 @@ describe('kopia jedzenia', () => {
     expect([...names]).toEqual(['gt-food-data', 'gt-osm-index']);
   });
 
-  it('nazwy kopii do wyczyszczenia to te, których używa service worker', () => {
+  it('nazwy kopii do wyczyszczenia to te, których używa service worker — i te, które on sam usuwa na prośbę resetu', () => {
     FOOD_CACHES.forEach((name) => expect(swSource).toContain(`cacheName: '${name}'`));
+    const trail = swSource.match(/const TRAIL = \[([^\]]*)\]/)?.[1];
+    expect(trail?.match(/'[^']+'/g)?.map((name) => name.slice(1, -1)).sort()).toEqual([...FOOD_CACHES].sort());
   });
 
   it('gdy baza odmówi, miejsce sklepów i kopie i tak znikają', async () => {
@@ -228,22 +230,25 @@ describe('zapis Workboxa o użytych plikach', () => {
     expect(await remaining()).toEqual(['gt-shop-data']);
   });
 
-  it('reset przed przejęciem strony przez service worker: kawałek, który miał wtedy pobrać do swojej kopii, nie wraca', async () => {
-    // Pierwsza wizyta: strona jeszcze nie jest pod jego opieką, a kawałek przyszedł obok niego.
+  it('reset przed przejęciem strony przez service worker: kawałek, który miał wtedy pobrać do swojej kopii, nie wraca — baza produktów tak', async () => {
+    // Pierwsza wizyta: strona jeszcze nie jest pod jego opieką, a kawałek i baza przyszły obok niego.
     const sw = Object.assign(new EventTarget(), { controller: null as object | null });
     Object.defineProperty(navigator, 'serviceWorker', { value: sw, configurable: true });
-    const fetchMock = vi.fn(async () => new Response('x'));
+    const fetchMock = vi.fn(async (_url: string) => new Response('x'));
     vi.stubGlobal('fetch', fetchMock);
-    refetchWhenControlled(afterNearby[0]!.url);
+    const products = 'https://app.example/kb/data/products.19a087023af2.json.gz';
+    refetchWhenControlled(afterNearby[0]!.url, Promise.resolve(), { trail: true });
+    refetchWhenControlled(products);
     stubCaches();
     await clearFood(database);
     sw.controller = {};
     sw.dispatchEvent(new Event('controllerchange'));
     await new Promise((resolve) => setTimeout(resolve, 20));
-    expect(fetchMock).not.toHaveBeenCalled();
+    // Baza jest taka sama dla wszystkich: trafia do kopii, żeby Jedzenie działało bez sieci.
+    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([products]);
   });
 
-  it('kawałek, który w chwili resetu był w drodze: gdy przyjdzie i service worker go zapisze, kopia i wpisy znikają jeszcze raz', async () => {
+  it('po resecie nic nie sprząta drugi raz: kawałek, który był wtedy w drodze, nie zostaje w pamięci, a kopia i wpisy wizyty zaraz po resecie zostają', async () => {
     // Udawany tylko `setTimeout`: IndexedDB w pamięci odmierza swoje kroki `setImmediate`, który
     // musi biec naprawdę.
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
@@ -267,20 +272,18 @@ describe('zapis Workboxa o użytych plikach', () => {
     await clearFood(database);
     expect(sweeps()).toBe(1);
     expect(await remaining()).toEqual(['gt-shop-data']);
-    await vi.advanceTimersByTimeAsync(5000);
-    expect(sweeps()).toBe(1);
 
     answer();
     await loading;
-    // Service worker zapisuje kawałek i wpis o nim dopiero po oddaniu go stronie.
+    // Przyszedł po resecie: strona go nie zapamiętuje (service worker też nie — `src/swPlugins.ts`).
+    expect(nearby.leafNow(leaf!)).toBeUndefined();
+    // Nowa wizyta w „W pobliżu” zaraz po resecie: service worker zapisuje jej kawałki i wpisy o nich.
     names.add('gt-osm');
-    await workboxDb([{ id: 'gt-osm|late', cacheName: 'gt-osm', url: afterNearby[0]!.url, timestamp: 4 }]);
-    await vi.advanceTimersByTimeAsync(1000);
+    await workboxDb([{ id: 'gt-osm|nowa', cacheName: 'gt-osm', url: afterNearby[1]!.url, timestamp: 4 }]);
+    await vi.advanceTimersByTimeAsync(10_000);
     expect(sweeps()).toBe(1);
-    await vi.advanceTimersByTimeAsync(1000);
-    await vi.waitFor(async () => expect(await remaining()).toEqual(['gt-shop-data']));
-    expect(sweeps()).toBe(2);
-    expect(names.has('gt-osm')).toBe(false);
+    expect(names.has('gt-osm')).toBe(true);
+    expect(await remaining()).toEqual(['gt-osm', 'gt-shop-data']);
   });
 
   it('gdy baza dziennika odmówi, wpisy oglądanych kawałków i tak znikają', async () => {
@@ -298,5 +301,78 @@ describe('zapis Workboxa o użytych plikach', () => {
     await forgetCacheEntries(FOOD_CACHES);
     const names = await indexedDB.databases();
     expect(names.map((d) => d.name)).not.toContain('workbox-expiration');
+  });
+});
+
+describe('reset a service worker, pod którego opieką jest strona', () => {
+  /** Strona pod opieką service workera, który odpowiada na prośbę resetu po `ms` (`null`: nigdy). */
+  function controlledBy(ms: number | null) {
+    const controller = {
+      postMessage: vi.fn((_message: unknown, transfer: MessagePort[]) => {
+        if (ms !== null) setTimeout(() => transfer[0]!.postMessage('done'), ms);
+      }),
+    };
+    Object.defineProperty(navigator, 'serviceWorker', { value: { controller }, configurable: true });
+    return controller;
+  }
+
+  /** Kroki IndexedDB w pamięci (prawdziwy `setImmediate`): wszystko, co reset robi bez service workera. */
+  async function letDatabaseWork() {
+    for (let k = 0; k < 50; k++) await new Promise((resolve) => setImmediate(resolve));
+  }
+
+  it('reset prosi go o zapomnienie śladu (`FORGET_TRAIL`, odpowiedź przez port) i czeka, aż skończy', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    const controller = controlledBy(1000);
+    stubCaches();
+    let done = false;
+    const reset = clearFood(database).then(() => (done = true));
+    await letDatabaseWork();
+    expect(controller.postMessage).toHaveBeenCalledWith({ type: 'FORGET_TRAIL' }, [expect.any(MessagePort)]);
+    expect(done).toBe(false);
+    await vi.advanceTimersByTimeAsync(1000);
+    await reset;
+    expect(await database.profile.count()).toBe(0);
+  });
+
+  it('gdy nie odpowiada, reset czeka na niego najwyżej 3 s', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    controlledBy(null);
+    stubCaches();
+    let done = false;
+    const reset = clearFood(database).then(() => (done = true));
+    await letDatabaseWork();
+    await vi.advanceTimersByTimeAsync(2900);
+    await letDatabaseWork();
+    expect(done).toBe(false);
+    await vi.advanceTimersByTimeAsync(100);
+    await reset;
+    expect(done).toBe(true);
+  });
+
+  it('strona bez service workera nie ma kogo pytać: kopie usuwa sama', async () => {
+    const { remove } = stubCaches();
+    await clearFood(database);
+    expect(remove.mock.calls.map(([name]) => name).sort()).toEqual(['gt-osm', 'off-images', 'osm-tiles']);
+  });
+});
+
+// Na końcu pliku: podmienia moduł danych OSM każdemu, kto go potem wczyta.
+describe('reset a moduły, których strona jeszcze nie wczytała', () => {
+  it('reset nie pobiera modułu danych OSM: na wolnym łączu kopie i dziennik nie czekają na niego, a moduł niewczytany niczego nie pamięta', async () => {
+    // Moduł, który pobierałby się bez końca (zawieszone łącze, strona bez service workera).
+    vi.doMock('./nearby/staticData', () => new Promise(() => {}));
+    try {
+      const { remove } = stubCaches();
+      const outcome = await Promise.race([
+        clearFood(database).then(() => 'gotowe'),
+        new Promise((resolve) => setTimeout(resolve, 2000, 'czeka na moduł')),
+      ]);
+      expect(outcome).toBe('gotowe');
+      expect(remove).toHaveBeenCalledWith('gt-osm');
+      expect(await database.profile.count()).toBe(0);
+    } finally {
+      vi.doUnmock('./nearby/staticData');
+    }
   });
 });
