@@ -1,10 +1,10 @@
-GYM TRACKER brings the numbers from your Garmin watch into GYM TRACKER, a free training app that runs in your browser on any phone or computer: https://aleksanderdudek.github.io/gym-training-tracker/ (the app interface is in Polish). No retyping, no account, no subscription.
+GYM TRACKER brings the numbers from your Garmin watch into GYM TRACKER, a free training app that runs in your browser on any phone or computer: https://aleksanderdudek.github.io/gym-training-tracker/ (in Polish or English). No retyping, no account, no subscription.
 
 WHAT IT SENDS
 About every 30 minutes, while your phone is nearby, the watch sends the last 7 days of:
 • steps, distance, floors climbed and intensity minutes
 • bike rides (start time, duration, distance)
-• heart rate (min, average, max), stress, Body Battery and average resting heart rate
+• heart rate (min, average, max), average resting heart rate and, on most models, stress and Body Battery
 Because each send covers a whole week, a day without your phone nearby fills in with the next send.
 
 WHAT YOU GET IN GYM TRACKER
@@ -13,17 +13,17 @@ WHAT YOU GET IN GYM TRACKER
 • Heart rate, stress and Body Battery are shown day by day, as they are, without medical interpretation.
 
 HOW TO CONNECT (about 2 minutes)
-1. Open GYM TRACKER in your browser: Ustawienia (Settings) → Zegarek Garmin (Garmin watch) → Połącz zegarek (Connect watch), then Kopiuj klucz (Copy key).
+1. Open GYM TRACKER in your browser: Settings → Garmin watch. Check your model, then tap Connect watch and Copy key.
 2. Paste the key into this app’s settings: Garmin Connect → your watch → Activities & Apps → GYM TRACKER → Settings.
 3. Open GYM TRACKER on the watch once. The first data arrives within minutes. Press START (or tap the screen) to send right away.
-Using GYM TRACKER on a second device? Choose “Mam już klucz” (I already have a key) there and paste the same key.
+Using GYM TRACKER on a second device? Choose “I already have a key from another device” there and paste the same key.
 
 ON THE WATCH
-The app screen shows the last send: “Sent 14:32”, “No phone nearby” (sending through Garmin Connect needs your phone within Bluetooth range), “Wrong key” (paste it again) or “Paste the key in Garmin Connect”. The glance shows the same at a look. The watch text is in English, or in Polish on a watch set to Polish.
+The app screen shows the last send: “Sent 14:32”, “No phone nearby” (sending through Garmin Connect needs your phone within Bluetooth range), “Wrong key” (paste it again) or “Paste the key in Garmin Connect”. On watches with glances, the glance shows the same at a look. The watch text is in English, or in Polish on a watch set to Polish.
 
 PRIVACY
 The watch encrypts the data (AES-256 and HMAC-SHA256) with your key before it leaves the watch. The key is created in your browser and the server never sees it: it keeps only the latest encrypted package, for at most 7 days, and cannot read it. Only your browser can open it. No accounts, no ads, no analytics, no location, no GPS tracks. Without a key the app sends nothing.
-Disconnect any time in GYM TRACKER (Odłącz zegarek): the package is deleted from the server at once. Data that already arrived stays in your history.
+Disconnect any time in GYM TRACKER (Disconnect watch): the package is deleted from the server at once. Data that already arrived stays in your history.
 Privacy policy: https://aleksanderdudek.github.io/gym-training-tracker/privacy.html
 
 PERMISSIONS
@@ -35,10 +35,10 @@ PERMISSIONS
 GOOD TO KNOW
 • Sleep score is not included: Connect IQ gives it only to watch faces, not to apps.
 • Runs and walks don’t become separate entries in GYM TRACKER: their steps are already in the day’s steps, so they would count twice.
-• Works with Garmin watches on Connect IQ 3.2 or newer (see the compatible devices list) and with iPhone or Android, wherever Garmin Connect runs.
+• Works with 118 Garmin watch models (Connect IQ 3.2 or newer) and with iPhone or Android. Check yours and what it can send: https://aleksanderdudek.github.io/gym-training-tracker/#/zegarek
 
 OPEN SOURCE
 The watch app, the web app and the server are open source: https://github.com/AleksanderDudek/gym-training-tracker
-Questions or problems: GitHub issues on that page, or the “Napisz do autora” (Write to the author) form in GYM TRACKER.
+Questions or problems: GitHub issues on that page, or Settings → Feedback and bugs → Write to the author in GYM TRACKER.
 
 GYM TRACKER helps you plan and log training. It is not a medical device and does not replace a doctor, physiotherapist or dietitian.

@@ -26,18 +26,18 @@ Your watch’s steps, rides, heart rate, stress and Body Battery — sent to the
 
 Store limit: 3700 characters. **For the store field use `description-en.txt`** (about 3600 characters, plain text ready to paste). The shorter text below (about 2000) is a summary; the Polish one at the end has about 1800.
 
-GYM TRACKER brings the numbers from your Garmin watch into GYM TRACKER, a free training app that runs in your browser (https://aleksanderdudek.github.io/gym-training-tracker/ — the app interface is in Polish). No retyping, no account.
+GYM TRACKER brings the numbers from your Garmin watch into GYM TRACKER, a free training app that runs in your browser (https://aleksanderdudek.github.io/gym-training-tracker/ — in Polish or English). No retyping, no account.
 
 WHAT IT SENDS
 About every 30 minutes, while your phone is nearby, the watch sends the last 7 days of:
 • steps, distance, floors climbed and intensity minutes
 • bike rides (start, duration, distance)
-• heart rate (min, average, max), stress, Body Battery and average resting heart rate
+• heart rate (min, average, max), average resting heart rate and, on most models, stress and Body Battery
 
 In GYM TRACKER, steps and rides count straight away towards calories, activity minutes, XP and badges. Heart rate, stress and Body Battery are shown as they are, without medical interpretation.
 
 HOW TO CONNECT
-1. Open GYM TRACKER in your browser: Ustawienia (Settings) → Zegarek Garmin (Garmin watch) → Połącz zegarek (Connect watch), then Kopiuj klucz (Copy key).
+1. Open GYM TRACKER in your browser: Settings → Garmin watch. Check your model, then tap Connect watch and Copy key.
 2. Paste the key into this app’s settings: Garmin Connect → your watch → Activities & Apps → GYM TRACKER → Settings.
 3. Open GYM TRACKER on the watch once. The first data arrives within minutes. Press START (or tap the screen) to send right away.
 
@@ -69,14 +69,16 @@ CO WYSYŁA
 Mniej więcej co 30 minut, gdy telefon jest w pobliżu, zegarek wysyła ostatnie 7 dni:
 • kroki, drogę, piętra i minuty intensywności
 • przejazdy rowerem (start, czas, droga)
-• tętno (najniższe, średnie, najwyższe), stres, Body Battery i średnie tętno spoczynkowe
+• tętno (najniższe, średnie, najwyższe), średnie tętno spoczynkowe, a na większości modeli także stres i Body Battery
 
 W GYM TRACKER kroki i przejazdy od razu liczą się do kalorii, minut ruchu, doświadczenia i odznak. Tętno, stres i Body Battery są pokazywane bez oceny medycznej.
 
 JAK POŁĄCZYĆ
-1. W GYM TRACKER: Ustawienia → Zegarek Garmin → Połącz zegarek → Kopiuj klucz.
+1. W GYM TRACKER: Ustawienia → Zegarek Garmin. Sprawdź swój model, potem Połącz zegarek i Kopiuj klucz.
 2. Wklej klucz w ustawieniach tej aplikacji: Garmin Connect → zegarek → Aktywności i aplikacje → GYM TRACKER → Ustawienia.
 3. Otwórz raz GYM TRACKER na zegarku. Pierwsze dane przyjdą po chwili; START (albo stuknięcie) wysyła od razu.
+
+Działa ze 118 modelami zegarków Garmin (Connect IQ 3.2 lub nowszy) i z telefonem z iOS albo Androidem. Sprawdź swój i to, co wyśle: https://aleksanderdudek.github.io/gym-training-tracker/#/zegarek
 
 PRYWATNOŚĆ
 Zegarek szyfruje dane (AES-256 i HMAC-SHA256) twoim kluczem, zanim opuszczą zegarek. Klucz powstaje w przeglądarce i serwer go nie zna: przechowuje tylko ostatnią zaszyfrowaną paczkę, najwyżej 7 dni, i nie umie jej odczytać. Bez kont, reklam i analityki. Bez klucza aplikacja niczego nie wysyła.
