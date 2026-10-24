@@ -75,6 +75,16 @@ describe('least squares with an honest standard error', () => {
     expect(leastSquares(blocks)!.r1).toBe(0.6);
   });
 
+  test('points exactly on a line leave only floating-point dust: no autocorrelation, the plain SE', () => {
+    // −0,5 kg a week to the last bit the floats allow: the residuals are about 1e-14 kg, not 0.
+    const line = leastSquares(Array.from({ length: 28 }, (_, i) => ({ day: day(i), kg: 84 - (0.5 / 7) * i })))!;
+    expect(line.slope * 7).toBeCloseTo(-0.5, 12);
+    expect(line.r1).toBe(0);
+    expect(line.se * 7).toBeCloseTo(0.0573, 4);
+    // The same weight every day, too.
+    expect(leastSquares(Array.from({ length: 12 }, (_, i) => ({ day: day(i), kg: 81.3 })))!.r1).toBe(0);
+  });
+
   test('a line needs two weigh-ins; two give no spread to trust', () => {
     expect(leastSquares(weighIns([[0, 80]]))).toBeNull();
     expect(leastSquares(weighIns([[0, 80], [7, 79]]))!.se).toBe(Number.POSITIVE_INFINITY);

@@ -67,6 +67,11 @@ const R1_MAX = 0.6;
 const R1_DEFAULT = 0.3;
 /** Below this many weigh-ins the autocorrelation is assumed (`R1_DEFAULT`), not measured. */
 const R1_MIN_N = 10;
+/**
+ * Residuals under this share of the mean weight are floating-point rounding, not scatter: points
+ * exactly on a line leave about 1e-14 kg; a scale reads to 0.05 kg.
+ */
+const ROUNDING_SHARE = 1e-9;
 export const PACE_MIN_WEIGH_INS = 5;
 export const PACE_MIN_SPAN = 14;
 /** Slower than this toward the target is no pace to forecast from, kg a week. */
@@ -146,12 +151,14 @@ export function leastSquares(weighIns: readonly WeighIn[]): Line | null {
   const residuals = pts.map((p, i) => p.kg - lineAt(xs[i]!));
   const squares = residuals.reduce((s, r) => s + r * r, 0);
   const sd = Math.max(n > 2 ? Math.sqrt(squares / (n - 2)) : Number.POSITIVE_INFINITY, RESIDUAL_FLOOR);
+  // Points on a line leave only rounding, which would read as a strong autocorrelation.
+  const onLine = squares <= n * (ROUNDING_SHARE * my) ** 2;
   let r1 = R1_DEFAULT;
   if (n >= R1_MIN_N) {
     let lagged = 0;
     for (let i = 1; i < n; i++) lagged += residuals[i]! * residuals[i - 1]!;
     // Points exactly on a line have nothing to correlate (and 0/0 would be NaN).
-    r1 = squares > 0 ? Math.min(R1_MAX, Math.max(0, lagged / squares)) : 0;
+    r1 = onLine ? 0 : Math.min(R1_MAX, Math.max(0, lagged / squares));
   }
   const se = (sd / Math.sqrt(sxx)) * Math.sqrt((1 + r1) / (1 - r1));
   return { slope, at: (day) => lineAt(daysBetween(first, day)), se, n, sd, r1, first, last };
