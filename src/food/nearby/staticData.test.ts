@@ -11,7 +11,12 @@ const ROWS = Array.from({ length: 12 }, (_, k) =>
 
 let data: OsmTestData;
 let requests: string[];
+/** Each request's cache mode, beside `requests` (`undefined`: the default). */
+let modes: (RequestCache | undefined)[];
 let respond: (url: string, init?: RequestInit) => Promise<Response>;
+
+/** The cache modes of the requests whose address has `part`, in order. */
+const modesOf = (part: string) => requests.flatMap((url, k) => (url.includes(part) ? [modes[k]] : []));
 
 /** A fresh module each test: its memory (index, leaves) must not carry over. */
 async function load() {
@@ -74,14 +79,41 @@ function fakeCaches() {
   return { stores, open };
 }
 
+/**
+ * The service worker and the browser's HTTP cache, as Chromium has them: the worker fetches a file
+ * itself, and the page giving up does not end that request. Until it ends it is writing the file's
+ * cache entry, and a request in the default mode for the same file joins it — and waits with it.
+ * `cache: 'reload'` goes past the entry to `server`, and its own request writes the entry from then
+ * on (Chromium drops the old one).
+ */
+function throughWorker(server: (url: string) => Promise<Response>) {
+  const writing = new Map<string, Promise<Response>>();
+  return (url: string, init?: RequestInit): Promise<Response> => {
+    const open = writing.get(url);
+    if (open && init?.cache !== 'reload') return open.then((response) => response.clone());
+    const request = server(url);
+    writing.set(url, request);
+    const written = () => {
+      if (writing.get(url) === request) writing.delete(url);
+    };
+    request.then(written, written);
+    return request;
+  };
+}
+
+/** A request that never answers: the server or the link stalls, and the worker's request stays open. */
+const stall = () => new Promise<Response>(() => {});
+
 beforeEach(() => {
   data = osmTestData(ROWS, WARSAW, 4);
   requests = [];
+  modes = [];
   respond = async (url) => osmResponse(data, url) ?? new Response('?', { status: 500 });
   vi.stubGlobal(
     'fetch',
     vi.fn(async (url: string, init?: RequestInit) => {
       requests.push(url);
+      modes.push(init?.cache);
       return respond(url, init);
     }),
   );
@@ -164,6 +196,89 @@ describe('the app’s own OSM data', () => {
     await vi.advanceTimersByTimeAsync(300); // 28.2 s
     expect(loading.error).toMatchObject({ kind: 'network' });
     expect(s.leafStartedAt(leaf!)).toBeUndefined();
+  });
+
+  test('the fixed deadline is for the headers only: headers at 15 s and the first byte 7 s later is within the body’s 10 s of silence — it loads', async () => {
+    vi.useFakeTimers();
+    const s = await load();
+    const [leaf] = s.leafRefs(await s.loadIndex());
+    // A slow EDGE link shared with other leaves: the headers late, the body later still.
+    respond = async (url, init) => {
+      if (!url.includes('/t/')) return osmResponse(data, url)!;
+      const bytes = new TextEncoder().encode(await osmResponse(data, url)!.text());
+      await new Promise((headers) => setTimeout(headers, 15_000));
+      const body = new ReadableStream<Uint8Array>({
+        start(stream) {
+          const timer = setTimeout(() => {
+            stream.enqueue(bytes);
+            stream.close();
+          }, 7000);
+          init?.signal?.addEventListener('abort', () => {
+            clearTimeout(timer);
+            stream.error(new DOMException('The operation was aborted.', 'AbortError'));
+          });
+        },
+      });
+      return new Response(body, { headers: { 'content-type': 'application/gzip' } });
+    };
+    const loading = track(s.loadLeaf(leaf!));
+    await vi.advanceTimersByTimeAsync(23_000);
+    expect(loading.error).toBeUndefined();
+    expect(loading.value?.elements).toHaveLength(leaf!.rows);
+    expect(requests.filter((u) => u.includes('/t/'))).toHaveLength(1);
+  });
+
+  test('the retry goes past the HTTP-cache entry the service worker’s own stalled request is still writing: the leaf comes at the next try', async () => {
+    vi.useFakeTimers();
+    const s = await load();
+    const [leaf] = s.leafRefs(await s.loadIndex());
+    let stalled = false;
+    respond = throughWorker(async (url) => {
+      if (!url.includes('/t/') || stalled) return osmResponse(data, url)!;
+      stalled = true;
+      return stall();
+    });
+    const loading = track(s.loadLeaf(leaf!));
+    await vi.advanceTimersByTimeAsync(20_100); // the header deadline gives up on the first request
+    expect(loading.done).toBe(false);
+    await vi.advanceTimersByTimeAsync(2100); // the retry, 2 s later
+    expect(loading.value?.elements).toHaveLength(leaf!.rows);
+    // The first request in the default mode: what was fetched before comes from the HTTP cache.
+    expect(modesOf('/t/')).toEqual([undefined, 'reload']);
+  });
+
+  test('after a failed request the next ask for the file — an automatic try, the button — goes past that entry at once: a leaf and the index', async () => {
+    vi.useFakeTimers();
+    const s = await load();
+    let indexStalled = false;
+    let leavesStuck = true;
+    respond = throughWorker(async (url) => {
+      if (url.includes('/t/')) return leavesStuck ? stall() : osmResponse(data, url)!;
+      if (indexStalled) return osmResponse(data, url)!;
+      indexStalled = true;
+      return stall();
+    });
+
+    const firstIndex = track(s.loadIndex());
+    await vi.advanceTimersByTimeAsync(10_100);
+    expect(firstIndex.error).toMatchObject({ kind: 'network' });
+    const index = track(s.loadIndex());
+    await vi.advanceTimersByTimeAsync(10);
+    expect(index.value).toMatchObject({ f: 1 });
+
+    // The link is stuck for a while: the leaf's first request stalls, and so does its retry — the
+    // worker's request for it is now the one writing the entry.
+    const [leaf] = s.leafRefs(index.value!);
+    const failed = track(s.loadLeaf(leaf!));
+    await vi.advanceTimersByTimeAsync(42_300);
+    expect(failed.error).toMatchObject({ kind: 'network' });
+    leavesStuck = false;
+    const again = track(s.loadLeaf(leaf!));
+    await vi.advanceTimersByTimeAsync(10);
+    expect(again.value?.elements).toHaveLength(leaf!.rows);
+
+    expect(modesOf('index.json')).toEqual([undefined, 'reload']);
+    expect(modesOf('/t/')).toEqual([undefined, 'reload', 'reload']);
   });
 
   test('offline after a data update: an older version of the same cell on the device stands in, marked older', async () => {
@@ -306,5 +421,39 @@ describe('the app’s own OSM data', () => {
     held.release!();
     await loading;
     await vi.waitFor(() => expect(asked(onWayUrl)).toBe(2));
+  });
+
+  test('„Usuń wszystkie dane”: the leaves and the index are forgotten; one still on its way is not kept, and the reset hears when it has ended', async () => {
+    const s = await load();
+    const [done, onWay] = s.leafRefs(await s.loadIndex());
+    await s.loadLeaf(done!);
+    const answers: (() => void)[] = [];
+    respond = async (url) => {
+      if (url.includes(`/t/${onWay!.d}-${onWay!.i}-${onWay!.j}.`)) await new Promise<void>((answer) => answers.push(answer));
+      return osmResponse(data, url)!;
+    };
+    const late = s.loadLeaf(onWay!);
+    await vi.waitFor(() => expect(answers).toHaveLength(1));
+
+    const forgot = track(s.forgetStaticData());
+    expect(s.leafNow(done!)).toBeUndefined();
+    // A view asking after the reset starts its own request, and that one is tracked as on its way.
+    const fresh = s.loadLeaf(onWay!);
+    await vi.waitFor(() => expect(answers).toHaveLength(2));
+    answers[0]!();
+    expect((await late).elements).toHaveLength(onWay!.rows);
+    await vi.waitFor(() => expect(forgot.done).toBe(true));
+    expect(forgot.value).toBe(true);
+    expect(s.leafNow(onWay!)).toBeUndefined();
+    expect(s.leafStartedAt(onWay!)).toBeDefined();
+    expect(s.loadLeaf(onWay!)).toBe(fresh);
+    answers[1]!();
+    await fresh;
+    expect(s.leafNow(onWay!)).toBeDefined();
+
+    // The index is read again; with nothing on its way there is nothing to wait for.
+    await s.loadIndex();
+    expect(requests.filter((u) => u.endsWith('index.json'))).toHaveLength(2);
+    expect(await s.forgetStaticData()).toBe(false);
   });
 });

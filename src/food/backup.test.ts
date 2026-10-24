@@ -4,8 +4,13 @@ import { DietDb } from './diet/db';
 import { saveProfile, completeProfile, logQuick, updateDay } from './diet/store';
 import { forgetCacheEntries, FOOD_CACHES, clearFood, dietBackup, forgetDietWeights, hasFoodData, restoreDiet } from './backup';
 import { DIET_FLAG, hasDiet } from './dietFlag';
+import { refetchWhenControlled } from '../swWarm';
+import { boxCoverage, osmResponse, osmRow, osmTestData } from './test/osm';
 // Service worker jako tekst (`?raw`): nazwy jego kopii muszą zgadzać się z tymi, które czyści reset.
 import swSource from '../sw.ts?raw';
+
+// Dane OSM „W pobliżu” w tej wersji aplikacji (pod Vitestem domyślnie ich nie ma): reset zapomina też ich kawałki.
+vi.mock('virtual:osm-places', () => ({ default: { index: 'data/osm/v1/index.json' } }));
 
 let database: DietDb;
 let n = 0;
@@ -16,7 +21,9 @@ beforeEach(() => {
 });
 
 afterEach(async () => {
+  vi.useRealTimers();
   vi.unstubAllGlobals();
+  delete (navigator as { serviceWorker?: unknown }).serviceWorker;
   database.close();
   await database.delete();
 });
@@ -219,6 +226,61 @@ describe('zapis Workboxa o użytych plikach', () => {
     await clearFood(database);
     expect(remove).toHaveBeenCalledWith('gt-osm');
     expect(await remaining()).toEqual(['gt-shop-data']);
+  });
+
+  it('reset przed przejęciem strony przez service worker: kawałek, który miał wtedy pobrać do swojej kopii, nie wraca', async () => {
+    // Pierwsza wizyta: strona jeszcze nie jest pod jego opieką, a kawałek przyszedł obok niego.
+    const sw = Object.assign(new EventTarget(), { controller: null as object | null });
+    Object.defineProperty(navigator, 'serviceWorker', { value: sw, configurable: true });
+    const fetchMock = vi.fn(async () => new Response('x'));
+    vi.stubGlobal('fetch', fetchMock);
+    refetchWhenControlled(afterNearby[0]!.url);
+    stubCaches();
+    await clearFood(database);
+    sw.controller = {};
+    sw.dispatchEvent(new Event('controllerchange'));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('kawałek, który w chwili resetu był w drodze: gdy przyjdzie i service worker go zapisze, kopia i wpisy znikają jeszcze raz', async () => {
+    // Udawany tylko `setTimeout`: IndexedDB w pamięci odmierza swoje kroki `setImmediate`, który
+    // musi biec naprawdę.
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    const data = osmTestData([osmRow('n1', 50.0614, 19.9366, { amenity: 'cafe', name: 'Kawiarnia' })], boxCoverage(49, 18, 51, 21));
+    let answer = () => {};
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.includes('/t/')) await new Promise<void>((arrive) => (answer = arrive));
+        return osmResponse(data, url)!;
+      }),
+    );
+    const nearby = await import('./nearby/staticData');
+    const [leaf] = nearby.leafRefs(await nearby.loadIndex());
+    const loading = nearby.loadLeaf(leaf!);
+    await workboxDb(afterNearby);
+    const { names, remove } = stubCaches();
+    const sweeps = () => remove.mock.calls.filter(([name]) => name === 'gt-osm').length;
+
+    // Reset na kawałek nie czeka: na wolnym łączu może iść jeszcze minutę.
+    await clearFood(database);
+    expect(sweeps()).toBe(1);
+    expect(await remaining()).toEqual(['gt-shop-data']);
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(sweeps()).toBe(1);
+
+    answer();
+    await loading;
+    // Service worker zapisuje kawałek i wpis o nim dopiero po oddaniu go stronie.
+    names.add('gt-osm');
+    await workboxDb([{ id: 'gt-osm|late', cacheName: 'gt-osm', url: afterNearby[0]!.url, timestamp: 4 }]);
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(sweeps()).toBe(1);
+    await vi.advanceTimersByTimeAsync(1000);
+    await vi.waitFor(async () => expect(await remaining()).toEqual(['gt-shop-data']));
+    expect(sweeps()).toBe(2);
+    expect(names.has('gt-osm')).toBe(false);
   });
 
   it('gdy baza dziennika odmówi, wpisy oglądanych kawałków i tak znikają', async () => {

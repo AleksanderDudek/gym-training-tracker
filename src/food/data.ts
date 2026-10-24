@@ -50,9 +50,13 @@ function loadShops(): Promise<{ shops: ShopData[]; chains: ChainData[] }> {
   let chunk: string | undefined;
   refetchWhenControlled(
     () => chunk,
-    loading.then((m) => {
-      chunk = m.CHUNK_URL;
-    }),
+    loading.then(
+      (m) => {
+        chunk = m.CHUNK_URL;
+      },
+      // Paczka się nie wczytała: nie ma czego pobierać drugi raz, a jej błąd obsługuje zwrot niżej.
+      () => undefined,
+    ),
   );
   return loading.then(
     (m) => ({ shops: m.SHOPS, chains: m.CHAIN_DATA }),
@@ -68,7 +72,11 @@ async function fetchDataset(): Promise<LoadedDataset> {
   const offline = () => {
     throw new Error(T.offline);
   };
-  const response = await fetch(url).catch(offline);
+  // Niski priorytet (Chromium): na wolnym łączu baza (3 MB) idzie za indeksem i kawałkami danych OSM
+  // „W pobliżu” (`nearby/staticData`, pytanymi w tym samym czasie z wysokim). Przy równych serwer
+  // wysyła odpowiedzi po kolei, a te małe pliki czekałyby za bazą, aż ich limit czasu uznałby to
+  // za brak połączenia.
+  const response = await fetch(url, { priority: 'low' }).catch(offline);
   if (!response.ok) throw new Error(T.http(response.status));
   const bytes = new Uint8Array(await response.arrayBuffer().catch(offline));
   let dataset: Dataset;

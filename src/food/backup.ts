@@ -3,6 +3,7 @@ import type { DietDb } from './diet/db';
 import { clearAll, exportAll, restoreAll } from './diet/store';
 import type { Backup } from './diet/store';
 import { markDiet } from './dietFlag';
+import { forgetRefetches } from '../swWarm';
 
 /**
  * Jedzenie w kopii zapasowej i w „Usuń wszystkie dane”. Aplikacja ma jedną kopię i jeden reset:
@@ -26,6 +27,15 @@ export const FOOD_KEYS = [
  * indeks i licencja danych OSM zostają: są takie same dla wszystkich.
  */
 export const FOOD_CACHES = ['osm-tiles', 'off-images', 'gt-osm'] as const;
+
+/** Kopia kawałków danych OSM: do niej po resecie może jeszcze dojść to, co było w drodze. */
+const LEAF_CACHE: (typeof FOOD_CACHES)[number] = 'gt-osm';
+
+/**
+ * Po tylu ms od przyjścia ostatniego kawałka, który w chwili resetu był w drodze, kopia kawałków jest
+ * sprzątana drugi raz: service worker zapisuje kawałek (i wpis o nim) dopiero po oddaniu go stronie.
+ */
+const LATE_WRITES_MS = 2000;
 
 /**
  * Czy w dzienniku jedzenia cokolwiek jest — te same tabele, które trafiają do kopii. Rozstrzyga
@@ -122,9 +132,23 @@ export function forgetCacheEntries(names: readonly string[]): Promise<void> {
 }
 
 /**
+ * Kawałki, które w chwili resetu były w drodze, service worker zapisze, gdy przyjdą — już po resecie.
+ * Gdy wszystkie przyjdą (`onWay`: czy cokolwiek było w drodze), ich kopia i wpisy o niej znikają
+ * jeszcze raz.
+ */
+async function sweepLateLeaves(onWay: Promise<boolean[]>): Promise<void> {
+  if (!(await onWay).includes(true)) return;
+  await new Promise((resolve) => setTimeout(resolve, LATE_WRITES_MS));
+  await caches.delete(LEAF_CACHE).catch(() => false);
+  await forgetCacheEntries([LEAF_CACHE]);
+}
+
+/**
  * Całe jedzenie z tego urządzenia: dziennik, znacznik diety, zapamiętane miejsce sklepów i kopie
  * kafelków mapy, kawałków danych OSM i zdjęć (z zapisem, kiedy ich użyto). Miejsce i kopie idą
  * pierwsze i niezależnie od bazy — gdyby baza odmówiła, ślad po oglądanych okolicach i tak znika.
+ * Także ten w pamięci strony: wczytane kawałki i pliki, które service worker miał pobrać do swojej
+ * kopii, gdy przejmie stronę.
  */
 export async function clearFood(database: DietDb = defaultDb): Promise<void> {
   FOOD_KEYS.forEach((key) => {
@@ -134,10 +158,23 @@ export async function clearFood(database: DietDb = defaultDb): Promise<void> {
       // Zablokowana pamięć przeglądarki: nie ma czego czyścić.
     }
   });
+  // Najpierw ślad w pamięci strony (wczytane kawałki, pliki czekające na service worker), żeby po
+  // usunięciu kopii nic z niego do nich nie wróciło. Moduł danych OSM wczytywany dynamicznie, jak
+  // reszta resetu.
+  const refetches = forgetRefetches();
+  let onWay: Promise<boolean[]> = Promise.all([refetches]);
+  try {
+    const nearby = await import('./nearby/staticData');
+    onWay = Promise.all([refetches, nearby.forgetStaticData()]);
+  } catch {
+    // Moduł się nie wczytał, więc strona go wcześniej nie miała — i niczego z niego nie pamięta.
+  }
   // `caches` jest tylko w bezpiecznym kontekście (https, localhost) — bez niego nie ma też kopii.
   if (typeof caches !== 'undefined') {
     await Promise.all(FOOD_CACHES.map((name) => caches.delete(name).catch(() => false)));
     await forgetCacheEntries(FOOD_CACHES);
+    // Bez czekania: kawałek na wolnym łączu może iść jeszcze minutę.
+    void sweepLateLeaves(onWay).catch(() => undefined);
   }
   await clearAll(database);
   markDiet(false);
