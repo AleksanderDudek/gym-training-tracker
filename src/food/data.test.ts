@@ -180,7 +180,7 @@ describe('loadDataset', () => {
       },
     ],
     ['nawet bez nagłówków', () => new Promise<Response>(() => {})],
-  ])('zawieszone pobieranie (%s) po minucie ciszy staje się błędem połączenia — nie „Wczytuję…” bez końca', async (_, answer) => {
+  ])('zawieszone pobieranie (%s) po chwili ciszy staje się błędem połączenia — nie „Wczytuję…” bez końca', async (_, answer) => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     vi.stubGlobal('fetch', vi.fn(answer));
     const { loadDataset, DATASET_STALL_MS } = await load();
@@ -190,6 +190,41 @@ describe('loadDataset', () => {
     expect(failure).toBeNull();
     await vi.advanceTimersByTimeAsync(2000);
     expect(failure).toEqual(new Error('Nie udało się pobrać danych produktów. Sprawdź połączenie z internetem.'));
+  });
+
+  it('po zawieszonym pobieraniu następne omija wpis w pamięci podręcznej (service worker wciąż go pisze), a po udanym znów idzie zwykle', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    const file = gz(TEXT);
+    const modes: (RequestCache | undefined)[] = [];
+    let stall = true;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, init?: RequestInit) => {
+        modes.push(init?.cache);
+        if (stall) return new Response(new ReadableStream<Uint8Array>({ start: (body) => body.enqueue(file.slice(0, file.length >> 1)) }));
+        return new Response(file);
+      }),
+    );
+    const { loadDataset, DATASET_STALL_MS } = await load();
+    const stalled = loadDataset().catch(() => 'failed');
+    await vi.advanceTimersByTimeAsync(DATASET_STALL_MS + 1000);
+    expect(await stalled).toBe('failed');
+    stall = false;
+    // „Spróbuj ponownie”: w zwykłym trybie dołączyłoby do zawieszonego wpisu i nie doszło do serwera.
+    await expect(loadDataset()).resolves.toMatchObject({ dataset: { generatedAt: DATASET.generatedAt } });
+    expect(modes).toEqual([undefined, 'reload']);
+    // Bez sieci od początku nic się nie zaczęło pisać: następna próba bez znacznika.
+    const fresh = await load();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, init?: RequestInit) => {
+        modes.push(init?.cache);
+        throw new TypeError('Failed to fetch');
+      }),
+    );
+    await expect(fresh.loadDataset()).rejects.toThrow();
+    await expect(fresh.loadDataset()).rejects.toThrow();
+    expect(modes.slice(2)).toEqual([undefined, undefined]);
   });
 
   it('…a powolne, ale równe kończy się, choćby szło minutami: liczy się tylko cisza, nie całość', async () => {

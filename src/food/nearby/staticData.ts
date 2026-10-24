@@ -163,8 +163,9 @@ async function fetchWithin(url: string, ms: number, init: RequestInit = {}): Pro
  *   the automatic tries and the button would all stall with it until the worker's request ends;
  * - no answer within the deadline: only the second time in a row. The first retry joins the entry
  *   and takes the worker's answer when it comes (a link where every answer takes 25 s would
- *   otherwise download each file twice); Chromium itself stops waiting for a writer without an
- *   answer after about 20 s, so a server that never answers costs one retry, not minutes;
+ *   otherwise download each file twice) — or the answer to the request Chromium sends itself when it
+ *   stops waiting for a writer without an answer, after about 20 s: so that retry may wait longer
+ *   than that (`JOINED_MS`), or the page would give up at the very moment the answer arrives;
  * - no connection at all (offline, refused): nothing is being written, there is nothing to go past.
  * A file's first request keeps the default mode: what was fetched before (the very first visit, the
  * takeover's fetch again) comes from the HTTP cache.
@@ -174,6 +175,11 @@ const failedOnWay = new Set<string>();
 let resets = 0;
 /** Files whose last request got no answer within its deadline (`failedOnWay`: the second marks). */
 const unanswered = new Set<string>();
+/**
+ * The deadline for the headers of a request that may join an unanswered one (`unanswered`): past
+ * Chromium's ~20 s wait for the HTTP-cache entry's writer, after which it asks the server itself.
+ */
+const JOINED_MS = 25_000;
 
 /** Notes where a request for `url` was lost (`failedOnWay`). */
 function noteLost(url: string, error: unknown): void {
@@ -188,8 +194,11 @@ function noteLost(url: string, error: unknown): void {
  * (`asked`, see `forgetStaticData`) changes nothing in what the page remembers of its file.
  */
 async function fetchFile(url: string, ms: number, asked = resets): Promise<{ response: Response; body: Uint8Array }> {
+  const past = failedOnWay.has(url);
+  // Joining an unanswered request: room for the answer Chromium's own request brings after its wait.
+  const deadline = !past && unanswered.has(url) ? Math.max(ms, JOINED_MS) : ms;
   try {
-    const got = await fetchWithin(url, ms, failedOnWay.has(url) ? { cache: 'reload' } : {});
+    const got = await fetchWithin(url, deadline, past ? { cache: 'reload' } : {});
     if (asked === resets) {
       unanswered.delete(url);
       if (got.response.ok) failedOnWay.delete(url);

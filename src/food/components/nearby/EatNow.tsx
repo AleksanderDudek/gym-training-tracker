@@ -321,14 +321,8 @@ export function EatNow({ state, update, closeEntry, geo, locate, setManual, setR
   const extrasFailed =
     geo.position !== null && placesState.status === 'ready' && (menus.status === 'error' || (menus.status === 'ready' && productsFailed));
   const retryFailed = () => {
-    // Chromium and WebKit keep a failed import of the menus' chunk for the page's life: importing it
-    // again fails at once, without asking the server. A reload brings it, and whatever else failed —
-    // the view is in the address, nothing is lost. Not offline: a page the service worker does not
-    // serve yet would reload into the browser's error page.
-    if (menus.status === 'error' && globalThis.navigator?.onLine !== false) {
-      window.location.reload();
-      return;
-    }
+    // The menus' own retry tries in place and reloads the page when the browser keeps the failed
+    // import (Chromium, WebKit) — the view is in the address, a hand-picked place in the tab.
     if (placesState.status === 'error') retry();
     if (menus.status === 'error') menus.retry();
     if (data.status === 'error' && !noProducts) data.retry();

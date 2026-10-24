@@ -1066,14 +1066,18 @@ najbliższych, a ponowienie nie traci miejsca w kolejce (reszta czeka, więc nik
 w kolejce przeglądarki); kawałek, który wciąż przychodzi, nie jest przerywany (10 km na EDGE to ok.
 265 kB), przerywa go dopiero 10 s ciszy, a ponowienie omija wtedy niedokończony wpis w pamięci
 podręcznej przeglądarki (`cache: 'reload'` — inaczej czekałoby na zawieszone pobranie service
-workera; po przekroczonym terminie nagłówków pierwsze ponowienie dołącza do trwającego pobrania,
-dopiero drugie omija wpis). „Zjedz teraz” prosi o bazę produktów (3,3 MB, gotowe jedzenie
+workera; po przekroczonym terminie nagłówków pierwsze ponowienie dołącza do trwającego pobrania
+i czeka na odpowiedź 25 s, dłużej niż Chromium na takie pobranie, dopiero drugie omija wpis). „Zjedz teraz” prosi o bazę produktów (3,3 MB, gotowe jedzenie
 w sklepach) dopiero po lokalach z danych aplikacji (za granicą i przy granicy od razu: tam czeka się
 na inny serwer), a baza idzie z niskim priorytetem: na wolnym łączu nie staje przed indeksem
-i kawałkami; minuta ciszy w jej pobieraniu to błąd, nie czekanie bez końca. Póki jej nie ma, wiersz
+i kawałkami; półtorej minuty ciszy w jej pobieraniu to błąd, nie czekanie bez końca, a następna
+próba omija niedokończony wpis jak przy kawałkach. Póki jej nie ma, wiersz
 stanu mówi „Wczytuję produkty sklepów…” zamiast liczyć sklepy jako bez menu, a gdy się nie wczyta,
-mówi to i daje „Spróbuj ponownie”; nieudane menu sieci przeglądarka pamięta do końca życia strony
-(Chromium, WebKit), więc „Spróbuj ponownie” przeładowuje wtedy stronę (z siecią). Przy granicy
+mówi to i daje „Spróbuj ponownie”. Po nieudanych menu sieci „Spróbuj ponownie” próbuje najpierw na
+miejscu (Firefox pyta serwer naprawdę), a gdy przeglądarka odmawia od ręki — Chromium i WebKit
+pamiętają nieudany import do końca życia strony — przeładowuje ją, o ile serwer odpowiada (ręcznie
+wybrane miejsce karta pamięta); paczki menu i sklepów idą bez `modulepreload`, bo nieudane wstępne
+wczytanie WebKit trzymałby nawet po przeładowaniu. Przy granicy
 przycisk pyta Overpass jeszcze raz dopiero, gdy jego szukanie się skończyło — nie przerywa go ani nie
 skraca przerwy, o którą prosi serwer. Nieudane pobranie — indeksu albo kawałka, także błąd serwera — wraca
 samo po 30 s, minucie i dwóch (nie przy zablokowanym telefonie ani bez sieci; po powrocie sieci od

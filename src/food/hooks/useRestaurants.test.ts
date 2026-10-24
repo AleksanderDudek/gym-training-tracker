@@ -22,10 +22,14 @@ function spyReload() {
   return reload;
 }
 
-/** Świeży moduł z paczką menu, która się nie wczytuje (jak offline przed pierwszym zapisaniem). */
-async function withFailingCatalog() {
+/**
+ * Świeży moduł z paczką menu, która się nie wczytuje — od razu (jak przeglądarka, która trzyma
+ * nieudany import) albo po `after` ms (prawdziwa próba przez sieć).
+ */
+async function withFailingCatalog(after = 0) {
   vi.resetModules();
-  vi.doMock('../restaurants/catalog', () => {
+  vi.doMock('../restaurants/catalog', async () => {
+    if (after) await new Promise((wait) => setTimeout(wait, after));
     throw new TypeError('Failed to fetch dynamically imported module');
   });
   return import('./useRestaurants');
@@ -42,13 +46,40 @@ afterEach(() => {
 });
 
 describe('useRestaurants: „Spróbuj ponownie” po nieudanej paczce menu', () => {
-  test('z siecią przeładowuje stronę: Chromium i WebKit trzymają nieudany import do końca jej życia', async () => {
+  test('próbuje na miejscu; gdy przeglądarka odmawia od ręki (trzyma nieudany import), a serwer odpowiada — przeładowuje stronę', async () => {
     const reload = spyReload();
+    const head = vi.fn(async () => new Response(null, { status: 200 }));
+    vi.stubGlobal('fetch', head);
     const { useRestaurants } = await withFailingCatalog();
     const { result } = renderHook(() => useRestaurants());
     await waitFor(() => expect(result.current.status).toBe('error'));
     act(() => result.current.retry());
-    expect(reload).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(reload).toHaveBeenCalledTimes(1));
+    // Strona spoza service workera przeładowuje się dopiero, gdy serwer odpowiada.
+    expect(head).toHaveBeenCalledWith(expect.any(String), { method: 'HEAD', cache: 'no-store' });
+  });
+
+  test('serwer nie odpowiada (łącze martwe, choć przeglądarka mówi, że jest sieć): bez przeładowania, które skończyłoby na stronie błędu', async () => {
+    const reload = spyReload();
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
+    const { useRestaurants } = await withFailingCatalog();
+    const { result } = renderHook(() => useRestaurants());
+    await waitFor(() => expect(result.current.status).toBe('error'));
+    act(() => result.current.retry());
+    await waitFor(() => expect(result.current.status).toBe('error'));
+    await new Promise((settled) => setTimeout(settled, 20));
+    expect(reload).not.toHaveBeenCalled();
+  });
+
+  test('prawdziwa, nieudana próba przez sieć (nie od ręki): błąd na miejscu, bez przeładowania — Firefox pyta naprawdę', async () => {
+    const reload = spyReload();
+    const { useRestaurants } = await withFailingCatalog(400);
+    const { result } = renderHook(() => useRestaurants());
+    await waitFor(() => expect(result.current.status).toBe('error'), { timeout: 2000 });
+    act(() => result.current.retry());
+    expect(result.current.status).toBe('loading');
+    await waitFor(() => expect(result.current.status).toBe('error'), { timeout: 2000 });
+    expect(reload).not.toHaveBeenCalled();
   });
 
   test('bez sieci nie przeładowuje (strona spoza service workera skończyłaby na stronie błędu przeglądarki): próbuje na miejscu', async () => {

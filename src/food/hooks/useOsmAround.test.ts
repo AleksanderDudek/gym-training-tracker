@@ -427,11 +427,29 @@ describe('useOsmAround', () => {
       retryAt: null,
     });
     expect(aroundNotes(result.current[0], 'lokale', Date.now())).toEqual({ status: '', clock: null });
+    // The app's data is tried again by itself (30 s): the empty answer stays — no „Szukam…” flash.
+    const leafAsks = () => requests.filter((u) => u.includes('/t/')).length;
+    const before = leafAsks();
+    const seen = new Set<string>();
+    for (let waited = 0; waited < AUTO_RETRY_MS[0]! + 4000; waited += 250) {
+      await settle(250, 250);
+      seen.add(`${result.current[0].source}/${result.current[0].shown}/${result.current[0].status}`);
+    }
+    expect(leafAsks()).toBeGreaterThan(before);
+    expect([...seen]).toEqual(['mixed/live/ready']);
+  });
+
+  test('at the border, while the Polish side loads, Overpass’s answer for the whole circle — nothing — is shown at once: nothing on either side', async () => {
+    data = osmTestData(BORDER_ROWS, BORDER, 3);
+    leaves = 'hold';
+    overpass = 'empty';
+    const { result } = mount(AT_BORDER);
+    await settle(3000);
+    expect(result.current[0]).toMatchObject({ source: 'mixed', shown: 'live', status: 'ready', items: [], error: null });
   });
 
   test.each([
     ['still asks', 'hold', true, 'asking', 'Przy granicy: lokale po polskiej stronie mam w aplikacji, o resztę pytam serwer map…'],
-    ['has answered (nothing across the border)', 'empty', true, 'done', 'Przy granicy: lokale po polskiej stronie wczytuję z aplikacji…'],
     [
       'has failed',
       '504',

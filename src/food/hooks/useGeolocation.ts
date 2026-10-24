@@ -11,6 +11,28 @@ export interface GeoState {
 }
 
 const KEY = 'produkty-pl:position';
+/**
+ * Whether the saved spot was picked by hand — for this tab only (`sessionStorage`): reloaded (also by
+ * „Spróbuj ponownie” after the menus failed), the page keeps the pick instead of the GPS fix; a new
+ * tab asks the browser again.
+ */
+const SOURCE_KEY = 'produkty-pl:position-source';
+
+function pickedByHand(): boolean {
+  try {
+    return window.sessionStorage.getItem(SOURCE_KEY) === 'manual';
+  } catch {
+    return false;
+  }
+}
+
+function noteSource(source: 'gps' | 'manual'): void {
+  try {
+    window.sessionStorage.setItem(SOURCE_KEY, source);
+  } catch {
+    // Blocked: a reload asks the browser again, as a new tab does.
+  }
+}
 
 /** The last position, kept on this device only, so the map opens where you were. */
 function loadSaved(): LatLon | null {
@@ -34,7 +56,8 @@ function save(position: LatLon): void {
 }
 
 /**
- * Where the user is: the saved spot at once, then the browser's answer. A
+ * Where the user is: the saved spot at once, then the browser's answer — unless
+ * the spot was picked by hand in this tab before a reload, then it stays. A
  * denial is ordinary (desktop browsers often say no), so the page offers a
  * click on the map instead; `setManual` is that click.
  */
@@ -42,8 +65,12 @@ export function useGeolocation(): [GeoState, { locate: () => void; setManual: (p
   const supported = typeof navigator !== 'undefined' && 'geolocation' in navigator;
   const [state, setState] = useState<GeoState>(() => {
     const saved = loadSaved();
+    // Picked by hand in this tab before a reload: still the place asked about.
+    if (saved && pickedByHand()) return { status: 'ready', position: saved, source: 'manual' };
     return { status: supported ? 'locating' : 'unavailable', position: saved, source: saved ? 'saved' : null };
   });
+  /** The first render already had a hand-picked place: the browser is not asked by itself. */
+  const [startedByHand] = useState(() => state.source === 'manual');
 
   // Each request (and each manual pick) takes a number; an answer to an older
   // one is ignored. Otherwise a slow GPS fix, arriving after the user picked a
@@ -60,6 +87,7 @@ export function useGeolocation(): [GeoState, { locate: () => void; setManual: (p
         if (mine !== sequence.current) return;
         const position = { lat: coords.latitude, lon: coords.longitude };
         save(position);
+        noteSource('gps');
         setState({ status: 'ready', position, source: 'gps' });
       },
       (error) => {
@@ -79,12 +107,13 @@ export function useGeolocation(): [GeoState, { locate: () => void; setManual: (p
   const setManual = useCallback((position: LatLon) => {
     sequence.current++;
     save(position);
+    noteSource('manual');
     setState({ status: 'ready', position, source: 'manual' });
   }, []);
 
   useEffect(() => {
-    request();
-  }, [request]);
+    if (!startedByHand) request();
+  }, [request, startedByHand]);
 
   return [state, { locate, setManual }];
 }

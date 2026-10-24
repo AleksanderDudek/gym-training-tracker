@@ -356,9 +356,9 @@ describe('„Zjedz teraz”: baza produktów czeka na lokale', () => {
 });
 
 describe('„Zjedz teraz”, gdy menu sieci się nie wczytały', () => {
-  // Chromium i WebKit pamiętają nieudany import paczki menu do końca życia strony: ponowny import
-  // odrzuca od razu, bez pytania serwera. Pomaga tylko przeładowanie — widok stoi w adresie.
-  test('wiersz stanu mówi to, zamiast radzić większy promień, a „Spróbuj ponownie” przeładowuje stronę', async () => {
+  // Przycisk woła ponowienie menu (`useRestaurants().retry`): to próbuje na miejscu, a gdy przeglądarka
+  // trzyma nieudany import (Chromium, WebKit), przeładowuje stronę — sprawdza to useRestaurants.test.
+  test('wiersz stanu mówi to, zamiast radzić większy promień, a „Spróbuj ponownie” ponawia menu', async () => {
     const user = userEvent.setup();
     menus.status = 'error';
     osm.state = osmState({ status: 'ready', completeWithin: 1000 });
@@ -368,12 +368,13 @@ describe('„Zjedz teraz”, gdy menu sieci się nie wczytały', () => {
     expect(screen.queryByText(/zwiększ promień/i)).toBeNull();
     const reload = spyReload();
     await user.click(screen.getByRole('button', { name: 'Spróbuj ponownie' }));
-    expect(reload).toHaveBeenCalledTimes(1);
-    expect(menus.retry).not.toHaveBeenCalled();
+    expect(menus.retry).toHaveBeenCalledTimes(1);
     expect(osm.retry).not.toHaveBeenCalled();
+    // Sam widok nie przeładowuje: o tym decyduje ponowienie menu.
+    expect(reload).not.toHaveBeenCalled();
   });
 
-  test('zawiodły i lokale, i menu: wiersz stanu mówi o lokalach, a jeden przycisk przeładowuje stronę — to ponawia oba', async () => {
+  test('zawiodły i lokale, i menu: wiersz stanu mówi o lokalach, a jeden przycisk ponawia oba', async () => {
     const user = userEvent.setup();
     menus.status = 'error';
     osm.state = osmState({ status: 'error', error: 'Nie udało się pobrać danych okolicy.', items: [], completeWithin: 0 });
@@ -381,21 +382,7 @@ describe('„Zjedz teraz”, gdy menu sieci się nie wczytały', () => {
     expect(await screen.findByText('Nie udało się pobrać danych okolicy.')).toHaveAttribute('role', 'status');
     const retries = screen.getAllByRole('button', { name: 'Spróbuj ponownie' });
     expect(retries).toHaveLength(1);
-    const reload = spyReload();
     await user.click(retries[0]!);
-    expect(reload).toHaveBeenCalledTimes(1);
-  });
-
-  test('bez internetu przycisk strony nie przeładowuje (strona bez service workera skończyłaby na błędzie przeglądarki): ponawia jak dotąd', async () => {
-    const user = userEvent.setup();
-    menus.status = 'error';
-    osm.state = osmState({ status: 'error', error: 'Nie udało się pobrać danych okolicy.', items: [], completeWithin: 0 });
-    renderWithBridge(<NearbyPage />);
-    await screen.findByText('Nie udało się pobrać danych okolicy.');
-    Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => false });
-    const reload = spyReload();
-    await user.click(screen.getByRole('button', { name: 'Spróbuj ponownie' }));
-    expect(reload).not.toHaveBeenCalled();
     expect(osm.retry).toHaveBeenCalledTimes(1);
     expect(menus.retry).toHaveBeenCalledTimes(1);
   });

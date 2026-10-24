@@ -138,7 +138,9 @@ describe('useStaticAround', () => {
       expect(calls.index).toBe(2);
       await settle(3000);
       expect(calls.index).toBe(3);
-      await settle(10_000 + AUTO_RETRY_MS[2]! - 2000);
+      // That one may join the unanswered request: it waits 25 s (past Chromium's own wait) before
+      // it counts as failed.
+      await settle(25_000 + AUTO_RETRY_MS[2]! - 2000);
       expect(calls.index).toBe(3);
       await settle(3000);
       expect(calls.index).toBe(4);

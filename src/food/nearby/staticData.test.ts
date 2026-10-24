@@ -85,13 +85,21 @@ function fakeCaches() {
  * the file's cache entry, and a request in the default mode for the same file joins it — and waits
  * with it. `cache: 'reload'` goes past the entry to `server`, and its own request writes the entry
  * from then on (Chromium drops the old one). The worker's own copy is never read here: each page
- * request gets a clone of it.
+ * request gets a clone of it. With `lock`, a joined request waits at most that long for the writer,
+ * then Chromium asks `server` for it itself (it does after about 20 s).
  */
-function throughWorker(server: (url: string) => Promise<Response>) {
+function throughWorker(server: (url: string) => Promise<Response>, lock = Infinity) {
   const writing = new Map<string, Promise<Response>>();
   return (url: string, init?: RequestInit): Promise<Response> => {
     const open = writing.get(url);
-    if (open && init?.cache !== 'reload') return open.then((copy) => copy.clone());
+    if (open && init?.cache !== 'reload') {
+      const joined = open.then((copy) => copy.clone());
+      if (!Number.isFinite(lock)) return joined;
+      let answered = false;
+      void joined.then(() => (answered = true), () => (answered = true));
+      const own = new Promise<void>((waited) => setTimeout(waited, lock)).then(() => (answered ? new Promise<Response>(() => {}) : server(url)));
+      return Promise.race([joined, own]);
+    }
     const request = server(url);
     writing.set(url, request);
     const written = () => {
@@ -310,6 +318,44 @@ describe('the app’s own OSM data', () => {
     expect(modesOf('/t/')).toEqual([undefined, undefined]);
   });
 
+  test('the first request hangs, a fresh one is answered: the joined retry waits out Chromium’s ~20 s and takes its own request’s answer — no failure', async () => {
+    vi.useFakeTimers();
+    const s = await load();
+    const [leaf] = s.leafRefs(await s.loadIndex());
+    const asked = new Set<string>();
+    respond = throughWorker(async (url) => {
+      if (!url.includes('/t/')) return osmResponse(data, url)!;
+      const first = !asked.has(url);
+      asked.add(url);
+      return first ? stall() : osmResponse(data, url)!;
+    }, 20_000);
+    const loading = track(s.loadLeaf(leaf!));
+    // Cut at 20 s; the retry at 22 s joins; Chromium stops waiting at 42 s and asks the server.
+    await vi.advanceTimersByTimeAsync(42_300);
+    expect(loading.value?.elements).toHaveLength(leaf!.rows);
+    expect(modesOf('/t/')).toEqual([undefined, undefined]);
+  });
+
+  test('…and the index likewise: its next read after a lost one waits out the lock instead of its own 10 s', async () => {
+    vi.useFakeTimers();
+    let first = true;
+    respond = throughWorker(async (url) => {
+      if (!url.endsWith('index.json') || !first) return osmResponse(data, url)!;
+      first = false;
+      return stall();
+    }, 20_000);
+    const s = await load();
+    const lost = track(s.loadIndex());
+    await vi.advanceTimersByTimeAsync(10_100);
+    expect(lost.error).toMatchObject({ kind: 'network' });
+    // The automatic try, 30 s later: it joins, and Chromium's own request answers it 20 s after.
+    await vi.advanceTimersByTimeAsync(30_000);
+    const read = track(s.loadIndex());
+    await vi.advanceTimersByTimeAsync(20_300);
+    expect(read.value).toMatchObject({ f: 1 });
+    expect(modesOf('index.json')).toEqual([undefined, undefined]);
+  });
+
   test('no answer within the deadline twice in a row: then the next ask goes past the entry', async () => {
     vi.useFakeTimers();
     const s = await load();
@@ -322,7 +368,7 @@ describe('the app’s own OSM data', () => {
       return stuck ? stall() : osmResponse(data, url)!;
     });
     const failed = track(s.loadLeaf(leaf!));
-    await vi.advanceTimersByTimeAsync(42_300); // cut at 20 s; the retry at 22 s joins, cut at 42 s
+    await vi.advanceTimersByTimeAsync(47_300); // cut at 20 s; the retry at 22 s joins, cut at 47 s
     expect(failed.error).toMatchObject({ kind: 'network' });
     stuck = false;
     const again = track(s.loadLeaf(leaf!));

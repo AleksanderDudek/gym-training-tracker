@@ -44,7 +44,16 @@ const datasetUrl = (): string | null => (foodData.url ? import.meta.env.BASE_URL
  * może nie dostać nic, póki serwer, który pilnuje priorytetów, wysyła przed nią paczkę sklepów
  * (783 kB, na EDGE ok. pół minuty) i kawałki mapy.
  */
-export const DATASET_STALL_MS = 60_000;
+export const DATASET_STALL_MS = 90_000;
+
+/**
+ * Ostatnie pobieranie bazy zawiesiło się albo urwało: następne idzie z pominięciem pamięci podręcznej
+ * przeglądarki (`reload`, odpowiedź i tak do niej trafia). Przerwanie strony kończy tylko jej stronę:
+ * zapytanie service workera trwa dalej i pisze wpis pliku w tej pamięci, a w Chromium każde następne
+ * zapytanie w zwykłym trybie dołącza do tego wpisu i wisi razem z nim — „Spróbuj ponownie” nigdy nie
+ * doszłoby do serwera. Udane pobranie znosi znacznik.
+ */
+let pastCache = false;
 
 /**
  * Produkty sklepów internetowych i sieci z własnymi danymi (Selgros) — osobna paczka, wczytywana
@@ -84,23 +93,32 @@ async function download(url: string): Promise<Uint8Array<ArrayBuffer>> {
   const stalled = new Promise<never>((_, reject) => controller.signal.addEventListener('abort', () => reject(new Error(T.offline))));
   stalled.catch(() => {});
   const within = <V>(step: Promise<V>) => Promise.race([step, stalled]);
-  let timer = setTimeout(() => controller.abort(), DATASET_STALL_MS);
+  /** Zegar ciszy się skończył (zawieszone pobieranie, nie brak sieci). */
+  let cut = false;
+  const silence = () => {
+    cut = true;
+    controller.abort();
+  };
+  let timer = setTimeout(silence, DATASET_STALL_MS);
   /** Coś przyszło: następny kawałek ma znów cały czas. */
   const alive = () => {
     clearTimeout(timer);
-    timer = setTimeout(() => controller.abort(), DATASET_STALL_MS);
+    timer = setTimeout(silence, DATASET_STALL_MS);
   };
   // Zerwane połączenie wychodzi z `fetch` albo dopiero w trakcie czytania treści.
   const offline = () => {
     throw new Error(T.offline);
   };
+  let answered = false;
   try {
     // Niski priorytet (Chromium): na wolnym łączu baza (3 MB) idzie za indeksem i kawałkami danych OSM
     // „W pobliżu” (`nearby/staticData`, pytanymi w tym samym czasie z wysokim). Przy równych serwer
     // wysyła odpowiedzi po kolei, a te małe pliki czekałyby za bazą, aż ich limit czasu uznałby to
     // za brak połączenia.
-    const response = await within(fetch(url, { priority: 'low', signal: controller.signal })).catch(offline);
+    const init: RequestInit = { priority: 'low', signal: controller.signal, ...(pastCache ? { cache: 'reload' as const } : {}) };
+    const response = await within(fetch(url, init)).catch(offline);
     if (!response.ok) throw new Error(T.http(response.status));
+    answered = true;
     alive();
     if (!response.body) return new Uint8Array(await within(response.arrayBuffer()).catch(offline));
     const reader = response.body.getReader();
@@ -119,7 +137,13 @@ async function download(url: string): Promise<Uint8Array<ArrayBuffer>> {
       bytes.set(chunk, at);
       at += chunk.length;
     }
+    pastCache = false;
     return bytes;
+  } catch (error) {
+    // Cisza albo treść urwana w drodze: wpis w pamięci podręcznej mógł zostać w połowie (`pastCache`).
+    // Brak sieci od początku niczego nie zaczął pisać.
+    if (cut || answered) pastCache = true;
+    throw error;
   } finally {
     clearTimeout(timer);
   }

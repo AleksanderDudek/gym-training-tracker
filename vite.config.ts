@@ -83,7 +83,13 @@ export default defineConfig(({ mode }) => ({
     }),
   ],
   base: './',
-  build: { outDir: 'dist' },
+  // Paczki menu sieci i sklepów bez `<link rel=modulepreload>`: WebKit (Safari, każda przeglądarka na
+  // iOS) pamięta nieudane wstępne wczytanie takiej paczki w karcie nawet po przeładowaniu, więc
+  // „Spróbuj ponownie” nie odzyskałby menu. Zwykły import() przeładowanie pobiera od nowa.
+  build: {
+    outDir: 'dist',
+    modulePreload: { resolveDependencies: (file, deps) => (/(?:^|\/)(?:catalog|shopData)-[\w-]+\.js$/.test(file) ? [] : deps) },
+  },
   // Bez tego Vitest podstawia pusty tekst pod każdy import arkusza — także pod
   // `styles.css?raw`, na którym stoi test kontrastu tokenów.
   // `setupFiles`: dopasowania jest-dom, IndexedDB w pamięci (dziennik jedzenia na Dexie) i sprzątanie

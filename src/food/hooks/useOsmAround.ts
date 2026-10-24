@@ -130,11 +130,12 @@ export function useOsmAround(geo: GeoState, radius: number): [OsmState, () => vo
     });
     if (stat.coverage === 'partial' && stat.failure !== 'unavailable') {
       // At the border: the Polish side at once, the whole circle once Overpass has answered it.
-      // Overpass's ready answer for this very place, out to the radius: when the Polish side failed,
-      // even an empty one says what is there — nothing, on either side (the same rules over the same
-      // map), not a failure to fetch.
+      // Overpass's ready answer for this very place, out to the radius: while the Polish side is not
+      // there (it failed, or is being tried again), even an empty one says what is there — nothing, on
+      // either side (the same rules over the same map), not a failure to fetch nor a „Szukam…” with
+      // every try of the app's data.
       const whole = live.status === 'ready' && liveHere && live.completeWithin >= radius;
-      const useLive = live.completeWithin >= stat.completeWithin && (live.items.length > 0 || (whole && stat.status === 'error'));
+      const useLive = live.completeWithin >= stat.completeWithin && (live.items.length > 0 || (whole && stat.status !== 'ready'));
       if (!(useLive && live.status === 'ready') && stat.status === 'ready' && stat.completeWithin >= radius) {
         // Overpass is asked when the ROUNDED circle comes near the border, but around the exact
         // position the app's data may already be complete: then nothing is missing, whatever
