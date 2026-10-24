@@ -1040,20 +1040,76 @@ Zobacz, gdzie zjeść w pobliżu”.
 
 **W pobliżu → Zakupy i przepisy**: lokalizacja (albo kliknięcie na mapie), sklepy spożywcze
 z OpenStreetMap w promieniu od 500 m do 10 km i przepisy, które zrobisz w jednym pobliskim sklepie
-(„Wszystko kupisz w: Żabka · 250 m”). Pozycja zaokrąglona do ok. 100 m idzie do serwera Overpass
-(overpass-api.de, zapasowo overpass.private.coffee), kafelki mapy z tile.openstreetmap.org. Pozycji
-nie ma w adresie, a ostatnie miejsce zostaje tylko na tym urządzeniu; odpowiedzi są pamiętane dobę.
-Dziennik sam nie łączy się z siecią — sklepy w podpowiedziach bierze z ostatniego wyszukiwania.
+(„Wszystko kupisz w: Żabka · 250 m”). Kafelki mapy z tile.openstreetmap.org. Pozycji nie ma
+w adresie, a ostatnie miejsce zostaje tylko na tym urządzeniu. Dziennik sam nie łączy się z siecią —
+sklepy w podpowiedziach bierze z ostatniego wyszukiwania (każda pełna odpowiedź zostawia ich skrót).
 
-**Zajęty serwer map.** Publiczne serwery Overpass bywają przeciążone (502 „at capacity”, 429, 504)
-albo odpowiadają ponad pół minuty — lokale w centrum miasta potrafią przyjść po 35 s. Dlatego: jedno
+**Skąd lokale i sklepy — dane OpenStreetMap w aplikacji.** W Polsce oba widoki biorą je z kopii
+danych OpenStreetMap dołączonej do aplikacji, a nie z serwera Overpass: odpowiedź jest od razu, nawet
+gdy Overpass leży, działa bez sieci dla oglądanych okolic, a pozycja nie trafia do żadnej obcej
+usługi (tylko zaokrąglone kawałki do hostingu aplikacji, GitHub Pages) — chyba że danych aplikacji
+nie da się odczytać z jej serwera: wtedy, jak za granicą, szukane miejsce zaokrąglone do ok. 100 m
+dostaje Overpass. Kopia to
+`data/osm/places-pl.tsv` (99 tys. nazwanych lokali i sklepów: tagi `amenity`, `shop`, `name`, `brand`,
+`opening_hours`, `cuisine` i adres, środek każdego obiektu) z `meta.json` (data danych, liczby,
+uproszczona granica Polski). Build (`vite/osmPlaces.ts`) tnie ją na drzewo czwórkowe — najwyżej 500
+miejsc w kawałku, ok. 590 kawałków po kilka kB — pod `data/osm/v1/t/<komórka>.<hasz>.json.gz`, z indeksem
+pod stałym adresem i `LICENSE.txt`. Telefon pobiera tylko kawałki wokół pozycji zaokrąglonej do
+0,001° (ok. 100 m; serwer aplikacji nie dowie się więcej niż kiedyś Overpass), najbliższe najpierw:
+promień 1 km w centrum Warszawy to 5 kawałków i ok. 50 kB (z indeksem ok. 60 kB) zamiast odpowiedzi
+Overpass 462 kB po kilkudziesięciu sekundach. Service worker trzyma kawałki (400 na 90 dni) i indeks (odświeżany w tle);
+nowe dane po wdrożeniu nie zmieniają kodu, więc nie ma paska „Nowa wersja”, a kawałek, który zniknął,
+każe przeczytać indeks od nowa. Przy pierwszej wizycie to, co przyszło, zanim service worker przejął
+stronę, idzie potem jeszcze raz przez niego — okolica działa bez sieci już przy następnym otwarciu.
+Wolne łącze: najwyżej 8 kawałków naraz — najpierw te z widoku na ekranie, w kolejności od
+najbliższych, a ponowienie nie traci miejsca w kolejce (reszta czeka, więc nikt nie traci terminu
+w kolejce przeglądarki); kawałek, który wciąż przychodzi, nie jest przerywany (10 km na EDGE to ok.
+265 kB), przerywa go dopiero 10 s ciszy, a ponowienie omija wtedy niedokończony wpis w pamięci
+podręcznej przeglądarki (`cache: 'reload'` — inaczej czekałoby na zawieszone pobranie service
+workera; po przekroczonym terminie nagłówków pierwsze ponowienie dołącza do trwającego pobrania
+i czeka na odpowiedź 25 s, dłużej niż Chromium na takie pobranie, dopiero drugie omija wpis). „Zjedz teraz” prosi o bazę produktów (3,3 MB, gotowe jedzenie
+w sklepach) dopiero po lokalach z danych aplikacji (za granicą i przy granicy od razu: tam czeka się
+na inny serwer), a baza idzie z niskim priorytetem: na wolnym łączu nie staje przed indeksem
+i kawałkami; półtorej minuty ciszy w jej pobieraniu to błąd, nie czekanie bez końca, a następna
+próba omija niedokończony wpis jak przy kawałkach. Póki jej nie ma, wiersz
+stanu mówi „Wczytuję produkty sklepów…” zamiast liczyć sklepy jako bez menu, a gdy się nie wczyta,
+mówi to i daje „Spróbuj ponownie”. Po nieudanych menu sieci „Spróbuj ponownie” próbuje najpierw na
+miejscu (Firefox pyta serwer naprawdę), a gdy przeglądarka odmawia od ręki — Chromium i WebKit
+pamiętają nieudany import do końca życia strony — przeładowuje ją, o ile serwer odpowiada (ręcznie
+wybrane miejsce karta pamięta); paczki menu i sklepów idą bez `modulepreload`, bo nieudane wstępne
+wczytanie WebKit trzymałby nawet po przeładowaniu. Przy granicy
+przycisk pyta Overpass jeszcze raz dopiero, gdy jego szukanie się skończyło — nie przerywa go ani nie
+skraca przerwy, o którą prosi serwer. Nieudane pobranie — indeksu albo kawałka, także błąd serwera — wraca
+samo po 30 s, minucie i dwóch (nie przy zablokowanym telefonie ani bez sieci; po powrocie sieci od
+razu), a w tym czasie odpowiada Overpass; jego gotowa lista zostaje na ekranie, aż dane aplikacji
+będą kompletne. Przełączenie widoków nic nie pobiera; jedne dane wczytują się od
+wejścia na stronę, nie po bazie produktów. Za granicą, dla części koła za granicą i gdy danych
+aplikacji nie da się odczytać z jej serwera, pyta Overpass — jednym zapytaniem dla obu widoków; co
+wysłać i czy pytać, liczy z pozycji zaokrąglonej, więc drganie GPS w obrębie ok. 100 m nie przerywa
+ani nie powtarza zapytania. Pod mapą: „Lokale i sklepy: © autorzy OpenStreetMap · licencja ODbL
+· stan z 22 października 2026”, a gdy na ekranie są miejsca z Overpass (także zapisane) — „… · z serwera
+Overpass”. Reguła, które obiekty się liczą (`src/food/nearby/osmTags.ts`), jest
+jedna dla zapytań Overpass, parserów, filtra osmium i skryptu.
+
+Odświeżenie danych: `npm run food:osm` (osmium-tool z brew albo apt; pobiera wyciąg Geofabrik dla
+Polski, 2,1 GB, do `~/.cache/gym-tracker/osm`, filtruje i zapisuje `data/osm/*`; sprawdza, czy liczby
+nie skoczyły — `--force`, by zapisać mimo to; `--pbf`/`--filtered`/`--poly` dla plików lokalnych), albo
+workflow „Dane OSM” w GitHub Actions (uruchamiany ręcznie; tygodniowy harmonogram czeka zakomentowany
+w `.github/workflows/osm-data.yml`). Licencja: dane © autorzy OpenStreetMap, ODbL 1.0 — `data/osm`
+w publicznym repozytorium to oferowana baza pochodna razem ze skryptem (`data/osm/README.md`).
+
+**Zajęty serwer map** (za granicą, przy granicy i gdy danych aplikacji nie da się odczytać). Publiczne
+serwery Overpass bywają przeciążone (502 „at capacity”, 429, 504) albo odpowiadają ponad pół minuty —
+lokale w centrum miasta potrafią przyjść po 35 s. Dlatego: jedno
 zapytanie czeka do 50 s, serwery idą na zmianę (każdy dwa razy, całość najwyżej 2 minuty), a serwer,
 który prosi o przerwę, dostaje ją (`Retry-After`, najwyżej 30 s, albo rosnącą) — strona odlicza
 „ponawiam za 6 s” poza regionem odczytywanym przez czytnik ekranu, a po 12 s mówi, że serwer odpowiada
 wolno. Odpowiedzi zostają na urządzeniu tydzień (świeże, bez pytania serwera, przez dobę; najwyżej
 cztery): starsza albo mniejsza odpowiedź dla tego miejsca pokazuje się od razu, a gdy nowa zawiedzie,
 zostaje z podpisem („Pokazuję lokale zapisane wczoraj”). Po porażce strona sama próbuje znowu po
-30 s, minucie i 2 minutach — nie przy ukrytej karcie; potem zostaje „Spróbuj ponownie”.
+30 s, minucie i 2 minutach — nie przy ukrytej karcie, a od razu, gdy wróci połączenie; potem zostaje
+„Spróbuj ponownie”. Serwer, który odmawia (429, 406), dostaje 30 s spokoju; bez internetu zapytanie
+nie wychodzi wcale.
 
 **Dane produktów są w repozytorium**: `data/food/products.json.gz` (3,3 MB zamiast 24 MB JSON-a).
 Build wydaje go jako `data/products.<hasz>.json.gz`, a przeglądarka rozpakowuje go sama
@@ -1073,7 +1129,8 @@ npm run food:data
 npm run food:check-recipes   # pokrycie przepisów na nowych danych
 ```
 
-Licencje: baza Open Food Facts — ODbL, zdjęcia — CC BY-SA, mapa — © autorzy OpenStreetMap.
+Licencje: baza Open Food Facts — ODbL, zdjęcia — CC BY-SA, mapa i lokale — © autorzy OpenStreetMap
+(dane lokali w aplikacji: ODbL, `data/osm/README.md`).
 Dane tworzą użytkownicy, więc bywają niepełne; wartości spoza fizycznego zakresu (np. 3000 kcal
 w 100 g) są odrzucane.
 
@@ -1563,11 +1620,11 @@ src/
     hash.ts                 stan stron w zapytaniu wewnątrz hasha (`#/produkty?q=skyr&ns=a`)
     food.css                miejsce na style wspólne całej zakładce; obszary mają arkusze obok swoich stron
     *.test.ts(x)            35 testów karty Dziś, kopii i resetu, arkuszy bez zderzeń klas, bazy produktów i hasha
-    lib/                    produkty: filtry, fasety, sortowanie, wyszukiwanie bez względu na ogonki, stan w adresie, formaty, opakowania — 51 testów
+    lib/                    produkty: filtry, fasety, sortowanie, wyszukiwanie bez względu na ogonki, stan w adresie, formaty, opakowania — 51 testów; `onReset` — co wczytane moduły zapominają przy „Usuń wszystkie dane”
     recipes/                przepisy białkowe i gotowce: katalog, składniki, koszyki sklepów i grupowanie, zamiany, progi, makro, gotowe produkty, hale po supermarketach — 319 testów
     online/                 sklepy internetowe: rejestr, dane sklepów (`data/*.json`), scalanie z bazą po EAN, kontrola liczb — 36 testów
     chains/                 sieci z własnymi danymi (Selgros): rejestr, dane (`data/*.json`), scalanie po EAN bez oferty online, kontrola liczb — 10 testów
-    nearby/                 w pobliżu: odległości, zapytanie do Overpass (z halami Selgros i Makro) z zapasowym serwerem, przerwami dla zajętego serwera i budżetem czasu, kopia na dobę i zapas na tydzień, promień
+    nearby/                 w pobliżu: reguła obiektów OSM (`osmTags`), drzewo kawałków i wybór wokół zaokrąglonej pozycji (`osmGrid`), format danych (`osmFormat`), dane aplikacji (`staticData`), zapytanie Overpass dla obu widoków (`live`) z przerwami i budżetem czasu, kopia na dobę i zapas na tydzień, promień
     scan/                   skaner kodów: kody GS1 (cyfra kontrolna, UPC-E, warianty w bazie), Open Food Facts dla kodów spoza bazy, porównanie pod cel diety, lista porównania znikająca godzinę po ostatnim skanie, czytnik (wbudowany albo WebAssembly) — 16 testów
     diet/                   dieta: baza Dexie (`produkty-pl-dieta`, wersja 4 z zestawami, ulubionymi i planami z zakupami), model energii z kierunkiem celu, sposoby odżywiania, dzień, plan z Excela, zestawy, ulubione, wyszukiwanie, podpowiedzi, cel dopasowany do ruchu wobec planu (`activity.ts`), symulacja cheat mealu (`cheat.ts`) — 170 testów
     prep/                   plan z zakupami (meal prep): bloki gotowania, przepisy z koszyka, wybór ról i lista zamienników, porcje i dodatki, cele dni, check-in, lista zakupów, nazwa, przesuwanie dat, pierwszeństwo w dzienniku, migawka w bazie, odczyt z kopii — 120 testów
@@ -1604,7 +1661,10 @@ src/
   phone.test.ts             3 testy wspólnego wektora, cudzej paczki w skrzynce i rozpoznania telefonu
   pwa.ts                    service worker od strony aplikacji: rejestracja, „nowa wersja czeka”, wpuszczenie poprawki z ekranu awarii
   pwa.test.ts               12 testów rejestracji, pytań o nową wersję i obu „Odśwież” — bez service workera
-  sw.ts                     service worker (Workbox, injectManifest): powłoka offline, baza produktów, zdjęcia, kafelki mapy, Web Push
+  sw.ts                     service worker (Workbox, injectManifest): powłoka offline, baza produktów, zdjęcia, kafelki mapy, dane OSM, Web Push
+  swNavigation.ts           które nawigacje nie dostają index.html (polityka prywatności, pliki spod data/) — od zakresu service workera
+  swPlugins.ts              wtyczka kopii kawałków OSM bez nagłówka Date (wiek od ostatniego użycia)
+  swWarm.ts                 pierwsza wizyta: pliki pobrane przed przejęciem strony jeszcze raz przez service worker
   csp.test.ts               5 testów polityki bezpieczeństwa: każdy obcy adres z kodu przepuszczony, serwer aplikacji, miejsce znacznika
   styles.css                arkusz stylów
   styles.contrast.test.ts   10 testów kontrastu tokenów (także kropki stanu połączenia), liczonych wprost z arkusza
@@ -2281,10 +2341,19 @@ GYM TRACKER instaluje się na ekranie głównym telefonu i działa bez sieci od 
   (`src/sw.ts`, moduły Workboxa), a build dopisuje do niego tylko listę plików powłoki z haszami.
   Zastąpił ręczny `public/sw.js` i skrypt, który po buildzie wpisywał do niego listę plików.
 - **Co gdzie leży.** Powłoka — skrypty, style, strona, ikony i kroje pisma w alfabecie łacińskim —
-  jest zapisana przy instalacji, a każda nawigacja dostaje zapisaną stronę. Baza produktów: kopia
+  jest zapisana przy instalacji, a każda nawigacja dostaje zapisaną stronę — poza polityką
+  prywatności i plikami spod `data/` (liczonymi od zakresu service workera, więc aplikacja działa pod
+  dowolną ścieżką, także w folderze o nazwie `data`). Baza produktów: kopia
   na zawsze, jedna (nowa wersja ma nowy hasz w nazwie). Zdjęcia produktów: 400 ostatnich na 30 dni.
-  Kafelki mapy: tylko oglądane, 500 na 7 dni. Czytnik kodów (WebAssembly): przy pierwszym skanie,
-  jedna kopia. Overpass, Open Food Facts i serwer przypomnień idą prosto do sieci.
+  Kafelki mapy: tylko oglądane, 500 na 7 dni. Dane OSM „W pobliżu”: kawałki tylko oglądanych okolic,
+  400 na 90 dni (wiek liczony od ostatniego użycia), indeks odświeżany w tle, a obok niego licencja
+  danych — po jednym otwarciu otwiera się też offline. Czytnik kodów (WebAssembly): przy pierwszym
+  skanie, jedna kopia. Overpass, Open Food Facts i serwer przypomnień idą prosto do sieci.
+- **Pierwsza wizyta bez dziur.** Service worker instaluje się po wczytaniu strony, więc to, co
+  przyszło wcześniej (baza produktów, paczka sklepów, indeks i kawałki danych OSM), ominęło jego
+  kopię. Gdy przejmie stronę (`controllerchange`), te pliki są pobierane jeszcze raz przez niego —
+  każdy po swojej pierwszej próbie, zwykle z pamięci podręcznej przeglądarki (`src/swWarm.ts`);
+  Produkty i „W pobliżu” działają offline już przy następnym otwarciu.
 - **Rejestracja w `main.tsx`, poza Reactem** (`registerSW` z `virtual:pwa-register`, stan w `src/pwa.ts`):
   ustawiona przed pierwszym renderem, a nie w komponencie, który montuje się dopiero po wczytaniu
   danych; sama rejestracja rusza po wczytaniu strony, żeby nie konkurować z pierwszym ekranem.
@@ -2434,8 +2503,12 @@ wejściu w Jedzenie przechodzą do dziennika wagi i znikają z diety; kroki diet
 i zegarka. Eksport z Ustawień zapisuje jeden plik — trening, a gdy dziennik jedzenia ma cokolwiek
 (rozstrzyga zawartość bazy, nie to, czy jest profil diety), także jego kopię pod `diet`; gdy bazy nie
 da się odczytać, plik i tak powstaje, a komunikat mówi, że jest bez dziennika. Import odtwarza oba,
-a „Usuń wszystkie dane” czyści oba, razem z zapamiętanym miejscem sklepów i kopiami kafelków mapy
-i zdjęć produktów (kafelki zdradzają, jakie okolice ktoś oglądał). Baza ma tę samą nazwę co
+a „Usuń wszystkie dane” czyści oba, razem z zapamiętanym miejscem sklepów i kopiami kafelków mapy,
+kawałków danych OSM i zdjęć produktów (kafelki i kawałki zdradzają, jakie okolice ktoś oglądał) —
+także z tym, co dopiero miało trafić do kopii: zapomina kawałki w pamięci i w kolejce oraz ich
+pobrania czekające na przejęcie strony przez service worker, i miejsce wybrane ręcznie w karcie, a sam service worker (wiadomość
+`FORGET_TRAIL`) kasuje te kopie i nie zapisuje już niczego, o co poproszono przed resetem — także gdy
+strona zaraz się przeładuje albo zamknie. Reset nie pobiera przy tym niczego z sieci. Baza ma tę samą nazwę co
 w Produktach PL — na tej samej domenie dawny dziennik pojawia się w aplikacji sam.
 
 ## Zastrzeżenie

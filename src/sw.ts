@@ -2,9 +2,11 @@
 import { clientsClaim } from 'workbox-core';
 import { cleanupOutdatedCaches, createHandlerBoundToURL, precacheAndRoute } from 'workbox-precaching';
 import { NavigationRoute, registerRoute } from 'workbox-routing';
-import { CacheFirst } from 'workbox-strategies';
-import { ExpirationPlugin } from 'workbox-expiration';
+import { CacheFirst, StaleWhileRevalidate } from 'workbox-strategies';
+import { CacheExpiration, ExpirationPlugin } from 'workbox-expiration';
 import { CacheableResponsePlugin } from 'workbox-cacheable-response';
+import { navigationDenylist } from './swNavigation';
+import { forgetTrail, fromAfterReset, withoutDateHeader } from './swPlugins';
 
 declare const self: ServiceWorkerGlobalScope;
 
@@ -18,29 +20,50 @@ declare const self: ServiceWorkerGlobalScope;
  *   instalacji, z listy, którą wpisuje build (`self.__WB_MANIFEST`, vite-plugin-pwa). Offline
  *   działa więc już po pierwszej wizycie, a kopie poprzedniej wersji znikają po aktywacji nowej.
  * - Strona (nawigacja) — zawsze `index.html` z tej listy, poza polityką prywatności
- *   (`privacy.html`), która ma się otwierać jako ona sama. Nowa wersja nie wchodzi sama: czeka, aż
- *   ktoś stuknie „Odśwież” na pasku (`UpdateBar`) albo na ekranie awarii (`RootBoundary`), a do tego
- *   czasu stare pliki zostają ważne.
+ *   (`privacy.html`) i plikami spod `data/` (licencja danych OSM), które mają się otwierać same.
+ *   Obie ścieżki liczone od zakresu service workera, nie od korzenia serwera: aplikacja działa pod
+ *   dowolną ścieżką, także pod folderem `data/`.
+ *   Nowa wersja nie wchodzi sama: czeka, aż ktoś stuknie „Odśwież” na pasku (`UpdateBar`) albo na
+ *   ekranie awarii (`RootBoundary`), a do tego czasu stare pliki zostają ważne.
  * - Baza produktów — najpierw kopia. Nazwa pliku ma hasz, więc nowa baza to nowy adres; trzymamy
  *   tylko ostatnią, bo każda waży kilka megabajtów.
  * - Zdjęcia produktów i kafelki mapy — najpierw kopia, z limitem liczby i wieku. Kafelki tylko
  *   obejrzane, nigdy pobierane zawczasu (tego wymagają zasady OpenStreetMap).
  * - Czytnik kodów kreskowych (WebAssembly) — najpierw kopia, pobrany przy pierwszym skanie.
+ * - Dane OSM „W pobliżu” (`data/osm/v1/`) — kawałki mapy najpierw z kopii (nazwa ma hasz treści,
+ *   tylko oglądane okolice, 400 na 90 dni), indeks z kopii od razu i odświeżany w tle: nowe dane
+ *   po wdrożeniu przychodzą same, bez paska „Nowa wersja”. Tak samo licencja danych
+ *   (`LICENSE.txt`, odnośnik z „W pobliżu”): raz otwarta, otwiera się też bez sieci.
  *
  * Overpass, Open Food Facts, serwer aplikacji i filmy z YouTube'a idą prosto do sieci: offline i tak
  * by nie ruszyły.
+ *
+ * „Usuń wszystkie dane” (wiadomość `FORGET_TRAIL` z `src/food/backup.ts`): kopie, które mówią, gdzie
+ * ktoś patrzył i co oglądał — kawałki danych OSM, kafelki mapy, zdjęcia produktów — znikają razem
+ * z zapisem, kiedy ich użyto, a to, o co poproszono przed resetem, nie trafia do nich, nawet gdy
+ * przyjdzie później (strona mogła się w tym czasie przeładować albo zamknąć).
  * W trybie deweloperskim ten plik nie jest rejestrowany.
  */
 
 const DAY = 24 * 3600;
 
+/** Kopie, które zdradzają, gdzie ktoś patrzył i co oglądał — te usuwa reset (`FOOD_CACHES` w `src/food/backup.ts`). */
+const TRAIL = ['gt-osm', 'osm-tiles', 'off-images'];
+
 precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
 // Pierwsza wizyta: strona przechodzi pod opiekę od razu, nie dopiero po przeładowaniu — tak jak
 // wcześniej. Przy aktualizacji niczego to nie przyspiesza: nowa wersja i tak czeka na zgodę.
+// To, co strona pobrała przed przejęciem (baza produktów, paczka sklepów, indeks i kawałki danych
+// OSM), poszło obok kopii — strona pobiera to wtedy jeszcze raz, już przez service worker
+// (`src/swWarm.ts`); kawałki tylko wtedy, gdy w międzyczasie nie było „Usuń wszystkie dane”.
 clientsClaim();
 
-registerRoute(new NavigationRoute(createHandlerBoundToURL('index.html'), { denylist: [/\/privacy\.html$/] }));
+registerRoute(
+  new NavigationRoute(createHandlerBoundToURL('index.html'), {
+    denylist: navigationDenylist(new URL(self.registration.scope).pathname),
+  }),
+);
 
 registerRoute(
   ({ url, sameOrigin }) =>
@@ -61,6 +84,39 @@ registerRoute(
   }),
 );
 
+// Kawałki danych OSM „W pobliżu”: nazwa z haszem treści, więc kopia jest ważna, dopóki istnieje.
+// Tylko oglądane okolice, z limitem — lista miejsc, które ktoś oglądał, nie rośnie bez końca.
+registerRoute(
+  ({ url, sameOrigin }) => sameOrigin && /\/data\/osm\/v1\/t\/\d+-\d+-\d+\.[0-9a-f]{10}\.json\.gz$/.test(url.pathname),
+  new CacheFirst({
+    cacheName: 'gt-osm',
+    plugins: [
+      new CacheableResponsePlugin({ statuses: [200] }),
+      // Nic, o co poproszono przed „Usuń wszystkie dane” — przed wygasaniem, bo ono notuje każde
+      // użycie kopii.
+      fromAfterReset,
+      new ExpirationPlugin({ maxEntries: 400, maxAgeSeconds: 90 * DAY, purgeOnQuotaError: true }),
+      // A leaf never changes under its name, so its age is how long ago it was LAST USED (what the
+      // expiration keeps track of), not its `Date` header.
+      withoutDateHeader,
+    ],
+  }),
+);
+
+// Indeks danych OSM i ich licencja (`LICENSE.txt`, odnośnik z „W pobliżu”) pod stałymi adresami:
+// od razu z kopii, nowe w tle — licencja raz otwarta otwiera się też bez sieci. Adres z `?r=`
+// (odświeżenie indeksu po zniknięciu kawałka po wdrożeniu) idzie prosto do sieci.
+registerRoute(
+  ({ url, sameOrigin }) =>
+    sameOrigin &&
+    url.search === '' &&
+    (url.pathname.endsWith('/data/osm/v1/index.json') || url.pathname.endsWith('/data/osm/v1/LICENSE.txt')),
+  new StaleWhileRevalidate({
+    cacheName: 'gt-osm-index',
+    plugins: [new ExpirationPlugin({ maxEntries: 2 }), new CacheableResponsePlugin({ statuses: [200] })],
+  }),
+);
+
 // Czytnik kodów kreskowych (WebAssembly, ok. 1 MB) dla przeglądarek bez własnego: pobierany przy
 // pierwszym skanie, nie przy instalacji — większość telefonów z Androidem go nie potrzebuje. Potem
 // z kopii, także w sklepie bez zasięgu. Nazwa ma hasz, więc nowa wersja to nowy adres.
@@ -78,8 +134,9 @@ registerRoute(
   new CacheFirst({
     cacheName: 'off-images',
     plugins: [
-      new ExpirationPlugin({ maxEntries: 400, maxAgeSeconds: 30 * DAY }),
       new CacheableResponsePlugin({ statuses: [200] }),
+      fromAfterReset,
+      new ExpirationPlugin({ maxEntries: 400, maxAgeSeconds: 30 * DAY }),
     ],
   }),
 );
@@ -89,8 +146,9 @@ registerRoute(
   new CacheFirst({
     cacheName: 'osm-tiles',
     plugins: [
-      new ExpirationPlugin({ maxEntries: 500, maxAgeSeconds: 7 * DAY }),
       new CacheableResponsePlugin({ statuses: [200] }),
+      fromAfterReset,
+      new ExpirationPlugin({ maxEntries: 500, maxAgeSeconds: 7 * DAY }),
     ],
   }),
 );
@@ -109,9 +167,23 @@ self.addEventListener('activate', (event) => {
 /**
  * „Odśwież” na pasku nowej wersji albo na ekranie awarii: nowa wersja przejmuje stronę, a ta się
  * przeładowuje.
+ *
+ * „Usuń wszystkie dane”: od tej chwili nic, o co poproszono wcześniej, nie trafia do kopii z `TRAIL`
+ * (`fromAfterReset`), a same kopie znikają razem z wpisami w bazie wygasania — Workbox trzyma tam
+ * adresy użytych plików. Wpisy usuwa jego własny `CacheExpiration`, także w workerze, który dopiero
+ * wstał dla tej wiadomości. Strona dostaje odpowiedź, gdy wszystko zniknie.
  */
 self.addEventListener('message', (event) => {
   if (event.data?.type === 'SKIP_WAITING') void self.skipWaiting();
+  if (event.data?.type === 'FORGET_TRAIL') {
+    const reply = event.ports[0];
+    event.waitUntil(
+      // Limit tylko dlatego, że konstruktor go wymaga: `delete()` usuwa wszystkie wpisy tej kopii.
+      forgetTrail(TRAIL, (name) => new CacheExpiration(name, { maxEntries: 1 }).delete())
+        .catch(() => undefined)
+        .then(() => reply?.postMessage('done')),
+    );
+  }
 });
 
 /*

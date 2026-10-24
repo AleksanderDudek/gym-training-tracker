@@ -6,6 +6,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 // ma zostać domyślnym w kolejnej wersji Vite — bez niego build ostrzega przy każdym starcie.
 import { cspPlugin } from './vite/csp.ts';
 import { foodData } from './vite/foodData.ts';
+import { osmPlaces } from './vite/osmPlaces.ts';
 
 /** Skrót na ekranie głównym: ta sama ikona dla wszystkich, jak dotąd. */
 const shortcut = (name: string, url: string, shortName?: string) => ({
@@ -23,6 +24,8 @@ export default defineConfig(({ mode }) => ({
     cspPlugin(loadEnv(mode, '.', 'VITE_').VITE_API_URL),
     // Baza produktów (`data/food/products.json.gz`) jako plik z wersją w nazwie i `virtual:food-data`.
     foodData(),
+    // Lokale i sklepy „W pobliżu” (`data/osm/places-pl.tsv`) pocięte na kawałki i `virtual:osm-places`.
+    osmPlaces(),
     VitePWA({
       // Własny service worker (`src/sw.ts`); build dopisuje do niego tylko listę plików powłoki.
       strategies: 'injectManifest',
@@ -80,7 +83,13 @@ export default defineConfig(({ mode }) => ({
     }),
   ],
   base: './',
-  build: { outDir: 'dist' },
+  // Paczki menu sieci i sklepów bez `<link rel=modulepreload>`: WebKit (Safari, każda przeglądarka na
+  // iOS) pamięta nieudane wstępne wczytanie takiej paczki w karcie nawet po przeładowaniu, więc
+  // „Spróbuj ponownie” nie odzyskałby menu. Zwykły import() przeładowanie pobiera od nowa.
+  build: {
+    outDir: 'dist',
+    modulePreload: { resolveDependencies: (file, deps) => (/(?:^|\/)(?:catalog|shopData)-[\w-]+\.js$/.test(file) ? [] : deps) },
+  },
   // Bez tego Vitest podstawia pusty tekst pod każdy import arkusza — także pod
   // `styles.css?raw`, na którym stoi test kontrastu tokenów.
   // `setupFiles`: dopasowania jest-dom, IndexedDB w pamięci (dziennik jedzenia na Dexie) i sprzątanie

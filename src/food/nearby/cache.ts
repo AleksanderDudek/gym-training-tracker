@@ -4,9 +4,12 @@ import type { LatLon, Shop } from './types';
 export type ShopCache = Pick<Storage, 'getItem' | 'setItem'>;
 export type Circle = LatLon & { radius: number };
 
-const KEY = 'produkty-pl:shops';
-/** Places to eat („Zjedz teraz”): restaurants and shops in one answer, kept apart from the shops. */
-export const PLACES_KEY = 'produkty-pl:places';
+/**
+ * The shops around the last place searched, for the diary's suggestions („Co teraz?”, the meal
+ * prep): written by „W pobliżu” whatever the source, read without asking anyone.
+ */
+export const SHOPS_KEY = 'produkty-pl:shops';
+const KEY = SHOPS_KEY;
 /** An answer this fresh is used without asking the server again. */
 const TTL_MS = 24 * 3600 * 1000;
 /**

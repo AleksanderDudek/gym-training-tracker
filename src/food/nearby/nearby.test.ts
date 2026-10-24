@@ -167,7 +167,7 @@ describe('overpass', () => {
     }
   });
 
-  test('pauses: Retry-After in seconds or as a date, capped at half a minute; without it, a rate limit waits longest', () => {
+  test('pauses: Retry-After in seconds or as a date, capped at half a minute; without it, a refusal waits longest', () => {
     const now = Date.UTC(2026, 9, 23, 12, 0, 0);
     const with_ = (status: number, retryAfter?: string) =>
       new Response('', { status, headers: retryAfter ? { 'retry-after': retryAfter } : {} });
@@ -175,8 +175,33 @@ describe('overpass', () => {
     expect(pauseFor(with_(503, new Date(now + 9000).toUTCString()), 2000, now)).toBe(9000);
     expect(pauseFor(with_(429, '600'), 2000, now)).toBe(30_000);
     expect(pauseFor(with_(503, '0'), 2000, now)).toBe(2000);
-    expect(pauseFor(with_(429), 2000, now)).toBe(10_000);
+    // Refused or rate-limited: half a minute, as the Overpass usage policy asks.
+    expect(pauseFor(with_(429), 2000, now)).toBe(30_000);
+    expect(pauseFor(with_(406), 2000, now)).toBe(30_000);
     expect(pauseFor(with_(504), 2000, now)).toBe(6000);
+  });
+
+  test('fetch: offline nothing is sent — the page waits for the connection', async () => {
+    const fetchImpl = vi.fn();
+    const online = Object.getOwnPropertyDescriptor(Navigator.prototype, 'onLine');
+    Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => false });
+    try {
+      await expect(fetchShops(PKIN, 1000, { fetchImpl, endpoints: ['https://a'] })).rejects.toMatchObject({ name: 'OverpassOffline' });
+      expect(fetchImpl).not.toHaveBeenCalled();
+    } finally {
+      if (online) Object.defineProperty(navigator, 'onLine', online);
+      else delete (navigator as { onLine?: boolean }).onLine;
+    }
+  });
+
+  test('fetch: a 406 refusal also leaves that server alone for a while', async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(new Response('not acceptable', { status: 406 }))
+      .mockResolvedValueOnce(json(OVERPASS));
+    const onWait = vi.fn();
+    expect(await fetchShops(PKIN, 1000, { fetchImpl, endpoints: ['https://a', 'https://b'], retryDelayMs: 0, onWait })).toHaveLength(3);
+    expect(fetchImpl.mock.calls.map((c) => c[0])).toEqual(['https://a', 'https://b']);
   });
 
   test('fetch: everything ends within the budget, also when servers keep asking to wait', async () => {

@@ -1,5 +1,7 @@
 import { LOCALE, text } from '../../../i18n';
 import type { AroundState } from '../../hooks/useNearbyShops';
+import type { OsmState } from '../../hooks/useOsmAround';
+import { dataDate } from './nearbyText';
 
 /** What both views say about a slow or busy map server and an older answer on screen. */
 const T = text({
@@ -9,6 +11,15 @@ const T = text({
     again: (s: number) => `Ponowię sam za ${s} s.`,
     meanwhile: (what: string, age: string) => `Na razie pokazuję ${what} zapisane ${age}.`,
     showing: (what: string, age: string) => `Pokazuję ${what} zapisane ${age}.`,
+    slowData: (s: number) => `Wolne połączenie — pobieram dane okolicy (${s} s)…`,
+    abroad: (what: string) => `Poza Polską ${what} pobieram z serwera map — może to chwilę potrwać.`,
+    border: (what: string) => `Przy granicy: ${what} po polskiej stronie mam w aplikacji, o resztę pytam serwer map…`,
+    borderLoading: (what: string) => `Przy granicy: ${what} po polskiej stronie wczytuję z aplikacji…`,
+    borderLoadingFailed: (what: string) =>
+      `Przy granicy: ${what} po polskiej stronie wczytuję z aplikacji, po drugiej stronie nie udało się pobrać danych.`,
+    borderFailed: (what: string) => `Po drugiej stronie granicy nie udało się pobrać danych — pokazuję ${what} po polskiej stronie.`,
+    older: 'Część danych okolicy jest z poprzedniej aktualizacji.',
+    stale: (date: string) => `Dane okolicy są z ${date} — część miejsc mogła się zmienić.`,
   },
   en: {
     slow: (s: number) => `The map server is slow — waiting (${s} s)…`,
@@ -16,11 +27,23 @@ const T = text({
     again: (s: number) => `I’ll try again in ${s} s.`,
     meanwhile: (what: string, age: string) => `Meanwhile showing ${what} saved ${age}.`,
     showing: (what: string, age: string) => `Showing ${what} saved ${age}.`,
+    slowData: (s: number) => `Slow connection — loading this area’s data (${s} s)…`,
+    abroad: (what: string) => `Outside Poland I get ${what} from the map server — this may take a while.`,
+    border: (what: string) => `Near the border: ${what} on the Polish side are in the app, the rest comes from the map server…`,
+    borderLoading: () => 'Near the border: loading the Polish side from the app…',
+    borderLoadingFailed: () => 'Near the border: loading the Polish side from the app; couldn’t get the data across the border.',
+    borderFailed: (what: string) => `Couldn’t get the data across the border — showing ${what} on the Polish side.`,
+    older: 'Part of this area’s data is from the previous update.',
+    stale: (date: string) => `This area’s data is from ${date} — some places may have changed.`,
   },
 });
 
 /** A search this long is called slow on screen. */
 const SLOW_MS = 12_000;
+/** The app's own files are small: past this a connection is called slow. */
+const SLOW_DATA_MS = 5000;
+/** The app's copy of the data is refreshed by hand: past this age the page says it may be out of date. */
+const STALE_DATA_MS = 60 * 24 * 3600 * 1000;
 /** While a new answer loads, an older one on screen is pointed out only past this age (fresh ones are). */
 const OLD_MS = 24 * 3600 * 1000;
 
@@ -45,16 +68,48 @@ export interface AroundNotes {
 /**
  * The words about the server and the data behind the list: an older answer on screen and its age,
  * a pause before the next try, a search that takes long. `what` names the items („lokale”, „sklepy”).
+ * `source` and `shown` decide which words apply: required, so a caller cannot drop them unnoticed.
  */
-export function aroundNotes(
-  state: Pick<AroundState<unknown>, 'status' | 'items' | 'savedAt' | 'since' | 'retryAt'>,
-  what: string,
-  now: number,
-): AroundNotes {
+export type AroundNotesState = Pick<AroundState<unknown>, 'status' | 'items' | 'savedAt' | 'since' | 'retryAt'> &
+  Pick<OsmState, 'source' | 'shown'> &
+  Partial<Pick<OsmState, 'coverage' | 'dataAsOf' | 'olderLeaves' | 'rest'>>;
+
+export function aroundNotes(state: AroundNotesState, what: string, now: number): AroundNotes {
   const left = state.retryAt ? Math.ceil((state.retryAt - now) / 1000) : 0;
+  const elapsed = state.since === null ? 0 : now - state.since;
+  // What the app's own data says of itself whenever it is on screen — the Polish side at the border
+  // too: part of it from the previous update, its date once it is old.
+  const asOf = state.dataAsOf ? Date.parse(state.dataAsOf) : NaN;
+  const date = now - asOf > STALE_DATA_MS ? dataDate(state.dataAsOf ?? null) : null;
+  const own = state.shown === 'static' ? [state.olderLeaves ? T.older : null, date ? T.stale(date) : null] : [];
+  const words = (...parts: (string | null)[]) => parts.filter(Boolean).join(' ');
+  if (state.source === 'static') {
+    // The app's own data: no server to wait for, only the connection.
+    if (state.status === 'loading') return { status: '', clock: elapsed >= SLOW_DATA_MS ? T.slowData(Math.round(elapsed / 1000)) : null };
+    if (state.status === 'error') return { status: '', clock: left > 0 ? T.again(left) : null };
+    return { status: words(...own), clock: null };
+  }
+  const live = liveNotes(state, what, now, left, elapsed);
+  // At the border, while the Polish side is what is shown; once Overpass's answer (or a saved one)
+  // is on screen, its own notes apply — with its age.
+  if (state.source === 'mixed' && state.shown !== 'live') {
+    if (state.status === 'loading') {
+      // „O resztę pytam serwer map” only while it is asked: not once it has answered, nor after it
+      // failed or while offline, when nothing goes out.
+      const border = state.rest === 'failed' ? T.borderLoadingFailed(what) : state.rest === 'done' ? T.borderLoading(what) : T.border(what);
+      return { status: words(border, ...own), clock: live.clock };
+    }
+    if (state.status === 'error') return { status: words(T.borderFailed(what), ...own), clock: live.clock };
+    return { status: words(...own), clock: live.clock };
+  }
+  if (state.coverage === 'none' && state.status === 'loading') return { status: words(T.abroad(what), live.status), clock: live.clock };
+  return live;
+}
+
+/** Overpass: an older answer on screen and its age, a pause before the next try, a long search. */
+function liveNotes(state: AroundNotesState, what: string, now: number, left: number, elapsed: number): AroundNotes {
   const age = state.savedAt !== null && state.items.length > 0 ? now - state.savedAt : null;
   if (state.status === 'loading') {
-    const elapsed = state.since === null ? 0 : now - state.since;
     return {
       status: age !== null && age >= OLD_MS ? T.meanwhile(what, ageText(age)) : '',
       clock: left > 0 ? T.wait(left) : elapsed >= SLOW_MS ? T.slow(Math.round(elapsed / 1000)) : null,

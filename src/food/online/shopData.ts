@@ -12,3 +12,9 @@ const chainFiles = import.meta.glob<ChainData>('../chains/data/*.json', { eager:
 export const SHOPS: ShopData[] = Object.values(files).sort((a, b) => a.name.localeCompare(b.name, 'pl'));
 
 export const CHAIN_DATA: ChainData[] = Object.values(chainFiles).sort((a, b) => a.name.localeCompare(b.name, 'pl'));
+
+/**
+ * This chunk's own address (`assets/shopData-<hash>.js` in the build, a name only the build knows):
+ * the very first visit fetches it once more for the service worker's copy (`src/swWarm.ts`).
+ */
+export const CHUNK_URL: string = import.meta.url;

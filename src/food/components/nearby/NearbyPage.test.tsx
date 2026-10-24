@@ -35,12 +35,12 @@ vi.mock('./StoreMap', () => ({
 }));
 
 // Ponowienia bez przerw: test mówi o tym, co strona pokazuje, a nie o tym, ile czeka zajęty serwer.
-vi.mock('../../nearby/overpass', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../nearby/overpass')>();
+vi.mock('../../nearby/live', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../nearby/live')>();
   return {
     ...actual,
-    fetchShops: (...[center, radius, options]: Parameters<typeof actual.fetchShops>) =>
-      actual.fetchShops(center, radius, { ...options, retryDelayMs: 0 }),
+    fetchOsm: (...[center, radius, options]: Parameters<typeof actual.fetchOsm>) =>
+      actual.fetchOsm(center, radius, { ...options, retryDelayMs: 0 }),
   };
 });
 
@@ -198,12 +198,10 @@ describe('W pobliżu', () => {
   test('przy zajętym serwerze zostają sklepy zapisane wcześniej na tym urządzeniu — z ich wiekiem i ponowieniem', async () => {
     // Odpowiedź sprzed dwóch dni dla tego miejsca (zaokrąglony środek i margines, jak zapisuje strona).
     const twoDaysAgo = Date.now() - 2 * 24 * 3600 * 1000;
-    const shops = [
-      { id: 'node/1', name: 'Biedronka', chain: 'biedronka', lat: HERE.lat + 0.0027, lon: HERE.lon, address: 'Marszałkowska 10', openingHours: null },
-    ];
+    const elements = [OVERPASS.elements[0]!];
     window.localStorage.setItem(
-      'produkty-pl:shops',
-      JSON.stringify([{ lat: 52.23, lon: 21.012, radius: 1250, fetchedAt: twoDaysAgo, shops }]),
+      'produkty-pl:osm',
+      JSON.stringify([{ lat: 52.23, lon: 21.012, radius: 1250, fetchedAt: twoDaysAgo, shops: elements }]),
     );
     overpassFails = true;
     render(<NearbyPage />);
@@ -212,6 +210,24 @@ describe('W pobliżu', () => {
     expect(await screen.findByText(/^Ponowię sam za (30|29) s\.$/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Spróbuj ponownie/ })).toBeInTheDocument();
   }, 15_000);
+
+  test('sklepy nie czekają na bazę produktów: zapytanie idzie od wejścia na stronę', async () => {
+    vi.mocked(loadedDataset).mockReturnValue(null);
+    vi.mocked(loadDataset).mockReturnValue(new Promise(() => {}));
+    render(<NearbyPage />);
+    await waitFor(() => expect(overpassCalls).toBe(1));
+  });
+
+  test('pełna odpowiedź zostawia sklepy z okolicy dla podpowiedzi dziennika', async () => {
+    window.localStorage.setItem('produkty-pl:places', '[]');
+    render(<NearbyPage />);
+    await screen.findByText(/2 sklepy z danymi/);
+    await waitFor(() => expect(window.localStorage.getItem('produkty-pl:shops')).not.toBeNull());
+    const [entry] = JSON.parse(window.localStorage.getItem('produkty-pl:shops')!) as { shops: { chain: string }[] }[];
+    expect(entry!.shops.map((s) => s.chain)).toEqual(['biedronka', 'lidl', 'sklep-u-ani']);
+    // Dawna pamięć „Zjedz teraz” (inny kształt) znika przy pierwszej wizycie.
+    expect(window.localStorage.getItem('produkty-pl:places')).toBeNull();
+  });
 
   test('żeton sieci zawęża przepisy do tej sieci', async () => {
     const user = userEvent.setup();
@@ -272,7 +288,8 @@ describe('W pobliżu', () => {
     overpassGate = new Promise((resolve) => (release = resolve));
     fireEvent.change(screen.getByRole('slider', { name: 'Promień' }), { target: { value: '5' } }); // 5 km
     expect(await screen.findByText(/Szukam sklepów w promieniu 5 km/)).toBeInTheDocument();
-    expect(screen.getByText(/na razie: 2 sklepy w promieniu 1/)).toBeInTheDocument();
+    // Poza regionem status: zmienia się z każdą paczką, czytnik ekranu czytałby każdą.
+    expect(screen.getByText(/^Na razie: 2 sklepy z danymi o produktach w promieniu 1/).closest('[role="status"]')).toBeNull();
     expect(screen.getByTestId('map')).toHaveTextContent(/^biedronka,lidl/);
     expect(screen.getByRole('heading', { level: 3, name: 'Skyr z białkiem i malinami' })).toBeInTheDocument();
     release();

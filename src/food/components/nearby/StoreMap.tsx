@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react';
 import { text } from '../../../i18n';
 import { formatDistance } from '../../nearby/geo';
 import type { LatLon, PlacedShop } from '../../nearby/types';
-import { MapFrame, POPUP_OPTIONS, useBaseMap } from './baseMap';
+import { MapFrame, POPUP_OPTIONS, popupKeeper, useBaseMap } from './baseMap';
 
 export { SafeCanvas, watchOneFingerPan } from './baseMap';
 
@@ -91,17 +91,20 @@ export function StoreMap(props: Props) {
   useEffect(() => {
     latest.current = props;
   });
+  /** Sklep z otwartym dymkiem: dymek zostaje, gdy pinezki rysują się od nowa. */
+  const openId = useRef<string | null>(null);
 
   useEffect(() => {
     const group = pins.current;
     const c = colors.current;
     if (!group || !c) return;
+    const keeper = popupKeeper(openId, box.current);
     group.clearLayers();
     for (const shop of shops) {
       const chosen = shop.chain === selectedChain;
       const dimmed = selectedChain !== null && !chosen;
       const withRecipes = latest.current.recipeCount(shop.chain ?? '') > 0;
-      L.circleMarker([shop.lat, shop.lon], {
+      const pin = L.circleMarker([shop.lat, shop.lon], {
         radius: chosen ? 9 : 7,
         color: chosen ? c.ink : c.edge,
         weight: chosen ? 2.5 : 2,
@@ -110,10 +113,12 @@ export function StoreMap(props: Props) {
       })
         .bindPopup(() => popupFor(shop, latest.current, () => map.current?.closePopup()), POPUP_OPTIONS)
         .addTo(group);
+      keeper.track(shop.id, pin);
     }
     // Płótno rysuje w kolejności dodania: „Ty” na wierzchu, nie pod gęstwiną sklepów w centrum miasta.
     you.current?.bringToFront();
-  }, [shops, selectedChain, pins, colors, map, you]);
+    keeper.restore();
+  }, [shops, selectedChain, box, pins, colors, map, you]);
 
   return <MapFrame boxRef={box} twoFingers={twoFingers} label={T.map} describedBy={describedBy} />;
 }

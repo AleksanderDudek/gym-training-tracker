@@ -4,14 +4,15 @@ import { useCallback, useId, useMemo, useRef, useState } from 'react';
 import { pluralEn, text } from '../../../i18n';
 import { useDataset } from '../../hooks/useDataset';
 import { useGeolocation, type GeoState } from '../../hooks/useGeolocation';
-import { useNearbyShops, type ShopsState } from '../../hooks/useNearbyShops';
+import { useOsmAround, type OsmState } from '../../hooks/useOsmAround';
 import { useUrlState } from '../../hooks/useUrlState';
 import { formatNumber, plural } from '../../lib/format';
 import type { Dataset, IndexedProduct } from '../../lib/types';
 import { formatDistance } from '../../nearby/geo';
+import { shopsOf } from '../../nearby/overpass';
 import { DEFAULT_RADIUS, radiusLabel } from '../../nearby/radius';
 import { placeShops, summarizeChains } from '../../nearby/summary';
-import type { LatLon } from '../../nearby/types';
+import type { LatLon, PlacedShop, Shop } from '../../nearby/types';
 import { nearbyFromParams, nearbyToParams, type NearbyState, type NearbyView } from '../../nearby/url';
 import { RECIPES } from '../../recipes/catalog';
 import { chainsWithFood } from '../../recipes/chains';
@@ -25,6 +26,8 @@ import { ReadyProducts } from '../recipes/ReadyProducts';
 import { RecipeCard } from '../recipes/RecipeCard';
 import { Segmented } from '../../../components/ui';
 import { AroundStatus } from './AroundStatus';
+import { NT } from './nearbyText';
+import { OsmCredit } from './OsmCredit';
 import { EatNow } from './EatNow';
 import { RadiusSlider } from './RadiusSlider';
 import { StoreMap } from './StoreMap';
@@ -36,11 +39,12 @@ const T = text({
     savedLocating: 'Pokazuję ostatnio zapisane miejsce, szukam aktualnej lokalizacji…',
     savedDenied: 'Pokazuję ostatnio zapisane miejsce – brak zgody na lokalizację.',
     savedFailed: 'Pokazuję ostatnio zapisane miejsce – nie udało się ustalić aktualnej lokalizacji.',
-    partial: (n: number, radius: string) => ` (na razie: ${n} ${plural(n, 'sklep', 'sklepy', 'sklepów')} w promieniu ${radius})`,
+    partial: (n: number, radius: string) =>
+      `Na razie: ${n} ${plural(n, 'sklep', 'sklepy', 'sklepów')} z danymi o produktach w promieniu ${radius}.`,
     locating: 'Szukam Twojej lokalizacji…',
     denied: 'Brak zgody na lokalizację. Kliknij na mapie miejsce, w którym jesteś.',
     failed: 'Nie udało się ustalić lokalizacji. Kliknij na mapie miejsce, w którym jesteś.',
-    loading: (radius: string, partial: string) => `Szukam sklepów w promieniu ${radius}…${partial}`,
+    loading: (radius: string) => `Szukam sklepów w promieniu ${radius}…`,
     fetchFailed: 'Nie udało się pobrać sklepów.',
     what: 'sklepy',
     noneKnown: (radius: string, other: number) =>
@@ -60,12 +64,11 @@ const T = text({
     myLocation: 'Moja lokalizacja',
     useCentre: 'Ustaw środek mapy jako moją lokalizację',
     help: 'Albo przytrzymaj palec na mapie (prawy klik na komputerze). Na telefonie mapę przesuwasz dwoma palcami, z klawiatury strzałkami, a przybliżasz klawiszami + i −.',
-    privacy:
-      'Twoja pozycja, zaokrąglona do ok. 100 m, trafia do serwera Overpass z danymi OpenStreetMap (overpass-api.de, zapasowo overpass.private.coffee), a oglądany fragment mapy do tile.openstreetmap.org. Pozycji nie ma w adresie strony, a ostatnie miejsce zostaje tylko na tym urządzeniu.',
     chains: 'Sieci w pobliżu',
     all: 'Wszystkie',
     recipes: 'Przepisy z najbliższych sklepów',
-    emptyHere: 'Tu jeszcze nic – poczekaj na sklepy albo zwiększ promień.',
+    emptyWait: 'Tu jeszcze nic – poczekaj na sklepy.',
+    emptyFinal: 'Nic do pokazania – zwiększ promień.',
     emptyNoPlace: 'Najpierw ustal, gdzie jesteś.',
     ready: 'Gotowe produkty białkowe w tych sklepach',
     views: 'Co w pobliżu',
@@ -76,11 +79,11 @@ const T = text({
     savedLocating: 'Showing the last saved place while I look for your current location…',
     savedDenied: 'Showing the last saved place – no permission to use your location.',
     savedFailed: 'Showing the last saved place – couldn’t find your current location.',
-    partial: (n: number, radius: string) => ` (so far: ${n} ${pluralEn(n, 'shop', 'shops')} within ${radius})`,
+    partial: (n: number, radius: string) => `So far: ${n} ${pluralEn(n, 'shop', 'shops')} with product data within ${radius}.`,
     locating: 'Looking for your location…',
     denied: 'No permission to use your location. Click the place on the map where you are.',
     failed: 'Couldn’t find your location. Click the place on the map where you are.',
-    loading: (radius: string, partial: string) => `Looking for shops within ${radius}…${partial}`,
+    loading: (radius: string) => `Looking for shops within ${radius}…`,
     fetchFailed: 'Couldn’t fetch the shops.',
     what: 'shops',
     noneKnown: (radius: string, other: number) =>
@@ -100,12 +103,11 @@ const T = text({
     myLocation: 'My location',
     useCentre: 'Use the map centre as my location',
     help: 'Or press and hold on the map (right-click on a computer). On a phone you move the map with two fingers, from the keyboard with the arrow keys, and zoom with the + and − keys.',
-    privacy:
-      'Your position, rounded to about 100 m, goes to the Overpass server with OpenStreetMap data (overpass-api.de, with overpass.private.coffee as a backup), and the part of the map you’re viewing goes to tile.openstreetmap.org. Your position isn’t in the page address, and the last place stays only on this device.',
     chains: 'Chains nearby',
     all: 'All',
     recipes: 'Recipes from the nearest shops',
-    emptyHere: 'Nothing here yet – wait for the shops or widen the radius.',
+    emptyWait: 'Nothing here yet – wait for the shops.',
+    emptyFinal: 'Nothing to show – widen the radius.',
     emptyNoPlace: 'First set where you are.',
     ready: 'Ready protein products in these shops',
     views: 'What’s nearby',
@@ -158,19 +160,31 @@ function placeNote(geo: GeoState): string | null {
   return T.savedFailed;
 }
 
+/** Dane strony (`useOsmAround`) ze sklepami w miejsce elementów OSM — z resztą stanu, z której biorą uwagi o danych. */
+type ShopsState = Omit<OsmState, 'items'> & { shops: Shop[] };
+
+/**
+ * Jak daleko lista jest pełna, póki odpowiedź przychodzi kawałkami — poza regionem `status`, bo
+ * zmienia się z każdą paczką. Promień w dół do pełnych 100 m i liczone tylko sklepy w nim: nie
+ * obiecuje więcej, niż jest. Liczy to, co wiersz stanu nazywa sklepami „z danymi o produktach”,
+ * i tak to nazywa — inne sklepy z okolicy się w tym nie liczą.
+ */
+function progressLine(geo: GeoState, shops: ShopsState, radius: number, known: PlacedShop[]): string | null {
+  const sure = Math.floor(shops.completeWithin / 100) * 100;
+  return geo.position && shops.status !== 'ready' && sure >= 100 && shops.completeWithin < radius
+    ? T.partial(known.filter((shop) => shop.distance <= sure).length, radiusLabel(sure))
+    : null;
+}
+
 /** Jedno zdanie o tym, co się dzieje, w kolejności, w jakiej użytkownik by o to pytał. */
 function statusLine(geo: GeoState, shops: ShopsState, radius: number, knownCount: number, otherCount: number): string {
-  const partial =
-    shops.completeWithin > 0 && shops.completeWithin < radius
-      ? T.partial(knownCount, radiusLabel(Math.round(shops.completeWithin / 100) * 100))
-      : '';
   if (!geo.position) {
     if (geo.status === 'locating') return T.locating;
     if (geo.status === 'denied') return T.denied;
     return T.failed;
   }
-  if (shops.status === 'loading' || shops.status === 'idle') return T.loading(radiusLabel(radius), partial);
-  if (shops.status === 'error') return `${shops.error ?? T.fetchFailed}${partial}`;
+  if (shops.status === 'loading' || shops.status === 'idle') return T.loading(radiusLabel(radius));
+  if (shops.status === 'error') return shops.error ?? T.fetchFailed;
   if (knownCount === 0) return T.noneKnown(radiusLabel(radius), otherCount);
   return T.found(radiusLabel(radius), knownCount, otherCount);
 }
@@ -189,11 +203,14 @@ export default function NearbyPage() {
   const write = useCallback((state: NearbyState) => nearbyToParams(state, defaultView), [defaultView]);
   const [state, update, closeEntry] = useUrlState<NearbyState>(read, write);
   const [geo, { locate, setManual }] = useGeolocation();
+  // Jedne dane dla obu widoków, od wejścia na stronę: przełączenie widoku nie pyta drugi raz,
+  // a sklepy nie czekają na bazę produktów.
+  const [osm, retryOsm] = useOsmAround(geo, state.radius);
   const setRadius = (radius: number) => {
     rememberRadius(radius);
     update({ radius });
   };
-  const place = { state, update, closeEntry, geo, locate, setManual, setRadius };
+  const place = { state, update, closeEntry, geo, locate, setManual, setRadius, osm, retryOsm };
 
   return (
     <>
@@ -236,8 +253,11 @@ function Nearby({
   locate,
   setManual,
   setRadius,
+  osm,
+  retryOsm: retry,
 }: ViewProps & { dataset: Dataset; products: IndexedProduct[] }) {
-  const [shopsState, retry] = useNearbyShops(geo.position, state.radius);
+  const shops = useMemo(() => shopsOf(osm.items), [osm.items]);
+  const shopsState: ShopsState = { ...osm, shops };
   const dict = dataset.dictionaries;
   const { candidates } = recipeIndex(products);
   const mapHelpId = useId();
@@ -302,6 +322,15 @@ function Nearby({
   const open = useCallback((code: string) => update({ product: code }, { push: true }), [update]);
   const mapCenter = useRef<LatLon | null>(null);
   const note = placeNote(geo);
+  // Pod pustą listą przepisów: czekać, póki sklepy się wczytują; większy promień dopiero, gdy lista
+  // jest ostateczna; po błędzie nic — mówią o nim wiersz stanu i „Spróbuj ponownie”.
+  const empty = !geo.position
+    ? T.emptyNoPlace
+    : shopsState.status === 'ready'
+      ? T.emptyFinal
+      : shopsState.status === 'error'
+        ? null
+        : T.emptyWait;
   // „Pokaż te przepisy” z dymka na mapie: wybór sieci i przejście do listy, która się właśnie zmieniła.
   const showChain = (chain: string | null) => {
     update({ store: chain });
@@ -323,6 +352,7 @@ function Nearby({
               state={{ ...shopsState, items: shopsState.shops }}
               what={T.what}
               status={statusLine(geo, shopsState, state.radius, placement.known.length, placement.otherCount)}
+              progress={progressLine(geo, shopsState, state.radius, placement.known)}
               showServer={geo.position !== null}
             />
             {shopsState.status === 'error' && (
@@ -379,7 +409,8 @@ function Nearby({
           <p className="hint fd-near-map-help" id={mapHelpId}>
             {T.help}
           </p>
-          <p className="fd-near-privacy">{T.privacy}</p>
+          <OsmCredit shown={osm.shown} dataAsOf={osm.dataAsOf} />
+          <p className="fd-near-privacy">{NT.privacy}</p>
         </div>
       </section>
 
@@ -413,11 +444,11 @@ function Nearby({
           </h2>
         </div>
         {recipes.length === 0 ? (
-          <div className="wrap">
-            <p className="empty fd-near-empty">
-              {geo.position ? T.emptyHere : T.emptyNoPlace}
-            </p>
-          </div>
+          empty && (
+            <div className="wrap">
+              <p className="empty fd-near-empty">{empty}</p>
+            </div>
+          )
         ) : (
           <ul className="fd-rec-list">
             {recipes.map(({ recipe, baskets }) => (

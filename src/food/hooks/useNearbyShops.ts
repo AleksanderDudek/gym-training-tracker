@@ -1,11 +1,10 @@
-import { useCallback, useEffect, useState } from 'react';
-import { say } from '../../i18n';
-import { PLACES_KEY, pruneCache, readCache, readFallback, writeCache, type Circle, type ShopCache } from '../nearby/cache';
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
+import { pruneCache, readCache, readFallback, writeCache, type Circle, type ShopCache } from '../nearby/cache';
 import { distanceMeters } from '../nearby/geo';
-import { OverpassUnavailable, fetchShops, type FetchOptions } from '../nearby/overpass';
-import { fetchPlaces, type Place } from '../nearby/places';
+import { roundingMargin } from '../nearby/osmGrid';
+import { OverpassOffline, OverpassUnavailable, type FetchOptions } from '../nearby/overpass';
 import { queryCircle } from '../nearby/query';
-import type { LatLon, Shop } from '../nearby/types';
+import type { LatLon } from '../nearby/types';
 
 export type ShopsStatus = 'idle' | 'loading' | 'ready' | 'error';
 
@@ -32,10 +31,6 @@ export interface AroundState<T> {
   retryAt: number | null;
 }
 
-export interface ShopsState extends Omit<AroundState<Shop>, 'items'> {
-  shops: Shop[];
-}
-
 interface Fetched<T> {
   status: ShopsStatus;
   items: T[];
@@ -48,6 +43,8 @@ interface Fetched<T> {
   waitUntil: number | null;
   /** When the last search failed: the next automatic try is counted from it. */
   failedAt: number | null;
+  /** The place (rounded centre and radius) the last search was for: its failure counts only there. */
+  place: string;
 }
 
 const IDLE: Fetched<never> = {
@@ -59,7 +56,11 @@ const IDLE: Fetched<never> = {
   since: null,
   waitUntil: null,
   failedAt: null,
+  place: '',
 };
+
+/** A place as the automatic tries count it: the rounded centre and the radius. */
+const placeOf = (lat: number | undefined, lon: number | undefined, radius: number) => `${lat},${lon},${radius}`;
 
 /** One empty list, so "nothing valid" does not change identity every render. */
 const NOTHING: never[] = [];
@@ -91,10 +92,17 @@ type Fetcher<T> = (center: LatLon, radius: number, options: FetchOptions) => Pro
  * a centre rounded to ~100 m plus a margin, so the exact position never leaves
  * the device and a short walk reuses the same answer.
  *
+ * Whether to ask at all is decided from that rounded centre too, so every spot of one rounding cell
+ * asks the same (or nothing), and GPS jitter inside it neither cancels nor repeats a search. Only
+ * what is complete on screen is measured from the exact position, on the device.
+ *
  * The public servers are often busy, so a search never leaves an empty map behind if anything
  * better is known: an answer kept on this device (up to a week old, or for a smaller radius) shows
  * while the new one loads and stays after a failure, with its age. A failure is retried by itself
  * a few times, further and further apart, and not while the page is hidden.
+ *
+ * The third value says whether the answer on hand is a READY one for this very place (the rounded
+ * centre and the radius), not one left over from the place just left.
  */
 export function useAround<T>(
   position: LatLon | null,
@@ -102,34 +110,42 @@ export function useAround<T>(
   fetcher: Fetcher<T>,
   cacheKey: string | undefined,
   failed: string,
-): [AroundState<T>, () => void] {
+): [AroundState<T>, () => void, boolean] {
   const [fetched, setFetched] = useState<Fetched<T>>(IDLE);
   const [attempt, setAttempt] = useState(0);
   const lat = position?.lat;
   const lon = position?.lon;
+  const query = position ? queryCircle(position, radius) : null;
+  const qLat = query?.lat;
+  const qLon = query?.lon;
 
   useEffect(() => {
-    if (lat === undefined || lon === undefined) return;
-    const center = { lat, lon };
+    if (qLat === undefined || qLon === undefined) return;
+    const centre = { lat: qLat, lon: qLon };
+    const place = placeOf(qLat, qLon, radius);
+    // `query` again, from the numbers the effect depends on (rounding a rounded centre changes nothing).
+    const circle = queryCircle(centre, radius);
     const now = Date.now();
     pruneCache(storage(), now, cacheKey);
-    const hit = readCache<T>(storage(), center, radius, now, cacheKey);
-    const circle = queryCircle(center, radius);
+    // A kept answer that holds the radius grown by the rounding's reach around the rounded centre
+    // holds the circle around any spot of the cell, the exact position's among them.
+    const reach = radius + roundingMargin(qLat);
+    const hit = readCache<T>(storage(), centre, reach, now, cacheKey);
     const controller = new AbortController();
     // A cached answer is applied on the next tick; a request waits for the
     // slider or the map to settle.
     const timer = setTimeout(
       async () => {
         if (hit) {
-          setFetched({ ...IDLE, status: 'ready', items: hit, circle: { ...center, radius } });
+          setFetched({ ...IDLE, status: 'ready', items: hit, circle: { ...centre, radius: reach }, place });
           return;
         }
-        const saved = readFallback<T>(storage(), center, now, cacheKey);
+        const saved = readFallback<T>(storage(), centre, now, cacheKey);
         setFetched((f) => {
-          const loading = { status: 'loading' as const, error: null, since: Date.now(), waitUntil: null, failedAt: null };
+          const loading = { status: 'loading' as const, error: null, since: Date.now(), waitUntil: null, failedAt: null, place };
           if (saved) return { ...loading, items: saved.items, circle: saved.circle, savedAt: saved.fetchedAt };
           // Nothing kept (storage full or off): this visit's own answer, if it still covers here.
-          return f.circle && reachOf(f.circle, center) > 0 ? { ...f, ...loading } : { ...IDLE, ...loading };
+          return f.circle && reachOf(f.circle, centre) > 0 ? { ...f, ...loading } : { ...IDLE, ...loading };
         });
         try {
           const items = await fetcher(circle, circle.radius, {
@@ -137,11 +153,11 @@ export function useAround<T>(
             onWait: (ms) => setFetched((f) => ({ ...f, waitUntil: Date.now() + ms })),
           });
           writeCache(storage(), circle, items, Date.now(), cacheKey);
-          setFetched({ ...IDLE, status: 'ready', items, circle });
+          setFetched({ ...IDLE, status: 'ready', items, circle, place });
         } catch (error) {
           if (controller.signal.aborted) return;
-          const message = error instanceof OverpassUnavailable ? error.message : failed;
-          setFetched((f) => ({ ...f, status: 'error', error: message, since: null, waitUntil: null, failedAt: Date.now() }));
+          const message = error instanceof OverpassUnavailable || error instanceof OverpassOffline ? error.message : failed;
+          setFetched((f) => ({ ...f, status: 'error', error: message, since: null, waitUntil: null, failedAt: Date.now(), place }));
         }
       },
       hit ? 0 : SETTLE_MS,
@@ -151,24 +167,125 @@ export function useAround<T>(
       clearTimeout(timer);
       controller.abort();
     };
-  }, [lat, lon, radius, attempt, fetcher, cacheKey, failed]);
+  }, [qLat, qLon, radius, attempt, fetcher, cacheKey, failed]);
 
   const retry = useCallback(() => setAttempt((n) => n + 1), []);
 
-  // Retries by itself after a failure, counted per place and radius: a new one starts afresh.
-  const placeKey = `${lat},${lon},${radius}`;
-  const [auto, setAuto] = useState({ key: '', used: 0 });
-  const used = auto.key === placeKey ? auto.used : 0;
+  // Retries by itself after a failure, counted per place (the rounded one: jitter is no new place)
+  // and radius: a new one starts afresh. The failure of the place just left is not this one's: while
+  // the new search waits to settle, nothing is tried for it on the old failure's clock.
+  const placeKey = placeOf(qLat, qLon, radius);
+  const failedHere = fetched.status === 'error' && fetched.place === placeKey;
+  const autoAt = useAutoRetry(failedHere ? fetched.failedAt : null, placeKey, retry);
+
+  // Within what distance of HERE is the last answer complete? Items fetched
+  // for another place are not shown for this one (after a move they would name
+  // a far shop as "the nearest"), but a smaller answer at the same place stays
+  // on screen while a wider one loads - it used to vanish, for a 10 km query
+  // that can take half a minute.
+  const completeWithin =
+    fetched.circle && lat !== undefined && lon !== undefined
+      ? Math.min(radius, Math.max(0, reachOf(fetched.circle, { lat, lon })))
+      : 0;
+  const retryAt = fetched.status === 'error' ? autoAt : fetched.waitUntil;
+  // In the render that moves to another place the answer on hand is still the old place's (the new
+  // search starts in the effect after it): ready, and on screen as far as its circle reaches the
+  // exact position — which is no answer for the new place.
+  const readyHere = fetched.status === 'ready' && fetched.place === placeKey;
+  return [
+    {
+      status: fetched.status,
+      items: completeWithin > 0 ? fetched.items : NOTHING,
+      completeWithin,
+      error: fetched.error,
+      savedAt: completeWithin > 0 ? fetched.savedAt : null,
+      since: fetched.status === 'loading' ? fetched.since : null,
+      retryAt,
+    },
+    retry,
+    readyHere,
+  ];
+}
+
+function subscribeOnline(onChange: () => void): () => void {
+  window.addEventListener('online', onChange);
+  window.addEventListener('offline', onChange);
+  return () => {
+    window.removeEventListener('online', onChange);
+    window.removeEventListener('offline', onChange);
+  };
+}
+
+/** Whether the browser says it has a connection (`false` only when it knows it has none). */
+export function useOnline(): boolean {
+  return useSyncExternalStore(
+    subscribeOnline,
+    () => globalThis.navigator?.onLine !== false,
+    () => true,
+  );
+}
+
+/**
+ * When the connection last came back (0: not since the page opened). Stamped by a listener added as
+ * the module loads, before any component's, so the render an `online` event causes already has it.
+ */
+let backOnlineAt = 0;
+if (typeof window !== 'undefined') {
+  window.addEventListener('online', () => {
+    backOnlineAt = Date.now();
+  });
+}
+
+/** The connection as a store value: `null` while offline, else when it last came back. */
+const onlineSince = () => (globalThis.navigator?.onLine !== false ? backOnlineAt : null);
+
+/**
+ * `null` while offline; else when the connection came back while the caller was mounted, 0 if it did
+ * not. Read from the store, not kept in a state an `online` handler sets: that state would arrive a
+ * render late, after a timer counted from the old failure had already fired and spent a try.
+ */
+function useResumedAt(): number | null {
+  const since = useSyncExternalStore(subscribeOnline, onlineSince, () => 0);
+  // A comeback from before the caller mounted is older than anything it failed at - unless the
+  // clock went back since (a correction, or a test's fresh clock): it does not count.
+  const [before] = useState(() => backOnlineAt);
+  return since === before ? 0 : since;
+}
+
+/** The automatic tries at one place. */
+interface AutoTries {
+  key: string;
+  used: number;
+  /** The `failedAt` the last try was fired for: while it stays the same, that try has not failed yet. */
+  firedFor: number | null;
+}
+
+/**
+ * After a failure: try again by itself, `AUTO_RETRY_MS` apart, counted per place (`placeKey`, which
+ * must NOT change with each try; a new place starts afresh) and once per failure (`failedAt` must
+ * change when a try fails again), never while the page is hidden (it waits to be looked at), never
+ * while offline (no countdown then either), and at once when the connection comes back (a try that
+ * spends no slot; the next waits from it). Returns when the next try is due, for the countdown;
+ * `null` when none is.
+ */
+export function useAutoRetry(failedAt: number | null, placeKey: string, retry: () => void): number | null {
+  const [auto, setAuto] = useState<AutoTries>({ key: '', used: 0, firedFor: null });
+  const resumedAt = useResumedAt();
+  const mine = auto.key === placeKey;
+  const used = mine ? auto.used : 0;
+  // This failure has had its try, still on its way (the index keeps its old failure while a new
+  // request runs): nothing more is due, however many due times a hidden page slept through.
+  const tried = mine && auto.firedFor === failedAt;
   const autoAt =
-    fetched.status === 'error' && fetched.failedAt !== null && used < AUTO_RETRY_MS.length
-      ? fetched.failedAt + AUTO_RETRY_MS[used]!
+    resumedAt !== null && failedAt !== null && !tried && used < AUTO_RETRY_MS.length
+      ? Math.max(failedAt, resumedAt) + AUTO_RETRY_MS[used]!
       : null;
   useEffect(() => {
     if (autoAt === null) return;
     let onVisible: (() => void) | null = null;
     const fire = () => {
-      setAuto({ key: placeKey, used: used + 1 });
-      setAttempt((n) => n + 1);
+      setAuto({ key: placeKey, used: used + 1, firedFor: failedAt });
+      retry();
     };
     const timer = setTimeout(() => {
       // A hidden page does not keep a busy server busy: it asks again when it is looked at.
@@ -184,30 +301,17 @@ export function useAround<T>(
       clearTimeout(timer);
       if (onVisible) document.removeEventListener('visibilitychange', onVisible);
     };
-  }, [autoAt, placeKey, used]);
+  }, [autoAt, placeKey, used, failedAt, retry]);
 
-  // Within what distance of HERE is the last answer complete? Items fetched
-  // for another place are not shown for this one (after a move they would name
-  // a far shop as "the nearest"), but a smaller answer at the same place stays
-  // on screen while a wider one loads - it used to vanish, for a 10 km query
-  // that can take half a minute.
-  const completeWithin =
-    fetched.circle && lat !== undefined && lon !== undefined
-      ? Math.min(radius, Math.max(0, reachOf(fetched.circle, { lat, lon })))
-      : 0;
-  const retryAt = fetched.status === 'error' ? autoAt : fetched.waitUntil;
-  return [
-    {
-      status: fetched.status,
-      items: completeWithin > 0 ? fetched.items : NOTHING,
-      completeWithin,
-      error: fetched.error,
-      savedAt: completeWithin > 0 ? fetched.savedAt : null,
-      since: fetched.status === 'loading' ? fetched.since : null,
-      retryAt,
-    },
-    retry,
-  ];
+  // The connection is back: ask at once, not at the next scheduled try.
+  const failed = failedAt !== null;
+  useEffect(() => {
+    if (!failed) return;
+    const onOnline = () => retry();
+    window.addEventListener('online', onOnline);
+    return () => window.removeEventListener('online', onOnline);
+  }, [failed, retry]);
+  return autoAt;
 }
 
 /** The time, once a second while `active` (a countdown on screen); otherwise as it was. */
@@ -225,24 +329,4 @@ export function useSecondClock(active: boolean): number {
     };
   }, [active]);
   return now;
-}
-
-const SHOPS_FAILED = say(
-  'Nie udało się pobrać sklepów. Sprawdź połączenie z internetem.',
-  'Couldn’t load the shops. Check your internet connection.',
-);
-const PLACES_FAILED = say(
-  'Nie udało się pobrać lokali. Sprawdź połączenie z internetem.',
-  'Couldn’t load the places. Check your internet connection.',
-);
-
-/** Grocery shops around a position („Zakupy i przepisy”). */
-export function useNearbyShops(position: LatLon | null, radius: number): [ShopsState, () => void] {
-  const [{ items, ...rest }, retry] = useAround(position, radius, fetchShops, undefined, SHOPS_FAILED);
-  return [{ ...rest, shops: items }, retry];
-}
-
-/** Restaurants, cafés, petrol stations and grocery shops around a position („Zjedz teraz”). */
-export function useNearbyPlaces(position: LatLon | null, radius: number): [AroundState<Place>, () => void] {
-  return useAround(position, radius, fetchPlaces, PLACES_KEY, PLACES_FAILED);
 }

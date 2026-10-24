@@ -1,13 +1,14 @@
 import { ChevronRight, Crosshair, LoaderCircle, LocateFixed, RefreshCw } from 'lucide-react';
 import { useCallback, useId, useMemo, useRef, useState } from 'react';
 import { pluralEn, text } from '../../../i18n';
+import { MISSING_DATA_MESSAGE } from '../../data';
 import { productFood, type Food } from '../../diet/foods';
 import type { Context } from '../../diet/suggest';
 import { useFavorites } from '../../hooks/useDiet';
 import { useDataset } from '../../hooks/useDataset';
 import { useEatNow } from '../../hooks/useEatNow';
 import type { GeoState } from '../../hooks/useGeolocation';
-import { useNearbyPlaces } from '../../hooks/useNearbyShops';
+import type { OsmState } from '../../hooks/useOsmAround';
 import { useRestaurants } from '../../hooks/useRestaurants';
 import { formatNumber, plural } from '../../lib/format';
 import { storeKey } from '../../lib/stores';
@@ -15,7 +16,7 @@ import type { Dictionaries, IndexedProduct } from '../../lib/types';
 import { dishName, picks, placeFoods, rankPlaces, type EatPick, type RankedPlace, type SortKey } from '../../nearby/eat';
 import { openState } from '../../nearby/hours';
 import { mapsPlatform } from '../../nearby/navigate';
-import type { Place } from '../../nearby/places';
+import { placesOf, type Place } from '../../nearby/places';
 import { radiusLabel } from '../../nearby/radius';
 import type { LatLon } from '../../nearby/types';
 import type { NearbyState } from '../../nearby/url';
@@ -30,6 +31,8 @@ import { FIT_LABEL, FitBadge, MacroLine } from '../diet/SuggestionList';
 import { ChipRow } from '../recipes/ChipRow';
 import { AddressSearch } from './AddressSearch';
 import { AroundStatus } from './AroundStatus';
+import { NT } from './nearbyText';
+import { OsmCredit } from './OsmCredit';
 import { distanceText, openText } from './eatText';
 import { PlaceMap } from './PlaceMap';
 import { PlaceSheet } from './PlaceSheet';
@@ -44,7 +47,11 @@ const T = text({
     failed: 'Nie udało się ustalić lokalizacji. Wpisz adres albo kliknij na mapie miejsce, w którym jesteś.',
     savedLocating: 'Pokazuję ostatnio zapisane miejsce, szukam aktualnej lokalizacji…',
     loading: (radius: string) => `Szukam lokali w promieniu ${radius}…`,
+    partial: (n: number, radius: string) => `Na razie: ${n} ${plural(n, 'miejsce', 'miejsca', 'miejsc')} z menu w promieniu ${radius}.`,
     menus: 'Wczytuję menu sieci…',
+    menusFailed: 'Nie udało się wczytać menu sieci.',
+    products: 'Wczytuję produkty sklepów…',
+    productsFailed: 'Nie udało się wczytać produktów sklepów.',
     fetchFailed: 'Nie udało się pobrać lokali.',
     what: 'lokale',
     found: (radius: string, known: number, fitting: number, other: number) =>
@@ -74,8 +81,6 @@ const T = text({
     myLocation: 'Moja lokalizacja',
     useCentre: 'Ustaw środek mapy jako moją lokalizację',
     help: 'Albo przytrzymaj palec na mapie (prawy klik na komputerze). Na telefonie mapę przesuwasz dwoma palcami, z klawiatury strzałkami, a przybliżasz klawiszami + i −.',
-    privacy:
-      'Twoja pozycja, zaokrąglona do ok. 100 m, trafia do serwera Overpass z danymi OpenStreetMap (overpass-api.de, zapasowo overpass.private.coffee), a oglądany fragment mapy do tile.openstreetmap.org. Pozycji nie ma w adresie strony, a ostatnie miejsce zostaje tylko na tym urządzeniu.',
     filters: 'Pokaż też',
     closed: (n: number) => `zamknięte (${n})`,
     unknown: (n: number) => `bez danych o menu (${n})`,
@@ -92,7 +97,11 @@ const T = text({
     failed: 'Couldn’t find your location. Type an address or click the place on the map where you are.',
     savedLocating: 'Showing the last saved place while I look for your current location…',
     loading: (radius: string) => `Looking for places within ${radius}…`,
+    partial: (n: number, radius: string) => `So far: ${n} ${pluralEn(n, 'place', 'places')} with a menu within ${radius}.`,
     menus: 'Loading the chains’ menus…',
+    menusFailed: 'Couldn’t load the chains’ menus.',
+    products: 'Loading the shops’ products…',
+    productsFailed: 'Couldn’t load the shops’ products.',
     fetchFailed: 'Couldn’t fetch the places.',
     what: 'places',
     found: (radius: string, known: number, fitting: number, other: number) =>
@@ -121,8 +130,6 @@ const T = text({
     myLocation: 'My location',
     useCentre: 'Use the map centre as my location',
     help: 'Or press and hold on the map (right-click on a computer). On a phone you move the map with two fingers, from the keyboard with the arrow keys, and zoom with the + and − keys.',
-    privacy:
-      'Your position, rounded to about 100 m, goes to the Overpass server with OpenStreetMap data (overpass-api.de, with overpass.private.coffee as a backup), and the part of the map you’re viewing goes to tile.openstreetmap.org. Your position isn’t in the page address, and the last place stays only on this device.',
     filters: 'Also show',
     closed: (n: number) => `closed (${n})`,
     unknown: (n: number) => `no menu data (${n})`,
@@ -155,6 +162,9 @@ interface Props {
   locate: () => void;
   setManual: (position: LatLon) => void;
   setRadius: (radius: number) => void;
+  /** The page's data for both views (`useOsmAround`). */
+  osm: OsmState;
+  retryOsm: () => void;
 }
 
 const kcal = (n: number) => formatNumber(Math.round(n / 10) * 10, 0);
@@ -165,12 +175,20 @@ const kcal = (n: number) => formatNumber(Math.round(n / 10) * 10, 0);
  * the three best choices under it (sortable), and a card per place with directions and the full
  * list. Everything follows the diary: the day's goal, what is eaten, a planned cheat meal.
  */
-export function EatNow({ state, update, closeEntry, geo, locate, setManual, setRadius }: Props) {
+export function EatNow({ state, update, closeEntry, geo, locate, setManual, setRadius, osm, retryOsm: retry }: Props) {
   const eat = useEatNow();
-  const [placesState, retry] = useNearbyPlaces(geo.position, state.radius);
+  const places = useMemo(() => placesOf(osm.items), [osm.items]);
+  const placesState = { ...osm, items: places };
   const menus = useRestaurants();
   const chains = menus.status === 'ready' ? menus.chains : NO_CHAINS;
-  const data = useDataset();
+  // The products only add the shops' ready food here, so they wait while the app's own files for the
+  // places are on their way: on a slow link their 3.3 MB went first and the 9 kB index and the nearest
+  // leaves queued behind them. Abroad, at the border (its few Polish leaves land in a second or two)
+  // and while Overpass stands in, the wait is for Overpass's search — minutes, with its pauses — not
+  // for the app's files: waiting would only put them a whole search later. Already loaded (another
+  // food screen, the other view), they are there at once.
+  const ownOnWay = osm.source === 'static' && (osm.status === 'loading' || osm.status === 'idle');
+  const data = useDataset(!ownOnWay);
   const products = data.status === 'ready' ? data.products : NO_PRODUCTS;
   const dict = data.status === 'ready' ? data.dataset.dictionaries : NO_DICT;
   const favorites = useFavorites();
@@ -272,14 +290,53 @@ export function EatNow({ state, update, closeEntry, geo, locate, setManual, setR
     ],
   });
 
+  // A shop's ready food comes with the products: until they are in, every Żabka and Biedronka around
+  // would count as a place without menu data. Without a chain's shop around they change no count.
+  const shopsAround = ranked.some((r) => r.place.shop !== null);
+  // A build without the products file: nothing to wait for and nothing another try could bring — the
+  // shops simply have no ready food here, and the counts are final without it.
+  const noProducts = data.status === 'error' && data.message === MISSING_DATA_MESSAGE;
+  const shopsWait = data.status === 'loading' && shopsAround;
+  const productsFailed = data.status === 'error' && !noProducts && shopsAround;
+  // Everything that gives a place its menu is here: what is counted (or found missing) is final.
+  const settled = menus.status === 'ready' && !shopsWait && !productsFailed;
+  // Counts only once they are final, before then what is still loading — said once, not numbers
+  // that change by themselves after the page looks finished (the status line is read out).
   const status = (() => {
     if (!geo.position) return geo.status === 'locating' ? T.locating : geo.status === 'denied' ? T.denied : T.failed;
     if (placesState.status === 'loading' || placesState.status === 'idle') return T.loading(radiusLabel(state.radius));
     if (placesState.status === 'error') return placesState.error ?? T.fetchFailed;
     if (menus.status === 'loading') return T.menus;
+    // Without the menus every place looks menu-less: a wider radius would not help, another try may.
+    if (menus.status === 'error') return T.menusFailed;
+    if (shopsWait) return T.products;
+    // The shops would all count as without menu data, and the button may bring their products.
+    if (productsFailed) return T.productsFailed;
     if (known === 0) return T.noneKnown(radiusLabel(state.radius));
     return T.found(radiusLabel(state.radius), known, fitting, ranked.length - known);
   })();
+  // „Spróbuj ponownie” whenever the status line says something failed — the places, or the menus or
+  // the shops' products with the places in (not while it still says the menus load) — and it tries
+  // again whatever failed.
+  const extrasFailed =
+    geo.position !== null && placesState.status === 'ready' && (menus.status === 'error' || (menus.status === 'ready' && productsFailed));
+  const retryFailed = () => {
+    // The menus' own retry tries in place and reloads the page when the browser keeps the failed
+    // import (Chromium, WebKit) — the view is in the address, a hand-picked place in the tab.
+    if (placesState.status === 'error') retry();
+    if (menus.status === 'error') menus.retry();
+    if (data.status === 'error' && !noProducts) data.retry();
+  };
+  // The app's data arrives in pieces, nearest first: what is complete so far is said, not hidden —
+  // counted only once the chains' menus are here (while they load, or when they failed, every place
+  // looks menu-less), and only out to the radius the note names. The shops' products come after the
+  // places, so while the note shows a shop has no menu yet: the count is of the places with one so
+  // far — it only grows, as „na razie” says.
+  const sure = Math.floor(within / 100) * 100;
+  const progress =
+    geo.position && placesState.status !== 'ready' && sure >= 100 && within < state.radius && menus.status === 'ready'
+      ? T.partial(ranked.filter((r) => r.best && r.distance <= sure).length, radiusLabel(sure))
+      : null;
   const note = geo.source === 'saved' && geo.status === 'locating' ? T.savedLocating : null;
   const over = needs.remaining.kcal <= 50;
 
@@ -291,9 +348,9 @@ export function EatNow({ state, update, closeEntry, geo, locate, setManual, setR
           <AddressSearch onPick={setManual} />
           {note && <p className="fd-near-place-note">{note}</p>}
           <div className="fd-near-status">
-            <AroundStatus state={placesState} what={T.what} status={status} showServer={geo.position !== null} />
-            {placesState.status === 'error' && (
-              <button type="button" className="btn sm ghost" onClick={retry}>
+            <AroundStatus state={placesState} what={T.what} status={status} showServer={geo.position !== null} progress={progress} />
+            {(placesState.status === 'error' || extrasFailed) && (
+              <button type="button" className="btn sm ghost" onClick={retryFailed}>
                 <RefreshCw size={16} strokeWidth={2} aria-hidden />
                 {COMMON.retry}
               </button>
@@ -388,7 +445,8 @@ export function EatNow({ state, update, closeEntry, geo, locate, setManual, setR
           <p className="hint fd-near-map-help" id={mapHelpId}>
             {T.help}
           </p>
-          <p className="fd-near-privacy">{T.privacy}</p>
+          <OsmCredit shown={osm.shown} dataAsOf={osm.dataAsOf} />
+          <p className="fd-near-privacy">{NT.privacy}</p>
         </div>
       </section>
 
@@ -417,7 +475,9 @@ export function EatNow({ state, update, closeEntry, geo, locate, setManual, setR
             </div>
           )}
           {rows.length === 0 ? (
-            geo.position && placesState.status === 'ready' && <p className="empty fd-near-empty">{T.empty}</p>
+            // „Widen the radius” only for a final list: not while the menus or the products load, nor
+            // after they failed (the status line says so and offers another try).
+            geo.position && placesState.status === 'ready' && settled && <p className="empty fd-near-empty">{T.empty}</p>
           ) : (
             <ol className="fd-near-pick-list">
               {shown.map((row, i) => (

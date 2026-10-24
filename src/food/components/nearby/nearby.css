@@ -192,3 +192,7 @@ p.fd-near-card-status:empty{display:none}
 .fd-near-card-notnow summary{min-height:44px;display:flex;align-items:center;font-weight:600;color:var(--steel);cursor:pointer}
 .fd-near-card-nodata p{margin:6px 0;font-size:14px}
 .fd-near-card-source{margin-top:12px}
+
+/* Skąd dane mapy i z kiedy: wymagany przez licencję ODbL wpis o OpenStreetMap, drobnym drukiem. */
+.fd-near-credit{margin:8px 0 0;font-size:12.5px;line-height:1.45;color:var(--ink-soft);overflow-wrap:anywhere}
+.fd-near-credit a{color:var(--steel)}

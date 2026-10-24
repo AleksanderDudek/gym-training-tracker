@@ -1,5 +1,5 @@
-import { gunzipSync } from 'fflate';
 import foodData from 'virtual:food-data';
+import { inflate } from './lib/inflate';
 import { indexProducts } from './lib/search';
 import type { Dataset, IndexedProduct } from './lib/types';
 import { mergeChains } from './chains/merge';
@@ -7,6 +7,7 @@ import type { ChainData } from './chains/types';
 import { mergeOnline } from './online/merge';
 import type { ShopData } from './online/types';
 import { text } from '../i18n';
+import { refetchWhenControlled } from '../swWarm';
 
 const T = text({
   pl: {
@@ -30,20 +31,29 @@ export interface LoadedDataset {
 
 export const MISSING_DATA_MESSAGE = T.missing;
 
+/** Re-exported: the products dataset and the OSM leaves unpack the same way. */
+export { inflate };
+
+/** Adres bazy produktów albo `null`, gdy tę wersję aplikacji zbudowano bez niej. */
+const datasetUrl = (): string | null => (foodData.url ? import.meta.env.BASE_URL + foodData.url : null);
+
 /**
- * Tekst bazy z pobranych bajtów. Plik leży na serwerze jako gzip (`data/products.<wersja>.json.gz`),
- * ale serwer, który poda go z `Content-Encoding: gzip`, oddaje już rozpakowany JSON — dlatego
- * decyduje znacznik gzipa na początku (`1f 8b`), a nie nazwa pliku czy nagłówki.
+ * Tyle pobieranie bazy może milczeć — bez nagłówków odpowiedzi, potem bez kolejnego kawałka treści —
+ * zanim uzna się je za zawieszone. Liczy się tylko cisza, nie całość: 3,3 MB na wolnym łączu idą
+ * minutami, ale idą. Dłużej niż przy małych plikach OSM (10 s): pobierana z niskim priorytetem baza
+ * może nie dostać nic, póki serwer, który pilnuje priorytetów, wysyła przed nią paczkę sklepów
+ * (783 kB, na EDGE ok. pół minuty) i kawałki mapy.
  */
-export async function inflate(bytes: Uint8Array<ArrayBuffer>): Promise<string> {
-  if (bytes[0] !== 0x1f || bytes[1] !== 0x8b) return new TextDecoder().decode(bytes);
-  if (typeof DecompressionStream === 'function') {
-    const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
-    return new Response(stream).text();
-  }
-  // Starsze przeglądarki bez DecompressionStream (Safari < 16.4).
-  return new TextDecoder().decode(gunzipSync(bytes));
-}
+export const DATASET_STALL_MS = 90_000;
+
+/**
+ * Ostatnie pobieranie bazy zawiesiło się albo urwało: następne idzie z pominięciem pamięci podręcznej
+ * przeglądarki (`reload`, odpowiedź i tak do niej trafia). Przerwanie strony kończy tylko jej stronę:
+ * zapytanie service workera trwa dalej i pisze wpis pliku w tej pamięci, a w Chromium każde następne
+ * zapytanie w zwykłym trybie dołącza do tego wpisu i wisi razem z nim — „Spróbuj ponownie” nigdy nie
+ * doszłoby do serwera. Udane pobranie znosi znacznik.
+ */
+let pastCache = false;
 
 /**
  * Produkty sklepów internetowych i sieci z własnymi danymi (Selgros) — osobna paczka, wczytywana
@@ -51,23 +61,99 @@ export async function inflate(bytes: Uint8Array<ArrayBuffer>): Promise<string> {
  * bez nich: to dodatek, nie powód, żeby nie pokazać 29 tysięcy produktów.
  */
 function loadShops(): Promise<{ shops: ShopData[]; chains: ChainData[] }> {
-  return import('./online/shopData').then(
+  const loading = import('./online/shopData');
+  // Pierwsza wizyta: paczka przyszła obok service workera, więc gdy ten przejmie stronę, jest
+  // pobierana jeszcze raz — do jego kopii. Nazwę z haszem zna tylko build, więc adres podaje sama
+  // paczka, kiedy już się wczyta.
+  let chunk: string | undefined;
+  refetchWhenControlled(
+    () => chunk,
+    loading.then(
+      (m) => {
+        chunk = m.CHUNK_URL;
+      },
+      // Paczka się nie wczytała: nie ma czego pobierać drugi raz, a jej błąd obsługuje zwrot niżej.
+      () => undefined,
+    ),
+  );
+  return loading.then(
     (m) => ({ shops: m.SHOPS, chains: m.CHAIN_DATA }),
     () => ({ shops: [], chains: [] }),
   );
 }
 
-async function fetchDataset(): Promise<LoadedDataset> {
-  const { url } = foodData;
-  if (!url) throw new Error(MISSING_DATA_MESSAGE);
-  const shops = loadShops();
+/**
+ * Plik bazy, czytany kawałek po kawałku z zegarem, który każdy znak życia nastawia od nowa
+ * (`DATASET_STALL_MS`): powolne, ale równe pobieranie kończy się, ile by nie trwało, a zawieszone
+ * staje się błędem połączenia — z „Spróbuj ponownie” zamiast „Wczytuję…” bez końca.
+ */
+async function download(url: string): Promise<Uint8Array<ArrayBuffer>> {
+  const controller = new AbortController();
+  // Przerwanie kończy zapytanie; wyścig z nim kończy też czytanie, które przeglądarka zostawiłaby zawieszone.
+  const stalled = new Promise<never>((_, reject) => controller.signal.addEventListener('abort', () => reject(new Error(T.offline))));
+  stalled.catch(() => {});
+  const within = <V>(step: Promise<V>) => Promise.race([step, stalled]);
+  /** Zegar ciszy się skończył (zawieszone pobieranie, nie brak sieci). */
+  let cut = false;
+  const silence = () => {
+    cut = true;
+    controller.abort();
+  };
+  let timer = setTimeout(silence, DATASET_STALL_MS);
+  /** Coś przyszło: następny kawałek ma znów cały czas. */
+  const alive = () => {
+    clearTimeout(timer);
+    timer = setTimeout(silence, DATASET_STALL_MS);
+  };
   // Zerwane połączenie wychodzi z `fetch` albo dopiero w trakcie czytania treści.
   const offline = () => {
     throw new Error(T.offline);
   };
-  const response = await fetch(import.meta.env.BASE_URL + url).catch(offline);
-  if (!response.ok) throw new Error(T.http(response.status));
-  const bytes = new Uint8Array(await response.arrayBuffer().catch(offline));
+  let answered = false;
+  try {
+    // Niski priorytet (Chromium): na wolnym łączu baza (3 MB) idzie za indeksem i kawałkami danych OSM
+    // „W pobliżu” (`nearby/staticData`, pytanymi w tym samym czasie z wysokim). Przy równych serwer
+    // wysyła odpowiedzi po kolei, a te małe pliki czekałyby za bazą, aż ich limit czasu uznałby to
+    // za brak połączenia.
+    const init: RequestInit = { priority: 'low', signal: controller.signal, ...(pastCache ? { cache: 'reload' as const } : {}) };
+    const response = await within(fetch(url, init)).catch(offline);
+    if (!response.ok) throw new Error(T.http(response.status));
+    answered = true;
+    alive();
+    if (!response.body) return new Uint8Array(await within(response.arrayBuffer()).catch(offline));
+    const reader = response.body.getReader();
+    const chunks: Uint8Array[] = [];
+    let size = 0;
+    for (;;) {
+      const { done, value } = await within(reader.read()).catch(offline);
+      if (done) break;
+      chunks.push(value);
+      size += value.length;
+      alive();
+    }
+    const bytes = new Uint8Array(size);
+    let at = 0;
+    for (const chunk of chunks) {
+      bytes.set(chunk, at);
+      at += chunk.length;
+    }
+    pastCache = false;
+    return bytes;
+  } catch (error) {
+    // Cisza albo treść urwana w drodze: wpis w pamięci podręcznej mógł zostać w połowie (`pastCache`).
+    // Brak sieci od początku niczego nie zaczął pisać.
+    if (cut || answered) pastCache = true;
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function fetchDataset(): Promise<LoadedDataset> {
+  const url = datasetUrl();
+  if (!url) throw new Error(MISSING_DATA_MESSAGE);
+  const shops = loadShops();
+  const bytes = await download(url);
   let dataset: Dataset;
   try {
     dataset = JSON.parse(await inflate(bytes)) as Dataset;
@@ -107,6 +193,11 @@ export function loadedDataset(): LoadedDataset | null {
 export function loadDataset(): Promise<LoadedDataset> {
   if (!pending) {
     pending = fetchDataset();
+    // Pierwsza wizyta: baza przyszła obok service workera, więc bez sieci by jej nie było. Gdy ten
+    // przejmie stronę, jest pobierana jeszcze raz — po tej próbie, zwykle z pamięci podręcznej
+    // przeglądarki — do jego kopii.
+    const url = datasetUrl();
+    if (url) refetchWhenControlled(url, pending);
     pending.then(
       (result) => {
         loaded = result;

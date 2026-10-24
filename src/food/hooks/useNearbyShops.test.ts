@@ -53,6 +53,16 @@ describe('useAround', () => {
     expect(fetcher).toHaveBeenCalledTimes(AUTO_RETRY_MS.length + 2);
   });
 
+  test('the connection coming back asks again at once, not at the next scheduled try', async () => {
+    const fetcher = vi.fn<(c: LatLon, r: number, o: FetchOptions) => Promise<Item[]>>(fail);
+    renderHook(() => useAround<Item>(HERE, 1000, fetcher, KEY, 'nie wyszło'));
+    await settle();
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    act(() => void window.dispatchEvent(new Event('online')));
+    await settle();
+    expect(fetcher).toHaveBeenCalledTimes(2);
+  });
+
   test('a hidden page waits with its retry until it is looked at again', async () => {
     const fetcher = vi.fn<(c: LatLon, r: number, o: FetchOptions) => Promise<Item[]>>(fail);
     renderHook(() => useAround<Item>(HERE, 1000, fetcher, KEY, 'nie wyszło'));
@@ -79,6 +89,137 @@ describe('useAround', () => {
     expect(result.current[0].completeWithin).toBe(1000);
     await act(async () => reject(new OverpassUnavailable()));
     expect(result.current[0]).toMatchObject({ status: 'error', items: [{ id: 'node/1' }], savedAt });
+  });
+
+  test('a fresh kept answer used from a spot off the cell’s centre is complete out to the radius — and ready for this place', async () => {
+    // A fresh answer for the cell 52.230, 21.012: the circle Overpass was asked (1000 + 250 m).
+    window.localStorage.setItem(
+      KEY,
+      JSON.stringify([{ lat: 52.23, lon: 21.012, radius: 1250, fetchedAt: Date.now() - 60_000, shops: [{ id: 'node/1' }] }]),
+    );
+    const fetcher = vi.fn((_c: LatLon, _r: number, _o: FetchOptions) => new Promise<Item[]>(() => {}));
+    // ~45 m from the cell's centre, still in the cell: the answer holds the radius plus the rounding's
+    // reach around the centre, so the whole 1000 m around here.
+    const { result } = renderHook(() => useAround<Item>({ lat: 52.2304, lon: 21.0122 }, 1000, fetcher, KEY, 'nie wyszło'));
+    await settle();
+    expect(fetcher).not.toHaveBeenCalled();
+    expect(result.current[0]).toMatchObject({ status: 'ready', items: [{ id: 'node/1' }], completeWithin: 1000, savedAt: null });
+    expect(result.current[2]).toBe(true);
+  });
+
+  test('right after a move to another rounding cell, the last place’s answer is no ready answer for the new one', async () => {
+    const fetcher = vi.fn((_c: LatLon, _r: number, _o: FetchOptions) => Promise.resolve([{ id: 'node/1' }]));
+    const { result, rerender } = renderHook(({ here }) => useAround<Item>(here, 1000, fetcher, KEY, 'nie wyszło'), {
+      initialProps: { here: HERE },
+    });
+    await settle();
+    expect(result.current[0].status).toBe('ready');
+    expect(result.current[2]).toBe(true);
+    // ~450 m north: the old answer still reaches here (and stays on screen), but nobody asked it about this place.
+    rerender({ here: { lat: HERE.lat + 0.004, lon: HERE.lon } });
+    expect(result.current[0]).toMatchObject({ status: 'ready', items: [{ id: 'node/1' }] });
+    expect(result.current[2]).toBe(false);
+    await settle();
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(result.current[2]).toBe(true);
+  });
+
+  test('whether Overpass is asked is decided from the rounded position: the same for the whole rounding cell', async () => {
+    // An hour-old answer from the neighbouring cell 52.588 (1250 m): around one of these two points
+    // its circle holds the 1000 m one, around the other it does not. Both lie in the cell 52.590.
+    const visit = async (here: LatLon) => {
+      window.localStorage.setItem(
+        KEY,
+        JSON.stringify([{ lat: 52.588, lon: 21.012, radius: 1250, fetchedAt: Date.now() - 3600_000, shops: [{ id: 'node/1' }] }]),
+      );
+      const fetcher = vi.fn((_c: LatLon, _r: number, _o: FetchOptions) => new Promise<Item[]>(() => {}));
+      const { result, unmount } = renderHook(() => useAround<Item>(here, 1000, fetcher, KEY, 'nie wyszło'));
+      await settle();
+      const asked = fetcher.mock.calls.map(([c, r]) => ({ lat: c.lat, lon: c.lon, radius: r }));
+      const { completeWithin } = result.current[0];
+      unmount();
+      return { asked, completeWithin };
+    };
+    const a = await visit({ lat: 52.5897, lon: 21.012 });
+    const b = await visit({ lat: 52.5904, lon: 21.012 });
+    expect(a.asked).toEqual(b.asked);
+    // 222 m from the cell's centre, plus 1000 m and the rounding's reach, is more than the 1250 m kept.
+    expect(a.asked).toEqual([{ lat: 52.59, lon: 21.012, radius: 1250 }]);
+    // What is complete on screen is still measured from the exact position (267 m from the answer's centre).
+    expect(a.completeWithin).toBe(1000);
+    expect(b.completeWithin).toBeCloseTo(983, 0);
+  });
+
+  test('GPS jitter inside one rounding cell neither cancels nor repeats the search on its way', async () => {
+    let aborted = 0;
+    const fetcher = vi.fn(
+      (_c: LatLon, _r: number, { signal }: FetchOptions) =>
+        new Promise<Item[]>((resolve, reject) => {
+          const timer = setTimeout(() => resolve([{ id: 'node/3' }]), 5000);
+          signal?.addEventListener('abort', () => {
+            clearTimeout(timer);
+            aborted++;
+            reject(new DOMException('aborted', 'AbortError'));
+          });
+        }),
+    );
+    const { result, rerender } = renderHook(({ here }) => useAround<Item>(here, 1000, fetcher, KEY, 'nie wyszło'), {
+      initialProps: { here: { lat: 52.5878, lon: 21.0122 } },
+    });
+    await settle();
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    for (const lat of [52.5881, 52.5879, 52.5883]) {
+      rerender({ here: { lat, lon: 21.0122 } });
+      await settle();
+    }
+    await act(() => vi.advanceTimersByTimeAsync(5000));
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(aborted).toBe(0);
+    expect(result.current[0]).toMatchObject({ status: 'ready', items: [{ id: 'node/3' }], completeWithin: 1000 });
+  });
+
+  test('GPS jitter inside one rounding cell does not start the automatic tries afresh', async () => {
+    const fetcher = vi.fn<(c: LatLon, r: number, o: FetchOptions) => Promise<Item[]>>(fail);
+    // A few metres this way and that, all inside the cell 52.230, 21.012.
+    const spots = [0, 0.0001, 0.0002].map((d) => ({ lat: HERE.lat + d, lon: HERE.lon }));
+    const { result, rerender } = renderHook(({ here }) => useAround<Item>(here, 1000, fetcher, KEY, 'nie wyszło'), {
+      initialProps: { here: HERE },
+    });
+    await settle();
+    let moves = 0;
+    for (const pause of AUTO_RETRY_MS) {
+      for (let waited = 0; waited < pause; waited += 10_000) {
+        rerender({ here: spots[++moves % spots.length]! });
+        await act(() => vi.advanceTimersByTimeAsync(10_000));
+      }
+      await settle();
+    }
+    expect(fetcher).toHaveBeenCalledTimes(1 + AUTO_RETRY_MS.length);
+    expect(result.current[0].retryAt).toBeNull();
+  });
+
+  test('a failure where the user was does not count where they are now: the new place starts with the first pause', async () => {
+    const fetcher = vi.fn<(c: LatLon, r: number, o: FetchOptions) => Promise<Item[]>>(fail);
+    const { result, rerender } = renderHook(({ here }) => useAround<Item>(here, 1000, fetcher, KEY, 'nie wyszło'), {
+      initialProps: { here: HERE },
+    });
+    await settle();
+    // The first automatic try fails too; the next would be a minute after it.
+    await act(() => vi.advanceTimersByTimeAsync(AUTO_RETRY_MS[0]!));
+    await settle();
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    // Over half a minute later the user is a kilometre away, in another rounding cell.
+    await act(() => vi.advanceTimersByTimeAsync(35_000));
+    rerender({ here: { lat: HERE.lat + 0.01, lon: HERE.lon } });
+    // While the new search settles: no try on the old failure's clock, no countdown.
+    expect(result.current[0].retryAt).toBeNull();
+    await settle();
+    expect(fetcher).toHaveBeenCalledTimes(3);
+    expect(result.current[0].status).toBe('error');
+    // Its own first failure gets the first pause, not the second.
+    const left = result.current[0].retryAt! - Date.now();
+    expect(left).toBeGreaterThan(AUTO_RETRY_MS[0]! - 1000);
+    expect(left).toBeLessThanOrEqual(AUTO_RETRY_MS[0]!);
   });
 
   test('the server’s own pause shows as a countdown while the search goes on', async () => {

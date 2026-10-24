@@ -6,7 +6,6 @@ import { loadDataset, loadedDataset, type LoadedDataset } from '../../data';
 import { db } from '../../diet/db';
 import { clearAll, completeProfile, logQuick, saveProfile } from '../../diet/store';
 import type { RankedPlace } from '../../nearby/eat';
-import { parsePlaces } from '../../nearby/places';
 import type { LatLon } from '../../nearby/types';
 import { renderWithBridge } from '../../test/bridge';
 import { DATASET, INDEXED } from '../../test/fixtures';
@@ -29,14 +28,17 @@ vi.mock('./PlaceMap', () => ({
 }));
 
 // Ponowienia bez przerw: test mówi o tym, co strona pokazuje, a nie o tym, ile czeka zajęty serwer.
-vi.mock('../../nearby/places', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../nearby/places')>();
+vi.mock('../../nearby/live', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../nearby/live')>();
   return {
     ...actual,
-    fetchPlaces: (...[center, radius, options]: Parameters<typeof actual.fetchPlaces>) =>
-      actual.fetchPlaces(center, radius, { ...options, retryDelayMs: 0 }),
+    fetchOsm: (...[center, radius, options]: Parameters<typeof actual.fetchOsm>) =>
+      actual.fetchOsm(center, radius, { ...options, retryDelayMs: 0 }),
   };
 });
+
+// „Zakupy i przepisy” w teście przełączania: mapa sklepów też bez Leafleta.
+vi.mock('./StoreMap', () => ({ StoreMap: () => <div data-testid="store-map" /> }));
 
 vi.mock('../../data', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../data')>()),
@@ -159,8 +161,8 @@ describe('Zjedz teraz', () => {
 
   test('a busy map server: places saved on this device two days ago stay on the map, with their age', async () => {
     window.localStorage.setItem(
-      'produkty-pl:places',
-      JSON.stringify([{ lat: 52.23, lon: 21.012, radius: 1250, fetchedAt: Date.now() - 2 * 24 * 3600 * 1000, shops: parsePlaces(OVERPASS) }]),
+      'produkty-pl:osm',
+      JSON.stringify([{ lat: 52.23, lon: 21.012, radius: 1250, fetchedAt: Date.now() - 2 * 24 * 3600 * 1000, shops: OVERPASS.elements }]),
     );
     overpassBusy = true;
     renderWithBridge(<NearbyPage />);
@@ -171,6 +173,18 @@ describe('Zjedz teraz', () => {
     // The answer is still worked out from them: the best pick is there.
     expect(within(screen.getByRole('region', { name: 'Na teraz' })).getByRole('button', { name: /Najlepiej:/ })).toBeInTheDocument();
     expect(await screen.findByText(/^Ponowię sam za \d+ s\.$/)).toBeInTheDocument();
+  }, 15_000);
+
+  test('switching to „Zakupy i przepisy” asks nothing new: both views share one answer', async () => {
+    const user = userEvent.setup();
+    renderWithBridge(<NearbyPage />);
+    await screen.findByText(/W promieniu 1 km: 4 miejsca z menu/);
+    const asked = requests.filter((u) => u.includes('overpass')).length;
+    expect(asked).toBe(1);
+    await user.click(screen.getByRole('button', { name: 'Zakupy i przepisy' }));
+    expect(await screen.findByTestId('store-map')).toBeInTheDocument();
+    expect(await screen.findByText(/W promieniu 1 km/)).toBeInTheDocument();
+    expect(requests.filter((u) => u.includes('overpass')).length).toBe(asked);
   }, 15_000);
 
   test('a typed address becomes the position after the search is sent, never while typing', async () => {

@@ -25,6 +25,10 @@ if (typeof window !== 'undefined') {
   // dopiero z `globals: true`.
   afterEach(() => cleanup());
 
+  // Każdy test to nowa karta: jej pamięć (`sessionStorage`, np. miejsce wybrane ręcznie, które
+  // przetrwałoby przeładowanie) nie przechodzi do następnego.
+  afterEach(() => window.sessionStorage.clear());
+
   // jsdom ma <dialog> bez jego metod. Komponenty wołają je jak w przeglądarce, więc zastępstwo
   // stoi tu, a nie w komponentach.
   if (typeof HTMLDialogElement !== 'undefined' && !HTMLDialogElement.prototype.showModal) {
