@@ -44,9 +44,12 @@ export interface StaticState {
   /** Some leaf is an older data version kept on the device (the current one could not be fetched). */
   olderLeaves: boolean;
   failure: StaticFailure | null;
-  /** When the leaves still missing started loading: a long wait is called slow. */
+  /**
+   * While loading: when this lookup started (its index included), or when a leaf it waits for set
+   * out, if earlier. A long wait is called slow.
+   */
   since: number | null;
-  /** When the next automatic try is due after a network failure. */
+  /** When the next automatic try is due after a failure. */
   retryAt: number | null;
 }
 
@@ -144,6 +147,13 @@ export function useStaticAround(position: LatLon | null, radius: number): [Stati
   /** The place and the try: a new try starts with a clean failure record. */
   const run = `${place}|${attempt}`;
 
+  // When this lookup began, known from its first render — a slow index is called slow too. A new
+  // place, radius or try starts the count; the index arriving does not. Kept in state and stamped
+  // once, when the lookup changes (as React applies the change), so a re-render never moves it.
+  const lookup = `${cLat},${cLon},${radius}|${attempt}`;
+  const [began, setBegan] = useState(() => ({ lookup, at: Date.now() }));
+  if (began.lookup !== lookup) setBegan(() => ({ lookup, at: Date.now() }));
+
   useEffect(() => {
     if (!index || !inData || cLat === undefined || cLon === undefined) return;
     let live = true;
@@ -185,8 +195,9 @@ export function useStaticAround(position: LatLon | null, radius: number): [Stati
         soon();
       });
     }
-    // Loads just started: one more look shortly, so "since when" (a slow connection) is known.
-    if (started > 0) soon();
+    // Nothing to load: every leaf is in memory — maybe the last one landed after this view rendered
+    // and before this effect ran. One more look, or the view would wait for a leaf already here.
+    if (started === 0) soon();
     return () => {
       live = false;
       clearTimeout(timer);
@@ -195,9 +206,10 @@ export function useStaticAround(position: LatLon | null, radius: number): [Stati
   }, [index, refs, inData, cLat, cLon, radius, run]);
 
   const failures = failed.run === run ? failed.byLeaf : NO_FAILURES;
-  const networkFailedAt = Object.values(failures).includes('network') ? failed.at : null;
-  const indexNetworkFailed = indexFailure === 'network';
-  const retryAt = useAutoRetry(networkFailedAt ?? (indexNetworkFailed ? indexFailed!.at : null), place, retry);
+  // The last try's failures at this place. A leaf the server failed stays failed until its new try
+  // has an answer, as the index does: Overpass stands in meanwhile, and handing the page back and
+  // forth would ask Overpass again with every try.
+  const before = failed.run !== run && failed.run.startsWith(`${place}|`) ? failed.byLeaf : NO_FAILURES;
 
   const state = useMemo<StaticState>(() => {
     void tick; // leaves arrived: read the memory again
@@ -205,7 +217,8 @@ export function useStaticAround(position: LatLon | null, radius: number): [Stati
     const dataAsOf = index?.dataAsOf ?? null;
     if (!index) {
       if (indexFailure === 'unavailable') return { ...BASE, failure: 'unavailable' };
-      return { ...BASE, coverage: 'unknown', status: indexFailure ? 'error' : lat === undefined ? 'idle' : 'loading', failure: indexFailure };
+      const status = indexFailure ? 'error' : lat === undefined ? 'idle' : 'loading';
+      return { ...BASE, coverage: 'unknown', status, failure: indexFailure, since: status === 'loading' ? began.at : null };
     }
     if (!netCoverage || !exactCoverage || lat === undefined || lon === undefined) return { ...BASE, coverage: 'unknown', dataAsOf };
     if (netCoverage.kind === 'none') return { ...BASE, coverage: 'none', dataAsOf };
@@ -213,17 +226,22 @@ export function useStaticAround(position: LatLon | null, radius: number): [Stati
     const wanted = wantedLeaves(refs, p, radius);
     const loaded = new Map<string, NonNullable<ReturnType<typeof leafNow>>>();
     let older = false;
-    let since: number | null = null;
+    // A leaf this view waits for may have set out before it (a walk on a slow link): the count goes on.
+    let since = began.at;
     const kinds = new Set<StaticFailure>();
+    let failedLeaves = 0;
     for (const leaf of wanted.leaves) {
       const got = leafNow(leaf);
-      const failure = failures[keyOf(leaf)];
+      const failure = failures[keyOf(leaf)] ?? (before[keyOf(leaf)] === 'unavailable' ? 'unavailable' : undefined);
       if (got) {
         loaded.set(keyOf(leaf), got);
         older ||= got.older;
-      } else if (failure) kinds.add(failure);
+      } else if (failure) {
+        kinds.add(failure);
+        failedLeaves++;
+      }
       const startedAt = got ? undefined : leafStartedAt(leaf);
-      if (startedAt !== undefined) since = since === null ? startedAt : Math.min(since, startedAt);
+      if (startedAt !== undefined) since = Math.min(since, startedAt);
     }
     let complete = completeOf(p, radius, wanted.leaves, (leaf) => loaded.has(keyOf(leaf)));
     // Near the border only the Polish side is here: complete up to the coverage's edge.
@@ -231,10 +249,11 @@ export function useStaticAround(position: LatLon | null, radius: number): [Stati
     if (netCoverage.kind === 'partial') complete = Math.min(complete, safe);
     const items: Element[] = [];
     for (const got of loaded.values()) for (const e of got.elements) if (haversine(wanted.centre, e) <= wanted.reach) items.push(e);
-    const pendingLeaves = wanted.leaves.length - loaded.size - Object.keys(failures).filter((k) => !loaded.has(k)).length;
+    const pendingLeaves = wanted.leaves.length - loaded.size - failedLeaves;
     const failure = kinds.has('unavailable') ? 'unavailable' : kinds.has('network') ? 'network' : null;
+    const status = pendingLeaves > 0 ? 'loading' : failure ? 'error' : 'ready';
     return {
-      status: pendingLeaves > 0 ? 'loading' : failure ? 'error' : 'ready',
+      status,
       items,
       completeWithin: complete,
       coverage: netCoverage.kind,
@@ -243,14 +262,16 @@ export function useStaticAround(position: LatLon | null, radius: number): [Stati
       dataAsOf,
       olderLeaves: older,
       failure,
-      since,
+      since: status === 'loading' ? since : null,
       retryAt: null,
     };
-  }, [enabled, index, indexFailure, netCoverage, exactCoverage, refs, lat, lon, radius, failures, tick]);
+  }, [enabled, index, indexFailure, netCoverage, exactCoverage, refs, lat, lon, radius, failures, before, tick, began.at]);
 
-  const withRetry = useMemo(
-    () => ({ ...state, retryAt: state.failure === 'network' || indexNetworkFailed ? retryAt : null }),
-    [state, retryAt, indexNetworkFailed],
-  );
+  // Every failure is tried again by itself, not only a lost connection: one transient 503 must not
+  // keep the whole visit on Overpass. Counted from this run's leaf failures, else the index's.
+  const failedAt = state.failure === null ? null : Object.keys(failures).length > 0 ? failed.at : (indexFailed?.at ?? null);
+  const retryAt = useAutoRetry(failedAt, place, retry);
+
+  const withRetry = useMemo(() => ({ ...state, retryAt }), [state, retryAt]);
   return [withRetry, retry];
 }

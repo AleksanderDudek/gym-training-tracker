@@ -41,16 +41,23 @@ export const leafRefs = (index: OsmIndex): LeafRef[] => index.leaves.map(([d, i,
 /** Whether this build carries the data at all (`null` in tests and in builds without the file). */
 export const hasStaticData = (): boolean => osmPlaces.index !== null;
 
+/** How long the server may take to start answering (the headers): the index, a leaf. */
 const INDEX_TIMEOUT_MS = 10_000;
 const LEAF_TIMEOUT_MS = 20_000;
+/**
+ * Then the body may go this long without a byte before it counts as stalled. Only silence counts,
+ * not the total: a 10 km view on a slow link (~250 kB gzipped in parallel, on EDGE) takes longer than
+ * any fixed deadline would allow, but keeps arriving.
+ */
+const STALL_MS = 10_000;
 /** A failed leaf is tried once more after this pause: one dropped packet should not cost a city. */
 const RETRY_PAUSE_MS = 2000;
 /** The index is re-read from the server at most this often (after a 404 for a leaf). */
 const REFRESH_EVERY_MS = 60_000;
 /**
  * Decoded leaves kept in memory. The leaves on screen are pinned and never dropped; this is the room
- * for the ones around them (a 10 km circle in central Warsaw needs ~37 — `osmData.test` keeps the
- * largest view under half of this).
+ * for the ones around them (the busiest 10 km circle needs ~37 — `osmData.test` keeps the largest
+ * 10 km view centred on any leaf under half of this).
  */
 export const MEMORY_LEAVES = 96;
 /** The service worker's caches (`src/sw.ts`): leaves first from the cache, the index refreshed in the background. */
@@ -63,16 +70,49 @@ const leafUrl = (leaf: LeafRef): string => new URL(leafPath([leaf.d, leaf.i, lea
 const cellPrefix = (leaf: Pick<LeafRef, 'd' | 'i' | 'j'>) => `/t/${leaf.d}-${leaf.i}-${leaf.j}.`;
 
 /**
- * `fetch` with a timeout that covers the BODY too (a stalled download must not hang the page), and
- * works without `AbortSignal.timeout` (Safari before 16). Any failure is `network`.
+ * `fetch` with a deadline for the headers (`ms`), then the body read chunk by chunk with a timer that
+ * every chunk restarts (`STALL_MS`): a slow but steady download finishes however long it takes, a
+ * stalled one is cut and must not hang the page. Works without `AbortSignal.timeout` (Safari before
+ * 16). Any failure is `network`; an error answer's body is not read (its status is all that counts).
  */
-async function fetchWithin<T>(url: string, ms: number, read: (response: Response) => Promise<T>, init: RequestInit = {}): Promise<{ response: Response; body: T }> {
+async function fetchWithin(url: string, ms: number, init: RequestInit = {}): Promise<{ response: Response; body: Uint8Array }> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), ms);
+  // The abort cancels the request; racing it also ends a read that a browser would leave hanging.
+  const aborted = new Promise<never>((_, reject) => controller.signal.addEventListener('abort', () => reject(new Error('timeout'))));
+  aborted.catch(() => {});
+  const within = <T>(step: Promise<T>) => Promise.race([step, aborted]);
+  let timer = setTimeout(() => controller.abort(), ms);
+  /** Something arrived: the body has `STALL_MS` again for the next chunk. */
+  const arrived = () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => controller.abort(), STALL_MS);
+  };
   try {
     // `priority` (Chromium): the places beat the 3 MB products download that may run at the same time.
-    const response = await fetch(url, { ...init, signal: controller.signal, priority: 'high' } as RequestInit);
-    return { response, body: await read(response) };
+    const response = await within(fetch(url, { ...init, signal: controller.signal, priority: 'high' } as RequestInit));
+    if (!response.ok) {
+      void response.body?.cancel().catch(() => {});
+      return { response, body: new Uint8Array(0) };
+    }
+    arrived();
+    if (!response.body) return { response, body: new Uint8Array(await within(response.arrayBuffer())) };
+    const reader = response.body.getReader();
+    const chunks: Uint8Array[] = [];
+    let size = 0;
+    for (;;) {
+      const { done, value } = await within(reader.read());
+      if (done) break;
+      chunks.push(value);
+      size += value.length;
+      arrived();
+    }
+    const body = new Uint8Array(size);
+    let at = 0;
+    for (const chunk of chunks) {
+      body.set(chunk, at);
+      at += chunk.length;
+    }
+    return { response, body };
   } catch {
     throw new StaticDataError('network');
   } finally {
@@ -80,7 +120,6 @@ async function fetchWithin<T>(url: string, ms: number, read: (response: Response
   }
 }
 
-const bytesOf = async (response: Response) => (response.ok ? new Uint8Array(await response.arrayBuffer()) : new Uint8Array(0));
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /** The service worker controls the page: until then, what is fetched does not land in its copy. */
@@ -115,7 +154,7 @@ function keep(request: Promise<OsmIndex>): Promise<OsmIndex> {
 
 /** The index, read once per page (the service worker serves it at once and refreshes it behind). */
 export function loadIndex(): Promise<OsmIndex> {
-  return index ?? keep(fetchWithin(indexUrl(), INDEX_TIMEOUT_MS, bytesOf).then(({ response, body }) => readIndex(response, body)));
+  return index ?? keep(fetchWithin(indexUrl(), INDEX_TIMEOUT_MS).then(({ response, body }) => readIndex(response, body)));
 }
 
 /**
@@ -126,7 +165,7 @@ export function refreshIndex(): Promise<OsmIndex> {
   if (Date.now() - refreshedAt < REFRESH_EVERY_MS && index) return index;
   refreshedAt = Date.now();
   return keep(
-    fetchWithin(`${indexUrl()}?r=${Date.now()}`, INDEX_TIMEOUT_MS, bytesOf, { cache: 'no-store' }).then(async ({ response, body }) => {
+    fetchWithin(`${indexUrl()}?r=${Date.now()}`, INDEX_TIMEOUT_MS, { cache: 'no-store' }).then(async ({ response, body }) => {
       const fresh = readIndex(response, body);
       if (typeof caches !== 'undefined')
         await caches
@@ -244,7 +283,7 @@ async function fetchLeaf(leaf: LeafRef, url: string): Promise<LoadedLeaf> {
   for (let attempt = 0; ; attempt++) {
     let got: { response: Response; body: Uint8Array };
     try {
-      got = await fetchWithin(url, LEAF_TIMEOUT_MS, bytesOf);
+      got = await fetchWithin(url, LEAF_TIMEOUT_MS);
     } catch (error) {
       if (attempt === 0) {
         await sleep(RETRY_PAUSE_MS);
