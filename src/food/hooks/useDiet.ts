@@ -1,12 +1,13 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useEffect, useMemo, useState } from 'react';
-import { useBridge } from '../bridge';
+import { useContext, useEffect, useMemo, useState } from 'react';
+import { BridgeContext, useBridge } from '../bridge';
 import { mergeBody } from '../diet/body';
 import { db, type DayRow, type Entry, type Favorite, type ProfileRow } from '../diet/db';
 import { byUse } from '../diet/favorites';
 import type { CustomFood, FoodSet } from '../diet/foods';
 import type { Plan } from '../diet/plan';
-import { ACTIVE_PLAN, completeProfile, now } from '../diet/store';
+import { ACTIVE_PLAN, latestKg, now, persistUpgrade } from '../diet/store';
+import { cleanProfile } from '../diet/validate';
 import { readCache } from '../nearby/cache';
 import { formatDistance } from '../nearby/geo';
 import { DEFAULT_RADIUS } from '../nearby/radius';
@@ -41,15 +42,28 @@ export function useClock(): Clock {
 }
 
 /**
- * `undefined` while loading, `null` when there is none. A row stored by an older version lacks the
- * fields added since (the check-in's `kcalCorrection`): they come with their defaults, never as
- * `undefined` in a sum.
+ * The diet profile: `undefined` while loading, `null` when there is none. Every read goes through
+ * the normaliser (`cleanProfile`), so `dailyKcal` is today's target and nothing unreadable reaches a
+ * screen. A row stored by the old model comes back upgraded at once (§3.4), and the upgrade is
+ * written once (`persistUpgrade`) with the same day and weight — the latest gym weigh-in when
+ * there is a bridge, else the start weight — so the upgrade date, the notice and the first check
+ * stay put.
  */
 export function useProfile(): ProfileRow | null | undefined {
-  return useLiveQuery(async () => {
+  const bridge = useContext(BridgeContext);
+  const weightKg = latestKg(bridge?.weights);
+  const today = useClock().date;
+  const read = useLiveQuery(async () => {
     const row = await db.profile.get('me');
-    return row ? { ...completeProfile(row), id: 'me' as const } : null;
-  }, []);
+    if (!row) return { profile: null, upgrade: null };
+    const profile: ProfileRow = { ...cleanProfile(row, { today, weightKg }), id: 'me' };
+    return { profile, upgrade: row.version === 2 ? null : { weightKg: weightKg ?? profile.startWeightKg, today } };
+  }, [today, weightKg]);
+  const upgrade = read?.upgrade ?? null;
+  useEffect(() => {
+    if (upgrade) persistUpgrade(upgrade).catch((error: unknown) => console.error(error));
+  }, [upgrade]);
+  return read && read.profile;
 }
 
 export function usePlan(): Plan | null | undefined {

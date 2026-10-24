@@ -2,6 +2,7 @@ import { strToU8, zipSync } from 'fflate';
 import { describe, expect, test } from 'vitest';
 import { plannedDay, plannedKcal, templateFor } from './plan';
 import { importPlan } from './plan-import';
+import { cleanProfile } from './validate';
 import { excelDate, readWorkbook } from './xlsx';
 
 type Cells = Record<string, string | number>;
@@ -320,6 +321,30 @@ describe('importPlan', () => {
 
   test('without WARIANTY it is not a plan', () => {
     expect(() => importPlan(readWorkbook(workbook({ PANEL })))).toThrow(/WARIANTY/);
+  });
+
+  test('the parameters are the old model’s: a new profile from them keeps the plan’s target and the burn it implies', () => {
+    // ×1,3 + 3000 steps of walking + 700 kcal a week at 100 kg: 2502,6 kcal; NASEM (K 40 y, inactive) 2476,5.
+    const p = cleanProfile(imported.profile, { today: '2026-10-24', fresh: true });
+    expect(p).toMatchObject({
+      version: 2,
+      sex: 'K',
+      dailyKcal: 1600,
+      activityLevel: 'inactive',
+      burnOffset: 26,
+      goalPace: 0.75,
+      goals: [{ from: '2026-03-02', kcal: 1600, by: 'setup' }],
+      anchored: false,
+      notice: null,
+      lastCheck: { week: '2026-10-19', status: 'setup' },
+      // The workbook's own keys stay as it gave them.
+      activityMultiplier: 1.3,
+      baseSteps: 5000,
+      targetSteps: 8000,
+      extraWeeklyKcal: 700,
+      kcalPer1000StepsPerKg: 0.5,
+      kcalPerKg: 7700,
+    });
   });
 });
 
