@@ -6,6 +6,7 @@ import { INGREDIENTS } from '../recipes/ingredients';
 import { ONLINE_ONLY, PREP_DICT, prepIndex, prepProfile } from '../test/prep';
 import { planDates } from './blocks';
 import { planRecipes } from './candidates';
+import type { CheckIn } from './checkin';
 import { generatePlan, noSwapMessage, rerollPlan, swapChoices, swapRecipe, type GenerateInput } from './generate';
 import { fitsRole } from './select';
 import { planTargets } from './targets';
@@ -31,15 +32,8 @@ function input(over: Partial<PrepSettings> = {}, style: DietProfileId = 'redukcj
     settings,
     index,
     dict: PREP_DICT,
-    dayTargets: planTargets({
-      profile,
-      kcal,
-      eaten: new Map(),
-      today: '2026-10-20',
-      dates: planDates(settings.start, settings.days),
-    }),
+    dayTargets: planTargets({ profile, kcal, dates: planDates(settings.start, settings.days) }),
     goal: { kcal, source: 'profile', dietProfile: style, styleLabel: DIET_PROFILES[style].label, pace: 0.5, weightKg: 82 },
-    checkIn: null,
   };
 }
 
@@ -91,7 +85,7 @@ describe('a plan meets the day, whatever the style', () => {
       const profile = prepProfile({ sex, dietProfile: style, dailyKcal: kcal, startWeightKg: weight, targetWeightKg: weight });
       const result = generatePlan({
         ...input({ meals }, style, kcal),
-        dayTargets: planTargets({ profile, kcal, eaten: new Map(), today: '2026-10-20', dates: planDates('2026-10-20', 7) }),
+        dayTargets: planTargets({ profile, kcal, dates: planDates('2026-10-20', 7) }),
       });
       if (!result.ok) throw new Error(result.message);
       for (const { date, targets } of result.plan.dayTargets) {
@@ -240,6 +234,35 @@ describe('the same plan, another plan, one recipe swapped', () => {
     expect(JSON.stringify(other.plan.choices)).not.toBe(JSON.stringify(p.choices));
     // Ticks stay for the lines the new plan still has.
     expect(other.plan.bought.every((k) => other.plan.shopping.some((i) => i.key === k))).toBe(true);
+  });
+
+  test('a new plan stores no check-in; a remake of an older plan keeps the check-in it was made with', () => {
+    const p = plan();
+    expect(p.checkIn).toBeNull();
+    expect(p.goal.source).toBe('profile');
+    const checkIn: CheckIn = {
+      status: 'korekta',
+      today: '2026-10-01',
+      weighIns: 9,
+      loggedDays: 20,
+      spanDays: 24,
+      trendKg: 81.2,
+      observedPace: 0.2,
+      plannedPace: 0.45,
+      observedTdee: 2150,
+      modelTdee: 2400,
+      profileKcal: 2200,
+      suggestedKcal: 1950,
+      correction: -250,
+      limited: 'cap',
+      reason: 'Przez ostatnie 24 dni waga szła w tempie −0,2 kg/tydz.',
+    };
+    const old = { ...p, goal: { ...p.goal, kcal: 1950, source: 'checkin' as const }, checkIn };
+    const again = rerollPlan(old, { index, dict: PREP_DICT }, 5, '2026-10-20');
+    expect(again.ok).toBe(true);
+    if (!again.ok) return;
+    expect(again.plan.checkIn).toEqual(checkIn);
+    expect(again.plan.goal).toEqual(old.goal);
   });
 
   test('a swap replaces one recipe everywhere in its role and keeps every other choice', () => {

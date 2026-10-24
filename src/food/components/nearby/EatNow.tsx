@@ -4,6 +4,7 @@ import { pluralEn, text } from '../../../i18n';
 import { MISSING_DATA_MESSAGE } from '../../data';
 import { productFood, type Food } from '../../diet/foods';
 import type { Context } from '../../diet/suggest';
+import { BAND } from '../../diet/target';
 import { useFavorites } from '../../hooks/useDiet';
 import { useDataset } from '../../hooks/useDataset';
 import { useEatNow } from '../../hooks/useEatNow';
@@ -63,7 +64,9 @@ const T = text({
     budget: (kcal: string, protein: string, left: string, meals: number) =>
       `ok. ${kcal} kcal i ${protein} g białka na ten posiłek — zostało ${left} kcal na ${meals} ${plural(meals, 'posiłek', 'posiłki', 'posiłków')}.`,
     done: (eaten: string, goal: string) =>
-      `Dzisiejszy cel już osiągnięty (${eaten} z ${goal} kcal). Jeśli jesteś głodny, wybierz coś lekkiego.`,
+      `Na dziś kalorii już wystarczy (${eaten} z ${goal} kcal). Jeśli masz ochotę na coś jeszcze, wybierz coś lekkiego.`,
+    budgetPlain: (protein: string) => `Na ten posiłek: coś z ok. ${protein} g białka.`,
+    donePlain: 'Na dziś wystarczy — jeśli masz ochotę na coś jeszcze, wybierz coś lekkiego.',
     showLight: 'Pokaż najlżejsze',
     noProfile: 'Bez profilu diety oceniam dla przeciętnego dnia: 2000 kcal, dieta zbilansowana.',
     setProfile: 'Ustaw profil diety',
@@ -112,7 +115,10 @@ const T = text({
     counting: 'Working out what’s left of today’s goal…',
     budget: (kcal: string, protein: string, left: string, meals: number) =>
       `about ${kcal} kcal and ${protein} g protein for this meal — ${left} kcal left for ${meals} ${pluralEn(meals, 'meal', 'meals')}.`,
-    done: (eaten: string, goal: string) => `Today’s goal is reached (${eaten} of ${goal} kcal). If you’re hungry, pick something light.`,
+    done: (eaten: string, goal: string) =>
+      `That’s enough calories for today (${eaten} of ${goal} kcal). If you’d like something more, pick something light.`,
+    budgetPlain: (protein: string) => `For this meal: something with about ${protein} g protein.`,
+    donePlain: 'That’s enough for today — if you’d like something more, pick something light.',
     showLight: 'Show the lightest',
     noProfile: 'Without a diet profile I rate for an average day: 2,000 kcal, a balanced diet.',
     setProfile: 'Set up your diet profile',
@@ -173,7 +179,8 @@ const kcal = (n: number) => formatNumber(Math.round(n / 10) * 10, 0);
  * „Zjedz teraz”: where and what to eat around here that fits what is left of today. The answer
  * first (what this meal should be, and the best pick), the map with the places coloured by fit,
  * the three best choices under it (sortable), and a card per place with directions and the full
- * list. Everything follows the diary: the day's goal, what is eaten, a planned cheat meal.
+ * list. Everything follows the diary: the day's target, what is eaten, a planned bigger meal; without
+ * calorie counting the answer speaks in protein only.
  */
 export function EatNow({ state, update, closeEntry, geo, locate, setManual, setRadius, osm, retryOsm: retry }: Props) {
   const eat = useEatNow();
@@ -338,7 +345,9 @@ export function EatNow({ state, update, closeEntry, geo, locate, setManual, setR
       ? T.partial(ranked.filter((r) => r.best && r.distance <= sure).length, radiusLabel(sure))
       : null;
   const note = geo.source === 'saved' && geo.status === 'locating' ? T.savedLocating : null;
-  const over = needs.remaining.kcal <= 50;
+  // Within the ±100 kcal band the day is at its target: what is left is no meal's worth.
+  const over = needs.remaining.kcal <= BAND;
+  const protein = formatNumber(Math.round(needs.meal.protein), 0);
 
   return (
     <>
@@ -364,7 +373,9 @@ export function EatNow({ state, update, closeEntry, geo, locate, setManual, setR
             <p className="tight fd-near-soft">{T.counting}</p>
           ) : over ? (
             <p className="tight">
-              {T.done(formatNumber(Math.round(eat.eaten.kcal), 0), formatNumber(Math.round(needs.targets.kcal), 0))}{' '}
+              {eat.hidesKcal
+                ? T.donePlain
+                : T.done(formatNumber(Math.round(eat.eaten.kcal), 0), formatNumber(Math.round(needs.targets.kcal), 0))}{' '}
               {state.sort !== 'light' && (
                 <button type="button" className="btn ghost sm" onClick={() => update({ sort: 'light' })}>
                   {T.showLight}
@@ -373,7 +384,9 @@ export function EatNow({ state, update, closeEntry, geo, locate, setManual, setR
             </p>
           ) : (
             <p className="tight">
-              {T.budget(kcal(needs.meal.kcal), formatNumber(Math.round(needs.meal.protein), 0), kcal(needs.remaining.kcal), needs.mealsLeft)}
+              {eat.hidesKcal
+                ? T.budgetPlain(protein)
+                : T.budget(kcal(needs.meal.kcal), protein, kcal(needs.remaining.kcal), needs.mealsLeft)}
             </p>
           )}
           {!eat.profile && (

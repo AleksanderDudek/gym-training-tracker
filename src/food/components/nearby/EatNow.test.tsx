@@ -7,7 +7,7 @@ import { db } from '../../diet/db';
 import { clearAll, completeProfile, logQuick, saveProfile } from '../../diet/store';
 import type { RankedPlace } from '../../nearby/eat';
 import type { LatLon } from '../../nearby/types';
-import { renderWithBridge } from '../../test/bridge';
+import { renderWithBridge, testBridge, testMove } from '../../test/bridge';
 import { DATASET, INDEXED } from '../../test/fixtures';
 import NearbyPage from './NearbyPage';
 
@@ -118,6 +118,42 @@ describe('Zjedz teraz', () => {
     expect(screen.getByRole('button', { name: /zamknięte \(1\)/ })).toHaveAttribute('aria-pressed', 'false');
     expect(screen.getByRole('button', { name: /bez danych o menu \(1\)/ })).toHaveAttribute('aria-pressed', 'false');
   });
+
+  test('15 000 steps and a long ride leave the budget as it is: activity never changes the target', async () => {
+    const bridge = testBridge({
+      stepsOn: () => 15_000,
+      moveOn: () => testMove({ stepsWorth: 15_000, cardioKcal: 900, otherKcal: 300, outings: 1, activeMin: 150 }),
+    });
+    renderWithBridge(<NearbyPage />, bridge);
+    const answer = await screen.findByRole('region', { name: 'Na teraz' });
+    // The same answer as without any activity: 2000 − 600 = 1400 left for three meals.
+    expect(
+      await within(answer).findByText('ok. 470 kcal i 37 g białka na ten posiłek — zostało 1400 kcal na 3 posiłki.'),
+    ).toBeInTheDocument();
+  });
+
+  test('within 100 kcal of the target the day is enough already; without calorie counting the answer is protein only', async () => {
+    await logQuick('2026-10-22', 'Obiad', 1390, { protein: 60, carbs: 150, fat: 40 });
+    const enough = renderWithBridge(<NearbyPage />);
+    const answer = await screen.findByRole('region', { name: 'Na teraz' });
+    expect(
+      await within(answer).findByText(
+        /^Na dziś kalorii już wystarczy \(1990 z 2000 kcal\)\. Jeśli masz ochotę na coś jeszcze, wybierz coś lekkiego\./,
+      ),
+    ).toBeInTheDocument();
+    expect(within(answer).getByRole('button', { name: 'Pokaż najlżejsze' })).toBeInTheDocument();
+    expect(answer).not.toHaveTextContent(/głodny|osiągnięty/);
+    enough.unmount();
+
+    await db.entries.clear();
+    await saveProfile(completeProfile({ startDate: '2026-10-01', dailyKcal: 2000, targetWeightKg: 75, hideKcal: true }));
+    // 45 g of protein eaten of 150: 105 g for the three meals ahead.
+    await logQuick('2026-10-22', 'Śniadanie', 600, { protein: 45, carbs: 60, fat: 20 });
+    renderWithBridge(<NearbyPage />);
+    const plain = await screen.findByRole('region', { name: 'Na teraz' });
+    expect(await within(plain).findByText('Na ten posiłek: coś z ok. 35 g białka.')).toBeInTheDocument();
+    expect(plain).not.toHaveTextContent(/kcal/);
+  }, 15_000);
 
   test('the three best under the map, numbered like the pins; sorting by protein is kept in the address', async () => {
     const user = userEvent.setup();

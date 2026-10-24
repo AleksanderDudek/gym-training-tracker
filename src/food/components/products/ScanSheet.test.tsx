@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { loadDataset, loadedDataset, type LoadedDataset } from '../../data';
 import { db } from '../../diet/db';
-import { clearAll } from '../../diet/store';
+import { clearAll, completeProfile, logQuick, now, saveProfile } from '../../diet/store';
 import { indexProducts } from '../../lib/search';
 import type { Product } from '../../lib/types';
 import { COMPARE_KEY } from '../../scan/compareStore';
@@ -107,7 +107,8 @@ describe('Skaner kodów', () => {
     expect(rows[1]).toBe('w 100 g631140');
     expect(rows[2]).toBe('opak. 150 g9516,560');
     expect(within(card).getByText('Piątnica · 150 g')).toBeInTheDocument();
-    expect(within(card).getByText(/Na dziś: mieści się — zostało \d/)).toBeInTheDocument();
+    // Without a profile: an average day of 2000 kcal, nothing eaten yet.
+    expect(within(card).getByText('Na dziś: mieści się — zostało ok. 2000 kcal.')).toBeInTheDocument();
     // Bez profilu: dieta zbilansowana, a skyr ma dobre proporcje.
     expect(within(card).getByText('pasuje')).toBeInTheDocument();
     expect(within(sheet).getByRole('heading', { name: 'Porównanie (1)' })).toBeInTheDocument();
@@ -185,6 +186,44 @@ describe('Skaner kodów', () => {
     expect(await within(sheet).findByText('Sprawdź cyfry — ostatnia się nie zgadza.')).toBeInTheDocument();
     // Kod sklepowy nie idzie nigdzie: w żadnej bazie go nie ma.
     expect(offRequests.some((u) => u.includes('2000000000008'))).toBe(false);
+  });
+
+  test('„Na dziś” na pasie ±100 kcal: 90 kcal zostało to już dość; opakowanie, które kończy się w pasie, mieści się', async () => {
+    await saveProfile(completeProfile({ startDate: '2026-10-01', dailyKcal: 2000, targetWeightKg: 75 }));
+    const today = now().date;
+    await logQuick(today, 'Obiad', 1910);
+    const user = userEvent.setup();
+    const sheet = await openScanner(user);
+    await typeCode(user, sheet, '5900000000015');
+    // 90 kcal left and a 95 kcal pack: the day is at its target either way.
+    const skyr = await within(sheet).findByRole('article', { name: 'Skyr naturalny' });
+    expect(within(skyr).getByText('Na dziś: kalorii już wystarczy.')).toBeInTheDocument();
+    expect(sheet).not.toHaveTextContent(/więcej, niż zostało|mieści się/);
+
+    // 200 left: a 260 kcal bar ends 60 over — inside the band, it fits.
+    await db.entries.clear();
+    await logQuick(today, 'Obiad', 1800);
+    await typeCode(user, sheet, '5900000000022');
+    const fits = await within(sheet).findByRole('article', { name: 'Baton czekoladowy' });
+    expect(await within(fits).findByText('Na dziś: mieści się — zostało ok. 200 kcal.')).toBeInTheDocument();
+
+    // 150 left: the bar ends 110 over — more than is left.
+    await db.entries.clear();
+    await logQuick(today, 'Obiad', 1850);
+    await typeCode(user, sheet, '5900000000015');
+    await typeCode(user, sheet, '5900000000022');
+    const over = await within(sheet).findByRole('article', { name: 'Baton czekoladowy' });
+    expect(await within(over).findByText('Na dziś: ok. 110 kcal więcej, niż zostało (ok. 150 kcal).')).toBeInTheDocument();
+  }, 15_000);
+
+  test('bez liczenia kalorii skaner nie mówi nic o dziś — makro i ocena zostają', async () => {
+    await saveProfile(completeProfile({ startDate: '2026-10-01', dailyKcal: 2000, targetWeightKg: 75, hideKcal: true }));
+    const user = userEvent.setup();
+    const sheet = await openScanner(user);
+    await typeCode(user, sheet, '5900000000015');
+    const card = await within(sheet).findByRole('article', { name: 'Skyr naturalny' });
+    expect(within(card).getAllByRole('row').map((r) => r.textContent)[1]).toBe('w 100 g631140');
+    expect(card).not.toHaveTextContent('Na dziś');
   });
 
   test('„Zjadłem 150 g” zapisuje opakowanie w dzisiejszym dzienniku', async () => {

@@ -68,9 +68,8 @@ function makePlan(over: Partial<PrepSettings> = {}, createdAt = '2026-10-20T07:0
     settings,
     index: prepIndex(),
     dict: PREP_DICT,
-    dayTargets: planTargets({ profile, kcal: 2200, eaten: new Map(), today: '2026-10-20', dates: planDates(settings.start, settings.days) }),
+    dayTargets: planTargets({ profile, kcal: 2200, dates: planDates(settings.start, settings.days) }),
     goal: { kcal: 2200, source: 'profile', dietProfile: 'redukcja', styleLabel: DIET_PROFILES.redukcja.label, pace: 0.5, weightKg: 82 },
-    checkIn: null,
     createdAt,
   });
   if (!result.ok) throw new Error(result.message);

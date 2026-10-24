@@ -65,10 +65,11 @@ export interface PrepShop {
   url: string | null;
 }
 
-/** The goal the plan was made for: what the diary's goal was, or what the check-in made it. */
+/** The goal the plan was made for: the diary's target of the day it was made. */
 export interface PrepGoal {
-  /** Daily kcal before the week's balance. */
+  /** Daily kcal: today's target from the diet profile (`targetOn`). */
   kcal: number;
+  /** `profile` for every new plan; `checkin` only in plans made before the Monday check, with a fitted goal. */
   source: 'profile' | 'checkin';
   dietProfile: DietProfileId;
   styleLabel: string;
@@ -180,7 +181,9 @@ export interface PrepPlan {
   /** The basket, the physical shop first. */
   shops: PrepShop[];
   goal: PrepGoal;
+  /** The check-in an older plan was made with; `null` for every new plan. */
   checkIn: CheckIn | null;
+  /** The targets of each day: the same for every day of a new plan (`planTargets`). */
   dayTargets: { date: string; targets: MacroTargets }[];
   slots: Slot[];
   choices: Choices;

@@ -129,7 +129,6 @@ export function prepProfile(over: Partial<Profile> = {}): Profile {
     targetWeightKg: 76,
     startDate: '2026-09-01',
     dailyKcal: 2200,
-    adaptWeekly: false,
     ...over,
   });
 }

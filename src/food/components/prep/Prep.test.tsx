@@ -42,6 +42,7 @@ const TUESDAY = new Date('2026-10-20T09:00:00');
 const at = (hash: string) => window.history.replaceState(null, '', `/${hash}`);
 /** A plan without a name of its own: the style and the shop. */
 const TITLE = `${DIET_PROFILES.redukcja.label} · Biedronka`;
+const FROM_PROFILE = 'Cel z profilu diety. Dopasowuje się w poniedziałki — plan bierze dzisiejszy.';
 
 beforeEach(async () => {
   vi.useFakeTimers({ toFake: ['Date'] });
@@ -72,9 +73,8 @@ function makePlan(over: Partial<PrepSettings> = {}): PrepPlan {
     settings,
     index: prepIndex(),
     dict: PREP_DICT,
-    dayTargets: planTargets({ profile, kcal: 2200, eaten: new Map(), today: '2026-10-20', dates: planDates(settings.start, settings.days) }),
+    dayTargets: planTargets({ profile, kcal: 2200, dates: planDates(settings.start, settings.days) }),
     goal: { kcal: 2200, source: 'profile', dietProfile: 'redukcja', styleLabel: DIET_PROFILES.redukcja.label, pace: 0.5, weightKg: 82 },
-    checkIn: null,
     createdAt: '2026-10-20T07:00:00.000Z',
   });
   if (!result.ok) throw new Error(result.message);
@@ -93,8 +93,8 @@ describe('plan posiłków: plan z zakupami', () => {
     expect(within(form).getByLabelText('Na ile dni')).toHaveDisplayValue('7 dni (tydzień)');
     expect(within(form).getByLabelText('Sklep (jedna wizyta)')).toHaveDisplayValue('Biedronka');
     expect(within(form).getByRole('button', { name: '4', pressed: true })).toBeInTheDocument();
-    // Without weigh-ins the check-in has nothing to go by: the profile's goal, and why.
-    expect(await within(form).findByText(/^Do dopasowania celu potrzebuję/)).toBeInTheDocument();
+    // The plan's goal is the profile's target of today, said once.
+    expect(within(form).getByText(FROM_PROFILE)).toBeInTheDocument();
 
     await user.click(within(form).getByRole('button', { name: 'Ułóż plan' }));
     expect(await screen.findByRole('heading', { name: TITLE })).toBeInTheDocument();
@@ -125,24 +125,55 @@ describe('plan posiłków: plan z zakupami', () => {
     expect(screen.getByText(/zakupy: Biedronka \+ Myprotein \(zamówienie\)/)).toBeInTheDocument();
   }, 15_000);
 
-  test('check-in z wagi i zapisów: dopasowany cel zaznaczony, a plan zapisuje go w profilu', async () => {
+  test('cel planu to dzisiejszy cel z profilu, ten sam na każdy dzień — bez wyboru celu i bez zmiany profilu', async () => {
     await saveProfile(prepProfile({ dailyKcal: 2200 }));
-    // Three weeks of weigh-ins standing still on 2200 kcal: the model expected a loss.
+    // Three weeks of weigh-ins standing still on 2200 kcal — the old check-in offered a lower goal —
+    // and 600 over the target yesterday, which the old weekly spread took off the days ahead.
     const weights = Array.from({ length: 8 }, (_, i) => ({ day: planDates('2026-09-26', 22)[i * 3]!, kg: 82 }));
     for (const d of planDates('2026-09-26', 24)) await db.entries.add({ date: d, time: '12:00', name: 'Dzień', amountLabel: '', kcal: 2200, protein: 150, carbs: 200, fat: 70, source: 'quick' });
+    await db.entries.add({ date: '2026-10-19', time: '19:00', name: 'Kolacja', amountLabel: '', kcal: 600, protein: 30, carbs: 60, fat: 25, source: 'quick' });
     at('#/jedzenie/plan');
     const user = userEvent.setup();
     const { bridge } = renderWithBridge(<DietPlanPage />, testBridge({ weights, heightCm: 180 }));
     const form = await screen.findByRole('form', { name: 'Plan z listą zakupów' });
-    const adjusted = await within(form).findByRole('radio', { name: /dopasowany do Twojego tempa \(zalecane\)/ });
-    expect(adjusted).toBeChecked();
-    const kcal = Number(adjusted.closest('label')!.textContent!.match(/(\d[\d\s ]*) kcal/)![1]!.replace(/\D/g, ''));
-    expect(kcal).toBeLessThan(2200);
-    await user.click(within(form).getByRole('button', { name: 'Ułóż plan' }));
+    // Settled: nothing is left to work out before the plan can be made.
+    const make = within(form).getByRole('button', { name: 'Ułóż plan' });
+    await waitFor(() => expect(make).toBeEnabled());
+    const goal = within(form).getByRole('region', { name: 'Cel planu' });
+    expect(within(goal).queryAllByRole('radio')).toHaveLength(0);
+    expect(goal).not.toHaveTextContent(/dopasowany do Twojego tempa|zalecane|Zapiszę ten cel/);
+    expect(goal).toHaveTextContent(/^Cel planu\s?Redukcja · −0,5 kg\/tydz\. · 2200 kcal dziennie · .+ · białko 152 g\./);
+    expect(within(goal).getByText(FROM_PROFILE)).toBeInTheDocument();
+
+    await user.click(make);
     await screen.findByRole('heading', { name: TITLE });
-    expect((await db.profile.get('me'))!.dailyKcal).toBe(kcal);
-    expect(bridge.toast).toHaveBeenCalledWith(expect.stringContaining(`Cel kalorii w profilu: ${kcal} kcal (było 2200)`));
-    expect((await db.prep.toArray())[0]!.goal).toMatchObject({ kcal, source: 'checkin' });
+    expect(bridge.toast).toHaveBeenCalledWith('Plan na 7 dni gotowy — lista zakupów czeka.');
+    const [stored] = await db.prep.toArray();
+    expect(stored!.goal).toMatchObject({ kcal: 2200, source: 'profile', pace: 0.5, weightKg: 82 });
+    expect(stored!.checkIn).toBeNull();
+    // Every day of the plan at the same targets: nothing spread over the days ahead.
+    expect(stored!.dayTargets.map((d) => d.targets.kcal)).toEqual(Array(7).fill(2200));
+    expect(new Set(stored!.dayTargets.map((d) => JSON.stringify(d.targets))).size).toBe(1);
+    // The plan follows the profile; it never changes it.
+    const profile = (await db.profile.get('me'))!;
+    expect(profile.dailyKcal).toBe(2200);
+    expect(profile.goals).toEqual([{ from: '2026-10-20', kcal: 2200, by: 'setup' }]);
+  }, 15_000);
+
+  test('nieaktualny plan: cel w profilu o 100 kcal niżej to wciąż ten plan, o 250 — już nie', async () => {
+    await saveProfile(prepProfile({ dailyKcal: 2100 }));
+    await savePrepPlan(makePlan());
+    at('#/jedzenie/plan');
+    const near = renderWithBridge(<DietPlanPage />);
+    expect(await screen.findByRole('heading', { name: TITLE })).toBeInTheDocument();
+    expect(screen.queryByText(/Od ułożenia planu zmienił się cel/)).not.toBeInTheDocument();
+    near.unmount();
+
+    await saveProfile(prepProfile({ dailyKcal: 1950 }));
+    renderWithBridge(<DietPlanPage />);
+    expect(
+      await screen.findByText(/^Od ułożenia planu zmienił się cel w profilu diety \(1950 kcal, ten sam styl\)\./),
+    ).toBeInTheDocument();
   }, 15_000);
 
   test('„Wymień” podmienia przepis w całym planie, „Usuń plan” wraca do formularza', async () => {
@@ -250,7 +281,7 @@ describe('lista zakupów', () => {
 });
 
 describe('dziennik: plan na ten dzień', () => {
-  test('posiłki dnia do odhaczenia, gotowanie dziś, lista zakupów; „Zjadłem” zapisuje porcję z dodatkami', async () => {
+  test('posiłki dnia do odhaczenia, gotowanie dziś, lista zakupów; przycisk posiłku zapisuje porcję z dodatkami', async () => {
     await saveProfile(prepProfile());
     const plan = makePlan();
     await savePrepPlan(plan);
@@ -269,7 +300,9 @@ describe('dziennik: plan na ten dzień', () => {
     expect(screen.queryByRole('heading', { name: 'Propozycja dnia' })).not.toBeInTheDocument();
 
     const breakfast = plan.meals.find((m) => m.date === '2026-10-20' && m.slotName === 'Śniadanie')!;
-    await user.click(within(card).getByRole('button', { name: `Zjadłem: ${breakfast.name}` }));
+    // „Zjadłem: …” becomes „Zjedzone: …” with the diary's new words (package B, `PrepDayCard`).
+    const eatLabels = [`Zjadłem: ${breakfast.name}`, `Zjedzone: ${breakfast.name}`];
+    await user.click(within(card).getByRole('button', { name: (n) => eatLabels.includes(n) }));
     await waitFor(async () => expect(await db.entries.count()).toBe(1));
     const [entry] = await db.entries.toArray();
     expect(entry).toMatchObject({ date: '2026-10-20', key: `recipe:${breakfast.recipeId}`, planIndex: 0, source: 'recipe', kcal: Math.round(breakfast.total.kcal) });
