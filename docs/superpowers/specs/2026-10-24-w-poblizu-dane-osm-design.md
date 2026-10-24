@@ -98,6 +98,7 @@ tiles blocked unless said):
 | Warm (service worker) | 0.6 s from opening the page |
 | Kraków 1 km / Warsaw 10 km | 9 files, 55 kB, 1.3 s / 34 files, 265 kB, 1.8–1.9 s from opening (0.83–0.89 s after „Szukam”) |
 | Warsaw 10 km on "EDGE" (400 ms, 200 kbit/s) | before round 3: 9 of 34 files cut by the header deadline while queued (HTTP/1.1, 6 connections) and fetched again; with 8 files at a time: **none cut or repeated**, ~28 s after „Szukam” (the link shared with the 3 MB products database) |
+| Final build (c63b6d8), „Zjedz teraz” with the products after the places | Warsaw 1 km: places **0.18 s** after „Szukam” on "4G" (was 0.27 s), **1.0 s** on "slow" (was 1.8 s); the counts follow the products (2.6 s / 18 s), „Wczytuję produkty sklepów…” meanwhile. Warsaw 10 km: 0.63 s on "4G"; on "EDGE" **16.5 s** (was 28 s), the slow-connection note at 9 s, none cut. An open popup stays open when the products arrive and the pins change |
 | Offline | an area seen before works offline — also right after the very first visit (files fetched before the service worker took over are fetched again through it); a new area says „Bez internetu nie mam jeszcze danych tej okolicy — pobiorę je, gdy wróci połączenie.” and loads at once when the connection is back |
 | Berlin | one Overpass request; credit „… · z serwera Overpass” (round 3 wording; was „na żywo z serwera Overpass”) |
 | Słubice 10 km | 2 files + 1 Overpass request; credit „… stan z 22 października 2026” while the Polish side is shown, „… · z serwera Overpass” once Overpass's whole circle is (round 3 wording) |
