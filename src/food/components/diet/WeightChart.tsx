@@ -1,91 +1,74 @@
 import { pluralEn, text } from '../../../i18n';
-import { daysBetween, shortDay } from '../../diet/model';
-import { formatNumber } from '../../lib/format';
+import { addDays, daysBetween, shortDay } from '../../diet/model';
+import type { WeighIn } from '../../diet/trend';
+import { formatNumber, plural } from '../../lib/format';
 
 const T = text({
   pl: {
-    label: (from: string, to: string, count: number, last: string | null, target: string) =>
-      `Wykres wagi od ${from} do ${to}: plan, ${count} pomiarów${last ? ` (ostatni ${last} kg)` : ''}, prognoza i cel ${target} kg.`,
+    label: (n: number, projection: boolean, target: string) =>
+      `Wykres wagi: ${n} ${plural(n, 'pomiar', 'pomiary', 'pomiarów')}, trend${projection ? ', prognoza' : ''} i waga docelowa ${target} kg.`,
     measured: 'pomiary',
-    plan: 'plan',
-    projection: 'prognoza od ostatniego ważenia',
-    goal: (kg: string) => `cel ${kg} kg`,
+    trend: 'trend',
+    projection: 'prognoza',
+    target: 'waga docelowa',
   },
   en: {
-    label: (from: string, to: string, count: number, last: string | null, target: string) =>
-      `Weight chart from ${from} to ${to}: plan, ${count} ${pluralEn(count, 'weigh-in', 'weigh-ins')}${last ? ` (last ${last} kg)` : ''}, forecast and goal ${target} kg.`,
+    label: (n: number, projection: boolean, target: string) =>
+      `Weight chart: ${n} ${pluralEn(n, 'weigh-in', 'weigh-ins')}, the trend${projection ? ', a forecast' : ''} and the target weight ${target} kg.`,
     measured: 'weigh-ins',
-    plan: 'plan',
-    projection: 'forecast from the last weigh-in',
-    goal: (kg: string) => `goal ${kg} kg`,
+    trend: 'trend',
+    projection: 'forecast',
+    target: 'target weight',
   },
 });
 
-export interface ChartPoint {
-  date: string;
-  plan: number;
-  /** Dokąd zmierza waga od ostatniego ważenia (`null` przed nim). */
-  projection: number | null;
-}
-
 interface Props {
+  /** The first day on the chart. */
   start: string;
   today: string;
-  points: ChartPoint[];
-  measured: { date: string; kg: number }[];
+  /** Raw weigh-ins on the chart, oldest first: faint dots. */
+  measured: readonly WeighIn[];
+  /** The display trend (`trendSeries`) on the chart, oldest first: the line. */
+  trend: readonly WeighIn[];
+  /** A dashed straight line from today's trend at the pace of the reach sentence; empty without one. */
+  projection: readonly WeighIn[];
   target: number;
 }
 
 // Rysunek w skali telefonu (kolumna ~360 px): napisy osi w 12 jednostkach zostają czytelne także na
-// 320 px. Przy 640 px rośnie razem z kolumną, jak wykres trendu w profilu.
+// 320 px. Przy 640 px rośnie razem z kolumną.
 const W = 360;
 const H = 220;
 const PAD = { left: 30, right: 8, top: 10, bottom: 24 };
+/** Room after the last weigh-in when there is no forecast: today is not glued to the edge. */
+const AFTER_DAYS = 7;
 
 /**
- * Waga w czasie: plan, pomiary, prognoza od ostatniego ważenia i cel. Zwykłe SVG bez biblioteki,
- * w kolorach aplikacji: pomiary jak linia wagi w profilu (zieleń), plan stalowy, prognoza
- * niebieska, cel złoty. Każda linia ma też własny wzór kreski — kolor nie jest jedynym znakiem.
+ * Waga w czasie: pomiary jako blade kropki, trend wagi (średnia krocząca, która nie skacze z wodą)
+ * jako linia, prognoza od dzisiejszego trendu przerywaną kreską i waga docelowa. Zwykłe SVG bez
+ * biblioteki; każda linia ma też własny wzór kreski — kolor nie jest jedynym znakiem.
  */
-export function WeightChart({ start, today, points, measured, target }: Props) {
-  const first = points[0];
-  const last = points[points.length - 1];
-  if (!first || !last || points.length < 2) return null;
-  const end = last.date;
+export function WeightChart({ start, today, measured, trend, projection, target }: Props) {
+  if (!measured.length && !trend.length) return null;
+  const last = [today, ...trend.map((p) => p.day), ...projection.map((p) => p.day)].sort().at(-1)!;
+  const end = projection.length ? last : addDays(last, AFTER_DAYS);
   const span = Math.max(1, daysBetween(start, end));
-  const values = [
-    target,
-    ...points.map((p) => p.plan),
-    ...points.flatMap((p) => (p.projection === null ? [] : [p.projection])),
-    ...measured.map((m) => m.kg),
-  ];
+  const values = [target, ...measured.map((m) => m.kg), ...trend.map((p) => p.kg), ...projection.map((p) => p.kg)];
   const lo = Math.floor(Math.min(...values) - 1);
   const hi = Math.ceil(Math.max(...values) + 1);
-  const x = (date: string) => PAD.left + (daysBetween(start, date) / span) * (W - PAD.left - PAD.right);
+  const x = (day: string) => PAD.left + (daysBetween(start, day) / span) * (W - PAD.left - PAD.right);
   const y = (kg: number) => PAD.top + ((hi - kg) / (hi - lo)) * (H - PAD.top - PAD.bottom);
-  const path = (pts: { date: string; kg: number }[]) =>
-    pts.map((p, i) => `${i ? 'L' : 'M'}${x(p.date).toFixed(1)},${y(p.kg).toFixed(1)}`).join(' ');
+  const path = (pts: readonly WeighIn[]) =>
+    pts.map((p, i) => `${i ? 'L' : 'M'}${x(p.day).toFixed(1)},${y(p.kg).toFixed(1)}`).join(' ');
 
   const step = hi - lo > 20 ? 5 : hi - lo > 8 ? 2 : 1;
   const ticks: number[] = [];
   for (let kg = Math.ceil(lo / step) * step; kg <= hi; kg += step) ticks.push(kg);
-  const visibleMeasured = measured.filter((m) => m.date >= start && m.date <= end);
-  const projection = points.flatMap((p) => (p.projection === null ? [] : [{ date: p.date, kg: p.projection }]));
-  const lastMeasured = visibleMeasured[visibleMeasured.length - 1];
+  const forecast = projection.length > 1;
 
   return (
     <figure className="fd-diet-chart">
-      <svg
-        viewBox={`0 0 ${W} ${H}`}
-        role="img"
-        aria-label={T.label(
-          shortDay(start),
-          shortDay(end),
-          visibleMeasured.length,
-          lastMeasured ? formatNumber(lastMeasured.kg, 1) : null,
-          formatNumber(target, 1),
-        )}
-      >
+      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={T.label(measured.length, forecast, formatNumber(target, 1))}>
         {ticks.map((kg) => (
           <g key={kg}>
             <line className="fd-diet-grid" x1={PAD.left} x2={W - PAD.right} y1={y(kg)} y2={y(kg)} />
@@ -95,19 +78,16 @@ export function WeightChart({ start, today, points, measured, target }: Props) {
           </g>
         ))}
         <line className="fd-diet-goal" x1={PAD.left} x2={W - PAD.right} y1={y(target)} y2={y(target)} />
-        {today >= start && today <= end && (
-          <line className="now" x1={x(today)} x2={x(today)} y1={PAD.top} y2={H - PAD.bottom} />
-        )}
-        <path className="fd-diet-plan" d={path(points.map((p) => ({ date: p.date, kg: p.plan })))} />
-        {projection.length > 1 && <path className="fd-diet-proj" d={path(projection)} />}
-        {visibleMeasured.length > 1 && <path className="fd-diet-real" d={path(visibleMeasured)} />}
-        {visibleMeasured.map((m) => (
-          <circle key={m.date} className="dot" cx={x(m.date)} cy={y(m.kg)} r={2.6}>
+        {today >= start && today <= end && <line className="now" x1={x(today)} x2={x(today)} y1={PAD.top} y2={H - PAD.bottom} />}
+        {measured.map((m) => (
+          <circle key={m.day} className="fd-diet-raw" cx={x(m.day)} cy={y(m.kg)} r={2.4}>
             <title>
-              {shortDay(m.date)}: {formatNumber(m.kg, 1)} kg
+              {shortDay(m.day)}: {formatNumber(m.kg, 1)} kg
             </title>
           </circle>
         ))}
+        {trend.length > 1 && <path className="fd-diet-trend" d={path(trend)} />}
+        {forecast && <path className="fd-diet-proj" d={path(projection)} />}
         <text className="tick" x={PAD.left} y={H - 6}>
           {shortDay(start)}
         </text>
@@ -117,16 +97,18 @@ export function WeightChart({ start, today, points, measured, target }: Props) {
       </svg>
       <figcaption className="fd-diet-legend">
         <span>
-          <i className="fd-diet-real" aria-hidden /> {T.measured}
+          <i className="fd-diet-raw" aria-hidden /> {T.measured}
         </span>
         <span>
-          <i className="fd-diet-plan" aria-hidden /> {T.plan}
+          <i className="fd-diet-trend" aria-hidden /> {T.trend}
         </span>
+        {forecast && (
+          <span>
+            <i className="fd-diet-proj" aria-hidden /> {T.projection}
+          </span>
+        )}
         <span>
-          <i className="fd-diet-proj" aria-hidden /> {T.projection}
-        </span>
-        <span>
-          <i className="fd-diet-goal" aria-hidden /> {T.goal(formatNumber(target, 1))}
+          <i className="fd-diet-goal" aria-hidden /> {T.target}
         </span>
       </figcaption>
     </figure>

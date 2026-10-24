@@ -430,3 +430,20 @@ p.fd-diet-resthead b{color:var(--ink)}
 /* — C: profil, większy posiłek — */
 
 /* — D: postęp, tygodnie, plan — */
+
+/* Trzy kafelki postępu w jednym rzędzie, także na telefonie. */
+.tiles.fd-diet-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+/* Wykres wagi: pomiary blado, trend linią ciągłą; prognoza i waga docelowa mają reguły wyżej. */
+.fd-diet-chart .fd-diet-raw{fill:var(--c-green-ink);opacity:.35}
+.fd-diet-chart path.fd-diet-trend{stroke:var(--c-green-ink);stroke-width:2;stroke-linejoin:round}
+.fd-diet-legend i.fd-diet-raw{width:7px;height:7px;border:0;border-radius:50%;background:var(--c-green-ink);opacity:.5}
+.fd-diet-legend i.fd-diet-trend{border-top-color:var(--c-green-ink)}
+/* Historia celu kalorii: data, cel i kto go zmienił — wiersz pod wierszem. */
+.fd-diet-history{margin:4px 0 0;padding:0;list-style:none;font-size:13.5px}
+.fd-diet-history li{padding:7px 0;border-top:1px solid var(--surface-2);font-variant-numeric:tabular-nums}
+.fd-diet-history li:first-child{border-top:0}
+/* Kalorie z 14 dni: jeden kolor słupków, dzień niepełny jaśniej. */
+.fd-diet-fortnight i.fd-diet-fbar.fd-diet-part{opacity:.35}
+/* Tabela tygodni ma pięć kolumn: na telefonie mieści się bez przewijania. */
+table.fd-diet-weeks{min-width:0}
+table.fd-diet-weeks th:first-child{min-width:84px;white-space:nowrap}
