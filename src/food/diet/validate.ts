@@ -5,7 +5,7 @@ import { goalDirection } from './energy';
 import { addDays, mondayOf } from './model';
 import type { Plan, PlanItem, PlanVariant } from './plan';
 import { DIET_PROFILE_IDS } from './profiles';
-import { safePace, setTarget, targetOn } from './target';
+import { safePace, setTarget, targetFor, targetOn } from './target';
 import {
   MODEL_DEFAULTS,
   type ActivityLevel,
@@ -127,8 +127,9 @@ const setupCheck = (today: string, kcal: number, goalPace: number): WeekCheck =>
 
 /**
  * A new profile (version 2) from what is given, the defaults for the rest (spec §3.5). The target
- * is 2000 unless given (the estimate takes over in the next step), and the target history starts
- * with it from `today`. For app code and tests: outside input goes through `cleanProfile`.
+ * is the estimate — `targetFor` at the start weight and the first pace, 2100 for the default man —
+ * unless given, and the target history starts with it from `today`. For app code and tests:
+ * outside input goes through `cleanProfile`.
  */
 export function newProfile(partial: Partial<Profile & LegacyFields>, today: string): Profile & LegacyFields {
   const merged = {
@@ -157,7 +158,7 @@ export function newProfile(partial: Partial<Profile & LegacyFields>, today: stri
     ...partial,
   };
   const goalPace = partial.goalPace ?? safePace(merged, merged.startWeightKg, FIRST_PACE[goalDirection(merged)]);
-  const estimate = 2000;
+  const estimate = targetFor({ ...merged, goalPace }, merged.startWeightKg);
   const dailyKcal =
     partial.dailyKcal ?? (partial.goals?.length ? targetOn({ goals: partial.goals, dailyKcal: estimate }, today) : estimate);
   // Every read of the profile comes through here: a malformed start date must not throw in `addDays`.

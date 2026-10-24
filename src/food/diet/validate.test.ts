@@ -323,9 +323,9 @@ describe('A19 — one normaliser for every entry point', () => {
     }
   });
 
-  test('a new profile is complete: version 2, 2000 as its target unless given', () => {
+  test('a new profile is complete: version 2, the estimate as its target unless given', () => {
     const p: Profile = newProfile({}, TODAY);
-    expect(p).toMatchObject({ version: 2, dailyKcal: 2000, goalPace: 0.5, goals: [{ from: TODAY, kcal: 2000, by: 'setup' }] });
+    expect(p).toMatchObject({ version: 2, dailyKcal: 2100, goalPace: 0.5, goals: [{ from: TODAY, kcal: 2100, by: 'setup' }] });
     expect(newProfile({ goals: [{ from: '2026-10-01', kcal: 1950, by: 'setup' }] }, TODAY).dailyKcal).toBe(1950);
   });
 });

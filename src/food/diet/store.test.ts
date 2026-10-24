@@ -84,6 +84,23 @@ async function logEvery(kcal: number, database: DietDb) {
 }
 
 describe('profile version 2', () => {
+  test('A20 completeProfile({}): the starting estimate — 2100 for the default man — with a setup goal and the start settle', () => {
+    const today = now().date;
+    const p = completeProfile({});
+    expect(p).toMatchObject({
+      version: 2,
+      dailyKcal: 2100,
+      activityLevel: 'inactive',
+      goalPace: 0.5,
+      goals: [{ from: today, kcal: 2100, by: 'setup' }],
+      settle: { from: addDays(today, 14), why: 'start' },
+      lastCheck: { week: mondayOf(today), status: 'setup', from: 2100, to: 2100, goalPace: 0.5, answer: null },
+    });
+    // A woman (K 30 y, 165 cm, 65 kg) gets 1550; a given target is kept.
+    expect(completeProfile({ sex: 'K', age: 30, heightCm: 165, startWeightKg: 65, targetWeightKg: 60 }).dailyKcal).toBe(1550);
+    expect(completeProfile({ dailyKcal: 1950 }).goals).toEqual([{ from: today, kcal: 1950, by: 'setup' }]);
+  });
+
   test('completeProfile: the defaults of the other fields', () => {
     const p = completeProfile({ startDate: '2026-10-01', dailyKcal: 1950 });
     expect(p).toMatchObject({
@@ -113,6 +130,8 @@ describe('profile version 2', () => {
     expect(completeProfile({ heightCm: 150, startWeightKg: 45, targetWeightKg: 42 }).goalPace).toBe(0.45);
     expect(completeProfile({ age: 16 }).goalPace).toBe(0);
     expect(completeProfile({ goalPace: 0.25 }).goalPace).toBe(0.25);
+    // Keeping the weight: the default target is maintenance.
+    expect(completeProfile({ startWeightKg: 80, targetWeightKg: 80 }).dailyKcal).toBe(2650);
   });
 
   test('a stored start date that is not a date does not break reading the profile', () => {
@@ -575,7 +594,8 @@ describe('store', () => {
       version: 2,
       age: 40,
       kcalPerKg: 3000,
-      dailyKcal: 2000,
+      // No readable target: the starting estimate (M 40 y at 80 kg, −0,5 kg a week at 3000 kcal a kg).
+      dailyKcal: 2350,
       dietProfile: 'redukcja',
     });
     expect(await db.entries.toArray()).toMatchObject([

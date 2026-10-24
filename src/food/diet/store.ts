@@ -37,7 +37,8 @@ export function now(): { date: string; time: string } {
 
 /**
  * A complete profile (version 2) from a partial one: the defaults for what is missing (spec §3.5).
- * The target history starts with `dailyKcal` today, so `targetOn(profile, today)` is that number.
+ * The target is the starting estimate unless given — 2100 for the default man — and the target
+ * history starts with it today, so `targetOn(profile, today)` is `dailyKcal`.
  */
 export function completeProfile(partial: Partial<Profile>): Profile {
   return newProfile(partial, now().date);
