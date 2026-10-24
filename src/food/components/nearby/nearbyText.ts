@@ -17,8 +17,7 @@ export const NT = text({
     authors: '© autorzy OpenStreetMap',
     license: 'licencja ODbL',
     asOf: (date: string) => `stan z ${date}`,
-    live: 'na żywo z serwera Overpass',
-    border: 'przy granicy na żywo z serwera Overpass',
+    overpass: 'z serwera Overpass',
   },
   en: {
     privacy:
@@ -27,7 +26,6 @@ export const NT = text({
     authors: '© OpenStreetMap contributors',
     license: 'ODbL licence',
     asOf: (date: string) => `data as of ${date}`,
-    live: 'live from the Overpass server',
-    border: 'near the border live from the Overpass server',
+    overpass: 'from the Overpass server',
   },
 });

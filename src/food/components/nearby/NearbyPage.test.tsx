@@ -288,7 +288,8 @@ describe('W pobliżu', () => {
     overpassGate = new Promise((resolve) => (release = resolve));
     fireEvent.change(screen.getByRole('slider', { name: 'Promień' }), { target: { value: '5' } }); // 5 km
     expect(await screen.findByText(/Szukam sklepów w promieniu 5 km/)).toBeInTheDocument();
-    expect(screen.getByText(/^Na razie: 2 sklepy w promieniu 1/)).toBeInTheDocument();
+    // Poza regionem status: zmienia się z każdą paczką, czytnik ekranu czytałby każdą.
+    expect(screen.getByText(/^Na razie: 2 sklepy w promieniu 1/).closest('[role="status"]')).toBeNull();
     expect(screen.getByTestId('map')).toHaveTextContent(/^biedronka,lidl/);
     expect(screen.getByRole('heading', { level: 3, name: 'Skyr z białkiem i malinami' })).toBeInTheDocument();
     release();

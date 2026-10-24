@@ -1,14 +1,16 @@
-import type { OsmSource } from '../../hooks/useOsmAround';
+import type { OsmState } from '../../hooks/useOsmAround';
 import { hasStaticData } from '../../nearby/staticData';
 import { NT, dataDate } from './nearbyText';
 
 /**
  * Whose data the map shows and from when — the OpenStreetMap credit the licence asks for, with the
- * ODbL notice that ships beside the app's copy of the data, and its date (or "live" for Overpass).
+ * ODbL notice that ships beside the app's copy of the data. Named after the items on screen: the
+ * copy's date while they are its own (the Polish side at the border too), the Overpass server while
+ * they are its answer — fresh or saved, a saved one's age is in the status line.
  */
-export function OsmCredit({ source, dataAsOf }: { source: OsmSource; dataAsOf: string | null }) {
-  const date = source !== 'live' ? dataDate(dataAsOf) : null;
-  const tail = [date && NT.asOf(date), source === 'live' ? NT.live : source === 'mixed' ? NT.border : null].filter(Boolean);
+export function OsmCredit({ shown, dataAsOf }: Pick<OsmState, 'shown' | 'dataAsOf'>) {
+  const date = shown === 'static' ? dataDate(dataAsOf) : null;
+  const tail = shown === 'live' ? NT.overpass : date && NT.asOf(date);
   return (
     <p className="fd-near-credit">
       {NT.credit}{' '}
@@ -23,7 +25,7 @@ export function OsmCredit({ source, dataAsOf }: { source: OsmSource; dataAsOf: s
           </a>
         </>
       )}
-      {tail.map((t) => ` · ${t}`).join('')}
+      {tail && ` · ${tail}`}
     </p>
   );
 }

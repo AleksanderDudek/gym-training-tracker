@@ -4,16 +4,15 @@ import { useCallback, useId, useMemo, useRef, useState } from 'react';
 import { pluralEn, text } from '../../../i18n';
 import { useDataset } from '../../hooks/useDataset';
 import { useGeolocation, type GeoState } from '../../hooks/useGeolocation';
-import type { AroundState } from '../../hooks/useNearbyShops';
-import { useOsmAround } from '../../hooks/useOsmAround';
+import { useOsmAround, type OsmState } from '../../hooks/useOsmAround';
 import { useUrlState } from '../../hooks/useUrlState';
 import { formatNumber, plural } from '../../lib/format';
 import type { Dataset, IndexedProduct } from '../../lib/types';
 import { formatDistance } from '../../nearby/geo';
-import { shopsOf, type Element } from '../../nearby/overpass';
+import { shopsOf } from '../../nearby/overpass';
 import { DEFAULT_RADIUS, radiusLabel } from '../../nearby/radius';
 import { placeShops, summarizeChains } from '../../nearby/summary';
-import type { LatLon, Shop } from '../../nearby/types';
+import type { LatLon, PlacedShop, Shop } from '../../nearby/types';
 import { nearbyFromParams, nearbyToParams, type NearbyState, type NearbyView } from '../../nearby/url';
 import { RECIPES } from '../../recipes/catalog';
 import { chainsWithFood } from '../../recipes/chains';
@@ -158,16 +157,18 @@ function placeNote(geo: GeoState): string | null {
   return T.savedFailed;
 }
 
-type ShopsState = Omit<AroundState<Element>, 'items'> & { shops: Shop[] };
+/** Dane strony (`useOsmAround`) ze sklepami w miejsce elementów OSM — z resztą stanu, z której biorą uwagi o danych. */
+type ShopsState = Omit<OsmState, 'items'> & { shops: Shop[] };
 
 /**
  * Jak daleko lista jest pełna, póki odpowiedź przychodzi kawałkami — poza regionem `status`, bo
- * zmienia się z każdą paczką. Promień w dół do pełnych 100 m: nie obiecuje więcej, niż jest.
+ * zmienia się z każdą paczką. Promień w dół do pełnych 100 m i liczone tylko sklepy w nim: nie
+ * obiecuje więcej, niż jest.
  */
-function progressLine(geo: GeoState, shops: ShopsState, radius: number, knownCount: number): string | null {
+function progressLine(geo: GeoState, shops: ShopsState, radius: number, known: PlacedShop[]): string | null {
   const sure = Math.floor(shops.completeWithin / 100) * 100;
   return geo.position && shops.status !== 'ready' && sure >= 100 && shops.completeWithin < radius
-    ? T.partial(knownCount, radiusLabel(sure))
+    ? T.partial(known.filter((shop) => shop.distance <= sure).length, radiusLabel(sure))
     : null;
 }
 
@@ -338,7 +339,7 @@ function Nearby({
               state={{ ...shopsState, items: shopsState.shops }}
               what={T.what}
               status={statusLine(geo, shopsState, state.radius, placement.known.length, placement.otherCount)}
-              progress={progressLine(geo, shopsState, state.radius, placement.known.length)}
+              progress={progressLine(geo, shopsState, state.radius, placement.known)}
               showServer={geo.position !== null}
             />
             {shopsState.status === 'error' && (
@@ -395,7 +396,7 @@ function Nearby({
           <p className="hint fd-near-map-help" id={mapHelpId}>
             {T.help}
           </p>
-          <OsmCredit source={osm.source} dataAsOf={osm.dataAsOf} />
+          <OsmCredit shown={osm.shown} dataAsOf={osm.dataAsOf} />
           <p className="fd-near-privacy">{NT.privacy}</p>
         </div>
       </section>

@@ -285,11 +285,12 @@ export function EatNow({ state, update, closeEntry, geo, locate, setManual, setR
     return T.found(radiusLabel(state.radius), known, fitting, ranked.length - known);
   })();
   // The app's data arrives in pieces, nearest first: what is complete so far is said, not hidden —
-  // counted only once the chains' menus are here (before that every place looks menu-less).
+  // counted only once the chains' menus are here (while they load, or when they failed, every place
+  // looks menu-less), and only out to the radius the note names.
   const sure = Math.floor(within / 100) * 100;
   const progress =
-    geo.position && placesState.status !== 'ready' && sure >= 100 && within < state.radius && menus.status !== 'loading'
-      ? T.partial(known, radiusLabel(sure))
+    geo.position && placesState.status !== 'ready' && sure >= 100 && within < state.radius && menus.status === 'ready'
+      ? T.partial(ranked.filter((r) => r.best && r.distance <= sure).length, radiusLabel(sure))
       : null;
   const note = geo.source === 'saved' && geo.status === 'locating' ? T.savedLocating : null;
   const over = needs.remaining.kcal <= 50;
@@ -399,7 +400,7 @@ export function EatNow({ state, update, closeEntry, geo, locate, setManual, setR
           <p className="hint fd-near-map-help" id={mapHelpId}>
             {T.help}
           </p>
-          <OsmCredit source={osm.source} dataAsOf={osm.dataAsOf} />
+          <OsmCredit shown={osm.shown} dataAsOf={osm.dataAsOf} />
           <p className="fd-near-privacy">{NT.privacy}</p>
         </div>
       </section>

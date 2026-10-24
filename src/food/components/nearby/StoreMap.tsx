@@ -98,7 +98,7 @@ export function StoreMap(props: Props) {
     const group = pins.current;
     const c = colors.current;
     if (!group || !c) return;
-    const keeper = popupKeeper(openId);
+    const keeper = popupKeeper(openId, box.current);
     group.clearLayers();
     for (const shop of shops) {
       const chosen = shop.chain === selectedChain;
@@ -118,7 +118,7 @@ export function StoreMap(props: Props) {
     // Płótno rysuje w kolejności dodania: „Ty” na wierzchu, nie pod gęstwiną sklepów w centrum miasta.
     you.current?.bringToFront();
     keeper.restore();
-  }, [shops, selectedChain, pins, colors, map, you]);
+  }, [shops, selectedChain, box, pins, colors, map, you]);
 
   return <MapFrame boxRef={box} twoFingers={twoFingers} label={T.map} describedBy={describedBy} />;
 }

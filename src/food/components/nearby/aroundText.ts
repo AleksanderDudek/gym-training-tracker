@@ -63,9 +63,11 @@ export interface AroundNotes {
 /**
  * The words about the server and the data behind the list: an older answer on screen and its age,
  * a pause before the next try, a search that takes long. `what` names the items („lokale”, „sklepy”).
+ * `source` and `shown` decide which words apply: required, so a caller cannot drop them unnoticed.
  */
 export type AroundNotesState = Pick<AroundState<unknown>, 'status' | 'items' | 'savedAt' | 'since' | 'retryAt'> &
-  Partial<Pick<OsmState, 'source' | 'shown' | 'coverage' | 'dataAsOf' | 'olderLeaves'>>;
+  Pick<OsmState, 'source' | 'shown'> &
+  Partial<Pick<OsmState, 'coverage' | 'dataAsOf' | 'olderLeaves'>>;
 
 export function aroundNotes(state: AroundNotesState, what: string, now: number): AroundNotes {
   const left = state.retryAt ? Math.ceil((state.retryAt - now) / 1000) : 0;
