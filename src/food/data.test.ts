@@ -12,7 +12,7 @@ const meta = vi.hoisted(() => ({
 vi.mock('virtual:food-data', () => ({ default: meta }));
 
 // Sklepy internetowe i sieci z próbki zamiast prawdziwych plików: liczby produktów w testach zostają stałe.
-const online = vi.hoisted(() => ({ SHOPS: [] as unknown[], CHAIN_DATA: [] as unknown[] }));
+const online = vi.hoisted(() => ({ SHOPS: [] as unknown[], CHAIN_DATA: [] as unknown[], CHUNK_URL: '' }));
 vi.mock('./online/shopData', () => online);
 
 const TEXT = JSON.stringify(DATASET);
@@ -191,18 +191,16 @@ describe('pierwsza wizyta: baza i paczka sklepów trafiają do kopii service wor
     return { sw, takeOver };
   }
 
-  /** Pliki wczytane przez przeglądarkę (Resource Timing), wśród nich paczka sklepów z builda. */
-  const loadedFiles = () =>
-    vi
-      .spyOn(performance, 'getEntriesByType')
-      .mockReturnValue([{ name: `${PAGES}assets/index-Po8H3kux.js` }, { name: CHUNK }] as PerformanceEntryList);
+  beforeEach(() => {
+    // Paczka z builda zna swój adres z haszem (`import.meta.url`).
+    online.CHUNK_URL = CHUNK;
+  });
 
   afterEach(() => {
     delete (navigator as { serviceWorker?: unknown }).serviceWorker;
   });
 
   it('gdy service worker przejmie stronę, pobiera je jeszcze raz przez niego — bazę dopiero po jej pierwszej próbie', async () => {
-    loadedFiles();
     const calls: string[] = [];
     let arrive = () => {};
     vi.stubGlobal(
@@ -228,7 +226,6 @@ describe('pierwsza wizyta: baza i paczka sklepów trafiają do kopii service wor
   });
 
   it('strona już pod opieką service workera: wszystko poszło przez niego, nic nie jest pobierane drugi raz', async () => {
-    loadedFiles();
     const fetchMock = vi.fn(async () => new Response(gz(TEXT)));
     vi.stubGlobal('fetch', fetchMock);
     const { sw } = serviceWorker({});

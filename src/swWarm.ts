@@ -7,7 +7,10 @@
  * twice at the same time.
  */
 
-/** A file's address — or, for a file whose name the build chose, how to find it once it has loaded. */
+/**
+ * A file's address — or, for a chunk whose hashed name only the build knows, how to get it once it
+ * has loaded (asked after `settled`; `undefined` skips it).
+ */
 export type WarmUrl = string | (() => string | undefined);
 
 /** What to fetch at the takeover, each after what it waits for (never rejects). */
@@ -57,12 +60,4 @@ export function refetchWhenControlled(url: WarmUrl, settled: Promise<unknown> = 
   const done = settled.then(ignore, ignore);
   const before = waiting.get(url);
   waiting.set(url, before ? Promise.all([before, done]) : done);
-}
-
-/**
- * The address of a file the page has loaded, from the browser's list of them (Resource Timing): for
- * a chunk whose name has a hash only the build knows. `undefined` when it is not on the list.
- */
-export function loadedUrl(name: RegExp): string | undefined {
-  return performance.getEntriesByType('resource').find((entry) => name.test(entry.name))?.name;
 }

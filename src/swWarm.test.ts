@@ -115,27 +115,26 @@ describe('files fetched before the service worker controlled the page', () => {
     expect(fetched).toEqual([LEAF]);
   });
 
-  test('a file whose name the build chose is looked up after its request, among the files the page loaded', async () => {
-    const entries = vi
-      .spyOn(performance, 'getEntriesByType')
-      .mockReturnValue([{ name: `${BASE}assets/index-Po8H3kux.js` }, { name: CHUNK }] as PerformanceEntryList);
-    const { loadedUrl, refetchWhenControlled } = await load();
+  test('a chunk whose name only the build knows is asked for its address after its request', async () => {
+    const { refetchWhenControlled } = await load();
     const chunk = onItsWay();
-    refetchWhenControlled(() => loadedUrl(/\/assets\/shopData-[\w-]+\.js$/), chunk.promise);
+    let address: string | undefined;
+    const asked = vi.fn(() => address);
+    refetchWhenControlled(asked, chunk.promise);
     takeOver();
     await flush();
-    expect(entries).not.toHaveBeenCalled();
+    expect(asked).not.toHaveBeenCalled();
+    // The chunk has loaded and tells its own address.
+    address = CHUNK;
     chunk.resolve();
     await flush();
-    expect(entries).toHaveBeenCalledWith('resource');
+    expect(asked).toHaveBeenCalledTimes(1);
     expect(fetched).toEqual([CHUNK]);
   });
 
-  test('a file the page cannot find among the loaded ones is skipped', async () => {
-    vi.spyOn(performance, 'getEntriesByType').mockReturnValue([{ name: `${BASE}src/food/online/shopData.ts` }] as PerformanceEntryList);
-    const { loadedUrl, refetchWhenControlled } = await load();
-    expect(loadedUrl(/\/assets\/shopData-[\w-]+\.js$/)).toBeUndefined();
-    refetchWhenControlled(() => loadedUrl(/\/assets\/shopData-[\w-]+\.js$/));
+  test('a chunk that never told its address (it failed to load) is skipped', async () => {
+    const { refetchWhenControlled } = await load();
+    refetchWhenControlled(() => undefined);
     refetchWhenControlled(INDEX);
     takeOver();
     await flush();

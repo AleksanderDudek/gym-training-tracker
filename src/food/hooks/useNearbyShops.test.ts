@@ -165,6 +165,30 @@ describe('useAround', () => {
     expect(result.current[0].retryAt).toBeNull();
   });
 
+  test('a failure where the user was does not count where they are now: the new place starts with the first pause', async () => {
+    const fetcher = vi.fn<(c: LatLon, r: number, o: FetchOptions) => Promise<Item[]>>(fail);
+    const { result, rerender } = renderHook(({ here }) => useAround<Item>(here, 1000, fetcher, KEY, 'nie wyszło'), {
+      initialProps: { here: HERE },
+    });
+    await settle();
+    // The first automatic try fails too; the next would be a minute after it.
+    await act(() => vi.advanceTimersByTimeAsync(AUTO_RETRY_MS[0]!));
+    await settle();
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    // Over half a minute later the user is a kilometre away, in another rounding cell.
+    await act(() => vi.advanceTimersByTimeAsync(35_000));
+    rerender({ here: { lat: HERE.lat + 0.01, lon: HERE.lon } });
+    // While the new search settles: no try on the old failure's clock, no countdown.
+    expect(result.current[0].retryAt).toBeNull();
+    await settle();
+    expect(fetcher).toHaveBeenCalledTimes(3);
+    expect(result.current[0].status).toBe('error');
+    // Its own first failure gets the first pause, not the second.
+    const left = result.current[0].retryAt! - Date.now();
+    expect(left).toBeGreaterThan(AUTO_RETRY_MS[0]! - 1000);
+    expect(left).toBeLessThanOrEqual(AUTO_RETRY_MS[0]!);
+  });
+
   test('the server’s own pause shows as a countdown while the search goes on', async () => {
     const fetcher = vi.fn(
       (_c: LatLon, _r: number, options: FetchOptions) =>

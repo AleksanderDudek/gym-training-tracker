@@ -43,6 +43,8 @@ interface Fetched<T> {
   waitUntil: number | null;
   /** When the last search failed: the next automatic try is counted from it. */
   failedAt: number | null;
+  /** The place (rounded centre and radius) the last search was for: its failure counts only there. */
+  place: string;
 }
 
 const IDLE: Fetched<never> = {
@@ -54,7 +56,11 @@ const IDLE: Fetched<never> = {
   since: null,
   waitUntil: null,
   failedAt: null,
+  place: '',
 };
+
+/** A place as the automatic tries count it: the rounded centre and the radius. */
+const placeOf = (lat: number | undefined, lon: number | undefined, radius: number) => `${lat},${lon},${radius}`;
 
 /** One empty list, so "nothing valid" does not change identity every render. */
 const NOTHING: never[] = [];
@@ -113,6 +119,7 @@ export function useAround<T>(
   useEffect(() => {
     if (qLat === undefined || qLon === undefined) return;
     const centre = { lat: qLat, lon: qLon };
+    const place = placeOf(qLat, qLon, radius);
     // `query` again, from the numbers the effect depends on (rounding a rounded centre changes nothing).
     const circle = queryCircle(centre, radius);
     const now = Date.now();
@@ -127,12 +134,12 @@ export function useAround<T>(
     const timer = setTimeout(
       async () => {
         if (hit) {
-          setFetched({ ...IDLE, status: 'ready', items: hit, circle: { ...centre, radius: reach } });
+          setFetched({ ...IDLE, status: 'ready', items: hit, circle: { ...centre, radius: reach }, place });
           return;
         }
         const saved = readFallback<T>(storage(), centre, now, cacheKey);
         setFetched((f) => {
-          const loading = { status: 'loading' as const, error: null, since: Date.now(), waitUntil: null, failedAt: null };
+          const loading = { status: 'loading' as const, error: null, since: Date.now(), waitUntil: null, failedAt: null, place };
           if (saved) return { ...loading, items: saved.items, circle: saved.circle, savedAt: saved.fetchedAt };
           // Nothing kept (storage full or off): this visit's own answer, if it still covers here.
           return f.circle && reachOf(f.circle, centre) > 0 ? { ...f, ...loading } : { ...IDLE, ...loading };
@@ -143,11 +150,11 @@ export function useAround<T>(
             onWait: (ms) => setFetched((f) => ({ ...f, waitUntil: Date.now() + ms })),
           });
           writeCache(storage(), circle, items, Date.now(), cacheKey);
-          setFetched({ ...IDLE, status: 'ready', items, circle });
+          setFetched({ ...IDLE, status: 'ready', items, circle, place });
         } catch (error) {
           if (controller.signal.aborted) return;
           const message = error instanceof OverpassUnavailable || error instanceof OverpassOffline ? error.message : failed;
-          setFetched((f) => ({ ...f, status: 'error', error: message, since: null, waitUntil: null, failedAt: Date.now() }));
+          setFetched((f) => ({ ...f, status: 'error', error: message, since: null, waitUntil: null, failedAt: Date.now(), place }));
         }
       },
       hit ? 0 : SETTLE_MS,
@@ -162,9 +169,11 @@ export function useAround<T>(
   const retry = useCallback(() => setAttempt((n) => n + 1), []);
 
   // Retries by itself after a failure, counted per place (the rounded one: jitter is no new place)
-  // and radius: a new one starts afresh.
-  const placeKey = `${qLat},${qLon},${radius}`;
-  const autoAt = useAutoRetry(fetched.status === 'error' ? fetched.failedAt : null, placeKey, retry);
+  // and radius: a new one starts afresh. The failure of the place just left is not this one's: while
+  // the new search waits to settle, nothing is tried for it on the old failure's clock.
+  const placeKey = placeOf(qLat, qLon, radius);
+  const failedHere = fetched.status === 'error' && fetched.place === placeKey;
+  const autoAt = useAutoRetry(failedHere ? fetched.failedAt : null, placeKey, retry);
 
   // Within what distance of HERE is the last answer complete? Items fetched
   // for another place are not shown for this one (after a move they would name

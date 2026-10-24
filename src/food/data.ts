@@ -7,7 +7,7 @@ import type { ChainData } from './chains/types';
 import { mergeOnline } from './online/merge';
 import type { ShopData } from './online/types';
 import { text } from '../i18n';
-import { loadedUrl, refetchWhenControlled } from '../swWarm';
+import { refetchWhenControlled } from '../swWarm';
 
 const T = text({
   pl: {
@@ -34,9 +34,6 @@ export const MISSING_DATA_MESSAGE = T.missing;
 /** Re-exported: the products dataset and the OSM leaves unpack the same way. */
 export { inflate };
 
-/** Paczka sklepów w buildzie (`assets/shopData-<hasz>.js`) — ta sama, którą service worker trzyma w kopii. */
-const SHOP_CHUNK = /\/assets\/shopData-[\w-]+\.js$/;
-
 /** Adres bazy produktów albo `null`, gdy tę wersję aplikacji zbudowano bez niej. */
 const datasetUrl = (): string | null => (foodData.url ? import.meta.env.BASE_URL + foodData.url : null);
 
@@ -48,9 +45,15 @@ const datasetUrl = (): string | null => (foodData.url ? import.meta.env.BASE_URL
 function loadShops(): Promise<{ shops: ShopData[]; chains: ChainData[] }> {
   const loading = import('./online/shopData');
   // Pierwsza wizyta: paczka przyszła obok service workera, więc gdy ten przejmie stronę, jest
-  // pobierana jeszcze raz — do jego kopii. Jej nazwę zna tylko build: adres z listy plików, które
-  // przeglądarka wczytała.
-  refetchWhenControlled(() => loadedUrl(SHOP_CHUNK), loading);
+  // pobierana jeszcze raz — do jego kopii. Nazwę z haszem zna tylko build, więc adres podaje sama
+  // paczka, kiedy już się wczyta.
+  let chunk: string | undefined;
+  refetchWhenControlled(
+    () => chunk,
+    loading.then((m) => {
+      chunk = m.CHUNK_URL;
+    }),
+  );
   return loading.then(
     (m) => ({ shops: m.SHOPS, chains: m.CHAIN_DATA }),
     () => ({ shops: [], chains: [] }),

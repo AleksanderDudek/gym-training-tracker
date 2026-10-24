@@ -239,7 +239,7 @@ describe('the app’s own OSM data', () => {
   });
 
   test('the very first visit: when the service worker takes over, what was fetched before goes through it again — a leaf on its way once it has settled', async () => {
-    // Not controlled yet: the module listens for the takeover as it loads.
+    // Not controlled yet: the takeover is listened for from the first request on (src/swWarm.ts).
     let takeOver = () => {};
     const worker = {
       controller: null as object | null,

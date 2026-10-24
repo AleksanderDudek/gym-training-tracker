@@ -46,9 +46,9 @@ precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
 // Pierwsza wizyta: strona przechodzi pod opiekę od razu, nie dopiero po przeładowaniu — tak jak
 // wcześniej. Przy aktualizacji niczego to nie przyspiesza: nowa wersja i tak czeka na zgodę.
-// To, co strona pobrała przed przejęciem (baza produktów, paczka sklepów, kawałki danych OSM),
-// poszło obok kopii — strona pobiera to wtedy jeszcze raz, już przez service worker
-// (`src/swWarm.ts`, kawałki: `src/food/nearby/staticData.ts`).
+// To, co strona pobrała przed przejęciem (baza produktów, paczka sklepów, indeks i kawałki danych
+// OSM), poszło obok kopii — strona pobiera to wtedy jeszcze raz, już przez service worker
+// (`src/swWarm.ts`).
 clientsClaim();
 
 registerRoute(

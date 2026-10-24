@@ -1,4 +1,5 @@
 import osmPlaces from 'virtual:osm-places';
+import { refetchWhenControlled } from '../../swWarm';
 import { inflate } from '../lib/inflate';
 import { decodeLeaf, leafPath, validateIndex, type OsmElement, type OsmIndex } from './osmFormat';
 
@@ -122,9 +123,6 @@ async function fetchWithin(url: string, ms: number, init: RequestInit = {}): Pro
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-/** The service worker controls the page: until then, what is fetched does not land in its copy. */
-const controlled = (): boolean => typeof navigator === 'undefined' || !navigator.serviceWorker || !!navigator.serviceWorker.controller;
-
 /* ---------------- The index ---------------- */
 
 let index: Promise<OsmIndex> | null = null;
@@ -154,7 +152,12 @@ function keep(request: Promise<OsmIndex>): Promise<OsmIndex> {
 
 /** The index, read once per page (the service worker serves it at once and refreshes it behind). */
 export function loadIndex(): Promise<OsmIndex> {
-  return index ?? keep(fetchWithin(indexUrl(), INDEX_TIMEOUT_MS).then(({ response, body }) => readIndex(response, body)));
+  if (index) return index;
+  const request = keep(fetchWithin(indexUrl(), INDEX_TIMEOUT_MS).then(({ response, body }) => readIndex(response, body)));
+  // The very first visit asks before the service worker controls the page: once it takes over, the
+  // index is fetched again through it, into its copy (the leaves the same way).
+  refetchWhenControlled(indexUrl(), request);
+  return request;
 }
 
 /**
@@ -192,8 +195,6 @@ const pending = new Map<string, Promise<LoadedLeaf>>();
 const started = new Map<string, number>();
 /** How many views hold each leaf on screen. */
 const pins = new Map<string, number>();
-/** Leaves requested before the service worker took over (the very first visit). */
-const uncontrolled = new Set<string>();
 
 /** When a leaf still on its way started loading; `undefined` when it is not loading. */
 export function leafStartedAt(leaf: LeafRef): number | undefined {
@@ -330,7 +331,6 @@ export function loadLeaf(leaf: LeafRef): Promise<LoadedLeaf> {
   let request = pending.get(url);
   if (!request) {
     started.set(url, Date.now());
-    if (!controlled()) uncontrolled.add(url);
     request = fetchLeaf(leaf, url)
       .then((loaded) => remember(url, loaded))
       .finally(() => {
@@ -338,30 +338,12 @@ export function loadLeaf(leaf: LeafRef): Promise<LoadedLeaf> {
         started.delete(url);
       });
     pending.set(url, request);
+    // The very first visit: fetched past the service worker, so once it takes over the leaf is
+    // fetched again through it (after this request), into its copy — the area works offline.
+    refetchWhenControlled(url, request);
   }
   return request;
 }
-
-/**
- * The very first visit fetches before the service worker controls the page, so those files would
- * be missing offline. When it takes over, everything asked for until then is fetched once more
- * through it (from the browser's HTTP cache, mostly) and lands in its copy — a leaf still on its way
- * first finishes.
- */
-function cacheThroughWorker(): void {
-  if (osmPlaces.index === null) return;
-  if (index) void fetch(indexUrl()).catch(() => {});
-  for (const url of uncontrolled) {
-    const onWay = pending.get(url);
-    void (onWay ?? Promise.resolve())
-      .catch(() => {})
-      .then(() => fetch(url))
-      .catch(() => {});
-  }
-  uncontrolled.clear();
-}
-if (typeof navigator !== 'undefined' && navigator.serviceWorker && !navigator.serviceWorker.controller)
-  navigator.serviceWorker.addEventListener('controllerchange', cacheThroughWorker, { once: true });
 
 /** Forgets everything in memory (tests). */
 export function __resetStaticData(): void {
@@ -371,5 +353,4 @@ export function __resetStaticData(): void {
   pending.clear();
   started.clear();
   pins.clear();
-  uncontrolled.clear();
 }

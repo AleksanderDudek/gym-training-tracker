@@ -103,6 +103,52 @@ describe('useStaticAround', () => {
     expect(calls.index).toBe(1 + AUTO_RETRY_MS.length);
   });
 
+  test('the index unreachable while the phone is locked: one try when it is looked at, the next only after that one fails', async () => {
+    // The first ask fails at once; every later one hangs until its own deadline cuts it (lie-fi).
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string, init?: RequestInit) => {
+        if (!url.includes('index.json')) return Promise.resolve(osmResponse(data, url)!);
+        calls.index++;
+        if (calls.index === 1) return Promise.reject(new TypeError('Failed to fetch'));
+        return new Promise<Response>((_, reject) =>
+          init?.signal?.addEventListener('abort', () => reject(new DOMException('The operation was aborted.', 'AbortError'))),
+        );
+      }),
+    );
+    const visibility = (state: 'visible' | 'hidden') => {
+      Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => state });
+      document.dispatchEvent(new Event('visibilitychange'));
+    };
+    try {
+      renderHook(() => useStaticAround(HERE, 1000));
+      await settle();
+      expect(calls.index).toBe(1);
+      // Locked for five minutes: every due time passes while hidden — nothing is asked meanwhile.
+      visibility('hidden');
+      await settle(5 * 60_000, 5000);
+      expect(calls.index).toBe(1);
+      // Looked at: ONE try, which hangs — the old failure must not count as a fresh one for the
+      // other slots while it runs.
+      visibility('visible');
+      await settle(500);
+      expect(calls.index).toBe(2);
+      // Cut after its 10 s; the next slot (1 min) counts from that failure, the last (2 min) likewise.
+      await settle(10_000 + AUTO_RETRY_MS[1]! - 2000);
+      expect(calls.index).toBe(2);
+      await settle(3000);
+      expect(calls.index).toBe(3);
+      await settle(10_000 + AUTO_RETRY_MS[2]! - 2000);
+      expect(calls.index).toBe(3);
+      await settle(3000);
+      expect(calls.index).toBe(4);
+      await settle(10 * 60_000, 5000);
+      expect(calls.index).toBe(4);
+    } finally {
+      visibility('visible');
+    }
+  });
+
   test('a slow connection: "since when" is known while the leaves load', async () => {
     mode = 'hold';
     const { result } = renderHook(() => useStaticAround(HERE, 1000));
