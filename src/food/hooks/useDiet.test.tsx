@@ -16,13 +16,9 @@ const bridge = (over: Partial<GymBridge> = {}): GymBridge => ({
   stepsOn: () => null,
   setSteps: vi.fn(),
   moveOn: () => ({
-    trained: false,
-    workoutKcal: null,
-    cardioKcal: null,
     workouts: 0,
     snacks: 0,
     outings: 0,
-    activeMin: 0,
   }),
   toast: vi.fn(),
   ...over,

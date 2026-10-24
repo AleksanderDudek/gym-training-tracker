@@ -40,20 +40,12 @@ export interface GymBridge {
 }
 
 export interface MoveDay {
-  /** Był trening siłowy (wpis w dzienniku treningów). */
-  trained: boolean;
-  /** Aktywne kalorie treningów siłowych tego dnia. */
-  workoutKcal: number | null;
-  /** Aktywne kalorie kroków i cardio razem. */
-  cardioKcal: number | null;
   /** Treningi siłowe zapisane tego dnia. */
   workouts: number;
   /** Przekąski ruchowe tego dnia. */
   snacks: number;
   /** Wyjścia na cardio od 10 minut: bieżnia, rower, taniec oraz biegi i marsze z zegarka. */
   outings: number;
-  /** Minuty ruchu w przeliczeniu na umiarkowany, tak jak liczą je treningi. */
-  activeMin: number;
 }
 
 export const BridgeContext = createContext<GymBridge | null>(null);

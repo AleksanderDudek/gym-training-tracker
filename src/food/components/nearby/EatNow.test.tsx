@@ -122,7 +122,7 @@ describe('Zjedz teraz', () => {
   test('15 000 steps and a long ride leave the budget as it is: activity never changes the target', async () => {
     const bridge = testBridge({
       stepsOn: () => 15_000,
-      moveOn: () => testMove({ cardioKcal: 900, outings: 1, activeMin: 150 }),
+      moveOn: () => testMove({ outings: 1 }),
     });
     renderWithBridge(<NearbyPage />, bridge);
     const answer = await screen.findByRole('region', { name: 'Na teraz' });

@@ -56,7 +56,6 @@ import {
   addCardio,
   deviceStepsOn,
   minutesByDay,
-  minutesOn,
   outingsOn,
   removeCardio,
   stepsOn,
@@ -87,7 +86,7 @@ import { GuidedSession } from './components/Guided';
 import { PromoPage } from './components/Promo';
 import type { WatchPayload } from './engine/watch';
 import { HEIGHT_RANGE, WEIGHT_RANGE, bodyOf, removeBodyWeight, setBodyWeight, validBody, validHeight, validWeight } from './engine/body';
-import { cardioBurn, dayBurn, workoutBurn } from './engine/burn';
+import { cardioBurn, workoutBurn } from './engine/burn';
 import { LevelUp, avatarOf } from './components/Character';
 import type { Avatar } from './components/Character';
 import type {
@@ -808,19 +807,11 @@ export default function App() {
       // Ta sama reguła co wszędzie w aplikacji: z wpisu ręcznego i zegarka zostaje wyższa liczba.
       stepsOn: (day) => stepsOn(state, day) || null,
       setSteps: (day, steps) => bridgeWrites.current?.setSteps(day, steps),
-      moveOn: (day) => {
-        const burn = dayBurn(state, day);
-        return {
-          // Ten sam dzień co w kaloriach dnia (`dayBurn`).
-          trained: state.log.some((e) => dayKey(e.date) === day),
-          workoutKcal: burn ? burn.workouts : null,
-          cardioKcal: burn ? burn.cardio : null,
-          workouts: state.log.filter((e) => dayKey(e.date) === day).length,
-          snacks: snacksOn(state, day).length,
-          outings: outingsOn(state, day),
-          activeMin: minutesOn(state, day),
-        };
-      },
+      moveOn: (day) => ({
+        workouts: state.log.filter((e) => dayKey(e.date) === day).length,
+        snacks: snacksOn(state, day).length,
+        outings: outingsOn(state, day),
+      }),
       toast: setToastMsg,
       // To samo pominięcie co karta ważenia na ekranie Dziś (`cfg.weighSkip`, dzień jak w `Weigh`).
       weighSkipped: () => state.cfg.weighSkip === weighDay(),

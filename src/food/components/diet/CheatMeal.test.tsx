@@ -207,7 +207,7 @@ describe('większy posiłek w dzienniku', () => {
     const bridge = testBridge({
       weights: [{ day: '2026-10-01', kg: 80 }],
       stepsOn: (day) => (day === TODAY ? 3000 : null),
-      moveOn: (day) => testMove(day === TODAY ? { trained: true, workoutKcal: 320, workouts: 1 } : {}),
+      moveOn: (day) => testMove(day === TODAY ? { workouts: 1 } : {}),
     });
     const user = userEvent.setup();
     renderWithBridge(<DiaryPage />, bridge);

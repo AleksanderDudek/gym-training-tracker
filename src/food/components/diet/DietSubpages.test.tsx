@@ -190,7 +190,7 @@ function trainingWeeks(trainings: number[]) {
   weights.push({ day: thisMonday, kg });
   return testBridge({
     weights,
-    moveOn: (day) => testMove({ trained: trainedOn.has(day), workouts: trainedOn.has(day) ? 1 : 0 }),
+    moveOn: (day) => testMove({ workouts: trainedOn.has(day) ? 1 : 0 }),
   });
 }
 

@@ -740,9 +740,6 @@ describe('Kroki — przez most do treningów', () => {
       stepsOn: (day) => (day === '2026-10-14' ? 7200 : null),
       moveOn: (day) =>
         testMove({
-          trained: day === '2026-10-14',
-          workoutKcal: day === '2026-10-14' ? 310 : 0,
-          cardioKcal: day === '2026-10-14' ? 180 : 0,
           workouts: day === '2026-10-14' ? 1 : 0,
         }),
     });

@@ -190,7 +190,9 @@ export function noticeNotes(p: Profile, kgNow: number): NoticeNotes {
   const raised = p.goals.some((g) => g.by === 'safety');
   const bmi = !age && raised && safety(p, kgNow).noLoss === 'bmi';
   const min = hardMinOf(p);
-  const hardMin = !age && !bmi && p.goals.some((g) => g.by === 'safety' && g.kcal === min) ? min : null;
+  // The newest `safety` entry only: after „Podnieś do …” the target is the floor, not the minimum.
+  const lastSafety = [...p.goals].reverse().find((g) => g.by === 'safety');
+  const hardMin = !age && !bmi && lastSafety?.kcal === min ? min : null;
   const floor = floorOf(p, kgNow);
   const below = !age && !p.belowFloorOk && p.dailyKcal >= min && p.dailyKcal < floor;
   return { age, bmi, hardMin, floor: below ? floor : null };

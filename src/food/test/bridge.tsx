@@ -5,13 +5,9 @@ import { BridgeContext, type GymBridge, type MoveDay } from '../bridge';
 
 /** Dzień bez ruchu — test nadpisuje tylko to, czego potrzebuje. */
 export const testMove = (over: Partial<MoveDay> = {}): MoveDay => ({
-  trained: false,
-  workoutKcal: null,
-  cardioKcal: null,
   workouts: 0,
   snacks: 0,
   outings: 0,
-  activeMin: 0,
   ...over,
 });
 

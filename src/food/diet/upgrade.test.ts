@@ -181,6 +181,9 @@ describe('A18 — safety exceptions', () => {
       { from: TODAY, kcal: 1200, by: 'safety' },
     ]);
     expect(noticeNotes(p, 62)).toMatchObject({ age: false, bmi: false, hardMin: 1200 });
+    // „Podnieś do …” on a later day: the target is the floor now, the minimum line would be stale.
+    const raised = { ...p, dailyKcal: 1350, goals: [...p.goals, { from: '2026-10-26', kcal: 1350, by: 'safety' as const }] };
+    expect(noticeNotes(raised, 62).hardMin).toBeNull();
   });
 
   test('a target between the hard minimum and the BMR floor is kept: the notice offers the floor', () => {
