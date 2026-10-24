@@ -1,6 +1,7 @@
 import { ChevronRight, Crosshair, LoaderCircle, LocateFixed, RefreshCw } from 'lucide-react';
 import { useCallback, useId, useMemo, useRef, useState } from 'react';
 import { pluralEn, text } from '../../../i18n';
+import { MISSING_DATA_MESSAGE } from '../../data';
 import { productFood, type Food } from '../../diet/foods';
 import type { Context } from '../../diet/suggest';
 import { useFavorites } from '../../hooks/useDiet';
@@ -180,10 +181,14 @@ export function EatNow({ state, update, closeEntry, geo, locate, setManual, setR
   const placesState = { ...osm, items: places };
   const menus = useRestaurants();
   const chains = menus.status === 'ready' ? menus.chains : NO_CHAINS;
-  // The products only add the shops' ready food here, so they wait for the places: on a slow link
-  // their 3.3 MB went first and the 9 kB index and the nearest leaves queued behind them. Already
-  // loaded (another food screen, the other view), they are there at once.
-  const data = useDataset(osm.status === 'ready' || osm.status === 'error');
+  // The products only add the shops' ready food here, so they wait while the app's own files for the
+  // places are on their way: on a slow link their 3.3 MB went first and the 9 kB index and the nearest
+  // leaves queued behind them. Abroad, at the border (its few Polish leaves land in a second or two)
+  // and while Overpass stands in, the wait is for Overpass's search — minutes, with its pauses — not
+  // for the app's files: waiting would only put them a whole search later. Already loaded (another
+  // food screen, the other view), they are there at once.
+  const ownOnWay = osm.source === 'static' && (osm.status === 'loading' || osm.status === 'idle');
+  const data = useDataset(!ownOnWay);
   const products = data.status === 'ready' ? data.products : NO_PRODUCTS;
   const dict = data.status === 'ready' ? data.dataset.dictionaries : NO_DICT;
   const favorites = useFavorites();
@@ -288,8 +293,11 @@ export function EatNow({ state, update, closeEntry, geo, locate, setManual, setR
   // A shop's ready food comes with the products: until they are in, every Żabka and Biedronka around
   // would count as a place without menu data. Without a chain's shop around they change no count.
   const shopsAround = ranked.some((r) => r.place.shop !== null);
+  // A build without the products file: nothing to wait for and nothing another try could bring — the
+  // shops simply have no ready food here, and the counts are final without it.
+  const noProducts = data.status === 'error' && data.message === MISSING_DATA_MESSAGE;
   const shopsWait = data.status === 'loading' && shopsAround;
-  const productsFailed = data.status === 'error' && shopsAround;
+  const productsFailed = data.status === 'error' && !noProducts && shopsAround;
   // Everything that gives a place its menu is here: what is counted (or found missing) is final.
   const settled = menus.status === 'ready' && !shopsWait && !productsFailed;
   // Counts only once they are final, before then what is still loading — said once, not numbers
@@ -308,12 +316,22 @@ export function EatNow({ state, update, closeEntry, geo, locate, setManual, setR
     return T.found(radiusLabel(state.radius), known, fitting, ranked.length - known);
   })();
   // „Spróbuj ponownie” whenever the status line says something failed — the places, or the menus or
-  // the shops' products with the places in — and it tries again whatever failed.
-  const extrasFailed = geo.position !== null && placesState.status === 'ready' && (menus.status === 'error' || productsFailed);
+  // the shops' products with the places in (not while it still says the menus load) — and it tries
+  // again whatever failed.
+  const extrasFailed =
+    geo.position !== null && placesState.status === 'ready' && (menus.status === 'error' || (menus.status === 'ready' && productsFailed));
   const retryFailed = () => {
+    // Chromium and WebKit keep a failed import of the menus' chunk for the page's life: importing it
+    // again fails at once, without asking the server. A reload brings it, and whatever else failed —
+    // the view is in the address, nothing is lost. Not offline: a page the service worker does not
+    // serve yet would reload into the browser's error page.
+    if (menus.status === 'error' && globalThis.navigator?.onLine !== false) {
+      window.location.reload();
+      return;
+    }
     if (placesState.status === 'error') retry();
     if (menus.status === 'error') menus.retry();
-    if (data.status === 'error') data.retry();
+    if (data.status === 'error' && !noProducts) data.retry();
   };
   // The app's data arrives in pieces, nearest first: what is complete so far is said, not hidden —
   // counted only once the chains' menus are here (while they load, or when they failed, every place

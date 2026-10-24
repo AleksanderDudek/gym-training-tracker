@@ -67,7 +67,8 @@ const T = text({
     chains: 'Sieci w pobliżu',
     all: 'Wszystkie',
     recipes: 'Przepisy z najbliższych sklepów',
-    emptyHere: 'Tu jeszcze nic – poczekaj na sklepy albo zwiększ promień.',
+    emptyWait: 'Tu jeszcze nic – poczekaj na sklepy.',
+    emptyFinal: 'Nic do pokazania – zwiększ promień.',
     emptyNoPlace: 'Najpierw ustal, gdzie jesteś.',
     ready: 'Gotowe produkty białkowe w tych sklepach',
     views: 'Co w pobliżu',
@@ -105,7 +106,8 @@ const T = text({
     chains: 'Chains nearby',
     all: 'All',
     recipes: 'Recipes from the nearest shops',
-    emptyHere: 'Nothing here yet – wait for the shops or widen the radius.',
+    emptyWait: 'Nothing here yet – wait for the shops.',
+    emptyFinal: 'Nothing to show – widen the radius.',
     emptyNoPlace: 'First set where you are.',
     ready: 'Ready protein products in these shops',
     views: 'What’s nearby',
@@ -320,6 +322,15 @@ function Nearby({
   const open = useCallback((code: string) => update({ product: code }, { push: true }), [update]);
   const mapCenter = useRef<LatLon | null>(null);
   const note = placeNote(geo);
+  // Pod pustą listą przepisów: czekać, póki sklepy się wczytują; większy promień dopiero, gdy lista
+  // jest ostateczna; po błędzie nic — mówią o nim wiersz stanu i „Spróbuj ponownie”.
+  const empty = !geo.position
+    ? T.emptyNoPlace
+    : shopsState.status === 'ready'
+      ? T.emptyFinal
+      : shopsState.status === 'error'
+        ? null
+        : T.emptyWait;
   // „Pokaż te przepisy” z dymka na mapie: wybór sieci i przejście do listy, która się właśnie zmieniła.
   const showChain = (chain: string | null) => {
     update({ store: chain });
@@ -433,11 +444,11 @@ function Nearby({
           </h2>
         </div>
         {recipes.length === 0 ? (
-          <div className="wrap">
-            <p className="empty fd-near-empty">
-              {geo.position ? T.emptyHere : T.emptyNoPlace}
-            </p>
-          </div>
+          empty && (
+            <div className="wrap">
+              <p className="empty fd-near-empty">{empty}</p>
+            </div>
+          )
         ) : (
           <ul className="fd-rec-list">
             {recipes.map(({ recipe, baskets }) => (

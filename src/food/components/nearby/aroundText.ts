@@ -14,6 +14,9 @@ const T = text({
     slowData: (s: number) => `Wolne połączenie — pobieram dane okolicy (${s} s)…`,
     abroad: (what: string) => `Poza Polską ${what} pobieram z serwera map — może to chwilę potrwać.`,
     border: (what: string) => `Przy granicy: ${what} po polskiej stronie mam w aplikacji, o resztę pytam serwer map…`,
+    borderLoading: (what: string) => `Przy granicy: ${what} po polskiej stronie wczytuję z aplikacji…`,
+    borderLoadingFailed: (what: string) =>
+      `Przy granicy: ${what} po polskiej stronie wczytuję z aplikacji, po drugiej stronie nie udało się pobrać danych.`,
     borderFailed: (what: string) => `Po drugiej stronie granicy nie udało się pobrać danych — pokazuję ${what} po polskiej stronie.`,
     older: 'Część danych okolicy jest z poprzedniej aktualizacji.',
     stale: (date: string) => `Dane okolicy są z ${date} — część miejsc mogła się zmienić.`,
@@ -27,6 +30,8 @@ const T = text({
     slowData: (s: number) => `Slow connection — loading this area’s data (${s} s)…`,
     abroad: (what: string) => `Outside Poland I get ${what} from the map server — this may take a while.`,
     border: (what: string) => `Near the border: ${what} on the Polish side are in the app, the rest comes from the map server…`,
+    borderLoading: () => 'Near the border: loading the Polish side from the app…',
+    borderLoadingFailed: () => 'Near the border: loading the Polish side from the app; couldn’t get the data across the border.',
     borderFailed: (what: string) => `Couldn’t get the data across the border — showing ${what} on the Polish side.`,
     older: 'Part of this area’s data is from the previous update.',
     stale: (date: string) => `This area’s data is from ${date} — some places may have changed.`,
@@ -67,7 +72,7 @@ export interface AroundNotes {
  */
 export type AroundNotesState = Pick<AroundState<unknown>, 'status' | 'items' | 'savedAt' | 'since' | 'retryAt'> &
   Pick<OsmState, 'source' | 'shown'> &
-  Partial<Pick<OsmState, 'coverage' | 'dataAsOf' | 'olderLeaves'>>;
+  Partial<Pick<OsmState, 'coverage' | 'dataAsOf' | 'olderLeaves' | 'rest'>>;
 
 export function aroundNotes(state: AroundNotesState, what: string, now: number): AroundNotes {
   const left = state.retryAt ? Math.ceil((state.retryAt - now) / 1000) : 0;
@@ -88,7 +93,12 @@ export function aroundNotes(state: AroundNotesState, what: string, now: number):
   // At the border, while the Polish side is what is shown; once Overpass's answer (or a saved one)
   // is on screen, its own notes apply — with its age.
   if (state.source === 'mixed' && state.shown !== 'live') {
-    if (state.status === 'loading') return { status: words(T.border(what), ...own), clock: live.clock };
+    if (state.status === 'loading') {
+      // „O resztę pytam serwer map” only while it is asked: not once it has answered, nor after it
+      // failed or while offline, when nothing goes out.
+      const border = state.rest === 'failed' ? T.borderLoadingFailed(what) : state.rest === 'done' ? T.borderLoading(what) : T.border(what);
+      return { status: words(border, ...own), clock: live.clock };
+    }
     if (state.status === 'error') return { status: words(T.borderFailed(what), ...own), clock: live.clock };
     return { status: words(...own), clock: live.clock };
   }
