@@ -8,6 +8,7 @@
 #   ./build.sh beta          ta sama paczka jako beta — z identyfikatorem bety (bin/gymtracker-beta.iq)
 #   ./build.sh shots fr265   aplikacja w symulatorze z jednorazowym kluczem — do zrzutów do sklepu
 #
+# store i beta najpierw sprawdzają listę zegarków w GYM TRACKER (npm run garmin:watches -- --check).
 # SDK: ten wybrany w SDK Managerze albo ścieżka w CIQ_SDK.
 # Klucz dewelopera: CIQ_KEY albo ~/.garmin/developer_key.der — tworzony przy pierwszym buildzie.
 # Tym samym kluczem trzeba podpisywać każdą kolejną wersję w sklepie, więc trzymaj jego kopię.
@@ -19,7 +20,7 @@ device="${2:-}"
 case "$cmd" in
   test | run | prg | store | beta | shots) ;;
   *)
-    sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'
     exit 1
     ;;
 esac
@@ -68,6 +69,12 @@ need_device() {
   fi
 }
 
+# „Czy mój zegarek jest obsługiwany?” w GYM TRACKER czyta src/watches/garmin.json: przed paczką do
+# sklepu ta lista musi się zgadzać z manifestem i urządzeniami z SDK Managera.
+check_watches() {
+  ( cd .. && npm run --silent garmin:watches -- --check )
+}
+
 case "$cmd" in
   test)
     need_device
@@ -85,6 +92,7 @@ case "$cmd" in
     echo "Gotowe: bin/gymtracker-$device.prg — skopiuj przez USB do GARMIN/APPS/ na zegarku."
     ;;
   store)
+    check_watches
     mc -o bin/gymtracker.iq -e -r
     echo "Gotowe: bin/gymtracker.iq — publikacja w https://apps-developer.garmin.com (bez zaznaczania „Beta App”)."
     ;;
@@ -105,6 +113,7 @@ case "$cmd" in
     sim "$shots/shots.prg" "$device"
     ;;
   beta)
+    check_watches
     sed "s/$PROD_ID/$BETA_ID/" manifest.xml > manifest-beta.xml
     grep -q "$BETA_ID" manifest-beta.xml || { echo "W manifest.xml nie ma identyfikatora $PROD_ID." >&2; exit 1; }
     JUNGLE=beta.jungle

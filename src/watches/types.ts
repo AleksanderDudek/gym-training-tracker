@@ -1,6 +1,8 @@
 // Types of the watch check („Czy mój zegarek jest obsługiwany?”, spec 2026-10-24 §4.11), split out
 // of the matcher prototype so the UI can use them without loading the list. Pure, no DOM, no i18n.
 
+export type { Tokens } from './words';
+
 /** What a watch app may read beyond steps and heart rate. */
 export type Cap = 'stress' | 'bodyBattery' | 'rides';
 
@@ -18,7 +20,10 @@ export interface Supported {
   lacks?: Cap[];
   newest?: Cap[];
   apac?: { lacks: Cap[]; names?: string[] };
-  /** Background memory, kB (package W1 generates it). */
+  /**
+   * Background memory: 32 — under 64 kB (little room for the background run, the „not tested on a
+   * real watch” note), 64 — 64 kB or more. The generator writes it for every product.
+   */
   bg?: 32 | 64;
 }
 
@@ -65,11 +70,6 @@ export interface Target {
   id?: string;
 }
 
-export interface Tokens {
-  words: string[];
-  apac: boolean;
-}
-
 export interface Hit {
   target: Target;
   /** The official name that fits best — „tactix® 7”, not the store's whole line. */
@@ -81,11 +81,17 @@ export interface Hit {
   exact: boolean;
   /** Some typed word fit only with a typo. */
   fuzzy: boolean;
+  /** Every typed word that fit, fit only with a typo: never a verdict, only „Czy chodzi o…”. */
+  typoOnly?: true;
 }
 
 /**
- * The answer under the field. `help` („nie wiem”, „nie pamiętam”) opens „Gdzie znajdę nazwę
- * modelu?” — package W1 produces it; the prototype never does.
+ * The answer under the field. `prompt`: only words that tell nothing („garmin”, „mój zegarek”).
+ * `help` („nie wiem”, „nie pamiętam”) opens „Gdzie znajdę nazwę modelu?”. `one`: a model, with
+ * namesakes that answer the same (`same`) or differently (`other`); `title` keeps every number the
+ * person typed. `line`: only line words were typed and its models answer differently. `guess`:
+ * every match was a typo, or one typed word fits nothing — „Czy chodzi o…”. `unknown`: nothing fits;
+ * with a model number, the nearest numbers of that line.
  */
 export type Answer =
   | { kind: 'prompt' }

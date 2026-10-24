@@ -12,6 +12,7 @@
         "Approach® S50"
       ],
       "ciq": "5.1.0",
+      "bg": 64,
       "parts": [
         "006-B4656-00"
       ]
@@ -24,6 +25,7 @@
         "Approach® S70 42mm"
       ],
       "ciq": "5.1.0",
+      "bg": 64,
       "parts": [
         "006-B4233-00"
       ]
@@ -36,6 +38,7 @@
         "Approach® S70 47mm"
       ],
       "ciq": "5.1.0",
+      "bg": 64,
       "parts": [
         "006-B4234-00"
       ]
@@ -48,6 +51,7 @@
         "Approach® S72 43mm"
       ],
       "ciq": "6.0.3",
+      "bg": 64,
       "parts": [
         "006-B4874-00"
       ]
@@ -60,6 +64,7 @@
         "Approach® S72 47mm"
       ],
       "ciq": "6.0.3",
+      "bg": 64,
       "parts": [
         "006-B4875-00"
       ]
@@ -72,6 +77,7 @@
         "D2™ Air"
       ],
       "ciq": "3.2.1",
+      "bg": 64,
       "parts": [
         "006-B2187-00"
       ],
@@ -89,6 +95,7 @@
         "D2™ Air X10"
       ],
       "ciq": "5.0.0",
+      "bg": 64,
       "parts": [
         "006-B4125-00"
       ]
@@ -101,6 +108,7 @@
         "D2™ Mach 1"
       ],
       "ciq": "5.2.0",
+      "bg": 64,
       "parts": [
         "006-B4079-00"
       ]
@@ -113,6 +121,7 @@
         "D2™ Mach 2"
       ],
       "ciq": "6.0.3",
+      "bg": 64,
       "parts": [
         "006-B4879-00"
       ]
@@ -125,6 +134,7 @@
         "D2™ Mach 2 Pro"
       ],
       "ciq": "6.0.3",
+      "bg": 64,
       "parts": [
         "006-B5056-00"
       ]
@@ -141,6 +151,7 @@
         "Descent™ G1 Solar - Ocean Edition"
       ],
       "ciq": "3.4.0",
+      "bg": 32,
       "parts": [
         "006-B4005-00",
         "006-B4132-00"
@@ -165,6 +176,7 @@
         "Descent™ G2"
       ],
       "ciq": "5.1.0",
+      "bg": 64,
       "parts": [
         "006-B4588-00"
       ]
@@ -181,6 +193,7 @@
         "Descent™MK2i"
       ],
       "ciq": "3.4.5",
+      "bg": 32,
       "parts": [
         "006-B3258-00",
         "006-B3702-00"
@@ -197,6 +210,7 @@
         "Descent™ Mk2S"
       ],
       "ciq": "3.4.5",
+      "bg": 32,
       "parts": [
         "006-B3542-00",
         "006-B3930-00"
@@ -211,6 +225,7 @@
         "Descent™ Mk3i 43mm"
       ],
       "ciq": "5.1.0",
+      "bg": 64,
       "parts": [
         "006-B4222-00"
       ]
@@ -223,6 +238,7 @@
         "Descent™ Mk3i 51mm"
       ],
       "ciq": "5.1.0",
+      "bg": 64,
       "parts": [
         "006-B4223-00"
       ]
@@ -235,6 +251,7 @@
         "Enduro™"
       ],
       "ciq": "3.4.2",
+      "bg": 32,
       "parts": [
         "006-B3638-00",
         "006-B3872-00"
@@ -248,6 +265,7 @@
         "Enduro™ 3"
       ],
       "ciq": "6.0.3",
+      "bg": 64,
       "parts": [
         "006-B4575-00"
       ]
@@ -260,6 +278,7 @@
         "Enduro™ 4"
       ],
       "ciq": "6.0.3",
+      "bg": 64,
       "parts": [
         "006-B5169-00"
       ]
@@ -276,6 +295,7 @@
         "quatix® 7 – Sapphire Edition"
       ],
       "ciq": "5.2.0",
+      "bg": 64,
       "parts": [
         "006-B3943-00",
         "006-B3944-00"
@@ -292,6 +312,7 @@
         "epix™ Pro (42mm)"
       ],
       "ciq": "5.2.0",
+      "bg": 64,
       "parts": [
         "006-B4312-00"
       ]
@@ -308,6 +329,7 @@
         "epix™ Pro (47mm)"
       ],
       "ciq": "5.2.0",
+      "bg": 64,
       "parts": [
         "006-B4313-00"
       ]
@@ -325,6 +347,7 @@
         "epix™ Pro (51mm)"
       ],
       "ciq": "5.2.0",
+      "bg": 64,
       "parts": [
         "006-B4314-00",
         "006-B4542-00",
@@ -339,6 +362,7 @@
         "fēnix® 5 Plus"
       ],
       "ciq": "3.3.3",
+      "bg": 32,
       "parts": [
         "006-B3110-00",
         "006-B3089-00"
@@ -365,6 +389,7 @@
         "fēnix® 5S Plus"
       ],
       "ciq": "3.3.3",
+      "bg": 32,
       "parts": [
         "006-B2900-00",
         "006-B3134-00"
@@ -391,6 +416,7 @@
         "fēnix® 5X Plus"
       ],
       "ciq": "3.3.3",
+      "bg": 32,
       "parts": [
         "006-B3111-00",
         "006-B3135-00"
@@ -419,6 +445,7 @@
         "fēnix® 6 Dual Power"
       ],
       "ciq": "3.4.5",
+      "bg": 32,
       "parts": [
         "006-B3289-00",
         "006-B3514-00",
@@ -438,6 +465,7 @@
         "quatix® 6"
       ],
       "ciq": "3.4.5",
+      "bg": 32,
       "parts": [
         "006-B3290-00",
         "006-B3515-00",
@@ -456,6 +484,7 @@
         "fēnix® 6S Dual Power"
       ],
       "ciq": "3.4.5",
+      "bg": 32,
       "parts": [
         "006-B3287-00",
         "006-B3512-00",
@@ -474,6 +503,7 @@
         "fēnix® 6S Pro Dual Power"
       ],
       "ciq": "3.4.5",
+      "bg": 32,
       "parts": [
         "006-B3288-00",
         "006-B3513-00",
@@ -497,11 +527,12 @@
         "quatix® 6X Dual Power"
       ],
       "aliases": [
-        "tactix® Delta Solar Ballistics",
+        "fēnix® 6X Pro Dual Power",
         "tactix® Delta Solar:Ballisitcs Edition",
-        "fēnix® 6X Pro Dual Power"
+        "tactix® Delta Solar Ballistics"
       ],
       "ciq": "3.4.5",
+      "bg": 32,
       "parts": [
         "006-B3291-00",
         "006-B3516-00",
@@ -517,11 +548,12 @@
         "quatix® 7"
       ],
       "aliases": [
+        "fēnix® 7 – Sapphire Dual Power Edition",
         "fēnix® 7 – Sapphire Solar Edition",
-        "fēnix® 7 Solar",
-        "fēnix® 7 – Sapphire Dual Power Edition"
+        "fēnix® 7 Solar"
       ],
       "ciq": "5.2.0",
+      "bg": 64,
       "parts": [
         "006-B3906-00",
         "006-B3909-00"
@@ -535,11 +567,12 @@
         "fēnix® 7 Pro"
       ],
       "aliases": [
-        "fēnix® 7 Pro – Solar Edition",
+        "fēnix® 7 Pro – Sapphire Dual Power Edition",
         "fēnix® 7 Pro – Sapphire Solar Edition",
-        "fēnix® 7 Pro – Sapphire Dual Power Edition"
+        "fēnix® 7 Pro – Solar Edition"
       ],
       "ciq": "5.2.0",
+      "bg": 64,
       "parts": [
         "006-B4375-00"
       ]
@@ -552,6 +585,7 @@
         "fēnix® 7 Pro - Solar Edition (no Wi-Fi)"
       ],
       "ciq": "5.2.0",
+      "bg": 64,
       "parts": [
         "006-B4595-00"
       ]
@@ -564,11 +598,12 @@
         "fēnix® 7S"
       ],
       "aliases": [
-        "fēnix® 7S – Solar Edition",
+        "fēnix® 7S – Sapphire Dual Power Edition",
         "fēnix® 7S – Sapphire Solar Edition",
-        "fēnix® 7S – Sapphire Dual Power Edition"
+        "fēnix® 7S – Solar Edition"
       ],
       "ciq": "5.2.0",
+      "bg": 64,
       "parts": [
         "006-B3905-00",
         "006-B3908-00"
@@ -582,10 +617,11 @@
         "fēnix® 7S Pro"
       ],
       "aliases": [
-        "fēnix® 7S Pro – Sapphire Solar Edition",
-        "fēnix® 7S Pro – Sapphire Dual Power Edition"
+        "fēnix® 7S Pro – Sapphire Dual Power Edition",
+        "fēnix® 7S Pro – Sapphire Solar Edition"
       ],
       "ciq": "5.2.0",
+      "bg": 64,
       "parts": [
         "006-B4374-00"
       ]
@@ -601,15 +637,16 @@
         "Enduro™ 2"
       ],
       "aliases": [
-        "fēnix® 7X - Solar Edition",
-        "fēnix® 7X – Sapphire Solar Edition",
-        "quatix® 7X – Solar Edition",
         "fēnix® 7X – Sapphire Dual Power Edition",
+        "fēnix® 7X – Sapphire Solar Edition",
+        "fēnix® 7X - Solar Edition",
         "quatix® 7X",
+        "quatix® 7X – Solar Edition",
         "tactix® 7 – Pro Ballistics Edition",
         "tactix® 7 – Pro Edition"
       ],
       "ciq": "5.2.0",
+      "bg": 64,
       "parts": [
         "006-B3907-00",
         "006-B3910-00",
@@ -625,10 +662,11 @@
         "fēnix® 7X Pro"
       ],
       "aliases": [
-        "fēnix® 7X Pro – Sapphire Solar Edition",
-        "fēnix® 7X Pro – Sapphire Dual Power Edition"
+        "fēnix® 7X Pro – Sapphire Dual Power Edition",
+        "fēnix® 7X Pro – Sapphire Solar Edition"
       ],
       "ciq": "5.2.0",
+      "bg": 64,
       "parts": [
         "006-B4376-00"
       ]
@@ -644,6 +682,7 @@
         "fēnix® 7X Pro No Wi-Fi"
       ],
       "ciq": "5.2.0",
+      "bg": 64,
       "parts": [
         "006-B4596-00"
       ]
@@ -659,6 +698,7 @@
         "fēnix® 8 AMOLED (43mm)"
       ],
       "ciq": "6.0.3",
+      "bg": 64,
       "parts": [
         "006-B4534-00"
       ]
@@ -681,6 +721,7 @@
         "tactix® 8 – 47 mm, AMOLED"
       ],
       "ciq": "6.0.3",
+      "bg": 64,
       "parts": [
         "006-B4536-00",
         "006-B4775-00"
@@ -706,6 +747,7 @@
         "quatix® 8 Pro - 51mm AMOLED"
       ],
       "ciq": "6.0.3",
+      "bg": 64,
       "parts": [
         "006-B4631-00"
       ]
@@ -721,6 +763,7 @@
         "fēnix® 8 Dual Power (47mm)"
       ],
       "ciq": "6.0.3",
+      "bg": 64,
       "parts": [
         "006-B4532-00"
       ]
@@ -735,10 +778,11 @@
       ],
       "aliases": [
         "fēnix® 8 Dual Power (51mm)",
-        "tactix® 8 – 51 mm, Solar",
-        "tactix® 8 – 51 mm"
+        "tactix® 8 – 51 mm",
+        "tactix® 8 – 51 mm, Solar"
       ],
       "ciq": "6.0.3",
+      "bg": 64,
       "parts": [
         "006-B4533-00",
         "006-B4776-00"
@@ -752,6 +796,7 @@
         "fēnix® 9 43mm"
       ],
       "ciq": "6.0.3",
+      "bg": 64,
       "parts": [
         "006-B5133-00"
       ]
@@ -765,6 +810,7 @@
         "fēnix® 9 51mm"
       ],
       "ciq": "6.0.3",
+      "bg": 64,
       "parts": [
         "006-B5134-00"
       ]
@@ -780,6 +826,7 @@
         "fenix® 9 Pro - inReach 43 mm"
       ],
       "ciq": "6.0.3",
+      "bg": 64,
       "parts": [
         "006-B4952-00"
       ]
@@ -795,6 +842,7 @@
         "fenix® 9 Pro - inReach 47 mm"
       ],
       "ciq": "6.0.3",
+      "bg": 64,
       "parts": [
         "006-B4953-00"
       ]
@@ -810,6 +858,7 @@
         "fenix® 9 Pro - inReach 51 mm"
       ],
       "ciq": "6.0.3",
+      "bg": 64,
       "parts": [
         "006-B4954-00"
       ]
@@ -825,6 +874,7 @@
         "fenix® 9 Pro - inReach Solar 47 mm"
       ],
       "ciq": "6.0.3",
+      "bg": 64,
       "parts": [
         "006-B4955-00"
       ]
@@ -840,6 +890,7 @@
         "fenix® 9 Pro - inReach Solar 51 mm"
       ],
       "ciq": "6.0.3",
+      "bg": 64,
       "parts": [
         "006-B4956-00"
       ]
@@ -852,6 +903,7 @@
         "fēnix® E"
       ],
       "ciq": "6.0.3",
+      "bg": 64,
       "parts": [
         "006-B4666-00"
       ]
@@ -864,6 +916,7 @@
         "Forerunner® 165"
       ],
       "ciq": "5.2.0",
+      "bg": 64,
       "parts": [
         "006-B4432-00"
       ]
@@ -876,6 +929,7 @@
         "Forerunner® 165 Music"
       ],
       "ciq": "5.2.0",
+      "bg": 64,
       "parts": [
         "006-B4433-00"
       ]
@@ -888,6 +942,7 @@
         "Forerunner® 170"
       ],
       "ciq": "6.0.3",
+      "bg": 64,
       "parts": [
         "006-B4815-00"
       ]
@@ -900,6 +955,7 @@
         "Forerunner® 170 Music"
       ],
       "ciq": "6.0.3",
+      "bg": 64,
       "parts": [
         "006-B4814-00"
       ]
@@ -915,6 +971,7 @@
         "ForeAthlete 245"
       ],
       "ciq": "3.3.1",
+      "bg": 32,
       "parts": [
         "006-B3076-00",
         "006-B3145-00",
@@ -932,6 +989,7 @@
         "ForeAthlete 245 Music"
       ],
       "ciq": "3.3.1",
+      "bg": 64,
       "parts": [
         "006-B3077-00",
         "006-B3321-00",
@@ -946,6 +1004,7 @@
         "Forerunner® 255"
       ],
       "ciq": "5.2.0",
+      "bg": 64,
       "parts": [
         "006-B3992-00"
       ]
@@ -958,6 +1017,7 @@
         "Forerunner® 255 Music"
       ],
       "ciq": "5.2.0",
+      "bg": 64,
       "parts": [
         "006-B3990-00"
       ]
@@ -970,6 +1030,7 @@
         "Forerunner® 255s"
       ],
       "ciq": "5.2.0",
+      "bg": 64,
       "parts": [
         "006-B3993-00"
       ]
@@ -982,6 +1043,7 @@
         "Forerunner® 255s Music"
       ],
       "ciq": "5.2.0",
+      "bg": 64,
       "parts": [
         "006-B3991-00"
       ]
@@ -994,6 +1056,7 @@
         "Forerunner® 265"
       ],
       "ciq": "5.2.0",
+      "bg": 64,
       "parts": [
         "006-B4257-00"
       ]
@@ -1006,6 +1069,7 @@
         "Forerunner® 265s"
       ],
       "ciq": "5.2.0",
+      "bg": 64,
       "parts": [
         "006-B4258-00"
       ]
@@ -1022,6 +1086,7 @@
         "Forerunner® 158"
       ],
       "ciq": "3.4.6",
+      "bg": 32,
       "parts": [
         "006-B3869-00",
         "006-B4033-00",
@@ -1036,6 +1101,7 @@
         "Forerunner® 570 42mm"
       ],
       "ciq": "6.0.3",
+      "bg": 64,
       "parts": [
         "006-B4574-00"
       ]
@@ -1048,6 +1114,7 @@
         "Forerunner® 570 47mm"
       ],
       "ciq": "6.0.3",
+      "bg": 64,
       "parts": [
         "006-B4570-00"
       ]
@@ -1063,6 +1130,7 @@
         "ForeAthlete 645 Music"
       ],
       "ciq": "3.2.3",
+      "bg": 64,
       "parts": [
         "006-B2888-00",
         "006-B3004-00"
@@ -1081,6 +1149,7 @@
         "Forerunner® 70"
       ],
       "ciq": "6.0.3",
+      "bg": 64,
       "parts": [
         "006-B4916-00",
         "006-B5214-00"
@@ -1097,6 +1166,7 @@
         "ForeAthlete 745"
       ],
       "ciq": "3.3.1",
+      "bg": 64,
       "parts": [
         "006-B3589-00",
         "006-B3794-00"
@@ -1110,6 +1180,7 @@
         "Forerunner® 945"
       ],
       "ciq": "3.3.1",
+      "bg": 64,
       "parts": [
         "006-B3113-00",
         "006-B3441-00"
@@ -1123,6 +1194,7 @@
         "Forerunner® 945 LTE"
       ],
       "ciq": "3.4.3",
+      "bg": 64,
       "parts": [
         "006-B3652-00"
       ]
@@ -1139,6 +1211,7 @@
         "Forerunner® 955 Dual Power"
       ],
       "ciq": "5.2.0",
+      "bg": 64,
       "parts": [
         "006-B4024-00"
       ]
@@ -1151,6 +1224,7 @@
         "Forerunner® 965"
       ],
       "ciq": "5.2.0",
+      "bg": 64,
       "parts": [
         "006-B4315-00"
       ]
@@ -1163,6 +1237,7 @@
         "Forerunner® 970"
       ],
       "ciq": "6.0.3",
+      "bg": 64,
       "parts": [
         "006-B4565-00"
       ]
@@ -1178,10 +1253,11 @@
       ],
       "aliases": [
         "Instinct® 2 - Camo Edition",
-        "Instinct® 2 Solar - Tactical Edition",
-        "Instinct® 2 Solar - Surf Edition"
+        "Instinct® 2 Solar - Surf Edition",
+        "Instinct® 2 Solar - Tactical Edition"
       ],
       "ciq": "3.4.2",
+      "bg": 32,
       "parts": [
         "006-B3888-00",
         "006-B4071-00"
@@ -1209,11 +1285,12 @@
       ],
       "aliases": [
         "Instinct® 2S - Camo Edition",
-        "Instinct® 2S Solar - Tactical Edition",
+        "Instinct® 2S - dēzl™ Edition",
         "Instinct® 2S Solar - Surf Edition",
-        "Instinct® 2S - dēzl™ Edition"
+        "Instinct® 2S Solar - Tactical Edition"
       ],
       "ciq": "3.4.2",
+      "bg": 32,
       "parts": [
         "006-B3889-00",
         "006-B4091-00"
@@ -1242,6 +1319,7 @@
         "Instinct® 2X"
       ],
       "ciq": "3.4.3",
+      "bg": 32,
       "parts": [
         "006-B4394-00"
       ]
@@ -1257,6 +1335,7 @@
         "Instinct® 3 – 45 mm, AMOLED"
       ],
       "ciq": "6.0.2",
+      "bg": 64,
       "parts": [
         "006-B4586-00"
       ]
@@ -1272,6 +1351,7 @@
         "Instinct® 3 – 50 mm, AMOLED"
       ],
       "ciq": "6.0.2",
+      "bg": 64,
       "parts": [
         "006-B4587-00"
       ]
@@ -1289,6 +1369,7 @@
         "Instinct® 3 – 50 mm, Solar"
       ],
       "ciq": "6.0.2",
+      "bg": 32,
       "parts": [
         "006-B4585-00",
         "006-B4759-00"
@@ -1305,6 +1386,7 @@
         "Instinct® Crossover Dual Power"
       ],
       "ciq": "3.4.2",
+      "bg": 32,
       "parts": [
         "006-B4155-00"
       ]
@@ -1317,6 +1399,7 @@
         "Instinct® Crossover AMOLED"
       ],
       "ciq": "6.0.2",
+      "bg": 64,
       "parts": [
         "006-B4678-00"
       ]
@@ -1329,6 +1412,7 @@
         "Instinct® E 40mm"
       ],
       "ciq": "6.0.2",
+      "bg": 32,
       "parts": [
         "006-B4583-00"
       ]
@@ -1341,6 +1425,7 @@
         "Instinct® E 45mm"
       ],
       "ciq": "6.0.2",
+      "bg": 32,
       "parts": [
         "006-B4584-00"
       ]
@@ -1353,6 +1438,7 @@
         "Captain Marvel"
       ],
       "ciq": "3.3.1",
+      "bg": 64,
       "parts": [
         "006-B3500-00",
         "006-B3535-00"
@@ -1366,6 +1452,7 @@
         "First Avenger"
       ],
       "ciq": "3.3.1",
+      "bg": 64,
       "parts": [
         "006-B3501-00",
         "006-B3536-00"
@@ -1379,6 +1466,7 @@
         "Darth Vader™"
       ],
       "ciq": "3.3.1",
+      "bg": 64,
       "parts": [
         "006-B3499-00",
         "006-B3538-00"
@@ -1392,6 +1480,7 @@
         "Rey™"
       ],
       "ciq": "3.3.1",
+      "bg": 64,
       "parts": [
         "006-B3498-00",
         "006-B3537-00"
@@ -1410,12 +1499,13 @@
         "MARQ® (Gen 2) Commander - Carbon Edition"
       ],
       "aliases": [
-        "MARQ® (Gen 2)",
-        "MARQ® Carbon Collection",
         "MARQ® Adventurer (Gen 2) - Damascus Steel Edition",
-        "MARQ® Commander (Gen 2) – Carbon Edition"
+        "MARQ® Carbon Collection",
+        "MARQ® Commander (Gen 2) – Carbon Edition",
+        "MARQ® (Gen 2)"
       ],
       "ciq": "5.2.0",
+      "bg": 64,
       "parts": [
         "006-B4105-00",
         "006-B4472-00"
@@ -1432,6 +1522,7 @@
         "MARQ™ Aviator (Gen 2)"
       ],
       "ciq": "5.2.0",
+      "bg": 64,
       "parts": [
         "006-B4124-00"
       ]
@@ -1444,6 +1535,7 @@
         "MARQ® Adventurer"
       ],
       "ciq": "3.4.5",
+      "bg": 32,
       "parts": [
         "006-B3624-00",
         "006-B3648-00"
@@ -1457,6 +1549,7 @@
         "MARQ® Athlete"
       ],
       "ciq": "3.4.5",
+      "bg": 32,
       "parts": [
         "006-B3251-00",
         "006-B3451-00"
@@ -1470,6 +1563,7 @@
         "MARQ® Aviator"
       ],
       "ciq": "3.4.5",
+      "bg": 32,
       "parts": [
         "006-B3247-00",
         "006-B3421-00"
@@ -1484,6 +1578,7 @@
         "MARQ® Captain: American Magic Edition"
       ],
       "ciq": "3.4.5",
+      "bg": 32,
       "parts": [
         "006-B3248-00",
         "006-B3448-00"
@@ -1497,6 +1592,7 @@
         "MARQ® Commander"
       ],
       "ciq": "3.4.5",
+      "bg": 32,
       "parts": [
         "006-B3249-00",
         "006-B3449-00"
@@ -1510,6 +1606,7 @@
         "MARQ® Driver"
       ],
       "ciq": "3.4.5",
+      "bg": 32,
       "parts": [
         "006-B3246-00",
         "006-B3420-00"
@@ -1523,6 +1620,7 @@
         "MARQ® Expedition"
       ],
       "ciq": "3.4.5",
+      "bg": 32,
       "parts": [
         "006-B3250-00",
         "006-B3450-00"
@@ -1536,6 +1634,7 @@
         "MARQ® Golfer"
       ],
       "ciq": "3.4.5",
+      "bg": 32,
       "parts": [
         "006-B3739-00",
         "006-B3850-00"
@@ -1549,6 +1648,7 @@
         "Venu®"
       ],
       "ciq": "3.3.1",
+      "bg": 64,
       "parts": [
         "006-B3226-00",
         "006-B3389-00"
@@ -1565,6 +1665,7 @@
         "Mercedes-Benz Venu® 2"
       ],
       "ciq": "5.0.0",
+      "bg": 64,
       "parts": [
         "006-B3703-00",
         "006-B3950-00",
@@ -1580,6 +1681,7 @@
         "Venu® 2 Plus"
       ],
       "ciq": "5.0.0",
+      "bg": 64,
       "parts": [
         "006-B3851-00",
         "006-B4017-00"
@@ -1596,6 +1698,7 @@
         "Mercedes-Benz Venu® 2S"
       ],
       "ciq": "5.0.0",
+      "bg": 64,
       "parts": [
         "006-B3704-00",
         "006-B3949-00",
@@ -1611,6 +1714,7 @@
         "Venu® 3"
       ],
       "ciq": "5.2.0",
+      "bg": 64,
       "parts": [
         "006-B4260-00"
       ]
@@ -1623,6 +1727,7 @@
         "Venu® 3S"
       ],
       "ciq": "5.2.0",
+      "bg": 64,
       "parts": [
         "006-B4261-00"
       ]
@@ -1635,6 +1740,7 @@
         "Venu® 4 41mm"
       ],
       "ciq": "6.0.3",
+      "bg": 64,
       "parts": [
         "006-B4644-00"
       ]
@@ -1648,6 +1754,7 @@
         "D2™ Air X15"
       ],
       "ciq": "6.0.3",
+      "bg": 64,
       "parts": [
         "006-B4643-00",
         "006-B4944-00"
@@ -1664,6 +1771,7 @@
         "Mercedes-Benz Venu®"
       ],
       "ciq": "3.2.6",
+      "bg": 64,
       "parts": [
         "006-B3740-00",
         "006-B3737-00"
@@ -1682,6 +1790,7 @@
         "Venu® Sq"
       ],
       "ciq": "3.3.6",
+      "bg": 32,
       "parts": [
         "006-B3600-00",
         "006-B3603-00",
@@ -1697,6 +1806,7 @@
         "Venu® Sq 2"
       ],
       "ciq": "5.0.0",
+      "bg": 64,
       "parts": [
         "006-B4115-00"
       ]
@@ -1709,6 +1819,7 @@
         "Venu® Sq 2 Music"
       ],
       "ciq": "5.0.0",
+      "bg": 64,
       "parts": [
         "006-B4116-00"
       ]
@@ -1724,6 +1835,7 @@
         "Venu® Sq. Music"
       ],
       "ciq": "3.3.6",
+      "bg": 64,
       "parts": [
         "006-B3596-00",
         "006-B3599-00",
@@ -1739,6 +1851,7 @@
         "Venu® X1"
       ],
       "ciq": "6.0.3",
+      "bg": 64,
       "parts": [
         "006-B4603-00"
       ]
@@ -1751,6 +1864,7 @@
         "vívoactive® 3 Music"
       ],
       "ciq": "3.2.0",
+      "bg": 64,
       "parts": [
         "006-B2988-00",
         "006-B3163-00"
@@ -1772,6 +1886,7 @@
         "GarminActive"
       ],
       "ciq": "3.3.1",
+      "bg": 64,
       "parts": [
         "006-B3225-00",
         "006-B3388-00"
@@ -1788,6 +1903,7 @@
         "GarminActive S"
       ],
       "ciq": "3.3.1",
+      "bg": 64,
       "parts": [
         "006-B3224-00",
         "006-B3387-00"
@@ -1801,6 +1917,7 @@
         "vívoactive® 5"
       ],
       "ciq": "5.2.0",
+      "bg": 64,
       "parts": [
         "006-B4426-00"
       ]
@@ -1813,6 +1930,7 @@
         "vívoactive® 6"
       ],
       "ciq": "6.0.3",
+      "bg": 64,
       "parts": [
         "006-B4625-00"
       ]
@@ -2151,6 +2269,16 @@
       "kind": "handheld"
     },
     {
+      "id": "fenix3_hr",
+      "series": "fēnix",
+      "label": "fēnix® 3 HR",
+      "names": [
+        "fēnix® 3 HR"
+      ],
+      "reason": "noBackground",
+      "ciq": "1.4.4"
+    },
+    {
       "id": "fenix3",
       "series": "fēnix",
       "label": "fēnix® 3 / tactix® Bravo / quatix® 3",
@@ -2158,16 +2286,6 @@
         "fēnix® 3",
         "tactix® Bravo",
         "quatix® 3"
-      ],
-      "reason": "noBackground",
-      "ciq": "1.4.4"
-    },
-    {
-      "id": "fenix3_hr",
-      "series": "fēnix",
-      "label": "fēnix® 3 HR",
-      "names": [
-        "fēnix® 3 HR"
       ],
       "reason": "noBackground",
       "ciq": "1.4.4"
@@ -2248,9 +2366,9 @@
         "Forerunner® 45"
       ],
       "aliases": [
-        "Forerunner® 45 Plus",
         "ForeAthlete 45",
-        "ForeAthlete 45S"
+        "ForeAthlete 45S",
+        "Forerunner® 45 Plus"
       ],
       "reason": "noApps",
       "ciq": "1.4.5"
@@ -2391,8 +2509,8 @@
       "aliases": [
         "Montana 700",
         "Montana 700i",
-        "Montana 750i",
-        "Montana® 710"
+        "Montana® 710",
+        "Montana 750i"
       ],
       "reason": "notWatch",
       "kind": "handheld"
