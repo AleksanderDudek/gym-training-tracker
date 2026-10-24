@@ -84,6 +84,37 @@ describe('karta „Zdrowie z telefonu”', () => {
     expect(screen.getByRole('link', { name: 'pliku APK' })).toBeInTheDocument();
   });
 
+  it('zdanie o zegarku Garmin: obie drogi naraz i link do sprawdzenia modelu w karcie zegarka', async () => {
+    vi.stubEnv('VITE_HEALTH_ANDROID_URL', 'https://example.org/zdrowie.apk');
+    const user = userEvent.setup();
+    const scroll = vi.fn();
+    Element.prototype.scrollIntoView = scroll;
+    window.history.replaceState(null, '', '#/ustawienia');
+    try {
+      const { GarminCard } = await import('./Garmin');
+      const { PhoneCard } = await import('./Phone');
+      render(
+        <>
+          <GarminCard state={freshState()} onSync={vi.fn()} onToast={vi.fn()} />
+          <PhoneCard state={freshState()} onSync={vi.fn()} onToast={vi.fn()} />
+        </>,
+      );
+      const sentence = screen.getByText(/^Masz zegarek Garmin\?/).closest('p')!;
+      expect(sentence).toHaveTextContent(
+        'Masz zegarek Garmin? Garmin Connect przekaże jego dane przez telefon — razem ze snem i wagą. Aplikacja GYM TRACKER na zegarku dokłada stres i Body Battery, a oba połączenia mogą działać naraz. Sprawdź swój model →',
+      );
+      const link = within(sentence).getByRole('link', { name: 'Sprawdź swój model →' });
+      expect(link).toHaveAttribute('href', '#/zegarek');
+      // Karta zegarka stoi wyżej na tym samym ekranie: przewinięcie do niej, bez nowej trasy.
+      await user.click(link);
+      expect(scroll.mock.contexts[0]).toBe(document.getElementById('zegarek'));
+      expect(window.location.hash).toBe('#/ustawienia?karta=zegarek');
+    } finally {
+      window.history.replaceState(null, '', '#/');
+      delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+    }
+  });
+
   it('zły klucz z innego urządzenia nie przechodzi', async () => {
     vi.stubEnv('VITE_HEALTH_IOS_URL', 'https://apps.apple.com/app/id1');
     const user = userEvent.setup();

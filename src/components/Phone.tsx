@@ -16,9 +16,10 @@ import {
 } from '../phone';
 import type { PhonePull } from '../phone';
 import { text } from '../i18n';
+import { WATCH_PATH } from '../routing';
 import { cleanKey, newKey } from '../watchseal';
 import type { AppState } from '../types';
-import { CARD_ID, Checklist, StatusBlock, phoneChecks, useNow, useScrollHere } from './DeviceStatus';
+import { CARD_ID, Checklist, StatusBlock, goToCard, phoneChecks, useNow, useScrollHere } from './DeviceStatus';
 
 /**
  * Karta „Zdrowie z telefonu” w ustawieniach: połączenie z aplikacją GYM TRACKER Zdrowie, klucz
@@ -63,11 +64,17 @@ const T = text({
     intro: (
       <>
         Kroki, przejazdy rowerem, tętno, sen i waga z Apple Zdrowie (iPhone) albo Health Connect (Android)
-        przyjdą same — razem z tym, co zapisują tam zegarki i wagi innych firm.{' '}
-        <b>Masz zegarek Garmin? To najprostsza droga:</b> aplikacja Garmin Connect przekaże jego dane przez
-        telefon. Strona nie ma dostępu do tych danych, więc czyta je mała aplikacja GYM TRACKER Zdrowie.
+        przyjdą same — razem z tym, co zapisują tam zegarki i wagi innych firm. Strona nie ma dostępu do
+        tych danych, więc czyta je mała aplikacja GYM TRACKER Zdrowie.
       </>
     ) as ReactNode,
+    garmin: (
+      <>
+        <b>Masz zegarek Garmin?</b> Garmin Connect przekaże jego dane przez telefon — razem ze snem i wagą.
+        Aplikacja GYM TRACKER na zegarku dokłada stres i Body Battery, a oba połączenia mogą działać naraz.
+      </>
+    ) as ReactNode,
+    checkModel: 'Sprawdź swój model →',
     connect: 'Połącz telefon',
     haveKey: 'Mam już klucz z innego urządzenia',
     badKey: 'Klucz to 64 znaki: cyfry i litery od a do f.',
@@ -128,11 +135,17 @@ const T = text({
     intro: (
       <>
         Steps, bike rides, heart rate, sleep and weight from Apple Health (iPhone) or Health Connect (Android) arrive
-        by themselves — along with whatever other brands’ watches and scales save there.{' '}
-        <b>Got a Garmin watch? This is the simplest way:</b> the Garmin Connect app passes its data on through your
-        phone. The website can’t read this data, so a small app, GYM TRACKER Zdrowie (Health), reads it instead.
+        by themselves — along with whatever other brands’ watches and scales save there. The website can’t read this
+        data, so a small app, GYM TRACKER Zdrowie (Health), reads it instead.
       </>
     ),
+    garmin: (
+      <>
+        <b>Got a Garmin watch?</b> Garmin Connect passes its data on through your phone — with sleep and weight. The
+        GYM TRACKER watch app adds stress and Body Battery, and both connections can run at once.
+      </>
+    ),
+    checkModel: 'Check your model →',
     connect: 'Connect phone',
     haveKey: 'I already have a key from another device',
     badKey: 'The key is 64 characters: digits and the letters a to f.',
@@ -292,6 +305,20 @@ export function PhoneCard({
       {!key ? (
         <>
           <p className="tight">{T.intro}</p>
+          <p className="tight">
+            {T.garmin}{' '}
+            {/* Karta zegarka stoi na tym samym ekranie: przewinięcie do niej, nie nowa trasa. */}
+            <a
+              className="phone-watch-link"
+              href={WATCH_PATH}
+              onClick={(e) => {
+                e.preventDefault();
+                goToCard('watch');
+              }}
+            >
+              {T.checkModel}
+            </a>
+          </p>
           {paste === null ? (
             <div className="watch-actions">
               <button className="btn" onClick={() => connect(newKey())}>

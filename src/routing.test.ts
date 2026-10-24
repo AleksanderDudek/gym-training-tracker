@@ -7,8 +7,10 @@ import {
   SECTIONS,
   SETTINGS_PATH,
   TABS,
+  WATCH_PATH,
   activeTab,
   forgetSections,
+  isDeviceLink,
   planEditPath,
   planPath,
   restaurantPath,
@@ -294,6 +296,28 @@ describe('trasy', () => {
   it('ustawienia są poza paskiem, ale wciąż mają działający adres', () => {
     expect(TABS.some((t) => t.key === 'set')).toBe(false);
     expect(parseHash(SETTINGS_PATH)).toEqual({ kind: 'tab', tab: 'set' });
+  });
+
+  it('#/zegarek to ustawienia z kartą zegarka — także z modelem w zapytaniu', () => {
+    // Dawniej nieznany adres lądował na ekranie Dziś.
+    expect(parseHash('#/zegarek')).toEqual({ kind: 'tab', tab: 'set' });
+    expect(parseHash('#/zegarek?model=fr265')).toEqual({ kind: 'tab', tab: 'set' });
+    expect(WATCH_PATH).toBe('#/zegarek');
+    expect(screenOf(parseHash(WATCH_PATH))).toEqual({ title: 'Ustawienia', parent: '#/profil' });
+    expect(activeTab(parseHash(WATCH_PATH))).toBe('set' as TabKey);
+    expect(isTabRoot(WATCH_PATH)).toBe(false);
+  });
+
+  it('link do karty urządzenia: #/zegarek i #/ustawienia?karta=…, nic więcej', () => {
+    expect(isDeviceLink('#/zegarek')).toBe(true);
+    expect(isDeviceLink('#/zegarek?model=vivoactive3')).toBe(true);
+    expect(isDeviceLink('#/ustawienia?karta=zegarek')).toBe(true);
+    expect(isDeviceLink('#/ustawienia?karta=telefon')).toBe(true);
+    expect(isDeviceLink('#/ustawienia')).toBe(false);
+    expect(isDeviceLink('#/ustawienia?karta=')).toBe(false);
+    expect(isDeviceLink('#/sesja')).toBe(false);
+    expect(isDeviceLink('#/cardio?karta=zegarek')).toBe(false);
+    expect(isDeviceLink('')).toBe(false);
   });
 
   it('sesja ma własny adres, a stary link do treningu dalej działa', () => {

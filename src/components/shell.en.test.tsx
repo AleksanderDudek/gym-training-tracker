@@ -146,7 +146,12 @@ describe('settings (English visit)', () => {
         <PhoneCard state={state} onSync={async () => ({ kind: 'skip' })} onToast={noop} />
       </>,
     );
-    expect(screen.getByRole('button', { name: 'Connect watch' })).toBeInTheDocument();
+    // Karta zegarka zaczyna od sprawdzenia modelu (leniwa paczka); połączyć da się i bez niego.
+    expect(await screen.findByRole('combobox', { name: 'Which watch do you have?' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Check' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Connect without checking' })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Popular:' })).toHaveTextContent('Forerunner 55');
+    expect(screen.getByRole('link', { name: 'Check your model →' })).toHaveAttribute('href', '#/zegarek');
     expect(screen.getByRole('button', { name: 'Connect phone' })).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: 'I already have a key from another device' })).toHaveLength(2);
     expect((await englishText()).match(POLISH)?.[0] ?? null).toBeNull();

@@ -34,6 +34,8 @@ import type { AppState, CardioInput, LogEntry } from '../types';
  */
 
 const POLISH = /[ąćęłńóśźż]/i;
+/** Polskie zdania o dzienniku jedzenia z ekranu kroków — po angielsku żadnego z nich. */
+const POLISH_NOTE = /Dziennik jedzenia|zaleceniem żywieniowym|Masz zegarek/;
 const now = Date.now();
 const today = dayKey(now);
 
@@ -151,6 +153,55 @@ describe('steps & cardio in English', () => {
     await user.type(screen.getByLabelText('time, min'), '30');
     expect(screen.getByText(/^above resting · ≈ \d+ kcal including resting — the number the treadmill usually shows$/)).toBeInTheDocument();
     expect(screen.getByText(/^3\.0 km · brisk walk or jog · \d\.\d MET$/)).toBeInTheDocument();
+  });
+
+  it('with a food diary: no calories on the Today card, a note on the steps screen; “how we count” for everyone', () => {
+    const s = richState();
+    localStorage.setItem('gt:diet', '1');
+    try {
+      const card = render(<CardioCard state={s} />);
+      expect(screen.getByRole('heading', { name: 'Today 3,000 steps' })).toBeInTheDocument();
+      expect(screen.queryByText(/^Calories above resting/)).not.toBeInTheDocument();
+      card.unmount();
+      render(<CardioPage state={s} onDelete={vi.fn()} />);
+      expect(
+        screen.getByText('These calories are an estimate (±20–30%). The food diary doesn’t add them — your food target adjusts weekly to your weight.'),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText(/Calories are not nutrition advice\. The food diary doesn’t add them to your target — the food target adjusts weekly to your weight and logs\./),
+      ).toBeInTheDocument();
+      expect(document.body.textContent).not.toMatch(POLISH_NOTE);
+    } finally {
+      localStorage.removeItem('gt:diet');
+    }
+  });
+
+  it('the watch link on the steps screen and form, and what a chosen model lacks', async () => {
+    vi.resetModules();
+    vi.stubEnv('VITE_API_URL', 'https://api.example');
+    try {
+      const { CardioPage: Page, CardioEntry: Entry } = await import('./Cardio');
+      const page = render(<Page state={freshState()} onDelete={vi.fn()} />);
+      expect(screen.getByRole('link', { name: 'Got a watch? Check whether your steps can arrive by themselves →' })).toHaveAttribute(
+        'href',
+        '#/zegarek',
+      );
+      expect(screen.getByRole('button', { name: 'Don’t show again' })).toBeInTheDocument();
+      page.unmount();
+      const entry = render(<Entry state={freshState()} sport="steps" onLog={vi.fn()} onToast={vi.fn()} />);
+      expect(screen.getByRole('link', { name: /^Got a watch\?/ })).toBeInTheDocument();
+      entry.unmount();
+      localStorage.setItem('gt-garmin-key', 'ab'.repeat(32));
+      localStorage.setItem('gt-garmin-model', JSON.stringify({ key: 'd2air', name: 'D2™ Air', v: 'part', lacks: ['stress', 'bodyBattery', 'rides'] }));
+      render(<Page state={freshState()} onDelete={vi.fn()} />);
+      expect(
+        screen.getByText('D2™ Air doesn’t share stress, Body Battery or bike rides with apps — that’s why they’re missing here.'),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: /^Got a watch\?/ })).not.toBeInTheDocument();
+    } finally {
+      vi.unstubAllEnvs();
+      localStorage.clear();
+    }
   });
 
   it('the card on Today, the profile summary and the weight card', () => {

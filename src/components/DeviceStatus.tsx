@@ -2,11 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { SAID, aboutText, agoText, atText, lastPackText, nextText, shortAtText, sinceText } from '../deviceStatus';
 import type { Device, DeviceStatus, Level } from '../deviceStatus';
-import { hashQuery } from '../food/hash';
+import { hashPath, hashQuery, hashWith } from '../food/hash';
 import { lastPullAt, onWatchCheck, watchConnected, watchStatus } from '../garmin';
 import { LOCALE, text } from '../i18n';
 import { lastPhoneAt, onPhoneCheck, phoneConnected, phoneStatus } from '../phone';
-import { SETTINGS_PATH } from '../routing';
+import { SETTINGS_PATH, WATCH_PATH } from '../routing';
 import type { AppState } from '../types';
 
 /**
@@ -62,8 +62,8 @@ const T = text({
       key: (
         <>
           <b>Klucz z tej karty wklejony w ustawieniach GYM TRACKER.</b> W Garmin Connect: zegarek → Aktywności
-          i aplikacje → GYM TRACKER → Ustawienia. W wersji testowej (beta) te ustawienia są w aplikacji Connect IQ
-          Store: urządzenie → GYM TRACKER → Ustawienia.
+          i aplikacje → GYM TRACKER → Ustawienia. Te same ustawienia są też w aplikacji Connect IQ Store:
+          urządzenie → GYM TRACKER → Ustawienia.
         </>
       ),
       opened: (
@@ -195,8 +195,8 @@ const T = text({
       key: (
         <>
           <b>The key from this card is pasted into the GYM TRACKER settings.</b> In Garmin Connect: watch → Activities
-          &amp; Apps → GYM TRACKER → Settings. In the test (beta) version these settings are in the Connect IQ Store
-          app: device → GYM TRACKER → Settings.
+          &amp; Apps → GYM TRACKER → Settings. The same settings are also in the Connect IQ Store app: device → GYM
+          TRACKER → Settings.
         </>
       ),
       opened: (
@@ -325,19 +325,43 @@ export const CARD_ID: Record<Device, string> = { watch: 'zegarek', phone: 'telef
 
 export const deviceCardPath = (d: Device): string => `${SETTINGS_PATH}?karta=${CARD_ID[d]}`;
 
+/** Czy adres wskazuje kartę: `?karta=…`, a karta zegarka także samym `#/zegarek`. */
+const pointsAt = (device: Device, hash: string): boolean => {
+  const card = hashQuery(hash).get('karta');
+  if (card) return card === CARD_ID[device];
+  return device === 'watch' && hashPath(hash) === WATCH_PATH;
+};
+
 /**
- * Karta przewija się do siebie, gdy przyszło się z linku „Stan połączenia”. Trasy siedzą w
- * części hash adresu, więc zwykła kotwica (`#zegarek`) zgubiłaby ekran ustawień — kartę wskazuje
- * zapytanie. Z opóźnieniem, bo router po zmianie ekranu sam przewija na górę (dwie klatki).
+ * Karta przewija się do siebie, gdy przyszło się z linku „Stan połączenia” albo „Czy mój zegarek
+ * jest obsługiwany?” (`#/zegarek`). Trasy siedzą w części hash adresu, więc zwykła kotwica
+ * (`#zegarek`) zgubiłaby ekran ustawień — kartę wskazuje zapytanie albo adres zegarka.
+ * Z opóźnieniem, bo router po zmianie ekranu sam przewija na górę (dwie klatki).
  */
 export function useScrollHere(device: Device) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (hashQuery(window.location.hash).get('karta') !== CARD_ID[device]) return;
+    if (!pointsAt(device, window.location.hash)) return;
     const t = window.setTimeout(() => ref.current?.scrollIntoView?.({ block: 'start' }), 150);
     return () => window.clearTimeout(t);
   }, [device]);
   return ref;
+}
+
+/**
+ * Przejście do karty na tym samym ekranie ustawień („Zdrowie z telefonu” → z wyniku sprawdzania
+ * zegarka, „Sprawdź swój model” z karty telefonu). Router pomija zmianę samego zapytania, więc
+ * zwykły link by nie przewinął — przewija się tu, a adres dostaje `?karta=…` bez nowego wpisu
+ * w historii i bez `hashchange` (jak strony jedzenia), żeby odświeżenie wróciło do tej karty.
+ */
+export function goToCard(device: Device): void {
+  document.getElementById(CARD_ID[device])?.scrollIntoView?.({ block: 'start' });
+  const hash = window.location.hash;
+  const path = hashPath(hash) === WATCH_PATH ? WATCH_PATH : SETTINGS_PATH;
+  const query = hashQuery(hash);
+  query.set('karta', CARD_ID[device]);
+  const next = hashWith(path, query);
+  if (next !== hash) window.history.replaceState(window.history.state, '', next);
 }
 
 const NAME: Record<Device, string> = T.name;

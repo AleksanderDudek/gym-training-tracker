@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, screen, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { freshState } from '../engine/plan';
@@ -56,7 +56,9 @@ afterEach(() => {
 });
 
 const checklist = () => screen.getByRole('list', { name: 'Dane nie przychodzą?' });
-const firstCheck = () => within(checklist()).getAllByRole('listitem')[0]!;
+const items = () => within(checklist()).getAllByRole('listitem');
+/** Najbardziej prawdopodobna przyczyna — pod pytaniem o model, które stoi na górze, dopóki nie wybrano modelu. */
+const firstCheck = () => items().find((li) => !/^Czy Twój model jest obsługiwany\?/.test(li.textContent ?? ''))!;
 
 describe('karta zegarka: stan połączenia', () => {
   const card = async (state: AppState, onSync?: () => Promise<unknown>) => {
@@ -160,6 +162,159 @@ describe('karta zegarka: stan połączenia', () => {
   it('karta ma kotwicę dla linków „Stan połączenia”', async () => {
     await card(withWatch(at(14, 32)));
     expect(screen.getByRole('heading', { name: 'Zegarek Garmin' }).closest('.grp')).toHaveAttribute('id', 'zegarek');
+  });
+});
+
+describe('karta zegarka: model i lista „Dane nie przychodzą?”', () => {
+  const remember = (model: Record<string, unknown>) => localStorage.setItem('gt-garmin-model', JSON.stringify(model));
+
+  const card = async (state: AppState = freshState(), onFeedback?: () => void) => {
+    localStorage.setItem('gt-garmin-key', KEY);
+    const { GarminCard } = await import('./Garmin');
+    render(<GarminCard state={state} onSync={vi.fn()} onToast={vi.fn()} onFeedback={onFeedback} />);
+  };
+
+  it('klucz w ustawieniach na zegarku: Garmin Connect albo Connect IQ Store — bez zdania o becie', async () => {
+    await card();
+    const key = items().find((li) => /^Klucz z tej karty wklejony/.test(li.textContent ?? ''))!;
+    expect(key).toHaveTextContent(
+      'W Garmin Connect: zegarek → Aktywności i aplikacje → GYM TRACKER → Ustawienia. Te same ustawienia są też w aplikacji Connect IQ Store: urządzenie → GYM TRACKER → Ustawienia.',
+    );
+    expect(key).not.toHaveTextContent('beta');
+    expect(key).not.toHaveTextContent('W wersji testowej');
+  });
+
+  it('bez wybranego modelu na górze listy: „Czy Twój model jest obsługiwany? Sprawdź →” otwiera sprawdzanie', async () => {
+    const user = userEvent.setup();
+    await card();
+    expect(items()[0]).toHaveTextContent('Czy Twój model jest obsługiwany? Sprawdź →');
+    expect(screen.queryByText(/^Wybrany model/)).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Czy Twój model jest obsługiwany? Sprawdź →' }));
+    // Paczka sprawdzania wczytuje się leniwie; pole od razu czeka na nazwę.
+    const field = await screen.findByRole('combobox', { name: 'Jaki masz zegarek?' });
+    await waitFor(() => expect(field).toHaveFocus());
+    // Zegarek już połączony: wynik bez „Połącz zegarek”.
+    await user.type(field, 'fr 265{Enter}');
+    expect(await screen.findByRole('heading', { name: 'Forerunner® 265 · Obsługiwany' })).toHaveFocus();
+    expect(screen.queryByRole('button', { name: 'Połącz zegarek' })).not.toBeInTheDocument();
+    // Wybór zostaje zapamiętany: linia nad listą, a pytanie o model znika z listy.
+    expect(screen.getByText('Wybrany model: Forerunner® 265 — obsługiwany.')).toBeInTheDocument();
+    expect(items()[0]).not.toHaveTextContent('Czy Twój model');
+    await user.click(screen.getByRole('button', { name: 'Zwiń' }));
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Zmień model' })).toBeInTheDocument();
+  }, 15_000);
+
+  it('wybrany model z brakami: „Wybrany model”, czego nie będzie i krok aktualizacji przed instalacją', async () => {
+    remember({ key: 'fenix5plus', name: 'fēnix® 5 Plus', v: 'part', lacks: ['bodyBattery'], newest: ['stress', 'rides'] });
+    await card();
+    expect(screen.getByText('Wybrany model: fēnix® 5 Plus — bez części danych.')).toBeInTheDocument();
+    expect(
+      screen.getByText('Ten model nie udostępnia aplikacjom Body Battery — w „Z zegarka” ich nie będzie.'),
+    ).toBeInTheDocument();
+    const steps = within(screen.getByRole('list', { name: 'Kroki połączenia' })).getAllByRole('listitem');
+    expect(steps[0]).toHaveTextContent(/^Najpierw zaktualizuj oprogramowanie zegarka: zsynchronizuj go z Garmin Connect/);
+    expect(steps[1]).toHaveTextContent(/^Zainstaluj na zegarku aplikację GYM TRACKER z Connect IQ Store\. Jeśli sklep pisze/);
+    expect(items()[0]).not.toHaveTextContent('Czy Twój model');
+  });
+
+  it('nieobsługiwany model mimo połączenia: przypomnienie o telefonie', async () => {
+    remember({ key: 'vivoactive3', name: 'vívoactive® 3', v: 'no' });
+    await card();
+    expect(screen.getByText('Wybrany model: vívoactive® 3 — nieobsługiwany.')).toBeInTheDocument();
+    expect(
+      screen.getByText('vívoactive® 3 nie działa z aplikacją na zegarek — dane może przynieść telefon („Zdrowie z telefonu”).'),
+    ).toBeInTheDocument();
+    // Bez aktualizacji w danych — instalacja to pierwszy krok.
+    const steps = within(screen.getByRole('list', { name: 'Kroki połączenia' })).getAllByRole('listitem');
+    expect(steps[0]).toHaveTextContent(/^Zainstaluj na zegarku/);
+  });
+
+  it('model z małą pamięcią na pracę w tle czeka na pierwszą paczkę: uwaga na górze i „Napisz do autora”', async () => {
+    remember({ key: 'fr55', name: 'Forerunner® 55', v: 'ok', bg: 32 });
+    const user = userEvent.setup();
+    const onFeedback = vi.fn();
+    await card(freshState(), onFeedback);
+    expect(items()[0]).toHaveTextContent(
+      /^Ten model ma mało pamięci na pracę w tle i nie był jeszcze sprawdzony na prawdziwym zegarku\. Jeśli dane nie przychodzą, napisz — to pomoże\./,
+    );
+    await user.click(within(items()[0]!).getByRole('button', { name: 'Napisz do autora' }));
+    expect(onFeedback).toHaveBeenCalledOnce();
+  });
+
+  it('bez okna uwag uwaga o pamięci zostaje, ale bez przycisku', async () => {
+    remember({ key: 'fr55', name: 'Forerunner® 55', v: 'ok', bg: 32 });
+    await card();
+    expect(items()[0]).toHaveTextContent(/^Ten model ma mało pamięci/);
+    expect(within(items()[0]!).queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  it('uwaga o pamięci tylko przy czekaniu na pierwsze dane i tylko dla modeli z 32 kB', async () => {
+    remember({ key: 'fr55', name: 'Forerunner® 55', v: 'ok', bg: 32 });
+    await card(withWatch(at(14, 32), 7300));
+    expect(screen.queryByText(/mało pamięci/)).not.toBeInTheDocument();
+  });
+
+  it('64 kB pamięci na pracę w tle — bez uwagi, także przed pierwszą paczką', async () => {
+    remember({ key: 'fr265', name: 'Forerunner® 265', v: 'ok', bg: 64 });
+    await card();
+    expect(screen.queryByText(/mało pamięci/)).not.toBeInTheDocument();
+  });
+
+  it('#/zegarek przewija ustawienia do karty zegarka, a nie do karty telefonu', async () => {
+    const scroll = vi.fn();
+    Element.prototype.scrollIntoView = scroll;
+    vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] });
+    vi.setSystemTime(NOW);
+    window.history.replaceState(null, '', '#/zegarek');
+    try {
+      await card();
+      await act(async () => {
+        vi.advanceTimersByTime(200);
+      });
+      expect(scroll).toHaveBeenCalledTimes(1);
+      expect(scroll.mock.contexts[0]).toBe(screen.getByRole('heading', { name: 'Zegarek Garmin' }).closest('.grp'));
+    } finally {
+      window.history.replaceState(null, '', '#/');
+      delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+    }
+  });
+});
+
+describe('przejście do karty na tym samym ekranie', () => {
+  afterEach(() => {
+    window.history.replaceState(null, '', '#/');
+    delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+  });
+
+  it('goToCard przewija do karty i zapisuje ją w adresie bez nowego wpisu w historii', async () => {
+    vi.stubEnv('VITE_HEALTH_ANDROID_URL', 'https://example.org/zdrowie.apk');
+    const scroll = vi.fn();
+    Element.prototype.scrollIntoView = scroll;
+    window.history.replaceState(null, '', '#/ustawienia');
+    const { GarminCard } = await import('./Garmin');
+    const { PhoneCard } = await import('./Phone');
+    const { goToCard } = await import('./DeviceStatus');
+    render(
+      <>
+        <GarminCard state={freshState()} onSync={vi.fn()} onToast={vi.fn()} />
+        <PhoneCard state={freshState()} onSync={vi.fn()} onToast={vi.fn()} />
+      </>,
+    );
+    const length = window.history.length;
+    const changes = vi.fn();
+    window.addEventListener('hashchange', changes);
+    goToCard('phone');
+    expect(scroll.mock.contexts[0]).toBe(document.getElementById('telefon'));
+    expect(window.location.hash).toBe('#/ustawienia?karta=telefon');
+    // Z `#/zegarek?model=…` zostaje adres zegarka i model — dochodzi tylko karta.
+    window.history.replaceState(null, '', '#/zegarek?model=fr265');
+    goToCard('phone');
+    expect(window.location.hash).toBe('#/zegarek?model=fr265&karta=telefon');
+    await new Promise((r) => setTimeout(r, 0));
+    expect(changes).not.toHaveBeenCalled();
+    expect(window.history.length).toBe(length);
+    window.removeEventListener('hashchange', changes);
   });
 });
 
