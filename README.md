@@ -349,7 +349,7 @@ i drugi, obok wyniku sesji, po każdym zamkniętym treningu.
 | --- | --- | --- |
 | Dziś | `#/sesja` | Co masz dziś do zrobienia według planu, ważenie, karta jedzenia (kalorie i białko dnia — gdy prowadzisz dietę), pasek postaci, przekąska ruchowa i rada dnia; w trakcie — bieżąca sesja. |
 | Trening | `#/plan`, `#/treningi`, `#/cwiczenia` | Trzy sekcje. **Plan**: uruchomiony plan — kalendarz terminów, punkty, stopień, dziennik; bez planu — katalog: plany z celem, własne i klasyczny. **Treningi**: 38 gotowych treningów (całe ciało, push/pull/nogi, góra/dół, partie), 32 z profilem i własne, z filtrem sprzętu i rodzaju. **Ćwiczenia**: atlas 114 ćwiczeń. |
-| Jedzenie | `#/jedzenie`, `#/przepisy`, `#/produkty`, `#/w-poblizu` | Cztery sekcje. **Dziennik**: pytanie o wagę, bilans dnia z „Dodaj zjedzone” i „Ulubione”, zjedzone, plan posiłków albo propozycja dnia, „Co teraz?”. **Przepisy**: białkowe, z produktów jednego sklepu. **Produkty**: 29 tys. produktów z filtrami. **W pobliżu**: „Zjedz teraz” (gdzie i co zjeść pod dzisiejszy cel) oraz „Zakupy i przepisy” (sklepy na mapie i przepisy z nich). |
+| Jedzenie | `#/jedzenie`, `#/przepisy`, `#/produkty`, `#/w-poblizu` | Cztery sekcje. **Dziennik**: jeden cel na dzień, w poniedziałek sprawdzenie celu, pytanie o wagę, bilans dnia z „Dodaj zjedzone”, „Ulubione” i „Większy posiłek”, zjedzone, plan posiłków albo propozycja dnia, „Co teraz?”. **Przepisy**: białkowe, z produktów jednego sklepu. **Produkty**: 29 tys. produktów z filtrami. **W pobliżu**: „Zjedz teraz” (gdzie i co zjeść pod dzisiejszy cel) oraz „Zakupy i przepisy” (sklepy na mapie i przepisy z nich). |
 | Osiągnięcia | `#/osiagniecia` | Dorobek w liczbach, progi najbliższe zdobycia, 73 rodziny odznak — także czasu na treningu — i odznaki każdego zrobionego ćwiczenia. |
 | Profil | `#/profil` | Postać i doświadczenie, twoje liczby, waga i wzrost, obciążenie, przekąski, kroki i cardio, lista zrobionych ćwiczeń i historia treningów z kaloriami. |
 
@@ -369,8 +369,8 @@ Podstrony mają własne adresy i strzałkę wstecz w pasku aplikacji:
 | Zapis kroków, bieżni, roweru albo zajęć tańca | `#/cardio/kroki`, `#/cardio/bieznia`, `#/cardio/rower`, `#/cardio/taniec` | Dziś |
 | Ćwiczenie — technika i wideo | `#/cwiczenia/<id>` | Trening |
 | Plan posiłków — tydzień, dni wzorcowe, warianty | `#/jedzenie/plan` | Jedzenie |
-| Postęp — waga z prognozą, co działa u ciebie (tygodnie), kalorie z 14 dni, makro z tygodnia | `#/jedzenie/postep` | Jedzenie |
-| Profil diety — energia, sposób odżywiania, plan z Excela, dane | `#/jedzenie/profil` | Jedzenie |
+| Postęp — trend wagi, tempo i termin celu, zmiany celu, tydzień po tygodniu, kalorie z 14 dni, białko z tygodnia | `#/jedzenie/postep` | Jedzenie |
+| Profil diety — cel, zwykły tydzień i tempo, „Jak liczę cel”, ustawienia liczenia, sposób odżywiania, plan z Excela, dane | `#/jedzenie/profil` | Jedzenie |
 | Produkt — zdjęcia, wartości, skład, ceny | `#/produkty?p=<kod>` (arkusz nad listą) | Jedzenie |
 | Historia ćwiczenia | `#/profil/<id>` | Profil |
 | Ustawienia | `#/ustawienia` | przycisk w pasku aplikacji |
@@ -397,8 +397,9 @@ i mają być widoczne również wtedy, gdy żaden plan nie jest uruchomiony.
 jeden trening i przycisk startu. Gdy terminu nie ma — mówi, kiedy wypada następny. Gdy sesja już
 trwa — pokazuje ją. Pełna lista treningów mieszka w zakładce Trening, bo ekran z dwudziestoma
 siedmioma równorzędnymi przyciskami nie podpowiada niczego. Kto prowadzi dietę, ma tu też jedną
-kartę jedzenia: ile kalorii i białka z celu dnia, ile zostało i „Dodaj zjedzone”. Kto nie prowadzi,
-nie widzi jej wcale, a ekran Dziś nie wczytuje ani nie uruchamia jej kodu. (Pobrany jest i tak:
+kartę jedzenia: jedno zdanie o dniu („Zostało ok. 650 kcal i 54 g białka”), paski białka i kalorii
+i „Dodaj zjedzone”. Kto nie prowadzi, nie widzi jej wcale, a ekran Dziś nie wczytuje ani nie
+uruchamia jej kodu. (Pobrany jest i tak:
 service worker trzyma całą aplikację w zapasie na pracę offline — ale leży tylko w pamięci podręcznej.)
 
 Stare adresy dalej działają — `#/trening` i `#/poziomy`, a także dawne linki do formularza
@@ -599,8 +600,8 @@ aktywności pieszo z zegarka (bieg, marsz, wędrówka) liczą się swoją prędk
 a reszta drogi dnia jako zwykły marsz. Piętra dokładają wznoszenie. Bieżnia wpisana ręcznie
 schodzi z kroków zegarka i telefonu (policzyły ją same), a jej duplikat z zegarka znika — nic nie
 liczy się dwa razy. Wpis kroków pokazuje rozpis („droga z zegarka 11,8 km · bieg 5,2 km w 28 min
-· 9 pięter”). Dieta dostaje z tego **wartość kroków** — ile kroków zwykłego marszu spaliłoby tyle
-samo — i liczy w niej swój wzór na chodzenie wobec celu kroków.
+· 9 pięter”). Do celu jedzenia nic z tego nie przechodzi: dziennik jedzenia kalorii ruchu nie
+dolicza (część „Jedzenie”).
 
 Między 6 a 8 km/h bieżnia przechodzi **płynnie** od wzoru na marsz do wzoru na bieg — twarde
 przełączenie dawało skok z 4,8 na 8,6 MET przy jednej dziesiątej km/h. Tabela roweru jest
@@ -633,6 +634,11 @@ na ćwiczenia), w historii treningów w profilu, przy każdej sesji w historii �
 z całej historii), w szacunku „ile to potrwa i ile spali” przy treningu na dziś i na liście
 treningów, na podstronie ćwiczenia w atlasie (pozycja Compendium i jedna sesja na twoim poziomie),
 a na ekranie kroków — dzień i siedem dni ze wszystkiego razem: wpisów, treningów i przekąsek.
+Wyjątkiem jest ekran Dziś u kogoś, kto prowadzi dziennik jedzenia: przy treningu na dziś stoi sam
+czas („Na Twoim poziomie to ok. 40 min serii z przerwami.”), a karta „Kroki i cardio” podaje kroki
+bez kalorii — na tym ekranie zostaje jeden rachunek kalorii, jedzenia. Ekran kroków pokazuje je
+dalej, z uwagą pod wstępem: „Te kalorie to szacunek (±20–30%). Dziennik jedzenia ich nie dolicza —
+cel jedzenia dopasowuje się co tydzień do Twojej wagi.”
 
 **Waga jest dziennikiem, nie jedną liczbą.** Kalorie zależą od wagi wprost, a waga się zmienia —
 często właśnie dlatego, że ktoś liczy kalorie. Każdy ruch liczy się z wagi obowiązującej w jego
@@ -693,88 +699,192 @@ Zakładka z czterema sekcjami — dawny projekt Produkty PL, przepisany na wygl�
 aplikacji. Dane produktów: [Open Food Facts](https://world.openfoodfacts.org), ceny:
 [Open Prices](https://prices.openfoodfacts.org), sklepy i mapa: OpenStreetMap.
 
-**Dziennik** (`#/jedzenie`) — plan żywienia, który się nagina:
+**Dziennik** (`#/jedzenie`) — jeden cel kalorii na dzień i plan żywienia, który się nagina:
 
-- **Profil diety** (podstrona): płeć, wiek, wzrost, waga startowa i docelowa, aktywność i kroki.
-  Na bieżąco liczy podstawowe spalanie (wzór Mifflina-St Jeora), spalanie dzienne, deficyt, tempo
-  i datę dojścia do celu; ostrzega, gdy cel kalorii jest poniżej podstawowego spalania albo tempo
-  przekracza 1% masy ciała na tydzień. Sposób odżywiania: redukcja wysokobiałkowa, zbilansowany,
-  low carb, keto albo sportowy — każdy wyznacza cele makro i ocenia jedzenie („pasuje”, „może być”,
-  „nie pasuje”, zawsze z powodem).
+- **Profil diety** (podstrona). „Ty”: płeć, wiek i wzrost (ten sam co w treningach), a waga to trend
+  z ważeń („Waga teraz: 82,4 kg (trend z ważeń).”). „Twój cel”: „Schudnąć”, „Utrzymać wagę” albo
+  „Przybrać”, z wagą docelową po właściwej stronie obecnej (u kobiet także „Jestem w ciąży lub
+  karmię piersią”). „Twój zwykły tydzień”: cztery opisy słowami — „Głównie siedzę” (domyślnie),
+  „Codziennie ok. godziny ruchu”, „Dużo ruchu” i „Bardzo dużo ruchu”; średnia kroków z dwóch
+  tygodni stoi obok tylko jako podpowiedź, bo według NASEM kroki nie najlepiej przypisują poziom.
+  „Tempo”: chipy kierunku celu (niżej) i jedna linijka wyniku („Cel: 2100 kcal dziennie · białko
+  co najmniej 150 g”), pod nią „To pierwszy szacunek — u większości ludzi trafia z dokładnością do
+  ok. 300 kcal. …” albo data ostatniego sprawdzenia. „Ustaw cel ręcznie” przyjmuje własną liczbę
+  i zamienia ją w tempo („Tempo przy tym celu: ok. −0,5 kg na tydzień”), więc sprawdzenie
+  dopasowuje się do niej jak do chipu. „Jak liczę cel” (zwinięte, `?jak=1` w adresie otwiera je
+  od razu) mówi w siedmiu punktach to, co niżej, a „Ustawienia liczenia” to „Dopasowuj cel co
+  tydzień”, „Bez liczenia kalorii” i „Przerwa”. Sposób odżywiania: redukcja wysokobiałkowa,
+  zbilansowany, low carb, keto albo sportowy — każdy wyznacza cele makro i ocenia jedzenie
+  („pasuje”, „może być”, „nie pasuje”, zawsze z powodem).
+- **Jeden cel na dzień** (`diet/target.ts`). Na start równanie NASEM 2023 (*Dietary Reference
+  Intakes for Energy*, z pomiarów metodą podwójnie znakowanej wody) liczy spalanie z płci, wieku,
+  wzrostu, wagi i zwykłego tygodnia; od niego odchodzi to, czego wymaga tempo (7500 kcal na
+  kilogram), a wynik zaokrągla się do 50 kcal. Domyślny mężczyzna (35 lat, 175 cm, 80 kg,
+  „Głównie siedzę”) przy −0,5 kg na tydzień dostaje 2100 kcal. U jednej osoby wzór myli się
+  zwykle o 250–350 kcal, więc to tylko punkt startu — dalej cel dopasowuje poniedziałkowe
+  sprawdzenie (niżej). Cel dnia nie jest liczony, tylko odczytany z **historii celów** w profilu
+  (każda zmiana z datą i powodem): od rana do wieczora ten sam, a miniony dzień zostaje przy swoim —
+  późna paczka z zegarka, nowe ważenie ani sprawdzenie go nie ruszą. **Kroki, treningi, cardio
+  i zegarek nie zmieniają celu jedzenia**: kalorie z ruchu to szacunek z błędem 20–30% i większym,
+  a zwykły tydzień jest już w szacunku; gdy ruchu jest więcej przez kilka tygodni, pokaże to waga —
+  i dopiero stamtąd trafi to do celu. Nic nie przechodzi też z dnia na dzień: nadwyżka nie obniża
+  kolejnych dni, a niedojedzone nie wraca.
 - **Plan z Excela**: „Wczytaj plan z Excela” czyta arkusz w przeglądarce — dni wzorcowe, warianty,
   potrawy z kaloriami i makro, parametry. Plik nigdzie nie trafia.
-- **Dziś**, od góry: **pytanie o wagę** („Ile dziś ważysz?” z ostatnim ważeniem i radą „rano, po
-  toalecie, przed jedzeniem”; po zapisie jedna linijka „Waga: 82,4 kg” ze „Zmień”), bilans dnia
-  z „Dodaj zjedzone” i „Ulubione (N)”, **zjedzone** zaraz pod nimi, plan dnia (z nazwą planu
-  z zakupami, a gdy plan zaczyna się później — „Plan „…” zaczyna się …”), „Co teraz?”, kroki i ruch,
-  na końcu wejścia do Planu posiłków, Moich planów, Postępu i Profilu diety. Bilans dnia z paskami
-  kalorii, białka, węglowodanów i tłuszczu. Pozycje planu można
-  odhaczyć, pominąć albo zamienić na coś o podobnej kaloryczności (±12%); bez planu „Propozycja
-  dnia” układa posiłki z tego, co w pobliżu i w domu. „Dodaj zjedzone” szuka we własnych
-  zestawach i jedzeniu, planie, przepisach, menu lokali („big mac”, „latte grande”) i produktach —
-  najbliższe nazwy pierwsze; gramaturę da się zmienić, a obiad poza sieciami wpisać samymi
-  kaloriami. **Zestaw** składa kilka rzeczy jedzonych razem („Banan + batonik”): każda z gramaturą,
-  suma na bieżąco, w dzienniku jeden wpis. Zaznaczone „Zapisz jako mój zestaw” zostawia go na
-  później — wraca pierwszy w wyszukiwaniu i w propozycjach („Twój zestaw”), a usuwa się go
+- **Dziś**, od góry: zawiadomienie o nowym liczeniu i poniedziałkowa karta, gdy czekają (niżej),
+  **pytanie o wagę** („Ile dziś ważysz?” z ostatnim ważeniem i radą „Najlepiej rano, po toalecie,
+  przed jedzeniem.”, z „Nie dziś” wspólnym z ekranem Dziś; po zapisie jedna linijka „Waga: 82,4 kg”
+  ze „Zmień”), bilans dnia z „Dodaj zjedzone”, „Ulubione (N)” i „Większy posiłek”, **zjedzone**
+  zaraz pod nim, plan dnia (z nazwą planu z zakupami, a gdy plan zaczyna się później — „Plan „…”
+  zaczyna się …”), „Co teraz?”, kroki, na końcu wejścia do Planu posiłków, Moich planów, Postępu
+  i Profilu diety. Bilans mówi to samo zdanie co karta na ekranie Dziś — „Na dziś: 2100 kcal i 150 g
+  białka”, „Zostało ok. 650 kcal i 54 g białka”, „Kalorie na dziś w zakresie celu, białka jeszcze 20
+  g” albo „Na dziś kalorii już wystarczy, białka jeszcze 20 g” — nad paskami białka i kalorii (dzień
+  miniony: „Zjedzone 1980 kcal · cel 2100”); węglowodany i tłuszcz są zwinięte, przy keto i low carb
+  rozwinięte. Paski mają jeden neutralny kolor: żaden kolor nie ocenia dnia. **Jedno pasmo ±100
+  kcal** ocenia dzień na każdym ekranie — karta Dziś, bilans, „Co teraz?”, dodawanie jedzenia,
+  „Większy posiłek”, „Zjedz teraz”, skaner, wykres 14 dni: w nim kalorie są „w zakresie celu”,
+  a „ponad cel” zaczyna się powyżej +100 i zawsze kończy się tym, że jeden dzień nie zmienia trendu
+  („To ok. 300 kcal ponad cel — jeden dzień nie zmienia trendu.”). **Pełny dzień** — jedna reguła
+  dla sprawdzenia, tabeli tygodni i wykresu 14 dni: dzień liczy się, gdy zapisano co najmniej 60%
+  jego celu (dzisiejszy nigdy). Słowo osoby wygrywa: pod zjedzonymi „Nie wszystko zapisane” robi
+  z dnia niepełny („Dzień niepełny — nie liczy się do dopasowania celu ani średnich.”), a zamknięty
+  dzień z mniejszą sumą mówi „Mało zapisów jak na cały dzień — …” i daje „To był cały dzień”; oba
+  z „Cofnij”. Pozycje planu można odhaczyć, pominąć albo zamienić na coś o podobnej kaloryczności
+  (±12%); bez planu „Propozycja dnia” układa posiłki z tego, co w pobliżu i w domu. „Dodaj zjedzone”
+  szuka we własnych zestawach i jedzeniu, planie, przepisach, menu lokali („big mac”, „latte
+  grande”) i produktach — najbliższe nazwy pierwsze; gramaturę da się zmienić, pod wybraną pozycją
+  stoi, co zostanie („Po tym zostanie ok. 450 kcal na dziś.”), a obiad poza sieciami da się wpisać
+  samymi kaloriami. **Zestaw** składa kilka rzeczy jedzonych razem („Banan + batonik”): każda
+  z gramaturą, suma na bieżąco, w dzienniku jeden wpis. Zaznaczone „Zapisz jako mój zestaw” zostawia
+  go na później — wraca pierwszy w wyszukiwaniu i w propozycjach („Twój zestaw”), a usuwa się go
   w Profilu diety → Twoje dane. Zestaw trzyma kopie części, jak wpisy dziennika, więc nowa baza
   produktów nie zmienia tego samego śniadania. **Ulubione**: gwiazdką oznacza się dowolne jedzenie —
   w „Dodaj zjedzone”, w szczegółach produktu, w karcie pozycji lokalu i przy tym, co już zjedzone.
-  „Ulubione (N)” pod bilansem otwiera arkusz z pełną listą i „+ Zjadłem” (zapis jednym stuknięciem,
-  w ilości z gwiazdki; arkusz zostaje otwarty, a jego pasek potwierdza zapis), najczęściej jedzone na
-  górze — każdy zapis takiego jedzenia liczy się do kolejności, ale w otwartym arkuszu wiersze stoją
-  w miejscu; od dziewięciu ulubionych — z szukaniem.
-  W „Dodaj zjedzone” ulubione stoją pierwsze, z „+” do zapisu bez otwierania, a w „Co teraz?” dostają
-  niewielką premię („Twoje ulubione”). Ulubione to migawki jak zestawy: działają bez bazy produktów
-  i offline; listę widać i czyści się w Profilu diety → Twoje dane. Cel dnia koryguje się według
-  tygodnia — nadwyżka rozkłada się na kolejne dni (najwyżej 10% celu dziennie), niedojedzone kalorie
-  wracają — i według ruchu (niżej). „Co teraz?” ma dwa widoki: **„Reszta dnia”** — trzy różne
-  zestawy posiłków na pory dnia, które zostały (obiad, kolacja, przekąska…), których suma trafia
-  w resztę („2345 z 2300 kcal, 224 g białka”); każdy kolejny posiłek dostaje to, co zostało po
-  poprzednich, a gdy porcje są za małe na resztę, dochodzą pozycje „Dodatkowo”; „Zjadłem” przy każdym
-  posiłku i „Inne warianty”. **„Jeden posiłek”** — lista najlepszych na teraz z gwiazdką przy
-  najlepszych i powodem.
-- **Cheat meal** — trzeci przycisk pod bilansem. Arkusz otwiera się na **„Z listy”**: ta sama
-  wyszukiwarka co w „Dodaj zjedzone” (menu sieci gastronomicznych, produkty, przepisy, własne
-  jedzenie), z ulubionymi widocznymi od razu; kilka rzeczy z gramaturą (pizza + cola + deser) składa
-  się w jeden posiłek z sumą na żywo. **„Wpisz makro”** zaczyna od tej sumy albo od zera. Pod polami
-  od razu widać skutki: cel dnia po ruchu, zjedzone, razem z cheat mealem — i czy dzień się
-  mieści („zostaje 900 kcal na 2 posiłki — po ok. 450 kcal i 47 g białka”), czy wychodzi ponad cel
-  („o 600 kcal, 26%”). Do tego białko, które jeszcze trzeba zjeść, węglowodany i tłuszcz ponad limity
-  sposobu odżywiania, ile z planu dnia jeszcze się zmieści, dwa warianty reszty dnia, a ponad
-  celem: o ile obniży się cel na kolejne dni tygodnia (ta sama korekta tygodniowa), ile to w prognozie
-  wagi i ile kroków albo treningów by to odrobiło. Na dziś arkusz pyta o ruch do końca dnia — kroki
-  (do celu, jak teraz, własna liczba) i trening z planu (będzie, nie będzie, dodatkowy) — bo od tego
-  zależy, ile naprawdę można zjeść. „Zaplanuj” zostawia cheat meal na ten dzień (także przyszły —
-  sobotnią pizzę planuje się w środę): karta pod bilansem z „Zjedzone”, „Zmień” i „Usuń”, a „Co
-  teraz?” rezerwuje jego kalorie i jeden posiłek. „Zjedzone teraz” zapisuje go od razu.
-- **Cel dopasowany do ruchu** (przełącznik w Profilu diety, domyślnie włączony). Cel kalorii zakłada
-  ruch z planu: kroki z profilu i treningi — te z planu treningowego, a bez planu tyle, ile zakłada
-  współczynnik aktywności (np. 2 w tygodniu przy 1,28). Cel zmienia się tylko o **różnicę** między
-  tym a ruchem zrobionym: kroki ponad cel i trening spoza planu dodają, mniej kroków i opuszczony
-  trening z planu odejmują, bieżnia, rower, taniec i przekąski ruchowe dodają w całości. Doliczanie
-  wszystkich spalonych kalorii liczyłoby treningi dwa razy, bo współczynnik już je zawiera. Dziś liczy
-  się od razu to, co się wydarzyło na plus, a braki (kroki do celu, trening jeszcze przed tobą) —
-  dopiero po dniu albo w symulacji cheat mealu; bilans pisze, o ile cel może jeszcze spaść. Zamknięte
-  dni tygodnia korekta tygodniowa ocenia wobec ich celu po ruchu. Kto nie zapisuje treningów
-  w aplikacji (i nie ma planu treningowego), nie traci kalorii za dni bez wpisu treningu — brak wpisu
-  to nie brak treningu.
-- **Postęp** (podstrona): wykres wagi z planem, prognozą od ostatniego ważenia i celem, kalorie
-  z 14 dni i średnie makro z tygodnia.
-- **Co działa u ciebie** (na Postępie, pod wykresem wagi): 12 tygodni w tabeli — zmiana wagi
-  (nachylenie ważeń od poniedziałku do następnego poniedziałku, kolor według kierunku celu),
-  średnie jedzenie wobec celu dnia, kroki, treningi, przekąski ruchowe, cardio i minuty ruchu, a przy
-  tygodniu siatka siedmiu dni: komórka to jedzenie (w celu / poza celem / bez zapisów), znaki to
-  trening (kwadrat), cel kroków (kropka), przekąska ruchowa (trójkąt) i cardio (romb). Pod tabelą
-  „Co idzie w parze z postępem”: dla każdego nawyku tygodnie z większą i mniejszą jego dawką (próg
-  dzielący je na równe grupy), średnia zmiana wagi w obu, siła związku i różnica w jedzeniu między
-  grupami — bo to jedzenie najczęściej tłumaczy różnicę. Od 4 pełnych tygodni z ważeniami; słaby
-  związek albo różnica poniżej 0,1 kg/tydz. to „bez wyraźnej różnicy”.
+  „Ulubione (N)” pod bilansem otwiera arkusz z pełną listą i „+ Zjedzone” (zapis jednym stuknięciem,
+  w ilości z gwiazdki; arkusz zostaje otwarty, a jego pasek potwierdza zapis), najczęściej jedzone
+  na górze — każdy zapis takiego jedzenia liczy się do kolejności, ale w otwartym arkuszu wiersze
+  stoją w miejscu; od dziewięciu ulubionych — z szukaniem. W „Dodaj zjedzone” ulubione stoją
+  pierwsze, z „+” do zapisu bez otwierania, a w „Co teraz?” dostają niewielką premię („Twoje
+  ulubione”). Ulubione to migawki jak zestawy: działają bez bazy produktów i offline; listę widać
+  i czyści się w Profilu diety → Twoje dane. „Co teraz?” ma dwa widoki: **„Reszta dnia”** (gdy
+  zostało ponad 100 kcal) — trzy różne zestawy posiłków na pory dnia, które zostały (obiad, kolacja,
+  przekąska…), których suma trafia w resztę („2345 z 2300 kcal, 224 g białka”); każdy kolejny
+  posiłek dostaje to, co zostało po poprzednich, a gdy porcje są za małe na resztę, dochodzą pozycje
+  „Dodatkowo”; „Zjedzone” przy każdym posiłku i „Inne warianty”. **„Jeden posiłek”** — lista
+  najlepszych na teraz z gwiazdką przy najlepszych i powodem. Karta „Kroki” zapisuje te same kroki
+  co w treningach i ma jedną uwagę: „Ruch nie zmienia celu jedzenia. Twój zwykły ruch jest już
+  w celu, a gdy ruszasz się więcej przez kilka tygodni, pokaże to waga — wtedy cel sam urośnie.”
+- **Większy posiłek** (dawniej „Cheat meal”) — trzeci przycisk pod bilansem. Arkusz otwiera się na
+  **„Z listy”**: ta sama wyszukiwarka co w „Dodaj zjedzone” (menu sieci gastronomicznych, produkty,
+  przepisy, własne jedzenie), z ulubionymi widocznymi od razu; kilka rzeczy z gramaturą (pizza +
+  cola + deser) składa się w jeden posiłek z sumą na żywo. **„Wpisz makro”** zaczyna od tej sumy
+  albo od zera. Pod polami od razu widać, co z tego wynika: cel tego dnia, zjedzone, większy posiłek
+  i razem — i czy dzień się mieści, na tym samym paśmie ±100 kcal: „Mieści się: zostaje ok. 900 kcal
+  na 2 posiłki — po ok. 450 kcal i 47 g białka.”, „Mieści się na styk: …, czyli raczej przekąski.”
+  (mniej niż 250 kcal na posiłek), „Mieści się — to wypełnia cel dnia.” albo „To ok. 600 kcal ponad
+  cel dnia. Jeden taki dzień nie zmienia trendu — jutro jedz po prostu jak zwykle.” z „Waga przez
+  dzień–dwa może pokazać więcej — to woda i sól, nie tłuszcz.”. Do tego białko, które jeszcze trzeba
+  zjeść, węglowodany ponad limit keto i low carb, ile z planu dnia jeszcze się zmieści i warianty
+  reszty dnia. Nic się nie odrabia — ani w kolejnych dniach, ani ruchem. „Zaplanuj” zostawia
+  posiłek na ten dzień (także przyszły — sobotnią pizzę planuje się w środę): karta „Zaplanowany
+  większy posiłek” pod bilansem z „Zjedzone”, „Zmień” i „Usuń”, a każde „Zostało” — karta Dziś,
+  bilans, „Co teraz?”, „Zjedz teraz” — odkłada już jego kalorie i jeden posiłek („Liczę już
+  z zaplanowanym większym posiłkiem (900 kcal).”). „Zjedzone teraz” zapisuje go od razu. Bez
+  liczenia kalorii przycisku nie ma.
+- **Poniedziałkowe sprawdzenie** (`diet/calibrate.ts`). Rusza raz w tygodniu, przy pierwszym
+  otwarciu karty jedzenia na ekranie Dziś, dziennika albo „Zjedz teraz” (w poniedziałek od 4:00 —
+  niedzielna kolacja może jeszcze czekać na wpis; póki trwa, najwyżej 3 s, w miejscu celu stoi
+  zaślepka, żeby nie mignął stary). Bierze 28 ostatnich dni: średnią z pełnych dni i nachylenie
+  ważeń — zjedzone minus zmiana wagi razy 7500 kcal to spalanie zmierzone. Potrzebuje co najmniej 5
+  ważeń z 2 tygodni i pełnych zapisów z ¾ dni, a spalanie poza 0,8–2,5 × BMR uznaje za niepełne
+  zapisy albo wodę. Ważenia z kolejnych dni mają wspólną wodę, więc błąd standardowy liczy uczciwie
+  (z autokorelacją) i wierzy tylko tej części różnicy, która wychodzi ponad 1,5 takiego błędu —
+  najwyżej 150 kcal spalania na tydzień. **Cel zmienia się o dokładnie 100 kcal albo wcale.**
+  Podniesienie — i zmiana z samej wagi („Ważysz mniej, więc spalasz trochę mniej — 100 kcal mniej
+  utrzyma tempo.”) — wchodzi od razu: karta „Od dziś cel: 2050 kcal (było 1950)”, fakty („Ostatnie 4
+  tygodnie: waga −0,6 kg na tydzień (plan: −0,5 kg), średnio zapisane 1960 kcal dziennie.”), jedno
+  zdanie powodu, „Szczegóły” i „Dobrze” albo „Zostaw 1950 kcal”. Obniżenie z mniejszego spalania
+  najpierw pyta: „Czy zapisujesz prawie wszystko, co jesz?” — „Tak — ustaw 1850 kcal” albo „Nie
+  zawsze — zostaw 1950 kcal” (wtedy niczego się nie uczy). „Zostaw” (tylko gdy stary cel mieści się
+  w zasadach bezpieczeństwa) przyjmuje tempo, jakie ten cel daje („Cel zostaje: 1950 kcal. Przy nim
+  tempo wyjdzie ok. … na tydzień.”), i przez 4 tygodnie nie wraca w tym kierunku; po każdej zmianie
+  sprawdzenie przez 4 tygodnie nie zawraca — w obu wypadkach chyba że różnica dojdzie do 200 kcal.
+  Po starcie, po zmianie celu w profilu o co najmniej 300 kcal albo zmianie kierunku, po przejściu
+  na utrzymanie i po przerwie czeka 14 dni, bo waga zmienia się wtedy głównie przez wodę, a po
+  każdej zmianie celu w profilu przez 2 tygodnie nie zmienia go z danych. Nie obniża celu, gdy waga
+  spada szybciej albo rośnie wolniej, niż zakłada plan (o ponad 0,1 kg na tydzień), i nie podnosi go
+  w sytuacji odwrotnej. Z wyłączonym „Dopasowuj cel co tydzień” tylko proponuje („Propozycja: 2050
+  kcal zamiast 1950” z „Ustaw 2050 kcal” i „Nie teraz”). Trend na wadze docelowej przełącza cel na
+  utrzymanie („Waga docelowa osiągnięta”, z „Chcę dalej chudnąć” albo „Chcę dalej przybierać”).
+  W tygodniu bez zmiany, w poniedziałek i wtorek, stoi jedna cicha linijka „Ten tydzień: cel bez
+  zmian (1950 kcal).” z tym, co sprawdzenie zobaczyło, czego mu brakuje albo na co czeka. Karta na
+  ekranie Dziś prowadzi do czekającej karty jedną linijką („Od dziś cel: 2050 kcal (było 1950) →”).
+- **Bezpieczeństwo.** Cel nie schodzi poniżej podstawowej przemiany materii (wzór Mifflina-St
+  Jeora, w górę do 50 kcal) i nigdy poniżej 1500 kcal u mężczyzn i 1200 u kobiet. Niższy niż BMR
+  da się tylko wpisać ręcznie, z zaznaczonym „Ten cel jest ustalony z lekarzem albo dietetykiem”,
+  a cel pod minimum poniedziałkowe sprawdzenie podnosi o 100 kcal na tydzień, bez względu na dane.
+  Tempo to najwyżej 1% masy ciała na tydzień (przybieranie — 0,5%): szybsze chipy są wyłączone,
+  a cel wpisany ręcznie, który daje szybsze, dostaje uwagę „Przy tym celu tempo wychodzi ponad 1%
+  masy ciała na tydzień — zwykle za szybko, by utrzymać mięśnie.”. Poniżej 18 lat, przy BMI
+  poniżej 18,5 (z trendu albo z wagi docelowej — takiej wagi docelowej profil zresztą nie przyjmie)
+  i w ciąży lub przy karmieniu deficytu nie ma; poniżej 18 lat i w ciąży nie ma też nadwyżki ani
+  sprawdzenia, a poniżej 18 lat kalorie są ukryte na stałe.
+- **Bez liczenia kalorii** (w „Ustawieniach liczenia” albo od razu z pierwszego ekranu dziennika):
+  dziennik i karta na ekranie Dziś mówią o białku i podpowiadają posiłki, bez kalorii — znika
+  „Większy posiłek”, poniedziałkowa karta (zostaje tylko „Waga docelowa osiągnięta”, bez liczb),
+  a w Postępie historia celu, wykres kalorii i kolumna jedzenia w tabeli tygodni; „Zjedz teraz” mówi
+  „Na ten posiłek: coś z ok. … g białka.”. Sprawdzenie dalej się uczy i może cel podnieść, ale nigdy
+  go nie obniża. **Przerwa** (na tydzień albo dwa — urlop, choroba): cel to utrzymanie wagi,
+  dziennik mówi „Przerwa do 7 listopada: cel to utrzymanie wagi (2650 kcal), a dopasowanie czeka.”
+  z „Zakończ przerwę”, dzień po przerwie wraca poprzedni cel, a sprawdzenie odczekuje jeszcze dwa
+  tygodnie.
+- **Przejście ze starego liczenia.** Profil zapisany przed jednym celem na dzień przechodzi sam przy
+  pierwszym otwarciu i **zachowuje cel co do kilokalorii**: dawny mnożnik aktywności staje się
+  najbliższym z czterech opisów tygodnia, różnica między starym spalaniem a NASEM zostaje jako
+  poprawka szacunku (spalanie startuje tam, gdzie stało stare liczenie), a tempo jest takie, jakie
+  ten cel dawał. Stare pola zostają w zapisie nietknięte, więc cofnięta wersja aplikacji czyta
+  profil jak dawniej. Dziennik pokazuje raz „Liczenie kalorii jest teraz prostsze” — pięć zdań
+  o tym, co się zmieniło, „Rozumiem” i link „Ustawienia w profilu diety” — a karta na ekranie Dziś
+  prowadzi do niego linijką „Liczenie kalorii jest teraz prostsze — zobacz, co się zmieniło →”.
+  Pierwsze sprawdzenie przychodzi co najmniej 7 dni po przejściu, od razu na zapisanej historii.
+  Wyjątki bezpieczeństwa: poniżej 18 lat i deficyt przy BMI poniżej 18,5 dają utrzymanie, cel
+  poniżej 1500 albo 1200 kcal — to minimum (każdy z linijką w zawiadomieniu); cel między minimum
+  a podstawową przemianą materii zostaje, a zawiadomienie pyta: „Podnieś do … kcal” albo „Zostaw —
+  ustalony z lekarzem albo dietetykiem”.
+- **Postęp** (podstrona): kafelki „Teraz (trend)”, „Od startu” i „Do celu” i wykres wagi —
+  ważenia jako blade kropki, linia trendu, prognoza i waga docelowa. **Trend zamiast pojedynczych
+  ważeń**: średnia wykładnicza, w której każde ważenie przesuwa trend o 1 − 0,9^dni drogi (dzień po
+  dniu o dziesiątą część, po tygodniu przerwy mniej więcej o połowę), a jeden krok najwyżej o 3 kg,
+  żeby literówka go nie wywróciła. Trend spóźnia się o ok. 9 dni — dlatego wszędzie jest podpisany
+  „trend” — i z niego liczą cele, profil i przejście na utrzymanie. Pod wykresem tempo z ostatnich
+  4 tygodni z niepewnością („Tempo z ostatnich 4 tygodni: −0,5 kg na tydzień (±0,15).”, od 5 ważeń
+  z 2 tygodni) i **termin jako zakres miesięcy** z tempa ± 2 błędy standardowe: „W tym tempie waga
+  docelowa: ok. luty–kwiecień 2027.” (albo „W tym tempie waga docelowa najwcześniej: marzec 2027.”,
+  gdy wolniejszy koniec nie dochodzi do celu, i „Przy tym tempie waga docelowa jest dalej niż 2
+  lata.”). Do pierwszego dopasowania celu termin to rachunek planu: „Przy zakładanym tempie (−0,5 kg
+  na tydzień) to ok. 10 tygodni. Prognozę z Twoich danych pokażę po pierwszym dopasowaniu celu.”
+  Dalej „Cel kalorii — zmiany” (sześć ostatnich wpisów historii celów z powodem: start, Twoja
+  zmiana, dopasowanie z wagi i zapisów, przejście na nowe liczenie, przerwa, bezpieczne minimum),
+  „Tydzień po tygodniu”, „Kalorie – ostatnie 14 dni” (każdy dzień wobec własnego celu, dzień
+  niepełny jasnym słupkiem) i „Białko – ostatnie 7 dni” (średnia z pełnych dni).
+- **Tydzień po tygodniu** (na Postępie; dawniej „Co działa u ciebie”): 12 tygodni w tabeli — zmiana
+  wagi (nachylenie ważeń od poniedziałku do następnego poniedziałku, od 3 ważeń w co najmniej
+  4 dniach), średnie jedzenie z pełnych dni, kroki i treningi, bez kolorów oceny. „Co idzie w parze
+  z postępem” stoi pod tabelą tylko wtedy, gdy któryś wniosek jest pewny: od 8 skończonych tygodni,
+  co najmniej 3 w każdej grupie, różnica co najmniej 0,1 kg/tydz. i 2,6 błędu standardowego Welcha
+  — porównuje się pięć nawyków (jedzenie w celu, treningi, kroki, przekąski ruchowe, cardio), więc
+  zwykłe 2 dawałoby przypadkowe „odkrycia”. Gdy jedzenie w obu grupach różniło się o co najmniej
+  50 kcal dziennie, wniosek mówi i to, ile ta różnica sama dałaby na wadze; na końcu „To skojarzenia
+  z Twoich tygodni, nie dowód.”. Przy utrzymaniu wagi wniosków nie ma.
 
-**Cel w trzech kierunkach.** Tempo w profilu diety to −1…−0,25 kg na tydzień, **utrzymanie**
-i **+0,25 kg/tydz.** (spokojne budowanie masy). Kierunek wynika z wagi docelowej wobec startowej:
-przy celu wyżej nadwyżka nie jest ostrzeżeniem, ostrzeżeniem jest deficyt i przybieranie szybsze niż
-0,5% masy ciała na tydzień (zwykle więcej tłuszczu niż mięśni); data celu to pierwszy dzień na celu
-albo nad nim, a przy utrzymaniu daty nie ma.
+**Cel w trzech kierunkach.** „Schudnąć” ma chipy −0,25, −0,5 i −0,75 kg/tydz., „Utrzymać wagę” —
+utrzymanie, a „Przybrać” — +0,25 kg/tydz. (spokojne budowanie masy; u lekkiej osoby mniej, bo
+przybieranie szybsze niż 0,5% masy ciała na tydzień to zwykle więcej tłuszczu niż mięśni). Tempo
+zapisane wcześniej, które nie pasuje do żadnego chipu, stoi obok jako „(obecne)”. Chip szybszy, niż
+pozwalają zasady bezpieczeństwa (wyżej), albo schodzący poniżej bezpiecznego minimum jest wyłączony,
+a pod chipami stoi dlaczego. Przy utrzymaniu waga docelowa to obecny trend, a przy chudnięciu
+i przybieraniu musi leżeć po właściwej stronie obecnej wagi.
 
 **Plan z zakupami (meal prep)** — u góry „Planu posiłków” (`#/jedzenie/plan`). Jedzenie na 5–14
 kolejnych dni dla jednej osoby, kupione w **jednym sklepie stacjonarnym albo w sklepie i jednym
@@ -795,7 +905,7 @@ dokłada), „Bez mięsa”, „Bez ryb i owoców morza”, „Bez jajek”.
   pudełka, bułka i awokado do wytrawnego śniadania, banan i orzechy do słodkiego, oliwa w łyżeczkach
   (4,5 g) i łyżkach (13,5 g); przy keto i low carb bez skrobi i banana, za to z orzechami i oliwą.
   Dodatki rosną z wielkością posiłku, więc plan karmi od 1200 do 3500 kcal. Dzień trafia w cel
-  kalorii (nigdy ponad 5% — tyle dziennik nazywa „ponad cel” — najwyżej 7% pod; na prawdziwych danych
+  kalorii (nigdy ponad 5% i najwyżej 7% pod; na prawdziwych danych
   zwykle ±2%), białko i tłuszcz nie spadają poniżej minimum; dzień, którego koszyk nie domyka, plan
   pokazuje i mówi, co pomoże. Ulubione przepisy mają pierwszeństwo, wspólne składniki też (jedno
   opakowanie skyru na dwa przepisy). „Inny plan” i „Wymień” zmieniają plan od dziś: zjedzone dni
@@ -805,20 +915,12 @@ dokłada), „Bez mięsa”, „Bez ryb i owoców morza”, „Bez jajek”.
   czasem, „pasuje do stylu”, „wspólne zakupy” i gwiazdką ulubionych; od dziewięciu — z szukaniem.
   Wybrany wchodzi do całego planu, a porcje i lista idą za nim. Wymieniony wcześniej też jest na
   liście („wcześniej wymieniony”): „Inny plan” go nie przywróci, ale można go wybrać samemu.
-- **Plan idzie za postępami (check-in)**: przed każdym planem 28 ostatnich dni — trend z ważeń
-  i średnia z zapisów jedzenia — mówi, ile naprawdę spalasz (zjedzone minus zmiana wagi razy energia
-  w kilogramie). Różnicę wobec wzoru check-in przyjmuje tylko w części pewnej (ponad dwa błędy
-  standardowe trendu — skacząca waga i rzadkie ważenia nie ruszają celu), od 100 kcal, najwyżej
-  o 250 kcal naraz, nigdy poniżej podstawowej przemiany materii albo 1500 kcal u mężczyzn i 1200
-  u kobiet. Zmierzona różnica zostaje w profilu jako **korekta spalania** — część wzoru od tej pory:
-  tempo, cele według tempa, prognoza i kolejny check-in liczą z nią, więc ten sam błąd nie odejmuje się
-  dwa razy (w „Zaawansowanych” można ją zmienić albo wyzerować). Po dojściu do wagi docelowej —
-  utrzymanie, krokami do 500 kcal. Potrzeba co najmniej 5 ważeń z 14 dni i pełnych zapisów z ¾ tych
-  dni (dzień zapisany poniżej połowy celu to dzień niedopisany); spalanie poza 0,8–2,5 × BMR to
-  niepełne zapisy albo woda. Dopasowany cel jest zaznaczony jako zalecany, a plan zapisuje go
-  w profilu razem z planem — dziennik i plan liczą tak samo. Nowy cel zaczyna własny bilans tygodnia
-  (dni zjedzone na stary cel nie są nadwyżką), a nadwyżka tygodnia rozkłada się od dziś na dni do
-  niedzieli, raz.
+- **Cel planu**: plan bierze dzisiejszy cel z profilu diety i daje go każdemu swojemu dniu („Cel
+  z profilu diety. Dopasowuje się w poniedziałki — plan bierze dzisiejszy.”), obok kierunku, tempa,
+  sposobu odżywiania i białka. Dopasowanie celu do postępów to poniedziałkowe sprawdzenie
+  w dzienniku, dla wszystkich; zmiana o 100 kcal nie rusza ułożonego planu — uwaga „Od ułożenia
+  planu zmienił się cel w profilu diety (…)” pojawia się dopiero przy różnicy co najmniej 200 kcal
+  albo innym sposobie odżywiania, a kupione zostaje kupione.
 - **Lista zakupów** (`#/jedzenie/zakupy`, także skrót aplikacji): wizyta w sklepie dział po dziale,
   zamówienie przez internet z odnośnikami do produktów, „Sprawdź w domu” (oliwa, przyprawy, białko
   w proszku). Opakowania wybranego produktu („3 opak. · po 450 g”, puszki tuńczyka i fasoli liczone po
@@ -828,7 +930,7 @@ dokłada), „Bez mięsa”, „Bez ryb i owoców morza”, „Bez jajek”.
   przypomina, co przełożyć do lodówki. Odhaczenia zostają przy planie i działają bez zasięgu i bez
   bazy produktów; „Udostępnij listę” wysyła ją jako tekst.
 - **W dzienniku**: w dni planu „Plan na ten dzień” z nazwą planu — posiłki z porcją i dodatkami do
-  odhaczenia („Zjadłem” zapisuje je jak każde jedzenie), w dniu gotowania „Dziś gotujesz”. Plan
+  odhaczenia („Zjedzone” zapisuje je jak każde jedzenie), w dniu gotowania „Dziś gotujesz”. Plan
   z zakupami ma w swoje dni pierwszeństwo przed planem z arkusza i „Propozycją dnia”; gdzie plany
   się nakładają, obowiązuje **ten ustawiony ostatnio** (ułożony, przesunięty albo wybrany przez
   „Ustaw w dzienniku”), więc następny tydzień można ułożyć zawczasu — plan i lista pokazują wtedy
@@ -849,12 +951,13 @@ dokłada), „Bez mięsa”, „Bez ryb i owoców morza”, „Bez jajek”.
   sklepach (i z zamówieniem) w każdym stylu.
 
 **Jedno ciało, jedno źródło.** Waga z dziennika jedzenia to ta sama waga co w profilu i na karcie
-ważenia — zapis z diety trafia do dziennika wagi. Kroki dieta bierze z wpisów, zegarka Garmin i telefonu,
-a wpis kroków z diety staje się zwykłym wpisem kroków (z doświadczeniem i odznakami jak każdy inny).
-Wzrost jest jeden. Treningi, cardio i plan treningowy dieta czyta z treningów i dolicza do celu
-**tylko różnicę wobec planu** (cel dopasowany do ruchu, wyżej) — nigdy wszystkich spalonych kalorii,
-bo współczynnik aktywności już zakłada treningi. Prognoza wagi liczy kroki z każdego dnia, także
-z dni bez wpisu w diecie.
+ważenia — zapis z diety trafia do dziennika wagi, a trend, tempo i poniedziałkowe sprawdzenie liczą
+z tego jednego dziennika. Kroki dieta bierze z wpisów, zegarka Garmin i telefonu, a wpis kroków
+z diety staje się zwykłym wpisem kroków (z doświadczeniem i odznakami jak każdy inny). Wzrost jest
+jeden. Treningi, przekąski ruchowe, cardio i kroki dieta czyta z treningów tylko do porównań
+w „Tygodniu po tygodniu” i do podpowiedzi przy zwykłym tygodniu — do celu nie dolicza niczego.
+Kalorie ruchu zostają w części treningowej: ekran kroków pokazuje je dalej i mówi, że dziennik ich
+nie dolicza, a na ekranie Dziś kto prowadzi dietę, ma jeden rachunek kalorii — jedzenia.
 
 **Przepisy** (`#/przepisy`): zawsze więcej białka niż węglowodanów i więcej białka niż tłuszczu —
 na porcję, z prawdziwych produktów. Na początku listy **gotowce** (rodzaj „Gotowiec”): 11 zestawów
@@ -1021,7 +1124,7 @@ filety śledziowe i żelatyna.
 **W pobliżu → Zjedz teraz** (`#/w-poblizu`, domyślny widok): odpowiedź na pytanie „jestem w obcym
 mieście i głodny — gdzie i co zjeść w okolicy, zgodnie z dzisiejszym celem?”. Nad mapą: ile kcal
 i białka ma mieć ten posiłek (z tego, co zostało z celu dnia — ten sam rachunek co „Co teraz?”:
-tydzień, ruch, zaplanowany cheat meal, pora dnia) i najlepszy wybór („Stripsy z kurczaka · 30 cm ·
+jeden cel dnia, zaplanowany większy posiłek, pora dnia) i najlepszy wybór („Stripsy z kurczaka · 30 cm ·
 Subway · 420 m · 5 min pieszo”). Lokale i sklepy z OpenStreetMap (fast food, restauracje, kawiarnie,
 stacje, sklepy) w promieniu, dopasowane do menu sieci po marce (`osm.brands` w pliku sieci — nowa
 sieć sama trafia na mapę); sklep sieci daje gotowe produkty białkowe, Żabka — także Żabka Café.
@@ -1136,8 +1239,8 @@ w 100 g) są odrzucane.
 
 ## Zegarek Garmin
 
-Kroki, przejazdy rowerem, tętno, stres i Body Battery przychodzą z zegarka same, bez
-przepisywania. Na zegarku działa mała aplikacja GYM TRACKER (`garmin/`, Connect IQ), która co
+Kroki, przejazdy rowerem i tętno — a na większości modeli także stres i Body Battery — przychodzą
+z zegarka same, bez przepisywania. Na zegarku działa mała aplikacja GYM TRACKER (`garmin/`, Connect IQ), która co
 pół godziny wysyła zaszyfrowany ostatni tydzień, a aplikacja w przeglądarce odbiera go przy
 otwarciu i po powrocie na ekran.
 
@@ -1174,8 +1277,35 @@ usunąć (nie ma krzyżyka): zegarek przysłałby go znowu. Nowa paczka, która 
 w trakcie treningu — okno z odznaką w środku serii to ostatnie, czego ktoś potrzebuje.
 
 Zegarek wysyła za każdym razem cały tydzień, więc dzień bez telefonu w pobliżu uzupełni się
-przy następnej wysyłce. Minimalny zegarek to Connect IQ 3.2; stres i Body Battery wymagają 3.3 —
-gdzie ich nie ma, stoi „—”.
+przy następnej wysyłce. Minimalny zegarek to Connect IQ 3.2 (od tej wersji aplikacja pracuje
+w tle); stres, Body Battery i przejazdy rowerem wymagają 3.3 i modelu, który udostępnia je
+aplikacjom. Czego zegarek nie przysyła, tego wiersz dnia w „Z zegarka” po prostu nie wymienia,
+a gdy w sprawdzeniu wybrano taki model, karta zegarka i „Z zegarka” mówią to wprost: „Ten model
+nie udostępnia aplikacjom stresu ani Body Battery — w „Z zegarka” ich nie będzie.”
+
+**Czy mój zegarek jest obsługiwany?** To pierwszy widok karty zegarka, zanim powstanie klucz,
+i własny adres: `#/zegarek` (ustawienia przewinięte do karty, bez wprowadzenia dla nowych w tej
+wizycie), a `#/zegarek?model=fr265` — identyfikator albo dowolny tekst — od razu pokazuje
+odpowiedź. Pole „Jaki masz zegarek?” podpowiada od dwóch znaków (wzorzec combobox, polskie
+końcówki, literówki, „fr”, „feniks”), pod nim „Popularne:” i „Gdzie znajdę nazwę modelu?”. Każda
+odpowiedź ma ikonę, słowo i jeden następny krok: **„Obsługiwany”** („Przyjdą same: kroki,
+przejazdy rowerem, tętno, stres i Body Battery.” i „Połącz zegarek”), **„Obsługiwany, bez części
+danych”** (czego model nie udostępnia aplikacjom), **„Nieobsługiwany”** (z powodem — np. Connect
+IQ starszy niż 3.2 — i pudełkiem „Zamiast tego — telefon”, które prowadzi do „Zdrowie z telefonu”
+albo do „Wpisz kroki →”, obok „Połącz mimo to”) i **„To nie Garmin”** (droga przez telefon
+z aplikacją tej marki); zegarek nowszy niż lista to „Jeszcze nieobsługiwany”, a nieznana nazwa —
+„Nie znam „…”” z trzema najbliższymi modelami. Pod spodem „Wszystkie obsługiwane zegarki — 118
+modeli” i „Lista według danych Garmina z października 2026.”; „Połącz bez sprawdzania” i „Mam już
+klucz z innego urządzenia” nikogo nie zatrzymują. Wybrany model zostaje tylko na tym urządzeniu
+(`gt-garmin-model`, poza eksportem): połączona karta mówi „Wybrany model: Forerunner® 265 —
+obsługiwany.” ze „Zmień model”. Do sprawdzenia prowadzą też cichy link na formularzu kroków i na
+ekranie kroków („Masz zegarek? Sprawdź, czy kroki mogą przychodzić same →”, z krzyżykiem), zdanie
+o Garminie w karcie telefonu („Sprawdź swój model →”) i pierwsza pozycja „Dane nie przychodzą?”,
+gdy model nie jest wybrany. Lista zegarków (`src/watches/garmin.json`) nie powstaje ręcznie:
+`npm run garmin:watches` składa ją z `garmin/manifest.xml` i plików urządzeń z Connect IQ SDK
+(z dopiskami w `src/watches/extra.ts`) — szczegóły w [garmin/README.md, „Lista zegarków w GYM
+TRACKER”](garmin/README.md#lista-zegarków-w-gym-tracker). Sprawdzanie przychodzi osobną paczką,
+dopiero z kartą.
 
 **Snu nie ma i z tej drogi nie będzie.** Wynik snu Connect IQ podaje tylko przez Complications,
 a te może czytać wyłącznie tarcza zegarka — aplikacja dostaje odmowę już przy kompilacji.
@@ -1206,13 +1336,15 @@ wysyła i że START na zegarku wysyła od razu.
 **„Dane nie przychodzą?”** — lista wszystkiego, co może przerwać drogę paczki: Bluetooth
 i zegarek blisko telefonu, Garmin Connect zalogowany i działający w tle (Android: bateria „Bez
 ograniczeń”, iPhone: odświeżanie w tle), GYM TRACKER otwarty choć raz na zegarku (bez tego
-zegarek nie planuje wysyłek), klucz w ustawieniach (w becie — w aplikacji Connect IQ Store, po
-publikacji — w Garmin Connect), internet w telefonie, tryb samolotowy, oszczędzanie energii
+zegarek nie planuje wysyłek), klucz w ustawieniach (w Garmin Connect, te same ustawienia są też
+w aplikacji Connect IQ Store), internet w telefonie, tryb samolotowy, oszczędzanie energii
 i Nie przeszkadzać na zegarku oraz ekran GYM TRACKER na zegarku, który mówi, jak poszła ostatnia
 wysyłka i kiedy następna. Najbardziej prawdopodobna przyczyna stoi na górze: przed pierwszą
 paczką klucz i pierwsze otwarcie, przy spóźnieniu Bluetooth, przy długiej ciszy Garmin Connect
 w tle. Lista rozwija się sama przy spóźnieniu, a przed pierwszą paczką — dopiero po pierwszym
-pytaniu serwera, żeby tuż po „Połącz zegarek” nie straszyć obok kroków połączenia.
+pytaniu serwera, żeby tuż po „Połącz zegarek” nie straszyć obok kroków połączenia. Bez wybranego
+modelu pierwsza pozycja to „Czy Twój model jest obsługiwany? Sprawdź →”, a przy modelu z małą
+pamięcią na pracę w tle, jeszcze niesprawdzonym na prawdziwym zegarku — prośba o wiadomość.
 
 **Poza ustawieniami.** Ekran kroków i cardio ma nad danymi „Z zegarka” jedną linię stanu
 z linkiem „Stan połączenia →” (`#/ustawienia?karta=zegarek` — trasy siedzą w hashu, więc kartę
@@ -1221,8 +1353,11 @@ odzywa się **tylko przy spóźnieniu** („Zegarek nie przysłał danych od 7 g
 połączenie →”) i dopiero po pytaniu serwera w tej wizycie: zaraz po otwarciu zapis ma jeszcze
 starą paczkę, a nowa może właśnie czekać na serwerze. Gdy wszystko działa — ani słowa.
 
-Karta zegarka pojawia się, gdy build zna adres serwera i adres aplikacji w Connect IQ Store
-(zmienna `GARMIN_APP_URL` w GitHubie). Wdrożenie: `garmin/README.md` i `server/api/README.md`.
+Karta zegarka pojawia się, gdy build zna adres serwera (zmienna `API_URL` w GitHubie) — nic więcej
+nie trzeba. Adres aplikacji w Connect IQ Store stoi w kodzie (`GARMIN_STORE_URL` w `src/garmin.ts`,
+wersja publiczna: https://apps.garmin.com/apps/681b79f1-3575-4375-9836-a5ec600abab4); zmienna
+`GARMIN_APP_URL` tylko go nadpisuje, np. adresem bety na czas testów, a pusta niczego nie zmienia.
+Wdrożenie: `garmin/README.md` i `server/api/README.md`.
 
 ## Zdrowie z telefonu
 
@@ -1524,7 +1659,7 @@ src/
     body.test.ts            3 testy średniej z tygodnia i zmiany tydzień do tygodnia
     cardio.ts               kroki, bieżnia, rower i taniec: zapis, zakresy, minuty ruchu WHO, statystyki
     burn.ts                 kalorie z zapisów: wpis, trening, ćwiczenie, przekąska, cały dzień
-    cardio.test.ts          34 testy wpisów, tańca, wagi w czasie, kalorii, minut ruchu według WHO, ruchu poza krokami i typowego treningu
+    cardio.test.ts          34 testy wpisów, tańca, wagi w czasie, kalorii i minut ruchu według WHO
     watch.ts                dane z zegarka: paczka, scalanie po czasie, kroki i przejazdy jako wpisy w locie
     watch.test.ts           15 testów paczki, scalania, wyższej liczby kroków, przejazdów i importu
     phone.ts                dane z telefonu: paczka, scalanie, kroki i przejazdy w locie, propozycja ważenia
@@ -1596,7 +1731,8 @@ src/
     Reminders.tsx           karta przypomnień w ustawieniach: zgoda, rano i wieczorem
     Structure.tsx           „przed treningiem”: przygotuj, rozgrzewka; nagłówki par i wskazówki serii
     Health.tsx              zastrzeżenie zdrowotne: krótka wersja, pełna karta i uwagi do liczb z zegarka i telefonu
-    Garmin.tsx              karta zegarka w ustawieniach: klucz, kroki połączenia, stan, odłączenie
+    Garmin.tsx              karta zegarka w ustawieniach: sprawdzenie modelu jako pierwszy widok, klucz, kroki połączenia, stan, odłączenie
+    WatchCheck.tsx          „Czy mój zegarek jest obsługiwany?”: pole z podpowiedziami, odpowiedź z następnym krokiem, pełna lista — osobna paczka
     DeviceStatus.tsx        stan połączenia słowami: nagłówek kart zegarka i telefonu, lista „Dane nie przychodzą?”, linia na ekranie kroków, uwaga na Dziś
     DeviceStatus.test.tsx   13 testów stanu w kartach, wyniku „Sprawdź teraz”, kolejności listy, linii na ekranie kroków i uwagi tylko przy spóźnieniu
     Phone.tsx               karta „Zdrowie z telefonu”: klucz, instrukcja dla iPhone'a albo Androida, stan, odłączenie
@@ -1611,7 +1747,7 @@ src/
     UpdateBar.tsx           pasek „Nowa wersja aplikacji” z „Odśwież” i „Później” — nigdy w trakcie treningu
   food/                     zakładka Jedzenie (dawne Produkty PL): osobna paczka, wczytywana dopiero w Jedzeniu
     FoodRoot.tsx            wejście do paczki: przełącznik sekcji, strony sekcji, podstrony diety i lokale, każda leniwie
-    TodayFoodCard.tsx       karta jedzenia na ekranie Dziś: kalorie i białko wobec celu dnia, „Dodaj zjedzone”
+    TodayFoodCard.tsx       karta jedzenia na ekranie Dziś: jedno zdanie o dniu, paski białka i kalorii, „Dodaj zjedzone”
     FoodCardPlaceholder.tsx miejsce na tę kartę, zanim przyjdzie jej paczka — w głównej paczce, bez importów
     dietFlag.ts             znacznik „prowadzi dietę” (`gt:diet`): ekran Dziś czyta go, zanim wczyta cokolwiek z jedzenia
     bridge.ts               most do danych treningu: waga, wzrost, kroki i ruch dnia z jednego źródła
@@ -1626,16 +1762,16 @@ src/
     chains/                 sieci z własnymi danymi (Selgros): rejestr, dane (`data/*.json`), scalanie po EAN bez oferty online, kontrola liczb — 10 testów
     nearby/                 w pobliżu: reguła obiektów OSM (`osmTags`), drzewo kawałków i wybór wokół zaokrąglonej pozycji (`osmGrid`), format danych (`osmFormat`), dane aplikacji (`staticData`), zapytanie Overpass dla obu widoków (`live`) z przerwami i budżetem czasu, kopia na dobę i zapas na tydzień, promień
     scan/                   skaner kodów: kody GS1 (cyfra kontrolna, UPC-E, warianty w bazie), Open Food Facts dla kodów spoza bazy, porównanie pod cel diety, lista porównania znikająca godzinę po ostatnim skanie, czytnik (wbudowany albo WebAssembly) — 16 testów
-    diet/                   dieta: baza Dexie (`produkty-pl-dieta`, wersja 4 z zestawami, ulubionymi i planami z zakupami), model energii z kierunkiem celu, sposoby odżywiania, dzień, plan z Excela, zestawy, ulubione, wyszukiwanie, podpowiedzi, cel dopasowany do ruchu wobec planu (`activity.ts`), symulacja cheat mealu (`cheat.ts`) — 170 testów
-    prep/                   plan z zakupami (meal prep): bloki gotowania, przepisy z koszyka, wybór ról i lista zamienników, porcje i dodatki, cele dni, check-in, lista zakupów, nazwa, przesuwanie dat, pierwszeństwo w dzienniku, migawka w bazie, odczyt z kopii — 120 testów
+    diet/                   dieta: baza Dexie (`produkty-pl-dieta`, wersja 4 z zestawami, ulubionymi i planami z zakupami), jeden cel na dzień z historią celów i szacunkiem NASEM (`target.ts`), trend wagi i tempo (`trend.ts`), poniedziałkowe sprawdzenie (`calibrate.ts`), przejście starych profili (`upgrade.ts`), zapis profilu (`edit.ts`), sposoby odżywiania, dzień, plan z Excela, zestawy, ulubione, wyszukiwanie, podpowiedzi, większy posiłek (`cheat.ts`) — 170 testów
+    prep/                   plan z zakupami (meal prep): bloki gotowania, przepisy z koszyka, wybór ról i lista zamienników, porcje i dodatki, cele dni z dzisiejszego celu, lista zakupów, nazwa, przesuwanie dat, pierwszeństwo w dzienniku, migawka w bazie, odczyt z kopii — 120 testów
     restaurants/            lokale: dane sieci (`data/*.json`), kontrola liczb, wyszukiwanie, kolejność, „Najwięcej białka”, stan w adresie — 101 testów
-    hooks/                  baza produktów, menu lokali, dieta na żywo i scalona z treningiem, stan w adresie, lokalizacja, sklepy w pobliżu (z zapasem i samoczynnym ponowieniem), szukanie kodu, porównanie — 26 testów
+    hooks/                  baza produktów, menu lokali, dieta na żywo i scalona z treningiem, poniedziałkowe sprawdzenie, stan w adresie, lokalizacja, sklepy w pobliżu (z zapasem i samoczynnym ponowieniem), szukanie kodu, porównanie — 26 testów
     components/common/      karta i szczegóły produktu, zdjęcie, oceny, cena, arkusz od dołu, ekrany stanu, aparat z czytnikiem kodów, kod wpisany ręcznie, „Porównaj”
     components/products/    przeglądarka produktów: pasek narzędzi ze skanerem, filtry w arkuszu, fasety, aktywne filtry, tabela, strony, skaner kodów z porównaniem
     components/recipes/     przepisy: lista z filtrami, karta ze sklepem, zamiana składnika, gotowe produkty
     components/nearby/      „W pobliżu”: „Zjedz teraz” (lokale pod cel dnia, karta miejsca, adres) i „Zakupy i przepisy”; wspólna mapa Leaflet
-    components/diet/        dziennik (pytanie o wagę, arkusz ulubionych), plan posiłków, postęp, profil diety, pierwsze kroki, wybór jedzenia i zestawy, import z Excela
-    components/prep/        plan z zakupami: formularz z check-inem, plan (przepisy, gotowanie, dzień po dniu), okna nazwy, dat i wymiany przepisu, „Moje plany”, lista zakupów, plan dnia w dzienniku
+    components/diet/        dziennik (pytanie o wagę, arkusz ulubionych, poniedziałkowa karta, zawiadomienie o nowym liczeniu, większy posiłek), plan posiłków, postęp, profil diety, pierwsze kroki, wybór jedzenia i zestawy, import z Excela
+    components/prep/        plan z zakupami: formularz z celem z profilu, plan (przepisy, gotowanie, dzień po dniu), okna nazwy, dat i wymiany przepisu, „Moje plany”, lista zakupów, plan dnia w dzienniku
     components/restaurants/ Lokale: lista sieci z wyszukiwaniem, menu sieci, karta pozycji z dodaniem do dziennika
     components/**/*.test.tsx 163 testy stron pod jsdom — przez role i etykiety, nie znaczniki
     test/                   dane do testów: produkty, most do treningu, arkusz Excela
@@ -1655,7 +1791,8 @@ src/
   mailbox.ts                skrzynka na serwerze, wspólna dla zegarka i telefonu: klucz w pamięci strony, odbiór, czas i wynik ostatniego sprawdzenia, odłączenie
   deviceStatus.ts           stan połączenia z zegarkiem i telefonem (działa, spóźnia się, od dawna nic, zły klucz, bez sieci), następna paczka, słowa o czasie
   deviceStatus.test.ts      19 testów progów, następnej paczki, braku sieci, słów o czasie i wyniku „Sprawdź teraz”
-  garmin.ts                 zegarek w przeglądarce: klucz, odbiór paczki, stan połączenia, odłączenie
+  garmin.ts                 zegarek w przeglądarce: klucz, adres w Connect IQ Store, odbiór paczki, stan połączenia, odłączenie
+  watches/                  lista zegarków Garmina (`garmin.json` z `npm run garmin:watches`), ręczne dopiski (`extra.ts`), wyszukiwarka nazw, zapamiętany model
   garmin.test.ts            3 testy odpowiedzi serwera i godziny ostatnich danych
   phone.ts                  telefon w przeglądarce: klucz, adresy aplikacji z buildu, odbiór, stan połączenia, rodzaj telefonu
   phone.test.ts             3 testy wspólnego wektora, cudzej paczki w skrzynce i rozpoznania telefonu
@@ -1694,6 +1831,7 @@ vite/                       wtyczki Vite
   foodData.ts               baza produktów jako `data/products.<hasz>.json.gz` i moduł `virtual:food-data`; w trybie deweloperskim podaje ją serwer Vite
   foodData.test.ts          4 testy daty, wersji z hasza, braku pliku i modułu w Vitest
 data/food/products.json.gz  baza produktów (3,3 MB) z `npm run food:data`; surowe pliki (`data/food/raw/`) poza gitem
+scripts/garmin/             lista zegarków z `garmin/manifest.xml`, urządzeń z Connect IQ SDK i katalogu sklepu (`npm run garmin:watches`)
 scripts/food/               przygotowanie bazy produktów (`npm run food:*`, przez tsx)
   fetch-taxonomies.ts       polskie nazwy kategorii, etykiet, alergenów i dodatków z taksonomii Open Food Facts
   fetch-prices.ts           wszystkie ceny w PLN z Open Prices
@@ -2484,7 +2622,9 @@ Dane z zegarka mają osobne pole `watch`: dni kroków, aktywności i zdrowie po 
 ostatniej przyjętej paczki i chwilę odbioru. To liczby z zegarka, a nie wpisy — wpisy ruchu
 wyprowadza z nich `cardioOf`. Przy wczytaniu i imporcie przechodzą te same zakresy co paczka
 z zegarka. Klucza do zegarka w zapisie nie ma: leży osobno w pamięci strony (`gt-garmin-key`),
-więc eksport niesie liczby, które już przyszły, ale nie otwiera skrzynki z nowymi.
+więc eksport niesie liczby, które już przyszły, ale nie otwiera skrzynki z nowymi. Model wybrany
+w sprawdzeniu zegarka leży obok (`gt-garmin-model`), też poza eksportem; „Usuń wszystkie dane” go
+zapomina.
 
 Dane z telefonu mają pole `phone` tej samej budowy: system (`ios`/`android`), dni z krokami,
 tętnem, snem i wagą, przejazdy rowerem, czas paczki i chwila odbioru. Klucz telefonu leży

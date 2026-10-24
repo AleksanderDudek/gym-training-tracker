@@ -65,12 +65,12 @@ Potem w GitHubie: **Settings → Secrets and variables → Actions → Variables
 | --- | --- |
 | `API_URL` | adres Workera z `wrangler deploy` (bez ukośnika na końcu) |
 | `VAPID_PUBLIC_KEY` | klucz publiczny wypisany przez `node keys.mjs` |
-| `GARMIN_APP_URL` | adres aplikacji GYM TRACKER w Connect IQ Store — włącza kartę zegarka (`garmin/README.md`) |
+| `GARMIN_APP_URL` | opcjonalnie: inny adres aplikacji GYM TRACKER w Connect IQ Store (np. beta). Domyślny — wersja publiczna — stoi w kodzie (`src/garmin.ts`); karta zegarka potrzebuje tylko `API_URL` (`garmin/README.md`) |
 | `HEALTH_IOS_URL`, `HEALTH_ANDROID_URL` | adresy aplikacji GYM TRACKER Zdrowie (App Store/TestFlight, APK albo Google Play) — włączają kartę „Zdrowie z telefonu” (`health/README.md`) |
 
 Następne wdrożenie strony (push na `main`) zbuduje aplikację z kartą „Przypomnienia”
-w Ustawieniach i dymkiem „Napisz do autora” w pasku. Bez tych zmiennych nie ma ani jednego,
-ani drugiego, a aplikacja działa jak dotąd.
+i kartą „Zegarek Garmin” w Ustawieniach oraz dymkiem „Napisz do autora” w pasku. Bez tych
+zmiennych nie ma żadnego z nich, a aplikacja działa jak dotąd.
 
 Plik `vapid-private.jwk.json` jest poza gitem. Nie generuj kluczy drugi raz — nowy klucz
 odcina wszystkie istniejące subskrypcje (skrypt odmówi, jeśli plik już jest).
