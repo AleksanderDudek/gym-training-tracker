@@ -136,13 +136,16 @@ describe('plan posiłków: plan z zakupami', () => {
     const user = userEvent.setup();
     const { bridge } = renderWithBridge(<DietPlanPage />, testBridge({ weights, heightCm: 180 }));
     const form = await screen.findByRole('form', { name: 'Plan z listą zakupów' });
+    // Settled: nothing is left to work out before the plan can be made.
+    const make = within(form).getByRole('button', { name: 'Ułóż plan' });
+    await waitFor(() => expect(make).toBeEnabled());
     const goal = within(form).getByRole('region', { name: 'Cel planu' });
-    expect(within(goal).queryByRole('radio')).not.toBeInTheDocument();
+    expect(within(goal).queryAllByRole('radio')).toHaveLength(0);
     expect(goal).not.toHaveTextContent(/dopasowany do Twojego tempa|zalecane|Zapiszę ten cel/);
     expect(goal).toHaveTextContent(/^Cel planu\s?Redukcja · −0,5 kg\/tydz\. · 2200 kcal dziennie · .+ · białko 152 g\./);
     expect(within(goal).getByText(FROM_PROFILE)).toBeInTheDocument();
 
-    await user.click(within(form).getByRole('button', { name: 'Ułóż plan' }));
+    await user.click(make);
     await screen.findByRole('heading', { name: TITLE });
     expect(bridge.toast).toHaveBeenCalledWith('Plan na 7 dni gotowy — lista zakupów czeka.');
     const [stored] = await db.prep.toArray();

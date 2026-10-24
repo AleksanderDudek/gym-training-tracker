@@ -208,9 +208,10 @@ describe('Postęp', () => {
     );
 
     // 83,6 then 82,4 ten days later: the trend has moved about two thirds of the way — 82,8, not 82,4.
-    const tiles = (await screen.findByText(/^Teraz \(trend\)/)).closest('.tiles')!;
-    expect(within(tiles as HTMLElement).getByText('82,8 kg')).toBeInTheDocument();
-    expect(screen.getByText('Teraz (trend) · ostatnie ważenie 12.10')).toBeInTheDocument();
+    await screen.findByRole('heading', { name: 'Waga' });
+    const now = screen.getByText('82,8 kg').closest('.tile')!;
+    expect(now).toHaveTextContent('Teraz (trend) · ostatnie ważenie 12.10');
+    expect(screen.queryByText('82,4 kg')).not.toBeInTheDocument();
     expect(screen.getByText('−1,2 kg')).toBeInTheDocument();
     expect(screen.getByText(/^Od startu · od 1 paź 2026$/)).toBeInTheDocument();
     expect(screen.getByText('4,8 kg')).toBeInTheDocument();
@@ -283,8 +284,16 @@ describe('Postęp', () => {
         ],
       }),
     );
-    const section = await screen.findByRole('region', { name: 'Tydzień po tygodniu' });
-    const table = within(section).getByRole('table');
+    // The page's one table: the weeks.
+    const table = await screen.findByRole('table');
+    const week = within(table).getAllByRole('row').find((r) => within(r).queryByRole('rowheader', { name: /^5–11\.10/ }))!;
+    const [weight, food] = within(week).getAllByRole('cell');
+    // Two weigh-ins four days apart: no change, and why.
+    expect(weight).toHaveTextContent(/^–/);
+    expect(within(weight!).getByTitle('Za mało ważeń w tym tygodniu (potrzeba 3)')).toBeInTheDocument();
+    // The 400 kcal day is not a whole day: six days of 2000.
+    expect(food).toHaveTextContent('20006 dni');
+    expect(screen.getByRole('region', { name: 'Tydzień po tygodniu' })).toContainElement(table);
     expect(within(table).getAllByRole('columnheader').map((h) => h.textContent)).toEqual([
       'Tydzień',
       'Waga',
@@ -292,23 +301,16 @@ describe('Postęp', () => {
       'Kroki',
       'Treningi',
     ]);
-    const week = within(table).getAllByRole('row').find((r) => within(r).queryByRole('rowheader', { name: '5–11.10' }))!;
-    const [weight, food] = within(week).getAllByRole('cell');
-    // Two weigh-ins four days apart: no change, and why.
-    expect(weight).toHaveTextContent(/^–/);
-    expect(within(weight!).getByTitle('Za mało ważeń w tym tygodniu (potrzeba 3)')).toBeInTheDocument();
-    // The 400 kcal day is not a whole day: six days of 2000.
-    expect(food).toHaveTextContent('20006 dni');
   });
 
   test('tylko siedem pełnych tygodni: tabela jest, wniosków jeszcze nie ma', async () => {
     await saveProfile(loser({ startDate: '2026-08-01', startWeightKg: 88 }));
     await openProgress(trainingWeeks([3, 1, 3, 1, 3, 1, 3]));
-    const section = await screen.findByRole('region', { name: 'Tydzień po tygodniu' });
-    // The current week and seven finished ones.
-    expect(within(within(section).getByRole('table')).getAllByRole('row').slice(1)).toHaveLength(8);
-    expect(within(section).queryByRole('heading', { name: 'Co idzie w parze z postępem' })).not.toBeInTheDocument();
-    expect(within(section).queryByText(/co najmniej 3 treningi/)).not.toBeInTheDocument();
+    // The current week and seven finished ones — and no finding from them yet.
+    expect(within(await screen.findByRole('table')).getAllByRole('row').slice(1)).toHaveLength(8);
+    expect(screen.queryByText(/co najmniej 3 treningi/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Co idzie w parze z postępem' })).not.toBeInTheDocument();
+    const section = screen.getByRole('region', { name: 'Tydzień po tygodniu' });
     expect(section).toHaveTextContent('Wnioski pokażę, gdy różnica między tygodniami będzie wyraźnie większa niż szum wagi.');
   });
 
