@@ -8,6 +8,8 @@ export type RestaurantsResult = RestaurantsState & { retry: () => void };
 
 let loaded: Chain[] | null = null;
 let pending: Promise<Chain[]> | null = null;
+/** The chunk's import has failed on this page: in Chromium and WebKit it stays failed until a reload. */
+let importFailed = false;
 
 /**
  * Menu sieci leżą we własnej paczce (`restaurants/catalog`): dziennik rysuje się bez nich, a ich
@@ -15,15 +17,18 @@ let pending: Promise<Chain[]> | null = null;
  * życie strony. Nieudane wczytanie (np. offline przed pierwszym zapisaniem paczki) nie zostaje
  * zapamiętane tutaj, ale pamięta je przeglądarka: Chromium i WebKit trzymają nieudany import paczki
  * do końca życia strony, więc kolejny `import()` odrzuca od razu, bez pytania serwera (Firefox pyta
- * jeszcze raz). Pomaga dopiero przeładowanie strony — „Zjedz teraz” przeładowuje ją swoim
- * „Spróbuj ponownie”.
+ * jeszcze raz). Pomaga dopiero przeładowanie strony — robi je „Spróbuj ponownie” (`retry`).
  */
 export function loadRestaurants(): Promise<Chain[]> {
   if (loaded) return Promise.resolve(loaded);
   pending ??= import('../restaurants/catalog').then(
-    (m) => (loaded = m.CHAINS),
+    (m) => {
+      importFailed = false;
+      return (loaded = m.CHAINS);
+    },
     (error: unknown) => {
       pending = null;
+      importFailed = true;
       throw error;
     },
   );
@@ -52,6 +57,14 @@ export function useRestaurants(): RestaurantsResult {
   }, [attempt]);
 
   const retry = useCallback(() => {
+    // The import already failed on this page: asking again would fail at once, without the server
+    // (Chromium, WebKit). Online, a reload brings the menus — the screen is in the address. Offline,
+    // a page the service worker does not serve yet would reload into the browser's error page: try in
+    // place (Firefox does ask again).
+    if (importFailed && globalThis.navigator?.onLine !== false) {
+      window.location.reload();
+      return;
+    }
     setState({ status: 'loading' });
     setAttempt((n) => n + 1);
   }, []);
