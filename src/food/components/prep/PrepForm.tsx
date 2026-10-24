@@ -3,12 +3,12 @@ import { useMemo, useState, type FormEvent } from 'react';
 import { text } from '../../../i18n';
 import { Segmented } from '../../../components/ui';
 import { useBridge } from '../../bridge';
-import { paceKgPerWeek } from '../../diet/energy';
 import { addDays } from '../../diet/model';
 import { DIET_PROFILES } from '../../diet/profiles';
+import { currentWeight, targetOn } from '../../diet/target';
 import type { Profile } from '../../diet/types';
 import { useDataset } from '../../hooks/useDataset';
-import { useClock, useFavorites, useMergedHistory, useNearbyChains } from '../../hooks/useDiet';
+import { useClock, useFavorites, useNearbyChains } from '../../hooks/useDiet';
 import { formatNumber } from '../../lib/format';
 import type { Dictionaries, IndexedProduct } from '../../lib/types';
 import { formatDistance } from '../../nearby/geo';
@@ -17,7 +17,6 @@ import { chainsWithFood } from '../../recipes/chains';
 import { recipeIndex, type RecipeIndex } from '../../recipes/resolve';
 import { planDates } from '../../prep/blocks';
 import { EXCLUSION_LABELS, planRecipes } from '../../prep/candidates';
-import { checkIn as runCheckIn, WINDOW_DAYS, type CheckIn } from '../../prep/checkin';
 import { goalName, shortDate } from '../../prep/format';
 import { generatePlan, newSeed } from '../../prep/generate';
 import { latestPlan, planEnd, startPlan } from '../../prep/store';
@@ -33,8 +32,6 @@ const EXCLUSIONS = Object.keys(EXCLUSION_LABELS) as Exclusion[];
 const T = text({
   pl: {
     saveFailed: 'Nie udało się zapisać planu na tym urządzeniu — spróbuj jeszcze raz.',
-    readyGoal: (days: number, kcal: string, was: string) =>
-      `Plan na ${days} dni gotowy. Cel kalorii w profilu: ${kcal} kcal (było ${was}).`,
     ready: (days: number) => `Plan na ${days} dni gotowy — lista zakupów czeka.`,
     next: 'Następny plan z zakupami',
     title: 'Plan z listą zakupów',
@@ -56,23 +53,15 @@ const T = text({
     name: 'Nazwa planu (nieobowiązkowa)',
     exclude: 'Czego nie jesz',
     goal: 'Cel planu',
-    working: 'Liczę Twoje tempo z wagi i zapisów…',
-    kcalLegend: 'Cel kalorii planu',
-    maintenance: 'utrzymanie',
-    fitted: 'dopasowany do Twojego tempa',
-    recommended: '(zalecane)',
-    asProfile: '— jak w profilu diety',
     goalLine: (goal: string, kcal: string, style: string, protein: number, carbsMax: number | null) =>
       `${goal} · ${kcal} kcal dziennie · ${style} · białko ${protein} g${carbsMax !== null ? ` · węglowodany do ${carbsMax} g` : ''}.`,
-    willSave: 'Zapiszę ten cel w profilu diety, żeby dziennik liczył tak samo.',
+    fromProfile: 'Cel z profilu diety. Dopasowuje się w poniedziałki — plan bierze dzisiejszy.',
     making: 'Układam…',
     make: 'Ułóż plan',
     cancel: 'Anuluj',
   },
   en: {
     saveFailed: 'Couldn’t save the plan on this device — try again.',
-    readyGoal: (days: number, kcal: string, was: string) =>
-      `Your ${days}-day plan is ready. Calorie goal in your profile: ${kcal} kcal (was ${was}).`,
     ready: (days: number) => `Your ${days}-day plan is ready — the shopping list is waiting.`,
     next: 'Next plan & shopping',
     title: 'Plan with a shopping list',
@@ -94,15 +83,9 @@ const T = text({
     name: 'Plan name (optional)',
     exclude: 'What you don’t eat',
     goal: 'Plan goal',
-    working: 'Working out your pace from your weight and logs…',
-    kcalLegend: 'The plan’s calorie goal',
-    maintenance: 'maintenance',
-    fitted: 'fitted to your pace',
-    recommended: '(recommended)',
-    asProfile: '— as in your diet profile',
     goalLine: (goal: string, kcal: string, style: string, protein: number, carbsMax: number | null) =>
       `${goal} · ${kcal} kcal a day · ${style} · protein ${protein} g${carbsMax !== null ? ` · carbs up to ${carbsMax} g` : ''}.`,
-    willSave: 'I’ll save this goal in your diet profile so the diary counts the same way.',
+    fromProfile: 'The target from your diet profile. It’s fitted on Mondays — the plan uses today’s.',
     making: 'Making the plan…',
     make: 'Make the plan',
     cancel: 'Cancel',
@@ -121,8 +104,9 @@ interface Props {
 
 /**
  * Nowy plan z listą zakupów: od kiedy, na ile dni, ile posiłków, co z pudełek, sklep (i jedno
- * zamówienie przez internet), czego nie jesz — i cel kalorii, który check-in dopasował do wagi
- * i zapisów. Baza produktów musi być wczytana: przepisy kupuje się w prawdziwych sklepach.
+ * zamówienie przez internet), czego nie jesz — pod dzisiejszy cel z profilu diety, ten sam na
+ * każdy dzień planu (dopasowuje go poniedziałkowe sprawdzenie, nie formularz). Baza produktów musi
+ * być wczytana: przepisy kupuje się w prawdziwych sklepach.
  */
 export function PrepForm(props: Props) {
   const data = useDataset();
@@ -144,15 +128,10 @@ function Form({
   const bridge = useBridge();
   const clock = useClock();
   const favorites = useFavorites();
-  const history = useMergedHistory(addDays(today, -WINDOW_DAYS));
   const index = recipeIndex(products);
   const nearby = useNearbyChains(chainsWithFood(products), profile.preferredStore, clock.ms);
   const last = latestPlan(plans)?.settings ?? null;
   const storeName = (key: string) => dict.stores[key] ?? onlineShop(key)?.name ?? key;
-
-  // The person as the model sees them: height from the gym profile, the last weigh-in.
-  const body = useMemo(() => ({ ...profile, heightCm: bridge.heightCm ?? profile.heightCm }), [profile, bridge.heightCm]);
-  const weight = [...bridge.weights].reverse().find((w) => w.day <= today)?.kg ?? profile.startWeightKg;
 
   const firstStore =
     nearby.chains.map((c) => c.chain).find((c) => index.ranking.includes(c)) ??
@@ -171,43 +150,31 @@ function Form({
   const [store, setStore] = useState(firstStore);
   const [online, setOnline] = useState<string | null>(last?.online && index.online.includes(last.online) ? last.online : null);
   const [exclude, setExclude] = useState<Exclusion[]>(last?.exclude ?? []);
-  const [useCheckIn, setUseCheckIn] = useState(true);
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const check: CheckIn | null = useMemo(
-    () => (history ? runCheckIn({ profile: body, days: history.days.values(), eaten: history.eaten, today }) : null),
-    [history, body, today],
-  );
-  const adjusts = check !== null && check.suggestedKcal !== profile.dailyKcal;
-  const kcal = adjusts && useCheckIn ? check.suggestedKcal : profile.dailyKcal;
+  // Today's target, the same for every day of the plan; the pace and the weight (the trend) of the profile.
+  const kcal = targetOn(profile, today);
+  const weight = currentWeight(profile, bridge.weights, today);
+  const pace = profile.goalPace;
   const style = DIET_PROFILES[profile.dietProfile];
   const targets = style.targets(kcal, profile.targetWeightKg);
-  // The pace of the goal chosen: with the check-in's correction when its goal is chosen.
-  const pace = paceKgPerWeek(adjusts && useCheckIn ? { ...body, kcalCorrection: check.correction } : body, weight, kcal);
 
   // What an online order adds: recipes the shop alone cannot make.
   const extra = useMemo(() => recipesAdded(recipeIndex(products), store, exclude, profile), [products, store, exclude, profile]);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!history || busy) return;
+    if (busy) return;
     setBusy(true);
     setError(null);
-    const source = adjusts && useCheckIn ? 'checkin' : 'profile';
-    // Accepted, the check-in's goal carries its correction, so the next check-in starts from the model's goal.
-    const planned =
-      source === 'checkin' && check
-        ? { ...profile, dailyKcal: kcal, kcalCorrection: check.correction, goalSince: today }
-        : profile;
     const result = generatePlan({
       settings: { start, days, meals, cooking, store, online, exclude, seed: newSeed(), avoid: [] },
       index,
       dict,
-      dayTargets: planTargets({ profile: planned, kcal, eaten: history.eaten, today, dates: planDates(start, days) }),
-      goal: { kcal, source, dietProfile: profile.dietProfile, styleLabel: style.label, pace, weightKg: weight },
-      checkIn: check,
+      dayTargets: planTargets({ profile, kcal, dates: planDates(start, days) }),
+      goal: { kcal, source: 'profile', dietProfile: profile.dietProfile, styleLabel: style.label, pace, weightKg: weight },
       favorites: new Set((favorites ?? []).filter((f) => f.key.startsWith('recipe:')).map((f) => f.key.slice(7))),
     });
     if (!result.ok) {
@@ -217,18 +184,14 @@ function Form({
     }
     const own = cleanName(name);
     try {
-      // The adjusted goal is the profile's goal from now on: the diary and the plan say the same number.
-      await startPlan(own ? { ...result.plan, name: own } : result.plan, source === 'checkin' ? planned : null);
+      // The plan follows the profile's target; it never changes it.
+      await startPlan(own ? { ...result.plan, name: own } : result.plan, null);
     } catch {
       setError(T.saveFailed);
       setBusy(false);
       return;
     }
-    bridge.toast(
-      source === 'checkin'
-        ? T.readyGoal(days, formatNumber(kcal, 0), formatNumber(profile.dailyKcal, 0))
-        : T.ready(days),
-    );
+    bridge.toast(T.ready(days));
     setBusy(false);
     onDone();
     // The plan takes the form's place: its name and actions are at the top, not where „Ułóż plan” was.
@@ -339,32 +302,11 @@ function Form({
 
       <section className="fd-prep-goal" aria-labelledby="fd-prep-goal-title">
         <h3 id="fd-prep-goal-title">{T.goal}</h3>
-        {!check ? (
-          <p className="tight">{T.working}</p>
-        ) : adjusts ? (
-          <fieldset className="fd-prep-kcal">
-            <legend className="sr-only">{T.kcalLegend}</legend>
-            <label className="check-row">
-              <input type="radio" name="fd-prep-kcal" checked={useCheckIn} onChange={() => setUseCheckIn(true)} />
-              <span>
-                <b>{formatNumber(check.suggestedKcal, 0)} kcal</b> — {check.status === 'cel' ? T.maintenance : T.fitted}{' '}
-                {T.recommended}
-              </span>
-            </label>
-            <label className="check-row">
-              <input type="radio" name="fd-prep-kcal" checked={!useCheckIn} onChange={() => setUseCheckIn(false)} />
-              <span>
-                <b>{formatNumber(profile.dailyKcal, 0)} kcal</b> {T.asProfile}
-              </span>
-            </label>
-          </fieldset>
-        ) : null}
-        {check && <p className="tight fd-prep-reason">{check.reason}</p>}
         <p className="tight">
           <CalendarCheck {...ICON} className="fd-prep-ico" />{' '}
-          {T.goalLine(goalName(pace), formatNumber(kcal, 0), style.label, targets.protein.target, targets.carbs.max)}{' '}
-          {adjusts && useCheckIn ? T.willSave : ''}
+          {T.goalLine(goalName(pace), formatNumber(kcal, 0), style.label, targets.protein.target, targets.carbs.max)}
         </p>
+        <p className="tight fd-prep-soft">{T.fromProfile}</p>
       </section>
 
       {error && (
@@ -373,7 +315,7 @@ function Form({
         </p>
       )}
       <div className="fd-prep-actions">
-        <button type="submit" className="btn" disabled={!history || busy || !store}>
+        <button type="submit" className="btn" disabled={busy || !store}>
           {busy ? T.making : T.make}
         </button>
         {onCancel && (

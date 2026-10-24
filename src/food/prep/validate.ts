@@ -4,7 +4,7 @@ import { DIET_PROFILE_IDS } from '../diet/profiles';
 import type { DietProfileId } from '../diet/types';
 import type { Macros } from '../recipes/macros';
 import { planDates } from './blocks';
-import type { CheckIn, CheckInStatus } from './checkin';
+import { CHECK_IN_STATUSES, type CheckIn } from './checkin';
 import { MAX_DAYS, MIN_DAYS, cleanName } from './types';
 import type {
   Aisle,
@@ -41,7 +41,6 @@ const BOX: readonly BoxRole[] = ['lunchBox', 'dinnerBox'];
 const KINDS: readonly SlotKind[] = ['breakfast', 'snack', 'lunch', 'dinner'];
 const EXCLUSIONS: readonly Exclusion[] = ['meat', 'fish', 'eggs'];
 const AISLES: readonly Aisle[] = ['warzywa', 'pieczywo', 'nabial', 'mieso', 'mrozonki', 'suche', 'inne'];
-const STATUSES: readonly CheckInStatus[] = ['za-malo-danych', 'zgodnie', 'korekta', 'cel'];
 const one = <T extends string>(list: readonly T[], v: unknown): T | null => list.find((x) => x === v) ?? null;
 const index = (v: unknown): v is number => finite(v) && Number.isInteger(v) && v >= 0;
 /** A link the page will open: an https address, nothing else (no `javascript:`, no `data:`). */
@@ -92,9 +91,10 @@ function shop(v: unknown): PrepShop | null {
   return { key: v.key, name: v.name, online: v.online, url: orNull(v.url, https) };
 }
 
+/** The check-in of a plan made before the Monday check (new plans store none). */
 function checkIn(v: unknown): CheckIn | null {
   if (!isObject(v)) return null;
-  const status = one(STATUSES, v.status);
+  const status = one(CHECK_IN_STATUSES, v.status);
   if (!status || !text(v.reason) || !isCalendarDate(v.today) || ![v.profileKcal, v.suggestedKcal, v.plannedPace, v.modelTdee].every(finite))
     return null;
   const count = (x: unknown) => (finite(x) ? x : 0);

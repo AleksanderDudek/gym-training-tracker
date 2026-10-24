@@ -26,10 +26,6 @@
 .fd-prep-form .chips{margin:2px 0 12px}
 .fd-prep-goal{margin-top:6px;padding-top:10px;border-top:1px solid var(--surface-2)}
 .fd-prep-goal h3{margin:0 0 6px}
-.fd-prep-kcal{border:0;margin:0 0 4px;padding:0}
-.fd-prep-kcal .check-row{margin:0}
-.grp p.fd-prep-reason,p.fd-prep-reason{margin:4px 0 8px;padding:8px 10px;background:var(--surface-2);border-left:3px solid var(--steel);
-  border-radius:var(--r);color:var(--ink)}
 .fd-prep-error{margin:10px 0 0;padding:9px 11px;border-left:3px solid var(--warn);background:var(--surface-2);
   border-radius:var(--r);font-size:13.5px;color:var(--ink)}
 

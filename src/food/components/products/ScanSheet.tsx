@@ -5,6 +5,7 @@ import { Segmented } from '../../../components/ui';
 import { dietPath } from '../../../routing';
 import type { DietProfile, Fit } from '../../diet/profiles';
 import { logFood } from '../../diet/store';
+import { BAND, r10 } from '../../diet/target';
 import { compare, useCompare } from '../../hooks/useCompare';
 import { useCodeLookup, type Lookup } from '../../hooks/useCodeLookup';
 import { useEatNow } from '../../hooks/useEatNow';
@@ -51,9 +52,9 @@ const T = text({
     head: { what: 'Ilość', kcal: 'kcal', protein: 'Białko', carbs: 'Węgl.', fat: 'Tłuszcz' },
     per100: 'w 100 g',
     pack: (g: number) => `opak. ${g} g`,
-    fits: (left: string) => `Na dziś: mieści się — zostało ${left} kcal.`,
-    over: (by: string, left: string) => `Na dziś: ${by} kcal więcej, niż zostało (${left} kcal).`,
-    done: 'Na dziś: cel już osiągnięty.',
+    fits: (left: string) => `Na dziś: mieści się — zostało ok. ${left} kcal.`,
+    over: (by: string, left: string) => `Na dziś: ok. ${by} kcal więcej, niż zostało (ok. ${left} kcal).`,
+    done: 'Na dziś: kalorii już wystarczy.',
     details: 'Szczegóły',
     eaten: (g: number) => `Zjadłem ${g} g`,
     saved: (name: string, kcal: string) => `Zapisane w dzienniku: ${name} · ${kcal} kcal.`,
@@ -102,9 +103,9 @@ const T = text({
     head: { what: 'Amount', kcal: 'kcal', protein: 'Protein', carbs: 'Carbs', fat: 'Fat' },
     per100: 'per 100 g',
     pack: (g: number) => `pack ${g} g`,
-    fits: (left: string) => `For today: it fits — ${left} kcal left.`,
-    over: (by: string, left: string) => `For today: ${by} kcal more than is left (${left} kcal).`,
-    done: 'For today: the goal is already reached.',
+    fits: (left: string) => `For today: it fits — about ${left} kcal left.`,
+    over: (by: string, left: string) => `For today: about ${by} kcal more than is left (about ${left} kcal).`,
+    done: 'For today: that’s enough calories.',
     details: 'Details',
     eaten: (g: number) => `I ate ${g} g`,
     saved: (name: string, kcal: string) => `Saved to the diary: ${name} · ${kcal} kcal.`,
@@ -224,7 +225,8 @@ export function ScanSheet({ products, dict, camera, covered, onOpenProduct, onCl
         lookup={lookup}
         ranked={ranked}
         profile={profile}
-        left={eat.loading ? null : eat.needs.remaining.kcal}
+        // Without calorie counting the scanner says nothing about today; while the diary loads, nothing yet.
+        left={eat.loading || eat.hidesKcal ? null : eat.needs.remaining.kcal}
         today={eat.today}
         empty={items.length === 0}
         onOpenProduct={onOpenProduct}
@@ -258,7 +260,7 @@ function LookupView({
   lookup: Lookup;
   ranked: RankedItem[];
   profile: DietProfile;
-  /** kcal left today; `null` while the diary loads. */
+  /** kcal left today (a planned bigger meal set aside); `null` while the diary loads or without calorie counting. */
   left: number | null;
   today: string;
   empty: boolean;
@@ -354,12 +356,13 @@ function ResultCard({
     }
   };
 
+  // On the ±100 kcal band: what is left within it is enough already; a pack that ends inside it fits.
   const todayLine = (() => {
     if (!food || left === null) return null;
-    if (left <= 50) return T.done;
-    const kcal = food.nutrients.kcal;
-    const leftText = formatNumber(Math.round(left), 0);
-    return kcal <= left ? T.fits(leftText) : T.over(formatNumber(Math.round(kcal - left), 0), leftText);
+    if (left <= BAND) return T.done;
+    const after = left - food.nutrients.kcal;
+    const leftText = formatNumber(r10(left), 0);
+    return after >= -BAND ? T.fits(leftText) : T.over(formatNumber(r10(-after), 0), leftText);
   })();
 
   const row = (label: string, v: Pick<Per100, 'kcal' | 'protein' | 'carbs' | 'fat'>) => (
