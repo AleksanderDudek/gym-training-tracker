@@ -5,45 +5,37 @@ import {
   ChevronRight,
   ClipboardList,
   MapPin,
-  Pizza,
   Plus,
   Star,
   TrendingDown,
   Trash2,
   UserRound,
+  UtensilsCrossed,
 } from 'lucide-react';
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { Segmented } from '../../../components/ui';
-import { LOCALE, pluralEn, text } from '../../../i18n';
+import { LOCALE, text } from '../../../i18n';
 import { NEARBY_PATH, dietPath } from '../../../routing';
 import { useBridge } from '../../bridge';
 import { MISSING_DATA_MESSAGE } from '../../data';
 import { hashWith } from '../../hash';
-import type { Activity } from '../../diet/activity';
 import { simulateCheat } from '../../diet/cheat';
-import { macroStatus, totals } from '../../diet/day';
+import { dayState, totals } from '../../diet/day';
 import { db, type DayRow, type Entry, type PlannedCheat } from '../../diet/db';
 import { entryFood } from '../../diet/favorites';
 import { planFood, type Food } from '../../diet/foods';
-import { addDays, dayGoal, dayLabel, longDay, mealsLeftAt, mondayOf } from '../../diet/model';
+import { addDays, dayLabel, longDay, mealsLeftAt } from '../../diet/model';
 import { dayNeeds } from '../../diet/now';
 import { plannedDay, plannedKcal, type Plan, type PlannedItem, type PlanItem } from '../../diet/plan';
-import { dropCheat, eatCheat, logFood, updateChoices, updateDay } from '../../diet/store';
+import { dropCheat, eatCheat, endPause, logFood, markDay, updateChoices, updateDay } from '../../diet/store';
 import { autoDay, restVariants, seedOf, suggest, swaps, type Context } from '../../diet/suggest';
-import type { Profile } from '../../diet/types';
+import { BAND, currentWeight, hidesKcal, isComplete, pauseOn, r10, targetOn } from '../../diet/target';
+import type { Pause, Profile } from '../../diet/types';
 import { diaryFromParams, diaryToParams } from '../../diet/url';
-import {
-  useDay,
-  useEntries,
-  useFavorites,
-  useMergedDay,
-  useMergedHistory,
-  type History,
-  type NearbyChains,
-} from '../../hooks/useDiet';
-import { activityKcalOf, useActivity, weightFrom } from '../../hooks/useActivity';
+import { useDay, useEntries, useFavorites, useMergedDay, type NearbyChains } from '../../hooks/useDiet';
 import { usePrepPlans } from '../../hooks/usePrep';
 import { useUrlState } from '../../hooks/useUrlState';
+import { useWeeklyCheck } from '../../hooks/useWeeklyCheck';
 import { formatNumber } from '../../lib/format';
 import type { Dictionaries } from '../../lib/types';
 import { formatDistance } from '../../nearby/geo';
@@ -53,13 +45,15 @@ import { nextPlanAfter, planCovering, planName } from '../../prep/store';
 import type { PrepPlan } from '../../prep/types';
 import { planHref } from '../prep/links';
 import { PrepDayCard } from '../prep/PrepDayCard';
-import { activityLine, activityParts, pendingParts } from './activityText';
 import { AutoDayCard } from './AutoDayCard';
+import { ChangeNotice } from './ChangeNotice';
 import { CheatMealSheet } from './CheatMealSheet';
 import { verdictText } from './cheatText';
-import { DT } from './dietText';
+import { dayMonthLong } from './dietFormat';
+import { DT, savedText } from './dietText';
 import { FavoritesSheet } from './FavoritesSheet';
 import { FoodPicker } from './FoodPicker';
+import { KcalShown, useKcalShown } from './kcalShown';
 import { StarButton } from '../common/StarButton';
 import { MacroBars } from './MacroBars';
 import { Loading, Onboarding } from './Onboarding';
@@ -68,20 +62,27 @@ import { RestVariants } from './RestVariants';
 import { SuggestionList } from './SuggestionList';
 import { SwapDialog } from './SwapDialog';
 import { useDietBase, useFoodPool, type FoodPool } from './useDietPage';
+import { WeekCheckCard } from './WeekCheckCard';
 import { WeighCard } from './WeighCard';
 import './diet.css';
 
 const ICON = { size: 20, strokeWidth: 2, 'aria-hidden': true } as const;
 
+const n = (value: number) => formatNumber(Math.round(value), 0);
+
 const T = text({
   pl: {
-    cheatDropped: 'Cheat meal usunięty z planu dnia.',
+    cheatDropped: 'Większy posiłek usunięty z planu dnia.',
     nowTitle: 'Co teraz?',
-    cheatCoversRest: 'Na resztę dnia zostaje zaplanowany cheat meal.',
-    left: (kcal: string, protein: string, meals: number, cheat: boolean) =>
-      `Zostało ${kcal} kcal i ${protein} g białka na ${meals} ${meals === 1 ? 'posiłek' : 'posiłki'}${cheat ? ' — po odjęciu zaplanowanego cheat mealu' : ''}. Najlepsze oznaczone gwiazdką.`,
-    usedWithCheat: 'Z zaplanowanym cheat mealem kalorie na dziś są wykorzystane – reszta dnia lekko i białkowo.',
-    used: 'Kalorie na dziś wykorzystane – jeśli jesteś głodny, wybierz coś lekkiego i białkowego.',
+    mealCoversRest: 'Na resztę dnia zostaje zaplanowany większy posiłek.',
+    left: (kcal: string, protein: string, meals: string, reserved: boolean) =>
+      `Zostało ok. ${kcal} kcal i ${protein} g białka na ${meals}${reserved ? ' — po zaplanowanym większym posiłku' : ''}. Najlepsze oznaczone gwiazdką.`,
+    within: 'Kalorie na dziś w zakresie celu — jeśli masz ochotę na coś jeszcze, wybierz coś lekkiego z białkiem.',
+    enough: 'Na dziś kalorii już wystarczy — jeśli masz ochotę na coś jeszcze, wybierz coś lekkiego z białkiem.',
+    enoughWithMeal: 'Z zaplanowanym większym posiłkiem kalorii na dziś wystarczy — reszta dnia lekko i z białkiem.',
+    leftPlain: (meals: string, protein: string) => `Na ${meals}: białka jeszcze ${protein} g. Najlepsze oznaczone gwiazdką.`,
+    bestPlain: 'Najlepsze oznaczone gwiazdką.',
+    enoughPlain: 'Na dziś wystarczy — jeśli masz ochotę na coś jeszcze, wybierz coś lekkiego z białkiem.',
     profile: (label: string) => `Profil: ${label}.`,
     show: 'Co pokazać',
     rest: (meals: string) => `Reszta dnia (${meals})`,
@@ -104,14 +105,26 @@ const T = text({
         Plan „{link}” zaczyna się {when}.
       </>
     ),
-    plannedCheat: 'Zaplanowany cheat meal',
+    plannedMeal: 'Zaplanowany większy posiłek',
     eatenNow: 'Zjedzone',
     change: 'Zmień',
     drop: 'Usuń',
     eaten: 'Zjedzone',
-    nothingYet: 'Nic jeszcze nie zapisane. Odhacz pozycję planu albo dodaj, co zjadłeś – liczy się to, co naprawdę zjedzone.',
+    nothingYet: 'Nic jeszcze nie zapisane. Odhacz pozycję planu albo dodaj jedzenie — liczy się to, co naprawdę zjedzone.',
     macrosUnknown: ' · makro nieznane',
+    macrosUnknownPlain: 'makro nieznane',
     deleteEntry: (name: string) => `Usuń: ${name}`,
+    notAll: 'Nie wszystko zapisane',
+    partial: 'Dzień niepełny — nie liczy się do dopasowania celu ani średnich.',
+    low: 'Mało zapisów jak na cały dzień — ten dzień nie liczy się do dopasowania celu ani średnich.',
+    wholeDay: 'To był cały dzień',
+    whole: 'Liczę jako pełny dzień.',
+    undo: 'Cofnij',
+    pause: (date: string, kcal: string) => `Przerwa do ${date}: cel to utrzymanie wagi (${kcal} kcal), a dopasowanie czeka.`,
+    pausePlain: (date: string) => `Przerwa do ${date}: dopasowanie czeka.`,
+    endPause: 'Zakończ przerwę',
+    pauseEnded: (kcal: string) => `Przerwa zakończona. Cel: ${kcal} kcal.`,
+    pauseEndedPlain: 'Przerwa zakończona.',
     nearby: (shops: string) => `Propozycje biorą pod uwagę sklepy w pobliżu: ${shops}.`,
     preferred: (store: string) => `Planuję pod sklep ${store} – nie znam sklepów wokół Ciebie.`,
     noShops: 'Nie znam sklepów wokół Ciebie – propozycje biorą pod uwagę wszystkie sieci.',
@@ -122,39 +135,27 @@ const T = text({
     noDataset: 'Bez bazy produktów proponuję tylko z planu i Twojego jedzenia.',
     datasetFailed: (message: string) => `${message} Proponuję na razie z planu i Twojego jedzenia.`,
     retry: 'Spróbuj ponownie',
-    training: (kcal: string | null) => `trening${kcal ? ` ${kcal}` : ''}`,
-    cardio: (kcal: string) => `kroki i cardio ${kcal}`,
-    moveTitle: 'Kroki i ruch',
+    stepsTitle: 'Kroki',
     stepsLater: 'Kroki wpiszesz tego dnia.',
     steps: 'Kroki',
     saveSteps: 'Zapisz kroki',
     save: 'Zapisz',
     stepsHint: 'Kroki trafiają do kroków w treningach — wpisane tu czy tam, to te same liczby.',
-    moveToday: 'Ruch dziś',
-    moveThatDay: 'Ruch tego dnia',
-    trainedNoKcal: 'był trening — kalorie policzę po pierwszym ważeniu.',
-    noKcal: 'kalorie ruchu policzę po pierwszym ważeniu.',
-    noMove: 'bez treningu i cardio.',
-    notAdapted: 'Cel kalorii nie idzie za ruchem — włączysz to w profilu diety („Dopasowuj cel do ruchu”).',
-    futureGoal: 'Cel tego dnia zakłada ruch z planu — zmieni się, gdy dzień przyjdzie.',
-    goalAndMove: 'Cel a ruch:',
-    unchangedToday: 'na razie bez zmian wobec planu.',
-    unchanged: 'ruch zgodny z planem — cel bez zmian.',
-    mayDrop: (parts: string) => ` Do wieczora może jeszcze ubyć: ${parts}.`,
-    assumes: (steps: string, training: string) =>
-      `Cel zakłada ${steps} kroków${training}. Liczę tylko różnicę między tym a ruchem zrobionym — całe spalone kalorie liczyłyby treningi dwa razy.`,
-    planTraining: (name: string | null, kcal: string) => ` i trening z planu (${name ? `„${name}”, ` : ''}ok. ${kcal})`,
-    noPlanTraining: ', bez treningu w planie',
-    profileTraining: (kcal: string) => ` i treningi z profilu (średnio ${kcal} dziennie)`,
+    stepsNote:
+      'Ruch nie zmienia celu jedzenia. Twój zwykły ruch jest już w celu, a gdy ruszasz się więcej przez kilka tygodni, pokaże to waga — wtedy cel sam urośnie.',
   },
   en: {
-    cheatDropped: 'Cheat meal removed from the day’s plan.',
+    cheatDropped: 'Bigger meal removed from the day’s plan.',
     nowTitle: 'What now?',
-    cheatCoversRest: 'The planned cheat meal takes the rest of the day.',
-    left: (kcal: string, protein: string, meals: number, cheat: boolean) =>
-      `${kcal} kcal and ${protein} g protein left for ${meals} ${pluralEn(meals, 'meal', 'meals')}${cheat ? ' — after the planned cheat meal' : ''}. The best are starred.`,
-    usedWithCheat: 'With the planned cheat meal, today’s calories are used up – keep the rest of the day light and high in protein.',
-    used: 'Today’s calories are used up – if you’re hungry, pick something light and high in protein.',
+    mealCoversRest: 'The planned bigger meal takes the rest of the day.',
+    left: (kcal: string, protein: string, meals: string, reserved: boolean) =>
+      `About ${kcal} kcal and ${protein} g protein left for ${meals}${reserved ? ' — after the planned bigger meal' : ''}. The best are starred.`,
+    within: 'Calories for today are within your target — if you’d like something more, pick something light with protein.',
+    enough: 'That’s enough calories for today — if you’d like something more, pick something light with protein.',
+    enoughWithMeal: 'With the planned bigger meal, that’s enough calories for today — keep the rest of the day light, with protein.',
+    leftPlain: (meals: string, protein: string) => `For ${meals}: ${protein} g protein to go. The best are starred.`,
+    bestPlain: 'The best are starred.',
+    enoughPlain: 'That’s enough for today — if you’d like something more, pick something light with protein.',
     profile: (label: string) => `Profile: ${label}.`,
     show: 'What to show',
     rest: (meals: string) => `Rest of the day (${meals})`,
@@ -174,14 +175,26 @@ const T = text({
         The plan “{link}” starts {when}.
       </>
     ),
-    plannedCheat: 'Planned cheat meal',
+    plannedMeal: 'Planned bigger meal',
     eatenNow: 'Eaten',
     change: 'Change',
     drop: 'Delete',
     eaten: 'Eaten',
-    nothingYet: 'Nothing logged yet. Tick off a plan item or add what you ate – what counts is what you really ate.',
+    nothingYet: 'Nothing logged yet. Tick off a plan item or add food — what counts is what you really ate.',
     macrosUnknown: ' · macros unknown',
+    macrosUnknownPlain: 'macros unknown',
     deleteEntry: (name: string) => `Delete: ${name}`,
+    notAll: 'Not everything logged',
+    partial: 'Incomplete day — it doesn’t count towards fitting your target or the averages.',
+    low: 'Not much logged for a whole day — this day doesn’t count towards fitting your target or the averages.',
+    wholeDay: 'That was the whole day',
+    whole: 'Counted as a complete day.',
+    undo: 'Undo',
+    pause: (date: string, kcal: string) => `Break until ${date}: your target is maintenance (${kcal} kcal) and fitting waits.`,
+    pausePlain: (date: string) => `Break until ${date}: fitting waits.`,
+    endPause: 'End the break',
+    pauseEnded: (kcal: string) => `Break over. Target: ${kcal} kcal.`,
+    pauseEndedPlain: 'Break over.',
     nearby: (shops: string) => `Suggestions take the shops nearby into account: ${shops}.`,
     preferred: (store: string) => `I’m planning around ${store} – I don’t know the shops around you.`,
     noShops: 'I don’t know the shops around you – suggestions take every chain into account.',
@@ -192,45 +205,34 @@ const T = text({
     noDataset: 'Without the product database I suggest only from your plan and your own food.',
     datasetFailed: (message: string) => `${message} For now I suggest from your plan and your own food.`,
     retry: 'Try again',
-    training: (kcal: string | null) => `workout${kcal ? ` ${kcal}` : ''}`,
-    cardio: (kcal: string) => `steps & cardio ${kcal}`,
-    moveTitle: 'Steps & activity',
+    stepsTitle: 'Steps',
     stepsLater: 'You’ll enter steps on the day.',
     steps: 'Steps',
     saveSteps: 'Save steps',
     save: 'Save',
     stepsHint: 'Steps go to the steps in Training — entered here or there, they’re the same numbers.',
-    moveToday: 'Activity today',
-    moveThatDay: 'Activity that day',
-    trainedNoKcal: 'you did a workout — I’ll count the calories after your first weigh-in.',
-    noKcal: 'I’ll count activity calories after your first weigh-in.',
-    noMove: 'no workout or cardio.',
-    notAdapted: 'Your calorie goal doesn’t follow your activity — turn it on in the diet profile (“Match the goal to activity”).',
-    futureGoal: 'This day’s goal assumes the planned activity — it changes when the day comes.',
-    goalAndMove: 'Goal and activity:',
-    unchangedToday: 'no change from the plan so far.',
-    unchanged: 'activity as planned — goal unchanged.',
-    mayDrop: (parts: string) => ` By tonight it may still drop: ${parts}.`,
-    assumes: (steps: string, training: string) =>
-      `Your goal assumes ${steps} steps${training}. I count only the difference between that and the activity you did — counting every calorie burned would count workouts twice.`,
-    planTraining: (name: string | null, kcal: string) => ` and the planned workout (${name ? `“${name}”, ` : ''}about ${kcal})`,
-    noPlanTraining: ', with no workout planned',
-    profileTraining: (kcal: string) => ` and your profile’s workouts (${kcal} a day on average)`,
+    stepsNote:
+      'Activity doesn’t change your food target. Your usual activity is already in it, and if you move more for a few weeks, the scale shows it — then the target grows by itself.',
   },
 });
 
 /**
  * Dziennik — korzeń zakładki Jedzenie (w Produktach PL widok „Dziś” zakładki Dieta). Od góry: dzień,
- * pytanie o wagę (rano, raz dziennie), bilans z „Dodaj zjedzone” i „Ulubione”, zaraz pod nim to,
- * co zjedzone — dopisane pojawia się tam, gdzie się stuknęło — potem plan dnia (z zakupami, z arkusza
- * albo propozycja), „Co teraz?”, kroki i ruch, a na dole wejścia do podstron (plan posiłków, moje
- * plany, postęp, profil diety) ze strzałką wstecz zamiast drugiego rzędu zakładek. Oglądany dzień
- * siedzi w adresie (`?dzien=`), a `?dodaj=1` z karty na ekranie Dziś otwiera „Dodaj zjedzone”
- * i znika z adresu.
+ * na dziś to, na co dziennik czeka (zmiany w liczeniu, poniedziałkowe sprawdzenie celu, przerwa),
+ * pytanie o wagę (rano, raz dziennie), karta dnia z „Dodaj zjedzone”, „Ulubione” i „Większy
+ * posiłek”, zaraz pod nią to, co zjedzone — dopisane pojawia się tam, gdzie się stuknęło — potem
+ * plan dnia (z zakupami, z arkusza albo propozycja), „Co teraz?”, kroki, a na dole wejścia do
+ * podstron (plan posiłków, moje plany, postęp, profil diety). Cel dnia to jedna liczba z historii
+ * celów (`targetOn`): ruch ani reszta tygodnia go nie przesuwają. Oglądany dzień siedzi w adresie
+ * (`?dzien=`), a `?dodaj=1` z karty na ekranie Dziś otwiera „Dodaj zjedzone” i znika z adresu.
+ *
+ * W poniedziałek sprawdzenie celu może go jeszcze zmienić: póki trwa (najwyżej 3 s), dziennik
+ * czeka, żeby nie pokazać starego celu.
  */
 export default function DiaryPage() {
   const [state, update] = useUrlState(diaryFromParams, diaryToParams);
   const { profile, plan, clock } = useDietBase();
+  const check = useWeeklyCheck(profile, clock);
   const today = clock.date;
   const date = state.date ?? today;
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -243,27 +245,24 @@ export default function DiaryPage() {
     if (state.add) update({ add: false });
   }, [state.add, update]);
 
-  // Tydzień oglądanego dnia (korekta celu) i bieżący — gdy ktoś patrzy na inny tydzień.
-  const from = profile ? [mondayOf(date), mondayOf(today)].sort()[0]! : null;
-  const history = useMergedHistory(from);
-
   if (profile === undefined || plan === undefined) return <Loading />;
   if (!profile) return <Onboarding />;
-  if (!history) return <Loading />;
+  if (check === 'pending') return <Loading />;
 
   return (
-    <TodayView
-      profile={profile}
-      plan={plan}
-      date={date}
-      today={today}
-      hour={clock.hour}
-      nowMs={clock.ms}
-      history={history}
-      pickerOpen={pickerOpen}
-      onPicker={setPickerOpen}
-      onDate={(next) => update({ date: next === today ? null : next })}
-    />
+    <KcalShown.Provider value={!hidesKcal(profile)}>
+      <TodayView
+        profile={profile}
+        plan={plan}
+        date={date}
+        today={today}
+        hour={clock.hour}
+        nowMs={clock.ms}
+        pickerOpen={pickerOpen}
+        onPicker={setPickerOpen}
+        onDate={(next) => update({ date: next === today ? null : next })}
+      />
+    </KcalShown.Provider>
   );
 }
 
@@ -272,10 +271,9 @@ interface ViewProps {
   plan: Plan | null;
   date: string;
   today: string;
-  /** Bieżąca godzina: dzień się kończy, a po 21:00 niedobór jest już prawdziwy. */
+  /** Bieżąca godzina: ile posiłków zostało do końca dnia. */
   hour: number;
   nowMs: number;
-  history: History;
   pickerOpen: boolean;
   onPicker: (open: boolean) => void;
   onDate: (date: string) => void;
@@ -290,10 +288,15 @@ function asPlanItem(food: Food): PlanItem {
   };
 }
 
-function TodayView({ profile, plan, date, today, hour, nowMs, history, pickerOpen, onPicker, onDate }: ViewProps) {
+/** No week to balance: the bigger-meal simulation's old input still asks for one (C narrows it). */
+const NO_WEEK: Map<string, number> = new Map();
+
+function TodayView({ profile, plan, date, today, hour, nowMs, pickerOpen, onPicker, onDate }: ViewProps) {
   const bridge = useBridge();
+  const shown = useKcalShown();
   const entries = useEntries(date);
-  // Surowy wiersz dnia: wybory planu i ziarno propozycji. Waga i kroki — z wersji scalonej z treningami.
+  // Surowy wiersz dnia: wybory planu, ziarno propozycji, zaplanowany większy posiłek i słowo osoby
+  // o dniu (`partial`). Waga i kroki — z wersji scalonej z treningami.
   const day = useDay(date);
   const body = useMergedDay(date);
   const food = useFoodPool(profile, plan, nowMs);
@@ -311,21 +314,20 @@ function TodayView({ profile, plan, date, today, hour, nowMs, history, pickerOpe
   const [nowView, setNowView] = useState<'rest' | 'one' | null>(null);
   const [restRoll, setRestRoll] = useState(0);
   const [swapping, setSwapping] = useState<PlannedItem | null>(null);
-  const activity = useActivity(profile, today);
 
   const eaten = useMemo(() => totals(entries ?? []), [entries]);
-  // Cel po tygodniu i po ruchu wobec planu (kroki, treningi) — ten sam w każdym miejscu diety.
-  const goal = dayGoal(profile, history.eaten, date, today, activityKcalOf(activity));
-  const moved = activity ? activity(date) : null;
-  // Zaplanowany cheat meal rezerwuje swoje kalorie i jeden posiłek: reszta dnia liczy się już z nim.
+  // Jeden cel na dzień, z historii celów: ten sam od rana do wieczora, bez ruchu i bez reszty tygodnia.
+  const target = targetOn(profile, date);
+  // Zaplanowany większy posiłek rezerwuje swoje kalorie i jeden posiłek: reszta dnia liczy się już z nim.
   const cheat = day?.cheat ?? null;
   const mealsAhead = date === today ? mealsLeftAt(hour) : date < today ? 1 : 4;
-  const needs = dayNeeds({ profile, goalKcal: goal.kcal, eaten, cheat, mealsAhead });
+  const needs = dayNeeds({ profile, goalKcal: target, eaten, cheat, mealsAhead });
   const { restMeals, targets, profile: dietProfile } = needs;
-  const dayDone = date < today || (date === today && hour >= 21);
-  const status = macroStatus(targets, eaten, dayDone);
+  const now = dayState(needs, eaten);
   const planned = plan && !prep ? plannedDay(plan, date, day?.choices) : null;
   const { nearby, dict, pool } = food;
+  // Waga, przy której liczą się odpowiedzi na sprawdzenie, przerwa i większy posiłek: trend z ważeń.
+  const kgNow = currentWeight(profile, bridge.weights, today);
 
   const base: Omit<Context, 'remaining' | 'mealsLeft'> = {
     targets,
@@ -343,9 +345,9 @@ function TodayView({ profile, plan, date, today, hour, nowMs, history, pickerOpe
   };
   const ctx: Context = { ...base, remaining: needs.remaining, mealsLeft: needs.mealsLeft };
   const suggestions = suggest(pool, ctx, 8);
-  // Reszta dnia w wariantach, gdy zostały dwa posiłki albo więcej — albo jeden, ale za duży na jeden talerz.
+  // Reszta dnia w wariantach, gdy zostało więcej niż pasmo celu i dwa posiłki albo więcej — albo jeden, ale za duży na jeden talerz.
   const restShown =
-    !(cheat && restMeals === 0) && ctx.remaining.kcal > 50 && (ctx.mealsLeft >= 2 || ctx.remaining.kcal > BIG_REST_KCAL);
+    !(cheat && restMeals === 0) && ctx.remaining.kcal > BAND && (ctx.mealsLeft >= 2 || ctx.remaining.kcal > BIG_REST_KCAL);
   const view = restShown ? (nowView ?? 'rest') : 'one';
   // Warianty liczone tylko na widoku „Reszta dnia” — po kilka przebiegów `suggest` na każdy.
   const variants = view === 'rest' ? restVariants(pool, ctx, seedOf(date) + restRoll * 7919, 3) : [];
@@ -356,27 +358,62 @@ function TodayView({ profile, plan, date, today, hour, nowMs, history, pickerOpe
 
   if (!entries || !day || !body || !prepPlans) return <Loading />;
 
-  const save = (f: Food) =>
-    logFood(date, f).then(() => bridge.toast(DT.saved(f.name, f.nutrients.kcal)));
+  const save = (f: Food) => logFood(date, f).then(() => bridge.toast(savedText(f.name, f.nutrients.kcal, shown)));
   const log = (f: Food) => void save(f);
   const starred = favorites?.length ?? 0;
   const dayPlanKcal = prep ? dayPlanTotals(prep, date).kcal : plannedKcal(planned);
+  const isToday = date === today;
+  const pause = isToday ? pauseOn(profile, today) : null;
+  const protein = n(Math.max(0, ctx.remaining.protein));
+  const meals = DT.meals(ctx.mealsLeft);
+  const leftNow = now.kind === 'start' || now.kind === 'left';
+  const nowText =
+    cheat && restMeals === 0
+      ? T.mealCoversRest
+      : !shown
+        ? leftNow
+          ? now.proteinDone
+            ? T.bestPlain
+            : T.leftPlain(meals, protein)
+          : T.enoughPlain
+        : leftNow
+          ? T.left(n(r10(ctx.remaining.kcal)), protein, meals, cheat !== null)
+          : cheat
+            ? T.enoughWithMeal
+            : now.kind === 'within'
+              ? T.within
+              : T.enough;
+
+  // The bigger meal's verdict. C narrows the simulation's input to the first five fields (spec
+  // §4.4); built as a variable, the call compiles against the old input and the new one alike.
+  const verdictOf = (meal: PlannedCheat) => {
+    const input = {
+      cheat: meal,
+      targets,
+      eaten,
+      mealsLeft: mealsAhead,
+      plannedLeftKcal: null,
+      profile,
+      kg: kgNow,
+      date,
+      eatenByDate: NO_WEEK,
+      typicalWorkoutKcal: 0,
+    };
+    return verdictText(simulateCheat(input));
+  };
 
   return (
     <>
       <DayNav date={date} today={today} onDate={onDate} />
 
+      {isToday && profile.notice === 'show' && <ChangeNotice profile={profile} today={today} kgNow={kgNow} />}
+      {isToday && <WeekCheckCard profile={profile} today={today} kgNow={kgNow} />}
+      {pause && <BreakLine pause={pause} target={target} today={today} kgNow={kgNow} />}
+
       {/* Kluczem dzień: pole i „Zmień” zaczynają od nowa na każdym dniu. */}
       <WeighCard key={date} date={date} today={today} weightKg={body.weightKg ?? null} />
 
-      <MacroBars
-        targets={targets}
-        eaten={eaten}
-        status={status}
-        adjustment={goal.adjustment}
-        activity={moved && date <= today ? activityLine(moved) : null}
-        plannedKcal={dayPlanKcal}
-      >
+      <MacroBars needs={needs} eaten={eaten} when={isToday ? 'today' : date < today ? 'past' : 'future'}>
         <div className="actions fd-diet-dayacts">
           <button type="button" className="btn" onClick={() => onPicker(true)}>
             <Plus {...ICON} /> {DT.addEaten}
@@ -385,9 +422,11 @@ function TodayView({ profile, plan, date, today, hour, nowMs, history, pickerOpe
             <Star {...ICON} className="fd-diet-fav-ico" /> {DT.favorites}
             {starred > 0 && ` (${starred})`}
           </button>
-          <button type="button" className="btn ghost" onClick={() => setCheatOpen(true)}>
-            <Pizza {...ICON} /> Cheat meal
-          </button>
+          {shown && (
+            <button type="button" className="btn ghost" onClick={() => setCheatOpen(true)}>
+              <UtensilsCrossed {...ICON} /> {DT.bigMeal}
+            </button>
+          )}
         </div>
       </MacroBars>
 
@@ -396,31 +435,18 @@ function TodayView({ profile, plan, date, today, hour, nowMs, history, pickerOpe
           cheat={cheat}
           date={date}
           today={today}
-          verdict={verdictText(
-            simulateCheat({
-              cheat,
-              targets,
-              eaten,
-              mealsLeft: mealsAhead,
-              profile,
-              kg: weightFrom(bridge.weights, date) ?? profile.startWeightKg,
-              date,
-              eatenByDate: new Map(),
-              plannedLeftKcal: null,
-              typicalWorkoutKcal: 0,
-            }),
-          )}
-          onEdit={() => setCheatOpen(true)}
+          verdict={shown ? verdictOf(cheat) : null}
+          onEdit={shown ? () => setCheatOpen(true) : null}
           onEaten={() =>
             void eatCheat(date, cheat, { planned: true }).then(
-              (id) => id !== null && bridge.toast(DT.saved(cheat.name || 'Cheat meal', cheat.kcal)),
+              (id) => id !== null && bridge.toast(savedText(cheat.name || DT.bigMeal, cheat.kcal, shown)),
             )
           }
           onDrop={() => void dropCheat(date).then(() => bridge.toast(T.cheatDropped))}
         />
       )}
 
-      <EatenCard entries={entries} kcal={eaten.kcal} />
+      <EatenCard entries={entries} kcal={eaten.kcal} date={date} today={today} partial={day.partial} target={target} />
 
       {prep ? (
         <PrepDayCard plan={prep} date={date} entries={entries} />
@@ -445,21 +471,9 @@ function TodayView({ profile, plan, date, today, hour, nowMs, history, pickerOpe
       <section className="grp" aria-labelledby="fd-diet-next-title">
         <h2 id="fd-diet-next-title">{T.nowTitle}</h2>
         <p className="tight">
-          {cheat && restMeals === 0
-            ? T.cheatCoversRest
-            : ctx.remaining.kcal > 50
-              ? T.left(
-                  formatNumber(ctx.remaining.kcal, 0),
-                  formatNumber(Math.max(0, ctx.remaining.protein), 0),
-                  ctx.mealsLeft,
-                  cheat !== null,
-                )
-              : cheat
-                ? T.usedWithCheat
-                : T.used}{' '}
-          {T.profile(dietProfile.label)}
+          {nowText} {T.profile(dietProfile.label)}
         </p>
-        {date === today && (
+        {isToday && (
           <p className="tight">
             <a className="fd-diet-eatout" href={`${NEARBY_PATH}?widok=zjedz`}>
               <MapPin size={18} strokeWidth={2} aria-hidden /> {T.eatOut}
@@ -485,20 +499,14 @@ function TodayView({ profile, plan, date, today, hour, nowMs, history, pickerOpe
             left={{ kcal: ctx.remaining.kcal, protein: Math.max(0, ctx.remaining.protein) }}
             entries={entries}
             onLog={log}
-            onReroll={() => setRestRoll((n) => n + 1)}
+            onReroll={() => setRestRoll((r) => r + 1)}
           />
         ) : (
           <SuggestionList suggestions={suggestions} actionLabel={DT.ate} onPick={log} />
         )}
       </section>
 
-      <MoveCard
-        key={`${date}:${body.steps ?? ''}`}
-        date={date}
-        today={today}
-        body={body}
-        activity={moved}
-      />
+      <StepsCard key={`${date}:${body.steps ?? ''}`} date={date} today={today} body={body} />
 
       <DietLinks date={date} today={today} />
 
@@ -509,35 +517,38 @@ function TodayView({ profile, plan, date, today, hour, nowMs, history, pickerOpe
         products={food.products}
         dict={dict}
         productsLoading={food.data.status === 'loading'}
+        left={needs.remaining.kcal}
+        reserved={cheat !== null}
+        past={!isToday}
         onClose={() => onPicker(false)}
         onLogged={bridge.toast}
       />
-      <CheatMealSheet
-        open={cheatOpen}
-        date={date}
-        today={today}
-        hour={hour}
-        profile={profile}
-        eaten={eaten}
-        eatenByDate={history.eaten}
-        activity={activity}
-        plannedKcal={dayPlanKcal}
-        planned={cheat}
-        ideasFor={(remaining, mealsLeft) => {
-          const rest = { ...base, remaining, mealsLeft };
-          const variants = mealsLeft >= 2 || remaining.kcal > BIG_REST_KCAL ? restVariants(pool, rest, seedOf(date), 2) : [];
-          return variants.length ? { variants, singles: [] } : { variants: [], singles: suggest(pool, rest, 3) };
-        }}
-        pool={pool}
-        products={food.products}
-        dict={dict}
-        productsLoading={food.data.status === 'loading'}
-        onClose={() => setCheatOpen(false)}
-        onSaved={(message) => {
-          setCheatOpen(false);
-          bridge.toast(message);
-        }}
-      />
+      {shown && (
+        <CheatMealSheet
+          open={cheatOpen}
+          date={date}
+          today={today}
+          hour={hour}
+          profile={profile}
+          eaten={eaten}
+          plannedKcal={dayPlanKcal}
+          planned={cheat}
+          ideasFor={(remaining, mealsLeft) => {
+            const rest = { ...base, remaining, mealsLeft };
+            const options = mealsLeft >= 2 || remaining.kcal > BIG_REST_KCAL ? restVariants(pool, rest, seedOf(date), 2) : [];
+            return options.length ? { variants: options, singles: [] } : { variants: [], singles: suggest(pool, rest, 3) };
+          }}
+          pool={pool}
+          products={food.products}
+          dict={dict}
+          productsLoading={food.data.status === 'loading'}
+          onClose={() => setCheatOpen(false)}
+          onSaved={(message) => {
+            setCheatOpen(false);
+            bridge.toast(message);
+          }}
+        />
+      )}
       <FavoritesSheet
         open={favoritesOpen}
         date={date}
@@ -590,6 +601,32 @@ function DayNav({ date, today, onDate }: { date: string; today: string; onDate: 
           {T.backToday}
         </button>
       )}
+    </div>
+  );
+}
+
+/**
+ * Przerwa w liczeniu (urlop, choroba): cel to utrzymanie wagi, a poniedziałkowe dopasowanie czeka
+ * do jej końca. Jedno zdanie z datą końca i „Zakończ przerwę”, które od dziś przywraca poprzedni cel.
+ */
+function BreakLine({ pause, target, today, kgNow }: { pause: Pause; target: number; today: string; kgNow: number }) {
+  const bridge = useBridge();
+  const shown = useKcalShown();
+  const [busy, setBusy] = useState(false);
+  const until = dayMonthLong(pause.to);
+  const end = () => {
+    if (busy) return;
+    setBusy(true);
+    void endPause({ today, kgNow })
+      .then(() => bridge.toast(shown ? T.pauseEnded(n(pause.kcal)) : T.pauseEndedPlain))
+      .finally(() => setBusy(false));
+  };
+  return (
+    <div className="grp fd-diet-pause">
+      <p className="tight">{shown ? T.pause(until, n(target)) : T.pausePlain(until)}</p>
+      <button type="button" className="btn ghost sm" disabled={busy} onClick={end}>
+        {T.endPause}
+      </button>
     </div>
   );
 }
@@ -658,10 +695,10 @@ function NextPlanLine({ plan, today }: { plan: PrepPlan; today: string }) {
 /** Od tylu kcal na jeden posiłek reszta dnia to już kilka pozycji, nie jeden talerz. */
 const BIG_REST_KCAL = 900;
 
-
 /**
- * Zaplanowany cheat meal na górze dnia: co to i ile, czy dzień się z nim mieści, i trzy ruchy —
- * „Zjedzone” (wpis w „Zjedzone”, plan znika), „Zmień” (arkusz z jego liczbami), „Usuń”.
+ * Zaplanowany większy posiłek na górze dnia: co to i ile, czy dzień się z nim mieści, i trzy ruchy —
+ * „Zjedzone” (wpis w „Zjedzone”, plan znika), „Zmień” (arkusz z jego liczbami), „Usuń”. Bez liczenia
+ * kalorii zostaje białko, bez oceny i bez arkusza.
  */
 function CheatCard({
   cheat,
@@ -675,8 +712,10 @@ function CheatCard({
   cheat: PlannedCheat;
   date: string;
   today: string;
-  verdict: string;
-  onEdit: () => void;
+  /** Czy dzień się mieści (`cheatText`); `null` bez liczenia kalorii. */
+  verdict: string | null;
+  /** „Zmień” otwiera arkusz; `null` — bez arkusza (bez liczenia kalorii). */
+  onEdit: (() => void) | null;
   onEaten: () => void;
   onDrop: () => void;
 }) {
@@ -684,21 +723,25 @@ function CheatCard({
   return (
     <section className="grp fd-diet-cheat" aria-labelledby="fd-diet-cheat-title">
       <h2 id="fd-diet-cheat-title">
-        <Pizza {...ICON} /> {T.plannedCheat}
+        <UtensilsCrossed {...ICON} /> {T.plannedMeal}
       </h2>
-      <p className="fd-diet-name">{cheat.name || 'Cheat meal'}</p>
+      <p className="fd-diet-name">{cheat.name || DT.bigMeal}</p>
       {cheat.items && cheat.items.length > 1 && <p className="fd-diet-meta">{cheat.items.join(' · ')}</p>}
       <p className="fd-diet-meta fd-diet-nums">
-        {formatNumber(cheat.kcal, 0)} kcal · {DT.p} {g(cheat.protein)} · {DT.c} {g(cheat.carbs)} · {DT.f} {g(cheat.fat)}
+        {verdict === null
+          ? `${DT.p} ${g(cheat.protein)} g`
+          : `${formatNumber(cheat.kcal, 0)} kcal · ${DT.p} ${g(cheat.protein)} · ${DT.c} ${g(cheat.carbs)} · ${DT.f} ${g(cheat.fat)}`}
       </p>
-      <p className="tight">{verdict}</p>
+      {verdict && <p className="tight">{verdict}</p>}
       <div className="actions fd-diet-cheatacts">
         <button type="button" className="btn sm" onClick={onEaten} disabled={date > today}>
           {T.eatenNow}
         </button>
-        <button type="button" className="btn ghost sm" onClick={onEdit}>
-          {T.change}
-        </button>
+        {onEdit && (
+          <button type="button" className="btn ghost sm" onClick={onEdit}>
+            {T.change}
+          </button>
+        )}
         <button type="button" className="btn ghost sm" onClick={onDrop}>
           {T.drop}
         </button>
@@ -707,11 +750,32 @@ function CheatCard({
   );
 }
 
-function EatenCard({ entries, kcal }: { entries: Entry[]; kcal: number }) {
+/**
+ * „Zjedzone”: wpisy dnia, a pod nimi słowo osoby o dniu (`DayRow.partial`) — dzień zapisany tylko
+ * w części nie liczy się do dopasowania celu ani do średnich. Bez tego słowa decyduje 60 % celu:
+ * zamknięty dzień z mniejszą sumą mówi to od razu i pozwala policzyć go jako cały.
+ */
+function EatenCard({
+  entries,
+  kcal,
+  date,
+  today,
+  partial,
+  target,
+}: {
+  entries: Entry[];
+  kcal: number;
+  date: string;
+  today: string;
+  partial: boolean | undefined;
+  target: number;
+}) {
+  const shown = useKcalShown();
   return (
     <section className="grp" aria-labelledby="fd-diet-eaten-title">
       <h2 id="fd-diet-eaten-title">
-        {T.eaten} <span className="fd-diet-h-meta">· {formatNumber(kcal, 0)} kcal</span>
+        {T.eaten}
+        {shown && <span className="fd-diet-h-meta"> · {formatNumber(kcal, 0)} kcal</span>}
       </h2>
       {entries.length === 0 ? (
         <p className="tight">{T.nothingYet}</p>
@@ -723,10 +787,15 @@ function EatenCard({ entries, kcal }: { entries: Entry[]; kcal: number }) {
               <div className="fd-diet-row-main">
                 <p className="fd-diet-name">{e.name}</p>
                 <p className="fd-diet-meta fd-diet-nums">
-                  {formatNumber(e.kcal, 0)} kcal
-                  {e.protein !== null
-                    ? ` · ${DT.p} ${formatNumber(e.protein, 0)} · ${DT.c} ${formatNumber(e.carbs ?? 0, 0)} · ${DT.f} ${formatNumber(e.fat ?? 0, 0)}`
-                    : T.macrosUnknown}
+                  {shown
+                    ? `${formatNumber(e.kcal, 0)} kcal${
+                        e.protein !== null
+                          ? ` · ${DT.p} ${formatNumber(e.protein, 0)} · ${DT.c} ${formatNumber(e.carbs ?? 0, 0)} · ${DT.f} ${formatNumber(e.fat ?? 0, 0)}`
+                          : T.macrosUnknown
+                      }`
+                    : e.protein !== null
+                      ? `${DT.p} ${formatNumber(e.protein, 0)} g`
+                      : T.macrosUnknownPlain}
                   {e.amountLabel && ` · ${e.amountLabel}`}
                 </p>
               </div>
@@ -743,7 +812,62 @@ function EatenCard({ entries, kcal }: { entries: Entry[]; kcal: number }) {
           ))}
         </ul>
       )}
+      {shown && entries.length > 0 && date <= today && (
+        <PartialFooter date={date} today={today} partial={partial} eaten={kcal} target={target} />
+      )}
     </section>
+  );
+}
+
+/** Where a day with entries stands for the check and the averages, and the one button that changes it. */
+function PartialFooter({
+  date,
+  today,
+  partial,
+  eaten,
+  target,
+}: {
+  date: string;
+  today: string;
+  partial: boolean | undefined;
+  eaten: number;
+  target: number;
+}) {
+  const button = useRef<HTMLButtonElement>(null);
+  // Po stuknięciu przycisk znika, a w jego miejscu staje inny: fokus idzie za nim, nie na `body`.
+  const moved = useRef(false);
+  const state =
+    partial === true
+      ? 'partial'
+      : partial === false
+        ? 'whole'
+        : date < today && !isComplete(eaten, undefined, target)
+          ? 'low'
+          : 'open';
+  useEffect(() => {
+    if (!moved.current) return;
+    moved.current = false;
+    button.current?.focus();
+  }, [state]);
+  const mark = (value: boolean | undefined) => {
+    moved.current = true;
+    void markDay(date, value);
+  };
+  const line = { partial: T.partial, whole: T.whole, low: T.low, open: null }[state];
+  // Otwarty dzień można oznaczyć jako niepełny, zamknięty z małą sumą — jako cały; słowo osoby — cofnąć.
+  const action: { label: string; value: boolean | undefined } =
+    state === 'open'
+      ? { label: T.notAll, value: true }
+      : state === 'low'
+        ? { label: T.wholeDay, value: false }
+        : { label: T.undo, value: undefined };
+  return (
+    <div className="fd-diet-partial">
+      {line && <p className="tight">{line}</p>}
+      <button ref={button} type="button" className="btn ghost sm" onClick={() => mark(action.value)}>
+        {action.label}
+      </button>
+    </div>
   );
 }
 
@@ -796,8 +920,6 @@ function DatasetLine({ food }: { food: FoodPool }) {
   );
 }
 
-const kcalText = (n: number) => `${formatNumber(Math.round(n), 0)} kcal`;
-
 /** Liczba z polskim przecinkiem albo kropką; `null`, gdy pole puste albo to nie liczba. */
 function numberOrNull(text: string): number | null {
   const n = Number(text.replace(',', '.').trim());
@@ -805,30 +927,17 @@ function numberOrNull(text: string): number | null {
 }
 
 /**
- * Kroki i ruch dnia — z danych treningowych, jedno źródło. Kroki zapisują przez most jako zwykły
- * wpis kroków, więc liczą się do odznak i kalorii jak każdy inny. Trening i jego kalorie tylko się
- * czyta: dziennik treningów jest jeden. Waga ma własne pytanie na górze dziennika (`WeighCard`):
- * waży się rano, a kroki wpisuje się wieczorem albo przychodzą z zegarka.
+ * Kroki dnia — z danych treningowych, jedno źródło. Zapis idzie przez most jako zwykły wpis kroków,
+ * więc liczy się do odznak jak każdy inny. Ruch nie zmienia celu jedzenia: jedno zdanie mówi
+ * dlaczego, bez kalorii ruchu — te zostają w treningach. Waga ma własne pytanie na górze dziennika
+ * (`WeighCard`): waży się rano, a kroki wpisuje się wieczorem albo przychodzą z zegarka.
  */
-function MoveCard({
-  date,
-  today,
-  body,
-  activity,
-}: {
-  date: string;
-  today: string;
-  body: DayRow;
-  /** Ruch wobec planu; `null`, gdy cel w profilu nie idzie za ruchem. */
-  activity: Activity | null;
-}) {
+function StepsCard({ date, today, body }: { date: string; today: string; body: DayRow }) {
   const bridge = useBridge();
-  const move = bridge.moveOn(date);
   const [steps, setSteps] = useState(body.steps != null ? String(body.steps) : '');
   const walked = numberOrNull(steps);
   const newSteps = walked !== null && Math.round(walked) !== (body.steps ?? null);
   const future = date > today;
-  const isToday = date === today;
 
   const save = (e: FormEvent) => {
     e.preventDefault();
@@ -836,15 +945,9 @@ function MoveCard({
     if (newSteps && walked !== null) bridge.setSteps(date, Math.round(walked));
   };
 
-  const noKcal = move.workoutKcal === null && move.cardioKcal === null;
-  const parts = [
-    move.trained || (move.workoutKcal ?? 0) > 0 ? T.training(move.workoutKcal ? kcalText(move.workoutKcal) : null) : null,
-    (move.cardioKcal ?? 0) > 0 ? T.cardio(kcalText(move.cardioKcal ?? 0)) : null,
-  ].filter(Boolean);
-
   return (
     <section className="grp" aria-labelledby="fd-diet-body-title">
-      <h2 id="fd-diet-body-title">{T.moveTitle}</h2>
+      <h2 id="fd-diet-body-title">{T.stepsTitle}</h2>
       {future ? (
         <p className="tight">{T.stepsLater}</p>
       ) : (
@@ -872,45 +975,7 @@ function MoveCard({
           {T.stepsHint}
         </p>
       )}
-      <p className="tight">
-        <b>{isToday ? T.moveToday : T.moveThatDay}:</b>{' '}
-        {noKcal
-          ? move.trained
-            ? T.trainedNoKcal
-            : T.noKcal
-          : parts.length
-            ? `${parts.join(' · ')}.`
-            : T.noMove}
-      </p>
-      {activity === null ? (
-        <p className="tight fd-diet-soft">{T.notAdapted}</p>
-      ) : future ? (
-        <p className="tight fd-diet-soft">{T.futureGoal}</p>
-      ) : (
-        <>
-          <p className="tight">
-            <b>{T.goalAndMove}</b>{' '}
-            {activityParts(activity).length
-              ? `${activityParts(activity).join(' · ')}.`
-              : isToday
-                ? T.unchangedToday
-                : T.unchanged}
-            {pendingParts(activity).length > 0 && T.mayDrop(pendingParts(activity).join(' · '))}
-          </p>
-          <p className="tight fd-diet-soft">
-            {T.assumes(
-              formatNumber(activity.steps.planned, 0),
-              activity.training.source === 'plan'
-                ? activity.training.planned > 0
-                  ? T.planTraining(activity.training.plannedName, kcalText(activity.training.planned))
-                  : T.noPlanTraining
-                : activity.training.source === 'profile'
-                  ? T.profileTraining(kcalText(activity.training.planned))
-                  : '',
-            )}
-          </p>
-        </>
-      )}
+      <p className="tight fd-diet-soft">{T.stepsNote}</p>
     </section>
   );
 }
