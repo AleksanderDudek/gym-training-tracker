@@ -91,6 +91,80 @@ describe('useAround', () => {
     expect(result.current[0]).toMatchObject({ status: 'error', items: [{ id: 'node/1' }], savedAt });
   });
 
+  test('whether Overpass is asked is decided from the rounded position: the same for the whole rounding cell', async () => {
+    // An hour-old answer from the neighbouring cell 52.588 (1250 m): around one of these two points
+    // its circle holds the 1000 m one, around the other it does not. Both lie in the cell 52.590.
+    const visit = async (here: LatLon) => {
+      window.localStorage.setItem(
+        KEY,
+        JSON.stringify([{ lat: 52.588, lon: 21.012, radius: 1250, fetchedAt: Date.now() - 3600_000, shops: [{ id: 'node/1' }] }]),
+      );
+      const fetcher = vi.fn((_c: LatLon, _r: number, _o: FetchOptions) => new Promise<Item[]>(() => {}));
+      const { result, unmount } = renderHook(() => useAround<Item>(here, 1000, fetcher, KEY, 'nie wyszło'));
+      await settle();
+      const asked = fetcher.mock.calls.map(([c, r]) => ({ lat: c.lat, lon: c.lon, radius: r }));
+      const { completeWithin } = result.current[0];
+      unmount();
+      return { asked, completeWithin };
+    };
+    const a = await visit({ lat: 52.5897, lon: 21.012 });
+    const b = await visit({ lat: 52.5904, lon: 21.012 });
+    expect(a.asked).toEqual(b.asked);
+    // 222 m from the cell's centre, plus 1000 m and the rounding's reach, is more than the 1250 m kept.
+    expect(a.asked).toEqual([{ lat: 52.59, lon: 21.012, radius: 1250 }]);
+    // What is complete on screen is still measured from the exact position (267 m from the answer's centre).
+    expect(a.completeWithin).toBe(1000);
+    expect(b.completeWithin).toBeCloseTo(983, 0);
+  });
+
+  test('GPS jitter inside one rounding cell neither cancels nor repeats the search on its way', async () => {
+    let aborted = 0;
+    const fetcher = vi.fn(
+      (_c: LatLon, _r: number, { signal }: FetchOptions) =>
+        new Promise<Item[]>((resolve, reject) => {
+          const timer = setTimeout(() => resolve([{ id: 'node/3' }]), 5000);
+          signal?.addEventListener('abort', () => {
+            clearTimeout(timer);
+            aborted++;
+            reject(new DOMException('aborted', 'AbortError'));
+          });
+        }),
+    );
+    const { result, rerender } = renderHook(({ here }) => useAround<Item>(here, 1000, fetcher, KEY, 'nie wyszło'), {
+      initialProps: { here: { lat: 52.5878, lon: 21.0122 } },
+    });
+    await settle();
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    for (const lat of [52.5881, 52.5879, 52.5883]) {
+      rerender({ here: { lat, lon: 21.0122 } });
+      await settle();
+    }
+    await act(() => vi.advanceTimersByTimeAsync(5000));
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(aborted).toBe(0);
+    expect(result.current[0]).toMatchObject({ status: 'ready', items: [{ id: 'node/3' }], completeWithin: 1000 });
+  });
+
+  test('GPS jitter inside one rounding cell does not start the automatic tries afresh', async () => {
+    const fetcher = vi.fn<(c: LatLon, r: number, o: FetchOptions) => Promise<Item[]>>(fail);
+    // A few metres this way and that, all inside the cell 52.230, 21.012.
+    const spots = [0, 0.0001, 0.0002].map((d) => ({ lat: HERE.lat + d, lon: HERE.lon }));
+    const { result, rerender } = renderHook(({ here }) => useAround<Item>(here, 1000, fetcher, KEY, 'nie wyszło'), {
+      initialProps: { here: HERE },
+    });
+    await settle();
+    let moves = 0;
+    for (const pause of AUTO_RETRY_MS) {
+      for (let waited = 0; waited < pause; waited += 10_000) {
+        rerender({ here: spots[++moves % spots.length]! });
+        await act(() => vi.advanceTimersByTimeAsync(10_000));
+      }
+      await settle();
+    }
+    expect(fetcher).toHaveBeenCalledTimes(1 + AUTO_RETRY_MS.length);
+    expect(result.current[0].retryAt).toBeNull();
+  });
+
   test('the server’s own pause shows as a countdown while the search goes on', async () => {
     const fetcher = vi.fn(
       (_c: LatLon, _r: number, options: FetchOptions) =>
