@@ -309,17 +309,20 @@ export const POPUP_OPTIONS: L.PopupOptions = {
   autoPanPaddingBottomRight: [12, 12],
 };
 
+const CLOSE_BUTTON = '.leaflet-popup-close-button';
+
 /**
  * Pins are redrawn whenever more data arrives (the app's data comes in pieces, nearest first): this
  * keeps the popup the user is reading open across a redraw. Create it BEFORE `clearLayers()` (which
- * closes the popup), `track` every new pin, then `restore`.
+ * closes the popup), `track` every new pin, then `restore`. `container` is the map's box (Leaflet
+ * makes it focusable): keyboard focus lands there when the popup it was in cannot come back.
  */
-export function popupKeeper(openId: { current: string | null }) {
+export function popupKeeper(openId: { current: string | null }, container: HTMLElement | null) {
   const reopen = openId.current;
-  // Keyboard focus inside the open popup (its button or its ×) comes back to the same control.
+  // Keyboard focus inside the open popup (its button or its ×) is put back after the redraw; focus elsewhere is left alone.
   const active = document.activeElement;
   const inPopup = active instanceof HTMLElement && active.closest('.leaflet-popup') ? active : null;
-  const focus = inPopup?.matches('.leaflet-popup-close-button') ? '.leaflet-popup-close-button' : inPopup ? 'button' : null;
+  const focus = inPopup?.matches(CLOSE_BUTTON) ? CLOSE_BUTTON : inPopup ? 'button' : null;
   const byId = new Map<string, L.Layer>();
   return {
     track(id: string, layer: L.Layer) {
@@ -332,13 +335,23 @@ export function popupKeeper(openId: { current: string | null }) {
     restore() {
       const layer = reopen ? byId.get(reopen) : undefined;
       const popup = layer?.getPopup();
-      if (!layer || !popup) return;
+      if (!layer || !popup) {
+        // Its place is gone from the redraw (closed at the minute tick, outside a smaller radius):
+        // focus goes to the map instead of dropping to the start of the page with the removed popup.
+        // A popup the user closed (still fading out) is not one to come back: its focus is left alone.
+        if (reopen && focus) container?.focus({ preventScroll: true });
+        return;
+      }
       // Reopened where it was, without panning: the user may have moved the map since.
       const autoPan = popup.options.autoPan;
       popup.options.autoPan = false;
       layer.openPopup();
       popup.options.autoPan = autoPan;
-      if (focus) popup.getElement()?.querySelector<HTMLElement>(focus)?.focus({ preventScroll: true });
+      if (!focus) return;
+      // The same control, or the × when it is gone („Pokaż te przepisy” once the shop has no recipes).
+      const element = popup.getElement();
+      const control = element?.querySelector<HTMLElement>(focus) ?? element?.querySelector<HTMLElement>(CLOSE_BUTTON) ?? container;
+      control?.focus({ preventScroll: true });
     },
   };
 }

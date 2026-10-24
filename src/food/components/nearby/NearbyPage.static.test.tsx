@@ -57,9 +57,16 @@ const ROWS = [
 const OVERPASS_BERLIN = {
   elements: [{ type: 'node', id: 99, lat: BERLIN.lat + 0.002, lon: BERLIN.lon, tags: { amenity: 'fast_food', brand: "McDonald's", name: "McDonald's Berlin" } }],
 };
+/** Odpowiedź dla koła przy granicy: lokal ~0,9 km na północ, za zasięgiem danych aplikacji. */
+const OVERPASS_BORDER = {
+  elements: [{ type: 'node', id: 98, lat: AT_BORDER.lat + 0.008, lon: AT_BORDER.lon, tags: { amenity: 'fast_food', brand: "McDonald's", name: "McDonald's z Overpass" } }],
+};
 
 let data: OsmTestData;
 let requests: string[];
+let overpassAnswer: object;
+/** Gdy ustawiona, Overpass odpowiada dopiero po jej spełnieniu. */
+let overpassGate: Promise<void> | null;
 
 function placeAt(position: LatLon) {
   Object.defineProperty(navigator, 'geolocation', {
@@ -78,12 +85,17 @@ beforeEach(async () => {
   vi.mocked(loadDataset).mockResolvedValue(LOADED);
   data = osmTestData(ROWS, POLAND, 3);
   requests = [];
+  overpassAnswer = OVERPASS_BERLIN;
+  overpassGate = null;
   placeAt(HERE);
   vi.stubGlobal(
     'fetch',
     vi.fn(async (url: string) => {
       requests.push(String(url));
-      if (String(url).includes('overpass')) return new Response(JSON.stringify(OVERPASS_BERLIN), { headers: { 'content-type': 'application/json' } });
+      if (String(url).includes('overpass')) {
+        if (overpassGate) await overpassGate;
+        return new Response(JSON.stringify(overpassAnswer), { headers: { 'content-type': 'application/json' } });
+      }
       return osmResponse(data, String(url)) ?? new Response('?', { status: 404 });
     }),
   );
@@ -118,19 +130,34 @@ describe('„W pobliżu” z danych OSM dołączonych do aplikacji', () => {
     const user = userEvent.setup();
     renderWithBridge(<NearbyPage />);
     await waitFor(() => expect(overpassAsked()).toBe(1));
-    expect(await screen.findByText(/Lokale i sklepy:/)).toHaveTextContent('na żywo z serwera Overpass');
+    const credit = await screen.findByText(/Lokale i sklepy:/);
+    expect(credit).toHaveTextContent('z serwera Overpass');
+    // Bez „na żywo”: na ekranie bywa też odpowiedź zapisana dni temu (jej wiek mówi wiersz stanu).
+    expect(credit).not.toHaveTextContent('na żywo');
+    expect(credit).not.toHaveTextContent('stan z');
     await waitFor(() => expect(screen.getByTestId('pins')).toHaveTextContent("McDonald's Berlin"));
     await user.click(screen.getByRole('button', { name: 'Zakupy i przepisy' }));
     await screen.findByTestId('shops');
     expect(overpassAsked()).toBe(1);
   }, 15_000);
 
-  test('przy granicy: polska strona od razu z danych aplikacji, reszta koła z Overpass', async () => {
+  test('przy granicy: polska strona od razu z danych aplikacji, reszta koła z Overpass — przypis mówi, czyje lokale widać', async () => {
     placeAt(AT_BORDER);
+    overpassAnswer = OVERPASS_BORDER;
+    let release!: () => void;
+    overpassGate = new Promise((resolve) => (release = resolve));
     renderWithBridge(<NearbyPage />);
     await waitFor(() => expect(overpassAsked()).toBe(1));
-    const credit = await screen.findByText(/Lokale i sklepy:/);
-    expect(credit).toHaveTextContent('przy granicy na żywo z serwera Overpass');
+    await waitFor(() => expect(screen.getByTestId('pins')).toHaveTextContent("McDonald's Polska strona"));
+    const credit = screen.getByText(/Lokale i sklepy:/);
+    expect(credit).toHaveTextContent('stan z 22 października 2026');
+    expect(credit).not.toHaveTextContent('Overpass');
+    expect(within(credit).getByRole('link', { name: 'licencja ODbL' })).toBeInTheDocument();
+    // Odpowiedź Overpass zastępuje polską stronę: data danych aplikacji już do niczego na ekranie nie pasuje.
+    release();
+    await waitFor(() => expect(screen.getByTestId('pins')).toHaveTextContent("McDonald's z Overpass"));
+    expect(credit).toHaveTextContent('z serwera Overpass');
+    expect(credit).not.toHaveTextContent('stan z');
     expect(within(credit).getByRole('link', { name: 'licencja ODbL' })).toBeInTheDocument();
   }, 15_000);
 });

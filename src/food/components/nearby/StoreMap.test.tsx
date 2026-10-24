@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { PlacedShop } from '../../nearby/types';
 import type L from 'leaflet';
 import { popupKeeper } from './baseMap';
@@ -102,27 +102,49 @@ describe('podpowiedź „dwoma palcami”', () => {
 });
 
 describe('dymek przy rysowaniu pinezek od nowa', () => {
-  /** Pinezka na niby: tyle z warstwy Leafleta, ile używa `popupKeeper`. */
-  function pin() {
+  /**
+   * Pinezka na niby: tyle z warstwy Leafleta, ile używa `popupKeeper`. Z treścią dymek jest
+   * prawdziwym węzłem w dokumencie, jak u Leafleta: treść i × w `.leaflet-popup`.
+   */
+  function pin(content?: () => HTMLElement) {
     const handlers = new Map<string, () => void>();
-    const popup = { options: { autoPan: true }, getElement: () => undefined };
+    let element: HTMLElement | undefined;
+    const popup = { options: { autoPan: true }, getElement: () => element };
     const layer = {
       on: (event: string, fn: () => void) => void handlers.set(event, fn),
       getPopup: () => popup,
       // Records whether the popup was reopened with panning switched off.
       openPopup: vi.fn(() => {
         layer.pannedOnOpen = popup.options.autoPan;
+        if (content) element = popupElement(content());
         handlers.get('popupopen')?.();
       }),
       pannedOnOpen: null as boolean | null,
       fire: (event: string) => handlers.get(event)?.(),
+      /** `clearLayers()` przy otwartym dymku: węzeł znika z dokumentu (a z nim fokus), potem `popupclose`. */
+      clear: () => {
+        element?.remove();
+        handlers.get('popupclose')?.();
+      },
     };
     return layer as typeof layer & L.Layer;
   }
 
+  function popupElement(content: HTMLElement): HTMLElement {
+    const root = document.createElement('div');
+    root.className = 'leaflet-popup';
+    const close = document.createElement('a');
+    close.className = 'leaflet-popup-close-button';
+    close.href = '#close';
+    close.setAttribute('role', 'button');
+    root.append(content, close);
+    document.body.append(root);
+    return root;
+  }
+
   test('otwarty dymek zostaje otwarty, gdy przyjdą nowe dane i pinezki rysują się od nowa', () => {
     const openId = { current: null as string | null };
-    const first = popupKeeper(openId);
+    const first = popupKeeper(openId, null);
     const a = pin();
     const b = pin();
     first.track('a', a);
@@ -131,7 +153,7 @@ describe('dymek przy rysowaniu pinezek od nowa', () => {
     b.fire('popupopen');
     expect(openId.current).toBe('b');
     // Nowe rysowanie: najpierw keeper, potem clearLayers (zamyka dymek), potem nowe pinezki.
-    const second = popupKeeper(openId);
+    const second = popupKeeper(openId, null);
     b.fire('popupclose');
     const a2 = pin();
     const b2 = pin();
@@ -148,15 +170,117 @@ describe('dymek przy rysowaniu pinezek od nowa', () => {
 
   test('zamknięty przez użytkownika dymek nie wraca', () => {
     const openId = { current: null as string | null };
-    const keeper = popupKeeper(openId);
+    const keeper = popupKeeper(openId, null);
     const a = pin();
     keeper.track('a', a);
     a.fire('popupopen');
     a.fire('popupclose');
-    const next = popupKeeper(openId);
+    const next = popupKeeper(openId, null);
     const a2 = pin();
     next.track('a', a2);
     next.restore();
     expect(a2.openPopup).not.toHaveBeenCalled();
+  });
+
+  describe('fokus z klawiatury w dymku', () => {
+    /** Dymek sklepu, który ma `recipes` przepisów: z „Pokaż te przepisy” albo bez. */
+    const shopPopup = (recipes: number) => () =>
+      popupFor(SHOP, { storeName: () => 'Biedronka', recipeCount: () => recipes, onSelectChain: vi.fn() }, vi.fn());
+    /** Pudełko mapy: Leaflet daje mu `tabindex`, więc da się na nim postawić fokus. */
+    let box: HTMLDivElement;
+
+    beforeEach(() => {
+      box = document.createElement('div');
+      box.tabIndex = 0;
+      document.body.append(box);
+    });
+
+    afterEach(() => document.body.replaceChildren());
+
+    /** Dymek sklepu „a” otwarty, fokus na `control` w nim; zaczyna się nowe rysowanie (keeper, clearLayers). */
+    function redrawWithFocusOn(control: string) {
+      const openId = { current: null as string | null };
+      const first = popupKeeper(openId, box);
+      const a = pin(shopPopup(2));
+      first.track('a', a);
+      first.restore();
+      a.openPopup();
+      a.getPopup().getElement()?.querySelector<HTMLElement>(control)?.focus();
+      expect(document.activeElement?.closest('.leaflet-popup')).not.toBeNull();
+      const keeper = popupKeeper(openId, box);
+      a.clear();
+      return keeper;
+    }
+
+    test('wraca na tę samą kontrolkę w otwartym znów dymku', () => {
+      for (const control of ['button', '.leaflet-popup-close-button']) {
+        const keeper = redrawWithFocusOn(control);
+        const a2 = pin(shopPopup(2));
+        keeper.track('a', a2);
+        keeper.restore();
+        const same = a2.getPopup().getElement()?.querySelector(control);
+        expect(same).toBeInstanceOf(HTMLElement);
+        expect(document.activeElement).toBe(same);
+      }
+    });
+
+    test('gdy tej kontrolki już nie ma (sieć straciła przepisy), na × tego dymku', () => {
+      const keeper = redrawWithFocusOn('button');
+      const a2 = pin(shopPopup(0));
+      keeper.track('a', a2);
+      keeper.restore();
+      const popup = a2.getPopup().getElement();
+      expect(popup?.querySelector('button')).toBeNull();
+      expect(document.activeElement).toBe(popup?.querySelector('.leaflet-popup-close-button'));
+    });
+
+    test('gdy dymka nie ma jak otworzyć (jego miejsca nie ma po rysowaniu), na mapie, bez przewijania strony', () => {
+      const focus = vi.spyOn(box, 'focus');
+      const keeper = redrawWithFocusOn('button');
+      keeper.track('b', pin(shopPopup(2)));
+      keeper.restore();
+      expect(document.activeElement).toBe(box);
+      expect(focus).toHaveBeenCalledWith({ preventScroll: true });
+    });
+
+    test('dymek zamknięty przez użytkownika, który jeszcze znika, nie przenosi fokusu na mapę', () => {
+      const openId = { current: null as string | null };
+      const first = popupKeeper(openId, box);
+      const a = pin(shopPopup(2));
+      first.track('a', a);
+      a.openPopup();
+      const button = a.getPopup().getElement()?.querySelector<HTMLElement>('button');
+      button?.focus();
+      // Zamknięty jego przyciskiem albo ×: `popupclose` od razu, węzeł Leaflet zdejmuje dopiero po wygaszeniu.
+      a.fire('popupclose');
+      const keeper = popupKeeper(openId, box);
+      keeper.track('a', pin(shopPopup(2)));
+      keeper.restore();
+      expect(document.activeElement).toBe(button);
+    });
+
+    test('fokusu spoza dymka nie zabiera — ani do otwartego znów dymku, ani na mapę', () => {
+      const outside = document.createElement('input');
+      document.body.append(outside);
+      const openId = { current: null as string | null };
+      const first = popupKeeper(openId, box);
+      const a = pin(shopPopup(2));
+      first.track('a', a);
+      a.openPopup();
+      outside.focus();
+      // Dymek otwarty znów…
+      const second = popupKeeper(openId, box);
+      a.clear();
+      const a2 = pin(shopPopup(2));
+      second.track('a', a2);
+      second.restore();
+      expect(a2.openPopup).toHaveBeenCalledOnce();
+      expect(document.activeElement).toBe(outside);
+      // …i jego miejsce znikające z mapy.
+      const third = popupKeeper(openId, box);
+      a2.clear();
+      third.restore();
+      expect(document.activeElement).toBe(outside);
+    });
   });
 });

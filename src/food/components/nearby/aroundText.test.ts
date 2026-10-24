@@ -3,7 +3,8 @@ import { ageText, aroundNotes } from './aroundText';
 
 const NOW = Date.UTC(2026, 9, 23, 12, 0, 0);
 const HOUR = 3600 * 1000;
-const base = { status: 'loading' as const, items: [{}], savedAt: null, since: NOW, retryAt: null };
+const DAY = 24 * HOUR;
+const base = { status: 'loading' as const, items: [{}], savedAt: null, since: NOW, retryAt: null, source: 'live' as const, shown: 'live' as const };
 
 describe('słowa o serwerze map', () => {
   test('wiek zapisanej odpowiedzi czyta się jak w rozmowie', () => {
@@ -32,5 +33,24 @@ describe('słowa o serwerze map', () => {
       clock: 'Ponowię sam za 30 s.',
     });
     expect(aroundNotes({ ...failed, items: [], savedAt: null, retryAt: null }, 'sklepy', NOW)).toEqual({ status: '', clock: null });
+  });
+});
+
+describe('przy granicy', () => {
+  const border = { ...base, source: 'mixed' as const, coverage: 'partial' as const };
+
+  test('na ekranie zapisana odpowiedź Overpass: jej wiek, a nie słowa o polskiej stronie, której nie widać', () => {
+    const saved = { ...border, shown: 'live' as const, savedAt: NOW - 3 * DAY };
+    expect(aroundNotes({ ...saved, status: 'error', since: null }, 'lokale', NOW).status).toBe('Pokazuję lokale zapisane 3 dni temu.');
+    expect(aroundNotes(saved, 'lokale', NOW).status).toBe('Na razie pokazuję lokale zapisane 3 dni temu.');
+  });
+
+  test('na ekranie polska strona z danych aplikacji: o reszcie przy szukaniu i po błędzie, gotowa odpowiedź bez uwagi', () => {
+    const polish = { ...border, shown: 'static' as const };
+    expect(aroundNotes(polish, 'lokale', NOW).status).toBe('Przy granicy: lokale po polskiej stronie mam w aplikacji, o resztę pytam serwer map…');
+    expect(aroundNotes({ ...polish, status: 'error', since: null }, 'sklepy', NOW).status).toBe(
+      'Po drugiej stronie granicy nie udało się pobrać danych — pokazuję sklepy po polskiej stronie.',
+    );
+    expect(aroundNotes({ ...polish, status: 'ready', since: null }, 'lokale', NOW)).toEqual({ status: '', clock: null });
   });
 });

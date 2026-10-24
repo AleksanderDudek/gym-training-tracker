@@ -71,7 +71,7 @@ export function PlaceMap(props: Props) {
     const group = pins.current;
     const c = colors.current;
     if (!group || !c) return;
-    const keeper = popupKeeper(openId);
+    const keeper = popupKeeper(openId, box.current);
     group.clearLayers();
     const popup = (p: RankedPlace) => () => placePopup(p, latest.current, () => map.current?.closePopup());
     const numbered = new Map(top.map((id, i) => [id, i + 1]));
@@ -113,7 +113,7 @@ export function PlaceMap(props: Props) {
     }
     you.current?.bringToFront();
     keeper.restore();
-  }, [places, top, selected, pins, colors, map, you]);
+  }, [places, top, selected, box, pins, colors, map, you]);
 
   return <MapFrame boxRef={box} twoFingers={twoFingers} label={T.map} describedBy={describedBy} />;
 }
