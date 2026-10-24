@@ -298,8 +298,8 @@ describe('A19 — one normaliser for every entry point', () => {
     expect(p).not.toHaveProperty('later');
     expect(p).not.toHaveProperty('id');
     expect(p).toMatchObject({ kcalCorrection: -120, targetSteps: 9000, goalSince: '2026-09-20' });
-    // An unreadable old key is not kept: its old default stands in while the old screens read it.
-    expect(p.baseSteps).toBe(4000);
+    // An unreadable old key is dropped, and nothing stands in for it.
+    expect(p).not.toHaveProperty('baseSteps');
   });
 
   test('no pace under 18 or in pregnancy', () => {

@@ -6,7 +6,7 @@ import { createContext, useContext } from 'react';
  * Dieta potrzebuje wagi, wzrostu, kroków i tego, czy był trening — a to wszystko gym tracker
  * już zapisuje (`state.body`, `cfg.height`, wpisy kroków i zegarek, dziennik treningów). Zamiast
  * drugiej kopii w IndexedDB ekrany jedzenia czytają i piszą przez ten most, a App buduje go
- * ze swojego stanu. Moduły diety zostają czyste: scalone dni podaje `useMergedHistory`.
+ * ze swojego stanu. Moduły diety zostają czyste: scalony dzień podaje `useMergedDay`.
  *
  * Plik leży w głównej paczce (App podaje kontekst), więc nie importuje niczego z jedzenia
  * poza typami — Dexie, Leaflet i baza produktów zostają w paczce zakładki Jedzenie.

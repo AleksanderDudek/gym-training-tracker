@@ -74,9 +74,9 @@ function legacyValues(row: LegacyFields & Pick<Profile, 'kcalPerKg'>) {
 }
 
 /**
- * The old model's expenditure at a weight (a private copy of the old `tdee`, which I2 deletes):
- * BMR × the multiplier, walking beyond the base steps at the planned steps, extra exercise spread
- * over the week, and the check-ins' correction.
+ * The old model's expenditure at a weight (a private copy of the old model's `tdee`): BMR × the
+ * multiplier, walking beyond the base steps at the planned steps, extra exercise spread over the
+ * week, and the check-ins' correction.
  */
 export function legacyBurn(row: Pick<Profile, 'sex' | 'age' | 'heightCm' | 'kcalPerKg'> & LegacyFields, kg: number): number {
   const v = legacyValues(row);
@@ -138,16 +138,9 @@ export function upgradeProfile(row: LegacyRow, ctx: UpgradeContext): Profile & L
   const firstBy: GoalBy = ctx.fresh ? 'setup' : 'migration';
   const start = row.startDate < ctx.today ? row.startDate : ctx.today;
 
+  // The old keys stay exactly as the row has them, a missing one missing: their defaults are only read above.
   let p: Profile & LegacyFields = {
     ...row,
-    // The old keys the old screens still read (I2 takes them out of `Profile`): a missing one gets its old default.
-    activityMultiplier: legacy.activityMultiplier,
-    baseSteps: legacy.baseSteps,
-    targetSteps: legacy.targetSteps,
-    kcalPer1000StepsPerKg: legacy.kcalPer1000StepsPerKg,
-    extraWeeklyKcal: legacy.extraWeeklyKcal,
-    kcalCorrection: legacy.kcalCorrection,
-    adaptWeekly: row.adaptWeekly ?? true,
     version: 2,
     activityLevel,
     goalPace,

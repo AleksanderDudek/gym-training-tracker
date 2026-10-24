@@ -98,7 +98,7 @@ export interface History {
   entries: Entry[];
 }
 
-/** Everything logged from `from` on: the forecast, the week and the progress view read this. */
+/** Everything logged from `from` on: the meal plan page and the progress page read this. */
 export function useHistory(from: string | null): History | undefined {
   const raw = useLiveQuery(async () => {
     if (!from) return { from, entries: [] as Entry[], days: [] as DayRow[] };
@@ -110,8 +110,8 @@ export function useHistory(from: string | null): History | undefined {
   }, [from]);
   return useMemo(() => {
     // Przy nowych zależnościach `useLiveQuery` oddaje jeszcze poprzedni wynik. Pusty wynik sprzed
-    // profilu (`from` = null) nie jest historią — strona pokazałaby przez chwilę cel bez korekty
-    // tygodnia i tydzień bez zapisów. Inny zakres (następny tydzień) może za to chwilę postać.
+    // profilu (`from` = null) nie jest historią — strona pokazałaby przez chwilę tygodnie bez
+    // zapisów. Inny zakres (następny tydzień) może za to chwilę postać.
     if (!raw || (from && raw.from === null)) return undefined;
     const eaten = new Map<string, number>();
     for (const e of raw.entries) eaten.set(e.date, (eaten.get(e.date) ?? 0) + e.kcal);
@@ -132,22 +132,6 @@ export function useMergedDay(date: string): DayRow | undefined {
     const weighed = bridge.weights.filter((w) => w.day === date);
     return mergeBody([day], weighed, bridge.stepsOn)[0] ?? day;
   }, [day, date, bridge]);
-}
-
-/**
- * Historia od `from` z wagą i krokami z treningów: ważenia z dziennika wagi (od `from`) nadpisują
- * i uzupełniają wagi diety, kroki z treningów — kroki diety. Prognoza, tydzień i postęp czytają
- * ten wariant, więc `weightOn`, `lastWeighing` i `forecastInputs` widzą jedno ciało.
- */
-export function useMergedHistory(from: string | null): History | undefined {
-  const history = useHistory(from);
-  const bridge = useBridge();
-  return useMemo(() => {
-    if (!history || !from) return history;
-    const weights = bridge.weights.filter((w) => w.day >= from);
-    const days = mergeBody([...history.days.values()], weights, bridge.stepsOn);
-    return { ...history, days: new Map(days.map((d) => [d.date, d])) };
-  }, [history, from, bridge]);
 }
 
 export interface NearbyChains {

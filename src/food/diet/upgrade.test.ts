@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { eer, targetOn } from './target';
 import type { LegacyFields, Profile } from './types';
-import { LEGACY_DEFAULTS, legacyBurn, noticeNotes, upgradedPace, upgradeProfile, type LegacyRow } from './upgrade';
+import { legacyBurn, noticeNotes, upgradedPace, upgradeProfile, type LegacyRow } from './upgrade';
 import { cleanProfile } from './validate';
 
 /*
@@ -106,13 +106,14 @@ describe('A17 — the owner keeps his target to the kcal', () => {
     expect(p).toMatchObject({ burnOffset: -224, goalPace: 0.5, dailyKcal: 2040 });
   });
 
-  test('the multiplier as a level; missing old keys read with the old defaults', () => {
+  test('the multiplier as a level; missing old keys read with the old defaults and stay missing', () => {
     expect(upgrade({ activityMultiplier: 1.55 }).activityLevel).toBe('active');
-    const bare = upgradeProfile(
-      { ...OWNER, activityMultiplier: undefined, baseSteps: undefined, targetSteps: undefined, kcalCorrection: undefined },
-      { today: TODAY, weightKg: 80 },
-    );
-    expect(bare).toMatchObject({ burnOffset: -241, goalPace: 0.5, activityMultiplier: LEGACY_DEFAULTS.activityMultiplier });
+    const { activityMultiplier: _m, baseSteps: _b, targetSteps: _t, kcalCorrection: _c, adaptWeekly: _w, ...rest } = OWNER;
+    const bare = upgradeProfile(rest, { today: TODAY, weightKg: 80 });
+    // The owner's values are the old defaults: the same burn, the same offset and pace.
+    expect(bare).toMatchObject({ burnOffset: -241, goalPace: 0.5 });
+    for (const key of ['activityMultiplier', 'baseSteps', 'targetSteps', 'kcalCorrection', 'adaptWeekly'])
+      expect(bare).not.toHaveProperty(key);
   });
 
   test('without a weight the start weight is used', () => {

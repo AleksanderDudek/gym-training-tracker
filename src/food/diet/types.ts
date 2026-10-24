@@ -105,7 +105,7 @@ export interface WeekCheck {
 
 /**
  * Keys of the old model. They stay in stored rows untouched (a code revert reads them as before)
- * and only the upgrade reads them. Until the old screens are gone (I2) they are also in `Profile`.
+ * and only the upgrade reads them; nothing adds them to a row without them.
  */
 export interface LegacyFields {
   activityMultiplier?: number;
@@ -166,48 +166,10 @@ export interface Profile {
   dietProfile: DietProfileId;
   /** Chain key to plan around when nothing nearby is known (null: any). */
   preferredStore: string | null;
-
-  // Legacy, read by the old screens until the packages replace them, then only in `LegacyFields` (I2).
-  /** BMR × this = expenditure at the base step count (1.28: desk job + 2 trainings a week). */
-  activityMultiplier: number;
-  /** Steps already inside the multiplier. */
-  baseSteps: number;
-  /** Planned steps a day. */
-  targetSteps: number;
-  kcalPer1000StepsPerKg: number;
-  /** Exercise beyond what the multiplier assumes, per week. */
-  extraWeeklyKcal: number;
-  /**
-   * What the energy model gets wrong for this person, in kcal a day, as the check-ins measured it
-   * from the scale and the log: part of the expenditure (`tdee`) everywhere - the pace, the goals of
-   * the pace chips, the forecast. A check-in compares the scale with the corrected model, so the
-   * same error is never applied twice. 0 until a check-in is accepted; editable in the profile.
-   * Superseded by `burnOffset`; the stored key is never touched.
-   */
-  kcalCorrection: number;
-  /**
-   * The day `dailyKcal` last changed (YYYY-MM-DD). The week's balance counts only the days since:
-   * days eaten to an older goal are not a surplus over a new one. Superseded by `goals`.
-   */
-  goalSince?: string;
-  /** Correct today's goal by this week's surplus or deficit. */
-  adaptWeekly: boolean;
-  /**
-   * Move the day's goal by the activity against the plan: more steps or an extra training add,
-   * fewer steps or a skipped planned training take off (`diet/activity.ts`). Absent means on.
-   */
-  adaptActivity?: boolean;
 }
 
-/** The workbook's defaults for everything a person does not have to know. */
-export const MODEL_DEFAULTS = {
-  activityMultiplier: 1.28,
-  baseSteps: 4000,
-  targetSteps: 10_000,
-  kcalPer1000StepsPerKg: 0.4,
-  extraWeeklyKcal: 0,
-  kcalPerKg: 7500,
-} as const;
+/** The model's defaults for what a person does not have to know. */
+export const MODEL_DEFAULTS = { kcalPerKg: 7500 } as const;
 
 /** Nutrition of one eaten amount; unknown macros are null, never zero. */
 export interface Nutrients {

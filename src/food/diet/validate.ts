@@ -141,8 +141,6 @@ export function newProfile(partial: Partial<Profile & LegacyFields>, today: stri
     startDate: today,
     activityLevel: 'inactive' as const,
     ...MODEL_DEFAULTS,
-    kcalCorrection: 0,
-    adaptWeekly: true,
     burnOffset: 0,
     anchored: false,
     autoAdjust: true,

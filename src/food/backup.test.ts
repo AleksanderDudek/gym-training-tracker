@@ -69,6 +69,11 @@ describe('kopia jedzenia', () => {
     try {
       await restoreDiet(backup, other);
       expect(await other.entries.count()).toBe(1);
+      // Profil w wersji 2 wraca taki sam — bez kluczy starego modelu, których nigdy nie miał.
+      const restored = await other.profile.get('me');
+      expect(restored).toEqual(await database.profile.get('me'));
+      expect(restored).not.toHaveProperty('activityMultiplier');
+      expect(restored).not.toHaveProperty('adaptWeekly');
       expect(hasDiet()).toBe(true);
     } finally {
       other.close();

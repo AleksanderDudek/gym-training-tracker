@@ -9,13 +9,8 @@ import type { LegacyFields, Profile } from './types';
  * does not leave it; a JSON export is the backup.
  */
 
-/**
- * The stored profile: the profile plus the old model's keys, which stay in the row untouched.
- * While `Profile` still carries those keys itself (until I2) the `Omit` leaves nothing to add —
- * `extends Profile, LegacyFields` would not compile with the same key required on one side and
- * optional on the other. Once they leave `Profile`, this is exactly `Profile & LegacyFields`.
- */
-export interface ProfileRow extends Profile, Omit<LegacyFields, keyof Profile> {
+/** The stored profile: the profile plus the old model's keys, which stay in the row untouched. */
+export interface ProfileRow extends Profile, LegacyFields {
   id: 'me';
 }
 

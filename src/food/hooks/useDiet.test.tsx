@@ -6,7 +6,7 @@ import { BridgeContext, type GymBridge } from '../bridge';
 import { db, type ProfileRow } from '../diet/db';
 import { logQuick } from '../diet/store';
 import { newProfile } from '../diet/validate';
-import { useHistory, useMergedDay, useMergedHistory, useProfile } from './useDiet';
+import { useHistory, useMergedDay, useProfile } from './useDiet';
 
 const bridge = (over: Partial<GymBridge> = {}): GymBridge => ({
   weights: [],
@@ -172,28 +172,6 @@ describe('historia zapisów', () => {
 });
 
 describe('dni diety czytane razem z danymi treningowymi', () => {
-  it('historia: ważenia z treningów od początku diety i kroki z treningów nad wartościami diety', async () => {
-    await db.days.bulkPut([
-      { date: '2026-10-01', weightKg: 82, steps: 3000 },
-      { date: '2026-10-03', steps: 4000, note: 'wesele' },
-    ]);
-    const b = bridge({
-      weights: [
-        { day: '2026-09-20', kg: 84 },
-        { day: '2026-10-01', kg: 81.5 },
-        { day: '2026-10-02', kg: 81.2 },
-      ],
-      stepsOn: (day) => (day === '2026-10-03' ? 11000 : null),
-    });
-    const { result } = renderHook(() => useMergedHistory('2026-10-01'), { wrapper: under(b) });
-    await waitFor(() => expect(result.current).toBeDefined());
-    expect([...result.current!.days.values()]).toEqual([
-      { date: '2026-10-01', weightKg: 81.5, steps: 3000 },
-      { date: '2026-10-02', weightKg: 81.2 },
-      { date: '2026-10-03', steps: 11000, note: 'wesele' },
-    ]);
-  });
-
   it('dzień: waga i kroki z treningów, choć dieta nie ma jeszcze wiersza', async () => {
     const b = bridge({ weights: [{ day: '2026-10-05', kg: 80 }], stepsOn: () => 7000 });
     const { result } = renderHook(() => useMergedDay('2026-10-05'), { wrapper: under(b) });

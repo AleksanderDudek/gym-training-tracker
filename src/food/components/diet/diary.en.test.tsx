@@ -8,8 +8,7 @@ vi.hoisted(() => {
   globalThis.__KB_LANG__ = 'en';
 });
 
-import { activityOn } from '../../diet/activity';
-import { dayState, macroStatus, totals, weeklyAdjustment } from '../../diet/day';
+import { dayState, totals } from '../../diet/day';
 import { db, type PlannedCheat } from '../../diet/db';
 import { planFood, recipeFood, setFood } from '../../diet/foods';
 import { dayLabel, longDay, paceText } from '../../diet/model';
@@ -21,7 +20,6 @@ import { slotLabel, suggest, swaps, type Context } from '../../diet/suggest';
 import type { CheckFacts, Profile, WeekCheck } from '../../diet/types';
 import { renderWithBridge, testBridge, testMove } from '../../test/bridge';
 import TodayFoodCard from '../../TodayFoodCard';
-import { activityLine, activityParts, pendingParts } from './activityText';
 import { dayLines, todayLink } from './dayText';
 import DiaryPage from './DiaryPage';
 import { KcalShown } from './kcalShown';
@@ -306,34 +304,12 @@ describe('diary in English', () => {
 });
 
 describe('diet texts composed in code', () => {
-  const p = completeProfile({ dailyKcal: 2000 });
   const noPolish = (texts: (string | null)[]) => {
     for (const t of texts) if (t) expect(t, t).not.toMatch(POLISH);
   };
 
-  test('activity in words', () => {
-    const run = activityOn(p, 80, testMove({ stepsWorth: 15_000, planActive: true }), 12_000, 'past');
-    expect(activityParts(run)[0]).toMatch(/^\+160 kcal for steps \(12\D?000 instead of 10\D?000; counted as 15\D?000 — breakdown in “Steps & cardio”\)$/);
-    const skipped = activityOn(p, 80, testMove({ planActive: true, planned: { name: 'Push', kcal: 300 } }), 8000, 'past');
-    expect(activityParts(skipped)).toContainEqual('−300 kcal: planned “Push” not done');
-    const today = activityOn(p, 80, testMove({ planActive: true, planned: { name: 'Push', kcal: 300 } }), 6000, 'today');
-    expect(pendingParts(today)[0]).toMatch(/^4\D?000 steps to go/);
-    const trained = activityOn(p, 80, testMove({ trained: true, workoutKcal: 400, otherKcal: 200 }), 11_000, 'past');
-    expect(activityLine(today)).toMatch(/^If that doesn’t happen by tonight, the goal drops by at most/);
-    expect(activityLine(trained)).toMatch(/^Activity: \+/);
-    noPolish([...activityParts(run), ...activityParts(skipped), ...pendingParts(today), ...activityParts(trained)]);
-    noPolish([activityLine(run), activityLine(skipped), activityLine(today), activityLine(trained)]);
-  });
-
-  test('day notes, the weekly correction, profiles, slots, dates and suggestions', () => {
+  test('profiles, slots, dates and suggestions', () => {
     const t = DIET_PROFILES.lowcarb.targets(2000, 75);
-    const status = macroStatus(t, totals([{ kcal: 2600, protein: 40, carbs: 220, fat: 30 }]), true);
-    expect(status.kcal.note).toBe('600 kcal over the goal');
-    noPolish(Object.values(status).map((s) => s.note));
-    noPolish(Object.values(macroStatus(t, totals([{ kcal: 900, protein: 160, carbs: 20, fat: 90 }]), false)).map((s) => s.note));
-    const week = weeklyAdjustment(2000, [{ date: '2026-10-12', eatenKcal: 2600 }], '2026-10-14');
-    expect(week.explanation).toBe('This week you’ve eaten 600 kcal over the plan – I’m spreading it over 5 days.');
-    expect(weeklyAdjustment(2000, [], '2026-10-14').explanation).toBe('This week is going to plan.');
 
     for (const id of DIET_PROFILE_IDS) {
       const d = DIET_PROFILES[id];

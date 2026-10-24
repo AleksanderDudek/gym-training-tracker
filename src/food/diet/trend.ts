@@ -9,7 +9,7 @@
  *   naive error would be too small. The Monday check and the progress page use the same line.
  *
  * Dates are calendar dates (YYYY-MM-DD) handled at noon UTC. This module keeps its own two date
- * helpers: `model.ts` reaches it back through `day.ts` and `target.ts`.
+ * helpers and imports nothing.
  */
 
 /** One weigh-in: the gym weight log through the bridge (`GymBridge.weights`). */

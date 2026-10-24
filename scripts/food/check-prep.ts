@@ -32,7 +32,7 @@ const products = indexProducts(dataset.products, dataset.dictionaries.brands);
 const index = recipeIndex(products);
 const dict = dataset.dictionaries;
 const START = '2026-10-20';
-const profile = completeProfile({ sex: 'M', age: 30, heightCm: 180, startWeightKg: 84, targetWeightKg: 78, dailyKcal: 2200, adaptWeekly: false });
+const profile = completeProfile({ sex: 'M', age: 30, heightCm: 180, startWeightKg: 84, targetWeightKg: 78, dailyKcal: 2200 });
 
 const pct = (x: number) => `${x >= 0 ? '+' : ''}${(x * 100).toFixed(1)}%`;
 const baskets: [string, string | null][] = [

@@ -29,8 +29,8 @@ import {
   updateChoices,
   updateDay,
 } from './store';
-import { targetOn } from './target';
-import type { Profile } from './types';
+import { setTarget, targetOn } from './target';
+import type { LegacyFields, Profile } from './types';
 import { newProfile } from './validate';
 
 let db: DietDb;
@@ -61,6 +61,18 @@ const LEGACY = {
 };
 /** The same row as the partial the old `useProfile` handed to `completeProfile`. */
 const legacyPartial = LEGACY as unknown as Partial<Profile>;
+/** Every key of the old model. */
+const LEGACY_KEYS = [
+  'activityMultiplier',
+  'baseSteps',
+  'targetSteps',
+  'kcalPer1000StepsPerKg',
+  'extraWeeklyKcal',
+  'kcalCorrection',
+  'adaptWeekly',
+  'adaptActivity',
+  'goalSince',
+] as const satisfies readonly (keyof LegacyFields)[];
 
 const M = '2026-10-26'; // a Monday
 const at = (offset: number) => addDays(M, offset);
@@ -115,13 +127,10 @@ describe('profile version 2', () => {
       reached: null,
       notice: null,
       settle: { from: '2026-10-15', why: 'start' },
-      // The old screens still read the old model's keys until I2.
-      activityMultiplier: 1.28,
-      targetSteps: 10_000,
-      kcalCorrection: 0,
-      adaptWeekly: true,
     });
     expect(targetOn(p, now().date)).toBe(1950);
+    // A new profile has none of the old model's keys: only an upgraded row keeps its own.
+    for (const key of LEGACY_KEYS) expect(p).not.toHaveProperty(key);
   });
 
   test('the first pace follows the goal, lowered to what is safe; a given one is kept', () => {
@@ -139,19 +148,9 @@ describe('profile version 2', () => {
   });
 
   test('saveProfile merges into the stored row: keys the profile does not carry stay', async () => {
-    await db.profile.put({ ...completeProfile({ dailyKcal: 1860, goalSince: '2026-09-20' }), id: 'me', later: 1 } as ProfileRow);
+    await db.profile.put({ ...completeProfile({ dailyKcal: 1860 }), goalSince: '2026-09-20', id: 'me', later: 1 } as ProfileRow);
     await saveProfileEdit(completeProfile({ dailyKcal: 1860, age: 36 }), db);
     expect(await db.profile.get('me')).toMatchObject({ age: 36, goalSince: '2026-09-20', later: 1, version: 2 });
-  });
-
-  test('a target changed alone (the old screens) becomes today’s entry, so dailyKcal mirrors today', async () => {
-    const today = now().date;
-    const p = completeProfile({ startDate: '2026-01-01', dailyKcal: 2000 });
-    await saveProfile({ ...p, dailyKcal: 1850 }, db);
-    const row = (await db.profile.get('me'))!;
-    expect(row.dailyKcal).toBe(1850);
-    expect(row.goals).toEqual([{ from: today, kcal: 1850, by: 'user' }]);
-    expect(targetOn(row, today)).toBe(1850);
   });
 
   test('dismissNotice: „show” becomes „seen”; no notice or no profile — nothing', async () => {
@@ -319,7 +318,8 @@ describe('the Monday check in the store', () => {
     await db.profile.put(stored());
     await logEvery(2100, db);
     await runWeeklyCheck({ weighIns: EXAMPLE_F, today: M, hour: 9 }, db);
-    await saveProfile({ ...(await db.profile.get('me'))!, dailyKcal: 2200 }, db);
+    // The profile page changed the target since (`applyProfileEdit` writes a „user” entry).
+    await saveProfile(setTarget((await db.profile.get('me'))!, 2200, M, 'user'), db);
     const before = await db.profile.get('me');
     await answerCheck('yes', { today: M, kgNow: 79.4 }, db);
     expect(await db.profile.get('me')).toEqual(before);

@@ -45,25 +45,15 @@ export function completeProfile(partial: Partial<Profile>): Profile {
 }
 
 /**
- * Every write keeps `dailyKcal` the mirror of today's target (§2.2). The old screens set `dailyKcal`
- * alone; their number becomes the target from today.
- */
-function inStep(profile: Profile, today: string): Profile {
-  return profile.dailyKcal === targetOn(profile, today)
-    ? profile
-    : setTarget(profile, profile.dailyKcal, today, 'user', today);
-}
-
-/**
  * Merges the profile into the stored row in one transaction (`{...stored, ...profile}`), so no write
  * path drops a key it does not know — the old model's keys stay in the row untouched. A legacy row
- * is never in the way: the profile comes from `useProfile`, which upgraded it already.
+ * is never in the way: the profile comes from `useProfile`, which upgraded it already. `dailyKcal`
+ * comes already in step with the target history (`completeProfile`, `applyProfileEdit`).
  */
 export async function saveProfile(profile: Profile, database: DietDb = db): Promise<void> {
-  const next = inStep(profile, now().date);
   await database.transaction('rw', database.profile, async () => {
     const stored = await database.profile.get('me');
-    await database.profile.put({ ...stored, ...next, id: 'me' });
+    await database.profile.put({ ...stored, ...profile, id: 'me' });
   });
 }
 
@@ -373,7 +363,7 @@ export interface ImportResult extends ImportedPlan {
  * Imports the workbook. The plan replaces the active one. The workbook's
  * parameters become the profile only on the FIRST import: after that the
  * profile is edited in the app, and re-importing an updated meal plan must
- * not quietly undo those edits (or move the start date under the forecast).
+ * not quietly undo those edits (or move the start date and the target history).
  * Days logged in the workbook come along without overwriting what the app
  * has. A changed plan clears the swaps and skips of days still to come:
  * they point at lines of the old plan.
