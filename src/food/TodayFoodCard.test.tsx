@@ -84,7 +84,7 @@ describe('Karta jedzenia na ekranie Dziś', () => {
       weights: [{ day: '2026-10-10', kg: 80 }],
       stepsOn: (day) => (day === TODAY ? 15_000 : null),
       moveOn: (day) =>
-        testMove(day === TODAY ? { trained: true, workoutKcal: 300, workouts: 1, stepsWorth: 15_000, planActive: true } : {}),
+        testMove(day === TODAY ? { trained: true, workoutKcal: 300, workouts: 1 } : {}),
     });
     renderWithBridge(<TodayFoodCard />, bridge);
     expect(await screen.findByRole('heading', { name: 'Na dziś: 2000 kcal i 150 g białka' })).toBeInTheDocument();

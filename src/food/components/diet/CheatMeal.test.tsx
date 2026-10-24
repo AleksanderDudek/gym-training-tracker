@@ -205,12 +205,11 @@ describe('arkusz „Większy posiłek”', () => {
 });
 
 describe('większy posiłek w dzienniku', () => {
-  test('ruch nie zmienia celu: kroki i opuszczony trening z planu zostają poza arkuszem', async () => {
-    const move = testMove({ planned: { name: 'Trening A', kcal: 320 }, planActive: true, typicalWorkoutKcal: 300 });
+  test('ruch nie zmienia celu: kroki i trening zostają poza arkuszem', async () => {
     const bridge = testBridge({
       weights: [{ day: '2026-10-01', kg: 80 }],
       stepsOn: (day) => (day === TODAY ? 3000 : null),
-      moveOn: (day) => (day === TODAY ? move : { ...move, planned: null }),
+      moveOn: (day) => testMove(day === TODAY ? { trained: true, workoutKcal: 320, workouts: 1 } : {}),
     });
     const user = userEvent.setup();
     renderWithBridge(<DiaryPage />, bridge);
@@ -220,7 +219,7 @@ describe('większy posiłek w dzienniku', () => {
     expect(sim(dialog)).toHaveTextContent(/Cel na dziś\s*2000 kcal/);
     expect(within(dialog).queryByRole('group', { name: 'Ruch do końca dnia' })).not.toBeInTheDocument();
     expect(within(dialog).queryByRole('radio')).not.toBeInTheDocument();
-    expect(dialog).not.toHaveTextContent(/Ruch w celu|Trening A/);
+    expect(dialog).not.toHaveTextContent(/Ruch w celu|trening/i);
   });
 
   test('z ulubionych i z wyszukiwania: kilka rzeczy składa się w jeden posiłek, a suma idzie do symulacji', async () => {

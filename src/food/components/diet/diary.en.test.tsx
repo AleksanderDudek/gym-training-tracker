@@ -18,7 +18,7 @@ import { DIET_PROFILES, DIET_PROFILE_IDS } from '../../diet/profiles';
 import { clearAll, completeProfile, logQuick, planCheat, saveProfile } from '../../diet/store';
 import { slotLabel, suggest, swaps, type Context } from '../../diet/suggest';
 import type { CheckFacts, Profile, WeekCheck } from '../../diet/types';
-import { renderWithBridge, testBridge, testMove } from '../../test/bridge';
+import { renderWithBridge } from '../../test/bridge';
 import TodayFoodCard from '../../TodayFoodCard';
 import { dayLines, todayLink } from './dayText';
 import DiaryPage from './DiaryPage';
@@ -187,7 +187,7 @@ describe('diary in English', () => {
     await logQuick(TODAY, 'Baton', 210);
     await planCheat(TODAY, { name: 'Pizza', kcal: 900, protein: 30, carbs: null, fat: null });
     window.history.replaceState(null, '', '/#/jedzenie');
-    renderWithBridge(<DiaryPage />, testBridge({ moveOn: () => testMove({ planActive: true }) }));
+    renderWithBridge(<DiaryPage />);
 
     expect(await screen.findByRole('heading', { name: 'Today' })).toBeInTheDocument();
     expect(screen.getByText('Wednesday 14 October')).toBeInTheDocument();

@@ -445,7 +445,6 @@ describe('Jeden cel na dzień', () => {
     const bridge = testBridge({
       weights: [{ day: '2026-10-01', kg: 80 }],
       stepsOn: (day) => (day === '2026-10-13' ? 5400 : null),
-      moveOn: () => testMove({ planActive: true, stepsWorth: 5400 }),
     });
     renderWithBridge(<DiaryPage />, bridge);
     const card = await screen.findByRole('region', { name: 'Bilans dnia' });
@@ -744,10 +743,7 @@ describe('Kroki — przez most do treningów', () => {
           trained: day === '2026-10-14',
           workoutKcal: day === '2026-10-14' ? 310 : 0,
           cardioKcal: day === '2026-10-14' ? 180 : 0,
-          otherKcal: 0,
-          typicalWorkoutKcal: 300,
           workouts: day === '2026-10-14' ? 1 : 0,
-          stepsWorth: day === '2026-10-14' ? 7200 : null,
         }),
     });
     renderWithBridge(<DiaryPage />, bridge);
