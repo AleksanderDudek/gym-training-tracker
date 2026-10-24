@@ -1,16 +1,25 @@
-import { useState } from 'react';
-import type { ReactNode } from 'react';
+import { Component, Suspense, lazy, useRef, useState } from 'react';
+import type { ComponentProps, ReactNode } from 'react';
 import { checkSaid } from '../deviceStatus';
 import { localDayOf } from '../engine/watch';
+import { hashQuery } from '../food/hash';
 import { GARMIN_APP_URL, forgetWatch, garminConfigured, garminKey, lastPullAt, onWatchCheck, saveGarminKey, watchStatus } from '../garmin';
 import type { PullResult } from '../garmin';
 import { text } from '../i18n';
+import { trail } from '../trail';
+import { rememberedWatch } from '../watches/remember';
 import { cleanKey, newKey } from '../watchseal';
 import type { AppState } from '../types';
 import { CARD_ID, Checklist, StatusBlock, useNow, useScrollHere, watchChecks } from './DeviceStatus';
+import { W, lacksText } from './WatchCheck.words';
 
 /**
- * Karta zegarka w ustawieniach: połączenie, klucz do wklejenia, stan i odłączenie.
+ * Karta zegarka w ustawieniach: sprawdzenie modelu, połączenie, klucz do wklejenia, stan i odłączenie.
+ *
+ * Bez klucza pierwsze, co widać, to „Jaki masz zegarek?” — odpowiedź, zanim ktoś zainstaluje
+ * aplikację na zegarku, który jej nie uruchomi. Nikogo to nie blokuje: „Połącz bez sprawdzania”
+ * i „Mam już klucz” stoją pod spodem. Samo sprawdzanie (lista modeli i wyszukiwarka) jest w osobnej
+ * paczce; karta zna tylko zapamiętany model i kilka słów.
  *
  * Połączenie to jeden klucz, który znają tylko ta przeglądarka i zegarek. Wkleja się go raz,
  * w ustawieniach aplikacji GYM TRACKER na zegarku — w Garmin Connect na telefonie jest
@@ -30,18 +39,27 @@ const T = text({
     title: 'Zegarek Garmin',
     intro: (
       <>
-        Kroki, przejazdy rowerem, tętno, stres i Body Battery przyjdą z zegarka same — bez
-        przepisywania. Potrzebna jest mała aplikacja GYM TRACKER na zegarku i jeden klucz wklejony
-        w jej ustawienia.
+        Kroki, przejazdy rowerem i tętno — a na większości zegarków także stres i Body Battery — przyjdą
+        z zegarka same, bez przepisywania. Potrzebna jest mała aplikacja GYM TRACKER na zegarku i jeden
+        klucz wklejony w jej ustawienia.
       </>
     ) as ReactNode,
-    viaPhone: (
-      <>
-        Prościej przez telefon: karta „Zdrowie z telefonu” bierze dane, które Garmin Connect zapisuje
-        w Apple Zdrowie albo Health Connect — razem ze snem i wagą. Ta karta dokłada stres i Body Battery.
-      </>
-    ) as ReactNode,
-    connect: 'Połącz zegarek',
+    connectNoCheck: 'Połącz bez sprawdzania',
+    connectAnyway: 'Połącz mimo to',
+    checking: 'Wczytuję listę zegarków…',
+    checkFailed: 'Nie udało się wczytać listy zegarków — sprawdź internet i odśwież stronę.',
+    storeList: 'Zgodne urządzenia w Connect IQ Store',
+    yourWatch: (name: string, short: string) => `Wybrany model: ${name} — ${short}.`,
+    change: 'Zmień model',
+    hideCheck: 'Zwiń',
+    modelLacks: (list: string) => `Ten model nie udostępnia aplikacjom ${list} — w „Z zegarka” ich nie będzie.`,
+    modelNo: (name: string) =>
+      `${name} nie działa z aplikacją na zegarek — dane może przynieść telefon („Zdrowie z telefonu”).`,
+    updateFirst:
+      'Najpierw zaktualizuj oprogramowanie zegarka: zsynchronizuj go z Garmin Connect (nowe oprogramowanie instaluje się samo) albo podłącz do Garmin Express na komputerze.',
+    checkModel: 'Czy Twój model jest obsługiwany? Sprawdź →',
+    bg32: 'Ten model ma mało pamięci na pracę w tle i nie był jeszcze sprawdzony na prawdziwym zegarku. Jeśli dane nie przychodzą, napisz — to pomoże.',
+    bg32Write: 'Napisz do autora',
     haveKey: 'Mam już klucz z innego urządzenia',
     badKey: 'Klucz to 64 znaki: cyfry i litery od a do f.',
     otherKey: 'klucz z drugiego urządzenia',
@@ -53,7 +71,8 @@ const T = text({
       <>
         Zainstaluj na zegarku aplikację GYM TRACKER z{' '}
         {link}
-        .
+        . Jeśli sklep pisze, że zegarek trzeba zaktualizować, zsynchronizuj go z Garmin Connect albo
+        podłącz do Garmin Express na komputerze.
       </>
     ),
     settings: (
@@ -95,17 +114,27 @@ const T = text({
     title: 'Garmin watch',
     intro: (
       <>
-        Steps, bike rides, heart rate, stress and Body Battery come from your watch by themselves — no retyping. You
-        need the small GYM TRACKER app on the watch and one key pasted into its settings.
+        Steps, bike rides and heart rate — and on most watches stress and Body Battery too — arrive from your watch by
+        themselves, no retyping. You need the small GYM TRACKER app on the watch and one key pasted into its settings.
       </>
     ),
-    viaPhone: (
-      <>
-        Simpler through your phone: the “Health from your phone” card takes the data Garmin Connect saves to Apple
-        Health or Health Connect — sleep and weight included. This card adds stress and Body Battery.
-      </>
-    ),
-    connect: 'Connect watch',
+    connectNoCheck: 'Connect without checking',
+    connectAnyway: 'Connect anyway',
+    checking: 'Loading the watch list…',
+    checkFailed: 'Couldn’t load the watch list — check your internet connection and refresh the page.',
+    storeList: 'Compatible devices in the Connect IQ Store',
+    yourWatch: (name: string, short: string) => `Chosen model: ${name} — ${short}.`,
+    change: 'Change model',
+    hideCheck: 'Close',
+    modelLacks: (list: string) =>
+      `This model doesn’t share ${list} with apps — they won’t appear under “From your watch”.`,
+    modelNo: (name: string) =>
+      `${name} doesn’t work with the watch app — your phone can bring the data (“Health from your phone”).`,
+    updateFirst:
+      'First update the watch’s software: sync it with Garmin Connect (new software installs by itself) or connect it to Garmin Express on a computer.',
+    checkModel: 'Is your model supported? Check →',
+    bg32: 'This model has little memory for background work and hasn’t been tested on a real watch yet. If data isn’t arriving, write — it helps.',
+    bg32Write: 'Write to the author',
     haveKey: 'I already have a key from another device',
     badKey: 'The key is 64 characters: digits and the letters a to f.',
     otherKey: 'key from your other device',
@@ -113,7 +142,12 @@ const T = text({
     cancel: 'Cancel',
     from: 'from the watch',
     steps: 'Connection steps',
-    install: (link: ReactNode): ReactNode => <>Install the GYM TRACKER app on your watch from the {link}.</>,
+    install: (link: ReactNode): ReactNode => (
+      <>
+        Install the GYM TRACKER app on your watch from the {link}. If the store says the watch needs an update, sync it
+        with Garmin Connect or connect it to Garmin Express on a computer.
+      </>
+    ),
     settings: (
       <>
         In the Garmin Connect app on your phone, open the GYM TRACKER settings: watch → Activities &amp; Apps → GYM
@@ -145,6 +179,53 @@ const T = text({
   },
 });
 
+/** Sprawdzanie modelu: lista zegarków, wyszukiwarka i ikony w osobnej paczce. */
+const WatchCheck = lazy(() => import('./WatchCheck'));
+
+type Shown = 'supported' | 'unsupported' | null;
+
+/** Model z adresu (`#/zegarek?model=fr265`): identyfikator albo tekst do sprawdzenia. */
+const modelParam = (): string | null => hashQuery(window.location.hash).get('model')?.trim() || null;
+
+/**
+ * Gdy paczka sprawdzania nie przyjdzie (brak sieci przed pierwszym wczytaniem) albo się wywróci,
+ * znika tylko ona: zdanie i link do listy zgodnych urządzeń w sklepie, a „Połącz bez sprawdzania”
+ * zostaje pod spodem.
+ */
+class CheckBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  override state = { failed: false };
+
+  static getDerivedStateFromError(): { failed: boolean } {
+    return { failed: true };
+  }
+
+  override componentDidCatch(error: unknown): void {
+    trail.error(error instanceof Error ? error.message : String(error));
+  }
+
+  override render(): ReactNode {
+    if (!this.state.failed) return this.props.children;
+    return (
+      <p className="tight wc-failed">
+        {T.checkFailed}{' '}
+        <a href={GARMIN_APP_URL} target="_blank" rel="noopener noreferrer">
+          {T.storeList}
+        </a>
+      </p>
+    );
+  }
+}
+
+function CheckSlot(props: ComponentProps<typeof WatchCheck>) {
+  return (
+    <CheckBoundary>
+      <Suspense fallback={<p className="hint wc-loading">{T.checking}</p>}>
+        <WatchCheck {...props} />
+      </Suspense>
+    </CheckBoundary>
+  );
+}
+
 /** Klucz w grupach po osiem znaków — łatwiej porównać na dwóch ekranach. Zegarek spacje pomija. */
 const grouped = (k: string): string => k.match(/.{1,8}/g)!.join(' ');
 
@@ -152,13 +233,16 @@ export function GarminCard({
   state,
   onSync,
   onToast,
+  onFeedback,
 }: {
   state: AppState;
   onSync: () => Promise<PullResult>;
   onToast: (m: string) => void;
+  /** Okno uwag — „Napisz do autora” w sprawdzaniu i przy modelu niesprawdzonym na prawdziwym zegarku. */
+  onFeedback?: (() => void) | undefined;
 }) {
-  // Klucz czytany przy każdym rysowaniu, nie zapamiętany: „Usuń wszystkie dane” kasuje go spod
-  // karty, a karta ma to od razu pokazać. `bump` tylko przerysowuje po zmianie tutaj.
+  // Klucz i wybrany model czytane przy każdym rysowaniu, nie zapamiętane: „Usuń wszystkie dane”
+  // kasuje je spod karty, a karta ma to od razu pokazać. `bump` tylko przerysowuje po zmianie tutaj.
   const [, bump] = useState(0);
   const key = garminKey();
   const [showKey, setShowKey] = useState(false);
@@ -167,15 +251,35 @@ export function GarminCard({
   const [result, setResult] = useState('');
   const [busy, setBusy] = useState(false);
   const [sure, setSure] = useState(false);
+  // Model z linku — z chwili otwarcia karty, do pierwszego zwinięcia sprawdzania.
+  const [linked, setLinked] = useState(modelParam);
+  // Co pokazuje sprawdzanie: od tego zależą ciche przyciski pod nim — jedna główna akcja na stan.
+  const [shown, setShown] = useState<Shown>(null);
+  // Sprawdzanie przy połączonym zegarku: „Zmień model”, „Sprawdź →” z listy albo link z modelem.
+  const [checkOpen, setCheckOpen] = useState(() => linked !== null);
+  const inline = useRef<HTMLDivElement>(null);
   const now = useNow(onWatchCheck);
   const ref = useScrollHere('watch');
 
   if (!garminConfigured()) return null;
 
+  const mine = rememberedWatch();
   const got = state.watch?.got;
   const status = watchStatus(state, now);
   // Dzień zegarka, nie dzień UTC aplikacji: zegarek liczy kroki od swojej północy.
   const todaySteps = state.watch?.days.find((d) => d.day === localDayOf(new Date(now)))?.steps ?? null;
+
+  /** Wynik sprawdzania się zmienił: inne ciche przyciski, a może inny zapamiętany model. */
+  const onShown = (s: Shown) => {
+    setShown(s);
+    bump((n) => n + 1);
+  };
+
+  const openCheck = () => {
+    // Już otwarte — fokus wraca do pola; nowe — pole dostaje fokus samo, przy wejściu.
+    if (checkOpen) inline.current?.querySelector('input')?.focus();
+    else setCheckOpen(true);
+  };
 
   const connect = (raw: string) => {
     if (!saveGarminKey(raw)) {
@@ -226,22 +330,70 @@ export function GarminCard({
     onToast(T.disconnected);
   };
 
+  // „Dane nie przychodzą?”: przy modelu niesprawdzonym na zegarku z małą pamięcią — najpierw on;
+  // bez wybranego modelu — najpierw pytanie, czy model w ogóle jest obsługiwany.
+  const checks = [
+    ...(mine?.bg === 32 && status.level === 'setup'
+      ? [
+          {
+            id: 'bg32',
+            text: (
+              <>
+                {T.bg32}
+                {onFeedback && (
+                  <>
+                    {' '}
+                    <button type="button" className="wc-linkbtn" onClick={onFeedback}>
+                      {T.bg32Write}
+                    </button>
+                  </>
+                )}
+              </>
+            ),
+          },
+        ]
+      : []),
+    ...(mine
+      ? []
+      : [
+          {
+            id: 'model',
+            text: (
+              <button type="button" className="wc-linkbtn" onClick={openCheck}>
+                {T.checkModel}
+              </button>
+            ),
+          },
+        ]),
+    ...watchChecks(status.level),
+  ];
+
   return (
     <div className="grp dev-card" id={CARD_ID.watch} ref={ref}>
       <h2>{T.title}</h2>
       {!key ? (
         <>
           <p className="tight">{T.intro}</p>
-          <p className="tight">{T.viaPhone}</p>
           {paste === null ? (
-            <div className="watch-actions">
-              <button className="btn" onClick={() => connect(newKey())}>
-                {T.connect}
-              </button>
-              <button className="btn ghost sm" onClick={() => setPaste('')}>
-                {T.haveKey}
-              </button>
-            </div>
+            <>
+              <CheckSlot
+                onConnect={() => connect(newKey())}
+                onFeedback={onFeedback}
+                onShown={onShown}
+                initial={linked ?? mine?.key}
+              />
+              <div className="watch-actions">
+                {/* Obsługiwany model ma „Połącz zegarek” w wyniku — tu zostaje tylko klucz z innego urządzenia. */}
+                {shown !== 'supported' && (
+                  <button className="btn ghost sm" onClick={() => connect(newKey())}>
+                    {shown === 'unsupported' ? T.connectAnyway : T.connectNoCheck}
+                  </button>
+                )}
+                <button className="btn ghost sm" onClick={() => setPaste('')}>
+                  {T.haveKey}
+                </button>
+              </div>
+            </>
           ) : (
             <form
               onSubmit={(e) => {
@@ -286,8 +438,40 @@ export function GarminCard({
           <p className="tight dev-result" role="status">
             {result}
           </p>
+          {mine && (
+            <p className="tight wc-mine">
+              {T.yourWatch(mine.name, W.short[mine.v])}
+              {!checkOpen && (
+                <>
+                  {' '}
+                  <button type="button" className="wc-linkbtn" onClick={openCheck}>
+                    {T.change}
+                  </button>
+                </>
+              )}
+            </p>
+          )}
+          {mine?.lacks && <p className="tight">{T.modelLacks(lacksText(mine.lacks))}</p>}
+          {mine && mine.v !== 'ok' && mine.v !== 'part' && <p className="tight">{T.modelNo(mine.name)}</p>}
+          {checkOpen && (
+            <div className="wc-inline" ref={inline}>
+              <CheckSlot compact onFeedback={onFeedback} onShown={onShown} initial={linked ?? undefined} />
+              <button
+                type="button"
+                className="btn ghost sm"
+                onClick={() => {
+                  setCheckOpen(false);
+                  setLinked(null);
+                }}
+              >
+                {T.hideCheck}
+              </button>
+            </div>
+          )}
           {(!got || showKey) && (
             <ol className="watch-steps" aria-label={T.steps}>
+              {/* Część danych przychodzi dopiero z najnowszym oprogramowaniem zegarka. */}
+              {mine?.newest && <li>{T.updateFirst}</li>}
               <li>
                 {T.install(
                   <a href={GARMIN_APP_URL} target="_blank" rel="noopener noreferrer">
@@ -326,7 +510,7 @@ export function GarminCard({
               {sure ? T.sure : T.disconnect}
             </button>
           </div>
-          <Checklist level={status.level} checked={lastPullAt() !== null} items={watchChecks(status.level)} />
+          <Checklist level={status.level} checked={lastPullAt() !== null} items={checks} />
         </>
       )}
       <p className="hint" style={{ marginTop: 10 }}>

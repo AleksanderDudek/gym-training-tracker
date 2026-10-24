@@ -29,6 +29,7 @@ import {
   forgetSections,
   go,
   goBack,
+  isDeviceLink,
   isFoodRoute,
   isTabRoot,
   screenOf,
@@ -115,6 +116,7 @@ import { forgetWatch, garminConfigured, garminKey, pullWatch } from './garmin';
 import type { PullResult } from './garmin';
 import { forgetPhone, phoneConfigured, phoneKey, pullPhone } from './phone';
 import type { PhonePull } from './phone';
+import { forgetWatchModel } from './watches/remember';
 import { attachTrail, trail } from './trail';
 import { FeedbackDialog } from './components/Feedback';
 import { ContactDialog } from './components/Contact';
@@ -697,6 +699,9 @@ export default function App() {
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [saveBroken, setSaveBroken] = useState(false);
   const [replayIntro, setReplayIntro] = useState(false);
+  // Wejście linkiem do karty urządzenia (`#/zegarek?model=…` z opisu w Connect IQ Store,
+  // `#/ustawienia?karta=…`): adres z chwili otwarcia, raz na wizytę.
+  const [deviceLink] = useState(() => isDeviceLink(window.location.hash));
   // iPhone poza aplikacją z ikony — to się nie zmienia, dopóki karta jest otwarta.
   const [installPlace] = useState(currentInstallPlace);
   const medalBox = useRef<HTMLDivElement>(null);
@@ -758,9 +763,11 @@ export default function App() {
 
   // Wprowadzenie wchodzi samo tylko przy pierwszym uruchomieniu i nigdy w trakcie sesji —
   // kto już trenuje, ten nie potrzebuje wycieczki po ekranach. Z ustawień da się je otworzyć
-  // ponownie w dowolnym momencie.
+  // ponownie w dowolnym momencie. Kto przyszedł linkiem do karty zegarka albo telefonu, przyszedł
+  // po jedną odpowiedź: w tej wizycie wprowadzenie nie wchodzi, a `introSeen` zostaje nietknięte,
+  // więc pokaże się przy następnym zwykłym starcie.
   const showIntro =
-    replayIntro || (!!state && !state.introSeen && !state.log.length && !state.session);
+    replayIntro || (!!state && !deviceLink && !state.introSeen && !state.log.length && !state.session);
   // Pasek „dodaj do ekranu początkowego” (iPhone w Safari): na tych samych zasadach co pasek
   // wsparcia, ale przed nim — dane, które Safari może skasować po tygodniu, są ważniejsze niż kawa.
   const installStrip = !!state && !!installPlace && !state.session && !showIntro && !state.installHidden;
@@ -1935,6 +1942,8 @@ export default function App() {
     await store.clear();
     if (watch) await forgetWatch();
     if (phone) await forgetPhone();
+    // Model zegarka wybrany w sprawdzaniu — też dane tej osoby, choć nie trafia do kopii.
+    forgetWatchModel();
     // Jedzenie też: inaczej stare ważenia z diety wróciłyby do dziennika wagi przy następnym wejściu.
     await import('./food/backup').then((m) => m.clearFood()).catch(() => undefined);
     forgetSections();

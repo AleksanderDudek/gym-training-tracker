@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { IconName } from './components/icons';
-import { hashPath } from './food/hash';
+import { hashPath, hashQuery } from './food/hash';
 import { text } from './i18n';
 import type { CardioSport, DietPage, ExerciseId, FoodSection, Route, TabKey } from './types';
 
@@ -124,6 +124,20 @@ export const SETTINGS_PATH = '#/ustawienia';
 /** Plakat polecający aplikację — z ustawień i z profilu. */
 export const PROMO_PATH = '#/polec';
 
+/**
+ * „Czy mój zegarek jest obsługiwany?” — ustawienia z kartą zegarka. Krótki adres do wklejenia
+ * w opis aplikacji w Connect IQ Store; `?model=fr265` (identyfikator albo tekst) wpisuje model.
+ */
+export const WATCH_PATH = '#/zegarek';
+
+/**
+ * Czy adres prowadzi wprost do karty urządzenia: `#/zegarek` albo `#/ustawienia?karta=…`. Kto
+ * przyszedł z takiego linku, szuka jednej odpowiedzi — wprowadzenie dla nowych go nie zasłania
+ * (tylko w tej wizycie; przy następnym zwykłym starcie wejdzie jak zawsze).
+ */
+export const isDeviceLink = (hash: string): boolean =>
+  hashPath(hash) === WATCH_PATH || (hashPath(hash) === SETTINGS_PATH && !!hashQuery(hash).get('karta'));
+
 const TAB_BY_PATH: Record<string, TabKey> = {
   sesja: 'train',
   // Stary adres zakładki. Zostaje, żeby zapisane linki i zakładki przeglądarki dalej działały.
@@ -137,6 +151,8 @@ const TAB_BY_PATH: Record<string, TabKey> = {
   osiagniecia: 'ach',
   treningi: 'work',
   ustawienia: 'set',
+  // Sprawdzanie modelu zegarka: te same ustawienia, przewinięte do karty zegarka.
+  zegarek: 'set',
 };
 
 export const exercisePath = (id: ExerciseId): string => `#/cwiczenia/${encodeURIComponent(id)}`;

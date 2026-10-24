@@ -134,6 +134,9 @@ export const T = text({
     noMove: 'bez ruchu',
     pageLead:
       'Ruch zmierzony telefonem, zegarkiem, bieżnią albo rowerem i zajęcia tańca — przepisane tutaj. Kalorie liczą się z twojej wagi i są szacunkiem: aktywne, czyli ponad to, co ciało spaliłoby w tym czasie w spoczynku.',
+    watchCheck: 'Masz zegarek? Sprawdź, czy kroki mogą przychodzić same →',
+    watchCheckHide: 'Nie pokazuj więcej',
+    watchGaps: (name: string, list: string) => `${name} nie udostępnia aplikacjom ${list} — dlatego ich tu nie ma.`,
     log: 'Wpisz',
     logHint: 'Wybierz, skąd są liczby — resztę wpiszesz na następnym ekranie.',
     kgFor: (kg: string, day: string) => `Kalorie liczone dla ${kg} kg (ważenie ${day}). Wagę zmienisz w profilu.`,
@@ -359,6 +362,9 @@ export const T = text({
     noMove: 'no movement',
     pageLead:
       'Movement measured by your phone, watch, treadmill or bike, and dance classes — copied in here. Calories are worked out from your weight and are an estimate: active calories, meaning above what your body would burn at rest in the same time.',
+    watchCheck: 'Got a watch? Check whether your steps can arrive by themselves →',
+    watchCheckHide: 'Don’t show again',
+    watchGaps: (name: string, list: string) => `${name} doesn’t share ${list} with apps — that’s why they’re missing here.`,
     log: 'Log',
     logHint: 'Pick where the numbers come from — you’ll enter the rest on the next screen.',
     kgFor: (kg: string, day: string) =>

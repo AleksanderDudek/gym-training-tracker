@@ -153,6 +153,34 @@ describe('steps & cardio in English', () => {
     expect(screen.getByText(/^3\.0 km · brisk walk or jog · \d\.\d MET$/)).toBeInTheDocument();
   });
 
+  it('the watch link on the steps screen and form, and what a chosen model lacks', async () => {
+    vi.resetModules();
+    vi.stubEnv('VITE_API_URL', 'https://api.example');
+    try {
+      const { CardioPage: Page, CardioEntry: Entry } = await import('./Cardio');
+      const page = render(<Page state={freshState()} onDelete={vi.fn()} />);
+      expect(screen.getByRole('link', { name: 'Got a watch? Check whether your steps can arrive by themselves →' })).toHaveAttribute(
+        'href',
+        '#/zegarek',
+      );
+      expect(screen.getByRole('button', { name: 'Don’t show again' })).toBeInTheDocument();
+      page.unmount();
+      const entry = render(<Entry state={freshState()} sport="steps" onLog={vi.fn()} onToast={vi.fn()} />);
+      expect(screen.getByRole('link', { name: /^Got a watch\?/ })).toBeInTheDocument();
+      entry.unmount();
+      localStorage.setItem('gt-garmin-key', 'ab'.repeat(32));
+      localStorage.setItem('gt-garmin-model', JSON.stringify({ key: 'd2air', name: 'D2™ Air', v: 'part', lacks: ['stress', 'bodyBattery', 'rides'] }));
+      render(<Page state={freshState()} onDelete={vi.fn()} />);
+      expect(
+        screen.getByText('D2™ Air doesn’t share stress, Body Battery or bike rides with apps — that’s why they’re missing here.'),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: /^Got a watch\?/ })).not.toBeInTheDocument();
+    } finally {
+      vi.unstubAllEnvs();
+      localStorage.clear();
+    }
+  });
+
   it('the card on Today, the profile summary and the weight card', () => {
     const s = richState();
     const { unmount } = render(<CardioCard state={s} />);

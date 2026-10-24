@@ -1008,6 +1008,98 @@
   .vidlink.dev-late{color:var(--warn)}
   /* Link „Stan połączenia” przewija do karty — niech nie wjedzie pod przyklejony pasek aplikacji. */
   .dev-card{scroll-margin-top:calc(80px + env(safe-area-inset-top))}
+  /* „Sprawdź swój model” z karty telefonu przewija do karty zegarka na tym samym ekranie. */
+  .phone-watch-link{color:var(--steel);font-weight:600;text-decoration:underline;white-space:nowrap}
+
+  /*
+   * Sprawdzanie modelu zegarka (karta „Zegarek Garmin”, `#/zegarek`). Pole z podpowiedziami jak
+   * wybór ćwiczenia (`.picker*`), wynik z kreską w kolorze stanu: słowo i ikona mówią wszystko,
+   * kolor tylko je wspiera — i to wyłącznie istniejące tusze (≥ 4,5:1 na każdym tle).
+   */
+  .wc{margin:8px 0 4px}
+  .wc-label{display:block;font-size:14px;font-weight:600;color:var(--ink);margin-bottom:4px}
+  .wc-row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}
+  .wc-box{position:relative;min-width:0}
+  .wc-box input{padding-right:44px}
+  .wc-clear{position:absolute;right:0;top:0;bottom:0;width:44px;min-height:44px;padding:0;background:none;border:0;
+    font-size:22px;line-height:1;color:var(--ink-soft);cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .wc-clear:focus-visible{outline:2px solid var(--steel);outline-offset:-2px}
+  .wc-row .btn{min-height:44px}
+  /* Podpowiedzi nad treścią, jak lista wyboru ćwiczenia; 5–8 pozycji mieści się nad klawiaturą. */
+  .wc-pop{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:25;background:#fff;border:1px solid var(--edge);
+    border-radius:var(--r);box-shadow:0 8px 24px rgba(30,35,32,.16);overflow:hidden}
+  .wc-opts{list-style:none;margin:0;padding:4px 0;max-height:min(400px,52vh);overflow-y:auto;overscroll-behavior:contain}
+  .wc-opt{display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:44px;padding:8px 12px 8px 11px;
+    border-left:3px solid transparent;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .wc-opt[aria-selected=true]{background:var(--surface-2);border-left-color:var(--steel)}
+  .wc-opt-name{font-size:15px;color:var(--ink);overflow-wrap:anywhere}
+  .wc-pop-more{margin:0;padding:8px 12px;font-size:12.5px;color:var(--ink-soft);border-top:1px solid var(--surface-2)}
+  .wc-tag{flex:none;font-size:12.5px;font-weight:600;color:var(--ink-soft);white-space:nowrap}
+  .wc-tag.ok{color:var(--ok)}
+  .wc-tag.part{color:var(--warn)}
+  .wc-tag.no{color:var(--c-orange-ink)}
+  .wc-popular{margin-top:10px}
+  .wc-popular-label{display:block;font-size:12.5px;color:var(--ink-soft)}
+  /* Wynik: kreska z lewej w kolorze stanu, nagłówek z nazwą i odpowiedzią — na niego idzie fokus. */
+  .wc-result{margin:12px 0 6px;padding:10px 12px;background:var(--surface-2);border-left:4px solid var(--ink-soft);
+    border-radius:var(--r)}
+  .wc-result.ok{border-left-color:var(--ok)}
+  .wc-result.part{border-left-color:var(--warn)}
+  .wc-result.no{border-left-color:var(--c-orange-ink)}
+  .wc-result.line{border-left-color:var(--steel)}
+  .grp .wc-result p.tight{margin:0 0 6px}
+  .wc-head{margin:0 0 6px;font-size:16px;line-height:1.35;color:var(--ink);overflow-wrap:anywhere}
+  /* Fokus trafia tu programowo (dla czytnika ekranu i żeby schować klawiaturę); nagłówek nie jest
+     kontrolką, więc bez ramki — następny Tab idzie do przycisku karty, który ramkę ma. */
+  .wc-head:focus,.wc-head:focus-visible{outline:none}
+  .wc-verdict{display:inline-flex;align-items:center;gap:5px;font-weight:600}
+  .wc-icon{flex:none}
+  .wc-result.ok .wc-verdict{color:var(--ok)}
+  .wc-result.part .wc-verdict{color:var(--warn)}
+  .wc-result.no .wc-verdict{color:var(--c-orange-ink)}
+  .wc-result.other .wc-verdict{color:var(--ink)}
+  .grp .wc-result p.wc-sub{font-size:12.5px}
+  .wc-connect{margin:4px 0 2px}
+  .wc-more{margin-top:2px}
+  .wc-more summary{padding:10px 0}
+  .wc-more .wc-linkbtn{margin-top:2px}
+  /* Nazwa, którą da się sprawdzić jednym stuknięciem: w zdaniu i na liście. */
+  .wc-name{font:inherit;font-size:14px;background:none;border:0;padding:4px 0;color:var(--steel);font-weight:600;
+    text-align:left;cursor:pointer;overflow-wrap:anywhere}
+  /* Podkreślona sama nazwa — odpowiedź obok niej to podpis, nie część linku. */
+  .wc-name .wc-n{text-decoration:underline;text-underline-offset:2px}
+  .wc-name:focus-visible{outline:2px solid var(--steel);outline-offset:2px}
+  .wc-question .wc-name{font-size:inherit;padding:0}
+  .wc-result p a:not(.btn),.wc-failed a{color:var(--steel);font-weight:600;text-decoration:underline}
+  .wc-names{list-style:none;margin:2px 0 6px;padding:0;display:flex;flex-wrap:wrap;gap:0 14px}
+  .wc-names li{min-height:44px;display:flex;align-items:center}
+  .wc-group-title{margin:8px 0 0;font-size:12.5px;font-weight:600;color:var(--ink-soft)}
+  .wc-group-title.ok{color:var(--ok)}
+  .wc-group-title.part{color:var(--warn)}
+  .wc-group-title.no{color:var(--c-orange-ink)}
+  /* „Zamiast tego — telefon”: jasne pole w szarej karcie wyniku, z jedną główną drogą. */
+  .wc-instead{margin:10px 0 6px;padding:10px 12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+  .wc-instead-title{margin:0 0 4px;font-weight:600;color:var(--ink)}
+  .grp .wc-instead p.wc-instead-title{color:var(--ink)}
+  .wc-instead .watch-actions{margin-top:6px;align-items:center}
+  .wc-instead .btn{text-decoration:none;display:inline-flex;align-items:center}
+  .grp p.wc-prompt{margin:10px 0 4px}
+  .wc-where,.wc-all{margin-top:2px}
+  .wc-line{margin:2px 0 4px}
+  .wc-series{margin:6px 0 0;font-size:12.5px;font-weight:600;color:var(--ink-soft)}
+  .grp p.wc-source{margin:4px 0 2px}
+  .wc-linkbtn{font:inherit;font-size:inherit;background:none;border:0;padding:0;min-height:44px;color:var(--steel);
+    font-weight:600;text-decoration:underline;text-align:left;cursor:pointer}
+  .wc-mine .wc-linkbtn{min-height:0}
+  .wc-inline{margin:6px 0 10px}
+  .wc-inline > .btn{margin-top:4px}
+  /* Cichy link „Masz zegarek? Sprawdź…” z krzyżykiem — na ekranie kroków i w formularzu kroków. */
+  .wc-entry{display:flex;align-items:center;gap:2px;margin:4px 0}
+  .grp p.wc-entry{margin:4px 0}
+  .wc-entry .vidlink{flex:1;min-width:0}
+  .wc-entry-x{flex:none;width:44px;height:44px;padding:0;background:none;border:0;font-size:20px;line-height:1;
+    color:var(--ink-soft);cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .wc-entry-x:focus-visible{outline:2px solid var(--steel);outline-offset:-2px}
   .phone-weight{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:10px}
   .phone-weight p.tight{margin:0}
   .body-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;margin:10px 0}
