@@ -91,6 +91,39 @@ describe('useAround', () => {
     expect(result.current[0]).toMatchObject({ status: 'error', items: [{ id: 'node/1' }], savedAt });
   });
 
+  test('a fresh kept answer used from a spot off the cell’s centre is complete out to the radius — and ready for this place', async () => {
+    // A fresh answer for the cell 52.230, 21.012: the circle Overpass was asked (1000 + 250 m).
+    window.localStorage.setItem(
+      KEY,
+      JSON.stringify([{ lat: 52.23, lon: 21.012, radius: 1250, fetchedAt: Date.now() - 60_000, shops: [{ id: 'node/1' }] }]),
+    );
+    const fetcher = vi.fn((_c: LatLon, _r: number, _o: FetchOptions) => new Promise<Item[]>(() => {}));
+    // ~45 m from the cell's centre, still in the cell: the answer holds the radius plus the rounding's
+    // reach around the centre, so the whole 1000 m around here.
+    const { result } = renderHook(() => useAround<Item>({ lat: 52.2304, lon: 21.0122 }, 1000, fetcher, KEY, 'nie wyszło'));
+    await settle();
+    expect(fetcher).not.toHaveBeenCalled();
+    expect(result.current[0]).toMatchObject({ status: 'ready', items: [{ id: 'node/1' }], completeWithin: 1000, savedAt: null });
+    expect(result.current[2]).toBe(true);
+  });
+
+  test('right after a move to another rounding cell, the last place’s answer is no ready answer for the new one', async () => {
+    const fetcher = vi.fn((_c: LatLon, _r: number, _o: FetchOptions) => Promise.resolve([{ id: 'node/1' }]));
+    const { result, rerender } = renderHook(({ here }) => useAround<Item>(here, 1000, fetcher, KEY, 'nie wyszło'), {
+      initialProps: { here: HERE },
+    });
+    await settle();
+    expect(result.current[0].status).toBe('ready');
+    expect(result.current[2]).toBe(true);
+    // ~450 m north: the old answer still reaches here (and stays on screen), but nobody asked it about this place.
+    rerender({ here: { lat: HERE.lat + 0.004, lon: HERE.lon } });
+    expect(result.current[0]).toMatchObject({ status: 'ready', items: [{ id: 'node/1' }] });
+    expect(result.current[2]).toBe(false);
+    await settle();
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(result.current[2]).toBe(true);
+  });
+
   test('whether Overpass is asked is decided from the rounded position: the same for the whole rounding cell', async () => {
     // An hour-old answer from the neighbouring cell 52.588 (1250 m): around one of these two points
     // its circle holds the 1000 m one, around the other it does not. Both lie in the cell 52.590.

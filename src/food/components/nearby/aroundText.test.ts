@@ -53,4 +53,23 @@ describe('przy granicy', () => {
     );
     expect(aroundNotes({ ...polish, status: 'ready', since: null }, 'lokale', NOW)).toEqual({ status: '', clock: null });
   });
+
+  test('polska strona to dane aplikacji: ich stara data i część z poprzedniej aktualizacji jak z dala od granicy — póki to je widać', () => {
+    // W południe UTC: ta sama data w każdej strefie czasowej.
+    const old = { status: 'ready' as const, since: null, dataAsOf: '2026-07-01T12:00:00Z', olderLeaves: true };
+    const notes = 'Część danych okolicy jest z poprzedniej aktualizacji. Dane okolicy są z 1 lipca 2026 — część miejsc mogła się zmienić.';
+    expect(aroundNotes({ ...base, ...old, source: 'static', shown: 'static' }, 'lokale', NOW).status).toBe(notes);
+    const polish = { ...border, ...old, shown: 'static' as const };
+    expect(aroundNotes(polish, 'lokale', NOW).status).toBe(notes);
+    expect(aroundNotes({ ...polish, dataAsOf: '2026-10-22T12:00:00Z' }, 'lokale', NOW).status).toBe('Część danych okolicy jest z poprzedniej aktualizacji.');
+    expect(aroundNotes({ ...polish, olderLeaves: false }, 'lokale', NOW).status).toBe('Dane okolicy są z 1 lipca 2026 — część miejsc mogła się zmienić.');
+    expect(aroundNotes({ ...polish, status: 'loading', since: NOW }, 'lokale', NOW).status).toBe(
+      `Przy granicy: lokale po polskiej stronie mam w aplikacji, o resztę pytam serwer map… ${notes}`,
+    );
+    expect(aroundNotes({ ...polish, status: 'error' }, 'sklepy', NOW).status).toBe(
+      `Po drugiej stronie granicy nie udało się pobrać danych — pokazuję sklepy po polskiej stronie. ${notes}`,
+    );
+    // Na ekranie cała odpowiedź Overpass: o danych aplikacji nic, ich na ekranie nie ma.
+    expect(aroundNotes({ ...polish, shown: 'live' }, 'lokale', NOW).status).toBe('');
+  });
 });

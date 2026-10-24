@@ -100,6 +100,9 @@ type Fetcher<T> = (center: LatLon, radius: number, options: FetchOptions) => Pro
  * better is known: an answer kept on this device (up to a week old, or for a smaller radius) shows
  * while the new one loads and stays after a failure, with its age. A failure is retried by itself
  * a few times, further and further apart, and not while the page is hidden.
+ *
+ * The third value says whether the answer on hand is a READY one for this very place (the rounded
+ * centre and the radius), not one left over from the place just left.
  */
 export function useAround<T>(
   position: LatLon | null,
@@ -107,7 +110,7 @@ export function useAround<T>(
   fetcher: Fetcher<T>,
   cacheKey: string | undefined,
   failed: string,
-): [AroundState<T>, () => void] {
+): [AroundState<T>, () => void, boolean] {
   const [fetched, setFetched] = useState<Fetched<T>>(IDLE);
   const [attempt, setAttempt] = useState(0);
   const lat = position?.lat;
@@ -185,6 +188,10 @@ export function useAround<T>(
       ? Math.min(radius, Math.max(0, reachOf(fetched.circle, { lat, lon })))
       : 0;
   const retryAt = fetched.status === 'error' ? autoAt : fetched.waitUntil;
+  // In the render that moves to another place the answer on hand is still the old place's (the new
+  // search starts in the effect after it): ready, and on screen as far as its circle reaches the
+  // exact position — which is no answer for the new place.
+  const readyHere = fetched.status === 'ready' && fetched.place === placeKey;
   return [
     {
       status: fetched.status,
@@ -196,6 +203,7 @@ export function useAround<T>(
       retryAt,
     },
     retry,
+    readyHere,
   ];
 }
 
