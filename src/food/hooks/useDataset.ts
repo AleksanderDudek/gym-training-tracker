@@ -19,12 +19,20 @@ function initial(): DatasetState {
  * Baza produktów dla ekranu jedzenia. Pobiera ją `loadDataset` — raz na życie strony, więc
  * przejście z Produktów do Przepisów nie pobiera niczego drugi raz, a już wczytana baza jest
  * gotowa od pierwszego renderu.
+ *
+ * `enabled: false` wstrzymuje pobieranie — dla ekranu, któremu baza tylko coś dodaje, a jego własne
+ * małe pliki nie mogą czekać za jej 3,3 MB. Już wczytana baza i tak jest od razu, a raz ruszone
+ * pobieranie zostaje, choćby `enabled` wróciło do fałszu.
  */
-export function useDataset(): DatasetResult {
+export function useDataset(enabled = true): DatasetResult {
   const [state, setState] = useState(initial);
   const [attempt, setAttempt] = useState(0);
+  // Raz poproszona, zostaje poproszona: baza w drodze nie przepada, gdy ekran znów na coś czeka.
+  const [asked, setAsked] = useState(enabled);
+  if (enabled && !asked) setAsked(true);
 
   useEffect(() => {
+    if (!asked) return;
     let live = true;
     loadDataset().then(
       ({ dataset, products }) => {
@@ -37,7 +45,7 @@ export function useDataset(): DatasetResult {
     return () => {
       live = false;
     };
-  }, [attempt]);
+  }, [attempt, asked]);
 
   const retry = useCallback(() => {
     setState({ status: 'loading' });

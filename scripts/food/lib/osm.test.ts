@@ -462,7 +462,7 @@ describe('the listing of the objects that should be rows (OPL)', () => {
   test('escapes: a space, the separators, control characters, code points of any length; an empty value', () => {
     // As osmium 1.19.1 wrote it.
     const [cafe] = readOpl(['n105 Tamenity=cafe,name=%201e%Café%20%%3d%%20%Bar%2c%%20%100%25%%20%%40%home%201d%%20%%1f355%%2028%end,note= x21 y52']);
-    expect(cafe?.tags).toEqual({ amenity: 'cafe', name: '„Café = Bar, 100% @home” 🍕 end', note: '' });
+    expect(cafe?.tags).toEqual({ amenity: 'cafe', name: '„Café = Bar, 100% @home” 🍕\u2028end', note: '' });
     expect(unescapeOpl('Kawa%09%na%0a%wynos%0d%!')).toBe('Kawa\tna\nwynos\r!');
     expect(unescapeOpl('%20ac%%2713%%5496%%5561%')).toBe('€✓咖啡');
   });
@@ -537,6 +537,20 @@ describe('what the export lost', () => {
     // Not the multipolygon and the boundary (osmium builds them), the unnamed site, nor r9, a row already.
     expect(unbuiltRelations(listing, [row('n1'), row('r9')])).toEqual({ place: ['r8', 'r10', 'r12'], represented: [] });
     expect(unbuiltRelations(listing, ['r8', 'r9', 'r10', 'r12'].map(row))).toEqual({ place: [], represented: [] });
+  });
+
+  test('a type in the known gap is one line: a line break typed into the map cannot start a workflow command in the log', () => {
+    const typed = readOpl([
+      oplLine('r20', { type: 'site\n::stop-commands::x', amenity: 'cafe', name: 'Kawa' }),
+      oplLine('r21', { type: 'site\r\n::error title=Injected::from OSM 1', amenity: 'cafe', name: 'Kawa' }),
+      oplLine('r22', { type: 'building\u2028x\u0085y\u0000z', amenity: 'cafe', name: 'Kawa' }),
+    ]);
+    // The refresh prints `type=<key>` for each: every control character and line separator a space.
+    expect(completeness(typed, []).knownGap).toEqual({
+      'site ::stop-commands::x': 1,
+      'site  ::error title=Injected::from OSM 1': 1,
+      'building x y z': 1,
+    });
   });
 });
 

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, renderHook } from '@testing-library/react';
+import { act, cleanup, renderHook } from '@testing-library/react';
 import { flushSync } from 'react-dom';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { AUTO_RETRY_MS, useAutoRetry } from './useNearbyShops';
@@ -8,6 +8,8 @@ const PLACE = '52.23,21.012,1000';
 
 let online = true;
 let visibility: DocumentVisibilityState = 'visible';
+/** How many times a wrapped `online` listener ran, in this file: one left on `window` by an earlier test shows here. */
+let wrapperRuns = 0;
 
 function setVisibility(state: DocumentVisibilityState) {
   visibility = state;
@@ -26,6 +28,7 @@ function renderAfterEachOnlineListener() {
   vi.spyOn(window, 'addEventListener').mockImplementation((type, listener, options) => {
     if (type !== 'online' || !listener) return add(type, listener, options);
     const wrapper: EventListener = (event) => {
+      wrapperRuns++;
       if (typeof listener === 'function') listener.call(window, event);
       else listener.handleEvent(event);
       flushSync(() => {});
@@ -65,6 +68,10 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  // Unmounted while the spies still map each `online` listener to its wrapper, so React's unsubscribe
+  // takes the wrapper off `window`. Restored first (Testing Library's own cleanup runs after this
+  // hook), the bare listener was removed instead and the wrappers heard every later `online`.
+  cleanup();
   vi.useRealTimers();
   vi.restoreAllMocks();
   // Back to jsdom's own getters.
@@ -147,6 +154,13 @@ describe('useAutoRetry', () => {
     expect(retry).toHaveBeenCalledTimes(1);
     await pass(1000);
     expect(retry).toHaveBeenCalledTimes(2);
+  });
+
+  // Right after the test that wraps `online` listeners: its hook is gone, so is every wrapper.
+  test('the wrapped `online` listeners leave with their test: a later comeback runs none of them', () => {
+    const before = wrapperRuns;
+    window.dispatchEvent(new Event('online'));
+    expect(wrapperRuns).toBe(before);
   });
 
   test('a comeback from before the hook was mounted does not count, even with the clock set back since', () => {
