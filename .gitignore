@@ -17,6 +17,5 @@ garmin/manifest-beta.xml
 # Bez ukośnika na końcu: łapie też dowiązanie do katalogu z danymi trzymanymi gdzie indziej.
 data/food/raw
 
-# Filmy demo: nagrania i arkusze kadrów odtwarza `npm run demo:videos`; opisy (.md) są w repozytorium.
-demo-videos/*.mp4
-demo-videos/*.jpg
+# Filmy demo: nagrania, opisy i arkusze kadrów odtwarza `npm run demo:videos` — nic z nich nie idzie do repozytorium.
+/demo-videos/
