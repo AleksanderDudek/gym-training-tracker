@@ -24,4 +24,11 @@ export async function seed(page: Page, scenario: Scenario): Promise<void> {
   await page.evaluate(([key, value]) => localStorage.setItem(key!, value!), [STATE_KEY, JSON.stringify(state)]);
   await page.evaluate(() => sessionStorage.clear());
   await page.goto('about:blank');
+  // The one-off „Liczenie kalorii jest teraz prostsze” notice greets profiles from before the
+  // change; a returning person has read it.
+  await page.goto('#/jedzenie');
+  const ok = page.getByRole('button', { name: 'Rozumiem' });
+  await ok.waitFor({ timeout: 8000 }).then(() => ok.click(), () => undefined);
+  await page.waitForTimeout(300);
+  await page.goto('about:blank');
 }

@@ -11,6 +11,14 @@ import { scenario as s09 } from './09-jem-na-miescie';
 import { scenario as s10 } from './10-przepisy-z-jednego-sklepu';
 import { scenario as s11 } from './11-ktory-skyr-ma-najwiecej-bialka';
 import { scenario as s12 } from './12-ulubione-szybki-wybor';
+import { scenario as s13 } from './13-zjedz-teraz-w-poblizu';
+import { scenario as s14 } from './14-skaner-porownanie-w-sklepie';
+import { scenario as s15 } from './15-plan-z-zakupami';
+import { scenario as s16 } from './16-wiekszy-posilek';
+import { scenario as s17 } from './17-reszta-dnia';
+import { scenario as s18 } from './18-co-dziala-u-ciebie';
+import { scenario as s19 } from './19-czy-moj-zegarek';
 
 /** In order of the needs list in demo-videos/README.md. */
-export const SCENARIOS: Scenario[] = [s01, s02, s03, s04, s05, s06, s07, s08, s09, s10, s11, s12];
+export const SCENARIOS: Scenario[] = [s01, s02, s03, s04, s05, s06, s07, s08, s09, s10, s11, s12,
+  s13, s14, s15, s16, s17, s18, s19];
