@@ -33,7 +33,7 @@ const context = await browser.newContext({
   locale: 'pl-PL',
   timezoneId: 'Europe/Warsaw',
   serviceWorkers: 'block',
-  baseURL: 'http://localhost:4327/',
+  baseURL: `http://localhost:${process.env.DEMO_PORT ?? 4327}/`,
   geolocation: { latitude: 52.2297, longitude: 21.0122 },
   permissions: ['geolocation'],
 });

@@ -28,7 +28,7 @@ import { addDays, dayLabel, longDay, mealsLeftAt } from '../../diet/model';
 import { dayNeeds } from '../../diet/now';
 import { plannedDay, plannedKcal, type Plan, type PlannedItem, type PlanItem } from '../../diet/plan';
 import { dropCheat, eatCheat, endPause, logFood, markDay, updateChoices, updateDay } from '../../diet/store';
-import { autoDay, restVariants, seedOf, suggest, swaps, type Context } from '../../diet/suggest';
+import { autoDay, notEatenToday, restVariants, seedOf, suggest, swaps, type Context } from '../../diet/suggest';
 import { BAND, currentWeight, hidesKcal, isComplete, pauseOn, r10, targetOn } from '../../diet/target';
 import type { Pause, Profile } from '../../diet/types';
 import { diaryFromParams, diaryToParams } from '../../diet/url';
@@ -347,7 +347,9 @@ function TodayView({ profile, plan, date, today, hour, nowMs, pickerOpen, onPick
     !(cheat && restMeals === 0) && ctx.remaining.kcal > BAND && (ctx.mealsLeft >= 2 || ctx.remaining.kcal > BIG_REST_KCAL);
   const view = restShown ? (nowView ?? 'rest') : 'one';
   // Warianty liczone tylko na widoku „Reszta dnia” — po kilka przebiegów `suggest` na każdy.
-  const variants = view === 'rest' ? restVariants(pool, ctx, seedOf(date) + restRoll * 7919, 3) : [];
+  // Reszta dnia bez tego, co już dziś zjedzone: owsianka ze śniadania nie wraca jako kolacja.
+  const restPool = notEatenToday(pool, (entries ?? []).map((e) => e.key));
+  const variants = view === 'rest' ? restVariants(restPool, ctx, seedOf(date) + restRoll * 7919, 3) : [];
   const autoSeed = day?.autoSeed ?? seedOf(date);
   // Kilkaset pozycji oceniane cztery razy: na tyle tanio, że bez zapamiętywania.
   const auto = planned || prep ? null : autoDay(pool, base, autoSeed);
@@ -480,7 +482,6 @@ function TodayView({ profile, plan, date, today, hour, nowMs, pickerOpen, onPick
           <RestVariants
             variants={variants}
             left={{ kcal: ctx.remaining.kcal, protein: Math.max(0, ctx.remaining.protein) }}
-            entries={entries}
             onLog={log}
             onReroll={() => setRestRoll((r) => r + 1)}
           />
@@ -518,7 +519,7 @@ function TodayView({ profile, plan, date, today, hour, nowMs, pickerOpen, onPick
           planned={cheat}
           ideasFor={(remaining, mealsLeft) => {
             const rest = { ...base, remaining, mealsLeft };
-            const options = mealsLeft >= 2 || remaining.kcal > BIG_REST_KCAL ? restVariants(pool, rest, seedOf(date), 2) : [];
+            const options = mealsLeft >= 2 || remaining.kcal > BIG_REST_KCAL ? restVariants(restPool, rest, seedOf(date), 2) : [];
             return options.length ? { variants: options, singles: [] } : { variants: [], singles: suggest(pool, rest, 3) };
           }}
           pool={pool}

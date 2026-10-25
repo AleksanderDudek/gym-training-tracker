@@ -435,6 +435,16 @@ export interface RestVariant {
 }
 
 /**
+ * What the rest of the day may offer: nothing already eaten today. The morning's oatmeal proposed
+ * again for dinner reads as „zjedzone” in the variant, while its kcal still count in the sum - and
+ * the day ends short.
+ */
+export function notEatenToday(foods: Food[], eatenKeys: Iterable<string | undefined>): Food[] {
+  const eaten = new Set(eatenKeys);
+  return eaten.size ? foods.filter((f) => !eaten.has(f.key)) : foods;
+}
+
+/**
  * Several different rests of the day, the closest to what is left first: the kcal miss, and protein
  * short of what is left counting three times as much (the diet's first macro).
  */

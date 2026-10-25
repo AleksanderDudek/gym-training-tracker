@@ -19,7 +19,8 @@ import type { Scenario } from './lib/types';
 import { SCENARIOS } from './scenarios';
 
 const OUT = 'demo-videos';
-const PORT = 4327;
+/** DEMO_PORT lets two recorders run side by side (each starts its own preview). */
+const PORT = Number(process.env.DEMO_PORT ?? 4327);
 const BASE = `http://localhost:${PORT}/`;
 /** The hard limits for every video, in seconds. */
 const MIN = 25;
