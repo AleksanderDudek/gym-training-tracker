@@ -182,8 +182,8 @@
 .fd-diet-sheet .fd-sheet-body p.tight{margin:0 0 6px;font-size:13px;color:var(--ink-soft)}
 .fd-diet-sheet .fd-sheet-body .seg{margin-bottom:12px}
 
-/* „Dodaj zjedzone”: wyszukiwanie, wynik do wybrania, gramatura; albo same kalorie. */
-.fd-diet-picker input[type=search],.fd-diet-set input[type=search]{width:100%;padding:11px 10px;font:inherit;
+/* „Dodaj zjedzone”, zestaw i „Większy posiłek”: wyszukiwanie, wynik do wybrania, gramatura; albo same kalorie. */
+.fd-diet-picker input[type=search],.fd-diet-set input[type=search],.fd-diet-cheatform input[type=search]{width:100%;padding:11px 10px;font:inherit;
   font-size:17px;border:1px solid var(--edge);border-radius:var(--r);background:#fff;color:var(--ink)}
 .fd-diet-hint,p.fd-diet-hint{margin:8px 0 0;font-size:12.5px;color:var(--ink-soft)}
 /* Wyszukiwanie i skaner kodów obok siebie; skaner rozwija się pod polem. */
