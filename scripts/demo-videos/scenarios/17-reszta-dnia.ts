@@ -134,12 +134,12 @@ export const scenario: Scenario = {
       edit: 'Before/after: freeze 651 → 1291 kcal and 41 → 93 g for a split second.',
     },
     fits: {
-      shows: '„Co teraz?” recalculated: „Zostało ok. 1010 kcal i 55 g białka”; „Wariant 1 · 1023 kcal z 1009 kcal · 105 g białka (z 55)” — twaróg z chlebem i szynką, nocna owsianka białkowa, jogurt proteinowy z borówkami.',
+      shows: '„Co teraz?” recalculated: „Zostało ok. 1010 kcal i 55 g białka”; „Wariant 1 · 992 kcal z 1009 kcal · 94 g białka (z 55)” — kurczak w stylu Rotisserie (Subway), nocna owsianka białkowa, jogurt proteinowy z borówkami. Nothing eaten today comes back in a variant.',
       captionPl: 'Reszta przeliczona — dalej się domyka',
       captionEn: 'The rest recalculated — still adds up',
       voPl: 'A reszta dnia przeliczona od nowa — i dalej się domyka.',
       voEn: 'And the rest of the day is laid out again — still adding up.',
-      edit: 'Zoom on „1023 kcal z 1009 kcal”; closing card over the last 2 s.',
+      edit: 'Zoom on „992 kcal z 1009 kcal”; closing card over the last 2 s.',
     },
   },
 };
