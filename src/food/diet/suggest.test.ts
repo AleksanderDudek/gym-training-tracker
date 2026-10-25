@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest';
 import { DATASET, makeProduct } from '../test/fixtures';
 import { customFood, planFood, portionGrams, productFood, withGrams, type Food } from './foods';
 import { DIET_PROFILES } from './profiles';
-import { autoDay, combine, restOfDay, restSlots, restVariants, seedOf, suggest, swaps, type Context } from './suggest';
+import { autoDay, combine, notEatenToday, restOfDay, restSlots, restVariants, seedOf, suggest, swaps, type Context } from './suggest';
 
 const dict = DATASET.dictionaries;
 const n = (kcal: number, protein: number, carbs: number, fat: number) => ({
@@ -289,5 +289,14 @@ describe('the rest of the day', () => {
     const sum = rest.reduce((s, m) => s + m.suggestion.food.nutrients.kcal, 0);
     expect(sum).toBeLessThan(700 * 1.4);
     expect(restVariants(pool, left(60, 10, 2), 1)).toEqual([]);
+  });
+
+  test('the rest of the day never proposes what was already eaten today', () => {
+    const eaten = restOfDay(pool, left(1100, 110, 3), 5).map((m) => m.suggestion.food.key);
+    const fresh = notEatenToday(pool, eaten);
+    expect(fresh.length).toBe(pool.length - eaten.length);
+    for (const v of restVariants(fresh, left(1100, 110, 3), 3))
+      for (const m of v.meals) expect(eaten).not.toContain(m.suggestion.food.key);
+    expect(notEatenToday(pool, [])).toBe(pool);
   });
 });

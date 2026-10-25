@@ -1,6 +1,5 @@
 import { Check, Shuffle } from 'lucide-react';
 import { text } from '../../../i18n';
-import type { Entry } from '../../diet/db';
 import type { Food } from '../../diet/foods';
 import { slotLabel, type RestVariant } from '../../diet/suggest';
 import { formatNumber } from '../../lib/format';
@@ -29,8 +28,6 @@ interface Props {
   variants: RestVariant[];
   /** What is left of the day, kcal and protein — each variant says how close it lands. */
   left: { kcal: number; protein: number };
-  /** Already eaten today: a meal of a variant that was logged shows „zjedzone”. */
-  entries?: Entry[];
   /** „Zjedzone” on a meal; without it the list is only to read (the bigger-meal sheet). */
   onLog?: (food: Food) => void;
   onReroll?: () => void;
@@ -44,7 +41,7 @@ const kcal = (n: number) => `${formatNumber(Math.round(n), 0)} kcal`;
  * w resztę: każdy kolejny dostaje to, co zostało po poprzednich (`restOfDay`). Bez liczenia
  * kalorii suma mówi tylko o białku.
  */
-export function RestVariants({ variants, left, entries = [], onLog, onReroll }: Props) {
+export function RestVariants({ variants, left, onLog, onReroll }: Props) {
   const shown = useKcalShown();
   if (!variants.length) return null;
   return (
@@ -58,7 +55,6 @@ export function RestVariants({ variants, left, entries = [], onLog, onReroll }: 
           </p>
           <ul className="fd-diet-list">
             {v.meals.map(({ slot, suggestion: s }) => {
-              const eaten = entries.some((e) => e.key === s.food.key);
               return (
                 // Jedzenie w wariancie się nie powtarza, pora tak — „Dodatkowo” bywa kilka razy.
                 <li key={s.food.key} className="fd-diet-row">
@@ -72,21 +68,16 @@ export function RestVariants({ variants, left, entries = [], onLog, onReroll }: 
                       {s.where && <> · {s.where}</>}
                     </p>
                   </div>
-                  {onLog &&
-                    (eaten ? (
-                      <span className="fd-diet-done">
-                        <Check size={20} strokeWidth={2} aria-hidden /> {DT.eaten}
-                      </span>
-                    ) : (
-                      <button
-                        type="button"
-                        className="btn ghost sm fd-diet-act"
-                        onClick={() => onLog(s.food)}
-                        aria-label={DT.ateFood(s.food.name)}
-                      >
-                        <Check size={20} strokeWidth={2} aria-hidden /> {DT.ate}
-                      </button>
-                    ))}
+                  {onLog && (
+                    <button
+                      type="button"
+                      className="btn ghost sm fd-diet-act"
+                      onClick={() => onLog(s.food)}
+                      aria-label={DT.ateFood(s.food.name)}
+                    >
+                      <Check size={20} strokeWidth={2} aria-hidden /> {DT.ate}
+                    </button>
+                  )}
                 </li>
               );
             })}
