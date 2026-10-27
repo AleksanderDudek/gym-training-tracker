@@ -19,11 +19,13 @@ import { DT, savedText } from './dietText';
 import { useKcalShown } from './kcalShown';
 import { FoodResults, PartsPicker, atGrams, badGrams, numberOrNull, partsOf, useMenus, type Part } from './PartsPicker';
 import { MacroLine } from './SuggestionList';
+import { PhotoMode } from './PhotoMode';
 
 const T = text({
   pl: {
     how: 'Sposób dodania',
     search: 'Szukaj',
+    photo: 'Zdjęcie',
     set: 'Zestaw',
     quick: 'Tylko kalorie',
     searchPlaceholder: 'Produkt, przepis, lokal, pozycja planu…',
@@ -65,6 +67,7 @@ const T = text({
   en: {
     how: 'How to add',
     search: 'Search',
+    photo: 'Photo',
     set: 'Set',
     quick: 'Calories only',
     searchPlaceholder: 'Product, recipe, restaurant, plan item…',
@@ -150,7 +153,7 @@ export function FoodPicker({ open, onClose, ...rest }: Props) {
 
 type BodyProps = Omit<Props, 'open' | 'onClose'> & { onDone: () => void };
 
-type Mode = 'search' | 'set' | 'quick';
+type Mode = 'search' | 'photo' | 'set' | 'quick';
 
 const QUICK = { name: '', kcal: '', protein: '', carbs: '', fat: '', save: false };
 
@@ -160,6 +163,7 @@ function PickerBody(props: BodyProps) {
   // Bez liczenia kalorii nie ma „Tylko kalorie”: wpis z samymi kaloriami nic by tu nie powiedział.
   const options: { key: Mode; label: string }[] = [
     { key: 'search', label: T.search },
+    { key: 'photo', label: T.photo },
     { key: 'set', label: T.set },
     ...(shown ? [{ key: 'quick' as const, label: T.quick }] : []),
   ];
@@ -167,7 +171,15 @@ function PickerBody(props: BodyProps) {
   return (
     <>
       <Segmented label={T.how} options={options} value={current} onChange={setMode} />
-      {current === 'search' ? <SearchMode {...props} /> : current === 'set' ? <SetBuilder {...props} /> : <QuickMode {...props} />}
+      {current === 'search' ? (
+        <SearchMode {...props} />
+      ) : current === 'photo' ? (
+        <PhotoMode date={props.date} onLogged={props.onLogged} onDone={props.onDone} />
+      ) : current === 'set' ? (
+        <SetBuilder {...props} />
+      ) : (
+        <QuickMode {...props} />
+      )}
     </>
   );
 }

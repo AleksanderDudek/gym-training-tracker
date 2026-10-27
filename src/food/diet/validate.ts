@@ -425,7 +425,7 @@ export function cleanEntry(raw: unknown): Entry | null {
     amountLabel: typeof raw.amountLabel === 'string' ? raw.amountLabel : '',
     ...n,
     source:
-      (['product', 'recipe', 'plan', 'custom', 'set', 'restaurant', 'quick'] as const).find((s) => s === raw.source) ??
+      (['product', 'recipe', 'plan', 'custom', 'set', 'restaurant', 'dish', 'quick'] as const).find((s) => s === raw.source) ??
       'quick',
     ...(typeof raw.key === 'string' && { key: raw.key }),
     ...(finite(raw.planIndex) && { planIndex: raw.planIndex }),
@@ -564,7 +564,7 @@ export function cleanSet(raw: unknown): FoodSet | null {
   return { ...(finite(raw.id) && { id: raw.id }), name: raw.name, parts: parts as SetPart[] };
 }
 
-const SOURCES: FoodSource[] = ['product', 'recipe', 'plan', 'custom', 'set', 'restaurant'];
+const SOURCES: FoodSource[] = ['product', 'recipe', 'plan', 'custom', 'set', 'restaurant', 'dish'];
 const ROLES: MealRole[] = ['main', 'light', 'addon'];
 
 /** A food snapshot from a backup: the fields the app reads, each of the right kind, or nothing. */

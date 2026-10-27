@@ -1,0 +1,9542 @@
+{
+ "source": {
+  "name": "USDA FNDDS 2021-2023 (FoodData Central survey foods, release 2024-10-31); USDA FoodData Central, SR Legacy (April 2018)",
+  "url": "https://fdc.nal.usda.gov/download-datasets",
+  "license": "CC0 1.0 / public domain",
+  "builtBy": "scripts/food/fetch-dishes.ts"
+ },
+ "units": "per 100 g as served: kcal; protein, carbs, fat, sugars, fiber, satFat, alcohol in g",
+ "notes": {
+  "composed": "Recipes in grams as served (cooked state); per 100 g = the sum of the parts over the total weight, divided by `yield` where a dough or batter loses water in the oven or the pan.",
+  "missing": [
+   "SR Legacy 168604 Seeds, sesame butter, tahini, type of kernels unspecified: sugars",
+   "SR Legacy 169500 Beef, rib, whole (ribs 6-12), separable lean and fat, trimmed to 1/8\" fat, all grades, cooked, roasted: sugars",
+   "SR Legacy 170173 Nuts, coconut milk, canned (liquid expressed from grated meat and water): fiber",
+   "SR Legacy 170173 Nuts, coconut milk, canned (liquid expressed from grated meat and water): sugars",
+   "SR Legacy 171100 Pate de foie gras, canned (goose liver pate), smoked: sugars",
+   "SR Legacy 172455 Falafel, home-prepared: fiber",
+   "SR Legacy 172455 Falafel, home-prepared: sugars",
+   "SR Legacy 172475 Tofu, raw, firm, prepared with calcium sulfate: sugars"
+  ]
+ },
+ "dishes": {
+  "aglioOlio": {
+   "per100": {
+    "kcal": 207,
+    "protein": 6,
+    "carbs": 28.2,
+    "fat": 7.5,
+    "sugars": 0.5,
+    "fiber": 1.7,
+    "satFat": 1.4
+   },
+   "source": {
+    "db": "composed",
+    "note": "spaghetti with olive oil, garlic, parmesan",
+    "recipe": [
+     {
+      "g": 220,
+      "db": "FNDDS 2021-2023",
+      "code": 56130000,
+      "description": "Pasta, cooked"
+     },
+     {
+      "g": 15,
+      "db": "FNDDS 2021-2023",
+      "code": 82104000,
+      "description": "Olive oil"
+     },
+     {
+      "g": 5,
+      "db": "FNDDS 2021-2023",
+      "code": 75111500,
+      "description": "Garlic, raw"
+     },
+     {
+      "g": 5,
+      "db": "SR Legacy",
+      "code": 170848,
+      "description": "Cheese, parmesan, hard"
+     }
+    ]
+   }
+  },
+  "applePie": {
+   "per100": {
+    "kcal": 296,
+    "protein": 2.7,
+    "carbs": 37.6,
+    "fat": 15.3,
+    "sugars": 15.9,
+    "fiber": 1.8,
+    "satFat": 5.3
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 53301000,
+    "description": "Pie, apple"
+   }
+  },
+  "arancini": {
+   "per100": {
+    "kcal": 154,
+    "protein": 3.4,
+    "carbs": 20.1,
+    "fat": 6.6,
+    "sugars": 0.6,
+    "fiber": 0.9,
+    "satFat": 1.7
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 58161710,
+    "description": "Rice croquette"
+   }
+  },
+  "arbuz": {
+   "per100": {
+    "kcal": 30,
+    "protein": 0.6,
+    "carbs": 7.6,
+    "fat": 0.2,
+    "sugars": 6.2,
+    "fiber": 0.4,
+    "satFat": 0
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 63149010,
+    "description": "Watermelon, raw"
+   }
+  },
+  "babaGanoush": {
+   "per100": {
+    "kcal": 144,
+    "protein": 3.1,
+    "carbs": 8.3,
+    "fat": 11.9,
+    "sugars": 3,
+    "fiber": 3.1,
+    "satFat": 1.8
+   },
+   "source": {
+    "db": "composed",
+    "note": "roasted aubergine with tahini, olive oil, lemon, garlic",
+    "recipe": [
+     {
+      "g": 150,
+      "db": "FNDDS 2021-2023",
+      "code": 75217010,
+      "description": "Eggplant, cooked, no added fat"
+     },
+     {
+      "g": 25,
+      "db": "SR Legacy",
+      "code": 168604,
+      "description": "Seeds, sesame butter, tahini, type of kernels unspecified"
+     },
+     {
+      "g": 10,
+      "db": "FNDDS 2021-2023",
+      "code": 82104000,
+      "description": "Olive oil"
+     },
+     {
+      "g": 10,
+      "db": "SR Legacy",
+      "code": 168156,
+      "description": "Lime juice, raw"
+     },
+     {
+      "g": 3,
+      "db": "FNDDS 2021-2023",
+      "code": 75111500,
+      "description": "Garlic, raw"
+     }
+    ]
+   }
+  },
+  "babyBackRibs": {
+   "per100": {
+    "kcal": 254,
+    "protein": 16.2,
+    "carbs": 12.1,
+    "fat": 15.1,
+    "sugars": 9.9,
+    "fiber": 0.3,
+    "satFat": 5.4
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 22701000,
+    "description": "Pork, ribs",
+    "note": "FNDDS: roasted back ribs with 30 % barbecue sauce"
+   }
+  },
+  "bagel": {
+   "per100": {
+    "kcal": 264,
+    "protein": 10.6,
+    "carbs": 52.4,
+    "fat": 1.3,
+    "sugars": 8.4,
+    "fiber": 1.6,
+    "satFat": 0.4
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 51180010,
+    "description": "Bagel"
+   }
+  },
+  "bagelCreamCheese": {
+   "per100": {
+    "kcal": 282,
+    "protein": 9.5,
+    "carbs": 41.8,
+    "fat": 8.5,
+    "sugars": 7.4,
+    "fiber": 1.2,
+    "satFat": 4.7
+   },
+   "source": {
+    "db": "composed",
+    "note": "bagel with cream cheese",
+    "recipe": [
+     {
+      "g": 105,
+      "db": "FNDDS 2021-2023",
+      "code": 51180010,
+      "description": "Bagel"
+     },
+     {
+      "g": 30,
+      "db": "FNDDS 2021-2023",
+      "code": 14301010,
+      "description": "Cream cheese, regular, plain"
+     }
+    ]
+   }
+  },
+  "bakedBeans": {
+   "per100": {
+    "kcal": 105,
+    "protein": 4.5,
+    "carbs": 21.6,
+    "fat": 0.9,
+    "sugars": 8.2,
+    "fiber": 4.4,
+    "satFat": 0.2
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 41201010,
+    "description": "Baked beans"
+   }
+  },
+  "baklava": {
+   "per100": {
+    "kcal": 440,
+    "protein": 6.6,
+    "carbs": 37.6,
+    "fat": 29.3,
+    "sugars": 12.8,
+    "fiber": 2.5,
+    "satFat": 10.9
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 53441110,
+    "description": "Baklava"
+   }
+  },
+  "banan": {
+   "per100": {
+    "kcal": 97,
+    "protein": 0.7,
+    "carbs": 22.7,
+    "fat": 0.3,
+    "sugars": 15.8,
+    "fiber": 1.7,
+    "satFat": 0.1
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 63107010,
+    "description": "Banana, raw"
+   }
+  },
+  "bangersAndMash": {
+   "per100": {
+    "kcal": 165,
+    "protein": 7.4,
+    "carbs": 10.2,
+    "fat": 10.7,
+    "sugars": 1.4,
+    "fiber": 0.7,
+    "satFat": 4
+   },
+   "source": {
+    "db": "composed",
+    "note": "pork sausages, mashed potatoes, onion gravy",
+    "recipe": [
+     {
+      "g": 120,
+      "db": "FNDDS 2021-2023",
+      "code": 25221405,
+      "description": "Pork sausage"
+     },
+     {
+      "g": 200,
+      "db": "FNDDS 2021-2023",
+      "code": 71501000,
+      "description": "Potato, mashed, NFS"
+     },
+     {
+      "g": 80,
+      "db": "FNDDS 2021-2023",
+      "code": 28500040,
+      "description": "Gravy, beef"
+     }
+    ]
+   }
+  },
+  "banhMi": {
+   "per100": {
+    "kcal": 236,
+    "protein": 10.9,
+    "carbs": 23.6,
+    "fat": 10.7,
+    "sugars": 4.1,
+    "fiber": 1.3,
+    "satFat": 3
+   },
+   "source": {
+    "db": "composed",
+    "note": "baguette with roast pork, pâté, quick-marinated carrot, cucumber, mayonnaise",
+    "recipe": [
+     {
+      "g": 80,
+      "db": "FNDDS 2021-2023",
+      "code": 51107010,
+      "description": "Bread, French or Vienna"
+     },
+     {
+      "g": 50,
+      "db": "SR Legacy",
+      "code": 167844,
+      "description": "Pork, fresh, shoulder, whole, separable lean and fat, cooked, roasted"
+     },
+     {
+      "g": 15,
+      "db": "FNDDS 2021-2023",
+      "code": 25112200,
+      "description": "Liver, paste or pate"
+     },
+     {
+      "g": 30,
+      "db": "FNDDS 2021-2023",
+      "code": 73101010,
+      "description": "Carrots, raw"
+     },
+     {
+      "g": 3,
+      "db": "FNDDS 2021-2023",
+      "code": 91101010,
+      "description": "Sugar, white, granulated or lump"
+     },
+     {
+      "g": 20,
+      "db": "FNDDS 2021-2023",
+      "code": 75111000,
+      "description": "Cucumber, raw"
+     },
+     {
+      "g": 10,
+      "db": "FNDDS 2021-2023",
+      "code": 83107000,
+      "description": "Mayonnaise, regular"
+     }
+    ]
+   }
+  },
+  "bao": {
+   "per100": {
+    "kcal": 273,
+    "protein": 11.2,
+    "carbs": 39.8,
+    "fat": 7.6,
+    "sugars": 5.9,
+    "fiber": 1.2,
+    "satFat": 2.3
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 58123110,
+    "description": "Bao bun"
+   }
+  },
+  "barszczCzerwony": {
+   "per100": {
+    "kcal": 20,
+    "protein": 0.5,
+    "carbs": 3.9,
+    "fat": 0.4,
+    "sugars": 2.2,
+    "fiber": 0.8,
+    "satFat": 0.1
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 75601100,
+    "description": "Soup, borscht",
+    "note": "clear beet soup"
+   }
+  },
+  "barszczZUszkami": {
+   "per100": {
+    "kcal": 39,
+    "protein": 1.1,
+    "carbs": 6.1,
+    "fat": 1.2,
+    "sugars": 2.1,
+    "fiber": 0.9,
+    "satFat": 0.1
+   },
+   "source": {
+    "db": "composed",
+    "note": "clear borscht with mushroom uszka",
+    "recipe": [
+     {
+      "g": 250,
+      "db": "FNDDS 2021-2023",
+      "code": 75601100,
+      "description": "Soup, borscht"
+     },
+     {
+      "g": 30,
+      "db": "FNDDS 2021-2023",
+      "code": 56112000,
+      "description": "Noodles, cooked"
+     },
+     {
+      "g": 15,
+      "db": "FNDDS 2021-2023",
+      "code": 99997515,
+      "description": "Mushrooms, cooked, as ingredient"
+     },
+     {
+      "g": 5,
+      "db": "FNDDS 2021-2023",
+      "code": 75117020,
+      "description": "Onions, raw"
+     },
+     {
+      "g": 2,
+      "db": "SR Legacy",
+      "code": 172336,
+      "description": "Oil, canola"
+     }
+    ]
+   }
+  },
+  "batonProteinowy": {
+   "per100": {
+    "kcal": 415,
+    "protein": 28,
+    "carbs": 48.7,
+    "fat": 12,
+    "sugars": 34.9,
+    "fiber": 3.1,
+    "satFat": 1.1
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 53720100,
+    "description": "Nutrition bar (Balance Original Bar)"
+   }
+  },
+  "beansOnToast": {
+   "per100": {
+    "kcal": 159,
+    "protein": 5.8,
+    "carbs": 28.5,
+    "fat": 3.1,
+    "sugars": 7.5,
+    "fiber": 3.9,
+    "satFat": 1.3
+   },
+   "source": {
+    "db": "composed",
+    "note": "baked beans on buttered toast",
+    "recipe": [
+     {
+      "g": 200,
+      "db": "FNDDS 2021-2023",
+      "code": 41201010,
+      "description": "Baked beans"
+     },
+     {
+      "g": 60,
+      "db": "FNDDS 2021-2023",
+      "code": 51101010,
+      "description": "Bread, white, toasted"
+     },
+     {
+      "g": 5,
+      "db": "SR Legacy",
+      "code": 173430,
+      "description": "Butter, without salt"
+     }
+    ]
+   }
+  },
+  "beefBroccoli": {
+   "per100": {
+    "kcal": 160,
+    "protein": 10.4,
+    "carbs": 5.1,
+    "fat": 10.6,
+    "sugars": 1.2,
+    "fiber": 1.3,
+    "satFat": 1.9
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 27415110,
+    "description": "Beef and broccoli"
+   }
+  },
+  "beefCarpaccio": {
+   "per100": {
+    "kcal": 209,
+    "protein": 17.7,
+    "carbs": 1.2,
+    "fat": 14.5,
+    "sugars": 0.4,
+    "fiber": 0.3,
+    "satFat": 4.2
+   },
+   "source": {
+    "db": "composed",
+    "note": "raw tenderloin, olive oil, parmesan, rocket, lemon",
+    "recipe": [
+     {
+      "g": 80,
+      "db": "SR Legacy",
+      "code": 171812,
+      "description": "Beef, tenderloin, steak, separable lean only, trimmed to 1/8\" fat, all grades, raw"
+     },
+     {
+      "g": 10,
+      "db": "FNDDS 2021-2023",
+      "code": 82104000,
+      "description": "Olive oil"
+     },
+     {
+      "g": 12,
+      "db": "SR Legacy",
+      "code": 170848,
+      "description": "Cheese, parmesan, hard"
+     },
+     {
+      "g": 20,
+      "db": "SR Legacy",
+      "code": 169387,
+      "description": "Arugula, raw"
+     },
+     {
+      "g": 5,
+      "db": "SR Legacy",
+      "code": 168156,
+      "description": "Lime juice, raw"
+     }
+    ]
+   }
+  },
+  "beefTartare": {
+   "per100": {
+    "kcal": 216,
+    "protein": 17.5,
+    "carbs": 0.3,
+    "fat": 15.6,
+    "sugars": 0.1,
+    "fiber": 0.2,
+    "satFat": 5.8
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 27116400,
+    "description": "Steak tartare"
+   }
+  },
+  "beetSalad": {
+   "per100": {
+    "kcal": 128,
+    "protein": 4.7,
+    "carbs": 8.5,
+    "fat": 8.7,
+    "sugars": 5.7,
+    "fiber": 2.3,
+    "satFat": 3.2
+   },
+   "source": {
+    "db": "composed",
+    "note": "beets, goat cheese, walnuts, leaves, vinaigrette",
+    "recipe": [
+     {
+      "g": 150,
+      "db": "FNDDS 2021-2023",
+      "code": 75208011,
+      "description": "Beets, fresh, cooked, no added fat"
+     },
+     {
+      "g": 30,
+      "db": "FNDDS 2021-2023",
+      "code": 14104700,
+      "description": "Cheese, goat"
+     },
+     {
+      "g": 10,
+      "db": "SR Legacy",
+      "code": 170187,
+      "description": "Nuts, walnuts, english"
+     },
+     {
+      "g": 20,
+      "db": "FNDDS 2021-2023",
+      "code": 75113000,
+      "description": "Lettuce, raw"
+     },
+     {
+      "g": 20,
+      "db": "FNDDS 2021-2023",
+      "code": 83106000,
+      "description": "Italian dressing, made with vinegar and oil"
+     }
+    ]
+   }
+  },
+  "beignets": {
+   "per100": {
+    "kcal": 417,
+    "protein": 5.5,
+    "carbs": 53.7,
+    "fat": 20.2,
+    "sugars": 31.1,
+    "fiber": 1.9,
+    "satFat": 8.4
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 53520510,
+    "description": "Beignet"
+   }
+  },
+  "bibimbap": {
+   "per100": {
+    "kcal": 100,
+    "protein": 5.5,
+    "carbs": 11.7,
+    "fat": 3.4,
+    "sugars": 1,
+    "fiber": 0.8,
+    "satFat": 0.8
+   },
+   "source": {
+    "db": "composed",
+    "note": "FNDDS bibimbap with more rice and a fried egg",
+    "recipe": [
+     {
+      "g": 300,
+      "db": "FNDDS 2021-2023",
+      "code": 58150100,
+      "description": "Bibimbap, Korean"
+     },
+     {
+      "g": 100,
+      "db": "FNDDS 2021-2023",
+      "code": 56205001,
+      "description": "Rice, white, cooked, NS as to fat"
+     },
+     {
+      "g": 50,
+      "db": "FNDDS 2021-2023",
+      "code": 31105005,
+      "description": "Egg, whole, fried, NS as to fat"
+     }
+    ]
+   }
+  },
+  "bigos": {
+   "per100": {
+    "kcal": 115,
+    "protein": 5.9,
+    "carbs": 6,
+    "fat": 7.7,
+    "sugars": 3.1,
+    "fiber": 2.1,
+    "satFat": 2.4
+   },
+   "source": {
+    "db": "composed",
+    "note": "sauerkraut and cabbage stewed with pork, kielbasa, bacon, mushrooms, prunes",
+    "recipe": [
+     {
+      "g": 200,
+      "db": "SR Legacy",
+      "code": 169279,
+      "description": "Sauerkraut, canned, solids and liquids"
+     },
+     {
+      "g": 100,
+      "db": "FNDDS 2021-2023",
+      "code": 75211020,
+      "description": "Cabbage, green, cooked, no added fat"
+     },
+     {
+      "g": 60,
+      "db": "SR Legacy",
+      "code": 167844,
+      "description": "Pork, fresh, shoulder, whole, separable lean and fat, cooked, roasted"
+     },
+     {
+      "g": 50,
+      "db": "FNDDS 2021-2023",
+      "code": 25221310,
+      "description": "Polish sausage"
+     },
+     {
+      "g": 10,
+      "db": "FNDDS 2021-2023",
+      "code": 22600100,
+      "description": "Bacon, NS as to type of meat, cooked"
+     },
+     {
+      "g": 15,
+      "db": "FNDDS 2021-2023",
+      "code": 99997515,
+      "description": "Mushrooms, cooked, as ingredient"
+     },
+     {
+      "g": 10,
+      "db": "FNDDS 2021-2023",
+      "code": 62122100,
+      "description": "Prune, dried"
+     },
+     {
+      "g": 10,
+      "db": "SR Legacy",
+      "code": 170459,
+      "description": "Tomato products, canned, paste, without salt added (Includes foods for USDA's Food Distribution Program)"
+     },
+     {
+      "g": 20,
+      "db": "FNDDS 2021-2023",
+      "code": 75117020,
+      "description": "Onions, raw"
+     },
+     {
+      "g": 5,
+      "db": "SR Legacy",
+      "code": 172336,
+      "description": "Oil, canola"
+     }
+    ]
+   }
+  },
+  "biryani": {
+   "per100": {
+    "kcal": 104,
+    "protein": 7.2,
+    "carbs": 13.6,
+    "fat": 2.4,
+    "sugars": 1.9,
+    "fiber": 1.1,
+    "satFat": 0.9
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 27243100,
+    "description": "Biryani with chicken"
+   }
+  },
+  "blt": {
+   "per100": {
+    "kcal": 231,
+    "protein": 10.9,
+    "carbs": 29.7,
+    "fat": 7.5,
+    "sugars": 3.7,
+    "fiber": 1.7,
+    "satFat": 2.3
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 27520610,
+    "description": "Bacon, lettuce, tomato sandwich on white"
+   }
+  },
+  "boeufBourguignon": {
+   "per100": {
+    "kcal": 148,
+    "protein": 18.5,
+    "carbs": 4.2,
+    "fat": 6,
+    "sugars": 1.5,
+    "fiber": 0.8,
+    "satFat": 1.8
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 27111200,
+    "description": "Beef burgundy"
+   }
+  },
+  "borowki": {
+   "per100": {
+    "kcal": 64,
+    "protein": 0.7,
+    "carbs": 14.6,
+    "fat": 0.3,
+    "sugars": 9.4,
+    "fiber": 2.4,
+    "satFat": 0
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 63203010,
+    "description": "Blueberries, raw"
+   }
+  },
+  "breadPudding": {
+   "per100": {
+    "kcal": 156,
+    "protein": 5.6,
+    "carbs": 23.5,
+    "fat": 4.9,
+    "sugars": 15.1,
+    "fiber": 1,
+    "satFat": 1.7
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 13210110,
+    "description": "Pudding, bread"
+   }
+  },
+  "breakfastBurrito": {
+   "per100": {
+    "kcal": 257,
+    "protein": 11.3,
+    "carbs": 18.9,
+    "fat": 15,
+    "sugars": 1.7,
+    "fiber": 1.3,
+    "satFat": 4.9
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 34003120,
+    "description": "Egg burrito, with sausage"
+   }
+  },
+  "brownie": {
+   "per100": {
+    "kcal": 405,
+    "protein": 4.8,
+    "carbs": 63.9,
+    "fat": 16.3,
+    "sugars": 36.6,
+    "fiber": 2.1,
+    "satFat": 4.2
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 53204010,
+    "description": "Cookie, brownie, without icing"
+   }
+  },
+  "bruschetta": {
+   "per100": {
+    "kcal": 171,
+    "protein": 4.3,
+    "carbs": 21.3,
+    "fat": 7.6,
+    "sugars": 3.3,
+    "fiber": 1.5,
+    "satFat": 1.2
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 51136000,
+    "description": "Bruschetta"
+   }
+  },
+  "bubbleTea": {
+   "per100": {
+    "kcal": 55,
+    "protein": 0.4,
+    "carbs": 10.4,
+    "fat": 1.4,
+    "sugars": 3.5,
+    "fiber": 0.1,
+    "satFat": 0.8
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 92306910,
+    "description": "Tea, bubble"
+   }
+  },
+  "budyn": {
+   "per100": {
+    "kcal": 106,
+    "protein": 2.8,
+    "carbs": 19.4,
+    "fat": 1.9,
+    "sugars": 19.4,
+    "fiber": 0,
+    "satFat": 1.1
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 13220110,
+    "description": "Pudding, flavors other than chocolate, made from dry mix"
+   }
+  },
+  "bulgogi": {
+   "per100": {
+    "kcal": 187,
+    "protein": 15.9,
+    "carbs": 3.4,
+    "fat": 12.4,
+    "sugars": 1.1,
+    "fiber": 0.5,
+    "satFat": 2.7
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 27115000,
+    "description": "Beef with soy-based sauce",
+    "note": "beef in a sweet soy sauce, as bulgogi"
+   }
+  },
+  "bulkaZDzemem": {
+   "per100": {
+    "kcal": 334,
+    "protein": 6.4,
+    "carbs": 51.4,
+    "fat": 11.3,
+    "sugars": 13.9,
+    "fiber": 1.7,
+    "satFat": 5.7
+   },
+   "source": {
+    "db": "composed",
+    "note": "kaiser roll with butter and jam",
+    "recipe": [
+     {
+      "g": 60,
+      "db": "FNDDS 2021-2023",
+      "code": 51153000,
+      "description": "Roll, white, hard"
+     },
+     {
+      "g": 10,
+      "db": "SR Legacy",
+      "code": 173430,
+      "description": "Butter, without salt"
+     },
+     {
+      "g": 25,
+      "db": "SR Legacy",
+      "code": 169641,
+      "description": "Jams and preserves"
+     }
+    ]
+   }
+  },
+  "burrito": {
+   "per100": {
+    "kcal": 225,
+    "protein": 10.8,
+    "carbs": 26.1,
+    "fat": 8.3,
+    "sugars": 1.6,
+    "fiber": 2,
+    "satFat": 3.4
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 58102340,
+    "description": "Burrito, beef, with beans and rice, cheese"
+   }
+  },
+  "burritoBowl": {
+   "per100": {
+    "kcal": 155,
+    "protein": 12.5,
+    "carbs": 14.2,
+    "fat": 5,
+    "sugars": 0.1,
+    "fiber": 0.2,
+    "satFat": 2.2
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 58102760,
+    "description": "Burrito bowl, chicken, with rice"
+   }
+  },
+  "butterChicken": {
+   "per100": {
+    "kcal": 169,
+    "protein": 13.9,
+    "carbs": 2,
+    "fat": 11.6,
+    "sugars": 1.6,
+    "fiber": 0.7,
+    "satFat": 5.7
+   },
+   "source": {
+    "db": "composed",
+    "note": "chicken in tomato, cream and butter sauce (tikka masala)",
+    "recipe": [
+     {
+      "g": 120,
+      "db": "FNDDS 2021-2023",
+      "code": 24122131,
+      "description": "Chicken breast, baked, broiled, or roasted, skin not eaten, from raw"
+     },
+     {
+      "g": 80,
+      "db": "SR Legacy",
+      "code": 170051,
+      "description": "Tomatoes, red, ripe, canned, packed in tomato juice"
+     },
+     {
+      "g": 40,
+      "db": "SR Legacy",
+      "code": 170859,
+      "description": "Cream, fluid, heavy whipping"
+     },
+     {
+      "g": 10,
+      "db": "SR Legacy",
+      "code": 173430,
+      "description": "Butter, without salt"
+     },
+     {
+      "g": 20,
+      "db": "FNDDS 2021-2023",
+      "code": 75117020,
+      "description": "Onions, raw"
+     },
+     {
+      "g": 5,
+      "db": "SR Legacy",
+      "code": 172336,
+      "description": "Oil, canola"
+     }
+    ]
+   }
+  },
+  "caesarSalad": {
+   "per100": {
+    "kcal": 138,
+    "protein": 3.8,
+    "carbs": 6.9,
+    "fat": 10.5,
+    "sugars": 1.4,
+    "fiber": 1.6,
+    "satFat": 2.6
+   },
+   "source": {
+    "db": "composed",
+    "note": "romaine, croutons, parmesan, Caesar dressing",
+    "recipe": [
+     {
+      "g": 200,
+      "db": "FNDDS 2021-2023",
+      "code": 72116150,
+      "description": "Caesar salad, with romaine, no dressing"
+     },
+     {
+      "g": 30,
+      "db": "FNDDS 2021-2023",
+      "code": 83102000,
+      "description": "Caesar dressing"
+     }
+    ]
+   }
+  },
+  "californiaRoll": {
+   "per100": {
+    "kcal": 94,
+    "protein": 2.9,
+    "carbs": 18.4,
+    "fat": 0.7,
+    "sugars": 2.1,
+    "fiber": 1,
+    "satFat": 0.1
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 58151180,
+    "description": "Sushi roll, California"
+   }
+  },
+  "calzone": {
+   "per100": {
+    "kcal": 343,
+    "protein": 14.8,
+    "carbs": 31.3,
+    "fat": 17.7,
+    "sugars": 0.6,
+    "fiber": 1.4,
+    "satFat": 5.7
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 58108010,
+    "description": "Calzone, with meat and cheese"
+   }
+  },
+  "cannoli": {
+   "per100": {
+    "kcal": 309,
+    "protein": 9.4,
+    "carbs": 33.5,
+    "fat": 15.8,
+    "sugars": 14.2,
+    "fiber": 1.1,
+    "satFat": 5.3
+   },
+   "source": {
+    "db": "composed",
+    "note": "fried shell (fried wonton crisps stand in) with sweetened ricotta and chocolate",
+    "recipe": [
+     {
+      "g": 30,
+      "db": "FNDDS 2021-2023",
+      "code": 54336100,
+      "description": "Crackers, wonton"
+     },
+     {
+      "g": 52,
+      "db": "SR Legacy",
+      "code": 171248,
+      "description": "Cheese, ricotta, part skim milk"
+     },
+     {
+      "g": 13,
+      "db": "FNDDS 2021-2023",
+      "code": 91101020,
+      "description": "Sugar, white, confectioner's, powdered"
+     },
+     {
+      "g": 5,
+      "db": "SR Legacy",
+      "code": 170273,
+      "description": "Chocolate, dark, 70-85% cacao solids"
+     }
+    ]
+   }
+  },
+  "cappuccino": {
+   "per100": {
+    "kcal": 27,
+    "protein": 1.7,
+    "carbs": 2.8,
+    "fat": 1,
+    "sugars": 2.5,
+    "fiber": 0,
+    "satFat": 0.6
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 92161000,
+    "description": "Coffee, Cappuccino"
+   }
+  },
+  "capreseSalad": {
+   "per100": {
+    "kcal": 161,
+    "protein": 9,
+    "carbs": 3.3,
+    "fat": 12.5,
+    "sugars": 1.5,
+    "fiber": 0.7,
+    "satFat": 6
+   },
+   "source": {
+    "db": "composed",
+    "note": "mozzarella, tomato, olive oil",
+    "recipe": [
+     {
+      "g": 100,
+      "db": "SR Legacy",
+      "code": 170845,
+      "description": "Cheese, mozzarella, whole milk"
+     },
+     {
+      "g": 150,
+      "db": "FNDDS 2021-2023",
+      "code": 74101000,
+      "description": "Tomatoes, raw"
+     },
+     {
+      "g": 10,
+      "db": "FNDDS 2021-2023",
+      "code": 82104000,
+      "description": "Olive oil"
+     }
+    ]
+   }
+  },
+  "carrotCake": {
+   "per100": {
+    "kcal": 374,
+    "protein": 2.5,
+    "carbs": 51.8,
+    "fat": 17.5,
+    "sugars": 38.5,
+    "fiber": 1.1,
+    "satFat": 3.2
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 53104260,
+    "description": "Cake or cupcake, carrot"
+   }
+  },
+  "ceviche": {
+   "per100": {
+    "kcal": 63,
+    "protein": 10.5,
+    "carbs": 3.6,
+    "fat": 0.8,
+    "sugars": 1.3,
+    "fiber": 0.5,
+    "satFat": 0.2
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 27151030,
+    "description": "Ceviche"
+   }
+  },
+  "chanaMasala": {
+   "per100": {
+    "kcal": 133,
+    "protein": 5.3,
+    "carbs": 17.2,
+    "fat": 5.2,
+    "sugars": 4.1,
+    "fiber": 5,
+    "satFat": 0.4
+   },
+   "source": {
+    "db": "composed",
+    "note": "chickpeas in spiced tomato and onion",
+    "recipe": [
+     {
+      "g": 150,
+      "db": "SR Legacy",
+      "code": 173757,
+      "description": "Chickpeas (garbanzo beans, bengal gram), mature seeds, cooked, boiled, without salt"
+     },
+     {
+      "g": 80,
+      "db": "SR Legacy",
+      "code": 170051,
+      "description": "Tomatoes, red, ripe, canned, packed in tomato juice"
+     },
+     {
+      "g": 30,
+      "db": "FNDDS 2021-2023",
+      "code": 75117020,
+      "description": "Onions, raw"
+     },
+     {
+      "g": 10,
+      "db": "SR Legacy",
+      "code": 172336,
+      "description": "Oil, canola"
+     }
+    ]
+   }
+  },
+  "cheesePlate": {
+   "per100": {
+    "kcal": 304,
+    "protein": 13.3,
+    "carbs": 15.4,
+    "fat": 21.4,
+    "sugars": 7,
+    "fiber": 1,
+    "satFat": 10
+   },
+   "source": {
+    "db": "composed",
+    "note": "brie, gouda, blue cheese, grapes, crackers, walnuts",
+    "recipe": [
+     {
+      "g": 30,
+      "db": "FNDDS 2021-2023",
+      "code": 14103020,
+      "description": "Cheese, Brie"
+     },
+     {
+      "g": 30,
+      "db": "FNDDS 2021-2023",
+      "code": 14105010,
+      "description": "Cheese, Gouda or Edam"
+     },
+     {
+      "g": 20,
+      "db": "FNDDS 2021-2023",
+      "code": 14101010,
+      "description": "Cheese, Blue or Roquefort"
+     },
+     {
+      "g": 50,
+      "db": "FNDDS 2021-2023",
+      "code": 63123000,
+      "description": "Grapes, raw"
+     },
+     {
+      "g": 20,
+      "db": "FNDDS 2021-2023",
+      "code": 54001000,
+      "description": "Crackers, NFS"
+     },
+     {
+      "g": 10,
+      "db": "SR Legacy",
+      "code": 170187,
+      "description": "Nuts, walnuts, english"
+     }
+    ]
+   }
+  },
+  "cheeseburger": {
+   "per100": {
+    "kcal": 296,
+    "protein": 17.9,
+    "carbs": 18.7,
+    "fat": 16.2,
+    "sugars": 3,
+    "fiber": 0.6,
+    "satFat": 6.9
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 27510241,
+    "description": "Cheeseburger, on white bun, 1 medium patty"
+   }
+  },
+  "cheesecake": {
+   "per100": {
+    "kcal": 399,
+    "protein": 5.3,
+    "carbs": 34.8,
+    "fat": 26.5,
+    "sugars": 26.6,
+    "fiber": 0.5,
+    "satFat": 14.4
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 53104500,
+    "description": "Cheesecake, plain",
+    "note": "US cream-cheese cheesecake; the Polish sernik is its own entry"
+   }
+  },
+  "chickenBurger": {
+   "per100": {
+    "kcal": 281,
+    "protein": 12.2,
+    "carbs": 27.5,
+    "fat": 13.5,
+    "sugars": 3.1,
+    "fiber": 1.7,
+    "satFat": 3.1
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 27540146,
+    "description": "Chicken fillet sandwich, fried, from fast food"
+   }
+  },
+  "chickenCurry": {
+   "per100": {
+    "kcal": 107,
+    "protein": 6.5,
+    "carbs": 6.5,
+    "fat": 6.5,
+    "sugars": 2.6,
+    "fiber": 1.4,
+    "satFat": 1.6
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 27146150,
+    "description": "Chicken curry"
+   }
+  },
+  "chickenNuggets": {
+   "per100": {
+    "kcal": 307,
+    "protein": 15.9,
+    "carbs": 14.9,
+    "fat": 20.4,
+    "sugars": 0.1,
+    "fiber": 0.9,
+    "satFat": 3.6
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 24198731,
+    "description": "Chicken nuggets, from fast food"
+   }
+  },
+  "chickenParmigiana": {
+   "per100": {
+    "kcal": 174,
+    "protein": 16.3,
+    "carbs": 8.3,
+    "fat": 8.3,
+    "sugars": 1.7,
+    "fiber": 0.8,
+    "satFat": 2.6
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 27146300,
+    "description": "Chicken or turkey parmigiana"
+   }
+  },
+  "chickenPotPie": {
+   "per100": {
+    "kcal": 255,
+    "protein": 9.2,
+    "carbs": 24,
+    "fat": 13.5,
+    "sugars": 3.3,
+    "fiber": 2,
+    "satFat": 4.6
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 27347100,
+    "description": "Pot pie, chicken"
+   }
+  },
+  "chickenQuesadilla": {
+   "per100": {
+    "kcal": 287,
+    "protein": 14.5,
+    "carbs": 27.3,
+    "fat": 13,
+    "sugars": 2.2,
+    "fiber": 1.9,
+    "satFat": 5.1
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 58104740,
+    "description": "Quesadilla, chicken"
+   }
+  },
+  "chickenWings": {
+   "per100": {
+    "kcal": 272,
+    "protein": 16.8,
+    "carbs": 6.2,
+    "fat": 20.2,
+    "sugars": 2.3,
+    "fiber": 0.1,
+    "satFat": 6.3
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 24168000,
+    "description": "Chicken \"wings\" with hot sauce, from fast food / restaurant"
+   }
+  },
+  "chiliConCarne": {
+   "per100": {
+    "kcal": 118,
+    "protein": 9.8,
+    "carbs": 10.3,
+    "fat": 4.3,
+    "sugars": 1.5,
+    "fiber": 3,
+    "satFat": 1.6
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 27111406,
+    "description": "Chili with meat and beans"
+   }
+  },
+  "chipsy": {
+   "per100": {
+    "kcal": 532,
+    "protein": 6.4,
+    "carbs": 53.8,
+    "fat": 34,
+    "sugars": 0.3,
+    "fiber": 3.1,
+    "satFat": 3.4
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 71200100,
+    "description": "Potato chips, plain"
+   }
+  },
+  "chleb": {
+   "per100": {
+    "kcal": 259,
+    "protein": 8.5,
+    "carbs": 48.3,
+    "fat": 3.3,
+    "sugars": 3.9,
+    "fiber": 5.8,
+    "satFat": 0.6
+   },
+   "source": {
+    "db": "SR Legacy",
+    "code": 172684,
+    "description": "Bread, rye"
+   }
+  },
+  "chlodnik": {
+   "per100": {
+    "kcal": 51,
+    "protein": 3.4,
+    "carbs": 6.6,
+    "fat": 1.4,
+    "sugars": 5.5,
+    "fiber": 0.6,
+    "satFat": 0.6
+   },
+   "source": {
+    "db": "composed",
+    "note": "kefir, beets, cucumber, radish, egg, dill",
+    "recipe": [
+     {
+      "g": 200,
+      "db": "FNDDS 2021-2023",
+      "code": 11115400,
+      "description": "Kefir"
+     },
+     {
+      "g": 50,
+      "db": "FNDDS 2021-2023",
+      "code": 75208011,
+      "description": "Beets, fresh, cooked, no added fat"
+     },
+     {
+      "g": 40,
+      "db": "FNDDS 2021-2023",
+      "code": 75111000,
+      "description": "Cucumber, raw"
+     },
+     {
+      "g": 20,
+      "db": "FNDDS 2021-2023",
+      "code": 75125000,
+      "description": "Radish"
+     },
+     {
+      "g": 25,
+      "db": "FNDDS 2021-2023",
+      "code": 31103010,
+      "description": "Egg, whole, boiled or poached"
+     }
+    ]
+   }
+  },
+  "chocolateCake": {
+   "per100": {
+    "kcal": 345,
+    "protein": 3.3,
+    "carbs": 52.3,
+    "fat": 15.2,
+    "sugars": 37.8,
+    "fiber": 1.6,
+    "satFat": 4.1
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 53105270,
+    "description": "Cake or cupcake, chocolate with chocolate icing, bakery"
+   }
+  },
+  "chocolateMousse": {
+   "per100": {
+    "kcal": 212,
+    "protein": 4.2,
+    "carbs": 16.2,
+    "fat": 15.1,
+    "sugars": 15.1,
+    "fiber": 0.6,
+    "satFat": 8.1
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 13250000,
+    "description": "Mousse"
+   }
+  },
+  "chowMein": {
+   "per100": {
+    "kcal": 130,
+    "protein": 9.2,
+    "carbs": 16.2,
+    "fat": 3.2,
+    "sugars": 2.1,
+    "fiber": 1,
+    "satFat": 0.7
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 58136160,
+    "description": "Lo mein, with chicken"
+   }
+  },
+  "churros": {
+   "per100": {
+    "kcal": 419,
+    "protein": 6.1,
+    "carbs": 48.9,
+    "fat": 22.2,
+    "sugars": 23.4,
+    "fiber": 2.6,
+    "satFat": 9.2
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 53520200,
+    "description": "Churros"
+   }
+  },
+  "ciasto": {
+   "per100": {
+    "kcal": 352,
+    "protein": 2.8,
+    "carbs": 53.6,
+    "fat": 14.8,
+    "sugars": 39.5,
+    "fiber": 1,
+    "satFat": 3.5
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 53100100,
+    "description": "Cake or cupcake, NFS"
+   }
+  },
+  "cinnamonRoll": {
+   "per100": {
+    "kcal": 452,
+    "protein": 4.5,
+    "carbs": 48.6,
+    "fat": 26.6,
+    "sugars": 25.7,
+    "fiber": 1.2,
+    "satFat": 12.6
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 51160110,
+    "description": "Roll, sweet, cinnamon bun, frosted"
+   }
+  },
+  "clamChowder": {
+   "per100": {
+    "kcal": 93,
+    "protein": 3.1,
+    "carbs": 9.3,
+    "fat": 4.8,
+    "sugars": 1,
+    "fiber": 1,
+    "satFat": 2.5
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 28355110,
+    "description": "Soup, New England clam chowder"
+   }
+  },
+  "clubSandwich": {
+   "per100": {
+    "kcal": 234,
+    "protein": 16,
+    "carbs": 18.4,
+    "fat": 10.6,
+    "sugars": 2.5,
+    "fiber": 0.8,
+    "satFat": 4.4
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 27540127,
+    "description": "Club sandwich or sub, restaurant"
+   }
+  },
+  "cola": {
+   "per100": {
+    "kcal": 42,
+    "protein": 0,
+    "carbs": 10.4,
+    "fat": 0.3,
+    "sugars": 9.9,
+    "fiber": 0,
+    "satFat": 0
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 92410310,
+    "description": "Soft drink, cola"
+   }
+  },
+  "coleslaw": {
+   "per100": {
+    "kcal": 117,
+    "protein": 0.9,
+    "carbs": 10.5,
+    "fat": 8,
+    "sugars": 7.4,
+    "fiber": 1.9,
+    "satFat": 1.2
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 75141000,
+    "description": "Coleslaw"
+   }
+  },
+  "congee": {
+   "per100": {
+    "kcal": 58,
+    "protein": 4.3,
+    "carbs": 7,
+    "fat": 1.3,
+    "sugars": 0,
+    "fiber": 0.1,
+    "satFat": 0.4
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 58157300,
+    "description": "Congee, with meat, poultry, and/or seafood"
+   }
+  },
+  "cookie": {
+   "per100": {
+    "kcal": 505,
+    "protein": 5.8,
+    "carbs": 59.2,
+    "fat": 29,
+    "sugars": 41.2,
+    "fiber": 2.5,
+    "satFat": 12
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 53206020,
+    "description": "Cookie, chocolate chip, made from home recipe or purchased at a bakery"
+   }
+  },
+  "cornDog": {
+   "per100": {
+    "kcal": 250,
+    "protein": 8.6,
+    "carbs": 27,
+    "fat": 12,
+    "sugars": 7.5,
+    "fiber": 1,
+    "satFat": 3.5
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 27560300,
+    "description": "Corn dog"
+   }
+  },
+  "crabCakes": {
+   "per100": {
+    "kcal": 214,
+    "protein": 14.4,
+    "carbs": 4.5,
+    "fat": 15,
+    "sugars": 0.7,
+    "fiber": 0.3,
+    "satFat": 2.5
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 27250040,
+    "description": "Crab, cake"
+   }
+  },
+  "cremeBrulee": {
+   "per100": {
+    "kcal": 377,
+    "protein": 4.9,
+    "carbs": 20.3,
+    "fat": 31.2,
+    "sugars": 19.8,
+    "fiber": 0,
+    "satFat": 18.6
+   },
+   "source": {
+    "db": "composed",
+    "note": "cream, yolks, sugar, caramel top; baked",
+    "recipe": [
+     {
+      "g": 250,
+      "db": "SR Legacy",
+      "code": 170859,
+      "description": "Cream, fluid, heavy whipping"
+     },
+     {
+      "g": 60,
+      "db": "SR Legacy",
+      "code": 172184,
+      "description": "Egg, yolk, raw, fresh"
+     },
+     {
+      "g": 60,
+      "db": "FNDDS 2021-2023",
+      "code": 91101010,
+      "description": "Sugar, white, granulated or lump"
+     }
+    ],
+    "yield": 0.92
+   }
+  },
+  "croissant": {
+   "per100": {
+    "kcal": 406,
+    "protein": 8.2,
+    "carbs": 45.8,
+    "fat": 21,
+    "sugars": 11.3,
+    "fiber": 2.6,
+    "satFat": 11.7
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 51166000,
+    "description": "Croissant"
+   }
+  },
+  "croqueMadame": {
+   "per100": {
+    "kcal": 196,
+    "protein": 11.9,
+    "carbs": 15.7,
+    "fat": 9.5,
+    "sugars": 2.5,
+    "fiber": 0.7,
+    "satFat": 3.8
+   },
+   "source": {
+    "db": "composed",
+    "note": "ham and cheese sandwich, fried egg, béchamel",
+    "recipe": [
+     {
+      "g": 150,
+      "db": "FNDDS 2021-2023",
+      "code": 27520220,
+      "description": "Ham sandwich on white, with cheese"
+     },
+     {
+      "g": 50,
+      "db": "FNDDS 2021-2023",
+      "code": 31105005,
+      "description": "Egg, whole, fried, NS as to fat"
+     },
+     {
+      "g": 40,
+      "db": "FNDDS 2021-2023",
+      "code": 13411000,
+      "description": "White sauce or gravy"
+     }
+    ]
+   }
+  },
+  "croqueMonsieur": {
+   "per100": {
+    "kcal": 213,
+    "protein": 13.3,
+    "carbs": 18.8,
+    "fat": 9.4,
+    "sugars": 3,
+    "fiber": 0.8,
+    "satFat": 4.6
+   },
+   "source": {
+    "db": "composed",
+    "note": "ham and cheese sandwich with béchamel and grilled cheese",
+    "recipe": [
+     {
+      "g": 150,
+      "db": "FNDDS 2021-2023",
+      "code": 27520220,
+      "description": "Ham sandwich on white, with cheese"
+     },
+     {
+      "g": 30,
+      "db": "FNDDS 2021-2023",
+      "code": 13411000,
+      "description": "White sauce or gravy"
+     },
+     {
+      "g": 15,
+      "db": "FNDDS 2021-2023",
+      "code": 14105010,
+      "description": "Cheese, Gouda or Edam"
+     }
+    ]
+   }
+  },
+  "croquetas": {
+   "per100": {
+    "kcal": 273,
+    "protein": 18,
+    "carbs": 2.6,
+    "fat": 20.7,
+    "sugars": 0.5,
+    "fiber": 0.2,
+    "satFat": 4.5
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 27220080,
+    "description": "Ham croquette"
+   }
+  },
+  "cupCakes": {
+   "per100": {
+    "kcal": 352,
+    "protein": 2.8,
+    "carbs": 53.6,
+    "fat": 14.8,
+    "sugars": 39.5,
+    "fiber": 1,
+    "satFat": 3.5
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 53100100,
+    "description": "Cake or cupcake, NFS"
+   }
+  },
+  "czekolada": {
+   "per100": {
+    "kcal": 535,
+    "protein": 7.7,
+    "carbs": 59.4,
+    "fat": 29.7,
+    "sugars": 51.5,
+    "fiber": 3.4,
+    "satFat": 18.5
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 91705010,
+    "description": "Chocolate candy"
+   }
+  },
+  "czeresnie": {
+   "per100": {
+    "kcal": 71,
+    "protein": 1,
+    "carbs": 16.2,
+    "fat": 0.2,
+    "sugars": 13.9,
+    "fiber": 2.1,
+    "satFat": 0
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 63115010,
+    "description": "Cherries, raw"
+   }
+  },
+  "dal": {
+   "per100": {
+    "kcal": 106,
+    "protein": 6.2,
+    "carbs": 14.4,
+    "fat": 3,
+    "sugars": 1.9,
+    "fiber": 5.6,
+    "satFat": 1.7
+   },
+   "source": {
+    "db": "composed",
+    "note": "lentils with tomato, onion and ghee",
+    "recipe": [
+     {
+      "g": 200,
+      "db": "SR Legacy",
+      "code": 172421,
+      "description": "Lentils, mature seeds, cooked, boiled, without salt"
+     },
+     {
+      "g": 40,
+      "db": "SR Legacy",
+      "code": 170051,
+      "description": "Tomatoes, red, ripe, canned, packed in tomato juice"
+     },
+     {
+      "g": 20,
+      "db": "FNDDS 2021-2023",
+      "code": 75117020,
+      "description": "Onions, raw"
+     },
+     {
+      "g": 10,
+      "db": "SR Legacy",
+      "code": 173430,
+      "description": "Butter, without salt"
+     },
+     {
+      "g": 30,
+      "db": "SR Legacy",
+      "code": 173647,
+      "description": "Beverages, water, tap, drinking"
+     }
+    ]
+   }
+  },
+  "deviledEggs": {
+   "per100": {
+    "kcal": 198,
+    "protein": 11.5,
+    "carbs": 1.1,
+    "fat": 15.9,
+    "sugars": 1.1,
+    "fiber": 0,
+    "satFat": 3.9
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 32102000,
+    "description": "Egg, deviled"
+   }
+  },
+  "dolmades": {
+   "per100": {
+    "kcal": 168,
+    "protein": 2.3,
+    "carbs": 13.9,
+    "fat": 12,
+    "sugars": 2.8,
+    "fiber": 3.1,
+    "satFat": 1.9
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 58161510,
+    "description": "Grape leaves stuffed with rice"
+   }
+  },
+  "donuts": {
+   "per100": {
+    "kcal": 426,
+    "protein": 5.5,
+    "carbs": 49.5,
+    "fat": 22.9,
+    "sugars": 23.5,
+    "fiber": 1.8,
+    "satFat": 9.9
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 53520000,
+    "description": "Doughnut, NFS"
+   }
+  },
+  "dosa": {
+   "per100": {
+    "kcal": 184,
+    "protein": 5.5,
+    "carbs": 30.8,
+    "fat": 4.3,
+    "sugars": 1.1,
+    "fiber": 2.2,
+    "satFat": 0.6
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 58174100,
+    "description": "Dosa, with filling"
+   }
+  },
+  "drozdzowka": {
+   "per100": {
+    "kcal": 374,
+    "protein": 8,
+    "carbs": 37.2,
+    "fat": 21.9,
+    "sugars": 7,
+    "fiber": 1,
+    "satFat": 6.8
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 53511000,
+    "description": "Danish pastry, with cheese"
+   }
+  },
+  "dumplings": {
+   "per100": {
+    "kcal": 113,
+    "protein": 6.9,
+    "carbs": 11.1,
+    "fat": 4.6,
+    "sugars": 2.3,
+    "fiber": 1.2,
+    "satFat": 1.4
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 58112510,
+    "description": "Wonton, dumpling or pot sticker, steamed"
+   }
+  },
+  "eclair": {
+   "per100": {
+    "kcal": 334,
+    "protein": 4.4,
+    "carbs": 37.4,
+    "fat": 18.5,
+    "sugars": 22.1,
+    "fiber": 0.9,
+    "satFat": 7.1
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 53420200,
+    "description": "Cream puff, eclair, custard or cream filled, iced"
+   }
+  },
+  "edamame": {
+   "per100": {
+    "kcal": 140,
+    "protein": 11.5,
+    "carbs": 8.6,
+    "fat": 7.6,
+    "sugars": 2.1,
+    "fiber": 5,
+    "satFat": 1.3
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 41420020,
+    "description": "Edamame, cooked"
+   }
+  },
+  "eggsBenedict": {
+   "per100": {
+    "kcal": 288,
+    "protein": 13.8,
+    "carbs": 8.5,
+    "fat": 22.1,
+    "sugars": 1.2,
+    "fiber": 0.6,
+    "satFat": 10.3
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 32101500,
+    "description": "Egg, Benedict"
+   }
+  },
+  "enchiladas": {
+   "per100": {
+    "kcal": 178,
+    "protein": 10,
+    "carbs": 14.6,
+    "fat": 9,
+    "sugars": 0.8,
+    "fiber": 2.3,
+    "satFat": 3.2
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 58102830,
+    "description": "Enchilada, chicken"
+   }
+  },
+  "energetyk": {
+   "per100": {
+    "kcal": 47,
+    "protein": 0.5,
+    "carbs": 11.3,
+    "fat": 0,
+    "sugars": 10.9,
+    "fiber": 0,
+    "satFat": 0
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 95310400,
+    "description": "Energy drink (Monster)"
+   }
+  },
+  "escargots": {
+   "per100": {
+    "kcal": 158,
+    "protein": 20,
+    "carbs": 2.5,
+    "fat": 6.9,
+    "sugars": 0,
+    "fiber": 0,
+    "satFat": 1.1
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 26321110,
+    "description": "Escargot"
+   }
+  },
+  "espresso": {
+   "per100": {
+    "kcal": 9,
+    "protein": 0.1,
+    "carbs": 1.7,
+    "fat": 0.2,
+    "sugars": 0,
+    "fiber": 0,
+    "satFat": 0.1
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 92101610,
+    "description": "Coffee, espresso"
+   }
+  },
+  "fajitas": {
+   "per100": {
+    "kcal": 206,
+    "protein": 11.3,
+    "carbs": 18,
+    "fat": 9.8,
+    "sugars": 2.4,
+    "fiber": 1.5,
+    "satFat": 2.1
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 58105000,
+    "description": "Fajita, chicken"
+   }
+  },
+  "falafel": {
+   "per100": {
+    "kcal": 333,
+    "protein": 13.3,
+    "carbs": 31.8,
+    "fat": 17.8,
+    "sugars": 0,
+    "fiber": 0,
+    "satFat": 2.4
+   },
+   "source": {
+    "db": "SR Legacy",
+    "code": 172455,
+    "description": "Falafel, home-prepared"
+   }
+  },
+  "falafelWrap": {
+   "per100": {
+    "kcal": 265,
+    "protein": 6.2,
+    "carbs": 27,
+    "fat": 14.8,
+    "sugars": 3,
+    "fiber": 2.5,
+    "satFat": 2.1
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 41901030,
+    "description": "Falafel sandwich"
+   }
+  },
+  "fasolkaPoBretonsku": {
+   "per100": {
+    "kcal": 156,
+    "protein": 8.2,
+    "carbs": 15.3,
+    "fat": 7.2,
+    "sugars": 1.9,
+    "fiber": 3.8,
+    "satFat": 1.9
+   },
+   "source": {
+    "db": "composed",
+    "note": "white beans in tomato sauce with kielbasa and bacon",
+    "recipe": [
+     {
+      "g": 150,
+      "db": "FNDDS 2021-2023",
+      "code": 41101120,
+      "description": "White beans, from dried, no added fat"
+     },
+     {
+      "g": 40,
+      "db": "FNDDS 2021-2023",
+      "code": 25221310,
+      "description": "Polish sausage"
+     },
+     {
+      "g": 10,
+      "db": "FNDDS 2021-2023",
+      "code": 22600100,
+      "description": "Bacon, NS as to type of meat, cooked"
+     },
+     {
+      "g": 60,
+      "db": "SR Legacy",
+      "code": 170051,
+      "description": "Tomatoes, red, ripe, canned, packed in tomato juice"
+     },
+     {
+      "g": 10,
+      "db": "SR Legacy",
+      "code": 170459,
+      "description": "Tomato products, canned, paste, without salt added (Includes foods for USDA's Food Distribution Program)"
+     },
+     {
+      "g": 20,
+      "db": "FNDDS 2021-2023",
+      "code": 75117020,
+      "description": "Onions, raw"
+     },
+     {
+      "g": 5,
+      "db": "SR Legacy",
+      "code": 172336,
+      "description": "Oil, canola"
+     }
+    ]
+   }
+  },
+  "fettuccineAlfredo": {
+   "per100": {
+    "kcal": 155,
+    "protein": 4.6,
+    "carbs": 21.6,
+    "fat": 5.3,
+    "sugars": 0.7,
+    "fiber": 1.2,
+    "satFat": 2.8
+   },
+   "source": {
+    "db": "composed",
+    "note": "pasta with Alfredo sauce",
+    "recipe": [
+     {
+      "g": 220,
+      "db": "FNDDS 2021-2023",
+      "code": 56130000,
+      "description": "Pasta, cooked"
+     },
+     {
+      "g": 100,
+      "db": "FNDDS 2021-2023",
+      "code": 14650160,
+      "description": "Alfredo sauce"
+     }
+    ]
+   }
+  },
+  "filetMignon": {
+   "per100": {
+    "kcal": 196,
+    "protein": 30.5,
+    "carbs": 0,
+    "fat": 8.3,
+    "sugars": 0,
+    "fiber": 0,
+    "satFat": 3.3
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 21103180,
+    "description": "Beef, steak, tenderloin"
+   }
+  },
+  "fishAndChips": {
+   "per100": {
+    "kcal": 252,
+    "protein": 7.7,
+    "carbs": 24.3,
+    "fat": 13.5,
+    "sugars": 0.5,
+    "fiber": 2.2,
+    "satFat": 2.2
+   },
+   "source": {
+    "db": "composed",
+    "note": "fried battered cod, chips, tartare sauce",
+    "recipe": [
+     {
+      "g": 180,
+      "db": "FNDDS 2021-2023",
+      "code": 26109140,
+      "description": "Fish, cod, fried"
+     },
+     {
+      "g": 200,
+      "db": "FNDDS 2021-2023",
+      "code": 71401031,
+      "description": "Potato, french fries, restaurant"
+     },
+     {
+      "g": 30,
+      "db": "FNDDS 2021-2023",
+      "code": 81302050,
+      "description": "Tartar sauce"
+     }
+    ]
+   }
+  },
+  "focaccia": {
+   "per100": {
+    "kcal": 249,
+    "protein": 8.8,
+    "carbs": 35.8,
+    "fat": 7.9,
+    "sugars": 1.8,
+    "fiber": 1.8,
+    "satFat": 0.9
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 51108010,
+    "description": "Focaccia, Italian, plain"
+   }
+  },
+  "foieGras": {
+   "per100": {
+    "kcal": 462,
+    "protein": 11.4,
+    "carbs": 4.7,
+    "fat": 43.8,
+    "sugars": 0,
+    "fiber": 0,
+    "satFat": 14.5
+   },
+   "source": {
+    "db": "SR Legacy",
+    "code": 171100,
+    "description": "Pate de foie gras, canned (goose liver pate), smoked"
+   }
+  },
+  "frenchFries": {
+   "per100": {
+    "kcal": 289,
+    "protein": 3.5,
+    "carbs": 37.2,
+    "fat": 14,
+    "sugars": 0.3,
+    "fiber": 3.9,
+    "satFat": 2.5
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 71401031,
+    "description": "Potato, french fries, restaurant"
+   }
+  },
+  "frenchOnionSoup": {
+   "per100": {
+    "kcal": 108,
+    "protein": 5.5,
+    "carbs": 11.8,
+    "fat": 4.5,
+    "sugars": 2.5,
+    "fiber": 1.1,
+    "satFat": 2.4
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 75608100,
+    "description": "Soup, French onion"
+   }
+  },
+  "frenchToast": {
+   "per100": {
+    "kcal": 273,
+    "protein": 10.4,
+    "carbs": 32.3,
+    "fat": 11.4,
+    "sugars": 10.1,
+    "fiber": 1.2,
+    "satFat": 3.3
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 55301000,
+    "description": "French toast, plain"
+   }
+  },
+  "friedCalamari": {
+   "per100": {
+    "kcal": 234,
+    "protein": 13.8,
+    "carbs": 14.1,
+    "fat": 13.2,
+    "sugars": 0.2,
+    "fiber": 0.5,
+    "satFat": 1.9
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 26213140,
+    "description": "Calamari, fried"
+   }
+  },
+  "friedChicken": {
+   "per100": {
+    "kcal": 260,
+    "protein": 19,
+    "carbs": 6,
+    "fat": 17.2,
+    "sugars": 0.1,
+    "fiber": 0.2,
+    "satFat": 3.7
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 24137300,
+    "description": "Chicken leg, drumstick and thigh, fried, coated, skin / coating eaten"
+   }
+  },
+  "friedRice": {
+   "per100": {
+    "kcal": 174,
+    "protein": 3.8,
+    "carbs": 32.5,
+    "fat": 3.2,
+    "sugars": 0.6,
+    "fiber": 1.1,
+    "satFat": 0.5
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 58150310,
+    "description": "Rice, fried, NFS"
+   }
+  },
+  "frozenYogurt": {
+   "per100": {
+    "kcal": 159,
+    "protein": 4,
+    "carbs": 24.2,
+    "fat": 5.6,
+    "sugars": 24,
+    "fiber": 0,
+    "satFat": 3.4
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 11460500,
+    "description": "Frozen yogurt, soft serve, vanilla"
+   }
+  },
+  "frytkiZBatatow": {
+   "per100": {
+    "kcal": 156,
+    "protein": 1.5,
+    "carbs": 16.4,
+    "fat": 9.4,
+    "sugars": 5.7,
+    "fiber": 2.8,
+    "satFat": 1.2
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 73410340,
+    "description": "Sweet potato fries, from fresh"
+   }
+  },
+  "fullEnglish": {
+   "per100": {
+    "kcal": 195,
+    "protein": 10.9,
+    "carbs": 9.7,
+    "fat": 12.7,
+    "sugars": 3.1,
+    "fiber": 1.5,
+    "satFat": 3.8
+   },
+   "source": {
+    "db": "composed",
+    "note": "2 fried eggs, bacon, 2 sausages, beans, mushrooms, tomato, toast",
+    "recipe": [
+     {
+      "g": 110,
+      "db": "FNDDS 2021-2023",
+      "code": 31105005,
+      "description": "Egg, whole, fried, NS as to fat"
+     },
+     {
+      "g": 30,
+      "db": "FNDDS 2021-2023",
+      "code": 22600100,
+      "description": "Bacon, NS as to type of meat, cooked"
+     },
+     {
+      "g": 90,
+      "db": "FNDDS 2021-2023",
+      "code": 25221405,
+      "description": "Pork sausage"
+     },
+     {
+      "g": 100,
+      "db": "FNDDS 2021-2023",
+      "code": 41201010,
+      "description": "Baked beans"
+     },
+     {
+      "g": 50,
+      "db": "FNDDS 2021-2023",
+      "code": 99997515,
+      "description": "Mushrooms, cooked, as ingredient"
+     },
+     {
+      "g": 5,
+      "db": "SR Legacy",
+      "code": 172336,
+      "description": "Oil, canola"
+     },
+     {
+      "g": 50,
+      "db": "FNDDS 2021-2023",
+      "code": 74101000,
+      "description": "Tomatoes, raw"
+     },
+     {
+      "g": 30,
+      "db": "FNDDS 2021-2023",
+      "code": 51101010,
+      "description": "Bread, white, toasted"
+     }
+    ]
+   }
+  },
+  "garlicBread": {
+   "per100": {
+    "kcal": 349,
+    "protein": 8.3,
+    "carbs": 41.6,
+    "fat": 16.6,
+    "sugars": 3.7,
+    "fiber": 2.5,
+    "satFat": 5.3
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 51121025,
+    "description": "Garlic bread, from fast food / restaurant"
+   }
+  },
+  "gazpacho": {
+   "per100": {
+    "kcal": 26,
+    "protein": 0.8,
+    "carbs": 4.5,
+    "fat": 0.6,
+    "sugars": 2.8,
+    "fiber": 1,
+    "satFat": 0.1
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 75604600,
+    "description": "Soup, gazpacho"
+   }
+  },
+  "generalTso": {
+   "per100": {
+    "kcal": 295,
+    "protein": 12.9,
+    "carbs": 24,
+    "fat": 16.4,
+    "sugars": 11.6,
+    "fiber": 0.9,
+    "satFat": 2.8
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 27445150,
+    "description": "General Tso chicken"
+   }
+  },
+  "gnocchi": {
+   "per100": {
+    "kcal": 135,
+    "protein": 2.4,
+    "carbs": 17.2,
+    "fat": 6.3,
+    "sugars": 1,
+    "fiber": 1,
+    "satFat": 3.4
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 58122220,
+    "description": "Gnocchi, potato"
+   }
+  },
+  "gofrZBitaSmietana": {
+   "per100": {
+    "kcal": 225,
+    "protein": 4.8,
+    "carbs": 31.2,
+    "fat": 9,
+    "sugars": 5.1,
+    "fiber": 1.9,
+    "satFat": 3.6
+   },
+   "source": {
+    "db": "composed",
+    "note": "waffle with whipped cream and strawberries",
+    "recipe": [
+     {
+      "g": 100,
+      "db": "FNDDS 2021-2023",
+      "code": 55200010,
+      "description": "Waffle, NFS"
+     },
+     {
+      "g": 30,
+      "db": "SR Legacy",
+      "code": 170860,
+      "description": "Cream, whipped, cream topping, pressurized"
+     },
+     {
+      "g": 50,
+      "db": "FNDDS 2021-2023",
+      "code": 63223020,
+      "description": "Strawberries, raw"
+     }
+    ]
+   }
+  },
+  "golabki": {
+   "per100": {
+    "kcal": 107,
+    "protein": 6.1,
+    "carbs": 9.2,
+    "fat": 5.1,
+    "sugars": 2.8,
+    "fiber": 1.5,
+    "satFat": 1.8
+   },
+   "source": {
+    "db": "composed",
+    "note": "cabbage leaves with pork and rice, tomato sauce with sour cream",
+    "recipe": [
+     {
+      "g": 90,
+      "db": "FNDDS 2021-2023",
+      "code": 75211020,
+      "description": "Cabbage, green, cooked, no added fat"
+     },
+     {
+      "g": 45,
+      "db": "FNDDS 2021-2023",
+      "code": 22002000,
+      "description": "Pork, ground"
+     },
+     {
+      "g": 40,
+      "db": "FNDDS 2021-2023",
+      "code": 56205001,
+      "description": "Rice, white, cooked, NS as to fat"
+     },
+     {
+      "g": 5,
+      "db": "FNDDS 2021-2023",
+      "code": 75117020,
+      "description": "Onions, raw"
+     },
+     {
+      "g": 60,
+      "db": "FNDDS 2021-2023",
+      "code": 74404010,
+      "description": "Spaghetti sauce"
+     },
+     {
+      "g": 10,
+      "db": "SR Legacy",
+      "code": 171257,
+      "description": "Cream, sour, cultured"
+     }
+    ]
+   }
+  },
+  "greekSalad": {
+   "per100": {
+    "kcal": 103,
+    "protein": 3.6,
+    "carbs": 4.4,
+    "fat": 8,
+    "sugars": 2.3,
+    "fiber": 0.8,
+    "satFat": 2.5
+   },
+   "source": {
+    "db": "composed",
+    "note": "tomato, cucumber, pepper, onion, olives, feta, olive oil",
+    "recipe": [
+     {
+      "g": 120,
+      "db": "FNDDS 2021-2023",
+      "code": 74101000,
+      "description": "Tomatoes, raw"
+     },
+     {
+      "g": 80,
+      "db": "FNDDS 2021-2023",
+      "code": 75111000,
+      "description": "Cucumber, raw"
+     },
+     {
+      "g": 40,
+      "db": "FNDDS 2021-2023",
+      "code": 75122200,
+      "description": "Peppers, sweet, red, raw"
+     },
+     {
+      "g": 15,
+      "db": "FNDDS 2021-2023",
+      "code": 75117020,
+      "description": "Onions, raw"
+     },
+     {
+      "g": 15,
+      "db": "FNDDS 2021-2023",
+      "code": 75510020,
+      "description": "Olives, black"
+     },
+     {
+      "g": 50,
+      "db": "FNDDS 2021-2023",
+      "code": 14104400,
+      "description": "Cheese, Feta"
+     },
+     {
+      "g": 15,
+      "db": "FNDDS 2021-2023",
+      "code": 82104000,
+      "description": "Olive oil"
+     }
+    ]
+   }
+  },
+  "greenCurry": {
+   "per100": {
+    "kcal": 157,
+    "protein": 11.1,
+    "carbs": 3.6,
+    "fat": 11.3,
+    "sugars": 2,
+    "fiber": 0.5,
+    "satFat": 7.9
+   },
+   "source": {
+    "db": "composed",
+    "note": "chicken in coconut milk with aubergine and pepper, fish sauce, sugar",
+    "recipe": [
+     {
+      "g": 100,
+      "db": "FNDDS 2021-2023",
+      "code": 24122131,
+      "description": "Chicken breast, baked, broiled, or roasted, skin not eaten, from raw"
+     },
+     {
+      "g": 120,
+      "db": "SR Legacy",
+      "code": 170173,
+      "description": "Nuts, coconut milk, canned (liquid expressed from grated meat and water)"
+     },
+     {
+      "g": 40,
+      "db": "FNDDS 2021-2023",
+      "code": 75217010,
+      "description": "Eggplant, cooked, no added fat"
+     },
+     {
+      "g": 30,
+      "db": "FNDDS 2021-2023",
+      "code": 75122200,
+      "description": "Peppers, sweet, red, raw"
+     },
+     {
+      "g": 5,
+      "db": "SR Legacy",
+      "code": 174531,
+      "description": "Sauce, fish, ready-to-serve"
+     },
+     {
+      "g": 3,
+      "db": "FNDDS 2021-2023",
+      "code": 91101010,
+      "description": "Sugar, white, granulated or lump"
+     },
+     {
+      "g": 5,
+      "db": "SR Legacy",
+      "code": 172336,
+      "description": "Oil, canola"
+     }
+    ]
+   }
+  },
+  "grilledCheeseSandwich": {
+   "per100": {
+    "kcal": 368,
+    "protein": 13.4,
+    "carbs": 26.4,
+    "fat": 23.3,
+    "sugars": 2.9,
+    "fiber": 1.2,
+    "satFat": 11.3
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 14640125,
+    "description": "Grilled cheese sandwich, cheddar cheese, on white bread"
+   }
+  },
+  "grilledSalmon": {
+   "per100": {
+    "kcal": 259,
+    "protein": 25.9,
+    "carbs": 0,
+    "fat": 16.5,
+    "sugars": 0,
+    "fiber": 0,
+    "satFat": 3.8
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 26137123,
+    "description": "Fish, salmon, grilled"
+   }
+  },
+  "grochowka": {
+   "per100": {
+    "kcal": 80,
+    "protein": 5.6,
+    "carbs": 9.1,
+    "fat": 2.4,
+    "sugars": 1.8,
+    "fiber": 3.3,
+    "satFat": 0.7
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 41602030,
+    "description": "Soup, split pea, with meat"
+   }
+  },
+  "gruszka": {
+   "per100": {
+    "kcal": 59,
+    "protein": 0.4,
+    "carbs": 15.2,
+    "fat": 0.2,
+    "sugars": 9.7,
+    "fiber": 3.1,
+    "satFat": 0
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 63137010,
+    "description": "Pear, raw"
+   }
+  },
+  "grzybowa": {
+   "per100": {
+    "kcal": 43,
+    "protein": 1.8,
+    "carbs": 4.2,
+    "fat": 2.2,
+    "sugars": 0.8,
+    "fiber": 0.5,
+    "satFat": 1.1
+   },
+   "source": {
+    "db": "composed",
+    "note": "broth, mushrooms, sour cream, noodles",
+    "recipe": [
+     {
+      "g": 280,
+      "db": "FNDDS 2021-2023",
+      "code": 28340120,
+      "description": "Soup, broth"
+     },
+     {
+      "g": 60,
+      "db": "FNDDS 2021-2023",
+      "code": 99997515,
+      "description": "Mushrooms, cooked, as ingredient"
+     },
+     {
+      "g": 25,
+      "db": "SR Legacy",
+      "code": 171257,
+      "description": "Cream, sour, cultured"
+     },
+     {
+      "g": 40,
+      "db": "FNDDS 2021-2023",
+      "code": 56112000,
+      "description": "Noodles, cooked"
+     },
+     {
+      "g": 3,
+      "db": "SR Legacy",
+      "code": 169761,
+      "description": "Wheat flour, white, all-purpose, unenriched"
+     },
+     {
+      "g": 3,
+      "db": "SR Legacy",
+      "code": 173430,
+      "description": "Butter, without salt"
+     }
+    ]
+   }
+  },
+  "guacamole": {
+   "per100": {
+    "kcal": 145,
+    "protein": 1.9,
+    "carbs": 8.1,
+    "fat": 13.1,
+    "sugars": 0.9,
+    "fiber": 6.1,
+    "satFat": 1.9
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 63409015,
+    "description": "Guacamole with tomatoes"
+   }
+  },
+  "gulasz": {
+   "per100": {
+    "kcal": 186,
+    "protein": 13,
+    "carbs": 2.7,
+    "fat": 13.5,
+    "sugars": 0.6,
+    "fiber": 0.3,
+    "satFat": 4.5
+   },
+   "source": {
+    "db": "composed",
+    "note": "pork stewed in gravy with onion",
+    "recipe": [
+     {
+      "g": 120,
+      "db": "SR Legacy",
+      "code": 167844,
+      "description": "Pork, fresh, shoulder, whole, separable lean and fat, cooked, roasted"
+     },
+     {
+      "g": 100,
+      "db": "FNDDS 2021-2023",
+      "code": 28500040,
+      "description": "Gravy, beef"
+     },
+     {
+      "g": 20,
+      "db": "FNDDS 2021-2023",
+      "code": 75117020,
+      "description": "Onions, raw"
+     },
+     {
+      "g": 5,
+      "db": "SR Legacy",
+      "code": 172336,
+      "description": "Oil, canola"
+     }
+    ]
+   }
+  },
+  "gyoza": {
+   "per100": {
+    "kcal": 192,
+    "protein": 8.8,
+    "carbs": 14.1,
+    "fat": 11.1,
+    "sugars": 2.9,
+    "fiber": 1.5,
+    "satFat": 2.5
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 58111110,
+    "description": "Wonton, dumpling or pot sticker, fried"
+   }
+  },
+  "gyros": {
+   "per100": {
+    "kcal": 184,
+    "protein": 11.2,
+    "carbs": 18.8,
+    "fat": 6.8,
+    "sugars": 1.7,
+    "fiber": 1,
+    "satFat": 2.5
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 27516010,
+    "description": "Gyro sandwich"
+   }
+  },
+  "hamburger": {
+   "per100": {
+    "kcal": 288,
+    "protein": 17.5,
+    "carbs": 20.7,
+    "fat": 14.4,
+    "sugars": 3,
+    "fiber": 0.7,
+    "satFat": 5.5
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 27510631,
+    "description": "Hamburger, on white bun, 1 medium patty"
+   }
+  },
+  "herbata": {
+   "per100": {
+    "kcal": 1,
+    "protein": 0,
+    "carbs": 0.3,
+    "fat": 0,
+    "sugars": 0,
+    "fiber": 0,
+    "satFat": 0
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 92302000,
+    "description": "Tea, hot, leaf, black"
+   }
+  },
+  "hotAndSourSoup": {
+   "per100": {
+    "kcal": 39,
+    "protein": 2.6,
+    "carbs": 4.4,
+    "fat": 1.2,
+    "sugars": 0.4,
+    "fiber": 0.5,
+    "satFat": 0.2
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 28340750,
+    "description": "Soup, hot and sour"
+   }
+  },
+  "hotDog": {
+   "per100": {
+    "kcal": 296,
+    "protein": 10.9,
+    "carbs": 23.7,
+    "fat": 17.4,
+    "sugars": 3.9,
+    "fiber": 0.8,
+    "satFat": 6.7
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 27564000,
+    "description": "Hot dog sandwich, NFS, on white bun"
+   }
+  },
+  "huevosRancheros": {
+   "per100": {
+    "kcal": 121,
+    "protein": 6.7,
+    "carbs": 8.9,
+    "fat": 6.7,
+    "sugars": 2.3,
+    "fiber": 1.7,
+    "satFat": 1.7
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 32105180,
+    "description": "Huevos rancheros"
+   }
+  },
+  "hummus": {
+   "per100": {
+    "kcal": 243,
+    "protein": 7.4,
+    "carbs": 14.9,
+    "fat": 17.1,
+    "sugars": 0.3,
+    "fiber": 5.4,
+    "satFat": 2.2
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 41205070,
+    "description": "Hummus, plain"
+   }
+  },
+  "hummusZWarzywami": {
+   "per100": {
+    "kcal": 92,
+    "protein": 2.7,
+    "carbs": 8.9,
+    "fat": 5.1,
+    "sugars": 2.6,
+    "fiber": 2.7,
+    "satFat": 0.7
+   },
+   "source": {
+    "db": "composed",
+    "note": "hummus with carrot, cucumber and pepper sticks",
+    "recipe": [
+     {
+      "g": 70,
+      "db": "FNDDS 2021-2023",
+      "code": 41205070,
+      "description": "Hummus, plain"
+     },
+     {
+      "g": 60,
+      "db": "FNDDS 2021-2023",
+      "code": 73101010,
+      "description": "Carrots, raw"
+     },
+     {
+      "g": 60,
+      "db": "FNDDS 2021-2023",
+      "code": 75111000,
+      "description": "Cucumber, raw"
+     },
+     {
+      "g": 50,
+      "db": "FNDDS 2021-2023",
+      "code": 75122200,
+      "description": "Peppers, sweet, red, raw"
+     }
+    ]
+   }
+  },
+  "iceCream": {
+   "per100": {
+    "kcal": 207,
+    "protein": 3.5,
+    "carbs": 23.6,
+    "fat": 11,
+    "sugars": 21.2,
+    "fiber": 0.7,
+    "satFat": 6.8
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 13110100,
+    "description": "Ice cream, vanilla"
+   }
+  },
+  "jablko": {
+   "per100": {
+    "kcal": 61,
+    "protein": 0.2,
+    "carbs": 14.8,
+    "fat": 0.2,
+    "sugars": 12.1,
+    "fiber": 2.1,
+    "satFat": 0
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 63101000,
+    "description": "Apple, raw"
+   }
+  },
+  "jajecznica": {
+   "per100": {
+    "kcal": 182,
+    "protein": 11.6,
+    "carbs": 0.9,
+    "fat": 14.6,
+    "sugars": 0.2,
+    "fiber": 0,
+    "satFat": 6
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 32130020,
+    "description": "Egg omelet or scrambled egg, made with butter"
+   }
+  },
+  "jajecznicaNaBoczku": {
+   "per100": {
+    "kcal": 215,
+    "protein": 14.4,
+    "carbs": 1,
+    "fat": 16.9,
+    "sugars": 0.4,
+    "fiber": 0,
+    "satFat": 6.6
+   },
+   "source": {
+    "db": "composed",
+    "note": "scrambled eggs with bacon",
+    "recipe": [
+     {
+      "g": 165,
+      "db": "FNDDS 2021-2023",
+      "code": 32130020,
+      "description": "Egg omelet or scrambled egg, made with butter"
+     },
+     {
+      "g": 20,
+      "db": "FNDDS 2021-2023",
+      "code": 22600100,
+      "description": "Bacon, NS as to type of meat, cooked"
+     }
+    ]
+   }
+  },
+  "jajkaNaTwardo": {
+   "per100": {
+    "kcal": 143,
+    "protein": 12.4,
+    "carbs": 1,
+    "fat": 10,
+    "sugars": 0.2,
+    "fiber": 0,
+    "satFat": 3.2
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 31103010,
+    "description": "Egg, whole, boiled or poached"
+   }
+  },
+  "jajkoSadzone": {
+   "per100": {
+    "kcal": 185,
+    "protein": 11.6,
+    "carbs": 0.9,
+    "fat": 15,
+    "sugars": 0.2,
+    "fiber": 0,
+    "satFat": 4.5
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 31105005,
+    "description": "Egg, whole, fried, NS as to fat"
+   }
+  },
+  "jogurtZGranola": {
+   "per100": {
+    "kcal": 172,
+    "protein": 5.6,
+    "carbs": 19.1,
+    "fat": 8.2,
+    "sugars": 11.1,
+    "fiber": 1.8,
+    "satFat": 2.5
+   },
+   "source": {
+    "db": "composed",
+    "note": "natural yoghurt with granola and honey",
+    "recipe": [
+     {
+      "g": 150,
+      "db": "FNDDS 2021-2023",
+      "code": 11411100,
+      "description": "Yogurt, whole milk, plain"
+     },
+     {
+      "g": 40,
+      "db": "SR Legacy",
+      "code": 171646,
+      "description": "Cereals ready-to-eat, granola, homemade"
+     },
+     {
+      "g": 10,
+      "db": "SR Legacy",
+      "code": 169640,
+      "description": "Honey"
+     }
+    ]
+   }
+  },
+  "jogurtZOwocami": {
+   "per100": {
+    "kcal": 68,
+    "protein": 2.4,
+    "carbs": 8.8,
+    "fat": 2.6,
+    "sugars": 6.1,
+    "fiber": 0.8,
+    "satFat": 1.3
+   },
+   "source": {
+    "db": "composed",
+    "note": "natural yoghurt with strawberries and banana",
+    "recipe": [
+     {
+      "g": 150,
+      "db": "FNDDS 2021-2023",
+      "code": 11411100,
+      "description": "Yogurt, whole milk, plain"
+     },
+     {
+      "g": 80,
+      "db": "FNDDS 2021-2023",
+      "code": 63223020,
+      "description": "Strawberries, raw"
+     },
+     {
+      "g": 40,
+      "db": "FNDDS 2021-2023",
+      "code": 63107010,
+      "description": "Banana, raw"
+     }
+    ]
+   }
+  },
+  "kakao": {
+   "per100": {
+    "kcal": 91,
+    "protein": 2.7,
+    "carbs": 16.5,
+    "fat": 1.5,
+    "sugars": 15.2,
+    "fiber": 0,
+    "satFat": 0.9
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 11512010,
+    "description": "Hot chocolate / cocoa, made with whole or reduced fat (2%) milk"
+   }
+  },
+  "kanapkaZSzynka": {
+   "per100": {
+    "kcal": 229,
+    "protein": 11,
+    "carbs": 23.5,
+    "fat": 10.2,
+    "sugars": 3.1,
+    "fiber": 1.3,
+    "satFat": 5.5
+   },
+   "source": {
+    "db": "composed",
+    "note": "2 slices of bread with butter, ham, cheese, tomato, lettuce",
+    "recipe": [
+     {
+      "g": 70,
+      "db": "FNDDS 2021-2023",
+      "code": 51101000,
+      "description": "Bread, white"
+     },
+     {
+      "g": 8,
+      "db": "SR Legacy",
+      "code": 173430,
+      "description": "Butter, without salt"
+     },
+     {
+      "g": 30,
+      "db": "FNDDS 2021-2023",
+      "code": 25230210,
+      "description": "Ham, prepackaged or deli, luncheon meat"
+     },
+     {
+      "g": 20,
+      "db": "FNDDS 2021-2023",
+      "code": 14105010,
+      "description": "Cheese, Gouda or Edam"
+     },
+     {
+      "g": 20,
+      "db": "FNDDS 2021-2023",
+      "code": 74101000,
+      "description": "Tomatoes, raw"
+     },
+     {
+      "g": 5,
+      "db": "FNDDS 2021-2023",
+      "code": 75113000,
+      "description": "Lettuce, raw"
+     }
+    ]
+   }
+  },
+  "kanapkaZTwarozkiem": {
+   "per100": {
+    "kcal": 173,
+    "protein": 8,
+    "carbs": 23,
+    "fat": 5.4,
+    "sugars": 3.1,
+    "fiber": 2.7,
+    "satFat": 2.7
+   },
+   "source": {
+    "db": "composed",
+    "note": "2 slices of rye bread with curd cheese (twarog), yoghurt and chives, radish",
+    "recipe": [
+     {
+      "g": 70,
+      "db": "SR Legacy",
+      "code": 172684,
+      "description": "Bread, rye"
+     },
+     {
+      "g": 60,
+      "db": "FNDDS 2021-2023",
+      "code": 14201200,
+      "description": "Cottage cheese, farmer's"
+     },
+     {
+      "g": 15,
+      "db": "FNDDS 2021-2023",
+      "code": 11411100,
+      "description": "Yogurt, whole milk, plain"
+     },
+     {
+      "g": 20,
+      "db": "FNDDS 2021-2023",
+      "code": 75125000,
+      "description": "Radish"
+     }
+    ]
+   }
+  },
+  "kapusniak": {
+   "per100": {
+    "kcal": 51,
+    "protein": 2.4,
+    "carbs": 4.2,
+    "fat": 2.8,
+    "sugars": 0.8,
+    "fiber": 0.9,
+    "satFat": 0.8
+   },
+   "source": {
+    "db": "composed",
+    "note": "broth, sauerkraut, potatoes, pork, kielbasa",
+    "recipe": [
+     {
+      "g": 250,
+      "db": "FNDDS 2021-2023",
+      "code": 28340120,
+      "description": "Soup, broth"
+     },
+     {
+      "g": 80,
+      "db": "SR Legacy",
+      "code": 169279,
+      "description": "Sauerkraut, canned, solids and liquids"
+     },
+     {
+      "g": 60,
+      "db": "SR Legacy",
+      "code": 170440,
+      "description": "Potatoes, boiled, cooked without skin, flesh, without salt"
+     },
+     {
+      "g": 20,
+      "db": "SR Legacy",
+      "code": 167844,
+      "description": "Pork, fresh, shoulder, whole, separable lean and fat, cooked, roasted"
+     },
+     {
+      "g": 15,
+      "db": "FNDDS 2021-2023",
+      "code": 25221310,
+      "description": "Polish sausage"
+     },
+     {
+      "g": 15,
+      "db": "FNDDS 2021-2023",
+      "code": 73102211,
+      "description": "Carrots, fresh, cooked, no added fat"
+     },
+     {
+      "g": 3,
+      "db": "SR Legacy",
+      "code": 172336,
+      "description": "Oil, canola"
+     }
+    ]
+   }
+  },
+  "kaszaGryczana": {
+   "per100": {
+    "kcal": 92,
+    "protein": 3.4,
+    "carbs": 19.9,
+    "fat": 0.6,
+    "sugars": 0.9,
+    "fiber": 2.7,
+    "satFat": 0.1
+   },
+   "source": {
+    "db": "SR Legacy",
+    "code": 170686,
+    "description": "Buckwheat groats, roasted, cooked"
+   }
+  },
+  "kaszanka": {
+   "per100": {
+    "kcal": 221,
+    "protein": 6.9,
+    "carbs": 9.7,
+    "fat": 17.3,
+    "sugars": 2,
+    "fiber": 1.4,
+    "satFat": 5.4
+   },
+   "source": {
+    "db": "composed",
+    "note": "kaszanka fried with onion",
+    "recipe": [
+     {
+      "g": 140,
+      "db": "composed",
+      "description": "kaszankaSausage"
+     },
+     {
+      "g": 40,
+      "db": "FNDDS 2021-2023",
+      "code": 75117020,
+      "description": "Onions, raw"
+     },
+     {
+      "g": 8,
+      "db": "SR Legacy",
+      "code": 172336,
+      "description": "Oil, canola"
+     }
+    ]
+   }
+  },
+  "katsuCurry": {
+   "per100": {
+    "kcal": 159,
+    "protein": 8,
+    "carbs": 16.9,
+    "fat": 6.5,
+    "sugars": 1.1,
+    "fiber": 0.7,
+    "satFat": 1.5
+   },
+   "source": {
+    "db": "composed",
+    "note": "breaded pork cutlet with Japanese curry sauce and rice",
+    "recipe": [
+     {
+      "g": 120,
+      "db": "composed",
+      "description": "kotletSchabowy"
+     },
+     {
+      "g": 120,
+      "db": "FNDDS 2021-2023",
+      "code": 81312100,
+      "description": "Curry sauce"
+     },
+     {
+      "g": 200,
+      "db": "FNDDS 2021-2023",
+      "code": 56205001,
+      "description": "Rice, white, cooked, NS as to fat"
+     }
+    ]
+   }
+  },
+  "kawaCzarna": {
+   "per100": {
+    "kcal": 1,
+    "protein": 0.1,
+    "carbs": 0,
+    "fat": 0,
+    "sugars": 0,
+    "fiber": 0,
+    "satFat": 0
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 92101000,
+    "description": "Coffee, brewed"
+   }
+  },
+  "kawaZMlekiem": {
+   "per100": {
+    "kcal": 43,
+    "protein": 2.8,
+    "carbs": 4.4,
+    "fat": 1.6,
+    "sugars": 4.1,
+    "fiber": 0,
+    "satFat": 0.9
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 92101900,
+    "description": "Coffee, Latte",
+    "note": "latte without sugar: the sweetness scale adds it"
+   }
+  },
+  "kebabBox": {
+   "per100": {
+    "kcal": 218,
+    "protein": 10.4,
+    "carbs": 14.6,
+    "fat": 12.9,
+    "sugars": 1,
+    "fiber": 1.8,
+    "satFat": 3.2
+   },
+   "source": {
+    "db": "composed",
+    "note": "kebab meat on chips with salad and garlic sauce",
+    "recipe": [
+     {
+      "g": 150,
+      "db": "composed",
+      "description": "kebabMeat"
+     },
+     {
+      "g": 150,
+      "db": "FNDDS 2021-2023",
+      "code": 71401031,
+      "description": "Potato, french fries, restaurant"
+     },
+     {
+      "g": 50,
+      "db": "FNDDS 2021-2023",
+      "code": 75103000,
+      "description": "Cabbage, green, raw"
+     },
+     {
+      "g": 30,
+      "db": "FNDDS 2021-2023",
+      "code": 74101000,
+      "description": "Tomatoes, raw"
+     },
+     {
+      "g": 50,
+      "db": "composed",
+      "description": "garlic sauce"
+     }
+    ]
+   }
+  },
+  "kebabTortilla": {
+   "per100": {
+    "kcal": 202,
+    "protein": 12,
+    "carbs": 13.7,
+    "fat": 10.6,
+    "sugars": 1.9,
+    "fiber": 1.3,
+    "satFat": 3.2
+   },
+   "source": {
+    "db": "composed",
+    "note": "flour tortilla, kebab meat, vegetables, garlic sauce",
+    "recipe": [
+     {
+      "g": 75,
+      "db": "FNDDS 2021-2023",
+      "code": 52215200,
+      "description": "Tortilla, flour"
+     },
+     {
+      "g": 120,
+      "db": "composed",
+      "description": "kebabMeat"
+     },
+     {
+      "g": 40,
+      "db": "FNDDS 2021-2023",
+      "code": 75103000,
+      "description": "Cabbage, green, raw"
+     },
+     {
+      "g": 25,
+      "db": "FNDDS 2021-2023",
+      "code": 74101000,
+      "description": "Tomatoes, raw"
+     },
+     {
+      "g": 15,
+      "db": "FNDDS 2021-2023",
+      "code": 75111000,
+      "description": "Cucumber, raw"
+     },
+     {
+      "g": 40,
+      "db": "composed",
+      "description": "garlic sauce"
+     }
+    ]
+   }
+  },
+  "kebabWBulce": {
+   "per100": {
+    "kcal": 192,
+    "protein": 11.6,
+    "carbs": 16.3,
+    "fat": 8.6,
+    "sugars": 1.5,
+    "fiber": 1,
+    "satFat": 2.4
+   },
+   "source": {
+    "db": "composed",
+    "note": "pita, kebab meat, cabbage, tomato, cucumber, onion, garlic sauce",
+    "recipe": [
+     {
+      "g": 80,
+      "db": "FNDDS 2021-2023",
+      "code": 51109100,
+      "description": "Bread, pita"
+     },
+     {
+      "g": 110,
+      "db": "composed",
+      "description": "kebabMeat"
+     },
+     {
+      "g": 40,
+      "db": "FNDDS 2021-2023",
+      "code": 75103000,
+      "description": "Cabbage, green, raw"
+     },
+     {
+      "g": 20,
+      "db": "FNDDS 2021-2023",
+      "code": 74101000,
+      "description": "Tomatoes, raw"
+     },
+     {
+      "g": 15,
+      "db": "FNDDS 2021-2023",
+      "code": 75111000,
+      "description": "Cucumber, raw"
+     },
+     {
+      "g": 10,
+      "db": "FNDDS 2021-2023",
+      "code": 75117020,
+      "description": "Onions, raw"
+     },
+     {
+      "g": 40,
+      "db": "composed",
+      "description": "garlic sauce"
+     }
+    ]
+   }
+  },
+  "kefir": {
+   "per100": {
+    "kcal": 52,
+    "protein": 3.6,
+    "carbs": 7.5,
+    "fat": 1,
+    "sugars": 6.9,
+    "fiber": 0,
+    "satFat": 0.6
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 11115400,
+    "description": "Kefir"
+   }
+  },
+  "kielbasaZGrilla": {
+   "per100": {
+    "kcal": 337,
+    "protein": 12.5,
+    "carbs": 5,
+    "fat": 29.7,
+    "sugars": 2.4,
+    "fiber": 0,
+    "satFat": 9.9
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 25221310,
+    "description": "Polish sausage"
+   }
+  },
+  "kimchi": {
+   "per100": {
+    "kcal": 15,
+    "protein": 1.1,
+    "carbs": 2.4,
+    "fat": 0.5,
+    "sugars": 1.1,
+    "fiber": 1.6,
+    "satFat": 0.1
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 75502520,
+    "description": "Kimchi"
+   }
+  },
+  "kiwi": {
+   "per100": {
+    "kcal": 64,
+    "protein": 1.1,
+    "carbs": 14,
+    "fat": 0.4,
+    "sugars": 9,
+    "fiber": 3,
+    "satFat": 0
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 63126500,
+    "description": "Kiwi fruit, raw"
+   }
+  },
+  "kluskiSlaskie": {
+   "per100": {
+    "kcal": 117,
+    "protein": 3.4,
+    "carbs": 24,
+    "fat": 1.1,
+    "sugars": 1,
+    "fiber": 1.9,
+    "satFat": 0.5
+   },
+   "source": {
+    "db": "composed",
+    "note": "potato and potato-starch dumplings with gravy",
+    "recipe": [
+     {
+      "g": 150,
+      "db": "SR Legacy",
+      "code": 170440,
+      "description": "Potatoes, boiled, cooked without skin, flesh, without salt"
+     },
+     {
+      "g": 40,
+      "db": "SR Legacy",
+      "code": 168446,
+      "description": "Potato flour"
+     },
+     {
+      "g": 10,
+      "db": "FNDDS 2021-2023",
+      "code": 31101010,
+      "description": "Egg, whole, raw"
+     },
+     {
+      "g": 80,
+      "db": "FNDDS 2021-2023",
+      "code": 28500040,
+      "description": "Gravy, beef"
+     }
+    ]
+   }
+  },
+  "knedle": {
+   "per100": {
+    "kcal": 177,
+    "protein": 3.9,
+    "carbs": 31.2,
+    "fat": 4.1,
+    "sugars": 6.5,
+    "fiber": 1.8,
+    "satFat": 2.2
+   },
+   "source": {
+    "db": "composed",
+    "note": "potato dough with plums, buttered breadcrumbs and sugar",
+    "recipe": [
+     {
+      "g": 75,
+      "db": "SR Legacy",
+      "code": 170440,
+      "description": "Potatoes, boiled, cooked without skin, flesh, without salt"
+     },
+     {
+      "g": 25,
+      "db": "SR Legacy",
+      "code": 169761,
+      "description": "Wheat flour, white, all-purpose, unenriched"
+     },
+     {
+      "g": 8,
+      "db": "FNDDS 2021-2023",
+      "code": 31101010,
+      "description": "Egg, whole, raw"
+     },
+     {
+      "g": 30,
+      "db": "FNDDS 2021-2023",
+      "code": 63143010,
+      "description": "Plum, raw"
+     },
+     {
+      "g": 8,
+      "db": "SR Legacy",
+      "code": 174928,
+      "description": "Bread, crumbs, dry, grated, plain"
+     },
+     {
+      "g": 6,
+      "db": "SR Legacy",
+      "code": 173430,
+      "description": "Butter, without salt"
+     },
+     {
+      "g": 6,
+      "db": "FNDDS 2021-2023",
+      "code": 91101010,
+      "description": "Sugar, white, granulated or lump"
+     }
+    ]
+   }
+  },
+  "kofte": {
+   "per100": {
+    "kcal": 228,
+    "protein": 21.9,
+    "carbs": 1.1,
+    "fat": 14.5,
+    "sugars": 0.5,
+    "fiber": 0.1,
+    "satFat": 5.5
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 27416200,
+    "description": "Beef, ground, with egg and onion"
+   }
+  },
+  "koktajlProteinowy": {
+   "per100": {
+    "kcal": 82,
+    "protein": 8,
+    "carbs": 9.1,
+    "fat": 1.5,
+    "sugars": 7.1,
+    "fiber": 0.6,
+    "satFat": 0.9
+   },
+   "source": {
+    "db": "composed",
+    "note": "whey protein shaken with 2 % milk and a banana",
+    "recipe": [
+     {
+      "g": 30,
+      "db": "SR Legacy",
+      "code": 173180,
+      "description": "Beverages, Protein powder whey based"
+     },
+     {
+      "g": 300,
+      "db": "FNDDS 2021-2023",
+      "code": 11112110,
+      "description": "Milk, reduced fat (2%)"
+     },
+     {
+      "g": 100,
+      "db": "FNDDS 2021-2023",
+      "code": 63107010,
+      "description": "Banana, raw"
+     }
+    ]
+   }
+  },
+  "kopytka": {
+   "per100": {
+    "kcal": 175,
+    "protein": 4.2,
+    "carbs": 29.3,
+    "fat": 4.6,
+    "sugars": 0.7,
+    "fiber": 1.8,
+    "satFat": 2.6
+   },
+   "source": {
+    "db": "composed",
+    "note": "potato dumplings (potato, flour, egg) with melted butter",
+    "recipe": [
+     {
+      "g": 150,
+      "db": "SR Legacy",
+      "code": 170440,
+      "description": "Potatoes, boiled, cooked without skin, flesh, without salt"
+     },
+     {
+      "g": 45,
+      "db": "SR Legacy",
+      "code": 169761,
+      "description": "Wheat flour, white, all-purpose, unenriched"
+     },
+     {
+      "g": 15,
+      "db": "FNDDS 2021-2023",
+      "code": 31101010,
+      "description": "Egg, whole, raw"
+     },
+     {
+      "g": 10,
+      "db": "SR Legacy",
+      "code": 173430,
+      "description": "Butter, without salt"
+     }
+    ]
+   }
+  },
+  "koreanFriedChicken": {
+   "per100": {
+    "kcal": 276,
+    "protein": 17,
+    "carbs": 13.1,
+    "fat": 17.4,
+    "sugars": 7.6,
+    "fiber": 0.2,
+    "satFat": 4.1
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 24168001,
+    "description": "Chicken \"wings\" with other sauces or seasoning, from fast food / restaurant"
+   }
+  },
+  "kotletMielony": {
+   "per100": {
+    "kcal": 306,
+    "protein": 19.4,
+    "carbs": 10.9,
+    "fat": 20.6,
+    "sugars": 1.7,
+    "fiber": 0.6,
+    "satFat": 5.4
+   },
+   "source": {
+    "db": "composed",
+    "note": "pork mince with soaked roll, egg and onion, breaded and fried",
+    "recipe": [
+     {
+      "g": 80,
+      "db": "FNDDS 2021-2023",
+      "code": 22002000,
+      "description": "Pork, ground"
+     },
+     {
+      "g": 15,
+      "db": "FNDDS 2021-2023",
+      "code": 51150000,
+      "description": "Roll, white, soft"
+     },
+     {
+      "g": 10,
+      "db": "FNDDS 2021-2023",
+      "code": 31101010,
+      "description": "Egg, whole, raw"
+     },
+     {
+      "g": 10,
+      "db": "FNDDS 2021-2023",
+      "code": 75117020,
+      "description": "Onions, raw"
+     },
+     {
+      "g": 8,
+      "db": "SR Legacy",
+      "code": 174928,
+      "description": "Bread, crumbs, dry, grated, plain"
+     },
+     {
+      "g": 8,
+      "db": "SR Legacy",
+      "code": 172336,
+      "description": "Oil, canola"
+     }
+    ]
+   }
+  },
+  "kotletSchabowy": {
+   "per100": {
+    "kcal": 275,
+    "protein": 23.3,
+    "carbs": 10.2,
+    "fat": 15.1,
+    "sugars": 0.7,
+    "fiber": 0.6,
+    "satFat": 2.8
+   },
+   "source": {
+    "db": "composed",
+    "note": "pounded pork loin in flour, egg and breadcrumbs, pan-fried; about 12 g of oil stays in",
+    "recipe": [
+     {
+      "g": 100,
+      "db": "SR Legacy",
+      "code": 167882,
+      "description": "Pork, fresh, loin, center loin (chops), bone-in, separable lean only, cooked, pan-fried"
+     },
+     {
+      "g": 15,
+      "db": "SR Legacy",
+      "code": 174928,
+      "description": "Bread, crumbs, dry, grated, plain"
+     },
+     {
+      "g": 12,
+      "db": "FNDDS 2021-2023",
+      "code": 31101010,
+      "description": "Egg, whole, raw"
+     },
+     {
+      "g": 5,
+      "db": "SR Legacy",
+      "code": 169761,
+      "description": "Wheat flour, white, all-purpose, unenriched"
+     },
+     {
+      "g": 12,
+      "db": "SR Legacy",
+      "code": 172336,
+      "description": "Oil, canola"
+     }
+    ]
+   }
+  },
+  "kotletZKurczaka": {
+   "per100": {
+    "kcal": 243,
+    "protein": 21.5,
+    "carbs": 6,
+    "fat": 14.1,
+    "sugars": 0.1,
+    "fiber": 0.2,
+    "satFat": 2.8
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 24127200,
+    "description": "Chicken breast, fried, coated, skin / coating eaten, from raw"
+   }
+  },
+  "krakersy": {
+   "per100": {
+    "kcal": 510,
+    "protein": 6.6,
+    "carbs": 61.3,
+    "fat": 26.4,
+    "sugars": 8.2,
+    "fiber": 2.3,
+    "satFat": 5.6
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 54001000,
+    "description": "Crackers, NFS"
+   }
+  },
+  "kremowka": {
+   "per100": {
+    "kcal": 410,
+    "protein": 5.7,
+    "carbs": 30.1,
+    "fat": 29.7,
+    "sugars": 4.7,
+    "fiber": 0.8,
+    "satFat": 7.7
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 53452420,
+    "description": "Pastry, puff, custard or cream filled, iced or not iced"
+   }
+  },
+  "krupnik": {
+   "per100": {
+    "kcal": 58,
+    "protein": 3.3,
+    "carbs": 6.7,
+    "fat": 2.1,
+    "sugars": 0.8,
+    "fiber": 1.1,
+    "satFat": 0.7
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 58401010,
+    "description": "Soup, barley"
+   }
+  },
+  "kungPaoChicken": {
+   "per100": {
+    "kcal": 129,
+    "protein": 9.8,
+    "carbs": 6.9,
+    "fat": 7,
+    "sugars": 3,
+    "fiber": 1.5,
+    "satFat": 1.4
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 27445220,
+    "description": "Kung pao chicken"
+   }
+  },
+  "kurczakZRyzem": {
+   "per100": {
+    "kcal": 127,
+    "protein": 11.3,
+    "carbs": 13.7,
+    "fat": 2.5,
+    "sugars": 0.4,
+    "fiber": 0.8,
+    "satFat": 0.4
+   },
+   "source": {
+    "db": "composed",
+    "note": "roast chicken breast, rice, broccoli, a teaspoon of oil",
+    "recipe": [
+     {
+      "g": 130,
+      "db": "FNDDS 2021-2023",
+      "code": 24122131,
+      "description": "Chicken breast, baked, broiled, or roasted, skin not eaten, from raw"
+     },
+     {
+      "g": 180,
+      "db": "FNDDS 2021-2023",
+      "code": 56205001,
+      "description": "Rice, white, cooked, NS as to fat"
+     },
+     {
+      "g": 100,
+      "db": "FNDDS 2021-2023",
+      "code": 72201211,
+      "description": "Broccoli, fresh, cooked, no added fat"
+     },
+     {
+      "g": 5,
+      "db": "SR Legacy",
+      "code": 172336,
+      "description": "Oil, canola"
+     }
+    ]
+   }
+  },
+  "kuskus": {
+   "per100": {
+    "kcal": 111,
+    "protein": 3.8,
+    "carbs": 23.1,
+    "fat": 0.2,
+    "sugars": 0.1,
+    "fiber": 1.4,
+    "satFat": 0
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 56207160,
+    "description": "Couscous, plain, cooked"
+   }
+  },
+  "lahmacun": {
+   "per100": {
+    "kcal": 247,
+    "protein": 11,
+    "carbs": 33,
+    "fat": 7.5,
+    "sugars": 2.1,
+    "fiber": 1.6,
+    "satFat": 2.1
+   },
+   "source": {
+    "db": "composed",
+    "note": "thin flatbread with spiced mince, tomato and pepper",
+    "recipe": [
+     {
+      "g": 100,
+      "db": "FNDDS 2021-2023",
+      "code": 51109100,
+      "description": "Bread, pita"
+     },
+     {
+      "g": 20,
+      "db": "FNDDS 2021-2023",
+      "code": 23132000,
+      "description": "Lamb, ground"
+     },
+     {
+      "g": 20,
+      "db": "FNDDS 2021-2023",
+      "code": 21500100,
+      "description": "Beef, ground"
+     },
+     {
+      "g": 10,
+      "db": "SR Legacy",
+      "code": 170459,
+      "description": "Tomato products, canned, paste, without salt added (Includes foods for USDA's Food Distribution Program)"
+     },
+     {
+      "g": 15,
+      "db": "FNDDS 2021-2023",
+      "code": 75122200,
+      "description": "Peppers, sweet, red, raw"
+     },
+     {
+      "g": 10,
+      "db": "FNDDS 2021-2023",
+      "code": 75117020,
+      "description": "Onions, raw"
+     },
+     {
+      "g": 5,
+      "db": "FNDDS 2021-2023",
+      "code": 82104000,
+      "description": "Olive oil"
+     }
+    ]
+   }
+  },
+  "langosz": {
+   "per100": {
+    "kcal": 319,
+    "protein": 8.5,
+    "carbs": 33.2,
+    "fat": 16.8,
+    "sugars": 1.1,
+    "fiber": 1.2,
+    "satFat": 5.1
+   },
+   "source": {
+    "db": "composed",
+    "note": "fried yeast flatbread with garlic, sour cream and cheese",
+    "recipe": [
+     {
+      "g": 70,
+      "db": "SR Legacy",
+      "code": 169761,
+      "description": "Wheat flour, white, all-purpose, unenriched"
+     },
+     {
+      "g": 45,
+      "db": "SR Legacy",
+      "code": 173647,
+      "description": "Beverages, water, tap, drinking"
+     },
+     {
+      "g": 15,
+      "db": "SR Legacy",
+      "code": 172336,
+      "description": "Oil, canola"
+     },
+     {
+      "g": 3,
+      "db": "FNDDS 2021-2023",
+      "code": 75111500,
+      "description": "Garlic, raw"
+     },
+     {
+      "g": 30,
+      "db": "SR Legacy",
+      "code": 171257,
+      "description": "Cream, sour, cultured"
+     },
+     {
+      "g": 25,
+      "db": "FNDDS 2021-2023",
+      "code": 14105010,
+      "description": "Cheese, Gouda or Edam"
+     }
+    ],
+    "yield": 0.9
+   }
+  },
+  "lasagna": {
+   "per100": {
+    "kcal": 206,
+    "protein": 13.6,
+    "carbs": 13.1,
+    "fat": 10.9,
+    "sugars": 1.5,
+    "fiber": 1.1,
+    "satFat": 5.6
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 58130015,
+    "description": "Lasagna with meat, home recipe"
+   }
+  },
+  "lemoniada": {
+   "per100": {
+    "kcal": 46,
+    "protein": 0,
+    "carbs": 12.1,
+    "fat": 0,
+    "sugars": 11.7,
+    "fiber": 0,
+    "satFat": 0
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 92510955,
+    "description": "Lemonade, fruit juice drink"
+   }
+  },
+  "leniwe": {
+   "per100": {
+    "kcal": 236,
+    "protein": 10.4,
+    "carbs": 24.6,
+    "fat": 10.5,
+    "sugars": 4.4,
+    "fiber": 0.8,
+    "satFat": 5.9
+   },
+   "source": {
+    "db": "composed",
+    "note": "curd cheese dumplings (twarog, flour, egg) with butter, breadcrumbs and sugar",
+    "recipe": [
+     {
+      "g": 100,
+      "db": "FNDDS 2021-2023",
+      "code": 14201200,
+      "description": "Cottage cheese, farmer's"
+     },
+     {
+      "g": 40,
+      "db": "SR Legacy",
+      "code": 169761,
+      "description": "Wheat flour, white, all-purpose, unenriched"
+     },
+     {
+      "g": 25,
+      "db": "FNDDS 2021-2023",
+      "code": 31101010,
+      "description": "Egg, whole, raw"
+     },
+     {
+      "g": 8,
+      "db": "SR Legacy",
+      "code": 173430,
+      "description": "Butter, without salt"
+     },
+     {
+      "g": 8,
+      "db": "SR Legacy",
+      "code": 174928,
+      "description": "Bread, crumbs, dry, grated, plain"
+     },
+     {
+      "g": 5,
+      "db": "FNDDS 2021-2023",
+      "code": 91101010,
+      "description": "Sugar, white, granulated or lump"
+     }
+    ]
+   }
+  },
+  "lobsterBisque": {
+   "per100": {
+    "kcal": 75,
+    "protein": 2.3,
+    "carbs": 5.9,
+    "fat": 4.8,
+    "sugars": 1.9,
+    "fiber": 0.9,
+    "satFat": 2.5
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 28355250,
+    "description": "Soup, bisque"
+   }
+  },
+  "lobsterRollSandwich": {
+   "per100": {
+    "kcal": 237,
+    "protein": 9.6,
+    "carbs": 16.4,
+    "fat": 14.7,
+    "sugars": 2.1,
+    "fiber": 1,
+    "satFat": 4.2
+   },
+   "source": {
+    "db": "composed",
+    "note": "lobster salad in a buttered bun",
+    "recipe": [
+     {
+      "g": 110,
+      "db": "FNDDS 2021-2023",
+      "code": 27450020,
+      "description": "Lobster salad"
+     },
+     {
+      "g": 55,
+      "db": "FNDDS 2021-2023",
+      "code": 51154010,
+      "description": "Roll, white, hot dog bun"
+     },
+     {
+      "g": 8,
+      "db": "SR Legacy",
+      "code": 173430,
+      "description": "Butter, without salt"
+     }
+    ]
+   }
+  },
+  "lodyWloskie": {
+   "per100": {
+    "kcal": 180,
+    "protein": 4.8,
+    "carbs": 29.5,
+    "fat": 4.8,
+    "sugars": 22.1,
+    "fiber": 0.3,
+    "satFat": 2.9
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 13110200,
+    "description": "Ice cream, soft serve, vanilla"
+   }
+  },
+  "macaroniAndCheese": {
+   "per100": {
+    "kcal": 223,
+    "protein": 8.7,
+    "carbs": 23.1,
+    "fat": 10.5,
+    "sugars": 2.4,
+    "fiber": 1.2,
+    "satFat": 5.2
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 58145110,
+    "description": "Macaroni or noodles with cheese"
+   }
+  },
+  "macarons": {
+   "per100": {
+    "kcal": 447,
+    "protein": 5.9,
+    "carbs": 64.5,
+    "fat": 20,
+    "sugars": 60.5,
+    "fiber": 2.2,
+    "satFat": 7.7
+   },
+   "source": {
+    "db": "composed",
+    "note": "almond meringue shells with buttercream; baked",
+    "recipe": [
+     {
+      "g": 50,
+      "db": "SR Legacy",
+      "code": 170567,
+      "description": "Nuts, almonds"
+     },
+     {
+      "g": 150,
+      "db": "FNDDS 2021-2023",
+      "code": 91101020,
+      "description": "Sugar, white, confectioner's, powdered"
+     },
+     {
+      "g": 55,
+      "db": "SR Legacy",
+      "code": 172183,
+      "description": "Egg, white, raw, fresh"
+     },
+     {
+      "g": 25,
+      "db": "FNDDS 2021-2023",
+      "code": 91101010,
+      "description": "Sugar, white, granulated or lump"
+     },
+     {
+      "g": 40,
+      "db": "SR Legacy",
+      "code": 173430,
+      "description": "Butter, without salt"
+     }
+    ],
+    "yield": 0.9
+   }
+  },
+  "makaron": {
+   "per100": {
+    "kcal": 157,
+    "protein": 5.8,
+    "carbs": 30.7,
+    "fat": 0.9,
+    "sugars": 0.6,
+    "fiber": 1.8,
+    "satFat": 0.2
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 56130000,
+    "description": "Pasta, cooked"
+   }
+  },
+  "makaronZSosemPomidorowym": {
+   "per100": {
+    "kcal": 106,
+    "protein": 3.7,
+    "carbs": 19.9,
+    "fat": 1.2,
+    "sugars": 2.9,
+    "fiber": 1.8,
+    "satFat": 0.2
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 58146222,
+    "description": "Pasta with tomato-based sauce, home recipe"
+   }
+  },
+  "makowiec": {
+   "per100": {
+    "kcal": 393,
+    "protein": 10.4,
+    "carbs": 51.1,
+    "fat": 17.7,
+    "sugars": 23.2,
+    "fiber": 6.9,
+    "satFat": 4.2
+   },
+   "source": {
+    "db": "composed",
+    "note": "sweet yeast dough rolled with poppy-seed filling (poppy, sugar, honey, prunes, butter, walnuts)",
+    "recipe": [
+     {
+      "g": 55,
+      "db": "FNDDS 2021-2023",
+      "code": 51160000,
+      "description": "Roll, sweet, no frosting"
+     },
+     {
+      "g": 25,
+      "db": "SR Legacy",
+      "code": 171330,
+      "description": "Spices, poppy seed"
+     },
+     {
+      "g": 10,
+      "db": "FNDDS 2021-2023",
+      "code": 91101010,
+      "description": "Sugar, white, granulated or lump"
+     },
+     {
+      "g": 4,
+      "db": "SR Legacy",
+      "code": 169640,
+      "description": "Honey"
+     },
+     {
+      "g": 3,
+      "db": "FNDDS 2021-2023",
+      "code": 62122100,
+      "description": "Prune, dried"
+     },
+     {
+      "g": 2,
+      "db": "SR Legacy",
+      "code": 173430,
+      "description": "Butter, without salt"
+     },
+     {
+      "g": 3,
+      "db": "SR Legacy",
+      "code": 170187,
+      "description": "Nuts, walnuts, english"
+     }
+    ]
+   }
+  },
+  "maliny": {
+   "per100": {
+    "kcal": 57,
+    "protein": 1,
+    "carbs": 12.9,
+    "fat": 0.2,
+    "sugars": 2.7,
+    "fiber": 6.5,
+    "satFat": 0
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 63219000,
+    "description": "Raspberries, raw"
+   }
+  },
+  "mandarynki": {
+   "per100": {
+    "kcal": 53,
+    "protein": 0.8,
+    "carbs": 13.3,
+    "fat": 0.3,
+    "sugars": 10.6,
+    "fiber": 1.8,
+    "satFat": 0
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 61125010,
+    "description": "Tangerine, raw"
+   }
+  },
+  "mango": {
+   "per100": {
+    "kcal": 60,
+    "protein": 0.8,
+    "carbs": 15,
+    "fat": 0.4,
+    "sugars": 13.7,
+    "fiber": 1.6,
+    "satFat": 0.1
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 63129010,
+    "description": "Mango, raw"
+   }
+  },
+  "mangoStickyRice": {
+   "per100": {
+    "kcal": 180,
+    "protein": 2.3,
+    "carbs": 21.5,
+    "fat": 10.4,
+    "sugars": 8.9,
+    "fiber": 1.6,
+    "satFat": 9
+   },
+   "source": {
+    "db": "composed",
+    "note": "rice cooked with coconut milk, mango, coconut cream, sugar",
+    "recipe": [
+     {
+      "g": 150,
+      "db": "FNDDS 2021-2023",
+      "code": 58161200,
+      "description": "Rice, cooked with coconut milk"
+     },
+     {
+      "g": 120,
+      "db": "FNDDS 2021-2023",
+      "code": 63129010,
+      "description": "Mango, raw"
+     },
+     {
+      "g": 20,
+      "db": "SR Legacy",
+      "code": 170173,
+      "description": "Nuts, coconut milk, canned (liquid expressed from grated meat and water)"
+     },
+     {
+      "g": 5,
+      "db": "FNDDS 2021-2023",
+      "code": 91101010,
+      "description": "Sugar, white, granulated or lump"
+     }
+    ]
+   }
+  },
+  "mapoTofu": {
+   "per100": {
+    "kcal": 159,
+    "protein": 13.7,
+    "carbs": 2.3,
+    "fat": 11.6,
+    "sugars": 0.6,
+    "fiber": 1.3,
+    "satFat": 2
+   },
+   "source": {
+    "db": "composed",
+    "note": "tofu with pork mince in chilli broth, oil, soy sauce",
+    "recipe": [
+     {
+      "g": 150,
+      "db": "SR Legacy",
+      "code": 172475,
+      "description": "Tofu, raw, firm, prepared with calcium sulfate"
+     },
+     {
+      "g": 40,
+      "db": "FNDDS 2021-2023",
+      "code": 22002000,
+      "description": "Pork, ground"
+     },
+     {
+      "g": 60,
+      "db": "FNDDS 2021-2023",
+      "code": 28340120,
+      "description": "Soup, broth"
+     },
+     {
+      "g": 10,
+      "db": "FNDDS 2021-2023",
+      "code": 74403000,
+      "description": "Hot Thai sauce"
+     },
+     {
+      "g": 10,
+      "db": "SR Legacy",
+      "code": 172336,
+      "description": "Oil, canola"
+     },
+     {
+      "g": 5,
+      "db": "FNDDS 2021-2023",
+      "code": 41420300,
+      "description": "Soy sauce"
+     }
+    ]
+   }
+  },
+  "meatloaf": {
+   "per100": {
+    "kcal": 199,
+    "protein": 17.5,
+    "carbs": 7.2,
+    "fat": 10.7,
+    "sugars": 1.8,
+    "fiber": 0.4,
+    "satFat": 4
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 27214100,
+    "description": "Meat loaf made with beef"
+   }
+  },
+  "melanzane": {
+   "per100": {
+    "kcal": 155,
+    "protein": 7,
+    "carbs": 9,
+    "fat": 10.5,
+    "sugars": 3,
+    "fiber": 1.9,
+    "satFat": 3.6
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 75412060,
+    "description": "Eggplant parmesan casserole, regular"
+   }
+  },
+  "menemen": {
+   "per100": {
+    "kcal": 106,
+    "protein": 5.9,
+    "carbs": 3,
+    "fat": 8,
+    "sugars": 1.7,
+    "fiber": 0.6,
+    "satFat": 1.7
+   },
+   "source": {
+    "db": "composed",
+    "note": "eggs scrambled with tomato and pepper in oil",
+    "recipe": [
+     {
+      "g": 100,
+      "db": "FNDDS 2021-2023",
+      "code": 31101010,
+      "description": "Egg, whole, raw"
+     },
+     {
+      "g": 80,
+      "db": "FNDDS 2021-2023",
+      "code": 74101000,
+      "description": "Tomatoes, raw"
+     },
+     {
+      "g": 40,
+      "db": "FNDDS 2021-2023",
+      "code": 75122200,
+      "description": "Peppers, sweet, red, raw"
+     },
+     {
+      "g": 8,
+      "db": "SR Legacy",
+      "code": 172336,
+      "description": "Oil, canola"
+     }
+    ]
+   }
+  },
+  "milkshake": {
+   "per100": {
+    "kcal": 150,
+    "protein": 3.7,
+    "carbs": 20.4,
+    "fat": 6.7,
+    "sugars": 13.4,
+    "fiber": 1.6,
+    "satFat": 4
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 11542100,
+    "description": "Milk shake, fast food, chocolate"
+   }
+  },
+  "minestrone": {
+   "per100": {
+    "kcal": 40,
+    "protein": 1.7,
+    "carbs": 7.3,
+    "fat": 0.5,
+    "sugars": 1,
+    "fiber": 1.5,
+    "satFat": 0.1
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 75651000,
+    "description": "Soup, minestrone"
+   }
+  },
+  "misoSoup": {
+   "per100": {
+    "kcal": 24,
+    "protein": 2.2,
+    "carbs": 2.3,
+    "fat": 0.9,
+    "sugars": 0.8,
+    "fiber": 0.6,
+    "satFat": 0.2
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 41601070,
+    "description": "Soup, miso or tofu"
+   }
+  },
+  "mizeria": {
+   "per100": {
+    "kcal": 58,
+    "protein": 1,
+    "carbs": 4.3,
+    "fat": 4.2,
+    "sugars": 3.1,
+    "fiber": 0.4,
+    "satFat": 2.1
+   },
+   "source": {
+    "db": "composed",
+    "note": "cucumber in sour cream with dill",
+    "recipe": [
+     {
+      "g": 150,
+      "db": "FNDDS 2021-2023",
+      "code": 75111000,
+      "description": "Cucumber, raw"
+     },
+     {
+      "g": 40,
+      "db": "SR Legacy",
+      "code": 171257,
+      "description": "Cream, sour, cultured"
+     },
+     {
+      "g": 2,
+      "db": "FNDDS 2021-2023",
+      "code": 91101010,
+      "description": "Sugar, white, granulated or lump"
+     }
+    ]
+   }
+  },
+  "mleko": {
+   "per100": {
+    "kcal": 50,
+    "protein": 3.4,
+    "carbs": 4.9,
+    "fat": 1.9,
+    "sugars": 4.9,
+    "fiber": 0,
+    "satFat": 1.1
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 11112110,
+    "description": "Milk, reduced fat (2%)"
+   }
+  },
+  "moussaka": {
+   "per100": {
+    "kcal": 123,
+    "protein": 6.1,
+    "carbs": 7.4,
+    "fat": 7.6,
+    "sugars": 3,
+    "fiber": 1.6,
+    "satFat": 2.5
+   },
+   "source": {
+    "db": "composed",
+    "note": "aubergine, beef mince in tomato sauce, potato, béchamel",
+    "recipe": [
+     {
+      "g": 120,
+      "db": "FNDDS 2021-2023",
+      "code": 75217010,
+      "description": "Eggplant, cooked, no added fat"
+     },
+     {
+      "g": 8,
+      "db": "FNDDS 2021-2023",
+      "code": 82104000,
+      "description": "Olive oil"
+     },
+     {
+      "g": 60,
+      "db": "FNDDS 2021-2023",
+      "code": 21500100,
+      "description": "Beef, ground"
+     },
+     {
+      "g": 40,
+      "db": "FNDDS 2021-2023",
+      "code": 74404010,
+      "description": "Spaghetti sauce"
+     },
+     {
+      "g": 40,
+      "db": "SR Legacy",
+      "code": 170440,
+      "description": "Potatoes, boiled, cooked without skin, flesh, without salt"
+     },
+     {
+      "g": 60,
+      "db": "FNDDS 2021-2023",
+      "code": 13411000,
+      "description": "White sauce or gravy"
+     }
+    ]
+   }
+  },
+  "muffin": {
+   "per100": {
+    "kcal": 402,
+    "protein": 5.8,
+    "carbs": 55.4,
+    "fat": 19,
+    "sugars": 32.9,
+    "fiber": 1.8,
+    "satFat": 5.4
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 52302500,
+    "description": "Muffin, chocolate chip"
+   }
+  },
+  "mujadara": {
+   "per100": {
+    "kcal": 150,
+    "protein": 5.5,
+    "carbs": 21.4,
+    "fat": 4.8,
+    "sugars": 1.3,
+    "fiber": 4.1,
+    "satFat": 0.7
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 58160805,
+    "description": "Rice, white, with lentils, fat added"
+   }
+  },
+  "mussels": {
+   "per100": {
+    "kcal": 109,
+    "protein": 15.1,
+    "carbs": 4.7,
+    "fat": 2.8,
+    "sugars": 0,
+    "fiber": 0,
+    "satFat": 0.5
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 26313110,
+    "description": "Mussels"
+   }
+  },
+  "naan": {
+   "per100": {
+    "kcal": 311,
+    "protein": 11.1,
+    "carbs": 50.2,
+    "fat": 7.3,
+    "sugars": 3.7,
+    "fiber": 5.2,
+    "satFat": 3.2
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 51108100,
+    "description": "Bread, naan"
+   }
+  },
+  "nachos": {
+   "per100": {
+    "kcal": 265,
+    "protein": 7.6,
+    "carbs": 23.9,
+    "fat": 15.9,
+    "sugars": 0.4,
+    "fiber": 1.7,
+    "satFat": 3.5
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 58104105,
+    "description": "Nachos, NFS"
+   }
+  },
+  "nalesnikiZDzemem": {
+   "per100": {
+    "kcal": 238,
+    "protein": 6.7,
+    "carbs": 34.2,
+    "fat": 8.4,
+    "sugars": 15.9,
+    "fiber": 0.7,
+    "satFat": 2.6
+   },
+   "source": {
+    "db": "composed",
+    "note": "crêpes with jam",
+    "recipe": [
+     {
+      "g": 100,
+      "db": "FNDDS 2021-2023",
+      "code": 55401000,
+      "description": "Crepe, plain"
+     },
+     {
+      "g": 35,
+      "db": "SR Legacy",
+      "code": 169641,
+      "description": "Jams and preserves"
+     }
+    ]
+   }
+  },
+  "nalesnikiZSerem": {
+   "per100": {
+    "kcal": 215,
+    "protein": 9.3,
+    "carbs": 17,
+    "fat": 12.4,
+    "sugars": 7.3,
+    "fiber": 0.3,
+    "satFat": 5.7
+   },
+   "source": {
+    "db": "composed",
+    "note": "crêpes with sweetened curd cheese (twarog), fried in butter",
+    "recipe": [
+     {
+      "g": 100,
+      "db": "FNDDS 2021-2023",
+      "code": 55401000,
+      "description": "Crepe, plain"
+     },
+     {
+      "g": 80,
+      "db": "FNDDS 2021-2023",
+      "code": 14201200,
+      "description": "Cottage cheese, farmer's"
+     },
+     {
+      "g": 8,
+      "db": "FNDDS 2021-2023",
+      "code": 91101010,
+      "description": "Sugar, white, granulated or lump"
+     },
+     {
+      "g": 5,
+      "db": "SR Legacy",
+      "code": 172184,
+      "description": "Egg, yolk, raw, fresh"
+     },
+     {
+      "g": 5,
+      "db": "SR Legacy",
+      "code": 173430,
+      "description": "Butter, without salt"
+     }
+    ]
+   }
+  },
+  "nicoise": {
+   "per100": {
+    "kcal": 83,
+    "protein": 6,
+    "carbs": 7.1,
+    "fat": 3.4,
+    "sugars": 1.8,
+    "fiber": 1.2,
+    "satFat": 0.7
+   },
+   "source": {
+    "db": "composed",
+    "note": "tuna, egg, potatoes, green beans, tomato, olives, lettuce, vinaigrette",
+    "recipe": [
+     {
+      "g": 80,
+      "db": "FNDDS 2021-2023",
+      "code": 26155110,
+      "description": "Fish, tuna, canned"
+     },
+     {
+      "g": 50,
+      "db": "FNDDS 2021-2023",
+      "code": 31103010,
+      "description": "Egg, whole, boiled or poached"
+     },
+     {
+      "g": 80,
+      "db": "SR Legacy",
+      "code": 170440,
+      "description": "Potatoes, boiled, cooked without skin, flesh, without salt"
+     },
+     {
+      "g": 60,
+      "db": "FNDDS 2021-2023",
+      "code": 75205021,
+      "description": "Green beans, fresh, cooked, no added fat"
+     },
+     {
+      "g": 60,
+      "db": "FNDDS 2021-2023",
+      "code": 74101000,
+      "description": "Tomatoes, raw"
+     },
+     {
+      "g": 15,
+      "db": "FNDDS 2021-2023",
+      "code": 75510020,
+      "description": "Olives, black"
+     },
+     {
+      "g": 40,
+      "db": "FNDDS 2021-2023",
+      "code": 75113000,
+      "description": "Lettuce, raw"
+     },
+     {
+      "g": 30,
+      "db": "FNDDS 2021-2023",
+      "code": 83106000,
+      "description": "Italian dressing, made with vinegar and oil"
+     }
+    ]
+   }
+  },
+  "nigiri": {
+   "per100": {
+    "kcal": 107,
+    "protein": 8.9,
+    "carbs": 13.4,
+    "fat": 1.7,
+    "sugars": 0.8,
+    "fiber": 0.6,
+    "satFat": 0.3
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 58151420,
+    "description": "Sushi, topped with salmon"
+   }
+  },
+  "ogorkowa": {
+   "per100": {
+    "kcal": 39,
+    "protein": 1.1,
+    "carbs": 5,
+    "fat": 1.7,
+    "sugars": 0.8,
+    "fiber": 0.6,
+    "satFat": 0.9
+   },
+   "source": {
+    "db": "composed",
+    "note": "broth, fermented cucumbers, potatoes, carrot, sour cream",
+    "recipe": [
+     {
+      "g": 250,
+      "db": "FNDDS 2021-2023",
+      "code": 28340120,
+      "description": "Soup, broth"
+     },
+     {
+      "g": 60,
+      "db": "SR Legacy",
+      "code": 168558,
+      "description": "Pickles, cucumber, dill or kosher dill"
+     },
+     {
+      "g": 60,
+      "db": "SR Legacy",
+      "code": 170440,
+      "description": "Potatoes, boiled, cooked without skin, flesh, without salt"
+     },
+     {
+      "g": 20,
+      "db": "FNDDS 2021-2023",
+      "code": 73102211,
+      "description": "Carrots, fresh, cooked, no added fat"
+     },
+     {
+      "g": 20,
+      "db": "SR Legacy",
+      "code": 171257,
+      "description": "Cream, sour, cultured"
+     },
+     {
+      "g": 5,
+      "db": "SR Legacy",
+      "code": 169761,
+      "description": "Wheat flour, white, all-purpose, unenriched"
+     },
+     {
+      "g": 3,
+      "db": "SR Legacy",
+      "code": 173430,
+      "description": "Butter, without salt"
+     }
+    ]
+   }
+  },
+  "omelette": {
+   "per100": {
+    "kcal": 182,
+    "protein": 11.6,
+    "carbs": 0.9,
+    "fat": 14.6,
+    "sugars": 0.2,
+    "fiber": 0,
+    "satFat": 6
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 32130020,
+    "description": "Egg omelet or scrambled egg, made with butter"
+   }
+  },
+  "onigiri": {
+   "per100": {
+    "kcal": 149,
+    "protein": 5.9,
+    "carbs": 24.6,
+    "fat": 2.7,
+    "sugars": 0.1,
+    "fiber": 0.4,
+    "satFat": 0.6
+   },
+   "source": {
+    "db": "composed",
+    "note": "rice ball with salmon and nori",
+    "recipe": [
+     {
+      "g": 100,
+      "db": "FNDDS 2021-2023",
+      "code": 56205001,
+      "description": "Rice, white, cooked, NS as to fat"
+     },
+     {
+      "g": 15,
+      "db": "FNDDS 2021-2023",
+      "code": 26137120,
+      "description": "Fish, salmon, baked or broiled"
+     },
+     {
+      "g": 1,
+      "db": "FNDDS 2021-2023",
+      "code": 75232000,
+      "description": "Seaweed, dried"
+     }
+    ]
+   }
+  },
+  "onionRings": {
+   "per100": {
+    "kcal": 352,
+    "protein": 4.2,
+    "carbs": 39.9,
+    "fat": 19.8,
+    "sugars": 5,
+    "fiber": 2.6,
+    "satFat": 3.2
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 75415022,
+    "description": "Fried onion rings"
+   }
+  },
+  "orangeChicken": {
+   "per100": {
+    "kcal": 262,
+    "protein": 14.5,
+    "carbs": 22.5,
+    "fat": 12.7,
+    "sugars": 13.6,
+    "fiber": 0.8,
+    "satFat": 2.4
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 27146350,
+    "description": "Orange chicken"
+   }
+  },
+  "orzechy": {
+   "per100": {
+    "kcal": 610,
+    "protein": 19.6,
+    "carbs": 20.9,
+    "fat": 53.8,
+    "sugars": 4.5,
+    "fiber": 7.4,
+    "satFat": 7.6
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 42110100,
+    "description": "Mixed nuts, with peanuts, salted"
+   }
+  },
+  "owoceZBitaSmietana": {
+   "per100": {
+    "kcal": 65,
+    "protein": 1,
+    "carbs": 8.6,
+    "fat": 3.1,
+    "sugars": 5.3,
+    "fiber": 1.6,
+    "satFat": 1.8
+   },
+   "source": {
+    "db": "composed",
+    "note": "strawberries with whipped cream",
+    "recipe": [
+     {
+      "g": 200,
+      "db": "FNDDS 2021-2023",
+      "code": 63223020,
+      "description": "Strawberries, raw"
+     },
+     {
+      "g": 30,
+      "db": "SR Legacy",
+      "code": 170860,
+      "description": "Cream, whipped, cream topping, pressurized"
+     }
+    ]
+   }
+  },
+  "owsianka": {
+   "per100": {
+    "kcal": 111,
+    "protein": 4.8,
+    "carbs": 17.5,
+    "fat": 2.6,
+    "sugars": 6.8,
+    "fiber": 1.6,
+    "satFat": 1.1
+   },
+   "source": {
+    "db": "composed",
+    "note": "oats cooked in 2 % milk with a teaspoon of honey",
+    "recipe": [
+     {
+      "g": 50,
+      "db": "SR Legacy",
+      "code": 173904,
+      "description": "Cereals, oats, regular and quick, not fortified, dry"
+     },
+     {
+      "g": 250,
+      "db": "FNDDS 2021-2023",
+      "code": 11112110,
+      "description": "Milk, reduced fat (2%)"
+     },
+     {
+      "g": 10,
+      "db": "SR Legacy",
+      "code": 169640,
+      "description": "Honey"
+     }
+    ]
+   }
+  },
+  "owsiankaZOwocami": {
+   "per100": {
+    "kcal": 104,
+    "protein": 3.8,
+    "carbs": 18,
+    "fat": 2,
+    "sugars": 8.4,
+    "fiber": 1.7,
+    "satFat": 0.8
+   },
+   "source": {
+    "db": "composed",
+    "note": "owsianka with banana and blueberries",
+    "recipe": [
+     {
+      "g": 300,
+      "db": "composed",
+      "description": "owsianka"
+     },
+     {
+      "g": 60,
+      "db": "FNDDS 2021-2023",
+      "code": 63107010,
+      "description": "Banana, raw"
+     },
+     {
+      "g": 40,
+      "db": "FNDDS 2021-2023",
+      "code": 63203010,
+      "description": "Blueberries, raw"
+     }
+    ]
+   }
+  },
+  "oysters": {
+   "per100": {
+    "kcal": 51,
+    "protein": 5.7,
+    "carbs": 2.7,
+    "fat": 1.7,
+    "sugars": 0.6,
+    "fiber": 0,
+    "satFat": 0.5
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 26315100,
+    "description": "Oysters, raw"
+   }
+  },
+  "paczek": {
+   "per100": {
+    "kcal": 390,
+    "protein": 4.9,
+    "carbs": 52.3,
+    "fat": 18.2,
+    "sugars": 28.4,
+    "fiber": 1.9,
+    "satFat": 7.6
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 53521140,
+    "description": "Doughnut, jelly"
+   }
+  },
+  "padThai": {
+   "per100": {
+    "kcal": 154,
+    "protein": 8.1,
+    "carbs": 14.4,
+    "fat": 7.5,
+    "sugars": 4.1,
+    "fiber": 1.2,
+    "satFat": 1.3
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 58137230,
+    "description": "Pad Thai with chicken"
+   }
+  },
+  "paella": {
+   "per100": {
+    "kcal": 169,
+    "protein": 9.5,
+    "carbs": 15.8,
+    "fat": 7.2,
+    "sugars": 0.7,
+    "fiber": 0.6,
+    "satFat": 1.9
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 27360090,
+    "description": "Paella, NFS"
+   }
+  },
+  "pakora": {
+   "per100": {
+    "kcal": 125,
+    "protein": 4.9,
+    "carbs": 16.2,
+    "fat": 4.8,
+    "sugars": 3,
+    "fiber": 3.2,
+    "satFat": 0.6
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 75440400,
+    "description": "Pakora"
+   }
+  },
+  "palakPaneer": {
+   "per100": {
+    "kcal": 101,
+    "protein": 5.4,
+    "carbs": 4.3,
+    "fat": 7,
+    "sugars": 1.9,
+    "fiber": 0.9,
+    "satFat": 1.8
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 72125310,
+    "description": "Palak Paneer"
+   }
+  },
+  "pancakes": {
+   "per100": {
+    "kcal": 282,
+    "protein": 7.4,
+    "carbs": 35.3,
+    "fat": 12.1,
+    "sugars": 7.1,
+    "fiber": 2.1,
+    "satFat": 3
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 55100005,
+    "description": "Pancakes, NFS",
+    "note": "plain, before syrup: the sweetness scale adds it"
+   }
+  },
+  "pannaCotta": {
+   "per100": {
+    "kcal": 221,
+    "protein": 3,
+    "carbs": 15.3,
+    "fat": 16.9,
+    "sugars": 14.9,
+    "fiber": 0.2,
+    "satFat": 10.5
+   },
+   "source": {
+    "db": "composed",
+    "note": "cream, milk, sugar, gelatine, strawberry sauce",
+    "recipe": [
+     {
+      "g": 250,
+      "db": "SR Legacy",
+      "code": 170858,
+      "description": "Cream, fluid, light whipping"
+     },
+     {
+      "g": 100,
+      "db": "FNDDS 2021-2023",
+      "code": 11112110,
+      "description": "Milk, reduced fat (2%)"
+     },
+     {
+      "g": 45,
+      "db": "FNDDS 2021-2023",
+      "code": 91101010,
+      "description": "Sugar, white, granulated or lump"
+     },
+     {
+      "g": 6,
+      "db": "SR Legacy",
+      "code": 169599,
+      "description": "Gelatins, dry powder, unsweetened"
+     },
+     {
+      "g": 60,
+      "db": "FNDDS 2021-2023",
+      "code": 63223020,
+      "description": "Strawberries, raw"
+     },
+     {
+      "g": 10,
+      "db": "FNDDS 2021-2023",
+      "code": 91101010,
+      "description": "Sugar, white, granulated or lump"
+     }
+    ]
+   }
+  },
+  "papayaSalad": {
+   "per100": {
+    "kcal": 73,
+    "protein": 1.8,
+    "carbs": 12.6,
+    "fat": 2.3,
+    "sugars": 9.1,
+    "fiber": 1.8,
+    "satFat": 0.4
+   },
+   "source": {
+    "db": "composed",
+    "note": "green papaya (ripe papaya stands in), tomato, beans, peanuts, lime, fish sauce, sugar",
+    "recipe": [
+     {
+      "g": 150,
+      "db": "SR Legacy",
+      "code": 169926,
+      "description": "Papayas, raw"
+     },
+     {
+      "g": 30,
+      "db": "FNDDS 2021-2023",
+      "code": 74101000,
+      "description": "Tomatoes, raw"
+     },
+     {
+      "g": 20,
+      "db": "FNDDS 2021-2023",
+      "code": 75205021,
+      "description": "Green beans, fresh, cooked, no added fat"
+     },
+     {
+      "g": 10,
+      "db": "SR Legacy",
+      "code": 173806,
+      "description": "Peanuts, all types, dry-roasted, without salt"
+     },
+     {
+      "g": 15,
+      "db": "SR Legacy",
+      "code": 168156,
+      "description": "Lime juice, raw"
+     },
+     {
+      "g": 10,
+      "db": "SR Legacy",
+      "code": 174531,
+      "description": "Sauce, fish, ready-to-serve"
+     },
+     {
+      "g": 8,
+      "db": "FNDDS 2021-2023",
+      "code": 91101010,
+      "description": "Sugar, white, granulated or lump"
+     }
+    ]
+   }
+  },
+  "parowki": {
+   "per100": {
+    "kcal": 277,
+    "protein": 9.7,
+    "carbs": 5,
+    "fat": 24.2,
+    "sugars": 2.8,
+    "fiber": 0,
+    "satFat": 7.6
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 25210280,
+    "description": "Hot dog, meat and poultry"
+   }
+  },
+  "pastaPesto": {
+   "per100": {
+    "kcal": 211,
+    "protein": 6.7,
+    "carbs": 27.2,
+    "fat": 8.2,
+    "sugars": 0.6,
+    "fiber": 1.7,
+    "satFat": 1.7
+   },
+   "source": {
+    "db": "composed",
+    "note": "pasta with basil pesto and parmesan",
+    "recipe": [
+     {
+      "g": 220,
+      "db": "FNDDS 2021-2023",
+      "code": 56130000,
+      "description": "Pasta, cooked"
+     },
+     {
+      "g": 30,
+      "db": "FNDDS 2021-2023",
+      "code": 81302070,
+      "description": "Pesto sauce"
+     },
+     {
+      "g": 5,
+      "db": "SR Legacy",
+      "code": 170848,
+      "description": "Cheese, parmesan, hard"
+     }
+    ]
+   }
+  },
+  "patatasBravas": {
+   "per100": {
+    "kcal": 147,
+    "protein": 2.2,
+    "carbs": 17,
+    "fat": 8,
+    "sugars": 1.8,
+    "fiber": 1.9,
+    "satFat": 1.6
+   },
+   "source": {
+    "db": "composed",
+    "note": "roast potatoes with tomato sauce and aioli",
+    "recipe": [
+     {
+      "g": 200,
+      "db": "FNDDS 2021-2023",
+      "code": 71104060,
+      "description": "Potato, roasted, from fresh, peel eaten, fat added, NS as to fat type"
+     },
+     {
+      "g": 40,
+      "db": "FNDDS 2021-2023",
+      "code": 74404010,
+      "description": "Spaghetti sauce"
+     },
+     {
+      "g": 15,
+      "db": "FNDDS 2021-2023",
+      "code": 83107000,
+      "description": "Mayonnaise, regular"
+     }
+    ]
+   }
+  },
+  "pekingDuck": {
+   "per100": {
+    "kcal": 251,
+    "protein": 12.3,
+    "carbs": 10,
+    "fat": 17.6,
+    "sugars": 4.1,
+    "fiber": 0.6,
+    "satFat": 5.9
+   },
+   "source": {
+    "db": "composed",
+    "note": "roast duck with skin, pancakes, hoisin, cucumber, scallion",
+    "recipe": [
+     {
+      "g": 100,
+      "db": "FNDDS 2021-2023",
+      "code": 24301010,
+      "description": "Duck, roasted, skin eaten"
+     },
+     {
+      "g": 40,
+      "db": "FNDDS 2021-2023",
+      "code": 55401000,
+      "description": "Crepe, plain"
+     },
+     {
+      "g": 20,
+      "db": "FNDDS 2021-2023",
+      "code": 41420250,
+      "description": "Hoisin sauce"
+     },
+     {
+      "g": 20,
+      "db": "FNDDS 2021-2023",
+      "code": 75111000,
+      "description": "Cucumber, raw"
+     },
+     {
+      "g": 10,
+      "db": "FNDDS 2021-2023",
+      "code": 75117010,
+      "description": "Onions, green, raw"
+     }
+    ]
+   }
+  },
+  "penneArrabbiata": {
+   "per100": {
+    "kcal": 160,
+    "protein": 3.4,
+    "carbs": 18.4,
+    "fat": 8,
+    "sugars": 2.7,
+    "fiber": 1.7,
+    "satFat": 1.1
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 58146221,
+    "description": "Pasta with tomato-based sauce, restaurant"
+   }
+  },
+  "phillyCheesesteak": {
+   "per100": {
+    "kcal": 270,
+    "protein": 18.4,
+    "carbs": 21.5,
+    "fat": 12,
+    "sugars": 2.8,
+    "fiber": 1,
+    "satFat": 5.6
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 27514030,
+    "description": "Cheese steak sandwich or sub on white"
+   }
+  },
+  "pho": {
+   "per100": {
+    "kcal": 77,
+    "protein": 5.8,
+    "carbs": 5.6,
+    "fat": 3.3,
+    "sugars": 0.5,
+    "fiber": 0.4,
+    "satFat": 1.3
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 28310330,
+    "description": "Soup, pho, with meat"
+   }
+  },
+  "pierogiCabbage": {
+   "per100": {
+    "kcal": 108,
+    "protein": 2.9,
+    "carbs": 15,
+    "fat": 4.2,
+    "sugars": 1.4,
+    "fiber": 1.8,
+    "satFat": 0.5
+   },
+   "source": {
+    "db": "composed",
+    "note": "boiled dough with sauerkraut and mushroom filling, fried onion",
+    "recipe": [
+     {
+      "g": 130,
+      "db": "FNDDS 2021-2023",
+      "code": 56112000,
+      "description": "Noodles, cooked"
+     },
+     {
+      "g": 80,
+      "db": "SR Legacy",
+      "code": 169279,
+      "description": "Sauerkraut, canned, solids and liquids"
+     },
+     {
+      "g": 20,
+      "db": "FNDDS 2021-2023",
+      "code": 99997515,
+      "description": "Mushrooms, cooked, as ingredient"
+     },
+     {
+      "g": 20,
+      "db": "FNDDS 2021-2023",
+      "code": 75117020,
+      "description": "Onions, raw"
+     },
+     {
+      "g": 8,
+      "db": "SR Legacy",
+      "code": 172336,
+      "description": "Oil, canola"
+     }
+    ]
+   }
+  },
+  "pierogiFruit": {
+   "per100": {
+    "kcal": 135,
+    "protein": 2.8,
+    "carbs": 23.1,
+    "fat": 3.5,
+    "sugars": 8.7,
+    "fiber": 1.4,
+    "satFat": 1.4
+   },
+   "source": {
+    "db": "composed",
+    "note": "boiled dough with blueberries, sweetened sour cream",
+    "recipe": [
+     {
+      "g": 130,
+      "db": "FNDDS 2021-2023",
+      "code": 56112000,
+      "description": "Noodles, cooked"
+     },
+     {
+      "g": 80,
+      "db": "FNDDS 2021-2023",
+      "code": 63203010,
+      "description": "Blueberries, raw"
+     },
+     {
+      "g": 8,
+      "db": "FNDDS 2021-2023",
+      "code": 91101010,
+      "description": "Sugar, white, granulated or lump"
+     },
+     {
+      "g": 30,
+      "db": "SR Legacy",
+      "code": 171257,
+      "description": "Cream, sour, cultured"
+     },
+     {
+      "g": 5,
+      "db": "FNDDS 2021-2023",
+      "code": 91101010,
+      "description": "Sugar, white, granulated or lump"
+     }
+    ]
+   }
+  },
+  "pierogiMeat": {
+   "per100": {
+    "kcal": 204,
+    "protein": 10.7,
+    "carbs": 14.8,
+    "fat": 11.3,
+    "sugars": 0.8,
+    "fiber": 0.8,
+    "satFat": 2.7
+   },
+   "source": {
+    "db": "composed",
+    "note": "boiled dough (cooked egg noodles) with pork filling and fried onion",
+    "recipe": [
+     {
+      "g": 130,
+      "db": "FNDDS 2021-2023",
+      "code": 56112000,
+      "description": "Noodles, cooked"
+     },
+     {
+      "g": 70,
+      "db": "FNDDS 2021-2023",
+      "code": 22002000,
+      "description": "Pork, ground"
+     },
+     {
+      "g": 25,
+      "db": "FNDDS 2021-2023",
+      "code": 75117020,
+      "description": "Onions, raw"
+     },
+     {
+      "g": 9,
+      "db": "SR Legacy",
+      "code": 172336,
+      "description": "Oil, canola"
+     }
+    ]
+   }
+  },
+  "pierogiRuskie": {
+   "per100": {
+    "kcal": 198,
+    "protein": 4.6,
+    "carbs": 26.5,
+    "fat": 8.2,
+    "sugars": 2.1,
+    "fiber": 1,
+    "satFat": 1.4
+   },
+   "source": {
+    "db": "composed",
+    "note": "FNDDS pierogi (potato and cheese) with onion fried in oil",
+    "recipe": [
+     {
+      "g": 240,
+      "db": "FNDDS 2021-2023",
+      "code": 58121610,
+      "description": "Pierogi"
+     },
+     {
+      "g": 30,
+      "db": "FNDDS 2021-2023",
+      "code": 75117020,
+      "description": "Onions, raw"
+     },
+     {
+      "g": 8,
+      "db": "SR Legacy",
+      "code": 172336,
+      "description": "Oil, canola"
+     }
+    ]
+   }
+  },
+  "piersZKurczaka": {
+   "per100": {
+    "kcal": 161,
+    "protein": 30.2,
+    "carbs": 0,
+    "fat": 3.5,
+    "sugars": 0,
+    "fiber": 0,
+    "satFat": 0.8
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 24122131,
+    "description": "Chicken breast, baked, broiled, or roasted, skin not eaten, from raw"
+   }
+  },
+  "piwo": {
+   "per100": {
+    "kcal": 43,
+    "protein": 0.5,
+    "carbs": 3.6,
+    "fat": 0,
+    "sugars": 0,
+    "fiber": 0,
+    "satFat": 0,
+    "alcohol": 3.9
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 93101000,
+    "description": "Beer"
+   }
+  },
+  "pizza": {
+   "per100": {
+    "kcal": 266,
+    "protein": 11.4,
+    "carbs": 33.3,
+    "fat": 9.7,
+    "sugars": 3.6,
+    "fiber": 2.3,
+    "satFat": 4.5
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 58106225,
+    "description": "Pizza, cheese, from restaurant or fast food, medium crust"
+   }
+  },
+  "pizzaCapricciosa": {
+   "per100": {
+    "kcal": 248,
+    "protein": 11.5,
+    "carbs": 28.4,
+    "fat": 9.8,
+    "sugars": 3.4,
+    "fiber": 2,
+    "satFat": 4.3
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 58106725,
+    "description": "Pizza with meat and vegetables, from restaurant or fast food, medium crust"
+   }
+  },
+  "pizzaHawaii": {
+   "per100": {
+    "kcal": 234,
+    "protein": 11,
+    "carbs": 28.2,
+    "fat": 8.6,
+    "sugars": 4,
+    "fiber": 1.9,
+    "satFat": 3.8
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 58106755,
+    "description": "Pizza with meat and fruit, medium crust"
+   }
+  },
+  "pizzaSalami": {
+   "per100": {
+    "kcal": 282,
+    "protein": 11.7,
+    "carbs": 32,
+    "fat": 11.9,
+    "sugars": 3.3,
+    "fiber": 2.3,
+    "satFat": 5.1
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 58106550,
+    "description": "Pizza with pepperoni, from restaurant or fast food, thin crust"
+   }
+  },
+  "pizzaVege": {
+   "per100": {
+    "kcal": 242,
+    "protein": 10.3,
+    "carbs": 30.7,
+    "fat": 8.7,
+    "sugars": 3.6,
+    "fiber": 2.2,
+    "satFat": 4
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 58106325,
+    "description": "Pizza, cheese, with vegetables, from restaurant or fast food, medium crust"
+   }
+  },
+  "plackiPoWegiersku": {
+   "per100": {
+    "kcal": 191,
+    "protein": 8.4,
+    "carbs": 11.3,
+    "fat": 12.5,
+    "sugars": 1,
+    "fiber": 1.2,
+    "satFat": 3.5
+   },
+   "source": {
+    "db": "composed",
+    "note": "potato pancakes with goulash and sour cream",
+    "recipe": [
+     {
+      "g": 200,
+      "db": "FNDDS 2021-2023",
+      "code": 71701000,
+      "description": "Potato pancake"
+     },
+     {
+      "g": 200,
+      "db": "composed",
+      "description": "gulasz"
+     },
+     {
+      "g": 20,
+      "db": "SR Legacy",
+      "code": 171257,
+      "description": "Cream, sour, cultured"
+     }
+    ]
+   }
+  },
+  "plackiZiemniaczane": {
+   "per100": {
+    "kcal": 196,
+    "protein": 4.5,
+    "carbs": 20.6,
+    "fat": 10.8,
+    "sugars": 1.1,
+    "fiber": 2.2,
+    "satFat": 1.8
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 71701000,
+    "description": "Potato pancake",
+    "note": "FNDDS potato pancake: grated raw potato, egg, flour, onion, fried in oil - the Polish recipe"
+   }
+  },
+  "platkiZMlekiem": {
+   "per100": {
+    "kcal": 103,
+    "protein": 3.9,
+    "carbs": 17.3,
+    "fat": 1.9,
+    "sugars": 5.6,
+    "fiber": 0.6,
+    "satFat": 1
+   },
+   "source": {
+    "db": "composed",
+    "note": "corn flakes with 2 % milk",
+    "recipe": [
+     {
+      "g": 40,
+      "db": "FNDDS 2021-2023",
+      "code": 57134000,
+      "description": "Cereal, corn flakes, plain"
+     },
+     {
+      "g": 200,
+      "db": "FNDDS 2021-2023",
+      "code": 11112110,
+      "description": "Milk, reduced fat (2%)"
+     }
+    ]
+   }
+  },
+  "pokeBowl": {
+   "per100": {
+    "kcal": 161,
+    "protein": 7.2,
+    "carbs": 13.9,
+    "fat": 8.5,
+    "sugars": 0.4,
+    "fiber": 1.4,
+    "satFat": 1.5
+   },
+   "source": {
+    "db": "composed",
+    "note": "rice, raw salmon, avocado, edamame, cucumber, soy sauce, sesame oil, spicy mayo",
+    "recipe": [
+     {
+      "g": 150,
+      "db": "FNDDS 2021-2023",
+      "code": 56205001,
+      "description": "Rice, white, cooked, NS as to fat"
+     },
+     {
+      "g": 80,
+      "db": "FNDDS 2021-2023",
+      "code": 26137100,
+      "description": "Fish, salmon, raw"
+     },
+     {
+      "g": 40,
+      "db": "FNDDS 2021-2023",
+      "code": 63105010,
+      "description": "Avocado, raw"
+     },
+     {
+      "g": 30,
+      "db": "FNDDS 2021-2023",
+      "code": 41420020,
+      "description": "Edamame, cooked"
+     },
+     {
+      "g": 30,
+      "db": "FNDDS 2021-2023",
+      "code": 75111000,
+      "description": "Cucumber, raw"
+     },
+     {
+      "g": 10,
+      "db": "FNDDS 2021-2023",
+      "code": 41420300,
+      "description": "Soy sauce"
+     },
+     {
+      "g": 5,
+      "db": "FNDDS 2021-2023",
+      "code": 82107000,
+      "description": "Sesame oil"
+     },
+     {
+      "g": 10,
+      "db": "FNDDS 2021-2023",
+      "code": 83107000,
+      "description": "Mayonnaise, regular"
+     }
+    ]
+   }
+  },
+  "pomarancza": {
+   "per100": {
+    "kcal": 50,
+    "protein": 0.9,
+    "carbs": 11.8,
+    "fat": 0.1,
+    "sugars": 9,
+    "fiber": 2.2,
+    "satFat": 0
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 61119010,
+    "description": "Orange, raw"
+   }
+  },
+  "popcorn": {
+   "per100": {
+    "kcal": 518,
+    "protein": 9.1,
+    "carbs": 55,
+    "fat": 30.6,
+    "sugars": 0.6,
+    "fiber": 10.2,
+    "satFat": 14.3
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 54403001,
+    "description": "Popcorn, NFS"
+   }
+  },
+  "porkChop": {
+   "per100": {
+    "kcal": 195,
+    "protein": 27,
+    "carbs": 0,
+    "fat": 9.2,
+    "sugars": 0,
+    "fiber": 0,
+    "satFat": 3.2
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 22101010,
+    "description": "Pork, chop, lean and fat eaten"
+   }
+  },
+  "potatoSalad": {
+   "per100": {
+    "kcal": 157,
+    "protein": 2,
+    "carbs": 16.2,
+    "fat": 9.4,
+    "sugars": 5,
+    "fiber": 1.3,
+    "satFat": 1.4
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 71601010,
+    "description": "Potato salad with egg, made with mayonnaise"
+   }
+  },
+  "poutine": {
+   "per100": {
+    "kcal": 220,
+    "protein": 7.3,
+    "carbs": 20.5,
+    "fat": 12.2,
+    "sugars": 0.2,
+    "fiber": 2.1,
+    "satFat": 4.4
+   },
+   "source": {
+    "db": "composed",
+    "note": "chips, cheese curds (fresh mozzarella stands in), beef gravy",
+    "recipe": [
+     {
+      "g": 200,
+      "db": "FNDDS 2021-2023",
+      "code": 71401031,
+      "description": "Potato, french fries, restaurant"
+     },
+     {
+      "g": 80,
+      "db": "SR Legacy",
+      "code": 170845,
+      "description": "Cheese, mozzarella, whole milk"
+     },
+     {
+      "g": 120,
+      "db": "FNDDS 2021-2023",
+      "code": 28500040,
+      "description": "Gravy, beef"
+     }
+    ]
+   }
+  },
+  "primeRib": {
+   "per100": {
+    "kcal": 351,
+    "protein": 22.8,
+    "carbs": 0,
+    "fat": 28.1,
+    "sugars": 0,
+    "fiber": 0,
+    "satFat": 11.3
+   },
+   "source": {
+    "db": "SR Legacy",
+    "code": 169500,
+    "description": "Beef, rib, whole (ribs 6-12), separable lean and fat, trimmed to 1/8\" fat, all grades, cooked, roasted"
+   }
+  },
+  "pulledPorkSandwich": {
+   "per100": {
+    "kcal": 243,
+    "protein": 15,
+    "carbs": 24.9,
+    "fat": 8.8,
+    "sugars": 9.1,
+    "fiber": 0.8,
+    "satFat": 2.9
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 27520510,
+    "description": "Barbecue pork sandwich, on white bun"
+   }
+  },
+  "puree": {
+   "per100": {
+    "kcal": 114,
+    "protein": 2.2,
+    "carbs": 17.6,
+    "fat": 4.1,
+    "sugars": 2.1,
+    "fiber": 1.2,
+    "satFat": 2.1
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 71501000,
+    "description": "Potato, mashed, NFS"
+   }
+  },
+  "quiche": {
+   "per100": {
+    "kcal": 387,
+    "protein": 15.5,
+    "carbs": 12.1,
+    "fat": 30.6,
+    "sugars": 1.9,
+    "fiber": 0.7,
+    "satFat": 14.7
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 58125110,
+    "description": "Quiche with meat, poultry or fish"
+   }
+  },
+  "quinoa": {
+   "per100": {
+    "kcal": 120,
+    "protein": 4.4,
+    "carbs": 21.2,
+    "fat": 1.9,
+    "sugars": 0.9,
+    "fiber": 2.8,
+    "satFat": 0.2
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 56204005,
+    "description": "Quinoa, no added fat"
+   }
+  },
+  "racuchy": {
+   "per100": {
+    "kcal": 234,
+    "protein": 5.1,
+    "carbs": 35.7,
+    "fat": 7.7,
+    "sugars": 11.7,
+    "fiber": 1.5,
+    "satFat": 1.1
+   },
+   "source": {
+    "db": "composed",
+    "note": "yeast pancakes with apple, fried, powdered sugar",
+    "recipe": [
+     {
+      "g": 60,
+      "db": "SR Legacy",
+      "code": 169761,
+      "description": "Wheat flour, white, all-purpose, unenriched"
+     },
+     {
+      "g": 60,
+      "db": "FNDDS 2021-2023",
+      "code": 11112110,
+      "description": "Milk, reduced fat (2%)"
+     },
+     {
+      "g": 15,
+      "db": "FNDDS 2021-2023",
+      "code": 31101010,
+      "description": "Egg, whole, raw"
+     },
+     {
+      "g": 8,
+      "db": "FNDDS 2021-2023",
+      "code": 91101010,
+      "description": "Sugar, white, granulated or lump"
+     },
+     {
+      "g": 60,
+      "db": "FNDDS 2021-2023",
+      "code": 63101000,
+      "description": "Apple, raw"
+     },
+     {
+      "g": 12,
+      "db": "SR Legacy",
+      "code": 172336,
+      "description": "Oil, canola"
+     },
+     {
+      "g": 5,
+      "db": "FNDDS 2021-2023",
+      "code": 91101020,
+      "description": "Sugar, white, confectioner's, powdered"
+     }
+    ],
+    "yield": 0.9
+   }
+  },
+  "ramen": {
+   "per100": {
+    "kcal": 127,
+    "protein": 7.1,
+    "carbs": 14,
+    "fat": 4.6,
+    "sugars": 0.4,
+    "fiber": 0.9,
+    "satFat": 1.1
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 58407056,
+    "description": "Ramen bowl with meat and egg"
+   }
+  },
+  "ratatouille": {
+   "per100": {
+    "kcal": 67,
+    "protein": 1.1,
+    "carbs": 5.8,
+    "fat": 4.7,
+    "sugars": 3.4,
+    "fiber": 1.9,
+    "satFat": 0.8
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 75316050,
+    "description": "Ratatouille"
+   }
+  },
+  "ravioli": {
+   "per100": {
+    "kcal": 148,
+    "protein": 8.7,
+    "carbs": 14.5,
+    "fat": 6.3,
+    "sugars": 1.7,
+    "fiber": 1,
+    "satFat": 2
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 58131320,
+    "description": "Ravioli, meat-filled, with tomato sauce or meat sauce"
+   }
+  },
+  "redVelvetCake": {
+   "per100": {
+    "kcal": 355,
+    "protein": 2.8,
+    "carbs": 54.4,
+    "fat": 14.6,
+    "sugars": 40.2,
+    "fiber": 1.2,
+    "satFat": 3
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 53116520,
+    "description": "Cake or cupcake, red velvet"
+   }
+  },
+  "risotto": {
+   "per100": {
+    "kcal": 156,
+    "protein": 4.1,
+    "carbs": 20.6,
+    "fat": 6,
+    "sugars": 0.8,
+    "fiber": 0.7,
+    "satFat": 2.9
+   },
+   "source": {
+    "db": "composed",
+    "note": "rice cooked in broth, butter, parmesan, onion, mushrooms",
+    "recipe": [
+     {
+      "g": 220,
+      "db": "FNDDS 2021-2023",
+      "code": 56205001,
+      "description": "Rice, white, cooked, NS as to fat"
+     },
+     {
+      "g": 12,
+      "db": "SR Legacy",
+      "code": 173430,
+      "description": "Butter, without salt"
+     },
+     {
+      "g": 15,
+      "db": "SR Legacy",
+      "code": 170848,
+      "description": "Cheese, parmesan, hard"
+     },
+     {
+      "g": 5,
+      "db": "FNDDS 2021-2023",
+      "code": 82104000,
+      "description": "Olive oil"
+     },
+     {
+      "g": 20,
+      "db": "FNDDS 2021-2023",
+      "code": 75117020,
+      "description": "Onions, raw"
+     },
+     {
+      "g": 50,
+      "db": "FNDDS 2021-2023",
+      "code": 99997515,
+      "description": "Mushrooms, cooked, as ingredient"
+     }
+    ]
+   }
+  },
+  "rosol": {
+   "per100": {
+    "kcal": 53,
+    "protein": 3.8,
+    "carbs": 6.2,
+    "fat": 1.4,
+    "sugars": 0.8,
+    "fiber": 0.7,
+    "satFat": 0.3
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 58403040,
+    "description": "Soup, chicken noodle",
+    "note": "US chicken noodle soup: the same broth, noodles and carrot as Polish rosol with noodles"
+   }
+  },
+  "rybaZZiemniakami": {
+   "per100": {
+    "kcal": 145,
+    "protein": 9.7,
+    "carbs": 10.2,
+    "fat": 7.1,
+    "sugars": 0.7,
+    "fiber": 1.3,
+    "satFat": 2
+   },
+   "source": {
+    "db": "composed",
+    "note": "baked salmon, boiled potatoes with butter, broccoli",
+    "recipe": [
+     {
+      "g": 150,
+      "db": "FNDDS 2021-2023",
+      "code": 26137120,
+      "description": "Fish, salmon, baked or broiled"
+     },
+     {
+      "g": 200,
+      "db": "SR Legacy",
+      "code": 170440,
+      "description": "Potatoes, boiled, cooked without skin, flesh, without salt"
+     },
+     {
+      "g": 5,
+      "db": "SR Legacy",
+      "code": 173430,
+      "description": "Butter, without salt"
+     },
+     {
+      "g": 100,
+      "db": "FNDDS 2021-2023",
+      "code": 72201211,
+      "description": "Broccoli, fresh, cooked, no added fat"
+     }
+    ]
+   }
+  },
+  "ryz": {
+   "per100": {
+    "kcal": 129,
+    "protein": 2.7,
+    "carbs": 28,
+    "fat": 0.3,
+    "sugars": 0.1,
+    "fiber": 0.4,
+    "satFat": 0.1
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 56205001,
+    "description": "Rice, white, cooked, NS as to fat"
+   }
+  },
+  "ryzZWarzywami": {
+   "per100": {
+    "kcal": 124,
+    "protein": 2.3,
+    "carbs": 22.7,
+    "fat": 2.4,
+    "sugars": 0.9,
+    "fiber": 0.8,
+    "satFat": 0.4
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 58160720,
+    "description": "Rice, white, with other vegetables, fat added"
+   }
+  },
+  "salatkaJarzynowa": {
+   "per100": {
+    "kcal": 144,
+    "protein": 2.7,
+    "carbs": 11.1,
+    "fat": 9.9,
+    "sugars": 2.6,
+    "fiber": 1.9,
+    "satFat": 1.7
+   },
+   "source": {
+    "db": "composed",
+    "note": "potatoes, carrot, peas, gherkins, egg, apple, onion, mayonnaise",
+    "recipe": [
+     {
+      "g": 80,
+      "db": "SR Legacy",
+      "code": 170440,
+      "description": "Potatoes, boiled, cooked without skin, flesh, without salt"
+     },
+     {
+      "g": 40,
+      "db": "FNDDS 2021-2023",
+      "code": 73102211,
+      "description": "Carrots, fresh, cooked, no added fat"
+     },
+     {
+      "g": 30,
+      "db": "FNDDS 2021-2023",
+      "code": 75224022,
+      "description": "Green peas, frozen, cooked, no added fat"
+     },
+     {
+      "g": 30,
+      "db": "SR Legacy",
+      "code": 168558,
+      "description": "Pickles, cucumber, dill or kosher dill"
+     },
+     {
+      "g": 25,
+      "db": "FNDDS 2021-2023",
+      "code": 31103010,
+      "description": "Egg, whole, boiled or poached"
+     },
+     {
+      "g": 15,
+      "db": "FNDDS 2021-2023",
+      "code": 63101000,
+      "description": "Apple, raw"
+     },
+     {
+      "g": 5,
+      "db": "FNDDS 2021-2023",
+      "code": 75117020,
+      "description": "Onions, raw"
+     },
+     {
+      "g": 30,
+      "db": "FNDDS 2021-2023",
+      "code": 83107000,
+      "description": "Mayonnaise, regular"
+     }
+    ]
+   }
+  },
+  "salatkaOwocowa": {
+   "per100": {
+    "kcal": 56,
+    "protein": 0.7,
+    "carbs": 13.5,
+    "fat": 0.2,
+    "sugars": 10.2,
+    "fiber": 1.7,
+    "satFat": 0
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 63311050,
+    "description": "Fruit salad, fresh or raw, including citrus fruits, no dressing"
+   }
+  },
+  "salatkaZKurczakiem": {
+   "per100": {
+    "kcal": 80,
+    "protein": 9.2,
+    "carbs": 3.9,
+    "fat": 3.1,
+    "sugars": 2.1,
+    "fiber": 0.9,
+    "satFat": 0.6
+   },
+   "source": {
+    "db": "composed",
+    "note": "mixed salad with chicken, vinaigrette",
+    "recipe": [
+     {
+      "g": 250,
+      "db": "FNDDS 2021-2023",
+      "code": 27446300,
+      "description": "Chicken or turkey garden salad, chicken and/or turkey, tomato and/or carrots, other vegetables, no dressing"
+     },
+     {
+      "g": 25,
+      "db": "FNDDS 2021-2023",
+      "code": 83106000,
+      "description": "Italian dressing, made with vinegar and oil"
+     }
+    ]
+   }
+  },
+  "salatkaZTunczykiem": {
+   "per100": {
+    "kcal": 68,
+    "protein": 7.3,
+    "carbs": 3.5,
+    "fat": 2.8,
+    "sugars": 1.8,
+    "fiber": 0.8,
+    "satFat": 0.6
+   },
+   "source": {
+    "db": "composed",
+    "note": "mixed salad with tuna, egg, vinaigrette",
+    "recipe": [
+     {
+      "g": 150,
+      "db": "FNDDS 2021-2023",
+      "code": 75143000,
+      "description": "Lettuce, salad with assorted vegetables including tomatoes and/or carrots, no dressing"
+     },
+     {
+      "g": 80,
+      "db": "FNDDS 2021-2023",
+      "code": 26155110,
+      "description": "Fish, tuna, canned"
+     },
+     {
+      "g": 25,
+      "db": "FNDDS 2021-2023",
+      "code": 31103010,
+      "description": "Egg, whole, boiled or poached"
+     },
+     {
+      "g": 20,
+      "db": "FNDDS 2021-2023",
+      "code": 83106000,
+      "description": "Italian dressing, made with vinegar and oil"
+     }
+    ]
+   }
+  },
+  "salatkaZielona": {
+   "per100": {
+    "kcal": 44,
+    "protein": 1,
+    "carbs": 5.3,
+    "fat": 2.1,
+    "sugars": 2.7,
+    "fiber": 1.4,
+    "satFat": 0.3
+   },
+   "source": {
+    "db": "composed",
+    "note": "mixed salad with vinaigrette",
+    "recipe": [
+     {
+      "g": 150,
+      "db": "FNDDS 2021-2023",
+      "code": 75143000,
+      "description": "Lettuce, salad with assorted vegetables including tomatoes and/or carrots, no dressing"
+     },
+     {
+      "g": 15,
+      "db": "FNDDS 2021-2023",
+      "code": 83106000,
+      "description": "Italian dressing, made with vinegar and oil"
+     }
+    ]
+   }
+  },
+  "salmonRoll": {
+   "per100": {
+    "kcal": 103,
+    "protein": 6.9,
+    "carbs": 15.3,
+    "fat": 1.3,
+    "sugars": 0.9,
+    "fiber": 0.7,
+    "satFat": 0.2
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 58151200,
+    "description": "Sushi roll, salmon"
+   }
+  },
+  "samosa": {
+   "per100": {
+    "kcal": 310,
+    "protein": 5.1,
+    "carbs": 33.2,
+    "fat": 17.5,
+    "sugars": 1.3,
+    "fiber": 1.8,
+    "satFat": 4.4
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 58124500,
+    "description": "Samosa"
+   }
+  },
+  "sashimi": {
+   "per100": {
+    "kcal": 149,
+    "protein": 22.4,
+    "carbs": 0,
+    "fat": 5.8,
+    "sugars": 0,
+    "fiber": 0,
+    "satFat": 1.3
+   },
+   "source": {
+    "db": "composed",
+    "note": "raw tuna and salmon, half and half",
+    "recipe": [
+     {
+      "g": 60,
+      "db": "FNDDS 2021-2023",
+      "code": 26153100,
+      "description": "Fish, tuna, raw"
+     },
+     {
+      "g": 60,
+      "db": "FNDDS 2021-2023",
+      "code": 26137100,
+      "description": "Fish, salmon, raw"
+     }
+    ]
+   }
+  },
+  "satay": {
+   "per100": {
+    "kcal": 185,
+    "protein": 24.2,
+    "carbs": 5.5,
+    "fat": 6.6,
+    "sugars": 4.3,
+    "fiber": 0.5,
+    "satFat": 1.3
+   },
+   "source": {
+    "db": "composed",
+    "note": "grilled chicken skewers with peanut sauce",
+    "recipe": [
+     {
+      "g": 120,
+      "db": "FNDDS 2021-2023",
+      "code": 24122131,
+      "description": "Chicken breast, baked, broiled, or roasted, skin not eaten, from raw"
+     },
+     {
+      "g": 40,
+      "db": "FNDDS 2021-2023",
+      "code": 42204050,
+      "description": "Peanut sauce"
+     }
+    ]
+   }
+  },
+  "scallops": {
+   "per100": {
+    "kcal": 126,
+    "protein": 15,
+    "carbs": 4,
+    "fat": 5.1,
+    "sugars": 0,
+    "fiber": 0,
+    "satFat": 1.3
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 26317120,
+    "description": "Scallops, baked or broiled"
+   }
+  },
+  "schabowyPlate": {
+   "per100": {
+    "kcal": 156,
+    "protein": 8.6,
+    "carbs": 13.8,
+    "fat": 7.3,
+    "sugars": 1.7,
+    "fiber": 1.5,
+    "satFat": 1.9
+   },
+   "source": {
+    "db": "composed",
+    "note": "kotlet schabowy, boiled potatoes with butter and dill, cabbage slaw",
+    "recipe": [
+     {
+      "g": 150,
+      "db": "composed",
+      "description": "kotletSchabowy"
+     },
+     {
+      "g": 200,
+      "db": "SR Legacy",
+      "code": 170440,
+      "description": "Potatoes, boiled, cooked without skin, flesh, without salt"
+     },
+     {
+      "g": 8,
+      "db": "SR Legacy",
+      "code": 173430,
+      "description": "Butter, without salt"
+     },
+     {
+      "g": 100,
+      "db": "composed",
+      "description": "cabbageSlaw"
+     }
+    ]
+   }
+  },
+  "sconeJamCream": {
+   "per100": {
+    "kcal": 355,
+    "protein": 4.8,
+    "carbs": 43.6,
+    "fat": 18.3,
+    "sugars": 17.9,
+    "fiber": 1,
+    "satFat": 10.4
+   },
+   "source": {
+    "db": "composed",
+    "note": "scone with jam and clotted cream (whipping cream stands in)",
+    "recipe": [
+     {
+      "g": 70,
+      "db": "FNDDS 2021-2023",
+      "code": 52105100,
+      "description": "Scone"
+     },
+     {
+      "g": 20,
+      "db": "SR Legacy",
+      "code": 169641,
+      "description": "Jams and preserves"
+     },
+     {
+      "g": 20,
+      "db": "SR Legacy",
+      "code": 170859,
+      "description": "Cream, fluid, heavy whipping"
+     }
+    ]
+   }
+  },
+  "seaweedSalad": {
+   "per100": {
+    "kcal": 107,
+    "protein": 3.4,
+    "carbs": 12,
+    "fat": 6.1,
+    "sugars": 4,
+    "fiber": 0.8,
+    "satFat": 0.9
+   },
+   "source": {
+    "db": "composed",
+    "note": "wakame, sesame oil, sugar, soy sauce, sesame",
+    "recipe": [
+     {
+      "g": 100,
+      "db": "SR Legacy",
+      "code": 170496,
+      "description": "Seaweed, wakame, raw"
+     },
+     {
+      "g": 5,
+      "db": "FNDDS 2021-2023",
+      "code": 82107000,
+      "description": "Sesame oil"
+     },
+     {
+      "g": 4,
+      "db": "FNDDS 2021-2023",
+      "code": 91101010,
+      "description": "Sugar, white, granulated or lump"
+     },
+     {
+      "g": 5,
+      "db": "FNDDS 2021-2023",
+      "code": 41420300,
+      "description": "Soy sauce"
+     },
+     {
+      "g": 3,
+      "db": "SR Legacy",
+      "code": 170150,
+      "description": "Seeds, sesame seeds, whole, dried"
+     }
+    ]
+   }
+  },
+  "sernik": {
+   "per100": {
+    "kcal": 265,
+    "protein": 9.6,
+    "carbs": 22,
+    "fat": 15.7,
+    "sugars": 18,
+    "fiber": 0.2,
+    "satFat": 9
+   },
+   "source": {
+    "db": "composed",
+    "note": "baked curd cheese (twarog), eggs, sugar, butter, potato starch",
+    "recipe": [
+     {
+      "g": 250,
+      "db": "FNDDS 2021-2023",
+      "code": 14201200,
+      "description": "Cottage cheese, farmer's"
+     },
+     {
+      "g": 100,
+      "db": "FNDDS 2021-2023",
+      "code": 31101010,
+      "description": "Egg, whole, raw"
+     },
+     {
+      "g": 70,
+      "db": "FNDDS 2021-2023",
+      "code": 91101010,
+      "description": "Sugar, white, granulated or lump"
+     },
+     {
+      "g": 40,
+      "db": "SR Legacy",
+      "code": 173430,
+      "description": "Butter, without salt"
+     },
+     {
+      "g": 15,
+      "db": "SR Legacy",
+      "code": 168446,
+      "description": "Potato flour"
+     }
+    ],
+    "yield": 0.9
+   }
+  },
+  "sernikNaZimno": {
+   "per100": {
+    "kcal": 203,
+    "protein": 8.2,
+    "carbs": 16.5,
+    "fat": 11.8,
+    "sugars": 15.2,
+    "fiber": 0.2,
+    "satFat": 7.3
+   },
+   "source": {
+    "db": "composed",
+    "note": "no-bake curd cheese cake with gelatine, cream and strawberries",
+    "recipe": [
+     {
+      "g": 250,
+      "db": "FNDDS 2021-2023",
+      "code": 14201200,
+      "description": "Cottage cheese, farmer's"
+     },
+     {
+      "g": 100,
+      "db": "SR Legacy",
+      "code": 170858,
+      "description": "Cream, fluid, light whipping"
+     },
+     {
+      "g": 60,
+      "db": "FNDDS 2021-2023",
+      "code": 91101010,
+      "description": "Sugar, white, granulated or lump"
+     },
+     {
+      "g": 10,
+      "db": "SR Legacy",
+      "code": 169599,
+      "description": "Gelatins, dry powder, unsweetened"
+     },
+     {
+      "g": 50,
+      "db": "FNDDS 2021-2023",
+      "code": 63223020,
+      "description": "Strawberries, raw"
+     }
+    ]
+   }
+  },
+  "shakshuka": {
+   "per100": {
+    "kcal": 83,
+    "protein": 4.2,
+    "carbs": 3.5,
+    "fat": 6,
+    "sugars": 2.3,
+    "fiber": 1.2,
+    "satFat": 1.4
+   },
+   "source": {
+    "db": "composed",
+    "note": "eggs poached in tomato, pepper and onion",
+    "recipe": [
+     {
+      "g": 100,
+      "db": "FNDDS 2021-2023",
+      "code": 31101010,
+      "description": "Egg, whole, raw"
+     },
+     {
+      "g": 150,
+      "db": "SR Legacy",
+      "code": 170051,
+      "description": "Tomatoes, red, ripe, canned, packed in tomato juice"
+     },
+     {
+      "g": 50,
+      "db": "FNDDS 2021-2023",
+      "code": 75122200,
+      "description": "Peppers, sweet, red, raw"
+     },
+     {
+      "g": 30,
+      "db": "FNDDS 2021-2023",
+      "code": 75117020,
+      "description": "Onions, raw"
+     },
+     {
+      "g": 10,
+      "db": "FNDDS 2021-2023",
+      "code": 82104000,
+      "description": "Olive oil"
+     }
+    ]
+   }
+  },
+  "shawarma": {
+   "per100": {
+    "kcal": 214,
+    "protein": 12.9,
+    "carbs": 15.3,
+    "fat": 10.9,
+    "sugars": 1.7,
+    "fiber": 1.2,
+    "satFat": 2.6
+   },
+   "source": {
+    "db": "composed",
+    "note": "lavash with chicken, garlic sauce, gherkins and tomato",
+    "recipe": [
+     {
+      "g": 70,
+      "db": "FNDDS 2021-2023",
+      "code": 52215200,
+      "description": "Tortilla, flour"
+     },
+     {
+      "g": 100,
+      "db": "FNDDS 2021-2023",
+      "code": 24152231,
+      "description": "Chicken thigh, baked, broiled, or roasted, skin not eaten, from raw"
+     },
+     {
+      "g": 30,
+      "db": "composed",
+      "description": "garlic sauce"
+     },
+     {
+      "g": 20,
+      "db": "SR Legacy",
+      "code": 168558,
+      "description": "Pickles, cucumber, dill or kosher dill"
+     },
+     {
+      "g": 20,
+      "db": "FNDDS 2021-2023",
+      "code": 74101000,
+      "description": "Tomatoes, raw"
+     },
+     {
+      "g": 4,
+      "db": "SR Legacy",
+      "code": 172336,
+      "description": "Oil, canola"
+     }
+    ]
+   }
+  },
+  "shepherdsPie": {
+   "per100": {
+    "kcal": 123,
+    "protein": 7.6,
+    "carbs": 8.7,
+    "fat": 6.3,
+    "sugars": 1.9,
+    "fiber": 1.5,
+    "satFat": 2.7
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 27311510,
+    "description": "Shepherd's pie"
+   }
+  },
+  "shrimpAndGrits": {
+   "per100": {
+    "kcal": 122,
+    "protein": 8.2,
+    "carbs": 8.1,
+    "fat": 6.1,
+    "sugars": 0.1,
+    "fiber": 0.4,
+    "satFat": 3
+   },
+   "source": {
+    "db": "composed",
+    "note": "cheese grits, shrimp, bacon, butter",
+    "recipe": [
+     {
+      "g": 250,
+      "db": "FNDDS 2021-2023",
+      "code": 56201092,
+      "description": "Grits, with cheese, fat added"
+     },
+     {
+      "g": 100,
+      "db": "FNDDS 2021-2023",
+      "code": 26319130,
+      "description": "Shrimp, steamed or boiled"
+     },
+     {
+      "g": 10,
+      "db": "FNDDS 2021-2023",
+      "code": 22600100,
+      "description": "Bacon, NS as to type of meat, cooked"
+     },
+     {
+      "g": 5,
+      "db": "SR Legacy",
+      "code": 173430,
+      "description": "Butter, without salt"
+     }
+    ]
+   }
+  },
+  "skyrBowl": {
+   "per100": {
+    "kcal": 114,
+    "protein": 7.5,
+    "carbs": 6.7,
+    "fat": 6.6,
+    "sugars": 5.1,
+    "fiber": 0.8,
+    "satFat": 2
+   },
+   "source": {
+    "db": "composed",
+    "note": "greek yoghurt with blueberries and walnuts",
+    "recipe": [
+     {
+      "g": 170,
+      "db": "SR Legacy",
+      "code": 171304,
+      "description": "Yogurt, Greek, plain, whole milk"
+     },
+     {
+      "g": 50,
+      "db": "FNDDS 2021-2023",
+      "code": 63203010,
+      "description": "Blueberries, raw"
+     },
+     {
+      "g": 10,
+      "db": "SR Legacy",
+      "code": 170187,
+      "description": "Nuts, walnuts, english"
+     }
+    ]
+   }
+  },
+  "sledzWSmietanie": {
+   "per100": {
+    "kcal": 200,
+    "protein": 7.9,
+    "carbs": 8.5,
+    "fat": 14.8,
+    "sugars": 6.7,
+    "fiber": 0.4,
+    "satFat": 4.2
+   },
+   "source": {
+    "db": "composed",
+    "note": "marinated herring in sour cream with onion and apple",
+    "recipe": [
+     {
+      "g": 100,
+      "db": "SR Legacy",
+      "code": 175118,
+      "description": "Fish, herring, Atlantic, pickled"
+     },
+     {
+      "g": 60,
+      "db": "SR Legacy",
+      "code": 171257,
+      "description": "Cream, sour, cultured"
+     },
+     {
+      "g": 20,
+      "db": "FNDDS 2021-2023",
+      "code": 75117020,
+      "description": "Onions, raw"
+     },
+     {
+      "g": 20,
+      "db": "FNDDS 2021-2023",
+      "code": 63101000,
+      "description": "Apple, raw"
+     }
+    ]
+   }
+  },
+  "sliwki": {
+   "per100": {
+    "kcal": 46,
+    "protein": 0.7,
+    "carbs": 11.4,
+    "fat": 0.3,
+    "sugars": 9.9,
+    "fiber": 1.4,
+    "satFat": 0
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 63143010,
+    "description": "Plum, raw"
+   }
+  },
+  "smoothie": {
+   "per100": {
+    "kcal": 66,
+    "protein": 2.3,
+    "carbs": 12,
+    "fat": 1.1,
+    "sugars": 8.9,
+    "fiber": 1.1,
+    "satFat": 0.6
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 11553110,
+    "description": "Fruit smoothie, with whole fruit and dairy"
+   }
+  },
+  "sokPomaranczowy": {
+   "per100": {
+    "kcal": 47,
+    "protein": 0.8,
+    "carbs": 10.2,
+    "fat": 0.3,
+    "sugars": 8.2,
+    "fiber": 0.3,
+    "satFat": 0
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 61210000,
+    "description": "Orange juice, 100%, NFS"
+   }
+  },
+  "souvlaki": {
+   "per100": {
+    "kcal": 124,
+    "protein": 13.9,
+    "carbs": 5.1,
+    "fat": 5.2,
+    "sugars": 2.4,
+    "fiber": 0.8,
+    "satFat": 1.7
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 27420520,
+    "description": "Pork shish kabob with vegetables, excluding potatoes"
+   }
+  },
+  "spaghettiBolognese": {
+   "per100": {
+    "kcal": 143,
+    "protein": 6.1,
+    "carbs": 20.4,
+    "fat": 3.9,
+    "sugars": 2.1,
+    "fiber": 1.6,
+    "satFat": 1
+   },
+   "source": {
+    "db": "composed",
+    "note": "spaghetti, meat sauce, olive oil, parmesan",
+    "recipe": [
+     {
+      "g": 220,
+      "db": "FNDDS 2021-2023",
+      "code": 56130000,
+      "description": "Pasta, cooked"
+     },
+     {
+      "g": 150,
+      "db": "FNDDS 2021-2023",
+      "code": 27162040,
+      "description": "Spaghetti sauce with meat"
+     },
+     {
+      "g": 5,
+      "db": "FNDDS 2021-2023",
+      "code": 82104000,
+      "description": "Olive oil"
+     },
+     {
+      "g": 5,
+      "db": "SR Legacy",
+      "code": 170848,
+      "description": "Cheese, parmesan, hard"
+     }
+    ]
+   }
+  },
+  "spaghettiCarbonara": {
+   "per100": {
+    "kcal": 200,
+    "protein": 11.6,
+    "carbs": 21.6,
+    "fat": 7.1,
+    "sugars": 0.6,
+    "fiber": 1.2,
+    "satFat": 2.7
+   },
+   "source": {
+    "db": "composed",
+    "note": "spaghetti, bacon (for guanciale), egg, parmesan; no cream",
+    "recipe": [
+     {
+      "g": 220,
+      "db": "FNDDS 2021-2023",
+      "code": 56130000,
+      "description": "Pasta, cooked"
+     },
+     {
+      "g": 30,
+      "db": "FNDDS 2021-2023",
+      "code": 22600100,
+      "description": "Bacon, NS as to type of meat, cooked"
+     },
+     {
+      "g": 50,
+      "db": "FNDDS 2021-2023",
+      "code": 31101010,
+      "description": "Egg, whole, raw"
+     },
+     {
+      "g": 20,
+      "db": "SR Legacy",
+      "code": 170848,
+      "description": "Cheese, parmesan, hard"
+     }
+    ]
+   }
+  },
+  "spanakopita": {
+   "per100": {
+    "kcal": 212,
+    "protein": 8.3,
+    "carbs": 10.4,
+    "fat": 15.2,
+    "sugars": 0.6,
+    "fiber": 1,
+    "satFat": 6.6
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 58124250,
+    "description": "Spanakopita"
+   }
+  },
+  "springRolls": {
+   "per100": {
+    "kcal": 272,
+    "protein": 7.6,
+    "carbs": 27,
+    "fat": 14.7,
+    "sugars": 5.1,
+    "fiber": 2,
+    "satFat": 2.4
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 58110130,
+    "description": "Egg roll, with beef and/or pork"
+   }
+  },
+  "steak": {
+   "per100": {
+    "kcal": 229,
+    "protein": 27,
+    "carbs": 0,
+    "fat": 12.9,
+    "sugars": 0,
+    "fiber": 0,
+    "satFat": 5.3
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 21101000,
+    "description": "Beef, steak, NFS"
+   }
+  },
+  "stirFry": {
+   "per100": {
+    "kcal": 116,
+    "protein": 13.3,
+    "carbs": 4,
+    "fat": 4.9,
+    "sugars": 1.6,
+    "fiber": 1.2,
+    "satFat": 0.6
+   },
+   "source": {
+    "db": "composed",
+    "note": "chicken stir-fried with broccoli, pepper, carrot, soy sauce",
+    "recipe": [
+     {
+      "g": 120,
+      "db": "FNDDS 2021-2023",
+      "code": 24122131,
+      "description": "Chicken breast, baked, broiled, or roasted, skin not eaten, from raw"
+     },
+     {
+      "g": 80,
+      "db": "FNDDS 2021-2023",
+      "code": 72201211,
+      "description": "Broccoli, fresh, cooked, no added fat"
+     },
+     {
+      "g": 50,
+      "db": "FNDDS 2021-2023",
+      "code": 75122200,
+      "description": "Peppers, sweet, red, raw"
+     },
+     {
+      "g": 30,
+      "db": "FNDDS 2021-2023",
+      "code": 73101010,
+      "description": "Carrots, raw"
+     },
+     {
+      "g": 10,
+      "db": "FNDDS 2021-2023",
+      "code": 41420300,
+      "description": "Soy sauce"
+     },
+     {
+      "g": 10,
+      "db": "SR Legacy",
+      "code": 172336,
+      "description": "Oil, canola"
+     }
+    ]
+   }
+  },
+  "strawberryShortcake": {
+   "per100": {
+    "kcal": 214,
+    "protein": 3.3,
+    "carbs": 40.1,
+    "fat": 4.7,
+    "sugars": 25.9,
+    "fiber": 0.9,
+    "satFat": 2.5
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 53123070,
+    "description": "Cake, strawberry shortcake"
+   }
+  },
+  "strogonow": {
+   "per100": {
+    "kcal": 150,
+    "protein": 10.1,
+    "carbs": 6.2,
+    "fat": 9.3,
+    "sugars": 1.4,
+    "fiber": 0.7,
+    "satFat": 3.4
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 27113100,
+    "description": "Beef stroganoff"
+   }
+  },
+  "summerRolls": {
+   "per100": {
+    "kcal": 112,
+    "protein": 5.7,
+    "carbs": 17.2,
+    "fat": 2.7,
+    "sugars": 3.9,
+    "fiber": 1.9,
+    "satFat": 0.5
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 58110200,
+    "description": "Roll with meat and/or shrimp, vegetables and rice paper, not fried"
+   }
+  },
+  "surowkaZKapusty": {
+   "per100": {
+    "kcal": 74,
+    "protein": 0.9,
+    "carbs": 8.1,
+    "fat": 4.3,
+    "sugars": 4.8,
+    "fiber": 2.4,
+    "satFat": 0.3
+   },
+   "source": {
+    "db": "composed",
+    "note": "cabbage slaw: cabbage, carrot, oil",
+    "recipe": [
+     {
+      "g": 100,
+      "db": "composed",
+      "description": "cabbageSlaw"
+     }
+    ]
+   }
+  },
+  "surowkaZMarchewki": {
+   "per100": {
+    "kcal": 68,
+    "protein": 0.7,
+    "carbs": 12.2,
+    "fat": 2,
+    "sugars": 8,
+    "fiber": 2.5,
+    "satFat": 0.2
+   },
+   "source": {
+    "db": "composed",
+    "note": "grated carrot and apple with lemon",
+    "recipe": [
+     {
+      "g": 120,
+      "db": "FNDDS 2021-2023",
+      "code": 73101010,
+      "description": "Carrots, raw"
+     },
+     {
+      "g": 40,
+      "db": "FNDDS 2021-2023",
+      "code": 63101000,
+      "description": "Apple, raw"
+     },
+     {
+      "g": 5,
+      "db": "SR Legacy",
+      "code": 168156,
+      "description": "Lime juice, raw"
+     },
+     {
+      "g": 3,
+      "db": "FNDDS 2021-2023",
+      "code": 91101010,
+      "description": "Sugar, white, granulated or lump"
+     },
+     {
+      "g": 3,
+      "db": "SR Legacy",
+      "code": 172336,
+      "description": "Oil, canola"
+     }
+    ]
+   }
+  },
+  "sushi": {
+   "per100": {
+    "kcal": 94,
+    "protein": 2.9,
+    "carbs": 18.4,
+    "fat": 0.7,
+    "sugars": 2.1,
+    "fiber": 1,
+    "satFat": 0.1
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 58151100,
+    "description": "Sushi, NFS"
+   }
+  },
+  "sweetSourChicken": {
+   "per100": {
+    "kcal": 250,
+    "protein": 10.1,
+    "carbs": 23.9,
+    "fat": 12.7,
+    "sugars": 11.5,
+    "fiber": 1,
+    "satFat": 1.9
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 27146100,
+    "description": "Sweet and sour chicken or turkey"
+   }
+  },
+  "sznycelWiedenski": {
+   "per100": {
+    "kcal": 238,
+    "protein": 27.3,
+    "carbs": 9.9,
+    "fat": 9.2,
+    "sugars": 0.6,
+    "fiber": 0.3,
+    "satFat": 3.1
+   },
+   "source": {
+    "db": "SR Legacy",
+    "code": 173819,
+    "description": "Veal, leg (top round), separable lean and fat, cooked, pan-fried, breaded"
+   }
+  },
+  "tabbouleh": {
+   "per100": {
+    "kcal": 127,
+    "protein": 1.6,
+    "carbs": 9.7,
+    "fat": 9.7,
+    "sugars": 1.3,
+    "fiber": 1.8,
+    "satFat": 1.5
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 58175110,
+    "description": "Tabbouleh"
+   }
+  },
+  "tacos": {
+   "per100": {
+    "kcal": 246,
+    "protein": 15.3,
+    "carbs": 15.6,
+    "fat": 13.6,
+    "sugars": 0.3,
+    "fiber": 2.2,
+    "satFat": 4.2
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 58102000,
+    "description": "Taco, NFS"
+   }
+  },
+  "takoyaki": {
+   "per100": {
+    "kcal": 166,
+    "protein": 7.1,
+    "carbs": 15.5,
+    "fat": 8.2,
+    "sugars": 0.9,
+    "fiber": 0.6,
+    "satFat": 1.3
+   },
+   "source": {
+    "db": "composed",
+    "note": "batter balls with octopus, mayonnaise and sauce; cooked in a pan",
+    "recipe": [
+     {
+      "g": 35,
+      "db": "SR Legacy",
+      "code": 169761,
+      "description": "Wheat flour, white, all-purpose, unenriched"
+     },
+     {
+      "g": 25,
+      "db": "FNDDS 2021-2023",
+      "code": 31101010,
+      "description": "Egg, whole, raw"
+     },
+     {
+      "g": 120,
+      "db": "SR Legacy",
+      "code": 173647,
+      "description": "Beverages, water, tap, drinking"
+     },
+     {
+      "g": 25,
+      "db": "SR Legacy",
+      "code": 174249,
+      "description": "Mollusks, octopus, common, cooked, moist heat"
+     },
+     {
+      "g": 6,
+      "db": "SR Legacy",
+      "code": 172336,
+      "description": "Oil, canola"
+     },
+     {
+      "g": 5,
+      "db": "FNDDS 2021-2023",
+      "code": 75117010,
+      "description": "Onions, green, raw"
+     },
+     {
+      "g": 10,
+      "db": "FNDDS 2021-2023",
+      "code": 83107000,
+      "description": "Mayonnaise, regular"
+     },
+     {
+      "g": 15,
+      "db": "FNDDS 2021-2023",
+      "code": 74406100,
+      "description": "Steak sauce"
+     }
+    ],
+    "yield": 0.85
+   }
+  },
+  "tempura": {
+   "per100": {
+    "kcal": 229,
+    "protein": 8,
+    "carbs": 16.4,
+    "fat": 14.4,
+    "sugars": 0.8,
+    "fiber": 1.1,
+    "satFat": 2.1
+   },
+   "source": {
+    "db": "composed",
+    "note": "prawn and vegetable tempura, half and half",
+    "recipe": [
+     {
+      "g": 50,
+      "db": "FNDDS 2021-2023",
+      "code": 26319140,
+      "description": "Shrimp, fried"
+     },
+     {
+      "g": 50,
+      "db": "FNDDS 2021-2023",
+      "code": 75440200,
+      "description": "Vegetable tempura"
+     }
+    ]
+   }
+  },
+  "teriyakiChicken": {
+   "per100": {
+    "kcal": 163,
+    "protein": 25.7,
+    "carbs": 1.6,
+    "fat": 6,
+    "sugars": 1.5,
+    "fiber": 0,
+    "satFat": 1.5
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 27145000,
+    "description": "Chicken or turkey with teriyaki"
+   }
+  },
+  "tiramisu": {
+   "per100": {
+    "kcal": 353,
+    "protein": 5.7,
+    "carbs": 29.4,
+    "fat": 23.9,
+    "sugars": 18.7,
+    "fiber": 0.6,
+    "satFat": 13.3
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 13252600,
+    "description": "Tiramisu"
+   }
+  },
+  "tomYum": {
+   "per100": {
+    "kcal": 24,
+    "protein": 3,
+    "carbs": 2.1,
+    "fat": 0.4,
+    "sugars": 1.5,
+    "fiber": 0.3,
+    "satFat": 0.1
+   },
+   "source": {
+    "db": "composed",
+    "note": "hot and sour broth with prawns, mushrooms, tomato, lime",
+    "recipe": [
+     {
+      "g": 300,
+      "db": "FNDDS 2021-2023",
+      "code": 28340120,
+      "description": "Soup, broth"
+     },
+     {
+      "g": 50,
+      "db": "FNDDS 2021-2023",
+      "code": 26319130,
+      "description": "Shrimp, steamed or boiled"
+     },
+     {
+      "g": 40,
+      "db": "FNDDS 2021-2023",
+      "code": 99997515,
+      "description": "Mushrooms, cooked, as ingredient"
+     },
+     {
+      "g": 30,
+      "db": "FNDDS 2021-2023",
+      "code": 74101000,
+      "description": "Tomatoes, raw"
+     },
+     {
+      "g": 10,
+      "db": "SR Legacy",
+      "code": 168156,
+      "description": "Lime juice, raw"
+     },
+     {
+      "g": 8,
+      "db": "SR Legacy",
+      "code": 174531,
+      "description": "Sauce, fish, ready-to-serve"
+     },
+     {
+      "g": 3,
+      "db": "FNDDS 2021-2023",
+      "code": 91101010,
+      "description": "Sugar, white, granulated or lump"
+     },
+     {
+      "g": 5,
+      "db": "FNDDS 2021-2023",
+      "code": 74403000,
+      "description": "Hot Thai sauce"
+     }
+    ]
+   }
+  },
+  "tonkatsu": {
+   "per100": {
+    "kcal": 203,
+    "protein": 16.2,
+    "carbs": 10.4,
+    "fat": 10.3,
+    "sugars": 2.1,
+    "fiber": 1.1,
+    "satFat": 1.9
+   },
+   "source": {
+    "db": "composed",
+    "note": "breaded pork cutlet with tonkatsu sauce and cabbage",
+    "recipe": [
+     {
+      "g": 150,
+      "db": "composed",
+      "description": "kotletSchabowy"
+     },
+     {
+      "g": 20,
+      "db": "FNDDS 2021-2023",
+      "code": 74406100,
+      "description": "Steak sauce"
+     },
+     {
+      "g": 50,
+      "db": "FNDDS 2021-2023",
+      "code": 75103000,
+      "description": "Cabbage, green, raw"
+     }
+    ]
+   }
+  },
+  "tortellini": {
+   "per100": {
+    "kcal": 149,
+    "protein": 6.2,
+    "carbs": 23,
+    "fat": 3.7,
+    "sugars": 3,
+    "fiber": 1.6,
+    "satFat": 1.6
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 58134620,
+    "description": "Tortellini, cheese-filled, meatless, with tomato sauce"
+   }
+  },
+  "tortillaEspanola": {
+   "per100": {
+    "kcal": 154,
+    "protein": 5.1,
+    "carbs": 11.2,
+    "fat": 10,
+    "sugars": 1.1,
+    "fiber": 1.1,
+    "satFat": 2.1
+   },
+   "source": {
+    "db": "composed",
+    "note": "potato and onion omelette; potatoes fried in olive oil",
+    "recipe": [
+     {
+      "g": 150,
+      "db": "SR Legacy",
+      "code": 170440,
+      "description": "Potatoes, boiled, cooked without skin, flesh, without salt"
+     },
+     {
+      "g": 100,
+      "db": "FNDDS 2021-2023",
+      "code": 31101010,
+      "description": "Egg, whole, raw"
+     },
+     {
+      "g": 30,
+      "db": "FNDDS 2021-2023",
+      "code": 75117020,
+      "description": "Onions, raw"
+     },
+     {
+      "g": 20,
+      "db": "FNDDS 2021-2023",
+      "code": 82104000,
+      "description": "Olive oil"
+     }
+    ]
+   }
+  },
+  "tostZAwokado": {
+   "per100": {
+    "kcal": 200,
+    "protein": 7.7,
+    "carbs": 21.6,
+    "fat": 9.8,
+    "sugars": 2.3,
+    "fiber": 3.4,
+    "satFat": 2
+   },
+   "source": {
+    "db": "composed",
+    "note": "toast with avocado and a poached egg",
+    "recipe": [
+     {
+      "g": 60,
+      "db": "FNDDS 2021-2023",
+      "code": 51101010,
+      "description": "Bread, white, toasted"
+     },
+     {
+      "g": 70,
+      "db": "FNDDS 2021-2023",
+      "code": 63105010,
+      "description": "Avocado, raw"
+     },
+     {
+      "g": 50,
+      "db": "FNDDS 2021-2023",
+      "code": 31103010,
+      "description": "Egg, whole, boiled or poached"
+     }
+    ]
+   }
+  },
+  "truskawki": {
+   "per100": {
+    "kcal": 36,
+    "protein": 0.6,
+    "carbs": 8,
+    "fat": 0.2,
+    "sugars": 4.9,
+    "fiber": 1.8,
+    "satFat": 0
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 63223020,
+    "description": "Strawberries, raw"
+   }
+  },
+  "tteokbokki": {
+   "per100": {
+    "kcal": 131,
+    "protein": 4.1,
+    "carbs": 19.6,
+    "fat": 4.1,
+    "sugars": 1.5,
+    "fiber": 0.8,
+    "satFat": 0.9
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 58150520,
+    "description": "Dukboki or Tteokbokki, Korean"
+   }
+  },
+  "tunaTartare": {
+   "per100": {
+    "kcal": 150,
+    "protein": 16.9,
+    "carbs": 2.8,
+    "fat": 8,
+    "sugars": 0.2,
+    "fiber": 1.9,
+    "satFat": 1.2
+   },
+   "source": {
+    "db": "composed",
+    "note": "raw tuna, avocado, soy sauce, sesame oil, sesame",
+    "recipe": [
+     {
+      "g": 100,
+      "db": "FNDDS 2021-2023",
+      "code": 26153100,
+      "description": "Fish, tuna, raw"
+     },
+     {
+      "g": 40,
+      "db": "FNDDS 2021-2023",
+      "code": 63105010,
+      "description": "Avocado, raw"
+     },
+     {
+      "g": 8,
+      "db": "FNDDS 2021-2023",
+      "code": 41420300,
+      "description": "Soy sauce"
+     },
+     {
+      "g": 5,
+      "db": "FNDDS 2021-2023",
+      "code": 82107000,
+      "description": "Sesame oil"
+     },
+     {
+      "g": 2,
+      "db": "SR Legacy",
+      "code": 170150,
+      "description": "Seeds, sesame seeds, whole, dried"
+     }
+    ]
+   }
+  },
+  "tzatziki": {
+   "per100": {
+    "kcal": 91,
+    "protein": 5.2,
+    "carbs": 4.1,
+    "fat": 6,
+    "sugars": 2.5,
+    "fiber": 0.2,
+    "satFat": 1.9
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 11440060,
+    "description": "Tzatziki dip"
+   }
+  },
+  "udkoZKurczaka": {
+   "per100": {
+    "kcal": 214,
+    "protein": 23.2,
+    "carbs": 0,
+    "fat": 12.8,
+    "sugars": 0,
+    "fiber": 0,
+    "satFat": 3.5
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 24132230,
+    "description": "Chicken leg, drumstick and thigh, baked or broiled, skin eaten"
+   }
+  },
+  "udon": {
+   "per100": {
+    "kcal": 61,
+    "protein": 2.4,
+    "carbs": 10.9,
+    "fat": 0.9,
+    "sugars": 1.3,
+    "fiber": 0.5,
+    "satFat": 0.2
+   },
+   "source": {
+    "db": "composed",
+    "note": "thick wheat noodles (cooked noodles stand in) in soy broth with scallion",
+    "recipe": [
+     {
+      "g": 200,
+      "db": "FNDDS 2021-2023",
+      "code": 56112000,
+      "description": "Noodles, cooked"
+     },
+     {
+      "g": 300,
+      "db": "FNDDS 2021-2023",
+      "code": 28340120,
+      "description": "Soup, broth"
+     },
+     {
+      "g": 10,
+      "db": "FNDDS 2021-2023",
+      "code": 41420300,
+      "description": "Soy sauce"
+     },
+     {
+      "g": 5,
+      "db": "FNDDS 2021-2023",
+      "code": 91101010,
+      "description": "Sugar, white, granulated or lump"
+     },
+     {
+      "g": 5,
+      "db": "FNDDS 2021-2023",
+      "code": 75117010,
+      "description": "Onions, green, raw"
+     }
+    ]
+   }
+  },
+  "vegetableRoll": {
+   "per100": {
+    "kcal": 93,
+    "protein": 1.8,
+    "carbs": 17.7,
+    "fat": 1.5,
+    "sugars": 1.2,
+    "fiber": 1.4,
+    "satFat": 0.2
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 58151230,
+    "description": "Sushi roll, vegetable"
+   }
+  },
+  "waffles": {
+   "per100": {
+    "kcal": 309,
+    "protein": 7.4,
+    "carbs": 48.4,
+    "fat": 9.5,
+    "sugars": 4.4,
+    "fiber": 2.6,
+    "satFat": 2.3
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 55200010,
+    "description": "Waffle, NFS",
+    "note": "plain, before toppings: the sweetness scale adds sugar or syrup"
+   }
+  },
+  "warzywaGotowane": {
+   "per100": {
+    "kcal": 65,
+    "protein": 2.9,
+    "carbs": 13.1,
+    "fat": 0.2,
+    "sugars": 3.1,
+    "fiber": 4.4,
+    "satFat": 0
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 75311012,
+    "description": "Classic mixed vegetables, frozen, cooked, no added fat"
+   }
+  },
+  "warzywaGrillowane": {
+   "per100": {
+    "kcal": 58,
+    "protein": 1.1,
+    "carbs": 5.4,
+    "fat": 3.9,
+    "sugars": 3.5,
+    "fiber": 1.7,
+    "satFat": 0.6
+   },
+   "source": {
+    "db": "composed",
+    "note": "grilled courgette, pepper, aubergine with olive oil",
+    "recipe": [
+     {
+      "g": 100,
+      "db": "FNDDS 2021-2023",
+      "code": 75233011,
+      "description": "Summer squash, yellow or green, fresh, cooked, no added fat"
+     },
+     {
+      "g": 80,
+      "db": "FNDDS 2021-2023",
+      "code": 75122200,
+      "description": "Peppers, sweet, red, raw"
+     },
+     {
+      "g": 80,
+      "db": "FNDDS 2021-2023",
+      "code": 75217010,
+      "description": "Eggplant, cooked, no added fat"
+     },
+     {
+      "g": 10,
+      "db": "FNDDS 2021-2023",
+      "code": 82104000,
+      "description": "Olive oil"
+     }
+    ]
+   }
+  },
+  "winoBiale": {
+   "per100": {
+    "kcal": 82,
+    "protein": 0.1,
+    "carbs": 2.6,
+    "fat": 0,
+    "sugars": 1,
+    "fiber": 0,
+    "satFat": 0,
+    "alcohol": 10.3
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 93401020,
+    "description": "Wine, white"
+   }
+  },
+  "winoCzerwone": {
+   "per100": {
+    "kcal": 85,
+    "protein": 0.1,
+    "carbs": 2.6,
+    "fat": 0,
+    "sugars": 0.6,
+    "fiber": 0,
+    "satFat": 0,
+    "alcohol": 10.6
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 93401010,
+    "description": "Wine, red"
+   }
+  },
+  "winogrona": {
+   "per100": {
+    "kcal": 83,
+    "protein": 0.9,
+    "carbs": 19.4,
+    "fat": 0.2,
+    "sugars": 16.7,
+    "fiber": 0.9,
+    "satFat": 0.1
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 63123000,
+    "description": "Grapes, raw"
+   }
+  },
+  "wontonSoup": {
+   "per100": {
+    "kcal": 33,
+    "protein": 2.4,
+    "carbs": 3,
+    "fat": 1.3,
+    "sugars": 0.7,
+    "fiber": 0.3,
+    "satFat": 0.4
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 58408010,
+    "description": "Soup, wonton"
+   }
+  },
+  "wrapZKurczakiem": {
+   "per100": {
+    "kcal": 252,
+    "protein": 20.8,
+    "carbs": 17.3,
+    "fat": 10.4,
+    "sugars": 1.6,
+    "fiber": 1.2,
+    "satFat": 4
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 27540300,
+    "description": "Chicken fillet wrap sandwich, grilled, from fast food"
+   }
+  },
+  "zapiekanka": {
+   "per100": {
+    "kcal": 226,
+    "protein": 9.7,
+    "carbs": 28.1,
+    "fat": 8.5,
+    "sugars": 5.3,
+    "fiber": 1.6,
+    "satFat": 3.2
+   },
+   "source": {
+    "db": "composed",
+    "note": "half a baguette with mushrooms, onion, cheese, ketchup",
+    "recipe": [
+     {
+      "g": 120,
+      "db": "FNDDS 2021-2023",
+      "code": 51107010,
+      "description": "Bread, French or Vienna"
+     },
+     {
+      "g": 60,
+      "db": "FNDDS 2021-2023",
+      "code": 99997515,
+      "description": "Mushrooms, cooked, as ingredient"
+     },
+     {
+      "g": 10,
+      "db": "FNDDS 2021-2023",
+      "code": 75117020,
+      "description": "Onions, raw"
+     },
+     {
+      "g": 8,
+      "db": "SR Legacy",
+      "code": 172336,
+      "description": "Oil, canola"
+     },
+     {
+      "g": 40,
+      "db": "FNDDS 2021-2023",
+      "code": 14105010,
+      "description": "Cheese, Gouda or Edam"
+     },
+     {
+      "g": 25,
+      "db": "FNDDS 2021-2023",
+      "code": 74401010,
+      "description": "Ketchup"
+     }
+    ]
+   }
+  },
+  "ziemniaki": {
+   "per100": {
+    "kcal": 126,
+    "protein": 1.9,
+    "carbs": 20.5,
+    "fat": 4.3,
+    "sugars": 1.6,
+    "fiber": 1.4,
+    "satFat": 1.1
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 71103000,
+    "description": "Potato, boiled, from fresh, peel not eaten, NS as to fat",
+    "note": "boiled potatoes with the usual knob of butter"
+   }
+  },
+  "zupaDyniowa": {
+   "per100": {
+    "kcal": 72,
+    "protein": 1.1,
+    "carbs": 6.9,
+    "fat": 4.7,
+    "sugars": 2.1,
+    "fiber": 1.5,
+    "satFat": 2.5
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 73502000,
+    "description": "Soup, pumpkin"
+   }
+  },
+  "zupaGulaszowa": {
+   "per100": {
+    "kcal": 69,
+    "protein": 4.8,
+    "carbs": 4.8,
+    "fat": 3.5,
+    "sugars": 1.2,
+    "fiber": 0.6,
+    "satFat": 1
+   },
+   "source": {
+    "db": "composed",
+    "note": "broth, beef, potatoes, pepper, onion, tomato paste, oil",
+    "recipe": [
+     {
+      "g": 200,
+      "db": "FNDDS 2021-2023",
+      "code": 28340120,
+      "description": "Soup, broth"
+     },
+     {
+      "g": 50,
+      "db": "FNDDS 2021-2023",
+      "code": 21410000,
+      "description": "Beef, stew meat"
+     },
+     {
+      "g": 60,
+      "db": "SR Legacy",
+      "code": 170440,
+      "description": "Potatoes, boiled, cooked without skin, flesh, without salt"
+     },
+     {
+      "g": 30,
+      "db": "FNDDS 2021-2023",
+      "code": 75122200,
+      "description": "Peppers, sweet, red, raw"
+     },
+     {
+      "g": 20,
+      "db": "FNDDS 2021-2023",
+      "code": 75117020,
+      "description": "Onions, raw"
+     },
+     {
+      "g": 10,
+      "db": "SR Legacy",
+      "code": 170459,
+      "description": "Tomato products, canned, paste, without salt added (Includes foods for USDA's Food Distribution Program)"
+     },
+     {
+      "g": 5,
+      "db": "SR Legacy",
+      "code": 172336,
+      "description": "Oil, canola"
+     }
+    ]
+   }
+  },
+  "zupaJarzynowa": {
+   "per100": {
+    "kcal": 27,
+    "protein": 0.8,
+    "carbs": 5.1,
+    "fat": 0.5,
+    "sugars": 1.3,
+    "fiber": 1,
+    "satFat": 0.1
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 75649110,
+    "description": "Soup, vegetable"
+   }
+  },
+  "zupaKremZWarzyw": {
+   "per100": {
+    "kcal": 78,
+    "protein": 1.4,
+    "carbs": 7.8,
+    "fat": 4.7,
+    "sugars": 1.7,
+    "fiber": 1.1,
+    "satFat": 2.5
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 75611010,
+    "description": "Soup, cream of vegetable"
+   }
+  },
+  "zupaPieczarkowa": {
+   "per100": {
+    "kcal": 74,
+    "protein": 2.1,
+    "carbs": 5.7,
+    "fat": 4.8,
+    "sugars": 1.7,
+    "fiber": 1.2,
+    "satFat": 2.5
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 75607060,
+    "description": "Soup, cream of mushroom"
+   }
+  },
+  "zupaPomidorowa": {
+   "per100": {
+    "kcal": 44,
+    "protein": 1.4,
+    "carbs": 6.8,
+    "fat": 1.3,
+    "sugars": 1.4,
+    "fiber": 0.6,
+    "satFat": 0.6
+   },
+   "source": {
+    "db": "composed",
+    "note": "broth, tomatoes, sour cream, rice",
+    "recipe": [
+     {
+      "g": 200,
+      "db": "FNDDS 2021-2023",
+      "code": 28340120,
+      "description": "Soup, broth"
+     },
+     {
+      "g": 50,
+      "db": "SR Legacy",
+      "code": 170051,
+      "description": "Tomatoes, red, ripe, canned, packed in tomato juice"
+     },
+     {
+      "g": 15,
+      "db": "SR Legacy",
+      "code": 170459,
+      "description": "Tomato products, canned, paste, without salt added (Includes foods for USDA's Food Distribution Program)"
+     },
+     {
+      "g": 15,
+      "db": "FNDDS 2021-2023",
+      "code": 73102211,
+      "description": "Carrots, fresh, cooked, no added fat"
+     },
+     {
+      "g": 20,
+      "db": "SR Legacy",
+      "code": 171257,
+      "description": "Cream, sour, cultured"
+     },
+     {
+      "g": 60,
+      "db": "FNDDS 2021-2023",
+      "code": 56205001,
+      "description": "Rice, white, cooked, NS as to fat"
+     }
+    ]
+   }
+  },
+  "zupaZSoczewicy": {
+   "per100": {
+    "kcal": 60,
+    "protein": 3.8,
+    "carbs": 10.2,
+    "fat": 0.7,
+    "sugars": 1.7,
+    "fiber": 3.7,
+    "satFat": 0.1
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 41603010,
+    "description": "Soup, lentil"
+   }
+  },
+  "zurek": {
+   "per100": {
+    "kcal": 99,
+    "protein": 5,
+    "carbs": 6.7,
+    "fat": 5.9,
+    "sugars": 0.5,
+    "fiber": 0.8,
+    "satFat": 2.1
+   },
+   "source": {
+    "db": "composed",
+    "note": "broth soured with rye starter, white sausage, egg, potatoes, sour cream",
+    "recipe": [
+     {
+      "g": 250,
+      "db": "FNDDS 2021-2023",
+      "code": 28340120,
+      "description": "Soup, broth"
+     },
+     {
+      "g": 20,
+      "db": "SR Legacy",
+      "code": 168886,
+      "description": "Rye flour, medium"
+     },
+     {
+      "g": 50,
+      "db": "SR Legacy",
+      "code": 171620,
+      "description": "Bratwurst, pork, cooked"
+     },
+     {
+      "g": 50,
+      "db": "FNDDS 2021-2023",
+      "code": 31103010,
+      "description": "Egg, whole, boiled or poached"
+     },
+     {
+      "g": 60,
+      "db": "SR Legacy",
+      "code": 170440,
+      "description": "Potatoes, boiled, cooked without skin, flesh, without salt"
+     },
+     {
+      "g": 15,
+      "db": "SR Legacy",
+      "code": 171257,
+      "description": "Cream, sour, cultured"
+     },
+     {
+      "g": 10,
+      "db": "FNDDS 2021-2023",
+      "code": 22600100,
+      "description": "Bacon, NS as to type of meat, cooked"
+     }
+    ]
+   }
+  }
+ },
+ "sauces": {
+  "bbq": {
+   "per100": {
+    "kcal": 172,
+    "protein": 0.8,
+    "carbs": 40.8,
+    "fat": 0.6,
+    "sugars": 33.2,
+    "fiber": 0.9,
+    "satFat": 0
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 74406010,
+    "description": "Barbecue sauce"
+   }
+  },
+  "bolognese": {
+   "per100": {
+    "kcal": 90,
+    "protein": 5.9,
+    "carbs": 6.5,
+    "fat": 4.4,
+    "sugars": 4.5,
+    "fiber": 1.5,
+    "satFat": 1.3
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 27162040,
+    "description": "Spaghetti sauce with meat"
+   }
+  },
+  "caesar": {
+   "per100": {
+    "kcal": 542,
+    "protein": 2.2,
+    "carbs": 3.3,
+    "fat": 57.9,
+    "sugars": 2.8,
+    "fiber": 0.5,
+    "satFat": 8.8
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 83102000,
+    "description": "Caesar dressing"
+   }
+  },
+  "cheese": {
+   "per100": {
+    "kcal": 163,
+    "protein": 3.1,
+    "carbs": 7.9,
+    "fat": 13.3,
+    "sugars": 0.3,
+    "fiber": 0.3,
+    "satFat": 3.1
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 14650100,
+    "description": "Cheese sauce"
+   }
+  },
+  "cream": {
+   "per100": {
+    "kcal": 150,
+    "protein": 2.1,
+    "carbs": 1.8,
+    "fat": 15,
+    "sugars": 0.9,
+    "fiber": 0,
+    "satFat": 8.5
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 14650160,
+    "description": "Alfredo sauce"
+   }
+  },
+  "curry": {
+   "per100": {
+    "kcal": 95,
+    "protein": 1.4,
+    "carbs": 5,
+    "fat": 8.2,
+    "sugars": 3.4,
+    "fiber": 1.4,
+    "satFat": 2.5
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 81312100,
+    "description": "Curry sauce"
+   }
+  },
+  "garlic": {
+   "per100": {
+    "kcal": 292,
+    "protein": 3,
+    "carbs": 5,
+    "fat": 28.9,
+    "sugars": 2.7,
+    "fiber": 0.1,
+    "satFat": 5.5
+   },
+   "source": {
+    "db": "composed",
+    "note": "Polish kebab garlic sauce: yoghurt and mayonnaise",
+    "recipe": [
+     {
+      "g": 60,
+      "db": "FNDDS 2021-2023",
+      "code": 11411100,
+      "description": "Yogurt, whole milk, plain"
+     },
+     {
+      "g": 35,
+      "db": "FNDDS 2021-2023",
+      "code": 83107000,
+      "description": "Mayonnaise, regular"
+     },
+     {
+      "g": 5,
+      "db": "FNDDS 2021-2023",
+      "code": 75111500,
+      "description": "Garlic, raw"
+     }
+    ]
+   }
+  },
+  "gravy": {
+   "per100": {
+    "kcal": 53,
+    "protein": 3.8,
+    "carbs": 4.8,
+    "fat": 2.4,
+    "sugars": 0.2,
+    "fiber": 0.4,
+    "satFat": 1.2
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 28500040,
+    "description": "Gravy, beef"
+   }
+  },
+  "hoisin": {
+   "per100": {
+    "kcal": 220,
+    "protein": 3.3,
+    "carbs": 44.1,
+    "fat": 3.4,
+    "sugars": 27.3,
+    "fiber": 2.8,
+    "satFat": 0.6
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 41420250,
+    "description": "Hoisin sauce"
+   }
+  },
+  "hollandaise": {
+   "per100": {
+    "kcal": 546,
+    "protein": 5.4,
+    "carbs": 1,
+    "fat": 58,
+    "sugars": 0.8,
+    "fiber": 0,
+    "satFat": 30.2
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 81302010,
+    "description": "Hollandaise sauce"
+   }
+  },
+  "ketchup": {
+   "per100": {
+    "kcal": 109,
+    "protein": 1.1,
+    "carbs": 27.1,
+    "fat": 0.3,
+    "sugars": 21.5,
+    "fiber": 0.3,
+    "satFat": 0
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 74401010,
+    "description": "Ketchup"
+   }
+  },
+  "mayo": {
+   "per100": {
+    "kcal": 680,
+    "protein": 1,
+    "carbs": 0.6,
+    "fat": 74.9,
+    "sugars": 0.6,
+    "fiber": 0,
+    "satFat": 11.7
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 83107000,
+    "description": "Mayonnaise, regular"
+   }
+  },
+  "oliveOil": {
+   "per100": {
+    "kcal": 900,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 100,
+    "sugars": 0,
+    "fiber": 0,
+    "satFat": 15.5
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 82104000,
+    "description": "Olive oil"
+   }
+  },
+  "peanut": {
+   "per100": {
+    "kcal": 257,
+    "protein": 6.3,
+    "carbs": 22,
+    "fat": 16,
+    "sugars": 17.1,
+    "fiber": 1.8,
+    "satFat": 2.9
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 42204050,
+    "description": "Peanut sauce"
+   }
+  },
+  "pesto": {
+   "per100": {
+    "kcal": 580,
+    "protein": 8.6,
+    "carbs": 5.7,
+    "fat": 59.2,
+    "sugars": 0.7,
+    "fiber": 1,
+    "satFat": 10.3
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 81302070,
+    "description": "Pesto sauce"
+   }
+  },
+  "ranch": {
+   "per100": {
+    "kcal": 430,
+    "protein": 1.3,
+    "carbs": 5.9,
+    "fat": 44.5,
+    "sugars": 4.7,
+    "fiber": 0,
+    "satFat": 7
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 83113500,
+    "description": "Ranch dressing"
+   }
+  },
+  "salsa": {
+   "per100": {
+    "kcal": 34,
+    "protein": 1.4,
+    "carbs": 6.7,
+    "fat": 0.2,
+    "sugars": 3.8,
+    "fiber": 1.8,
+    "satFat": 0
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 74402100,
+    "description": "Salsa, NFS"
+   }
+  },
+  "sourCream": {
+   "per100": {
+    "kcal": 198,
+    "protein": 2.4,
+    "carbs": 4.6,
+    "fat": 19.4,
+    "sugars": 3.4,
+    "fiber": 0,
+    "satFat": 10.1
+   },
+   "source": {
+    "db": "SR Legacy",
+    "code": 171257,
+    "description": "Cream, sour, cultured"
+   }
+  },
+  "soy": {
+   "per100": {
+    "kcal": 53,
+    "protein": 8.1,
+    "carbs": 4.9,
+    "fat": 0.6,
+    "sugars": 0.4,
+    "fiber": 0.8,
+    "satFat": 0.1
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 41420300,
+    "description": "Soy sauce"
+   }
+  },
+  "sweetSour": {
+   "per100": {
+    "kcal": 154,
+    "protein": 0.3,
+    "carbs": 38.2,
+    "fat": 0,
+    "sugars": 18.8,
+    "fiber": 0.1,
+    "satFat": 0
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 91361010,
+    "description": "Sweet and sour sauce"
+   }
+  },
+  "tartar": {
+   "per100": {
+    "kcal": 211,
+    "protein": 1,
+    "carbs": 13.3,
+    "fat": 16.7,
+    "sugars": 4.3,
+    "fiber": 0.5,
+    "satFat": 3.3
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 81302050,
+    "description": "Tartar sauce"
+   }
+  },
+  "teriyaki": {
+   "per100": {
+    "kcal": 89,
+    "protein": 5.9,
+    "carbs": 15.6,
+    "fat": 0,
+    "sugars": 14.1,
+    "fiber": 0.1,
+    "satFat": 0
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 41420400,
+    "description": "Teriyaki sauce"
+   }
+  },
+  "tomato": {
+   "per100": {
+    "kcal": 51,
+    "protein": 1.4,
+    "carbs": 8.1,
+    "fat": 1.5,
+    "sugars": 5.5,
+    "fiber": 1.8,
+    "satFat": 0.2
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 74404010,
+    "description": "Spaghetti sauce"
+   }
+  },
+  "tzatziki": {
+   "per100": {
+    "kcal": 91,
+    "protein": 5.2,
+    "carbs": 4.1,
+    "fat": 6,
+    "sugars": 2.5,
+    "fiber": 0.2,
+    "satFat": 1.9
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 11440060,
+    "description": "Tzatziki dip"
+   }
+  },
+  "vinaigrette": {
+   "per100": {
+    "kcal": 240,
+    "protein": 0.4,
+    "carbs": 12.1,
+    "fat": 21.1,
+    "sugars": 10.8,
+    "fiber": 0,
+    "satFat": 2.9
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 83106000,
+    "description": "Italian dressing, made with vinegar and oil"
+   }
+  },
+  "whippedCream": {
+   "per100": {
+    "kcal": 257,
+    "protein": 3.2,
+    "carbs": 12.5,
+    "fat": 22.2,
+    "sugars": 8,
+    "fiber": 0,
+    "satFat": 13.8
+   },
+   "source": {
+    "db": "SR Legacy",
+    "code": 170860,
+    "description": "Cream, whipped, cream topping, pressurized"
+   }
+  },
+  "whiteSauce": {
+   "per100": {
+    "kcal": 144,
+    "protein": 3.8,
+    "carbs": 9.2,
+    "fat": 10.2,
+    "sugars": 4.6,
+    "fiber": 0.2,
+    "satFat": 4.7
+   },
+   "source": {
+    "db": "FNDDS 2021-2023",
+    "code": 13411000,
+    "description": "White sauce or gravy"
+   }
+  }
+ }
+}

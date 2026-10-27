@@ -464,3 +464,25 @@ details.fd-diet-how > summary{display:flex;align-items:center;min-height:44px;fo
 /* Tabela tygodni ma pięć kolumn: na telefonie mieści się bez przewijania. */
 table.fd-diet-weeks{min-width:0}
 table.fd-diet-weeks th:first-child{min-width:84px;white-space:nowrap}
+
+/* ---------------- Zdjęcie posiłku: propozycje, talerz, porcja i skale ---------------- */
+
+.fd-diet-photo{display:grid;gap:8px}
+.fd-diet-photo-row{display:flex;gap:10px;align-items:center}
+.fd-diet-photo-img{width:88px;height:88px;object-fit:cover;border-radius:var(--r);border:1px solid var(--line);flex:none}
+.fd-diet-photo-btns{display:flex;flex-wrap:wrap;gap:8px}
+.fd-diet-dishes{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.fd-diet-dish{display:inline-flex;align-items:center;gap:4px;min-height:40px;padding:6px 12px;border:1px solid var(--line);border-radius:999px;
+  background:var(--surface);color:var(--ink);font:inherit;font-size:14px;cursor:pointer}
+.fd-diet-dish:focus-visible{outline:2px solid var(--steel);outline-offset:2px}
+.fd-diet-dish-lead{border-color:var(--steel);font-weight:600}
+.fd-diet-dish-on{background:var(--steel);border-color:var(--steel);color:#fff}
+.fd-diet-dish-search input{width:100%}
+.fd-diet-plate{display:grid;gap:8px;margin-top:6px}
+.fd-diet-plate-list{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.fd-diet-plate-item{display:grid;gap:6px;padding:10px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+.fd-diet-portion{display:grid;gap:2px;font-size:13px;font-weight:600}
+.fd-diet-portion input[type=range]{width:100%;min-height:32px;accent-color:var(--steel)}
+.fd-diet-scale{display:grid;gap:4px}
+.fd-diet-scale .seg button{font-size:12.5px;padding-left:4px;padding-right:4px}
+.fd-diet-plate-total{margin:0;font-size:14px}

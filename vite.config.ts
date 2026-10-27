@@ -8,6 +8,7 @@ import { cspPlugin } from './vite/csp.ts';
 import { foodData } from './vite/foodData.ts';
 import { ocrData } from './vite/ocrData.ts';
 import { osmPlaces } from './vite/osmPlaces.ts';
+import { photoModel } from './vite/photoModel.ts';
 
 /** Skrót na ekranie głównym: ta sama ikona dla wszystkich, jak dotąd. */
 const shortcut = (name: string, url: string, shortName?: string) => ({
@@ -29,6 +30,8 @@ export default defineConfig(({ mode }) => ({
     osmPlaces(),
     // Polskie dane OCR dla zdjęć wyników badań (`ocr/…/pol.traineddata.gz`) pod stałym adresem.
     ocrData(),
+    // Model rozpoznawania dań ze zdjęcia (`models/…/vision.onnx`, 55 MB) z przypiętej wersji, poza gitem.
+    photoModel(),
     VitePWA({
       // Własny service worker (`src/sw.ts`); build dopisuje do niego tylko listę plików powłoki.
       strategies: 'injectManifest',
@@ -79,7 +82,8 @@ export default defineConfig(({ mode }) => ({
         // Bazy jedzenia nie idą do instalacji: produkty i dane sklepów internetowych service worker
         // zapisuje dopiero przy pierwszym wejściu w Jedzenie (`src/sw.ts`), po jednej kopii.
         // Czytniki wyników badań (pdf.js, Tesseract i jego dane, razem ok. 8 MB) też nie: przychodzą
-        // przy pierwszym pliku albo zdjęciu, a potem z kopii (`src/sw.ts`).
+        // przy pierwszym pliku albo zdjęciu, a potem z kopii (`src/sw.ts`). Tak samo rozpoznawanie
+        // dań ze zdjęcia: worker z ONNX Runtime (model, .wasm i tabela dań i tak nie pasują do wzorców).
         globIgnores: [
           'data/**',
           'assets/shopData-*.js',
@@ -88,6 +92,7 @@ export default defineConfig(({ mode }) => ({
           'assets/pdf-*.js',
           'assets/worker.min-*.js',
           'assets/tesseract-core-*.js',
+          'assets/recognize.worker-*.js',
         ],
       },
       // W trybie deweloperskim bez service workera: trzymałby stare pliki i każda zmiana
@@ -96,6 +101,8 @@ export default defineConfig(({ mode }) => ({
     }),
   ],
   base: './',
+  // Worker zdjęć jako moduł: ONNX Runtime szuka swoich plików przez `import.meta.url`.
+  worker: { format: 'es' },
   // Paczki menu sieci i sklepów bez `<link rel=modulepreload>`: WebKit (Safari, każda przeglądarka na
   // iOS) pamięta nieudane wstępne wczytanie takiej paczki w karcie nawet po przeładowaniu, więc
   // „Spróbuj ponownie” nie odzyskałby menu. Zwykły import() przeładowanie pobiera od nowa.
