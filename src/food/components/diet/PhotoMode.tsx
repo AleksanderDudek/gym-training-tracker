@@ -46,6 +46,7 @@ const T = text({
     macros: (p: string, c: string, f: string) => `B ${p} g · W ${c} g · T ${f} g`,
     total: 'Razem',
     add: (n: number) => (n > 1 ? `Dodaj ${n} pozycje` : 'Dodaj do dziennika'),
+    saveFailed: 'Nie udało się zapisać. To, co zostało na talerzu, nie jest jeszcze w dzienniku — spróbuj ponownie.',
     saved: (n: number, kcal: string | null) => `Zapisano ${n > 1 ? `${n} pozycje` : 'posiłek'} ze zdjęcia${kcal ? ` — ok. ${kcal} kcal` : ''}.`,
     why: 'Wartości z bazy dań (USDA). Najbardziej zmienia je porcja i tłuszcz — ustaw je, a szacunek będzie bliżej prawdy.',
   },
@@ -74,6 +75,7 @@ const T = text({
     macros: (p: string, c: string, f: string) => `P ${p} g · C ${c} g · F ${f} g`,
     total: 'Total',
     add: (n: number) => (n > 1 ? `Add ${n} items` : 'Add to the diary'),
+    saveFailed: 'Couldn’t save. What is still on the plate is not in the diary yet — try again.',
     saved: (n: number, kcal: string | null) => `Saved ${n > 1 ? `${n} items` : 'the meal'} from the photo${kcal ? ` — about ${kcal} kcal` : ''}.`,
     why: 'Values from a dish database (USDA). Portion and fat change them most — set those and the estimate gets closer to the truth.',
   },
@@ -113,6 +115,7 @@ export function PhotoMode({ date, onLogged, onDone }: Props) {
   const [items, setItems] = useState<PlateItem[]>([]);
   const [query, setQuery] = useState('');
   const [busy, setBusy] = useState(false);
+  const [saveFailed, setSaveFailed] = useState(false);
   const camera = useRef<HTMLInputElement>(null);
   const gallery = useRef<HTMLInputElement>(null);
   const run = useRef(0);
@@ -130,8 +133,10 @@ export function PhotoMode({ date, onLogged, onDone }: Props) {
       const suggestions = await recognize(file, (progress) => mine === run.current && setStage({ kind: 'working', progress }));
       if (mine === run.current) setStage({ kind: 'done', suggestions });
     } catch (e) {
+      // A newer photo or a closed screen ended this one; only the current photo's failure is news.
+      if (mine !== run.current) return;
       console.error(e);
-      if (mine === run.current) setStage({ kind: 'failed' });
+      setStage({ kind: 'failed' });
     }
   };
 
@@ -158,11 +163,22 @@ export function PhotoMode({ date, onLogged, onDone }: Props) {
   const save = async () => {
     if (busy || !items.length) return;
     setBusy(true);
+    setSaveFailed(false);
+    let logged = 0;
     try {
-      for (const item of items) await logFood(date, plateFood(item));
+      for (const item of items) {
+        await logFood(date, plateFood(item));
+        logged++;
+      }
       rememberItems(items);
       onLogged(T.saved(items.length, shown && total ? formatNumber(total.kcal, 0) : null));
       onDone();
+    } catch (e) {
+      // What was saved leaves the plate, so „Dodaj” again does not log it twice.
+      console.error(e);
+      rememberItems(items.slice(0, logged));
+      setItems(items.slice(logged));
+      setSaveFailed(true);
     } finally {
       setBusy(false);
     }
@@ -243,6 +259,11 @@ export function PhotoMode({ date, onLogged, onDone }: Props) {
             </p>
           )}
           <p className="fd-diet-meta">{T.why}</p>
+          {saveFailed && (
+            <p className="fd-diet-hint" role="alert">
+              {T.saveFailed}
+            </p>
+          )}
           <button type="button" className="btn wide" disabled={busy} onClick={() => void save()}>
             {T.add(items.length)}
           </button>

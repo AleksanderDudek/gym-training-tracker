@@ -60,16 +60,21 @@ function start(): Worker {
 const send = (req: Request) => start().postMessage(req);
 
 export function warmUp(): void {
+  // Progress of a warm-up belongs to no photo yet; the last photo's screen must not take it as its own.
+  listen = undefined;
   send({ type: 'warm', base: document.baseURI });
 }
 
 export function recognize(image: Blob, onProgress?: (p: Progress) => void): Promise<Suggestion[]> {
   listen = onProgress;
   const id = ++next;
-  return new Promise((resolve, reject) => {
+  const done = () => {
+    if (listen === onProgress) listen = undefined;
+  };
+  return new Promise<Suggestion[]>((resolve, reject) => {
     waiting.set(id, { resolve, reject });
     send({ type: 'read', id, base: document.baseURI, image });
-  });
+  }).finally(done);
 }
 
 export function release(): void {

@@ -9,6 +9,17 @@ import { KcalShown } from './kcalShown';
 import { PhotoMode } from './PhotoMode';
 
 const recognize = vi.hoisted(() => vi.fn());
+const failLog = vi.hoisted(() => ({ after: Infinity, calls: 0 }));
+vi.mock('../../diet/store', async (importOriginal) => {
+  const real = await importOriginal<typeof import('../../diet/store')>();
+  return {
+    ...real,
+    logFood: async (...args: Parameters<typeof real.logFood>) => {
+      if (failLog.calls++ >= failLog.after) throw new Error('quota');
+      return real.logFood(...args);
+    },
+  };
+});
 vi.mock('../../photo/recognize', () => ({ MODEL_MB: 20, recognize, warmUp: vi.fn(), release: vi.fn() }));
 
 const DATE = '2026-10-14';
@@ -79,6 +90,26 @@ describe('Zdjęcie posiłku', () => {
     const { container } = render(<PhotoMode date={DATE} onLogged={vi.fn()} onDone={vi.fn()} />);
     await userEvent.setup().upload(container.querySelectorAll('input[type=file]')[1] as HTMLInputElement, photo());
     expect(await screen.findByText('To chyba pierogi — wybierz rodzaj:')).toBeInTheDocument();
+  });
+
+  test('zapis przerwany w połowie: zapisane schodzi z talerza, ponowne „Dodaj” nie dubluje', async () => {
+    recognize.mockResolvedValue([
+      { dish: dishById('padThai')!, score: 0.5 },
+      { dish: dishById('springRolls')!, score: 0.3 },
+    ]);
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const user = userEvent.setup();
+    const { container } = render(<PhotoMode date={DATE} onLogged={vi.fn()} onDone={vi.fn()} />);
+    await user.upload(container.querySelectorAll('input[type=file]')[1] as HTMLInputElement, photo());
+    await user.click(await screen.findByRole('button', { name: 'Pad thai' }));
+    await user.click(screen.getByRole('button', { name: /Sajgonki/ }));
+    Object.assign(failLog, { after: 1, calls: 0 });
+    await user.click(screen.getByRole('button', { name: 'Dodaj 2 pozycje' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(/Nie udało się zapisać/);
+    expect(await db.entries.count()).toBe(1);
+    failLog.after = Infinity;
+    await user.click(screen.getByRole('button', { name: 'Dodaj do dziennika' }));
+    await waitFor(async () => expect((await db.entries.toArray()).map((e) => e.key).sort()).toEqual(['dish:padThai', 'dish:springRolls']));
   });
 
   test('błąd modelu: komunikat, a wyszukiwanie dalej działa; bez liczenia kalorii nie ma kcal', async () => {

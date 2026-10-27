@@ -28,7 +28,7 @@ npm run build      # typecheck + produkcyjny build do dist/ z service workerem (
 npm run preview    # podgląd builda — tu działa też praca offline
 npm run typecheck  # tsc: aplikacja, testy, konfiguracja Vite i skrypty, service worker, filmy demo
 npm run lint       # oxlint
-npm test           # 3240 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, plan z zakupami, serwer… (vitest)
+npm test           # 3241 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, plan z zakupami, serwer… (vitest)
 ```
 
 Aplikacje na telefon (GYM TRACKER Zdrowie — `health/README.md`):
