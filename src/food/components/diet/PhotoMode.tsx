@@ -17,7 +17,7 @@ import {
   searchDishes,
   type PlateItem,
 } from '../../photo/plate';
-import { MODEL_MB, recognize, release, warmUp, type Progress, type Suggestion } from '../../photo/recognize';
+import { MODEL_MB, modelSaved, recognize, release, warmUp, type Progress, type Suggestion } from '../../photo/recognize';
 import { useKcalShown } from './kcalShown';
 
 const T = text({
@@ -26,6 +26,7 @@ const T = text({
     take: 'Zrób zdjęcie',
     gallery: 'Z galerii',
     privacy: (mb: number) => `Zdjęcie zostaje w telefonie. Za pierwszym razem pobiorę model rozpoznawania (ok. ${mb} MB), potem działa też bez internetu.`,
+    privacySaved: 'Zdjęcie zostaje w telefonie. Model rozpoznawania jest już pobrany — działa też bez internetu.',
     loading: (pct: number | null) => (pct === null ? 'Wczytuję model rozpoznawania…' : `Pobieram model rozpoznawania: ${pct}%`),
     reading: 'Rozpoznaję danie…',
     failed: 'Nie udało się rozpoznać zdjęcia. Wyszukaj danie poniżej.',
@@ -55,6 +56,7 @@ const T = text({
     take: 'Take a photo',
     gallery: 'From gallery',
     privacy: (mb: number) => `The photo stays on your phone. The first time I’ll download the recognition model (about ${mb} MB); after that it also works offline.`,
+    privacySaved: 'The photo stays on your phone. The recognition model is already downloaded, so it also works offline.',
     loading: (pct: number | null) => (pct === null ? 'Loading the recognition model…' : `Downloading the recognition model: ${pct}%`),
     reading: 'Recognising the dish…',
     failed: 'Couldn’t recognise the photo. Search for the dish below.',
@@ -213,7 +215,7 @@ export function PhotoMode({ date, onLogged, onDone }: Props) {
       {/* Dwa pola: jedno otwiera od razu aparat (tylne), drugie galerię — zrzut ekranu z menu też się liczy. */}
       <input ref={camera} type="file" accept="image/*" capture="environment" hidden onChange={(e) => pickFile(e, onFile)} />
       <input ref={gallery} type="file" accept="image/*" hidden onChange={(e) => pickFile(e, onFile)} />
-      {stage.kind === 'start' && <p className="fd-diet-meta">{T.privacy(MODEL_MB)}</p>}
+      {stage.kind === 'start' && <p className="fd-diet-meta">{modelSaved() ? T.privacySaved : T.privacy(MODEL_MB)}</p>}
 
       {stage.kind === 'working' && (
         <p className="fd-diet-hint" role="status">

@@ -20,7 +20,7 @@ vi.mock('../../diet/store', async (importOriginal) => {
     },
   };
 });
-vi.mock('../../photo/recognize', () => ({ MODEL_MB: 20, recognize, warmUp: vi.fn(), release: vi.fn() }));
+vi.mock('../../photo/recognize', () => ({ MODEL_MB: 20, modelSaved: () => false, recognize, warmUp: vi.fn(), release: vi.fn() }));
 
 const DATE = '2026-10-14';
 

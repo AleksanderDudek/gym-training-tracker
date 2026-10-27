@@ -6,7 +6,8 @@
  *
  * Everything comes from the app's own server: the runtime's .wasm (an asset with a hash), the
  * model (`models/<version>/vision.onnx`) and the dish table. The service worker keeps copies after
- * the first photo. The photo itself never leaves this worker.
+ * the first photo — or before it, when the app saves them in the background (`save`, without
+ * loading the model). The photo itself never leaves this worker.
  */
 import * as ort from 'onnxruntime-web/wasm';
 import wasm from 'onnxruntime-web/ort-wasm-simd-threaded.wasm?url';
@@ -15,29 +16,38 @@ import meta from './data/dish-embeddings.json';
 import { PHOTO_MODEL } from './model';
 import { loadTable, rank, type DishTable } from './score';
 
-export type Request = { type: 'warm'; base: string } | { type: 'read'; id: number; base: string; image: Blob };
+export type Request =
+  | { type: 'warm'; base: string }
+  | { type: 'save'; id: number; base: string; fetchMissing: boolean }
+  | { type: 'read'; id: number; base: string; image: Blob };
 export type Reply =
   | { type: 'progress'; step: 'load' | 'read'; share: number | null }
   | { type: 'result'; id: number; top: { id: string; score: number }[] }
+  | { type: 'saved'; id: number; saved: boolean }
   | { type: 'error'; id: number | null; message: string };
 
 // The app's types are the page's (DOM); a worker's own global is only this much of it.
 const scope = self as unknown as { postMessage(m: Reply): void; onmessage: ((e: MessageEvent<Request>) => void) | null };
 const post = (m: Reply) => scope.postMessage(m);
 
-ort.env.wasm.wasmPaths = { wasm: new URL(wasm, self.location.href).href };
+const wasmHref = new URL(wasm, self.location.href).href;
+const tableHref = new URL(tableUrl, self.location.href).href;
+const modelUrl = (base: string) => new URL(`${PHOTO_MODEL.dir}/vision.onnx`, base).href;
+
+ort.env.wasm.wasmPaths = { wasm: wasmHref };
 ort.env.wasm.numThreads = 1;
 ort.env.wasm.proxy = false;
 
 /**
  * The model file with progress. Counted against its known size: a server that compresses it
- * reports the compressed length, while the stream yields the file's own bytes.
+ * reports the compressed length, while the stream yields the file's own bytes. `keep: false` only
+ * reads it through, for the service worker's copy, without holding 55 MB here.
  */
-async function download(url: string): Promise<Uint8Array> {
+async function download(url: string, keep = true): Promise<Uint8Array> {
   const res = await fetch(url);
   if (!res.ok || !res.body) throw new Error(`HTTP ${res.status} for ${url}`);
   const total = PHOTO_MODEL.bytes;
-  const out = new Uint8Array(total);
+  const out = new Uint8Array(keep ? total : 0);
   const reader = res.body.getReader();
   let got = 0;
   let last = -1;
@@ -45,7 +55,7 @@ async function download(url: string): Promise<Uint8Array> {
     const { done, value } = await reader.read();
     if (done) break;
     if (got + value.length > total) throw new Error(`model is larger than ${total} bytes`);
-    out.set(value, got);
+    if (keep) out.set(value, got);
     got += value.length;
     const share = got / total;
     if (share - last >= 0.01) {
@@ -58,13 +68,65 @@ async function download(url: string): Promise<Uint8Array> {
 }
 
 let ready: Promise<{ session: ort.InferenceSession; table: DishTable }> | null = null;
+let saving: Promise<boolean> | null = null;
+const ignore = () => undefined;
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const has = async (url: string) => (await caches.match(url)) !== undefined;
+
+/** The service worker writes its copy just after the response is read; this waits for it a little. */
+async function landed(url: string): Promise<boolean> {
+  for (let i = 0; i < 20; i++) {
+    if (await has(url)) return true;
+    await sleep(250);
+  }
+  return false;
+}
+
+const files = (base: string) => [self.location.href, wasmHref, tableHref, modelUrl(base)];
+
+/** Whether everything a photo needs is in the service worker's copy. */
+async function inCopy(base: string): Promise<boolean> {
+  if (typeof caches === 'undefined') return false;
+  for (const url of files(base)) if (!(await has(url))) return false;
+  return true;
+}
+
+/**
+ * Fetches, through the service worker and into its copy, what reading a photo needs and the copy
+ * lacks: this worker, the runtime, the dish table and the model. Nothing is loaded, so it costs
+ * no memory. True when all of it is in the copy; false without one (no Cache API, a full disk).
+ * `fetchMissing: false` only looks (offline, mobile data).
+ */
+function save(base: string, fetchMissing: boolean): Promise<boolean> {
+  if (!fetchMissing) return (saving ?? Promise.resolve()).catch(ignore).then(() => inCopy(base));
+  saving ??= (async () => {
+    // A photo already loading the model fetches it now; the copy is checked once it has.
+    await ready?.catch(ignore);
+    if (typeof caches === 'undefined') return false;
+    for (const url of files(base)) {
+      if (await has(url)) continue;
+      if (url === modelUrl(base)) await download(url, false);
+      else await fetch(url).then((r) => r.arrayBuffer());
+    }
+    for (const url of files(base)) if (!(await landed(url))) return false;
+    return true;
+  })().catch((e: unknown) => {
+    saving = null;
+    throw e;
+  });
+  return saving;
+}
 
 function load(base: string) {
   ready ??= (async () => {
     post({ type: 'progress', step: 'load', share: null });
+    // The background save is on its way: its model is read from the copy once it is in, not
+    // downloaded a second time alongside.
+    await saving?.catch(ignore);
     const [model, bytes] = await Promise.all([
-      download(new URL(`${PHOTO_MODEL.dir}/vision.onnx`, base).href),
-      fetch(new URL(tableUrl, self.location.href)).then(async (r) => {
+      download(modelUrl(base)),
+      fetch(tableHref).then(async (r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status} for the dish table`);
         return new Int8Array(await r.arrayBuffer());
       }),
@@ -107,6 +169,10 @@ scope.onmessage = async ({ data: req }) => {
       await load(req.base);
       return;
     }
+    if (req.type === 'save') {
+      post({ type: 'saved', id: req.id, saved: await save(req.base, req.fetchMissing) });
+      return;
+    }
     const { session, table } = await load(req.base);
     post({ type: 'progress', step: 'read', share: null });
     const out = await session.run({ pixel_values: await pixels(req.image) });
@@ -114,6 +180,6 @@ scope.onmessage = async ({ data: req }) => {
     if (!pooled) throw new Error('no pooler_output');
     post({ type: 'result', id: req.id, top: rank(table, pooled.data as Float32Array, PHOTO_MODEL.logitScale) });
   } catch (e) {
-    post({ type: 'error', id: req.type === 'read' ? req.id : null, message: e instanceof Error ? e.message : String(e) });
+    post({ type: 'error', id: req.type === 'warm' ? null : req.id, message: e instanceof Error ? e.message : String(e) });
   }
 };
