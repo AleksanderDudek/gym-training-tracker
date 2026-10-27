@@ -11,11 +11,13 @@ export interface RecipesState {
   product: string | null;
   /** The list by time (default), or grouped into the fewest shopping plans: `uklad=sklepy`. */
   layout: RecipesLayout;
+  /** A recipe to scroll to, from a link elsewhere (the lab-results diet): `przepis=<id>`. */
+  recipe: string | null;
 }
 
 export type RecipesLayout = 'czas' | 'sklepy';
 
-export const DEFAULT_RECIPES_STATE: RecipesState = { store: null, kind: null, tier: null, product: null, layout: 'czas' };
+export const DEFAULT_RECIPES_STATE: RecipesState = { store: null, kind: null, tier: null, product: null, layout: 'czas', recipe: null };
 
 export function recipesToParams(state: RecipesState): URLSearchParams {
   const params = new URLSearchParams();
@@ -24,6 +26,7 @@ export function recipesToParams(state: RecipesState): URLSearchParams {
   if (state.tier) params.set('czas', state.tier);
   if (state.product) params.set('p', state.product);
   if (state.layout !== 'czas') params.set('uklad', state.layout);
+  if (state.recipe) params.set('przepis', state.recipe);
   return params;
 }
 
@@ -39,5 +42,6 @@ export function recipesFromParams(params: URLSearchParams): RecipesState {
     tier: oneOf(TIER_LABELS, params.get('czas')),
     product: params.get('p') || null,
     layout: params.get('uklad') === 'sklepy' ? 'sklepy' : 'czas',
+    recipe: params.get('przepis') || null,
   };
 }

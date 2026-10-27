@@ -28,7 +28,7 @@ npm run build      # typecheck + produkcyjny build do dist/ z service workerem (
 npm run preview    # podgląd builda — tu działa też praca offline
 npm run typecheck  # tsc: aplikacja, testy, konfiguracja Vite i skrypty, service worker, filmy demo
 npm run lint       # oxlint
-npm test           # 1878 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, plan z zakupami, serwer… (vitest)
+npm test           # 3200 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, plan z zakupami, serwer… (vitest)
 ```
 
 Aplikacje na telefon (GYM TRACKER Zdrowie — `health/README.md`):
@@ -371,6 +371,7 @@ Podstrony mają własne adresy i strzałkę wstecz w pasku aplikacji:
 | Plan posiłków — tydzień, dni wzorcowe, warianty | `#/jedzenie/plan` | Jedzenie |
 | Postęp — trend wagi, tempo i termin celu, zmiany celu, tydzień po tygodniu, kalorie z 14 dni, białko z tygodnia | `#/jedzenie/postep` | Jedzenie |
 | Profil diety — cel, zwykły tydzień i tempo, „Jak liczę cel”, ustawienia liczenia, sposób odżywiania, plan z Excela, dane | `#/jedzenie/profil` | Jedzenie |
+| Badania — wyniki z PDF, zdjęcia lub tekstu, dieta pod wyniki, historia, co zbadać | `#/jedzenie/badania` | Jedzenie |
 | Produkt — zdjęcia, wartości, skład, ceny | `#/produkty?p=<kod>` (arkusz nad listą) | Jedzenie |
 | Historia ćwiczenia | `#/profil/<id>` | Profil |
 | Ustawienia | `#/ustawienia` | przycisk w pasku aplikacji |
@@ -885,6 +886,32 @@ zapisane wcześniej, które nie pasuje do żadnego chipu, stoi obok jako „(obe
 pozwalają zasady bezpieczeństwa (wyżej), albo schodzący poniżej bezpiecznego minimum jest wyłączony,
 a pod chipami stoi dlaczego. Przy utrzymaniu waga docelowa to obecny trend, a przy chudnięciu
 i przybieraniu musi leżeć po właściwej stronie obecnej wagi.
+
+**Badania — dieta pod wyniki** (`#/jedzenie/badania`, piąty kafelek pod dziennikiem). Wyniki krwi
+i moczu wchodzą z PDF-u laboratorium (np. konto pacjenta Diagnostyki), ze zdjęcia lub zrzutu ekranu
+wydruku z przychodni, z wklejonego tekstu albo wpisane ręcznie. Czyta je telefon, bez modelu
+językowego i bez wysyłania: pdf.js daje warstwę tekstu, Tesseract (WebAssembly, polskie dane)
+czyta zdjęcie powiększone tak, żeby litery miały ok. 30 px, a parser (`src/food/labs/read/parse.ts`)
+dopasowuje wiersze do katalogu ~65 badań (`labs/markers.ts`: nazwy z Diagnostyki, ALAB i szpitali,
+jednostki z przelicznikami, zakresy dla dorosłych, cele z wytycznych). Każdy odczyt kończy się
+ekranem przeglądu: data pobrania, wartości do poprawienia, wiersze nierozpoznane i — po zdjęciu —
+ostrzeżenie o zgubionym przecinku („401” przy zakresie „4,20–5,40” → „może 4,01?”). Zapisuje się
+tylko to, co zatwierdzisz; plik nie zostaje.
+
+Ocena idzie z zakresu wydrukowanego przy wyniku, a cel z wytycznych dochodzi osobno (witamina D
+30–50 ng/ml — Płudowski 2023, LDL < 115 — PSLD/PoLA 2024, B12 ≥ 350 — NICE 2024). Czerwone flagi
+(`labs/assess.ts`) najpierw kierują do lekarza: potas poza 3–6, glukoza od 126, HbA1c od 6,5 %,
+eGFR < 60 (wtedy też ostrzeżenie, że białkowe przepisy zakładki nie są dla tej osoby bez lekarza),
+ferrytyna < 15, wysoka ferrytyna z wysyceniem transferyny, TSH, mocz. Z reszty powstają najwyżej
+trzy cele diety (żelazo, B12, foliany, witamina D, magnez, cynk, selen, LDL, triglicerydy, cukier,
+kwas moczowy, wątroba, omega-3, stan zapalny, nawodnienie) — każdy z dzienną normą (Normy żywienia
+2020), produktami z największą ilością w porcji (`labs/foods.ts`, 133 produkty z USDA FoodData Central,
+`npm run food:nutrients`), przykładem na dziś, przepisami zakładki (`?przepis=`), tym, co ograniczyć,
+i nawykami tygodniowymi z licznikiem. „Zaczynam plan” wyznacza badanie kontrolne (8–16 tygodni,
+zależnie od celu) i po nowych wynikach pokazuje zmianę od początku planu. „Co zbadać” zestawia
+cztery drogi: lekarz rodzinny (NFZ), bilans „Moje Zdrowie”, pakiety witamin i minerałów oraz
+premium — z przygotowaniem do badań. Szczegóły i źródła: `docs/superpowers/specs/2026-10-27-badania-design.md`,
+`docs/research/badania-laboratoryjne.md`.
 
 **Plan z zakupami (meal prep)** — u góry „Planu posiłków” (`#/jedzenie/plan`). Jedzenie na 5–14
 kolejnych dni dla jednej osoby, kupione w **jednym sklepie stacjonarnym albo w sklepie i jednym

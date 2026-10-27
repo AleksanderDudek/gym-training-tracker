@@ -461,7 +461,15 @@ export function cleanDay(raw: unknown): DayRow | null {
     ...(typeof raw.note === 'string' && { note: raw.note }),
     ...(cheat && { cheat }),
     ...(typeof raw.partial === 'boolean' && { partial: raw.partial }),
+    ...(isObject(raw.labHabits) && { labHabits: cleanHabits(raw.labHabits) }),
   };
+}
+
+/** Habit ticks of a day: small whole counts under short keys. */
+function cleanHabits(raw: Record<string, unknown>): Record<string, number> {
+  return Object.fromEntries(
+    Object.entries(raw).flatMap(([k, v]) => (k.length <= 40 && finite(v) && Number.isInteger(v) && v > 0 && v <= 20 ? [[k, v]] : [])),
+  );
 }
 
 /** A planned cheat meal from a backup: a name and calories, macros when they are numbers. */

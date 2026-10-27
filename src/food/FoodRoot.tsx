@@ -33,6 +33,7 @@ const DIET_PAGE: Record<DietPage, LazyPage> = {
   progress: lazy(() => import('./components/diet/DietProgressPage')),
   profile: lazy(() => import('./components/diet/DietProfilePage')),
   shopping: lazy(() => import('./components/prep/ShoppingPage')),
+  labs: lazy(() => import('./components/labs/LabsPage')),
 };
 
 /** Lokale: lista sieci i menu jednej z nich — jedyna strona jedzenia z propsem (sieć z adresu). */

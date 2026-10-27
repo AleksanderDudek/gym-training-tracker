@@ -128,6 +128,20 @@ registerRoute(
   }),
 );
 
+// Czytniki wyników badań: pdf.js (biblioteka i worker, ok. 1,4 MB), Tesseract (worker i rdzeń WebAssembly, ok. 4 MB)
+// i polskie dane OCR (2,6 MB). Pobierane przy pierwszym PDF-ie albo zdjęciu wyników, potem z kopii —
+// odczyt działa wtedy także bez sieci. Zasoby mają hasz w nazwie, dane OCR wersję w ścieżce.
+registerRoute(
+  ({ url, sameOrigin }) =>
+    sameOrigin &&
+    (/\/assets\/(?:pdf\.worker\.min|pdf|worker\.min|tesseract-core)[\w.-]*\.m?js$/.test(url.pathname) ||
+      /\/ocr\/[\w.]+\/pol\.traineddata\.gz$/.test(url.pathname)),
+  new CacheFirst({
+    cacheName: 'gt-labs-readers',
+    plugins: [new ExpirationPlugin({ maxEntries: 8 }), new CacheableResponsePlugin({ statuses: [200] })],
+  }),
+);
+
 // Tylko odpowiedzi 200: nieprzezroczystą (bez CORS) Chrome liczy do limitu miejsca po kilka MB.
 registerRoute(
   /^https:\/\/images\.openfoodfacts\.org\//,
