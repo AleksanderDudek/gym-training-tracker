@@ -14,14 +14,17 @@ class FakeWorker {
   postMessage(m: unknown) {
     this.sent.push(m);
   }
-  terminate() {}
+  terminated = false;
+  terminate() {
+    this.terminated = true;
+  }
   reply(data: Reply) {
     this.onmessage?.({ data });
   }
 }
 
 vi.stubGlobal('Worker', FakeWorker);
-const { recognize, release, warmUp } = await import('./recognize');
+const { modelSaved, recognize, release, saveModel, warmUp } = await import('./recognize');
 
 afterEach(() => release());
 
@@ -47,5 +50,36 @@ describe('recognize', () => {
     const id = (FakeWorker.last.sent.at(-1) as { id: number }).id;
     FakeWorker.last.reply({ type: 'error', id, message: 'HTTP 404' });
     await expect(result).rejects.toThrow('HTTP 404');
+  });
+});
+
+describe('saveModel', () => {
+  const lastId = () => (FakeWorker.last.sent.at(-1) as { id: number }).id;
+
+  it('ends the worker once the files are saved, and remembers that they are', async () => {
+    expect(modelSaved()).toBe(false);
+    const saving = saveModel();
+    const w = FakeWorker.last;
+    expect(w.sent.at(-1)).toMatchObject({ type: 'save' });
+    w.reply({ type: 'saved', id: lastId(), saved: true });
+    await expect(saving).resolves.toBe(true);
+    expect(w.terminated).toBe(true);
+    expect(modelSaved()).toBe(true);
+  });
+
+  it('leaves the worker to a photo screen that took it meanwhile', async () => {
+    const saving = saveModel();
+    const w = FakeWorker.last;
+    const id = lastId();
+    warmUp();
+    w.reply({ type: 'saved', id, saved: true });
+    await saving;
+    expect(w.terminated).toBe(false);
+  });
+
+  it('rejects when the photo screen releases the worker first', async () => {
+    const saving = saveModel();
+    release();
+    await expect(saving).rejects.toThrow('released');
   });
 });

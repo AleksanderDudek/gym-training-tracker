@@ -143,8 +143,10 @@ registerRoute(
 );
 
 // Rozpoznawanie dań ze zdjęcia: worker, ONNX Runtime (.wasm, ok. 12 MB), tabela dań (0,5 MB) i model
-// (55 MB). Pobierane przy pierwszym zdjęciu posiłku, nie przy instalacji — model to więcej niż cała
-// reszta aplikacji. Potem z kopii, także bez sieci. Zasoby mają hasz w nazwie, model wersję w ścieżce;
+// (55 MB). Nie w kopii powłoki — model to więcej niż cała reszta aplikacji, a lista instalacji
+// wstrzymałaby nową wersję na czas jego pobierania. Strona pobiera je w tle chwilę po starcie
+// (`src/food/photo/background.ts`, nie na danych komórkowych) albo przy pierwszym zdjęciu posiłku.
+// Potem z kopii, także bez sieci. Zasoby mają hasz w nazwie, model wersję w ścieżce;
 // stara wersja wypada z kopii po kolejnych (limit wpisów), a nie zostaje na zawsze.
 registerRoute(
   ({ url, sameOrigin }) =>

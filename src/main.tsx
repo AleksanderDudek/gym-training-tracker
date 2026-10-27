@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { registerSW } from 'virtual:pwa-register';
 import App from './App';
 import { RootBoundary } from './components/RootBoundary';
+import { downloadModelInBackground } from './food/photo/background';
 import { LANG, text } from './i18n';
 import { startPwa } from './pwa';
 // Kroje pisma z paczki, nie z Google Fonts: działają offline od pierwszej wizyty, nie wysyłają
@@ -18,6 +19,9 @@ import './styles.css';
 // zapyta o nowszą, a ekran awarii (`RootBoundary`) ją wpuści. W trybie deweloperskim
 // `virtual:pwa-register` jest pusty — bez service workera.
 startPwa(registerSW);
+// Model rozpoznawania dań ze zdjęcia pobiera się sam, w wolnej chwili po starcie — pierwsze zdjęcie
+// posiłku działa wtedy od razu, także bez sieci (`src/food/photo/background.ts`).
+downloadModelInBackground();
 
 // Język strony dla czytników ekranu, dzielenia wyrazów i tłumacza przeglądarki — `index.html` ma
 // polski na sztywno, a wizyta może być po angielsku.

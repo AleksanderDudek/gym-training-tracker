@@ -28,7 +28,7 @@ npm run build      # typecheck + produkcyjny build do dist/ z service workerem (
 npm run preview    # podgląd builda — tu działa też praca offline
 npm run typecheck  # tsc: aplikacja, testy, konfiguracja Vite i skrypty, service worker, filmy demo
 npm run lint       # oxlint
-npm test           # 3241 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, plan z zakupami, serwer… (vitest)
+npm test           # 3251 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, plan z zakupami, serwer… (vitest)
 ```
 
 Aplikacje na telefon (GYM TRACKER Zdrowie — `health/README.md`):
@@ -898,8 +898,10 @@ w ~81 % i w pierwszej piątce w ~97 %. Kalorie liczy się z katalogu, nie z obra
 jedno lub kilka dań, każde z suwakiem porcji (¼–3 typowej porcji, z gramami i słowami) i z pytaniami,
 których zdjęcie nie widzi — „Jak tłuste?”, „Jak słodkie?”, „Ile sosu?” (tylko tam, gdzie mają
 znaczenie). Wynik to szacunek z zakresem („ok. 630 kcal (498–762)”); ostatnia porcja i odpowiedzi
-dla dania zostają na urządzeniu i wracają przy następnym zdjęciu. Model pobiera się przy pierwszym
-zdjęciu (od stuknięcia „Zrób zdjęcie”), potem działa z kopii service workera, także bez sieci; zdjęcie
+dla dania zostają na urządzeniu i wracają przy następnym zdjęciu. Model (ok. 59 MB) pobiera się sam
+w tle, kilka sekund po starcie aplikacji, gdy nic innego się nie dzieje (`src/food/photo/background.ts`)
+— nie przy „Oszczędzaniu danych”, na znanym połączeniu komórkowym ani na 2G; wtedy dopiero po zmianie
+sieci albo przy pierwszym zdjęciu. Potem działa z kopii service workera, także bez sieci; zdjęcie
 nie wychodzi z telefonu. Plik modelu nie jest w gicie: build pobiera przypiętą wersję z Hugging Face
 (`vite/photoModel.ts`, SHA-256), a wektory fraz robi `npm run food:dish-embeddings` (test pilnuje,
 żeby pasowały do katalogu). Szczegóły: `docs/superpowers/specs/2026-10-27-zdjecie-posilku-design.md`,
