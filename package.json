@@ -21,6 +21,8 @@
     "food:extract-priced": "tsx scripts/food/extract-priced.ts",
     "food:check-recipes": "tsx scripts/food/check-recipes.ts",
     "food:check-prep": "tsx scripts/food/check-prep.ts",
+    "food:dishes": "tsx scripts/food/fetch-dishes.ts",
+    "food:dish-embeddings": "tsx scripts/food/dish-embeddings.ts",
     "food:selgros": "tsx scripts/food/fetch-selgros.ts",
     "food:osm": "tsx scripts/food/osm-places.ts",
     "food:nutrients": "tsx scripts/food/fetch-nutrients.ts",
@@ -39,12 +41,14 @@
     "html-to-image": "^1.11.13",
     "leaflet": "^1.9.4",
     "lucide-react": "^1.55.0",
+    "onnxruntime-web": "1.31.1",
     "pdfjs-dist": "^5.4.296",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "tesseract.js": "^7.0.0"
   },
   "devDependencies": {
+    "@huggingface/transformers": "^4.3.1",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",

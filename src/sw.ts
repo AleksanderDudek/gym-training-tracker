@@ -142,6 +142,21 @@ registerRoute(
   }),
 );
 
+// Rozpoznawanie dań ze zdjęcia: worker, ONNX Runtime (.wasm, ok. 12 MB), tabela dań (0,5 MB) i model
+// (55 MB). Pobierane przy pierwszym zdjęciu posiłku, nie przy instalacji — model to więcej niż cała
+// reszta aplikacji. Potem z kopii, także bez sieci. Zasoby mają hasz w nazwie, model wersję w ścieżce;
+// stara wersja wypada z kopii po kolejnych (limit wpisów), a nie zostaje na zawsze.
+registerRoute(
+  ({ url, sameOrigin }) =>
+    sameOrigin &&
+    (/\/assets\/(?:recognize\.worker|ort-wasm-simd-threaded|dish-embeddings)-[\w-]+\.(?:js|wasm|bin)$/.test(url.pathname) ||
+      /\/models\/[\w.-]+\/vision\.onnx$/.test(url.pathname)),
+  new CacheFirst({
+    cacheName: 'gt-photo-model',
+    plugins: [new ExpirationPlugin({ maxEntries: 4 }), new CacheableResponsePlugin({ statuses: [200] })],
+  }),
+);
+
 // Tylko odpowiedzi 200: nieprzezroczystą (bez CORS) Chrome liczy do limitu miejsca po kilka MB.
 registerRoute(
   /^https:\/\/images\.openfoodfacts\.org\//,

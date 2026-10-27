@@ -20,6 +20,8 @@ export const FOOD_KEYS = [
   'produkty-pl:osm',
   // Dawna pamięć „Zjedz teraz” — znika sama przy pierwszej wizycie, ale reset nie może jej przeoczyć.
   'produkty-pl:places',
+  // Porcje i skale ostatnio wybrane przy daniach ze zdjęcia.
+  'produkty-pl:dish-choices',
 ] as const;
 
 /** To samo w pamięci karty (`sessionStorage`): miejsce wybrane ręcznie, które przetrwałoby przeładowanie. */

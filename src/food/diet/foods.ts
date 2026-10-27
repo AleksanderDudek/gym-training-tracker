@@ -11,7 +11,8 @@ import type { Nutrients } from './types';
  * a product, a recipe serving, a line of the plan, a food of the user's own,
  * a set of the user's own, a position of a restaurant menu.
  */
-export type FoodSource = 'product' | 'recipe' | 'plan' | 'custom' | 'set' | 'restaurant';
+/** `dish`: a dish from the photo catalog (`photo/dishes.ts`), its amount and scales set by the person. */
+export type FoodSource = 'product' | 'recipe' | 'plan' | 'custom' | 'set' | 'restaurant' | 'dish';
 
 /** 'main': a meal; 'light': breakfast, snack, shake; 'addon': butter, oil - never suggested on its own. */
 export type MealRole = 'main' | 'light' | 'addon';

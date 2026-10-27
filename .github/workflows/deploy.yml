@@ -40,6 +40,12 @@ jobs:
       # publiczna, src/garmin.ts), a GARMIN_APP_URL tylko go nadpisuje — nieustawiona nic nie
       # zmienia. Adresy aplikacji GYM TRACKER Zdrowie (App Store/TestFlight, APK albo Google Play)
       # włączają kartę „Zdrowie z telefonu” (health/README.md).
+      # Model rozpoznawania dań ze zdjęcia (55 MB, vite/photoModel.ts): build pobiera go z Hugging Face
+      # tylko przy nowej wersji w src/food/photo/model.ts, potem bierze z tej kopii (i sprawdza SHA-256).
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/gym-tracker/*.onnx
+          key: photo-model-${{ hashFiles('src/food/photo/model.ts') }}
       - run: npm run build
         env:
           VITE_API_URL: ${{ vars.API_URL }}
