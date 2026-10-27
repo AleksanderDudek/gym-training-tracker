@@ -45,6 +45,8 @@ export function judge(marker: Marker, result: Pick<LabResult, 'value' | 'cmp' | 
   const range = result.ref ?? refFor(marker, sex) ?? SEDIMENT[marker.id] ?? null;
   const from = result.ref ? 'lab' : range ? 'app' : null;
   let level: Level = range ? against(range, result.value, result.cmp) : 'unknown';
+  // A strip result as a bare number ("Glukoza 250 mg/dl" in urine): anything above nothing is "present".
+  if (marker.qualitative && !range) level = result.value === 0 || result.cmp === '<' ? 'ok' : 'high';
   // A strip with a number: "ujemny <15 mg/dl" is negative whatever the number.
   if (marker.qualitative && result.qual === 'neg') level = 'ok';
   let target: Verdict['target'] = null;
@@ -122,17 +124,20 @@ export function ckdEpi2021(creatinineMgDl: number, age: number, sex: Sex): numbe
 }
 
 function derive(out: Map<string, Latest>, person: { sex: Sex; age: number | null }) {
+  // A calculated value replaces a printed one only when its inputs are newer: an old report's eGFR
+  // must not hide the one today's creatinine gives.
+  const stale = (m: string, date: string) => !out.has(m) || out.get(m)!.date < date;
   const chol = out.get('chol');
   const hdl = out.get('hdl');
-  if (!out.has('nonHdl') && sameDay(chol, hdl)) put(out, 'nonHdl', chol.value! - hdl!.value!, chol.date, 0);
+  if (sameDay(chol, hdl) && stale('nonHdl', chol.date)) put(out, 'nonHdl', chol.value! - hdl!.value!, chol.date, 0);
   const glucose = out.get('glucose');
   const insulin = out.get('insulin');
-  if (!out.has('homaIr') && sameDay(glucose, insulin)) put(out, 'homaIr', (glucose.value! * insulin!.value!) / 405, glucose.date, 2);
+  if (sameDay(glucose, insulin) && stale('homaIr', glucose.date)) put(out, 'homaIr', (glucose.value! * insulin!.value!) / 405, glucose.date, 2);
   const iron = out.get('iron');
   const tibc = out.get('tibc');
-  if (!out.has('tsat') && sameDay(iron, tibc) && tibc!.value! > 0) put(out, 'tsat', (iron.value! / tibc!.value!) * 100, iron.date, 0);
+  if (sameDay(iron, tibc) && tibc!.value! > 0 && stale('tsat', iron.date)) put(out, 'tsat', (iron.value! / tibc!.value!) * 100, iron.date, 0);
   const creatinine = out.get('creatinine');
-  if (!out.has('egfr') && creatinine?.value && creatinine.cmp === null && person.age !== null && person.age >= 18) {
+  if (creatinine?.value && creatinine.cmp === null && person.age !== null && person.age >= 18 && stale('egfr', creatinine.date)) {
     put(out, 'egfr', ckdEpi2021(creatinine.value, person.age, person.sex), creatinine.date, 0);
   }
 }

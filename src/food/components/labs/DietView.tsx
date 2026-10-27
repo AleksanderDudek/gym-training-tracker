@@ -177,7 +177,7 @@ export function DietView({ assessment, person, plan, reports, today, habits, onT
         </section>
       )}
 
-      {assessment.focus.length > 0 && (
+      {(assessment.focus.length > 0 || plan !== null) && (
         <PlanCard
           plan={plan}
           focus={assessment.focus}
@@ -186,6 +186,7 @@ export function DietView({ assessment, person, plan, reports, today, habits, onT
           newest={newest}
           reports={reports}
           habits={habits}
+          canReplan={assessment.focus.length > 0}
           onStart={() => void savePrefs({ plan: { start: today, focus: assessment.focus.map((f) => f.id), basedOn: newest } }).catch(fail)}
           onStop={() => void savePrefs({ plan: null }).catch(fail)}
           onTick={(id, d) => void tickHabit(today, id, d).catch(fail)}
@@ -374,6 +375,7 @@ function PlanCard({
   newest,
   reports,
   habits,
+  canReplan,
   onStart,
   onStop,
   onTick,
@@ -385,6 +387,7 @@ function PlanCard({
   newest: string;
   reports: LabReport[];
   habits: DietViewProps['habits'];
+  canReplan: boolean;
   onStart: () => void;
   onStop: () => void;
   onTick: (habit: string, delta: 1 | -1) => void;
@@ -432,7 +435,7 @@ function PlanCard({
           </ul>
         </div>
       )}
-      {newest > plan.basedOn && (
+      {newest > plan.basedOn && canReplan && (
         <p className="fd-lab-pair">
           {T.newer}{' '}
           <button type="button" className="btn ghost sm" onClick={onStart}>

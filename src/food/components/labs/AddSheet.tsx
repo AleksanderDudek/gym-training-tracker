@@ -10,7 +10,7 @@ import { foldUnit, parsePrinted } from '../../labs/units';
 import { judge } from '../../labs/verdict';
 import type { Sex } from '../../diet/types';
 import { Sheet } from '../common/Sheet';
-import { formatValue, prettyUnit, QUAL_WORDS, rangeText, verdictWord } from './labsFormat';
+import { formatValue, inputValue, prettyUnit, QUAL_WORDS, rangeText, verdictWord } from './labsFormat';
 
 const T = text({
   pl: {
@@ -53,7 +53,7 @@ const T = text({
     unknownHint: 'To badania spoza listy aplikacji albo wiersze, których nie umiem przeczytać. Ważny wynik dodaj niżej ręcznie.',
     addRow: 'Dodaj badanie',
     pick: 'Wybierz badanie…',
-    qualPick: 'Wynik',
+    qualPick: (name: string) => `Wynik paskowy: ${name}`,
     save: (n: number) => (n ? `Zapisz ${n} ${plural(n, 'wynik', 'wyniki', 'wyników')}` : 'Zapisz'),
     saveFailed: 'Nie udało się zapisać.',
     badValue: 'To nie jest liczba',
@@ -100,7 +100,7 @@ const T = text({
     unknownHint: 'Tests outside the app’s list, or rows I cannot read. Add an important one by hand below.',
     addRow: 'Add a test',
     pick: 'Choose a test…',
-    qualPick: 'Result',
+    qualPick: (name: string) => `Strip result: ${name}`,
     save: (n: number) => (n ? `Save ${n} ${n === 1 ? 'result' : 'results'}` : 'Save'),
     saveFailed: 'Could not save.',
     badValue: 'Not a number',
@@ -156,13 +156,13 @@ function fromRead(read: ReadResult, source: LabSource, today: string): Draft {
     rows: read.rows.map((r) => ({
       key: nextKey++,
       marker: r.marker.id,
-      value: r.value === null ? '' : `${r.cmp ?? ''}${formatValue(r.marker, r.value)}`,
+      value: r.value === null ? '' : `${r.cmp ?? ''}${inputValue(r.marker, r.value)}`,
       unit: canonicalKey(r.marker),
       cmp: r.cmp,
       qual: r.qual,
       printed: [r.printed, r.unit].filter(Boolean).join(' '),
       ref: r.ref,
-      use: !r.duplicate && !r.suspect,
+      use: !r.duplicate,
       guessed: r.unitGuessed,
       duplicate: r.duplicate,
       suspect: r.suspect,
@@ -184,7 +184,7 @@ export function draftOf(report: LabReport): Draft {
       return {
         key: nextKey++,
         marker: r.marker,
-        value: r.value === null ? '' : `${r.cmp ?? ''}${formatValue(marker, r.value)}`,
+        value: r.value === null ? '' : `${r.cmp ?? ''}${inputValue(marker, r.value)}`,
         unit: canonicalKey(marker),
         cmp: r.cmp,
         qual: r.qual,
@@ -232,7 +232,8 @@ export function AddSheet({
   open: boolean;
   onClose: () => void;
   today: string;
-  sex: Sex;
+  /** Unknown until set: sex-specific ranges are then not judged in the review. */
+  sex: Sex | null;
   edit: LabReport | null;
   onSaved: (date: string) => void;
   /** Sex and year of birth from the document's header, for the ranges when the app has neither. */
@@ -252,13 +253,13 @@ export function AddSheet({
     setStage(read.rows.length ? { kind: 'review', draft: fromRead(read, source, today), note: T.found(read.rows.filter((r) => !r.duplicate).length) } : { kind: 'choose' });
   };
 
-  const photos = async (files: readonly Blob[], source: LabSource) => {
+  const photos = async (files: readonly Blob[], source: LabSource, before: readonly string[] = []) => {
     setStage({ kind: 'reading', status: T.loadingOcr });
     const { readImages } = await import('../../labs/read/ocr');
     const lines = await readImages(files, (p) =>
       setStage({ kind: 'reading', status: p.step === 'load' ? T.loadingOcr : T.ocr(p.page, p.pages, Math.round(p.share * 100)) }),
     );
-    review(readText(lines.join('\n'), { ocr: true }), source);
+    review(readText([...before, ...lines].join('\n'), { ocr: before.length === 0 }), source);
   };
 
   const onPdf = async (file: File) => {
@@ -267,9 +268,9 @@ export function AddSheet({
     try {
       const { readPdf } = await import('../../labs/read/pdf');
       const pdf = await readPdf(file, (share) => setStage({ kind: 'reading', status: T.pdfReading(Math.round(share * 100)) }));
-      if (pdf.lines.length) review(readText(pdf.lines.join('\n')), 'pdf');
-      else if (pdf.scans.length) await photos(pdf.scans, 'pdf');
-      else review(readText(''), 'pdf');
+      // Scanned pages go through OCR, also next to pages with text (a scan stapled to a printout).
+      if (pdf.scans.length) await photos(pdf.scans, 'pdf', pdf.lines);
+      else review(readText(pdf.lines.join('\n')), 'pdf');
     } catch (e) {
       console.error(e);
       setError(T.failed);
@@ -320,7 +321,7 @@ export function AddSheet({
     setDraft({
       rows: [
         ...draft.rows,
-        { key: nextKey++, marker, value: '', unit: canonicalKey(m), cmp: null, qual: m.qualitative ? 'neg' : null, printed: '', ref: null, use: true, guessed: false, duplicate: false, suspect: null },
+        { key: nextKey++, marker, value: '', unit: canonicalKey(m), cmp: null, qual: null, printed: '', ref: null, use: true, guessed: false, duplicate: false, suspect: null },
       ],
     });
   };
@@ -517,12 +518,14 @@ export function AddSheet({
   );
 }
 
-function ReviewRow({ row, sex, manual, onChange, onRemove }: { row: Row; sex: Sex; manual: boolean; onChange: (p: Partial<Row>) => void; onRemove: () => void }) {
+function ReviewRow({ row, sex, manual, onChange, onRemove }: { row: Row; sex: Sex | null; manual: boolean; onChange: (p: Partial<Row>) => void; onRemove: () => void }) {
   const id = useId();
   const marker = MARKERS[row.marker]!;
   const result = resultOf(row);
   const bad = row.value.trim() !== '' && parsePrinted(row.value) === null;
-  const verdict = result ? judge(marker, result, sex) : null;
+  // Without the person's sex only the lab's own range or a range shared by both sexes can judge.
+  const sexless = !marker.ref || JSON.stringify(marker.ref.M) === JSON.stringify(marker.ref.K);
+  const verdict = result && (sex || row.ref || sexless) ? judge(marker, result, sex ?? 'K') : null;
   const word = verdict ? verdictWord(marker, verdict, result!.qual) : null;
   const units = Object.keys(marker.units);
   const range = row.ref ? T.labRange(rangeText(marker, row.ref)!) : verdict?.range ? T.appRange(rangeText(marker, verdict.range)!) : null;
@@ -542,7 +545,7 @@ function ReviewRow({ row, sex, manual, onChange, onRemove }: { row: Row; sex: Se
         {marker.qualitative && (
           <select
             className="fd-lab-input fd-lab-qual"
-            aria-label={T.qualPick}
+            aria-label={T.qualPick(marker.name)}
             value={row.qual ?? ''}
             onChange={(e) => onChange({ qual: (e.target.value || null) as Qual | null })}
           >
@@ -591,7 +594,7 @@ function ReviewRow({ row, sex, manual, onChange, onRemove }: { row: Row; sex: Se
             <button
               type="button"
               className="btn ghost sm"
-              onClick={() => onChange({ value: formatValue(marker, row.suspect!.suggest!), suspect: null, use: true })}
+              onClick={() => onChange({ value: inputValue(marker, row.suspect!.suggest!), suspect: null, use: true })}
             >
               {T.fix(formatValue(marker, row.suspect.suggest))}
             </button>

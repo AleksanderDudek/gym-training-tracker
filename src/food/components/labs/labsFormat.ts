@@ -1,4 +1,4 @@
-import { num, text } from '../../../i18n';
+import { LOCALE, num, text } from '../../../i18n';
 import { MARKERS, type Marker, type Range } from '../../labs/markers';
 import type { Qual } from '../../labs/read/parse';
 import type { LabResult } from '../../labs/types';
@@ -50,6 +50,15 @@ export function prettyUnit(key: string): string {
 /** The number in this language, with as many decimals as the marker keeps. */
 export function formatValue(marker: Marker, value: number): string {
   return num(value, marker.digits);
+}
+
+/**
+ * The number for an input field: never grouped ("1,250" would read back as 1.25 in English), with
+ * up to two more decimals than shown, so a converted value (HbA1c 47 mmol/mol = 6.45 %) is not
+ * rounded across a threshold.
+ */
+export function inputValue(marker: Marker, value: number): string {
+  return value.toLocaleString(LOCALE, { useGrouping: false, minimumFractionDigits: marker.digits, maximumFractionDigits: marker.digits + 2 });
 }
 
 /** „<0,5 mg/l”, „18,4 ng/ml”, „ujemny”. */

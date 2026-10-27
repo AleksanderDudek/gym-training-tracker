@@ -254,7 +254,7 @@ function suspicion(printed: string, value: number | null, range: Range | null, r
     const v = value / k;
     if (decimals && v >= lo / 4 && v <= hi * 4) return { suggest: v };
   }
-  return value > hi * 10 ? { suggest: null } : null;
+  return null;
 }
 
 function startsWord(folded: string, word: string): boolean {
@@ -337,8 +337,12 @@ function readRow(line: string, folded: string, match: Match, section: Specimen, 
   }
   if (at === -1) return null;
 
-  // A strip result often comes with a number too: "ujemny <15 mg/dl", "(+) 30 mg/dl".
+  // A strip result often comes with a number too: "ujemny <15 mg/dl", "(+) 30 mg/dl" — or the word after it.
   let after = at + used;
+  if (qual === null && marker.qualitative) {
+    // A lone "-" after the number is a range dash, not "negative".
+    for (let i = after; i < tokens.length && qual === null; i++) if (tokens[i] !== '-') qual = qualAt(tokens, i)?.qual ?? null;
+  }
   if (qual !== null) {
     const number = tokens[after] === undefined ? null : parsePrinted(tokens[after]!);
     if (number) {
@@ -358,7 +362,8 @@ function readRow(line: string, folded: string, match: Match, section: Specimen, 
   const known = toCanonical(marker, 1, printedUnit) !== null;
   const rangeText = left.filter((t) => !FLAGS[t]).join(' ');
   const rawRange = rangeIn(rangeText);
-  const suspect = qual === null ? suspicion(printed, value, rawRange, rangeText) : null;
+  // Only OCR loses commas; a PDF or pasted text says exactly what the lab printed.
+  const suspect = options.ocr && qual === null ? suspicion(printed, value, rawRange, rangeText) : null;
 
   return {
     marker,

@@ -133,6 +133,7 @@ const T = {
   ketoGlucose: say('Ketony razem z glukozą w moczu lub wysokim cukrem we krwi — pilnie do lekarza.', 'Ketones together with urine glucose or high blood sugar — see a doctor urgently.'),
   ck: say('CK rośnie na kilka dni po treningu siłowym. Powtórz badanie po 5–7 dniach bez ciężkiego treningu.', 'CK rises for a few days after strength training. Retest after 5–7 days without hard training.'),
   vitAHigh: say('Wysoka witamina A — odstaw suplementy z witaminą A i powiedz lekarzowi.', 'High vitamin A — stop vitamin A supplements and tell your doctor.'),
+  vitEHigh: say('Wysoka witamina E — odstaw suplementy z witaminą E i powiedz lekarzowi.', 'High vitamin E — stop vitamin E supplements and tell your doctor.'),
   minor: say('Niewielkie odchylenie — pokaż je lekarzowi przy okazji.', 'A small deviation — show it to your doctor when you can.'),
   under18: say('Zakresy w aplikacji są dla dorosłych. U osoby poniżej 18 lat wyniki ocenia lekarz.', 'The app’s ranges are for adults. Under 18, results are for a doctor to read.'),
   b12Absorption: say('Przy diecie z produktami zwierzęcymi niska B12 często znaczy złe wchłanianie (leki na zgagę, metformina, żołądek) — powiedz lekarzowi.', 'With animal foods in the diet, low B12 often means poor absorption (heartburn drugs, metformin, the stomach) — tell your doctor.'),
@@ -161,11 +162,14 @@ function classify(id: string, latest: Latest, verdict: Verdict, person: Person, 
   const { level, target, times } = verdict;
   const marker = MARKERS[id]!;
   const valueOf = (m: string) => all.get(m)?.value ?? null;
+  // A detection limit counts on its side: "<3" is below 3, ">90" is above 90.
+  const below = (limit: number) => v !== null && (v < limit || (v <= limit && latest.cmp === '<'));
+  const above = (limit: number) => v !== null && (v > limit || (v >= limit && latest.cmp === '>'));
   const out = (severity: Severity, note: string | null = null) => ({ severity, note });
 
   switch (id) {
     case 'potassium':
-      if (v !== null && (v < 3 || v > 6)) return out('urgent', T.urgentPotassium);
+      if (below(3) || above(6)) return out('urgent', T.urgentPotassium);
       if (level === 'high') return out('doctor', T.potassiumHigh);
       if (level === 'low') return out('doctor', T.potassiumLow);
       return out('ok');
@@ -173,8 +177,8 @@ function classify(id: string, latest: Latest, verdict: Verdict, person: Person, 
       if (v !== null && (v < 125 || v > 155)) return out('urgent', T.urgentSodium);
       return out(level === 'ok' ? 'ok' : 'doctor', level === 'ok' ? null : T.blood);
     case 'glucose':
-      if (v !== null && v >= 200) return out('urgent', T.urgentGlucose);
-      if (v !== null && v < 55) return out('doctor', T.hypo);
+      if (v !== null && v >= 200 && latest.cmp !== '<') return out('urgent', T.urgentGlucose);
+      if (below(55)) return out('doctor', T.hypo);
       if (v !== null && v >= 126) return out('doctor', T.diabetes);
       if (v !== null && v >= 100) return out('diet', T.prediabetes);
       if (level === 'low') return out('doctor', T.blood);
@@ -188,7 +192,7 @@ function classify(id: string, latest: Latest, verdict: Verdict, person: Person, 
     case 'homaIr':
       return level === 'high' ? out('watch', T.homaNote) : out('ok');
     case 'hgb': {
-      if (v !== null && v < 10) return out('urgent', T.severeAnaemia);
+      if (below(10)) return out('urgent', T.severeAnaemia);
       if (level === 'low') {
         const mcv = valueOf('mcv');
         const pattern = mcv !== null && mcv < 80 ? T.ironPattern : mcv !== null && mcv > 100 ? T.b12Pattern : null;
@@ -215,7 +219,7 @@ function classify(id: string, latest: Latest, verdict: Verdict, person: Person, 
       const tsat = valueOf('tsat');
       if (level === 'high' && tsat !== null && tsat > 45) return out('doctor', T.ironOverload);
       if (level === 'high') return out('doctor', T.highFerritin);
-      if (v !== null && v < 15) return out('doctor', T.ferritinLow);
+      if (below(15)) return out('doctor', T.ferritinLow);
       if (level === 'low') return out('diet');
       if (target === 'below') return out('watch');
       return out('ok');
@@ -230,7 +234,7 @@ function classify(id: string, latest: Latest, verdict: Verdict, person: Person, 
       // Serum iron alone moves with the time of day and the last meal: it supports ferritin, it never leads.
       return level === 'ok' || level === 'unknown' ? out('ok') : out('watch');
     case 'b12':
-      if (v !== null && v < 180) return out('doctor', T.b12Low);
+      if (below(180)) return out('doctor', T.b12Low);
       if (level === 'low') return out('diet', person.eats === 'all' ? T.b12Absorption : null);
       if (target === 'below') return out('watch');
       return out('ok');
@@ -238,13 +242,13 @@ function classify(id: string, latest: Latest, verdict: Verdict, person: Person, 
       if (v !== null && v > 30) return out('doctor', T.homocysteineHigh);
       return level === 'high' ? out('diet') : out('ok');
     case 'vitD':
-      if (v !== null && v > 100) return out('doctor', T.vitDHigh);
-      if (v !== null && v < 10) return out('doctor', T.vitDSevere);
+      if (above(100)) return out('doctor', T.vitDHigh);
+      if (below(10)) return out('doctor', T.vitDSevere);
       if (v !== null && v < 20) return out('diet', T.vitDLow);
       if (level === 'low' || target === 'below') return out('diet');
       return out('ok');
     case 'folate':
-      if (v !== null && v < 3) return out('doctor', T.folateLow);
+      if (below(3)) return out('doctor', T.folateLow);
       return level === 'low' ? out('diet') : out('ok');
     case 'magnesium':
       if (v !== null && (v < 1.2 || v > 2.9)) return out('doctor', T.mineral);
@@ -257,7 +261,7 @@ function classify(id: string, latest: Latest, verdict: Verdict, person: Person, 
       return level === 'low' ? out('diet') : level === 'high' ? out('watch', T.minor) : out('ok');
     case 'vitA':
     case 'vitE':
-      if (level === 'high') return out('doctor', T.vitAHigh);
+      if (level === 'high') return out('doctor', id === 'vitA' ? T.vitAHigh : T.vitEHigh);
       return level === 'low' ? out('doctor', T.minor) : out('ok');
     case 'ck':
       return level === 'high' ? out('watch', T.ck) : out('ok');
@@ -340,6 +344,20 @@ function classify(id: string, latest: Latest, verdict: Verdict, person: Person, 
   }
 }
 
+/** Doctor findings food can still support, on the side `feedsFocus` allows. */
+const DOCTOR_AND_DIET = ['glucose', 'hba1c', 'ldl', 'chol', 'tg', 'potassium', 'b12', 'ferritin', 'vitD', 'folate', 'uricAcid'];
+
+/** Markers whose focus raises something feed it only when low; those that lower something, only when high. */
+const RAISES = new Set(['ferritin', 'tsat', 'iron', 'hgb', 'b12', 'holotc', 'folate', 'vitD', 'magnesium', 'zinc', 'selenium', 'potassium', 'omega3', 'hdl']);
+
+function feedsFocus(f: Finding): boolean {
+  const { level, target } = f.verdict;
+  if (RAISES.has(f.marker)) return level === 'low' || (level === 'ok' && target === 'below');
+  // Glucose under range is a hypo, not a reason to cut sugar; diabetes-range values still get the food side.
+  if (f.marker === 'glucose') return (f.latest.value ?? 0) >= 100;
+  return level === 'high' || (level === 'ok' && target === 'above');
+}
+
 /** Which focus a finding feeds, if any. */
 const FOCUS_OF: Record<string, FocusId> = {
   ferritin: 'iron',
@@ -399,16 +417,14 @@ export function assess(latest: Map<string, Latest>, person: Person): Assessment 
   };
   for (const f of findings) {
     const id = FOCUS_OF[f.marker];
-    if (!id) continue;
+    if (!id || !feedsFocus(f)) continue;
     if (f.severity === 'diet' || (f.severity === 'watch' && f.verdict.level !== 'ok')) add(id, f.marker);
     else if (f.severity === 'watch') add(id, f.marker, 20);
-    // A doctor finding that food can still support: prediabetes in the diabetes range, LDL ≥ 190.
-    else if (f.severity === 'doctor' && ['glucose', 'hba1c', 'ldl', 'chol', 'tg', 'potassium', 'b12', 'ferritin', 'vitD', 'folate', 'uricAcid'].includes(f.marker)) {
-      if (!(f.marker === 'potassium' && f.verdict.level === 'high')) add(id, f.marker);
-    }
+    // A doctor finding that food can still support: diabetes-range glucose, LDL ≥ 190, empty iron stores.
+    else if (f.severity === 'doctor' && DOCTOR_AND_DIET.includes(f.marker)) add(id, f.marker);
   }
   // Anaemia with small cells, or low ferritin: iron. Haemoglobin alone without ferritin is not enough.
-  if (sev('hgb') === 'doctor' && (latest.get('mcv')?.value ?? 100) < 80) add('iron', 'hgb');
+  if (byId.get('hgb')?.verdict.level === 'low' && (latest.get('mcv')?.value ?? 100) < 80) add('iron', 'hgb');
   if (focus.has('iron') && !['ferritin', 'tsat'].some((m) => focus.get('iron')!.markers.includes(m)) && !latest.has('ferritin')) {
     // Only haemoglobin or serum iron: keep it, but behind everything that is better founded.
     focus.get('iron')!.priority += 20;

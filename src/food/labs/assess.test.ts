@@ -118,3 +118,36 @@ describe('recommend', () => {
     expect(recipes[0]!.share).toBeGreaterThan(0.15);
   });
 });
+
+describe('review fixes', () => {
+  const focusOf = (text: string, person: Person = PERSON) => run([report(text)], person).focus.map((f) => f.id);
+
+  it('never raises what is already too high, never cuts sugar for a low glucose', () => {
+    expect(focusOf('25(OH)D 120 ng/ml 30 - 50')).toEqual([]);
+    expect(focusOf('Glukoza 50 mg/dl 70 - 99')).toEqual([]);
+    expect(focusOf('Żelazo 220 µg/dl 50 - 170')).toEqual([]);
+    expect(focusOf('Glukoza 130 mg/dl 70 - 99')).toEqual(['glucose']);
+  });
+
+  it('reads a detection limit on its side of a red flag', () => {
+    const a = run([report('Kwas foliowy <3,0 ng/ml 4 - 20')]);
+    expect(a.findings[0]).toMatchObject({ marker: 'folate', severity: 'doctor' });
+  });
+
+  it('a newer creatinine gives a new eGFR instead of the old printed one', () => {
+    const old = report('eGFR 85 ml/min/1,73m2', '2024-05-01', 1);
+    const fresh = report('Kreatynina 1,8 mg/dl', '2026-10-01', 2);
+    const latest = latestValues([old, fresh], { sex: 'M', age: 60 });
+    expect(latest.get('egfr')).toMatchObject({ date: '2026-10-01', derived: true });
+    expect(latest.get('egfr')!.value!).toBeLessThan(60);
+  });
+
+  it('a urine strip test printed as a bare number is present, not unknown', () => {
+    const a = run([report('Badanie ogólne moczu\nGlukoza 250 mg/dl')]);
+    expect(a.findings.find((f) => f.marker === 'uGlucose')).toMatchObject({ severity: 'doctor' });
+  });
+
+  it('small cells with normal haemoglobin give no iron focus (thalassaemia trait looks like this)', () => {
+    expect(focusOf('Hemoglobina 14,5 g/dl 12 - 16\nMCV 68 fl 80 - 100')).toEqual([]);
+  });
+});

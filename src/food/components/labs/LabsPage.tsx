@@ -154,7 +154,12 @@ export default function LabsPage() {
   const onPerson = (found: { sex: Sex | null; birthYear: number | null }) => {
     if (profile || prefs.sex) return;
     const years = found.birthYear ? Number(today.slice(0, 4)) - found.birthYear : null;
-    void savePrefs({ sex: found.sex, age: years !== null && years >= 18 && years <= 110 ? years : null }).catch(fail);
+    // Only what the header says: a found sex never wipes an age typed in by hand.
+    const patch = {
+      ...(found.sex && { sex: found.sex }),
+      ...(years !== null && years >= 18 && years <= 110 && prefs.age === null && { age: years }),
+    };
+    if (Object.keys(patch).length) void savePrefs(patch).catch(fail);
   };
 
   return (
@@ -248,7 +253,7 @@ export default function LabsPage() {
           key={sheetKey}
           open
           today={today}
-          sex={sex ?? 'K'}
+          sex={sex}
           edit={editing}
           onClose={() => closeEntry({ add: false, edit: null })}
           onPerson={onPerson}
