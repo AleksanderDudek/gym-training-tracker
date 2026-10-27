@@ -65,6 +65,8 @@ const T = text({
     newer: 'Masz nowsze wyniki niż te, z których powstał plan.',
     replan: 'Ułóż plan od nowa',
     stop: 'Zakończ plan',
+    paused: 'Plan wstrzymany: przy tych wynikach dietę ustala lekarz. Możesz go zakończyć.',
+    empty: 'Ten plan nie ma już celów. Zakończ go, a ułożę nowy z aktualnych wyników.',
     missingTitle: 'Warto dobadać',
   },
   en: {
@@ -113,6 +115,8 @@ const T = text({
     newer: 'You have newer results than the ones the plan was made from.',
     replan: 'Make the plan again',
     stop: 'End the plan',
+    paused: 'Plan paused: with these results a doctor sets the diet. You can end it.',
+    empty: 'This plan has no goals left. End it and I will make a new one from your current results.',
     missingTitle: 'Worth testing',
   },
 });
@@ -177,7 +181,17 @@ export function DietView({ assessment, person, plan, reports, today, habits, onT
         </section>
       )}
 
-      {(assessment.focus.length > 0 || plan !== null) && (
+      {plan && (assessment.blocked || !plan.focus.some((f) => f in FOCUS)) ? (
+        <section className="grp fd-lab-plan" aria-labelledby="fd-lab-plan">
+          <h2 id="fd-lab-plan">
+            <CalendarClock aria-hidden="true" size={18} /> {T.planTitle}
+          </h2>
+          <p>{assessment.blocked ? T.paused : T.empty}</p>
+          <button type="button" className="btn ghost sm" onClick={() => void savePrefs({ plan: null }).catch(fail)}>
+            {T.stop}
+          </button>
+        </section>
+      ) : (assessment.focus.length > 0 || plan !== null) && (
         <PlanCard
           plan={plan}
           focus={assessment.focus}

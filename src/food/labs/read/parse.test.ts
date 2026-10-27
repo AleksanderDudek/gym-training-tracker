@@ -239,3 +239,10 @@ Tńglicerydy 96 mg/dl <150`;
     expect(rows.hdl?.value).toBe(45);
   });
 });
+
+it('takes a strip word next to the number, never one from the reference column', () => {
+  const at = (text: string) => readText(`Badanie ogólne moczu\n${text}`).rows[0]!;
+  expect(at('Glukoza 250 mg/dl Norma: ujemny')).toMatchObject({ value: 250, qual: null });
+  expect(at('Glukoza 250 mg/dl 0 - 15 brak')).toMatchObject({ qual: null });
+  expect(at('Białko 15 mg/dl ślad')).toMatchObject({ value: 15, qual: 'trace' });
+});

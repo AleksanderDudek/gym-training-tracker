@@ -57,6 +57,8 @@ export interface Assessment {
   more: Focus[];
   /** eGFR under 60 or creatinine above range: the tab's high-protein rule is not for this person without a doctor. */
   proteinCaution: boolean;
+  /** eGFR under 30 or under 18: the app makes no diet plan at all. */
+  blocked: boolean;
   /** CRP above 10: iron and ferritin are not reliable now; retest after the infection. */
   inflamed: boolean;
   /** Tests worth asking for, given what is there and what is missing. */
@@ -449,7 +451,8 @@ export function assess(latest: Map<string, Latest>, person: Person): Assessment 
   const proteinCaution = egfrLow(60) || byId.get('creatinine')?.verdict.level === 'high';
   // Weak kidneys: no potassium-rich advice; very weak ones or a minor: no plan at all.
   if (proteinCaution) focus.delete('potassium');
-  if (egfrLow(30) || (person.age !== null && person.age < 18)) focus.clear();
+  const blocked = egfrLow(30) || (person.age !== null && person.age < 18);
+  if (blocked) focus.clear();
   const sorted = [...focus.values()].sort((a, b) => a.priority - b.priority);
 
   const missing: Assessment['missing'] = [];
@@ -464,7 +467,7 @@ export function assess(latest: Map<string, Latest>, person: Person): Assessment 
   if (!has('ldl') && !has('chol')) missing.push({ marker: 'ldl', why: missingWhy.lipids });
   if (!has('egfr') && !has('creatinine')) missing.push({ marker: 'egfr', why: missingWhy.egfr });
 
-  return { findings, focus: sorted.slice(0, 3), more: sorted.slice(3), proteinCaution, inflamed, missing: dedupe(missing) };
+  return { findings, focus: sorted.slice(0, 3), more: sorted.slice(3), proteinCaution, blocked, inflamed, missing: dedupe(missing) };
 }
 
 function dedupe<T extends { marker: string }>(list: T[]): T[] {

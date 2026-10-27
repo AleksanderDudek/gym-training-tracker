@@ -142,6 +142,19 @@ type Stage = { kind: 'choose' } | { kind: 'paste' } | { kind: 'reading'; status:
 
 let nextKey = 1;
 
+/** Two reads of one document (text pages, scanned pages): rows of both, a marker read twice marked. */
+function mergeReads(a: ReadResult, b: ReadResult): ReadResult {
+  const seen = new Set(a.rows.filter((r) => !r.duplicate).map((r) => r.marker.id));
+  return {
+    rows: [...a.rows, ...b.rows.map((r) => ({ ...r, duplicate: r.duplicate || seen.has(r.marker.id) }))],
+    unknown: [...a.unknown, ...b.unknown].slice(0, 40),
+    date: a.date ?? b.date,
+    lab: a.lab ?? b.lab,
+    sex: a.sex ?? b.sex,
+    birthYear: a.birthYear ?? b.birthYear,
+  };
+}
+
 const nowIso = () => new Date().toISOString();
 
 const canonicalKey = (m: Marker) => foldUnit(m.unit);
@@ -259,7 +272,9 @@ export function AddSheet({
     const lines = await readImages(files, (p) =>
       setStage({ kind: 'reading', status: p.step === 'load' ? T.loadingOcr : T.ocr(p.page, p.pages, Math.round(p.share * 100)) }),
     );
-    review(readText([...before, ...lines].join('\n'), { ocr: before.length === 0 }), source);
+    // Text pages exactly as printed, scanned pages with the OCR repairs; one review for both.
+    const scanned = readText(lines.join('\n'), { ocr: true });
+    review(before.length ? mergeReads(readText(before.join('\n')), scanned) : scanned, source);
   };
 
   const onPdf = async (file: File) => {

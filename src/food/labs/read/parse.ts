@@ -339,9 +339,11 @@ function readRow(line: string, folded: string, match: Match, section: Specimen, 
 
   // A strip result often comes with a number too: "ujemny <15 mg/dl", "(+) 30 mg/dl" — or the word after it.
   let after = at + used;
+  // Only right after the number or its unit: words further on are the reference column („Norma: ujemny”).
   if (qual === null && marker.qualitative) {
-    // A lone "-" after the number is a range dash, not "negative".
-    for (let i = after; i < tokens.length && qual === null; i++) if (tokens[i] !== '-') qual = qualAt(tokens, i)?.qual ?? null;
+    const next = tokens[after] !== undefined && Object.hasOwn(marker.units, foldUnit(tokens[after]!)) ? after + 1 : after;
+    const word = tokens[next] === undefined || tokens[next] === '-' ? null : qualAt(tokens, next);
+    if (word && !/^norm/.test(word.printed)) qual = word.qual;
   }
   if (qual !== null) {
     const number = tokens[after] === undefined ? null : parsePrinted(tokens[after]!);
