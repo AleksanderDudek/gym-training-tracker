@@ -671,7 +671,7 @@ export type TabKey = View | 'atlas' | 'plan' | 'ach' | 'food';
 export type FoodSection = 'diary' | 'recipes' | 'products' | 'nearby';
 
 /** Podstrony dziennika jedzenia: ze strzałką wstecz do dziennika, bez drugiego rzędu zakładek. */
-export type DietPage = 'plan' | 'plans' | 'progress' | 'profile' | 'shopping';
+export type DietPage = 'plan' | 'plans' | 'progress' | 'profile' | 'shopping' | 'labs';
 
 /** Trasa aplikacji. Podstrona ćwiczenia ma własny adres, więc da się ją wysłać komuś linkiem. */
 export type Route =

@@ -21,6 +21,7 @@ const T = text({
       progress: 'Postęp',
       profile: 'Profil diety',
       shopping: 'Lista zakupów',
+      labs: 'Badania',
     } as Record<DietPage, string>,
     sections: { plan: 'Plan', workouts: 'Treningi', atlas: 'Ćwiczenia', diary: 'Dziennik' },
     sport: { steps: 'Kroki', treadmill: 'Bieżnia', bike: 'Rower', dance: 'Taniec' } as Record<CardioSport, string>,
@@ -61,6 +62,7 @@ const T = text({
       progress: 'Progress',
       profile: 'Diet profile',
       shopping: 'Shopping list',
+      labs: 'Lab results',
     },
     sections: { plan: 'Plan', workouts: 'Workouts', atlas: 'Exercises', diary: 'Diary' },
     sport: { steps: 'Steps', treadmill: 'Treadmill', bike: 'Bike', dance: 'Dance' },
@@ -200,6 +202,7 @@ const DIET_SLUG: Record<DietPage, string> = {
   progress: 'postep',
   profile: 'profil',
   shopping: 'zakupy',
+  labs: 'badania',
 };
 
 const DIET_BY_SLUG = Object.fromEntries(Object.entries(DIET_SLUG).map(([k, v]) => [v, k as DietPage])) as Record<

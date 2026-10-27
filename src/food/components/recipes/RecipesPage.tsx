@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useMemo, type ReactNode } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, type ReactNode } from 'react';
 import { pluralEn, text } from '../../../i18n';
 import { EmptyState, Segmented } from '../../../components/ui';
 import { useDataset } from '../../hooks/useDataset';
@@ -202,6 +202,14 @@ function Recipes({ dataset, products }: { dataset: Dataset; products: IndexedPro
     [state.layout, recipes, index, store],
   );
   const ready = useMemo(() => readyProducts(products, store), [products, store]);
+  // Przepis z odnośnika (dieta pod wyniki badań): przewinięty do widoku raz, gdy jest już na liście.
+  const target = state.recipe;
+  const listed = !!target && recipes.some((r) => r.id === target);
+  useEffect(() => {
+    if (!target || !listed) return;
+    document.getElementById(`przepis-${target}`)?.scrollIntoView({ block: 'start' });
+    update({ recipe: null });
+  }, [target, listed, update]);
 
   const byCode = useMemo(() => new Map(products.map((p) => [p.code, p])), [products]);
   const openProduct = state.product ? byCode.get(state.product) : undefined;
@@ -328,7 +336,7 @@ function Recipes({ dataset, products }: { dataset: Dataset; products: IndexedPro
                 </div>
                 <ul className="fd-rec-list">
                   {group.items.map((recipe) => (
-                    <li key={recipe.id}>
+                    <li key={recipe.id} id={`przepis-${recipe.id}`}>
                       <RecipeCard
                         key={`${store ?? 'any'}:${label}`}
                         recipe={recipe}
@@ -348,7 +356,7 @@ function Recipes({ dataset, products }: { dataset: Dataset; products: IndexedPro
         ) : (
           <ul className="fd-rec-list">
             {recipes.map((recipe) => (
-              <li key={recipe.id}>
+              <li key={recipe.id} id={`przepis-${recipe.id}`}>
                 <RecipeCard
                   // Nowy sklep strony zaczyna kartę od nowa: jej zamiany należały do poprzedniego.
                   key={store ?? 'any'}

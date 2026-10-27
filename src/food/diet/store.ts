@@ -1,4 +1,5 @@
 import { say } from '../../i18n';
+import { cleanLabPrefs, cleanLabReport } from '../labs/validate';
 import { cleanPrepPlan } from '../prep/validate';
 import { applyAnswer, CHECK, checkDue, weeklyCheck } from './calibrate';
 import { db, type DayRow, type DietDb, type Entry, type PlannedCheat } from './db';
@@ -438,6 +439,9 @@ export interface Backup {
   favorites?: unknown[];
   /** Meal-prep plans with their shopping lists; absent in backups made before they existed. */
   prep?: unknown[];
+  /** Lab results and the plan built on them; absent in backups made before they existed. */
+  labs?: unknown[];
+  labPrefs?: unknown[];
 }
 
 export async function exportAll(database: DietDb = db): Promise<Backup> {
@@ -454,6 +458,8 @@ export async function exportAll(database: DietDb = db): Promise<Backup> {
     sets: await database.sets.toArray(),
     favorites: await database.favorites.toArray(),
     prep: await database.prep.toArray(),
+    labs: await database.labs.toArray(),
+    labPrefs: await database.labPrefs.toArray(),
   };
 }
 
@@ -472,6 +478,8 @@ export async function restoreAll(backup: unknown, database: DietDb = db): Promis
   const sets = cleanRows(b.sets, cleanSet);
   const favorites = cleanRows(b.favorites, cleanFavorite);
   const prep = cleanRows(b.prep, cleanPrepPlan);
+  const labs = cleanRows(b.labs, cleanLabReport);
+  const labPrefs = cleanRows(b.labPrefs, cleanLabPrefs);
   await database.transaction(
     'rw',
     [
@@ -483,6 +491,8 @@ export async function restoreAll(backup: unknown, database: DietDb = db): Promis
       database.sets,
       database.favorites,
       database.prep,
+      database.labs,
+      database.labPrefs,
     ],
     async () => {
       await Promise.all([
@@ -494,6 +504,8 @@ export async function restoreAll(backup: unknown, database: DietDb = db): Promis
         database.sets.clear(),
         database.favorites.clear(),
         database.prep.clear(),
+        database.labs.clear(),
+        database.labPrefs.clear(),
       ]);
       // A backup's profile may be either model's: an old one is upgraded (with the notice) as on a first read.
       if (b.profile)
@@ -505,11 +517,21 @@ export async function restoreAll(backup: unknown, database: DietDb = db): Promis
       await database.sets.bulkPut(sets.rows);
       await database.favorites.bulkPut(favorites.rows);
       await database.prep.bulkPut(prep.rows);
+      await database.labs.bulkPut(labs.rows);
+      await database.labPrefs.bulkPut(labPrefs.rows);
     },
   );
   return {
     dropped:
-      days.dropped + entries.dropped + plans.dropped + foods.dropped + sets.dropped + favorites.dropped + prep.dropped,
+      days.dropped +
+      entries.dropped +
+      plans.dropped +
+      foods.dropped +
+      sets.dropped +
+      favorites.dropped +
+      prep.dropped +
+      labs.dropped +
+      labPrefs.dropped,
   };
 }
 
@@ -525,6 +547,8 @@ export async function clearAll(database: DietDb = db): Promise<void> {
       database.sets,
       database.favorites,
       database.prep,
+      database.labs,
+      database.labPrefs,
     ],
     async () => {
       await Promise.all([
@@ -536,6 +560,8 @@ export async function clearAll(database: DietDb = db): Promise<void> {
         database.sets.clear(),
         database.favorites.clear(),
         database.prep.clear(),
+        database.labs.clear(),
+        database.labPrefs.clear(),
       ]);
     },
   );

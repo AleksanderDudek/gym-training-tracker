@@ -6,6 +6,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 // ma zostać domyślnym w kolejnej wersji Vite — bez niego build ostrzega przy każdym starcie.
 import { cspPlugin } from './vite/csp.ts';
 import { foodData } from './vite/foodData.ts';
+import { ocrData } from './vite/ocrData.ts';
 import { osmPlaces } from './vite/osmPlaces.ts';
 
 /** Skrót na ekranie głównym: ta sama ikona dla wszystkich, jak dotąd. */
@@ -26,6 +27,8 @@ export default defineConfig(({ mode }) => ({
     foodData(),
     // Lokale i sklepy „W pobliżu” (`data/osm/places-pl.tsv`) pocięte na kawałki i `virtual:osm-places`.
     osmPlaces(),
+    // Polskie dane OCR dla zdjęć wyników badań (`ocr/…/pol.traineddata.gz`) pod stałym adresem.
+    ocrData(),
     VitePWA({
       // Własny service worker (`src/sw.ts`); build dopisuje do niego tylko listę plików powłoki.
       strategies: 'injectManifest',
@@ -75,7 +78,17 @@ export default defineConfig(({ mode }) => ({
         globPatterns: ['**/*.{js,css,html,svg,png}', 'assets/*latin*.woff2'],
         // Bazy jedzenia nie idą do instalacji: produkty i dane sklepów internetowych service worker
         // zapisuje dopiero przy pierwszym wejściu w Jedzenie (`src/sw.ts`), po jednej kopii.
-        globIgnores: ['data/**', 'assets/shopData-*.js'],
+        // Czytniki wyników badań (pdf.js, Tesseract i jego dane, razem ok. 8 MB) też nie: przychodzą
+        // przy pierwszym pliku albo zdjęciu, a potem z kopii (`src/sw.ts`).
+        globIgnores: [
+          'data/**',
+          'assets/shopData-*.js',
+          'ocr/**',
+          'assets/pdf.worker.min-*.mjs',
+          'assets/pdf-*.js',
+          'assets/worker.min-*.js',
+          'assets/tesseract-core-*.js',
+        ],
       },
       // W trybie deweloperskim bez service workera: trzymałby stare pliki i każda zmiana
       // wymagałaby twardego odświeżenia.

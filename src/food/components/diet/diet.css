@@ -88,6 +88,7 @@
    dwa na dwa (cztery w rzędzie łamały „Plan posiłków” na trzy linijki), od 480 px w jednym rzędzie. */
 .fd-diet-subnav{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:12px auto}
 @media (min-width:480px){.fd-diet-subnav{grid-template-columns:repeat(4,1fr)}}
+.fd-diet-subnav a.fd-diet-subnav-wide{grid-column:1 / -1;min-height:52px;grid-auto-flow:column;justify-content:center}
 .fd-diet-subnav a{display:grid;justify-items:center;align-content:center;gap:4px;min-height:64px;padding:8px 4px;
   background:var(--surface);border:1px solid var(--line);border-radius:var(--r);color:var(--ink);
   text-decoration:none;font-size:13px;font-weight:600;line-height:1.2;text-align:center;

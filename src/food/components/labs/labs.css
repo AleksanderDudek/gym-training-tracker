@@ -1,0 +1,117 @@
+/* ---------------- Badania: wyniki laboratoryjne i dieta pod nie ---------------- */
+
+.fd-lab-head h2,.fd-lab-plan h2,.fd-lab-doctor h2{display:flex;align-items:center;gap:6px}
+.fd-lab-head svg,.fd-lab-plan h2 svg{color:var(--steel)}
+.fd-lab-doctor{border-left:4px solid var(--warn)}
+.fd-lab-doctor h2 svg{color:var(--warn)}
+
+.fd-lab-list{margin:4px 0 8px;padding-left:18px;font-size:13.5px;color:var(--ink)}
+.fd-lab-list li{margin:3px 0;max-width:62ch}
+.fd-lab-note{color:var(--ink-soft)}
+
+.fd-lab-views{margin:12px auto}
+.fd-lab-eats,.fd-lab-who{display:grid;gap:6px;margin:8px 0}
+
+/* Słowo oceny w ramce; kolor tylko dopowiada (to samo słowo jest w tekście). */
+.fd-lab-badge{display:inline-flex;align-items:center;gap:3px;padding:0 7px;border:1px solid var(--line);border-radius:999px;
+  font-size:11.5px;font-weight:600;line-height:19px;white-space:nowrap;color:var(--ink-soft);background:var(--surface)}
+.fd-lab-tone-low,.fd-lab-tone-high{color:var(--c-orange-ink);background:var(--c-orange-bg);border-color:var(--c-orange)}
+.fd-lab-tone-target{color:var(--c-gold-ink);background:var(--c-gold-bg);border-color:var(--c-gold)}
+.fd-lab-tone-ok{color:var(--c-green-ink);border-color:var(--c-green)}
+
+/* Cele */
+.fd-lab-focus details > summary,.fd-lab-nested details > summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;min-height:32px}
+.fd-lab-focus details > summary::-webkit-details-marker,.fd-lab-nested details > summary::-webkit-details-marker{display:none}
+.fd-lab-focus details > summary::before,.fd-lab-nested details > summary::before{content:'▸';color:var(--steel);font-size:13px;transition:transform .15s}
+.fd-lab-focus details[open] > summary::before,.fd-lab-nested details[open] > summary::before{transform:rotate(90deg)}
+.grp .fd-lab-focus-title{margin:0;font-family:var(--display);font-size:18px;letter-spacing:.02em}
+.fd-lab-nested{border-top:1px solid var(--surface-2);padding:8px 0}
+.fd-lab-nested .fd-lab-focus-title{font-size:16px}
+.fd-lab-markers{list-style:none;margin:8px 0;padding:0;display:grid;gap:4px;font-size:14px}
+.fd-lab-mname{color:var(--ink-soft)}
+.grp p.fd-lab-norm{margin:8px 0 4px;font-size:13px;color:var(--ink)}
+.fd-lab-block{margin:12px 0 0}
+.fd-lab-block h4,.fd-lab-habits-title{margin:0 0 4px;font-family:var(--display);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);font-weight:500}
+.fd-lab-foods{list-style:none;margin:0;padding:0}
+.fd-lab-foods li{display:grid;gap:1px;padding:6px 0;border-top:1px solid var(--surface-2)}
+.fd-lab-foods li:first-child{border-top:0}
+.fd-lab-food{font-size:14.5px;font-weight:600;color:var(--ink)}
+a.fd-lab-food{color:var(--steel)}
+.fd-lab-food-meta,.grp p.fd-lab-food-meta{margin:0;font-size:12.5px;color:var(--ink-soft)}
+.grp p.fd-lab-pair,.grp p.fd-lab-example{margin:6px 0 0;font-size:13px;color:var(--ink)}
+
+/* Plan i nawyki */
+.fd-lab-habits{list-style:none;margin:4px 0 12px;padding:0}
+.fd-lab-habits li{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--surface-2)}
+.fd-lab-habits li:first-child{border-top:0}
+.fd-lab-habit-name{font-size:14px;color:var(--ink)}
+.fd-lab-habit-count{font-size:13px;font-variant-numeric:tabular-nums;color:var(--ink-soft);white-space:nowrap}
+.fd-lab-habit-done .fd-lab-habit-count{color:var(--c-green-ink);font-weight:600}
+.fd-lab-habit-btns{display:flex;gap:4px}
+.fd-lab-icon{display:inline-grid;place-items:center;width:44px;height:44px;border:1px solid var(--line);border-radius:var(--r);
+  background:var(--surface);color:var(--steel);cursor:pointer}
+.fd-lab-icon:disabled{opacity:.4;cursor:default}
+.fd-lab-icon:focus-visible{outline:2px solid var(--steel);outline-offset:2px}
+.fd-lab-plus{background:var(--steel);border-color:var(--steel);color:#fff}
+
+/* Wyniki */
+.fd-lab-results{list-style:none;margin:4px 0 0;padding:0}
+.fd-lab-result{border-top:1px solid var(--surface-2)}
+.fd-lab-result:first-child{border-top:0}
+.fd-lab-result-head{all:unset;box-sizing:border-box;width:100%;display:grid;grid-template-columns:1fr auto;gap:2px 8px;align-items:center;
+  padding:9px 0;cursor:pointer;min-height:44px}
+.fd-lab-result-head:focus-visible{outline:2px solid var(--steel);outline-offset:2px}
+.fd-lab-result-head .fd-lab-mname{grid-column:1;color:var(--ink);font-size:14px}
+.fd-lab-result-value{grid-column:1;font-size:13px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.fd-lab-result-head .fd-lab-badge{grid-column:2;grid-row:1 / span 2}
+.fd-lab-result-body{padding:0 0 10px}
+.fd-lab-history{list-style:none;margin:6px 0 0;padding:0;font-size:13px}
+.fd-lab-spark{display:block;width:100%;max-width:420px;height:70px;margin:6px 0}
+.fd-lab-spark-band{fill:var(--c-green);opacity:.14}
+.fd-lab-spark-line{fill:none;stroke:var(--steel);stroke-width:2}
+.fd-lab-spark-dot{fill:var(--steel)}
+.fd-lab-reports{list-style:none;margin:0;padding:0}
+.fd-lab-reports li{display:grid;grid-template-columns:1fr auto;gap:2px 8px;align-items:center;padding:8px 0;border-top:1px solid var(--surface-2)}
+.fd-lab-reports li:first-child{border-top:0}
+.fd-lab-reports .fd-lab-habit-btns{grid-column:2;grid-row:1 / span 2}
+.fd-lab-report-name{font-size:14px;font-weight:600}
+
+/* Co zbadać */
+.fd-lab-chips{list-style:none;margin:6px 0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.fd-lab-chip{display:inline-flex;align-items:center;gap:3px;padding:2px 9px;border:1px solid var(--line);border-radius:999px;font-size:12.5px;color:var(--ink)}
+.fd-lab-chip-have{border-color:var(--c-green);color:var(--c-green-ink)}
+
+/* Arkusz dodawania */
+.fd-lab-add{display:grid;gap:10px}
+.fd-lab-ways{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.fd-lab-way{display:grid;justify-items:start;gap:3px;padding:12px;min-height:88px;border:1px solid var(--line);border-radius:var(--r);
+  background:var(--surface);color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.fd-lab-way svg{color:var(--steel)}
+.fd-lab-way:focus-visible{outline:2px solid var(--steel);outline-offset:2px}
+.fd-lab-way-name{font-size:14px;font-weight:600}
+.fd-lab-way-sub{font-size:12px;color:var(--ink-soft)}
+.fd-lab-error{margin:0;padding:8px 10px;border-left:4px solid var(--warn);background:var(--surface-2);font-size:13.5px}
+.fd-lab-warn{margin:2px 0 0;font-size:12.5px;color:var(--c-orange-ink)}
+.fd-lab-reading{margin:24px 0;font-size:15px;text-align:center}
+.fd-lab-field{display:flex;align-items:center;gap:4px;margin:10px 0 4px;font-size:13px;font-weight:600}
+.fd-lab-input{font:inherit;font-size:16px;min-height:44px;padding:8px 10px;border:1px solid var(--line);border-radius:var(--r);
+  background:var(--surface);color:var(--ink);box-sizing:border-box;width:100%}
+.fd-lab-paste{font:inherit;font-size:14px;padding:8px 10px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);
+  color:var(--ink);width:100%;box-sizing:border-box;resize:vertical}
+.fd-lab-meta{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fd-lab-rows{list-style:none;margin:12px 0 0;padding:0}
+.fd-lab-row{padding:10px 0;border-top:1px solid var(--surface-2)}
+.fd-lab-row-off{opacity:.6}
+.fd-lab-row-head{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center}
+.fd-lab-check{display:flex;align-items:center;gap:8px;min-height:44px;cursor:pointer}
+.fd-lab-check input{width:20px;height:20px;accent-color:var(--steel)}
+.fd-lab-row-name{font-size:14.5px;font-weight:600}
+.fd-lab-row-fields{display:flex;gap:8px;align-items:center;margin-top:4px}
+.fd-lab-value{max-width:120px}
+.fd-lab-unit{max-width:150px}
+.fd-lab-qual{max-width:130px}
+.fd-lab-unit-text{font-size:14px;color:var(--ink-soft)}
+.grp p.fd-lab-row-meta,.fd-lab-row-meta{margin:4px 0 0;font-size:12px;color:var(--ink-soft);overflow-wrap:anywhere}
+.fd-lab-unknown{margin:14px 0 0;font-size:13px}
+.fd-lab-unknown summary{cursor:pointer;min-height:32px;font-weight:600}
+.fd-lab-unknown ul{margin:4px 0;padding-left:18px;color:var(--ink-soft);overflow-wrap:anywhere}

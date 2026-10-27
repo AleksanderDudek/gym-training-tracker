@@ -23,6 +23,7 @@
     "food:check-prep": "tsx scripts/food/check-prep.ts",
     "food:selgros": "tsx scripts/food/fetch-selgros.ts",
     "food:osm": "tsx scripts/food/osm-places.ts",
+    "food:nutrients": "tsx scripts/food/fetch-nutrients.ts",
     "garmin:watches": "tsx scripts/garmin/watches.ts",
     "demo:seed": "TZ=Europe/Warsaw vitest run --config scripts/demo-videos/seed/vitest.config.ts",
     "demo:videos": "tsx scripts/demo-videos/record.ts"
@@ -30,6 +31,7 @@
   "dependencies": {
     "@fontsource/ibm-plex-sans": "^5.3.0",
     "@fontsource/oswald": "^5.3.0",
+    "@tesseract.js-data/pol": "^1.0.0",
     "barcode-detector": "3.2.2",
     "dexie": "^4.4.6",
     "dexie-react-hooks": "^4.4.0",
@@ -37,8 +39,10 @@
     "html-to-image": "^1.11.13",
     "leaflet": "^1.9.4",
     "lucide-react": "^1.55.0",
+    "pdfjs-dist": "^5.4.296",
     "react": "^19.3.0",
-    "react-dom": "^19.3.0"
+    "react-dom": "^19.3.0",
+    "tesseract.js": "^7.0.0"
   },
   "devDependencies": {
     "@testing-library/dom": "^10.4.2",

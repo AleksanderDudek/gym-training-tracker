@@ -6,16 +6,17 @@ test('the default state is an empty query', () => {
   expect(recipesFromParams(new URLSearchParams(''))).toEqual(DEFAULT_RECIPES_STATE);
 });
 
-test('store, kind, time tier and open product round-trip', () => {
+test('store, kind, time tier, open product and linked recipe round-trip', () => {
   const state = {
     store: 'biedronka',
     kind: 'shake' as const,
     tier: 'szybkie' as const,
     product: '590',
     layout: 'sklepy' as const,
+    recipe: 'skyr-bowl',
   };
   expect(recipesFromParams(recipesToParams(state))).toEqual(state);
-  expect(recipesToParams(state).toString()).toBe('sklep=biedronka&typ=shake&czas=szybkie&p=590&uklad=sklepy');
+  expect(recipesToParams(state).toString()).toBe('sklep=biedronka&typ=shake&czas=szybkie&p=590&uklad=sklepy&przepis=skyr-bowl');
   expect(recipesFromParams(new URLSearchParams('uklad=cokolwiek')).layout).toBe('czas');
 });
 

@@ -10,6 +10,7 @@ import {
   TrendingDown,
   Trash2,
   UserRound,
+  FlaskConical,
   UtensilsCrossed,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
@@ -95,6 +96,7 @@ const T = text({
     myPlans: 'Moje plany',
     progress: 'Postęp',
     dietProfile: 'Profil diety',
+    labs: 'Badania — dieta pod wyniki',
     tomorrow: 'jutro',
     on: (start: string) => {
       const day = weekday(start);
@@ -168,6 +170,7 @@ const T = text({
     myPlans: 'My plans',
     progress: 'Progress',
     dietProfile: 'Diet profile',
+    labs: 'Lab results — diet for them',
     tomorrow: 'tomorrow',
     on: (start: string) => `on ${WEEKDAY_DAY_MONTH.format(new Date(`${start}T12:00:00Z`))}`,
     nextPlan: (link: ReactNode, when: string): ReactNode => (
@@ -616,7 +619,7 @@ function BreakLine({ pause, target, today, kgNow }: { pause: Pause; target: numb
 }
 
 /**
- * Wejścia do podstron dziennika: cztery kafelki na dole, każdy prowadzi w głąb (strzałka wstecz
+ * Wejścia do podstron dziennika: pięć kafelków na dole (badania szerokie, pod czterema), każdy prowadzi w głąb (strzałka wstecz
  * wraca). Góra dziennika należy do liczb dnia, a dwa najczęstsze cele mają odnośniki na miejscu:
  * karta wagi — do postępu, plan dnia — do swojego planu. Plan posiłków dostaje oglądany dzień
  * (`?dzien=`, ten sam zapis co w dzienniku), więc otwiera się na jego tygodniu — jak w Produktach
@@ -641,6 +644,10 @@ function DietLinks({ date, today }: { date: string; today: string }) {
       <a href={dietPath('profile')}>
         <UserRound {...ICON} />
         <span>{T.dietProfile}</span>
+      </a>
+      <a className="fd-diet-subnav-wide" href={dietPath('labs')}>
+        <FlaskConical {...ICON} />
+        <span>{T.labs}</span>
       </a>
     </nav>
   );

@@ -1,5 +1,6 @@
 import Dexie, { type Table } from 'dexie';
 import type { CustomFood, Food, FoodSet, FoodSource } from './foods';
+import type { LabPrefs, LabReport } from '../labs/types';
 import type { PrepPlan } from '../prep/types';
 import type { DayChoices, Plan } from './plan';
 import type { LegacyFields, Profile } from './types';
@@ -32,6 +33,8 @@ export interface DayRow {
    * the whole day („To był cały dzień”); absent — 60 % of the day's target decides (`isComplete`).
    */
   partial?: boolean;
+  /** Weekly habits of the lab-results plan ticked this day: habit id → times. */
+  labHabits?: Record<string, number>;
 }
 
 /** A planned cheat meal: calories always, macros when known (unknown is not zero). */
@@ -90,6 +93,8 @@ export class DietDb extends Dexie {
   sets!: Table<FoodSet, number>;
   favorites!: Table<Favorite, string>;
   prep!: Table<PrepPlan, number>;
+  labs!: Table<LabReport, number>;
+  labPrefs!: Table<LabPrefs, string>;
 
   constructor(name = 'produkty-pl-dieta') {
     super(name);
@@ -100,6 +105,8 @@ export class DietDb extends Dexie {
     this.version(3).stores({ favorites: 'key' });
     // Meal prep — plany na kolejne dni z listą zakupów, każdy jako migawka.
     this.version(4).stores({ prep: '++id' });
+    // Badania — wyniki z laboratorium (jeden wiersz na dzień pobrania) i ustawienia planu pod wyniki.
+    this.version(5).stores({ labs: '++id, date', labPrefs: 'id' });
   }
 }
 
