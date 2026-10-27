@@ -46,6 +46,17 @@ accepted only if the same digits appear in that row of the source text. Recorded
 | Pasted text | Lines as pasted | Copy from a lab portal or IKP |
 | Typed by hand | Marker picker + value + unit | Always available; also edits any read row |
 
+Measured on a Diagnostyka-style printout („SPRAWOZDANIE Z BADANIA”, the layout from their own
+annotated sample): the PDF gave 19 of 19 results and the collection date in 0.2 s. A 1600 px
+picture of the same page at 1× lost decimal commas (4,01 → 401, vitamin D 18,6 → 186), read "58"
+as "s8" and misspelt names; enlarged 2× before OCR, the same 19 rows came out exact in 1.8 s. So:
+
+- photos are scaled so letters are about 30 px (up to 3×, at most 12 MP — the iPhone canvas limit);
+- OCR text gets digit repairs (O→0, S→5, l→1, B→8 inside numbers) and names may have one typo
+  (two from 10 letters);
+- any read: a value with no decimals far above a printed range with decimals is flagged as a lost
+  comma, not selected, with a one-tap „Popraw na 4,01”.
+
 Every read ends on a review screen: each recognised row with its value, unit, the lab's range and
 the app's verdict, editable, with a checkbox; unrecognised rows are listed separately; the date
 of collection is detected or asked for. Nothing is saved before „Zapisz”. The file itself is never
@@ -83,6 +94,15 @@ sheet (`?dodaj=pdf|zdjecie|tekst|recznie`).
 | CSS | New area `fd-lab-` | `src/food/css.test.ts` |
 | Language | Every string Polish and English (`text`/`say`) | `docs/i18n.md` |
 
+### Safety thresholds
+
+The doctor-first values follow `docs/research/badania-laboratoryjne.md` §4. Some are the
+research's "app policy" (conservative, not verbatim from one guideline) and are listed there for a
+clinician to review before a public launch: potassium < 3.0 or > 6.0 urgent, TG ≥ 500, eGFR < 60
+(doctor) and < 30 (no plan at all), ALT/AST > 3× the upper limit, ferritin < 15, B12 < 180, vitamin D
+< 10 or > 100, HbA1c ≥ 9 urgent, TSH < 0.1 or > 10 urgent, ketones with glucose urgent. Under 18 no
+plan is made.
+
 ### Considered, not done now
 
 - An on-device LLM fallback for unrecognised rows (see §1).
@@ -92,3 +112,8 @@ sheet (`?dodaj=pdf|zdjecie|tekst|recznie`).
   people get them out.
 - Supplement doses: only the public vitamin D guideline is quoted; anything else is for a doctor or
   pharmacist.
+- IKP's CDA XML documents (structured, with lab codes) — patients' access to the raw XML is
+  unverified; the PDF inside or a screenshot covers it for now.
+- Medicines (anticoagulants, ACE inhibitors) as a profile field: the advice carries the warnings
+  in text (vitamin K consistency, no potassium salt) instead of asking about medicines.
+- A "Normy żywienia 2024" refresh: its PDF returned 404 on 2026-10-27; the 2020 values are used.
