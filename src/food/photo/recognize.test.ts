@@ -57,7 +57,9 @@ describe('recognize', () => {
     await expect(result).rejects.toThrow('HTTP 404');
   });
 
-  it('a photo that downloads the model itself shows the download, then confirms the copy', async () => {
+  it('a photo that downloads the model itself shows the download, then the copy decides', async () => {
+    const inCopy = vi.fn(async () => new Response(''));
+    vi.stubGlobal('caches', { match: inCopy });
     const result = recognize(new Blob());
     const w = FakeWorker.last;
     const id = lastId();
@@ -65,9 +67,36 @@ describe('recognize', () => {
     expect(modelState()).toEqual({ kind: 'downloading', share: 0.25 });
     w.reply({ type: 'result', id, top: [] });
     await result;
-    expect(w.sent.at(-1)).toMatchObject({ type: 'save', fetchMissing: true });
-    w.reply({ type: 'saved', id: lastId(), saved: true });
     await vi.waitFor(() => expect(modelState()).toEqual({ kind: 'ready' }));
+    // The page looked itself: nothing more was asked of the worker.
+    expect(w.sent.at(-1)).toMatchObject({ type: 'read' });
+    vi.unstubAllGlobals();
+    vi.stubGlobal('Worker', FakeWorker);
+  });
+
+  it('the model failing after its download (memory) is not a failed download', async () => {
+    vi.stubGlobal('caches', { match: async () => new Response('') });
+    const result = recognize(new Blob());
+    FakeWorker.last.reply({ type: 'progress', step: 'load', share: 1, source: 'network' });
+    FakeWorker.last.reply({ type: 'error', id: lastId(), message: 'could not allocate memory' });
+    await expect(result).rejects.toThrow('memory');
+    await vi.waitFor(() => expect(modelState()).toEqual({ kind: 'ready' }));
+    vi.unstubAllGlobals();
+    vi.stubGlobal('Worker', FakeWorker);
+  });
+
+  it('closing the sheet while the photo downloads the model: „not yet”, not „failed”', async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal('caches', { match: async () => undefined });
+    const result = recognize(new Blob()).catch((e: Error) => e.message);
+    FakeWorker.last.reply({ type: 'progress', step: 'load', share: 0.5, source: 'network' });
+    release();
+    await expect(result).resolves.toBe('released');
+    await vi.advanceTimersByTimeAsync(6000);
+    expect(modelState()).toEqual({ kind: 'missing', wait: null });
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+    vi.stubGlobal('Worker', FakeWorker);
   });
 
   it('reading the model from the phone is not a download', async () => {
@@ -115,6 +144,20 @@ describe('saveModel', () => {
     w.reply({ type: 'saved', id, saved: true });
     await saving;
     expect(w.terminated).toBe(false);
+  });
+
+  it('a save that ends first leaves the worker to another request still waiting on it', async () => {
+    const first = saveModel();
+    const w = FakeWorker.last;
+    const firstId = lastId();
+    const look = saveModel(false);
+    const lookId = lastId();
+    w.reply({ type: 'saved', id: firstId, saved: true });
+    await first;
+    expect(w.terminated).toBe(false);
+    w.reply({ type: 'saved', id: lookId, saved: true });
+    await look;
+    expect(w.terminated).toBe(true);
   });
 
   it('closing the photo screen does not throw away a download in progress', async () => {

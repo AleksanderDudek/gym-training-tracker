@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { clearRun, clearRunOnLeave, interrupted, markCamera, markReading, pendingPhoto } from './pending';
+import { clearCamera, clearRun, clearRunOnLeave, consumeRun, interrupted, markCamera, markReading, pendingPhoto } from './pending';
 
 /** The Cache API, as much of it as `pending.ts` uses (jsdom has none). */
 function fakeCaches() {
@@ -62,6 +62,26 @@ describe('the marker a crash leaves behind', () => {
     markCamera();
     dispatchEvent(new Event('pagehide'));
     expect(interrupted()).toBeNull();
+    return vi.waitFor(() => expect(fake.stores.size).toBe(0));
+  });
+
+  it('told once: consuming the marker keeps the photo for a retry', async () => {
+    await markReading(new Blob([new Uint8Array([1, 2, 3])]));
+    expect(interrupted()).not.toBeNull();
+    // React may read it twice; reading changes nothing.
+    expect(interrupted()).not.toBeNull();
+    consumeRun();
+    expect(interrupted()).toBeNull();
+    expect((await pendingPhoto())?.size).toBe(3);
+  });
+
+  it('back on the page without a photo clears only a camera marker', async () => {
+    markCamera();
+    clearCamera();
+    expect(interrupted()).toBeNull();
+    await markReading(new Blob([new Uint8Array([1])]));
+    clearCamera();
+    expect(interrupted()).toMatchObject({ stage: 'reading' });
   });
 
   it('a broken marker is ignored', () => {

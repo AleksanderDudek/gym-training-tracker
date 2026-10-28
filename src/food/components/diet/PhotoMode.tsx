@@ -7,7 +7,7 @@ import { formatNumber } from '../../lib/format';
 import { FAT_SCALE, SAUCE_SCALE, SWEET_SCALE, type Choices, type Dish, type FatLevel, type SauceLevel, type SweetLevel } from '../../photo/dishes';
 import { PHOTO_MODEL } from '../../photo/model';
 import { checkModel, useModelState, type ModelState } from '../../photo/modelState';
-import { clearRun, clearRunOnLeave, markCamera, markReading, pendingPhoto, type Interrupted } from '../../photo/pending';
+import { clearCamera, clearRun, clearRunOnLeave, consumeRun, markCamera, markReading, pendingPhoto, type Interrupted } from '../../photo/pending';
 import {
   PORTION_STEPS,
   gramsOf,
@@ -215,6 +215,7 @@ export function PhotoMode({ date, resume = null, onLogged, onDone }: Props) {
   const gallery = useRef<HTMLInputElement>(null);
   const result = useRef<HTMLDivElement>(null);
   const run = useRef(0);
+  const mounted = useRef(true);
   /** Analyses in a row the phone cut short: carried into the next marker, back to 0 after a result. */
   const tries = useRef(resume?.tries ?? 0);
   /** The kept photo has been read (or there is none): from now on closing the sheet may delete it. */
@@ -222,12 +223,22 @@ export function PhotoMode({ date, resume = null, onLogged, onDone }: Props) {
   const ids = useId();
 
   useEffect(() => () => void (photo && URL.revokeObjectURL(photo)), [photo]);
+  // Told once: the next start does not open the sheet with the same story.
   useEffect(() => {
+    if (resume) consumeRun();
+  }, [resume]);
+  useEffect(() => {
+    // The counter itself, not a node: the clean-up moves it on so a photo still on its way stops.
+    const runs = run;
+    mounted.current = true;
     clearRunOnLeave();
     void checkModel();
     // The model holds about 0.2 GB; it goes with the screen and comes back from the cache.
-    // Closing the sheet is a normal ending: nothing to recover next time.
+    // Closing the sheet is a normal ending: nothing to recover next time, and a photo still on its
+    // way to the model (`markReading` takes a moment) must not start it after this.
     return () => {
+      mounted.current = false;
+      runs.current++;
       release();
       if (settled.current) clearRun();
     };
@@ -238,8 +249,9 @@ export function PhotoMode({ date, resume = null, onLogged, onDone }: Props) {
     if (resume?.stage !== 'reading') return;
     let live = true;
     void pendingPhoto().then((kept) => {
+      if (!live) return;
       settled.current = true;
-      if (!live || !kept) return;
+      if (!kept) return;
       setFile(kept);
       setPhoto(URL.createObjectURL(kept));
     });
@@ -248,12 +260,22 @@ export function PhotoMode({ date, resume = null, onLogged, onDone }: Props) {
     };
   }, [resume]);
 
-  // A cancelled camera or gallery is not a crash.
+  // A cancelled camera or gallery is not a crash, and neither is any return to the page: a page the
+  // phone killed comes back as a new start, not as `focus`. (Older Safari fires no `cancel`.) A photo
+  // that does arrive writes its own marker.
   useEffect(() => {
     const inputs = [camera.current, gallery.current];
-    const cancel = () => clearRun();
-    inputs.forEach((i) => i?.addEventListener('cancel', cancel));
-    return () => inputs.forEach((i) => i?.removeEventListener('cancel', cancel));
+    const back = () => {
+      if (document.visibilityState === 'visible') clearCamera();
+    };
+    inputs.forEach((i) => i?.addEventListener('cancel', clearCamera));
+    addEventListener('focus', back);
+    document.addEventListener('visibilitychange', back);
+    return () => {
+      inputs.forEach((i) => i?.removeEventListener('cancel', clearCamera));
+      removeEventListener('focus', back);
+      document.removeEventListener('visibilitychange', back);
+    };
   }, []);
 
   // The answer may sit below the fold of the sheet; bring it into view once.
@@ -268,6 +290,11 @@ export function PhotoMode({ date, resume = null, onLogged, onDone }: Props) {
     setPhoto(URL.createObjectURL(image));
     setStage({ kind: 'working', progress: { step: 'load', share: null }, since: Date.now() });
     await markReading(image, tries.current);
+    // A newer photo or a closed sheet came first; a closed sheet's clean-up ran before the photo was kept.
+    if (mine !== run.current) {
+      if (!mounted.current) clearRun();
+      return;
+    }
     try {
       const suggestions = await recognize(image, (progress) => mine === run.current && setStage((s) => (s.kind === 'working' ? { ...s, progress } : s)));
       if (mine !== run.current) return;
@@ -289,7 +316,8 @@ export function PhotoMode({ date, resume = null, onLogged, onDone }: Props) {
 
   // The download (not the model itself) starts while the person frames the shot.
   const pick = (input: HTMLInputElement | null) => {
-    markCamera(tries.current);
+    // A photo already in the model keeps its marker until another one arrives.
+    if (stage.kind !== 'working') markCamera(tries.current);
     input?.click();
     try {
       prepare();
@@ -457,7 +485,11 @@ function ModelCard() {
   );
   return (
     <section className="fd-diet-model" aria-label={T.model}>
-      <p className="fd-diet-model-line">
+      {/* Changes of state are announced, not every percent. */}
+      <span className="sr-only" role="status">
+        {state.kind === 'downloading' ? T.modelDownloading(null, null) : modelLine(state)}
+      </span>
+      <p className="fd-diet-model-line" aria-hidden="true">
         <ModelIcon state={state} />
         <span>
           <b>{T.model}:</b> {modelLine(state)}
@@ -465,7 +497,13 @@ function ModelCard() {
       </p>
       {state.kind === 'downloading' && (
         <>
-          <progress className="fd-diet-model-bar" max={1} value={state.share ?? undefined} aria-label={T.model} />
+          <progress
+            className="fd-diet-model-bar"
+            max={1}
+            value={state.share ?? undefined}
+            aria-label={T.model}
+            aria-valuetext={modelLine(state)}
+          />
           <p className="fd-diet-meta">{T.modelDownloadingNote}</p>
         </>
       )}
@@ -530,8 +568,8 @@ function Steps({ progress, since }: { progress: Progress; since: number }) {
     [T.stepRead, of(2)],
   ];
   return (
-    <div className="fd-diet-steps" role="status">
-      <ol>
+    <div className="fd-diet-steps">
+      <ol role="status">
         {steps.map(([label, s], i) => (
           <li key={i} className={`fd-diet-step-${s}`}>
             {s === 'done' ? (

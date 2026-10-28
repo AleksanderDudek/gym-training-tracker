@@ -1,6 +1,6 @@
 import { dishById, type Dish } from './dishes';
 import { PHOTO_MODEL } from './model';
-import { modelState, setModelState } from './modelState';
+import { modelState, setModelState, settleModel } from './modelState';
 import type { Reply, Request } from './recognize.worker';
 
 /**
@@ -76,6 +76,7 @@ function start(): Worker {
   w.onerror = (e) => {
     e.preventDefault();
     worker = null;
+    loaded = false;
     w.terminate();
     fail(new Error(e.message || 'photo worker failed'));
   };
@@ -117,13 +118,16 @@ export function recognize(image: Blob, onProgress?: (p: Progress) => void): Prom
   return ask((id) => ({ type: 'read', id, base: document.baseURI, image }))
     .then(
       (r) => {
-        // The photo downloaded the model itself: the service worker kept a copy on the way, and
-        // a save (which fetches nothing now) confirms it for the status card.
-        if (modelState().kind === 'downloading' && saving === 0) saveModel(true).catch(() => undefined);
+        // The photo downloaded the model itself: the service worker kept a copy on the way.
+        if (saving === 0) void settleModel({ kind: 'missing', wait: null });
         return (r.type === 'result' ? r.top : []).flatMap(({ id, score }) => (dishById(id) ? [{ dish: dishById(id)!, score }] : []));
       },
       (e: unknown) => {
-        if (modelState().kind === 'downloading' && saving === 0) setModelState({ kind: 'failed', reason: navigator.onLine ? 'error' : 'offline' });
+        // The download may have finished and the model failed later (memory): the copy decides.
+        // A closed screen (`released`) is no failure of the download.
+        const released = e instanceof Error && e.message === 'released';
+        if (saving === 0)
+          void settleModel(released ? { kind: 'missing', wait: null } : { kind: 'failed', reason: navigator.onLine ? 'error' : 'offline' });
         throw e;
       },
     )
@@ -163,9 +167,11 @@ export function saveModel(fetchMissing = true): Promise<boolean> {
     )
     .finally(() => {
       if (fetchMissing) saving--;
-      if (held || !worker) return;
+      // Another request still waits on this worker (a second save, a look): it ends after that one.
+      if (held || !worker || waiting.size > 0) return;
       worker.terminate();
       worker = null;
+      loaded = false;
     });
 }
 

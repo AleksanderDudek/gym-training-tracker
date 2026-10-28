@@ -59,6 +59,25 @@ export async function checkModel(): Promise<void> {
   }
 }
 
+/**
+ * A photo that downloaded the model itself has ended: the page looks in the copy (the service
+ * worker writes it just after the last byte, so it waits a little) — no worker, which the photo
+ * screen may be ending right now. Not there: `otherwise`. Only while the card still says
+ * "downloading": a save on its way reports for itself.
+ */
+export async function settleModel(otherwise: ModelState): Promise<void> {
+  for (let i = 0; i < 20 && typeof caches !== 'undefined'; i++) {
+    if (state.kind !== 'downloading') return;
+    try {
+      if (await caches.match(modelHref())) return setModelState({ kind: 'ready' });
+    } catch {
+      break;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+  if (state.kind === 'downloading') setModelState(otherwise);
+}
+
 /** Test hook: back to "not looked yet". */
 export function resetModelState(): void {
   state = { kind: 'unknown' };

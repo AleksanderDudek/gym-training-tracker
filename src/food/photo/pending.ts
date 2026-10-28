@@ -67,27 +67,45 @@ export async function markReading(photo: Blob, tries = 0): Promise<void> {
 
 /** The run ended in a way the person saw. */
 export function clearRun(): void {
-  try {
-    localStorage.removeItem(KEY);
-  } catch {
-    // Nothing stored.
-  }
+  forget();
   if (typeof caches !== 'undefined') caches.delete(CACHE).catch(() => undefined);
 }
 
-/** A run the system cut short, if the app has just started again within half an hour of it. */
+/**
+ * A run the system cut short, if the app has just started again within half an hour of it. Only
+ * reads (React may call it twice); the screen that shows it calls `consumeRun()`, so the next start
+ * does not tell the same story again. The kept photo stays for „Spróbuj ponownie”.
+ */
 export function interrupted(now = Date.now()): Interrupted | null {
   const m = read();
-  if (!m) {
-    // A photo kept by a run whose marker went with a reload by hand.
-    if (typeof caches !== 'undefined') caches.delete(CACHE).catch(() => undefined);
-    return null;
-  }
+  if (!m) return null;
   if (now - m.at > FRESH_MS || now < m.at) {
     clearRun();
     return null;
   }
   return { stage: m.stage, tries: m.tries };
+}
+
+/** The story has been told: the marker goes, the kept photo stays until the sheet closes. */
+export function consumeRun(): void {
+  forget();
+}
+
+/**
+ * The page is in front again with no photo: the camera or gallery was closed without one, and the
+ * page was not killed. For browsers whose file input fires no `cancel` (older Safari). A marker of
+ * a photo being read stays.
+ */
+export function clearCamera(): void {
+  if (read()?.stage === 'camera') forget();
+}
+
+function forget(): void {
+  try {
+    localStorage.removeItem(KEY);
+  } catch {
+    // Nothing stored.
+  }
 }
 
 /** The photo kept by `markReading`, if it survived. */
@@ -107,10 +125,7 @@ export function clearRunOnLeave(): void {
   if (leaving || typeof addEventListener !== 'function') return;
   leaving = true;
   addEventListener('pagehide', () => {
-    try {
-      localStorage.removeItem(KEY);
-    } catch {
-      // Nothing stored.
-    }
+    forget();
+    if (typeof caches !== 'undefined') caches.delete(CACHE).catch(() => undefined);
   });
 }

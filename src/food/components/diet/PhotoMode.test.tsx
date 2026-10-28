@@ -13,7 +13,7 @@ import { PhotoMode } from './PhotoMode';
 const recognize = vi.hoisted(() => vi.fn());
 const downloadModel = vi.hoisted(() => vi.fn(() => Promise.resolve(true)));
 const prepare = vi.hoisted(() => vi.fn());
-const kept = vi.hoisted(() => ({ photo: null as Blob | null }));
+const kept = vi.hoisted(() => ({ photo: null as Blob | null, gate: null as Promise<void> | null }));
 const failLog = vi.hoisted(() => ({ after: Infinity, calls: 0 }));
 vi.mock('../../diet/store', async (importOriginal) => {
   const real = await importOriginal<typeof import('../../diet/store')>();
@@ -35,7 +35,15 @@ vi.mock('../../photo/recognize', () => ({
 }));
 vi.mock('../../photo/pending', async (importOriginal) => {
   const real = await importOriginal<typeof import('../../photo/pending')>();
-  return { ...real, pendingPhoto: async () => kept.photo };
+  return {
+    ...real,
+    pendingPhoto: async () => kept.photo,
+    // A slow phone: keeping the photo takes a moment before it goes to the model.
+    markReading: async (photo: Blob, tries?: number) => {
+      await real.markReading(photo, tries);
+      await kept.gate;
+    },
+  };
 });
 
 const DATE = '2026-10-14';
@@ -48,6 +56,7 @@ beforeEach(async () => {
   downloadModel.mockClear();
   prepare.mockClear();
   kept.photo = null;
+  kept.gate = null;
   resetModelState();
   URL.createObjectURL = vi.fn(() => 'blob:photo');
   URL.revokeObjectURL = vi.fn();
@@ -167,7 +176,8 @@ describe('Zdjęcie posiłku', () => {
     });
     const { container } = render(<PhotoMode date={DATE} onLogged={vi.fn()} onDone={vi.fn()} />);
     await userEvent.setup().upload(inputs(container)[1]!, photo());
-    const steps = await screen.findByRole('status');
+    await waitFor(() => expect(container.querySelector('.fd-diet-steps')).not.toBeNull());
+    const steps = container.querySelector<HTMLElement>('.fd-diet-steps')!;
     expect(steps).toHaveTextContent('Zdjęcie odebrane');
     expect(steps).toHaveTextContent('Czekam na model');
     act(() => report({ step: 'load', share: 0.4, source: 'network' }));
@@ -194,6 +204,47 @@ describe('Zdjęcie posiłku', () => {
     expect(recognize).not.toHaveBeenCalled();
     expect(JSON.parse(localStorage.getItem(MARKER)!)).toMatchObject({ stage: 'camera' });
     fireEvent(camera, new Event('cancel'));
+    expect(localStorage.getItem(MARKER)).toBeNull();
+  });
+});
+
+describe('Znacznik na wypadek zamknięcia przez telefon', () => {
+  test('powrót na stronę bez zdjęcia zdejmuje znacznik aparatu; zdjęcie w analizie go zostawia', async () => {
+    let finish: (v: unknown) => void = () => undefined;
+    recognize.mockImplementation(() => new Promise((resolve) => (finish = resolve)));
+    const user = userEvent.setup();
+    const { container } = render(<PhotoMode date={DATE} onLogged={vi.fn()} onDone={vi.fn()} />);
+    vi.spyOn(inputs(container)[0]!, 'click').mockImplementation(() => undefined);
+    await user.click(screen.getByRole('button', { name: /Zrób zdjęcie/ }));
+    fireEvent(window, new Event('focus'));
+    expect(localStorage.getItem(MARKER)).toBeNull();
+
+    await user.upload(inputs(container)[1]!, photo());
+    await waitFor(() => expect(recognize).toHaveBeenCalled());
+    // „Inne zdjęcie” in the middle of the analysis, then back without one.
+    await user.click(screen.getByRole('button', { name: /Inne zdjęcie/ }));
+    fireEvent(inputs(container)[0]!, new Event('cancel'));
+    fireEvent(window, new Event('focus'));
+    expect(JSON.parse(localStorage.getItem(MARKER)!)).toMatchObject({ stage: 'reading' });
+    await act(async () => finish([]));
+  });
+
+  test('arkusz zamknięty, zanim zdjęcie trafiło do modelu: model się nie wczytuje, znacznika nie ma', async () => {
+    let open: () => void = () => undefined;
+    kept.gate = new Promise((resolve) => (open = resolve));
+    const { container, unmount } = render(<PhotoMode date={DATE} onLogged={vi.fn()} onDone={vi.fn()} />);
+    await userEvent.setup().upload(inputs(container)[1]!, photo());
+    expect(JSON.parse(localStorage.getItem(MARKER)!)).toMatchObject({ stage: 'reading' });
+    unmount();
+    await act(async () => open());
+    expect(recognize).not.toHaveBeenCalled();
+    expect(localStorage.getItem(MARKER)).toBeNull();
+  });
+
+  test('wyjaśnienie po awarii pokazuje się raz: znacznik schodzi, gdy ekran je pokaże', () => {
+    localStorage.setItem(MARKER, JSON.stringify({ stage: 'camera', at: Date.now(), tries: 0 }));
+    render(<PhotoMode date={DATE} resume={{ stage: 'camera', tries: 0 }} onLogged={vi.fn()} onDone={vi.fn()} />);
+    expect(screen.getByRole('alert')).toBeInTheDocument();
     expect(localStorage.getItem(MARKER)).toBeNull();
   });
 });
