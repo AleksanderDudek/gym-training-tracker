@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { modelState, resetModelState, setModelState } from './modelState';
 import type { Reply } from './recognize.worker';
 
 /** A stand-in worker: records what the page sends and lets the test answer. */
@@ -24,9 +25,14 @@ class FakeWorker {
 }
 
 vi.stubGlobal('Worker', FakeWorker);
-const { modelSaved, recognize, release, saveModel, warmUp } = await import('./recognize');
+const { failureOf, prepare, recognize, release, saveModel } = await import('./recognize');
 
-afterEach(() => release());
+const lastId = () => (FakeWorker.last.sent.at(-1) as { id: number }).id;
+
+afterEach(() => {
+  release();
+  resetModelState();
+});
 
 describe('recognize', () => {
   it('maps the worker’s ranking to dishes and stops reporting progress once the photo is done', async () => {
@@ -39,47 +45,118 @@ describe('recognize', () => {
     expect(first?.dish.id).toBe('pierogiRuskie');
     expect(rest).toEqual([]);
     expect(progress).toHaveBeenCalledTimes(1);
-    // A warm-up for the next photo must not move the finished screen back to „Pobieram…”.
-    warmUp();
-    w.reply({ type: 'progress', step: 'load', share: 0.5 });
+    // A download after the photo must not move the finished screen back to „Pobieram…”.
+    void saveModel().catch(() => undefined);
+    w.reply({ type: 'progress', step: 'load', share: 0.5, source: 'network' });
     expect(progress).toHaveBeenCalledTimes(1);
   });
 
   it('a worker error fails the photo it belongs to', async () => {
     const result = recognize(new Blob());
-    const id = (FakeWorker.last.sent.at(-1) as { id: number }).id;
-    FakeWorker.last.reply({ type: 'error', id, message: 'HTTP 404' });
+    FakeWorker.last.reply({ type: 'error', id: lastId(), message: 'HTTP 404' });
     await expect(result).rejects.toThrow('HTTP 404');
+  });
+
+  it('a photo that downloads the model itself shows the download, then confirms the copy', async () => {
+    const result = recognize(new Blob());
+    const w = FakeWorker.last;
+    const id = lastId();
+    w.reply({ type: 'progress', step: 'load', share: 0.25, source: 'network' });
+    expect(modelState()).toEqual({ kind: 'downloading', share: 0.25 });
+    w.reply({ type: 'result', id, top: [] });
+    await result;
+    expect(w.sent.at(-1)).toMatchObject({ type: 'save', fetchMissing: true });
+    w.reply({ type: 'saved', id: lastId(), saved: true });
+    await vi.waitFor(() => expect(modelState()).toEqual({ kind: 'ready' }));
+  });
+
+  it('reading the model from the phone is not a download', async () => {
+    setModelState({ kind: 'ready' });
+    void recognize(new Blob()).catch(() => undefined);
+    FakeWorker.last.reply({ type: 'progress', step: 'load', share: 0.5, source: 'copy' });
+    expect(modelState()).toEqual({ kind: 'ready' });
   });
 });
 
 describe('saveModel', () => {
-  const lastId = () => (FakeWorker.last.sent.at(-1) as { id: number }).id;
-
-  it('ends the worker once the files are saved, and remembers that they are', async () => {
-    expect(modelSaved()).toBe(false);
+  it('ends the worker once the files are saved, and the model counts as on the phone', async () => {
+    setModelState({ kind: 'missing', wait: null });
     const saving = saveModel();
     const w = FakeWorker.last;
+    expect(modelState()).toEqual({ kind: 'downloading', share: null });
     expect(w.sent.at(-1)).toMatchObject({ type: 'save' });
     w.reply({ type: 'saved', id: lastId(), saved: true });
     await expect(saving).resolves.toBe(true);
     expect(w.terminated).toBe(true);
-    expect(modelSaved()).toBe(true);
+    expect(modelState()).toEqual({ kind: 'ready' });
+  });
+
+  it('a look without fetching that finds nothing says „not yet”', async () => {
+    const looking = saveModel(false);
+    FakeWorker.last.reply({ type: 'saved', id: lastId(), saved: false });
+    await expect(looking).resolves.toBe(false);
+    expect(modelState()).toEqual({ kind: 'missing', wait: null });
+  });
+
+  it('a failed download shows as failed, offline when the network is gone', async () => {
+    const online = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    const saving = saveModel();
+    FakeWorker.last.reply({ type: 'error', id: lastId(), message: 'Failed to fetch' });
+    await expect(saving).rejects.toThrow('Failed to fetch');
+    expect(modelState()).toEqual({ kind: 'failed', reason: 'offline' });
+    online.mockRestore();
   });
 
   it('leaves the worker to a photo screen that took it meanwhile', async () => {
     const saving = saveModel();
     const w = FakeWorker.last;
     const id = lastId();
-    warmUp();
+    void recognize(new Blob()).catch(() => undefined);
     w.reply({ type: 'saved', id, saved: true });
     await saving;
     expect(w.terminated).toBe(false);
   });
 
-  it('rejects when the photo screen releases the worker first', async () => {
+  it('closing the photo screen does not throw away a download in progress', async () => {
     const saving = saveModel();
+    const w = FakeWorker.last;
+    const id = lastId();
+    release();
+    expect(w.terminated).toBe(false);
+    w.reply({ type: 'saved', id, saved: true });
+    await expect(saving).resolves.toBe(true);
+    expect(w.terminated).toBe(true);
+  });
+
+  it('rejects when the photo screen releases a worker that holds the model', async () => {
+    const saving = saveModel();
+    void recognize(new Blob()).catch(() => undefined);
     release();
     await expect(saving).rejects.toThrow('released');
+  });
+});
+
+describe('prepare', () => {
+  it('starts the download when the model is not on the phone, and nothing when it is', () => {
+    setModelState({ kind: 'ready' });
+    const before = FakeWorker.last;
+    prepare();
+    expect(FakeWorker.last).toBe(before);
+    setModelState({ kind: 'missing', wait: 'mobile' });
+    prepare();
+    expect(FakeWorker.last.sent.at(-1)).toMatchObject({ type: 'save', fetchMissing: true });
+    // The camera is open: nothing may load the model now.
+    expect(FakeWorker.last.sent.some((m) => (m as { type: string }).type === 'read')).toBe(false);
+  });
+});
+
+describe('failureOf', () => {
+  it('names memory, offline without the model, and the rest', () => {
+    expect(failureOf(new RangeError('WebAssembly.Memory(): could not allocate memory'))).toBe('memory');
+    const online = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    expect(failureOf(new Error('Failed to fetch'))).toBe('offline');
+    setModelState({ kind: 'ready' });
+    expect(failureOf(new Error('Failed to fetch'))).toBe('error');
+    online.mockRestore();
   });
 });

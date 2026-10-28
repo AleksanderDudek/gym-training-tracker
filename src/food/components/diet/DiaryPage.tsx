@@ -40,6 +40,7 @@ import { useWeeklyCheck } from '../../hooks/useWeeklyCheck';
 import { formatNumber } from '../../lib/format';
 import type { Dictionaries } from '../../lib/types';
 import { formatDistance } from '../../nearby/geo';
+import { interrupted, type Interrupted } from '../../photo/pending';
 import { weekday } from '../../prep/format';
 import { dayPlanTotals } from '../../prep/meals';
 import { nextPlanAfter, planCovering, planName } from '../../prep/store';
@@ -238,7 +239,14 @@ export default function DiaryPage() {
   const check = useWeeklyCheck(profile, clock);
   const today = clock.date;
   const date = state.date ?? today;
-  const [pickerOpen, setPickerOpen] = useState(false);
+  // Telefon zamknął aplikację w trakcie zdjęcia posiłku: „Dodaj zjedzone” wraca otwarte na „Zdjęcie”
+  // i mówi, co się stało. Raz — zamknięcie arkusza kończy sprawę.
+  const [resume, setResume] = useState(interrupted);
+  const [pickerOpen, setPickerOpen] = useState(() => resume !== null);
+  const onPicker = (open: boolean) => {
+    setPickerOpen(open);
+    if (!open) setResume(null);
+  };
 
   // „Dodaj zjedzone” z ekranu Dziś: arkusz otwiera się raz, a `dodaj` schodzi z adresu podmianą —
   // przeładowanie ani powrót do zakładki nie otworzą go drugi raz. Otwarcie już w renderze (stan
@@ -262,7 +270,8 @@ export default function DiaryPage() {
         hour={clock.hour}
         nowMs={clock.ms}
         pickerOpen={pickerOpen}
-        onPicker={setPickerOpen}
+        resume={resume}
+        onPicker={onPicker}
         onDate={(next) => update({ date: next === today ? null : next })}
       />
     </KcalShown.Provider>
@@ -278,6 +287,8 @@ interface ViewProps {
   hour: number;
   nowMs: number;
   pickerOpen: boolean;
+  /** Zdjęcie posiłku przerwane przez telefon — arkusz otwarty na „Zdjęcie”. */
+  resume: Interrupted | null;
   onPicker: (open: boolean) => void;
   onDate: (date: string) => void;
 }
@@ -291,7 +302,7 @@ function asPlanItem(food: Food): PlanItem {
   };
 }
 
-function TodayView({ profile, plan, date, today, hour, nowMs, pickerOpen, onPicker, onDate }: ViewProps) {
+function TodayView({ profile, plan, date, today, hour, nowMs, pickerOpen, resume, onPicker, onDate }: ViewProps) {
   const bridge = useBridge();
   const shown = useKcalShown();
   const entries = useEntries(date);
@@ -509,6 +520,7 @@ function TodayView({ profile, plan, date, today, hour, nowMs, pickerOpen, onPick
         past={!isToday}
         onClose={() => onPicker(false)}
         onLogged={bridge.toast}
+        resume={resume}
       />
       {shown && (
         <CheatMealSheet

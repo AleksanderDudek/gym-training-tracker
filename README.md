@@ -902,9 +902,14 @@ dla dania zostają na urządzeniu i wracają przy następnym zdjęciu. Model (ok
 w tle, kilka sekund po starcie aplikacji, gdy nic innego się nie dzieje (`src/food/photo/background.ts`)
 — nie przy „Oszczędzaniu danych”, na znanym połączeniu komórkowym ani na 2G; wtedy dopiero po zmianie
 sieci albo przy pierwszym zdjęciu. Potem działa z kopii service workera, także bez sieci; zdjęcie
-nie wychodzi z telefonu. Plik modelu nie jest w gicie: build pobiera przypiętą wersję z Hugging Face
+nie wychodzi z telefonu. Karta „Model rozpoznawania” na górze zakładki mówi, czy model jest w telefonie,
+ile się już pobrało i czemu czeka (dane komórkowe, brak sieci), z przyciskiem „Pobierz teraz”; zdjęcie
+przechodzi przez widoczne kroki (zdjęcie odebrane → model → uruchamianie → rozpoznawanie), a pewne
+danie od razu ląduje na talerzu z kcal i makro. Gdy telefon zamknie aplikację w trakcie (przy otwartym
+aparacie albo w czasie analizy), po ponownym otwarciu „Dodaj zjedzone” wraca na „Zdjęcie” z wyjaśnieniem
+i zachowanym zdjęciem (`src/food/photo/pending.ts`). Plik modelu nie jest w gicie: build pobiera przypiętą wersję z Hugging Face
 (`vite/photoModel.ts`, SHA-256), a wektory fraz robi `npm run food:dish-embeddings` (test pilnuje,
-żeby pasowały do katalogu). Szczegóły: `docs/superpowers/specs/2026-10-27-zdjecie-posilku-design.md`,
+żeby pasowały do katalogu). Szczegóły: `docs/superpowers/specs/2026-10-27-zdjecie-posilku-design.md` i `…/2026-10-28-zdjecie-status-design.md`,
 pomiary modeli: `docs/research/zdjecie-posilku-modele.md`.
 
 **Badania — dieta pod wyniki** (`#/jedzenie/badania`, piąty kafelek pod dziennikiem). Wyniki krwi
