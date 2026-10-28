@@ -19,6 +19,7 @@ import { DT, savedText } from './dietText';
 import { useKcalShown } from './kcalShown';
 import { FoodResults, PartsPicker, atGrams, badGrams, numberOrNull, partsOf, useMenus, type Part } from './PartsPicker';
 import { MacroLine } from './SuggestionList';
+import type { Interrupted } from '../../photo/pending';
 import { PhotoMode } from './PhotoMode';
 
 const T = text({
@@ -126,6 +127,11 @@ interface Props {
   onClose: () => void;
   /** Po zapisie: krótka wiadomość na dole ekranu (most do treningów). */
   onLogged: (text: string) => void;
+  /**
+   * Telefon zamknął aplikację w trakcie zdjęcia (`photo/pending.ts`): arkusz otwiera się od razu
+   * na „Zdjęcie” i mówi, co się stało.
+   */
+  resume?: Interrupted | null;
 }
 
 /** What the chosen food leaves of the day, on the ±100 band: kcal left, the target filled, or over it. */
@@ -151,7 +157,7 @@ export function FoodPicker({ open, onClose, ...rest }: Props) {
   );
 }
 
-type BodyProps = Omit<Props, 'open' | 'onClose'> & { onDone: () => void };
+type BodyProps = Omit<Props, 'open' | 'onClose' | 'resume'> & { onDone: () => void; resume?: Interrupted | null };
 
 type Mode = 'search' | 'photo' | 'set' | 'quick';
 
@@ -159,7 +165,7 @@ const QUICK = { name: '', kcal: '', protein: '', carbs: '', fat: '', save: false
 
 function PickerBody(props: BodyProps) {
   const shown = useKcalShown();
-  const [mode, setMode] = useState<Mode>('search');
+  const [mode, setMode] = useState<Mode>(props.resume ? 'photo' : 'search');
   // Bez liczenia kalorii nie ma „Tylko kalorie”: wpis z samymi kaloriami nic by tu nie powiedział.
   const options: { key: Mode; label: string }[] = [
     { key: 'search', label: T.search },
@@ -174,7 +180,7 @@ function PickerBody(props: BodyProps) {
       {current === 'search' ? (
         <SearchMode {...props} />
       ) : current === 'photo' ? (
-        <PhotoMode date={props.date} onLogged={props.onLogged} onDone={props.onDone} />
+        <PhotoMode date={props.date} resume={props.resume} onLogged={props.onLogged} onDone={props.onDone} />
       ) : current === 'set' ? (
         <SetBuilder {...props} />
       ) : (

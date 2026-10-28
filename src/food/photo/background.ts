@@ -14,6 +14,8 @@
  *   (which ends the shared worker) is followed by another try.
  */
 
+import { setModelState } from './modelState';
+
 /** The parts of the Network Information API this reads (Chrome on Android; none in Safari or Firefox). */
 interface Connection extends EventTarget {
   saveData?: boolean;
@@ -59,6 +61,8 @@ function attempt(): void {
       (saved) => {
         // Not saved although it could (a full disk): trying again would only download it again.
         if (saved || now) return;
+        // The photo screen says why it is not there yet.
+        setModelState({ kind: 'missing', wait: navigator.onLine ? 'mobile' : 'offline' });
         if (!navigator.onLine) addEventListener('online', () => later(attempt), { once: true });
         else c?.addEventListener('change', () => later(attempt), { once: true });
       },
@@ -76,7 +80,7 @@ export function downloadModelInBackground(): void {
   if (started) return;
   started = true;
   const sw = container();
-  if (!sw) return;
+  if (!sw) return setModelState({ kind: 'unsupported' });
   if (sw.controller) later(attempt);
   else sw.addEventListener('controllerchange', () => later(attempt), { once: true });
 }

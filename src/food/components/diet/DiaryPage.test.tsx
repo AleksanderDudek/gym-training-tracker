@@ -361,6 +361,21 @@ describe('Dziennik', () => {
     expect(within(dialog).getByRole('searchbox', { name: 'Szukaj jedzenia' })).toHaveFocus();
   });
 
+  test('telefon zamknął aplikację przy otwartym aparacie: arkusz wraca na „Zdjęcie” z wyjaśnieniem, raz', async () => {
+    await saveProfile(completeProfile({ startDate: '2026-10-01' }));
+    localStorage.setItem('gt-photo-run', JSON.stringify({ stage: 'camera', at: Date.now(), tries: 0 }));
+    const user = userEvent.setup();
+    renderWithBridge(<DiaryPage />);
+    const dialog = (await screen.findByRole('dialog', { name: 'Dodaj zjedzone' })) as HTMLDialogElement;
+    await waitFor(() => expect(dialog.open).toBe(true));
+    expect(within(dialog).getByRole('button', { name: 'Zdjęcie', pressed: true })).toBeInTheDocument();
+    expect(within(dialog).getByRole('alert')).toHaveTextContent(/Telefon zamknął aplikację/);
+    await user.click(within(dialog).getByRole('button', { name: 'Zamknij' }));
+    expect(localStorage.getItem('gt-photo-run')).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Dodaj zjedzone' }));
+    expect(within(dialog).getByRole('searchbox', { name: 'Szukaj jedzenia' })).toBeInTheDocument();
+  });
+
   test('produkt z bazy: wyszukany, z gramaturą zmienioną przed zapisem — i ile zostanie z dnia', async () => {
     await saveProfile(profile());
     await logQuick(TODAY, 'Śniadanie', 1200, { protein: 60, carbs: 120, fat: 40 });

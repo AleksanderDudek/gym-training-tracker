@@ -486,3 +486,22 @@ table.fd-diet-weeks th:first-child{min-width:84px;white-space:nowrap}
 .fd-diet-scale{display:grid;gap:4px}
 .fd-diet-scale .seg button{font-size:12.5px;padding-left:4px;padding-right:4px}
 .fd-diet-plate-total{margin:0;font-size:14px}
+.fd-diet-dish-kcal{font-size:12px;font-weight:400;opacity:.75}
+.fd-diet-dish-kcal::before{content:"·";margin:0 4px 0 2px}
+.fd-diet-model{display:grid;gap:6px;justify-items:start;padding:10px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+.fd-diet-model-line{display:flex;gap:8px;align-items:flex-start;margin:0;font-size:13px;line-height:1.4}
+.fd-diet-model-line svg{flex:none;margin-top:2px}
+.fd-diet-model-ok{color:var(--ok)}
+.fd-diet-model-bar{width:100%;height:8px;accent-color:var(--steel)}
+.fd-diet-steps{display:grid;gap:4px}
+.fd-diet-steps ol{list-style:none;margin:0;padding:0;display:grid;gap:4px;font-size:13.5px}
+.fd-diet-steps li{display:flex;gap:8px;align-items:center}
+.fd-diet-steps li svg{flex:none}
+.fd-diet-step-done svg{color:var(--ok)}
+.fd-diet-step-now{font-weight:600}
+.fd-diet-step-todo{color:var(--ink-soft)}
+.fd-diet-photo-note{padding:10px;border-left:3px solid var(--warn);background:var(--surface);border-radius:var(--r);font-size:13.5px}
+.fd-diet-photo-note p{margin:0}
+.fd-diet-photo-note p+p{margin-top:6px}
+.fd-diet-photo-result{scroll-margin-top:12px}
+.fd-diet-photo-result details{margin-top:4px}

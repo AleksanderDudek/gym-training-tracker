@@ -17,14 +17,14 @@ import { PHOTO_MODEL } from './model';
 import { loadTable, rank, type DishTable } from './score';
 
 export type Request =
-  | { type: 'warm'; base: string }
   | { type: 'save'; id: number; base: string; fetchMissing: boolean }
   | { type: 'read'; id: number; base: string; image: Blob };
 export type Reply =
-  | { type: 'progress'; step: 'load' | 'read'; share: number | null }
+  /** `load`: the model file (`source` says from where); `start`: ONNX Runtime builds the session; `read`: the photo itself. */
+  | { type: 'progress'; step: 'load' | 'start' | 'read'; share: number | null; source?: 'network' | 'copy' }
   | { type: 'result'; id: number; top: { id: string; score: number }[] }
   | { type: 'saved'; id: number; saved: boolean }
-  | { type: 'error'; id: number | null; message: string };
+  | { type: 'error'; id: number; message: string };
 
 // The app's types are the page's (DOM); a worker's own global is only this much of it.
 const scope = self as unknown as { postMessage(m: Reply): void; onmessage: ((e: MessageEvent<Request>) => void) | null };
@@ -44,6 +44,8 @@ ort.env.wasm.proxy = false;
  * reads it through, for the service worker's copy, without holding 55 MB here.
  */
 async function download(url: string, keep = true): Promise<Uint8Array> {
+  const source = typeof caches !== 'undefined' && (await has(url)) ? 'copy' : 'network';
+  post({ type: 'progress', step: 'load', share: 0, source });
   const res = await fetch(url);
   if (!res.ok || !res.body) throw new Error(`HTTP ${res.status} for ${url}`);
   const total = PHOTO_MODEL.bytes;
@@ -60,7 +62,7 @@ async function download(url: string, keep = true): Promise<Uint8Array> {
     const share = got / total;
     if (share - last >= 0.01) {
       last = share;
-      post({ type: 'progress', step: 'load', share });
+      post({ type: 'progress', step: 'load', share, source });
     }
   }
   if (got !== total) throw new Error(`model is ${got} bytes, expected ${total}`);
@@ -131,7 +133,7 @@ function load(base: string) {
         return new Int8Array(await r.arrayBuffer());
       }),
     ]);
-    post({ type: 'progress', step: 'load', share: null });
+    post({ type: 'progress', step: 'start', share: null });
     const session = await ort.InferenceSession.create(model, { executionProviders: ['wasm'], graphOptimizationLevel: 'all' });
     return { session, table: loadTable(meta, bytes) };
   })().catch((e: unknown) => {
@@ -165,10 +167,6 @@ async function pixels(image: Blob): Promise<ort.Tensor> {
 
 scope.onmessage = async ({ data: req }) => {
   try {
-    if (req.type === 'warm') {
-      await load(req.base);
-      return;
-    }
     if (req.type === 'save') {
       post({ type: 'saved', id: req.id, saved: await save(req.base, req.fetchMissing) });
       return;
@@ -180,6 +178,6 @@ scope.onmessage = async ({ data: req }) => {
     if (!pooled) throw new Error('no pooler_output');
     post({ type: 'result', id: req.id, top: rank(table, pooled.data as Float32Array, PHOTO_MODEL.logitScale) });
   } catch (e) {
-    post({ type: 'error', id: req.type === 'warm' ? null : req.id, message: e instanceof Error ? e.message : String(e) });
+    post({ type: 'error', id: req.id, message: e instanceof Error ? e.message : String(e) });
   }
 };
