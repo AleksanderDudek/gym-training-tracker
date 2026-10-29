@@ -94,6 +94,7 @@ const T = text({
     refSummary: (n: number, low: string, high: string, own: string) => `Podobne w bazie (${n}): ${low === high ? low : `${low}–${high}`} kcal/100 g · to danie ${own}`,
     refSummaryMacros: (n: number) => `Podobne w bazie (${n})`,
     refNone: 'W bazie nie ma nic o podobnej nazwie.',
+    refLoading: 'Szukam podobnych w bazie produktów…',
     refPer100: (kcal: string) => `${kcal} kcal/100 g`,
     refUse: 'Użyj',
     refUsing: (name: string) => `Liczę z wartości: ${name}`,
@@ -180,6 +181,7 @@ const T = text({
     refSummary: (n: number, low: string, high: string, own: string) => `Similar in the database (${n}): ${low === high ? low : `${low}–${high}`} kcal/100 g · this dish ${own}`,
     refSummaryMacros: (n: number) => `Similar in the database (${n})`,
     refNone: 'Nothing with a similar name in the database.',
+    refLoading: 'Looking for similar foods in the product database…',
     refPer100: (kcal: string) => `${kcal} kcal/100 g`,
     refUse: 'Use',
     refUsing: (name: string) => `Counted from: ${name}`,
@@ -242,11 +244,13 @@ interface Props {
   resume?: Interrupted | null;
   /** The diary's search over products, recipes, menus and own foods: „Podobne w bazie” for each dish. */
   find?: (query: string) => readonly Food[];
+  /** The product database is still loading: „nothing similar” would not be true yet. */
+  findLoading?: boolean;
   onLogged: (text: string) => void;
   onDone: () => void;
 }
 
-export function PhotoMode({ date, resume = null, find, onLogged, onDone }: Props) {
+export function PhotoMode({ date, resume = null, find, findLoading = false, onLogged, onDone }: Props) {
   const shown = useKcalShown();
   const model = useModelState();
   const [stage, setStage] = useState<Stage>(resume ? { kind: 'interrupted', at: resume.stage, tries: resume.tries } : { kind: 'start' });
@@ -345,8 +349,10 @@ export function PhotoMode({ date, resume = null, find, onLogged, onDone }: Props
       if (mine !== run.current) return;
       tries.current = 0;
       clearRun();
-      const notFood = (suggestions[0]?.cos ?? 1) < NOT_FOOD_COS;
+      const notFood = !suggestions.length || (suggestions[0]!.cos ?? 1) < NOT_FOOD_COS;
       setStage({ kind: 'done', suggestions, notFood });
+      // A guess from an earlier photo stays on the plate as it is: this photo's chips are about this photo.
+      setItems((list) => list.map((i) => (i.alts ? { ...i, alts: undefined } : i)));
       if (!notFood) place(suggestions);
     } catch (e) {
       // A newer photo or a closed screen ended this one; only the current photo's failure is news.
@@ -387,8 +393,11 @@ export function PhotoMode({ date, resume = null, find, onLogged, onDone }: Props
   const choose = (dish: Dish) =>
     setItems((list) => {
       const guess = list.findIndex((i) => i.alts);
-      if (guess < 0 || list.some((i) => i.dish.id === dish.id)) return list.some((i) => i.dish.id === dish.id) ? list.filter((i) => i.dish.id !== dish.id) : [...list, newItem(dish)];
-      return list.map((i, n) => (n === guess ? newItem(dish) : i));
+      const on = list.some((i) => i.dish.id === dish.id);
+      // „Stuknij właściwe”: the guess itself is confirmed, another dish takes its place.
+      if (guess >= 0 && list[guess]!.dish.id === dish.id) return list.map((i, n) => (n === guess ? { ...i, alts: undefined } : i));
+      if (guess >= 0 && !on) return list.map((i, n) => (n === guess ? newItem(dish) : i));
+      return on ? list.filter((i) => i.dish.id !== dish.id) : [...list, newItem(dish)];
     });
   // Touching an item confirms it: it is no longer only the model's guess.
   const update = (id: string, patch: Partial<PlateItem>) =>
@@ -508,9 +517,11 @@ export function PhotoMode({ date, resume = null, find, onLogged, onDone }: Props
         {notFood && (
           <div className="fd-diet-answer" role="status">
             <p className="fd-diet-answer-what">{T.notFood}</p>
-            <button type="button" className="btn ghost sm" onClick={showAnyway}>
-              {T.showAnyway}
-            </button>
+            {stage.kind === 'done' && stage.suggestions.length > 0 && (
+              <button type="button" className="btn ghost sm" onClick={showAnyway}>
+                {T.showAnyway}
+              </button>
+            )}
           </div>
         )}
         {suggestions.length > 0 && (
@@ -550,7 +561,7 @@ export function PhotoMode({ date, resume = null, find, onLogged, onDone }: Props
           </h3>
           <ul className="fd-diet-plate-list">
             {items.map((item) => (
-              <PlateRow key={item.dish.id} item={item} shown={shown} find={find} onChange={(p) => update(item.dish.id, p)} onRemove={() => toggle(item.dish)} />
+              <PlateRow key={item.dish.id} item={item} shown={shown} find={find} findLoading={findLoading} onChange={(p) => update(item.dish.id, p)} onRemove={() => toggle(item.dish)} />
             ))}
           </ul>
           {total && items.length > 1 && (
@@ -701,11 +712,12 @@ interface RowProps {
   item: PlateItem;
   shown: boolean;
   find?: (query: string) => readonly Food[];
+  findLoading: boolean;
   onChange: (p: Partial<PlateItem>) => void;
   onRemove: () => void;
 }
 
-function PlateRow({ item, shown, find, onChange, onRemove }: RowProps) {
+function PlateRow({ item, shown, find, findLoading, onChange, onRemove }: RowProps) {
   const id = useId();
   const e = itemEstimate(item);
   const range = itemRange(item);
@@ -754,15 +766,30 @@ function PlateRow({ item, shown, find, onChange, onRemove }: RowProps) {
         {shown && ' · '}
         {T.macros(num(e.protein), num(e.carbs), num(e.fat))}
       </p>
-      {find && <Similar item={item} shown={shown} find={find} onChange={onChange} />}
+      {find && <Similar item={item} shown={shown} find={find} findLoading={findLoading} onChange={onChange} />}
     </li>
   );
 }
 
 /** „Podobne w bazie”: foods with a similar name and their values, to check the estimate against — or count from. */
-function Similar({ item, shown, find, onChange }: Required<Pick<RowProps, 'item' | 'shown' | 'find' | 'onChange'>>) {
+function Similar({ item, shown, find, findLoading, onChange }: Required<Pick<RowProps, 'item' | 'shown' | 'find' | 'findLoading' | 'onChange'>>) {
   const refs = useMemo(() => similarFoods(item.dish, find), [item.dish, find]);
-  if (!refs.length) return <p className="fd-diet-meta">{T.refNone}</p>;
+  // Chosen values stay undoable even if the list has changed under them (the database loaded later).
+  const using = item.ref && (
+    <p className="fd-diet-ref-using">
+      {T.refUsing(item.ref.name)}{' '}
+      <button type="button" className="btn ghost sm" onClick={() => onChange({ ref: undefined })}>
+        {T.refBack}
+      </button>
+    </p>
+  );
+  if (!refs.length)
+    return (
+      <>
+        {using}
+        <p className="fd-diet-meta">{findLoading ? T.refLoading : T.refNone}</p>
+      </>
+    );
   const kcals = refs.map((r) => r.per100.kcal);
   const summary = shown
     ? T.refSummary(refs.length, formatNumber(Math.min(...kcals), 0), formatNumber(Math.max(...kcals), 0), T.refPer100(formatNumber(item.dish.per100.kcal, 0)))
@@ -770,14 +797,7 @@ function Similar({ item, shown, find, onChange }: Required<Pick<RowProps, 'item'
   return (
     <details className="fd-diet-ref" open={!!item.ref}>
       <summary>{summary}</summary>
-      {item.ref && (
-        <p className="fd-diet-ref-using">
-          {T.refUsing(item.ref.name)}{' '}
-          <button type="button" className="btn ghost sm" onClick={() => onChange({ ref: undefined })}>
-            {T.refBack}
-          </button>
-        </p>
-      )}
+      {using}
       <ul className="fd-diet-ref-list">
         {refs.map((r) => (
           <li key={r.key}>

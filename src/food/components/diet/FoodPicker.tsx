@@ -191,10 +191,10 @@ function PickerBody(props: BodyProps) {
 }
 
 /** „Zdjęcie” z wyszukiwaniem z „Szukaj”: pod każdym daniem podobne produkty, przepisy i pozycje lokali z bazy. */
-function PhotoBody({ date, resume, pool, products, dict, onLogged, onDone }: BodyProps) {
+function PhotoBody({ date, resume, pool, products, dict, productsLoading, onLogged, onDone }: BodyProps) {
   const chains = useMenus();
   const find = useCallback((query: string) => searchFoods({ query, pool, chains, products, dict, noSets: true }), [pool, chains, products, dict]);
-  return <PhotoMode date={date} resume={resume} find={find} onLogged={onLogged} onDone={onDone} />;
+  return <PhotoMode date={date} resume={resume} find={find} findLoading={productsLoading} onLogged={onLogged} onDone={onDone} />;
 }
 
 /** Zapis raz: podwójne stuknięcie nie może zapisać tego samego posiłku dwa razy. */
