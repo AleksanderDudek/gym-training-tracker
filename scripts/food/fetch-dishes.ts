@@ -24,6 +24,8 @@ import { strFromU8, unzipSync } from 'fflate';
 import { fetchWithRetry } from './http';
 
 const OUT = 'src/food/photo/data/dishes.json';
+// Where each value comes from, for the tests and for anyone checking a number; the app does not load it.
+const SOURCES_OUT = 'src/food/photo/data/dish-sources.json';
 
 const FNDDS = {
   name: 'USDA FNDDS 2021-2023 (FoodData Central survey foods, release 2024-10-31)',
@@ -702,12 +704,11 @@ function rounded(n: Nutrients): Record<string, number> {
 }
 
 for (const id of Object.keys(PARTS)) if (id in DISHES) throw new Error(`${id} is both a part and a dish`);
-const entry = (key: string) => {
-  const b = build(key);
-  return { per100: rounded(b.per100), source: b.source };
-};
+const entry = (key: string) => ({ per100: rounded(build(key).per100) });
 const dishes = Object.fromEntries(Object.keys(DISHES).sort().map((id) => [id, entry(id)]));
 const sauces = Object.fromEntries(Object.keys(SAUCES).sort().map((id) => [id, entry(`sauce:${id}`)]));
+const dishSources = Object.fromEntries(Object.keys(DISHES).sort().map((id) => [id, build(id).source]));
+const sauceSources = Object.fromEntries(Object.keys(SAUCES).sort().map((id) => [id, build(`sauce:${id}`).source]));
 
 const out = {
   source: {
@@ -727,6 +728,7 @@ const out = {
 };
 await mkdir('src/food/photo/data', { recursive: true });
 await writeFile(OUT, `${JSON.stringify(out, null, 1)}\n`);
-const count = (db: string) => Object.values(dishes).filter((d) => d.source.db === db).length;
+await writeFile(SOURCES_OUT, `${JSON.stringify({ source: out.source, dishes: dishSources, sauces: sauceSources }, null, 1)}\n`);
+const count = (db: string) => Object.values(dishSources).filter((s) => s.db === db).length;
 console.log(`${OUT}: ${Object.keys(dishes).length} dishes (FNDDS ${count(FNDDS.db)}, SR ${count(SR.db)}, composed ${count('composed')}), ${Object.keys(sauces).length} sauces`);
 for (const m of missing) console.log(`  missing, counted as 0: ${m}`);

@@ -38,5 +38,5 @@ export const FAT_LIGHT: FatScale = { step: 1 };
 export const sweet = (step: number, base: SweetLevel = 'usual'): SweetScale => ({ step, base });
 export const sauce = (kind: SauceKind, step: number, base: SauceLevel = 'usual'): SauceScale => ({ kind, step, base });
 
-export type Entry = Omit<Dish, 'per100' | 'source'>;
+export type Entry = Omit<Dish, 'per100'>;
 

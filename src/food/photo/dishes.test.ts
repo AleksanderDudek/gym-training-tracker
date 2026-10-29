@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import SOURCES from './data/dish-sources.json';
 import data from './data/dishes.json';
 import {
   DISHES,
@@ -12,6 +13,7 @@ import {
   estimate,
   type Choices,
   type Dish,
+  type DishSource,
 } from './dishes';
 
 // ethz/food101, the 101 class names.
@@ -94,16 +96,19 @@ describe('DISHES', () => {
     }
   });
 
-  it('names its source: a USDA food, or a recipe of them', () => {
+  it('names its source: a USDA food, or a recipe of them (data/dish-sources.json, outside the app)', () => {
+    const sources = SOURCES.dishes as Record<string, DishSource>;
+    expect(Object.keys(sources).sort()).toEqual(DISHES.map((d) => d.id).sort());
     for (const d of DISHES) {
-      if (d.source.db === 'composed') {
-        expect(d.source.note, d.id).toBeTruthy();
-        expect(d.source.recipe?.length, d.id).toBeGreaterThan(0);
-        for (const line of d.source.recipe!) expect(line.g, d.id).toBeGreaterThan(0);
+      const source = sources[d.id]!;
+      if (source.db === 'composed') {
+        expect(source.note, d.id).toBeTruthy();
+        expect(source.recipe?.length, d.id).toBeGreaterThan(0);
+        for (const line of source.recipe!) expect(line.g, d.id).toBeGreaterThan(0);
       } else {
-        expect(['FNDDS 2021-2023', 'SR Legacy'], d.id).toContain(d.source.db);
-        expect(d.source.code, d.id).toBeGreaterThan(0);
-        expect(d.source.description, d.id).toBeTruthy();
+        expect(['FNDDS 2021-2023', 'SR Legacy'], d.id).toContain(source.db);
+        expect(source.code, d.id).toBeGreaterThan(0);
+        expect(source.description, d.id).toBeTruthy();
       }
     }
   });

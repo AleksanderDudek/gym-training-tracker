@@ -59,7 +59,7 @@ export const ENTRIES: readonly Entry[] = [
   { id: 'saltedPeanuts', label: say('Orzeszki ziemne solone', 'Salted peanuts'), prompts: ['salted peanuts', 'roasted peanuts in a bowl'], group: 'snack', portion: p(30, HANDFUL), adjust: {} },
   { id: 'trailMix', label: say('Mieszanka studencka', 'Trail mix'), prompts: ['trail mix', 'mix of nuts, raisins and chocolate pieces'], group: 'snack', portion: p(40, HANDFUL), adjust: {} },
   { id: 'driedFruitMix', label: say('Suszone owoce', 'Dried fruit'), prompts: ['dried fruit', 'a plate of dried apricots, prunes, figs and raisins'], group: 'snack', portion: p(50, HANDFUL), adjust: {} },
-  { id: 'riceCakes', label: say('Wafle ryżowe', 'Rice cakes'), prompts: ['rice cakes', 'round puffed rice crackers'], group: 'snack', portion: p(20, PIECES_FEW(2)), adjust: {} },
+  { id: 'riceCakes', label: say('Wafle ryżowe', 'Rice cakes'), prompts: ['puffed rice cakes', 'a stack of round puffed rice crackers'], group: 'snack', portion: p(20, PIECES_FEW(2)), adjust: {} },
   { id: 'granolaBar', label: say('Baton zbożowy', 'Granola bar'), prompts: ['granola bar', 'a chewy cereal bar with oats and nuts'], group: 'snack', portion: p(40, PIECE), adjust: {} },
   { id: 'energyBalls', label: say('Kulki mocy', 'Energy balls'), prompts: ['energy balls', 'date and oat balls rolled in coconut or cocoa'], group: 'snack', portion: p(60, PIECES_FEW(3)), adjust: {} },
   { id: 'beefJerky', label: say('Suszone mięso (jerky)', 'Beef jerky'), prompts: ['beef jerky', 'dried strips of seasoned beef'], group: 'snack', portion: p(30, SERVING), adjust: {} },

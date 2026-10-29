@@ -105,7 +105,9 @@ export const DISHES: Record<string, Source> = {
   mandazi: recipe('fried coconut-milk dough triangles with cardamom', [[I.flour, 100], [I.sugar, 15], [I.coconutMilk, 40], [I.egg, 15], [I.oil, 18]], { yield: 0.85 }),
   maafe: recipe('peanut stew with chicken, tomato, carrot and onion on rice', [[I.chickenThigh, 100], [peanutButter, 35], [I.tomatoPaste, 15], [cookedOnion, 40], [I.cookedCarrot, 30], [I.broth, 100], [I.rice, 150], [I.oil, 5]]),
   // Biltong: air-dried lean beef; about a third of the raw weight is left.
-  biltong: recipe('lean raw beef dried to about 38 % of its weight', [[I.rawBeefTenderloin, 100]], { yield: 0.38 }),
+  // Biltong is cut from silverside or eye of round, leaner than tenderloin: about 55 g protein and
+  // under 10 g fat per 100 g once dried.
+  biltong: recipe('lean raw beef (eye of round) dried to about 38 % of its weight', [[S(174049, 'Beef, round, eye of round, roast, separable lean only'), 100]], { yield: 0.38 }),
   okraStew: recipe('okra stewed with tomato, onion and palm oil', [[okra, 150], [I.tinnedTomatoes, 60], [cookedOnion, 40], [palmOil, 10]]),
 
   // --- Caucasus ---

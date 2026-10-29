@@ -112,6 +112,7 @@ export const DISHES: Record<string, Source> = {
   gemista: recipe('tomatoes and peppers stuffed with rice, onion, herbs and olive oil', [[I.rice, 90], [I.tomato, 160], [I.pepper, 70], [I.oliveOil, 16], [I.onion, 14]]),
   fasolada: recipe('white beans, tomato, carrot, celery, onion, olive oil, water', [[I.whiteBeans, 130], [S(170051, 'Tomatoes, red, ripe, canned, packed in tomato juice'), 50], [I.cookedCarrot, 25], [S(169989, 'Celery, cooked, boiled, drained, without salt'), 15], [I.onion, 15], [I.oliveOil, 12], [I.water, 103]]),
   loukoumades: recipe('fried yeast dough balls with honey and walnuts', [[F(53520170, 'Doughnut holes'), 90], [I.honey, 25], [I.walnuts, 5]]),
-  saganaki: recipe('hard cheese dusted with flour and fried in olive oil', [[gruyere, 75], [I.flour, 6], [I.oliveOil, 12]]),
+  // Pan-fried, not deep-fried: the cheese takes up a few grams of oil, most stays in the pan.
+  saganaki: recipe('hard cheese dusted with flour and fried in olive oil', [[gruyere, 85], [I.flour, 5], [I.oliveOil, 6]]),
   keftedes: recipe('beef and lamb meatballs with bread, egg, onion, fried in olive oil', [[I.beefGround, 80], [I.lambGround, 30], [I.bread, 15], [I.egg, 10], [I.onion, 10], [I.oliveOil, 12]]),
 };
