@@ -12,6 +12,7 @@ import {
   type Dish,
   type DishGroup,
   type Estimate,
+  type Macros,
 } from './dishes';
 
 /**
@@ -24,7 +25,26 @@ export interface PlateItem {
   /** Multiple of `dish.portion.g`, in steps of ¼ (`PORTION_STEPS`). */
   portion: number;
   choices: Choices;
+  /**
+   * The model's first guess, not yet confirmed: the other dishes it found likely. The range covers
+   * them; another suggestion replaces this item instead of joining it. Gone once the person
+   * touches the item.
+   */
+  alts?: readonly Dish[];
+  /** Values per 100 g from a food in the database with a similar name, in place of the catalog's. */
+  ref?: PlateRef;
 }
+
+/** A food from the app's database („Podobne w bazie”): its name and values per 100 g. */
+export interface PlateRef {
+  key: string;
+  name: string;
+  detail: string;
+  per100: { kcal: number; protein: number; carbs: number; fat: number };
+}
+
+/** A suggestion with less of the probability than this is not one of the „other likely dishes”. */
+export const ALT_SHARE = 0.1;
 
 /** ¼ to 3 portions. A quarter is a bite of cake; three is a family-size plate. */
 export const PORTION_STEPS: readonly number[] = Array.from({ length: 12 }, (_, i) => (i + 1) / 4);
@@ -40,24 +60,54 @@ export function portionWord(portion: number): string {
   return say('duża porcja', 'large portion');
 }
 
+/** The values the item is counted from: the catalog's, or the chosen database food's (sugars stay the dish's, at most its carbs). */
+function baseOf(item: PlateItem): Macros | undefined {
+  const r = item.ref?.per100;
+  return r && { ...r, sugars: Math.min(item.dish.per100.sugars, r.carbs) };
+}
+
 export function itemEstimate(item: PlateItem): Estimate {
-  return estimate(item.dish, gramsOf(item), item.choices);
+  return estimate(item.dish, gramsOf(item), item.choices, baseOf(item));
+}
+
+/**
+ * The honest range of an item: its own, or — while it is the model's unconfirmed guess — wide
+ * enough for each other likely dish at the portion it would have (`newItem`).
+ */
+export function itemRange(item: PlateItem): { low: number; high: number } {
+  const e = itemEstimate(item);
+  let { low, high } = e;
+  for (const dish of item.alts ?? []) {
+    const alt = itemEstimate(newItem(dish));
+    low = Math.min(low, alt.low);
+    high = Math.max(high, alt.high);
+  }
+  return { low, high };
+}
+
+/** The other likely dishes of a photo: those with at least `ALT_SHARE` of the top five's probability. */
+export function likelyAlts(suggestions: readonly { dish: Dish; score: number }[]): Dish[] {
+  const total = suggestions.reduce((s, x) => s + x.score, 0) || 1;
+  return suggestions.slice(1).flatMap((s) => (s.score / total >= ALT_SHARE ? [s.dish] : []));
 }
 
 export function plateTotal(items: readonly PlateItem[]): Estimate {
   const all = items.map(itemEstimate);
+  const ranges = items.map(itemRange);
   const sum = (k: keyof Estimate) => all.reduce((s, e) => s + e[k], 0);
   // Independent errors add in quadrature, not linearly: a plate of three is not three times as unsure.
+  // An unconfirmed guess may be lopsided (pho is lighter than pad thai): each side is added on its own.
   const kcal = Math.round(sum('kcal'));
-  const spread = Math.sqrt(all.reduce((s, e) => s + ((e.high - e.low) / 2) ** 2, 0));
+  const below = Math.sqrt(all.reduce((s, e, i) => s + (e.kcal - ranges[i]!.low) ** 2, 0));
+  const above = Math.sqrt(all.reduce((s, e, i) => s + (ranges[i]!.high - e.kcal) ** 2, 0));
   return {
     kcal,
     protein: Math.round(sum('protein') * 10) / 10,
     carbs: Math.round(sum('carbs') * 10) / 10,
     fat: Math.round(sum('fat') * 10) / 10,
     sugars: Math.round(sum('sugars') * 10) / 10,
-    low: Math.max(0, Math.round(kcal - spread)),
-    high: Math.round(kcal + spread),
+    low: Math.max(0, Math.round(kcal - below)),
+    high: Math.round(kcal + above),
   };
 }
 
@@ -77,14 +127,16 @@ export function choiceWords(item: PlateItem): string[] {
 export function plateFood(item: PlateItem): Food {
   const grams = gramsOf(item);
   const e = itemEstimate(item);
-  const per100 = adjustedPer100(item.dish, item.choices);
+  const per100 = adjustedPer100(item.dish, item.choices, baseOf(item));
   const words = choiceWords(item);
+  const ref = item.ref?.name;
   return {
     key: `dish:${item.dish.id}`,
     name: words.length ? `${item.dish.label} (${words.join(', ')})` : item.dish.label,
     detail: say('ze zdjęcia, szacunek', 'from a photo, an estimate'),
     source: 'dish',
-    amountLabel: `${grams} g`,
+    // The diary shows the amount, so that is where it says whose values were used.
+    amountLabel: ref ? say(`${grams} g, wartości jak ${ref}`, `${grams} g, values as ${ref}`) : `${grams} g`,
     nutrients: { kcal: e.kcal, protein: e.protein, carbs: e.carbs, fat: e.fat },
     per100: { kcal: per100.kcal, protein: per100.protein, carbs: per100.carbs, fat: per100.fat },
     grams,
@@ -150,3 +202,35 @@ export function rememberItems(items: readonly PlateItem[]): void {
 }
 
 export const DISH_CHOICES_KEY = KEY;
+
+/**
+ * Foods in the app's database whose name is like the dish's („Podobne w bazie”): the whole name
+ * first, then its first two words, then the first one; only foods with values per 100 g. `find`
+ * is the diary's own search (`searchFoods`), so the list is what typing the name would show.
+ * A name match far from the dish in energy (`PLAUSIBLE`) is something else that shares a word —
+ * breadcrumbs „do schabowego”, a dry pasta for a cooked one — and a second copy of the same food
+ * (same name, same kcal) adds nothing.
+ */
+/** How far from the dish's kcal/100 g a food may be and still be the same kind of thing. */
+const PLAUSIBLE = [0.5, 2] as const;
+
+export function similarFoods(dish: Dish, find: (query: string) => readonly Food[], limit = 3): PlateRef[] {
+  const words = dish.label
+    .replace(/\([^)]*\)/g, ' ')
+    .split(/\s+/)
+    .filter((w) => w.length >= 3);
+  const queries = [...new Set([words.join(' '), words.slice(0, 2).join(' '), words[0] ?? ''])].filter(Boolean);
+  const out: PlateRef[] = [];
+  for (const q of queries) {
+    for (const f of find(q)) {
+      if (out.length >= limit) return out;
+      if (!f.per100 || f.source === 'set' || f.source === 'dish') continue;
+      const ratio = f.per100.kcal / dish.per100.kcal;
+      if (!(ratio >= PLAUSIBLE[0] && ratio <= PLAUSIBLE[1])) continue;
+      const same = (r: PlateRef) => r.key === f.key || (normalizeForSearch(r.name) === normalizeForSearch(f.name) && r.per100.kcal === f.per100!.kcal);
+      if (out.some(same)) continue;
+      out.push({ key: f.key, name: f.name, detail: f.detail, per100: { kcal: f.per100.kcal, protein: f.per100.protein, carbs: f.per100.carbs, fat: f.per100.fat } });
+    }
+  }
+  return out;
+}

@@ -721,13 +721,16 @@ function stepsOf(dish: Dish, choices: Choices): { fat: number; sweet: number; sa
   };
 }
 
-/** Per 100 g of the dish as the person described it. Nothing goes below 0. */
-export function adjustedPer100(dish: Dish, choices: Choices = {}): Macros {
+/**
+ * Per 100 g of the dish as the person described it. Nothing goes below 0. `base`: values from
+ * elsewhere (a product with a similar name) in place of the catalog's; the scales still move them.
+ */
+export function adjustedPer100(dish: Dish, choices: Choices = {}, base: Macros = dish.per100): Macros {
   const step = oneStep(dish);
   const steps = stepsOf(dish, choices);
   const out = zero();
   for (const k of MACROS) {
-    let v = dish.per100[k];
+    let v = base[k];
     if (step.fat) v += steps.fat * step.fat[k];
     if (step.sweet) v += steps.sweet * step.sweet[k];
     if (step.sauce) v += steps.sauce * step.sauce[k];
@@ -744,8 +747,8 @@ const round1 = (v: number) => Math.round(v * 10) / 10;
  * answered (the truth lies between the chosen level and its neighbours) or a whole step when it
  * was not (it could be a level either way). The range is symmetric around `kcal`; `low` stops at 0.
  */
-export function estimate(dish: Dish, grams: number, choices: Choices = {}): Estimate {
-  const per100 = adjustedPer100(dish, choices);
+export function estimate(dish: Dish, grams: number, choices: Choices = {}, base?: Macros): Estimate {
+  const per100 = adjustedPer100(dish, choices, base);
   const f = Math.max(0, grams) / 100;
   const step = oneStep(dish);
   let spread = PORTION_UNCERTAINTY * per100.kcal;

@@ -505,3 +505,18 @@ table.fd-diet-weeks th:first-child{min-width:84px;white-space:nowrap}
 .fd-diet-photo-note p+p{margin-top:6px}
 .fd-diet-photo-result{scroll-margin-top:12px}
 .fd-diet-photo-result details{margin-top:4px}
+.fd-diet-photo-result{display:grid;gap:8px}
+.fd-diet-answer{display:grid;gap:4px;justify-items:start;padding:12px;border:1px solid var(--steel);border-radius:var(--r);background:var(--surface)}
+.fd-diet-answer p{margin:0}
+.fd-diet-answer-what{font-size:14px;font-weight:600}
+.fd-diet-answer-kcal{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px}
+.fd-diet-answer-kcal b{font-family:var(--display);font-size:28px;line-height:1.1}
+.fd-diet-answer-kcal span{font-size:13px;color:var(--ink-soft)}
+.fd-diet-answer-macros{font-size:14px}
+.fd-diet-tag{display:inline-block;margin-left:8px;padding:1px 8px;border-radius:999px;border:1px solid var(--warn);font-size:11.5px;font-weight:600;vertical-align:2px}
+.fd-diet-ref{font-size:13px}
+.fd-diet-ref summary{cursor:pointer;color:var(--ink-soft);min-height:32px;display:list-item;padding-top:6px}
+.fd-diet-ref-using{margin:6px 0;display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.fd-diet-ref-list{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:6px}
+.fd-diet-ref-list li{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.fd-diet-ref-list .fd-diet-meta{display:inline}

@@ -1,5 +1,5 @@
 import { ScanBarcode, X } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Segmented } from '../../../components/ui';
 import { db } from '../../diet/db';
 import { autoSetName, productFood, setFood, setTotals, type Food, type FoodSet } from '../../diet/foods';
@@ -180,7 +180,7 @@ function PickerBody(props: BodyProps) {
       {current === 'search' ? (
         <SearchMode {...props} />
       ) : current === 'photo' ? (
-        <PhotoMode date={props.date} resume={props.resume} onLogged={props.onLogged} onDone={props.onDone} />
+        <PhotoBody {...props} />
       ) : current === 'set' ? (
         <SetBuilder {...props} />
       ) : (
@@ -188,6 +188,13 @@ function PickerBody(props: BodyProps) {
       )}
     </>
   );
+}
+
+/** „Zdjęcie” z wyszukiwaniem z „Szukaj”: pod każdym daniem podobne produkty, przepisy i pozycje lokali z bazy. */
+function PhotoBody({ date, resume, pool, products, dict, onLogged, onDone }: BodyProps) {
+  const chains = useMenus();
+  const find = useCallback((query: string) => searchFoods({ query, pool, chains, products, dict, noSets: true }), [pool, chains, products, dict]);
+  return <PhotoMode date={date} resume={resume} find={find} onLogged={onLogged} onDone={onDone} />;
 }
 
 /** Zapis raz: podwójne stuknięcie nie może zapisać tego samego posiłku dwa razy. */
