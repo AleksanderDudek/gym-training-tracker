@@ -1,11 +1,12 @@
 import type { Source } from './kit';
+import * as eastAsia from './eastAsia';
 
 /**
  * The regional additions to the photo catalog's sources, one file per region. Each exports
  * `DISHES` (id → source, the same ids as its half in `src/food/photo/catalog/`) and may export
  * `PARTS` (shared sub-recipes). An id in two files stops the build.
  */
-const regions: { DISHES: Record<string, Source>; PARTS?: Record<string, Source> }[] = [];
+const regions: { DISHES: Record<string, Source>; PARTS?: Record<string, Source> }[] = [eastAsia];
 
 function merged(pick: (r: (typeof regions)[number]) => Record<string, Source> | undefined): Record<string, Source> {
   const out: Record<string, Source> = {};
