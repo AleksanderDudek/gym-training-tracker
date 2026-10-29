@@ -92,6 +92,7 @@ const T = text({
     lostPhoto: 'Zdjęcie jest zachowane:',
     result: 'Wynik ze zdjęcia',
     weakFood: (name: string) => `Słabo widać tu jedzenie — może to ${name}? Sprawdź i popraw poniżej.`,
+    genericGuess: (kind: string) => `Nie znam dokładnie tego dania — to chyba ${kind}. Jeśli wiesz, co to, wyszukaj je poniżej.`,
     sure: (name: string, pct: number) => `${name} — pewne (${pct}%)`,
     probably: (name: string, pct: number) => `Najpewniej ${name} (${pct}%)`,
     maybeAlso: (names: string) => `, może też: ${names}`,
@@ -182,6 +183,7 @@ const T = text({
     lostPhoto: 'The photo is kept:',
     result: 'Result from the photo',
     weakFood: (name: string) => `The food is hard to make out — maybe ${name}? Check it and correct it below.`,
+    genericGuess: (kind: string) => `I don’t know this exact dish — it looks like ${kind}. If you know what it is, search for it below.`,
     sure: (name: string, pct: number) => `${name} — sure (${pct}%)`,
     probably: (name: string, pct: number) => `Most likely ${name} (${pct}%)`,
     maybeAlso: (names: string) => `, could also be: ${names}`,
@@ -256,6 +258,9 @@ type Stage =
   | { kind: 'failed'; why: Failure; detail: string }
   /** The app was closed by the phone last time (`pending.ts`). */
   | { kind: 'interrupted'; at: Interrupted['stage']; tries: number };
+
+/** A catch-all type's name without its „— inna” ending, lower-cased for the middle of a sentence: „zupa krem”. */
+const kindOf = (dish: Dish) => dish.label.replace(/\s+—\s+\S+$/, '').toLocaleLowerCase(LOCALE);
 
 const pct = (share: number | null) => (share === null ? null : Math.round(share * 100));
 
@@ -428,8 +433,8 @@ export function PhotoMode({ date, resume = null, find, findLoading = false, onLo
   const place = (found: readonly Suggestion[], weak = false) => {
     const first = found[0];
     if (!first) return;
-    // Hard to see, it stays a first guess however sure the ranking is.
-    const alts = first.score >= SURE_SCORE && !weak ? undefined : likelyAlts(found);
+    // Hard to see, or only a type of dish: it stays a first guess however sure the ranking is.
+    const alts = first.score >= SURE_SCORE && !weak && !first.dish.generic ? undefined : likelyAlts(found);
     setItems((list) => (list.some((i) => i.dish.id === first.dish.id) ? list : [...list, { ...newItem(first.dish), ...(alts && { alts }) }]));
   };
 
@@ -455,7 +460,7 @@ export function PhotoMode({ date, resume = null, find, findLoading = false, onLo
   const suggestions = stage.kind === 'done' && !notFood ? stage.suggestions : [];
   const lead = suggestions[0];
   const weak = stage.kind === 'done' && stage.weak;
-  const sure = (lead?.score ?? 0) >= SURE_SCORE && !weak;
+  const sure = (lead?.score ?? 0) >= SURE_SCORE && !weak && !lead?.dish.generic;
   const kind = sure ? null : family(suggestions);
   const guessing = items.some((i) => i.alts);
   const showAnyway = () => {
@@ -520,6 +525,7 @@ export function PhotoMode({ date, resume = null, find, findLoading = false, onLo
   const verdict = () => {
     if (!lead) return '';
     if (weak) return T.weakFood(lead.dish.label);
+    if (lead.dish.generic) return T.genericGuess(kindOf(lead.dish));
     if (sure) return T.sure(lead.dish.label, pct(lead.score)!);
     if (kind) return T.kind(kind);
     const alts = likelyAlts(suggestions).map((d) => d.label.toLocaleLowerCase(LOCALE));

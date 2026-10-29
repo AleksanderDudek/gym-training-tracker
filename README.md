@@ -890,11 +890,15 @@ i przybieraniu musi leżeć po właściwej stronie obecnej wagi.
 **Zdjęcie posiłku** (zakładka „Zdjęcie” w „Dodaj zjedzone”). Zdjęcie talerza z aparatu albo
 z galerii rozpoznaje telefon — bez serwera i bez opłat za zdjęcie, w każdej przeglądarce
 (WebAssembly, bez WebGPU). Model obrazu SigLIP 2 (Google, Apache-2.0, 55 MB, 4-bit) porównuje
-zdjęcie z frazami 351 dań z całego świata (`src/food/photo/dishes.ts`: wszystkie klasy Food-101,
-kuchnia polska, azjatycka, meksykańska, bliskowschodnia, codzienne talerze; wartości na 100 g
-z USDA FNDDS/SR, `npm run food:dishes`) i daje pięć propozycji: „To chyba:”, „To chyba pierogi —
-wybierz rodzaj:” albo „Nie jestem pewien”. Na zdjęciach testowych właściwe danie było pierwsze
-w ~81 % i w pierwszej piątce w ~97 %. Kalorie liczy się z katalogu, nie z obrazu: na talerz trafia
+zdjęcie z frazami 947 dań z całego świata — 351 w `src/food/photo/dishes.ts` (wszystkie klasy
+Food-101, kuchnia polska, codzienne talerze) i 564 w plikach regionów w `src/food/photo/catalog/`
+(Europa Środkowa i Wschodnia, śródziemnomorska, Azja Wschodnia, Południowa i Południowo-Wschodnia,
+Bliski Wschód z Afryką i Kaukazem, obie Ameryki, Wyspy, kraje niemieckojęzyczne, Skandynawia, Bałkany,
+codzienne jedzenie i napoje) oraz 32 typy „inne” („Zupa krem — inna”, „Obiad na talerzu — inny”), dzięki
+którym każde zdjęcie jedzenia ma szacunek. Wartości na 100 g z USDA FNDDS/SR (`npm run food:dishes`,
+skąd każda: `data/dish-sources.json`; wyszukiwarka `npm run food:find-usda -- <słowa>`). Daje pięć
+propozycji; na zdjęciach z Wikimedia Commons kcal/100 g zgadza się w ±25 % dla ~75 % zdjęć (przy 351
+daniach ~62 %; `docs/superpowers/specs/2026-10-30-katalog-dan-design.md`). Kalorie liczy się z katalogu, nie z obrazu: na talerz trafia
 jedno lub kilka dań, każde z suwakiem porcji (¼–3 typowej porcji, z gramami i słowami) i z pytaniami,
 których zdjęcie nie widzi — „Jak tłuste?”, „Jak słodkie?”, „Ile sosu?” (tylko tam, gdzie mają
 znaczenie). Wynik to szacunek z zakresem („ok. 630 kcal (498–762)”); ostatnia porcja i odpowiedzi

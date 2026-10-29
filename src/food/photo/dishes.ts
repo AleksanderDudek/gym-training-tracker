@@ -130,9 +130,13 @@ export interface Dish {
   portion: { g: number; label: string };
   /** Which scales apply, and how much a step moves the numbers. */
   adjust: { fat?: FatScale; sweet?: SweetScale; sauce?: SauceScale };
-  source: DishSource;
   /** The Food-101 class name, when the dish is one. */
   food101?: string;
+  /**
+   * A catch-all type („Zupa krem — inna”), not one dish: it stands in for whatever the catalog does
+   * not name, so the ranking lets a named dish that fits about as well go first.
+   */
+  generic?: true;
 }
 
 export const FAT_SCALE = {
@@ -201,56 +205,54 @@ const SAUCE_LABELS = {
   pesto: say('pesto', 'pesto'),
 };
 
+/** Values only; where each comes from is in `data/dish-sources.json` (tests, review), not in the app. */
 interface Row {
   per100: Per100;
-  source: DishSource;
 }
 const DISH_ROWS = data.dishes as Record<string, Row>;
 const SAUCE_ROWS = data.sauces as Record<string, Row>;
 
 /** Each sauce a scale can move, with its own composition per 100 g. */
-export const SAUCES: Readonly<Record<SauceKind, { label: string; per100: Per100; source: DishSource }>> = Object.fromEntries(
+export const SAUCES: Readonly<Record<SauceKind, { label: string; per100: Per100 }>> = Object.fromEntries(
   Object.entries(SAUCE_LABELS).map(([kind, label]) => {
     const row = SAUCE_ROWS[kind];
     if (!row) throw new Error(`no data for sauce ${kind}`);
-    return [kind, { label, per100: row.per100, source: row.source }];
+    return [kind, { label, per100: row.per100 }];
   }),
-) as Record<SauceKind, { label: string; per100: Per100; source: DishSource }>;
+) as Record<SauceKind, { label: string; per100: Per100 }>;
 
 // --- Building the list ---
 
-/** A portion: its household name (`say`) with the grams after it, „1 talerz (350 g)”. */
-const p = (g: number, label: string) => ({ g, label: `${label} (${g} g)` });
-/** A drink's portion in ml; 1 ml is taken as 1 g (milk 1.03, wine 0.99 - within the range). */
-const ml = (g: number, label: string) => ({ g, label: `${label} (${g} ml)` });
-
-const PLATE = say('1 talerz', '1 plate');
-const SOUP = say('1 talerz', '1 bowl');
-const BOWL = say('1 miska', '1 bowl');
-const SMALL_BOWL = say('1 miseczka', '1 small bowl');
-const SERVING = say('1 porcja', '1 serving');
-const PIECE = say('1 sztuka', '1 piece');
-const SLICE = say('1 kawałek', '1 slice');
-const SANDWICH = say('1 kanapka', '1 sandwich');
-const HALF_PIZZA = say('½ pizzy 32 cm', '½ of a 32 cm pizza');
-const CUTLET = say('1 kotlet', '1 cutlet');
-const MUG = say('1 kubek', '1 mug');
-const CUP = say('1 filiżanka', '1 cup');
-const GLASS = say('1 szklanka', '1 glass');
-const BIG_GLASS = say('1 duża szklanka', '1 large glass');
-const CAN = say('1 puszka', '1 can');
-const WINE_GLASS = say('1 kieliszek', '1 glass');
-const PIECES = (count: number) => `${count} ${say('sztuk', 'pieces')}`;
-const PIECES_FEW = (count: number) => `${count} ${say('sztuki', 'pieces')}`;
-
-const FAT_FRIED: FatScale = { step: 4 };
-const FAT_RICH: FatScale = { step: 3 };
-const FAT_COOKED: FatScale = { step: 2 };
-const FAT_LIGHT: FatScale = { step: 1 };
-const sweet = (step: number, base: SweetLevel = 'usual'): SweetScale => ({ step, base });
-const sauce = (kind: SauceKind, step: number, base: SauceLevel = 'usual'): SauceScale => ({ kind, step, base });
-
-type Entry = Omit<Dish, 'per100' | 'source'>;
+import {
+  p,
+  ml,
+  PLATE,
+  SOUP,
+  BOWL,
+  SMALL_BOWL,
+  SERVING,
+  PIECE,
+  SLICE,
+  SANDWICH,
+  HALF_PIZZA,
+  CUTLET,
+  MUG,
+  CUP,
+  GLASS,
+  BIG_GLASS,
+  CAN,
+  WINE_GLASS,
+  PIECES,
+  PIECES_FEW,
+  FAT_FRIED,
+  FAT_RICH,
+  FAT_COOKED,
+  FAT_LIGHT,
+  sweet,
+  sauce,
+  type Entry,
+} from './catalog/kit';
+import { REGION_ENTRIES } from './catalog';
 
 const ENTRIES: readonly Entry[] = [
   // --- Food-101 ---
@@ -335,7 +337,7 @@ const ENTRIES: readonly Entry[] = [
   { id: 'poutine', label: say('Poutine', 'Poutine'), prompts: ['poutine', 'fries with cheese curds and gravy'], group: 'main', portion: p(400, SERVING), adjust: { fat: FAT_RICH, sauce: sauce('gravy', 15) }, food101: 'poutine' },
   { id: 'primeRib', label: say('Antrykot pieczony (prime rib)', 'Prime rib'), prompts: ['prime rib', 'slice of roast beef rib'], group: 'main', portion: p(250, say('1 plaster', '1 slice')), adjust: { fat: FAT_FRIED }, food101: 'prime_rib' },
   { id: 'pulledPorkSandwich', label: say('Kanapka z szarpaną wieprzowiną', 'Pulled pork sandwich'), prompts: ['pulled pork sandwich', 'bbq pulled pork burger'], group: 'sandwich', portion: p(200, PIECE), adjust: { fat: FAT_COOKED }, food101: 'pulled_pork_sandwich' },
-  { id: 'ramen', label: say('Ramen', 'Ramen'), prompts: ['ramen', 'japanese noodle soup with egg and pork'], group: 'soup', portion: p(550, say('1 duża miska', '1 large bowl')), adjust: { fat: { step: 1.5 } }, food101: 'ramen' },
+  { id: 'ramen', label: say('Ramen', 'Ramen'), prompts: ['ramen', 'japanese noodle soup with egg and pork', 'a bowl of ramen noodles in broth with chashu pork, a soft-boiled egg, nori and scallions'], group: 'soup', portion: p(550, say('1 duża miska', '1 large bowl')), adjust: { fat: { step: 1.5 } }, food101: 'ramen' },
   { id: 'ravioli', label: say('Ravioli', 'Ravioli'), prompts: ['ravioli', 'ravioli in tomato sauce'], group: 'pasta', portion: p(300, PLATE), adjust: { fat: FAT_COOKED }, food101: 'ravioli' },
   { id: 'redVelvetCake', label: say('Ciasto red velvet', 'Red velvet cake'), prompts: ['red velvet cake', 'red sponge cake with cream cheese frosting'], group: 'dessert', portion: p(110, SLICE), adjust: { fat: FAT_RICH, sweet: sweet(8) }, food101: 'red_velvet_cake' },
   { id: 'risotto', label: say('Risotto', 'Risotto'), prompts: ['risotto', 'creamy mushroom risotto with parmesan'], group: 'rice', portion: p(320, PLATE), adjust: { fat: FAT_COOKED }, food101: 'risotto' },
@@ -644,10 +646,10 @@ const ENTRIES: readonly Entry[] = [
   { id: 'energetyk', label: say('Napój energetyczny', 'Energy drink'), prompts: ['energy drink can'], group: 'drink', portion: ml(500, CAN), adjust: {} },
 ];
 
-export const DISHES: readonly Dish[] = ENTRIES.map((e) => {
+export const DISHES: readonly Dish[] = [...ENTRIES, ...REGION_ENTRIES].map((e) => {
   const row = DISH_ROWS[e.id];
   if (!row) throw new Error(`no data for dish ${e.id} - run scripts/food/fetch-dishes.ts`);
-  return { ...e, per100: row.per100, source: row.source };
+  return { ...e, per100: row.per100 };
 });
 
 const BY_ID = new Map(DISHES.map((d) => [d.id, d]));

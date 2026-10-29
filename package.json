@@ -23,6 +23,7 @@
     "food:check-prep": "tsx scripts/food/check-prep.ts",
     "food:dishes": "tsx scripts/food/fetch-dishes.ts",
     "food:dish-embeddings": "tsx scripts/food/dish-embeddings.ts",
+    "food:find-usda": "tsx scripts/food/find-usda.ts",
     "food:selgros": "tsx scripts/food/fetch-selgros.ts",
     "food:osm": "tsx scripts/food/osm-places.ts",
     "food:nutrients": "tsx scripts/food/fetch-nutrients.ts",
