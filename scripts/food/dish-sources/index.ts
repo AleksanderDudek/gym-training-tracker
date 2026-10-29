@@ -1,6 +1,7 @@
 import * as cee from './cee';
 import * as eastAsia from './eastAsia';
 import * as generic from './generic';
+import * as meaCaucasus from './meaCaucasus';
 import * as med from './med';
 import * as northWest from './northWest';
 import type { Source } from './kit';
@@ -10,7 +11,7 @@ import type { Source } from './kit';
  * `DISHES` (id → source, the same ids as its half in `src/food/photo/catalog/`) and may export
  * `PARTS` (shared sub-recipes). An id in two files stops the build.
  */
-const regions: { DISHES: Record<string, Source>; PARTS?: Record<string, Source> }[] = [cee, eastAsia, generic, med, northWest];
+const regions: { DISHES: Record<string, Source>; PARTS?: Record<string, Source> }[] = [cee, eastAsia, generic, meaCaucasus, med, northWest];
 
 function merged(pick: (r: (typeof regions)[number]) => Record<string, Source> | undefined): Record<string, Source> {
   const out: Record<string, Source> = {};
