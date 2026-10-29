@@ -133,6 +133,11 @@ export interface Dish {
   source: DishSource;
   /** The Food-101 class name, when the dish is one. */
   food101?: string;
+  /**
+   * A catch-all type („Zupa krem — inna”), not one dish: it stands in for whatever the catalog does
+   * not name, so the ranking lets a named dish that fits about as well go first.
+   */
+  generic?: true;
 }
 
 export const FAT_SCALE = {
