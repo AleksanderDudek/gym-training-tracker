@@ -5,6 +5,7 @@ import { NavigationRoute, registerRoute } from 'workbox-routing';
 import { CacheFirst, StaleWhileRevalidate } from 'workbox-strategies';
 import { CacheExpiration, ExpirationPlugin } from 'workbox-expiration';
 import { CacheableResponsePlugin } from 'workbox-cacheable-response';
+import { PHOTO_CACHE } from './food/photo/model';
 import { navigationDenylist } from './swNavigation';
 import { forgetTrail, fromAfterReset, withoutDateHeader } from './swPlugins';
 
@@ -154,7 +155,8 @@ registerRoute(
     (/\/assets\/(?:recognize\.worker|ort-wasm-simd-threaded|dish-embeddings)-[\w-]+\.(?:js|wasm|bin)$/.test(url.pathname) ||
       /\/models\/[\w.-]+\/vision\.onnx$/.test(url.pathname)),
   new CacheFirst({
-    cacheName: 'gt-photo-model',
+    // The photo worker writes here too, before this worker controls the page (the first start).
+    cacheName: PHOTO_CACHE,
     plugins: [new ExpirationPlugin({ maxEntries: 4 }), new CacheableResponsePlugin({ statuses: [200] })],
   }),
 );

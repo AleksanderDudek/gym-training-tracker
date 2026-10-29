@@ -14,6 +14,9 @@ import { PhotoMode } from './PhotoMode';
 const recognize = vi.hoisted(() => vi.fn());
 const downloadModel = vi.hoisted(() => vi.fn(() => Promise.resolve(true)));
 const prepare = vi.hoisted(() => vi.fn());
+const preload = vi.hoisted(() => vi.fn());
+const grabFrame = vi.hoisted(() => vi.fn());
+vi.mock('../../photo/frame', () => ({ grabFrame }));
 const kept = vi.hoisted(() => ({ photo: null as Blob | null, gate: null as Promise<void> | null }));
 const failLog = vi.hoisted(() => ({ after: Infinity, calls: 0 }));
 vi.mock('../../diet/store', async (importOriginal) => {
@@ -30,6 +33,7 @@ vi.mock('../../photo/recognize', () => ({
   MODEL_MB: 20,
   recognize,
   prepare,
+  preload,
   downloadModel,
   release: vi.fn(),
   failureOf: (e: unknown) => (e instanceof Error && /memory/.test(e.message) ? 'memory' : 'error'),
@@ -56,6 +60,9 @@ beforeEach(async () => {
   recognize.mockReset();
   downloadModel.mockClear();
   prepare.mockClear();
+  preload.mockClear();
+  grabFrame.mockReset();
+  HTMLMediaElement.prototype.play = vi.fn(() => Promise.resolve());
   kept.photo = null;
   kept.gate = null;
   resetModelState();
@@ -209,12 +216,12 @@ describe('Zdjęcie posiłku', () => {
     expect(localStorage.getItem(MARKER)).toBeNull();
   });
 
-  test('aparat zostawia znacznik i zaczyna pobieranie (nie wczytuje modelu); anulowanie go zdejmuje', async () => {
+  test('galeria zostawia znacznik i zaczyna pobieranie (nie wczytuje modelu); anulowanie go zdejmuje', async () => {
     const user = userEvent.setup();
     const { container } = render(<PhotoMode date={DATE} onLogged={vi.fn()} onDone={vi.fn()} />);
-    const camera = inputs(container)[0]!;
+    const camera = inputs(container)[1]!;
     const click = vi.spyOn(camera, 'click').mockImplementation(() => undefined);
-    await user.click(screen.getByRole('button', { name: /Zrób zdjęcie/ }));
+    await user.click(screen.getByRole('button', { name: /Z galerii/ }));
     expect(click).toHaveBeenCalled();
     expect(prepare).toHaveBeenCalled();
     expect(recognize).not.toHaveBeenCalled();
@@ -360,16 +367,15 @@ describe('Znacznik na wypadek zamknięcia przez telefon', () => {
     recognize.mockImplementation(() => new Promise((resolve) => (finish = resolve)));
     const user = userEvent.setup();
     const { container } = render(<PhotoMode date={DATE} onLogged={vi.fn()} onDone={vi.fn()} />);
-    vi.spyOn(inputs(container)[0]!, 'click').mockImplementation(() => undefined);
-    await user.click(screen.getByRole('button', { name: /Zrób zdjęcie/ }));
+    vi.spyOn(inputs(container)[1]!, 'click').mockImplementation(() => undefined);
+    await user.click(screen.getByRole('button', { name: /Z galerii/ }));
     fireEvent(window, new Event('focus'));
     expect(localStorage.getItem(MARKER)).toBeNull();
 
     await user.upload(inputs(container)[1]!, photo());
     await waitFor(() => expect(recognize).toHaveBeenCalled());
-    // „Inne zdjęcie” in the middle of the analysis, then back without one.
-    await user.click(screen.getByRole('button', { name: /Inne zdjęcie/ }));
-    fireEvent(inputs(container)[0]!, new Event('cancel'));
+    // The gallery in the middle of the analysis (its button is off then; the input itself still works), then back without one.
+    fireEvent(inputs(container)[1]!, new Event('cancel'));
     fireEvent(window, new Event('focus'));
     expect(JSON.parse(localStorage.getItem(MARKER)!)).toMatchObject({ stage: 'reading' });
     await act(async () => finish([]));
@@ -412,11 +418,11 @@ describe('Model rozpoznawania', () => {
     expect(card).toHaveTextContent(/Jest w telefonie \(55 MB\)/);
   });
 
-  test('na danych komórkowych mówi, czemu czeka; bez sieci nie proponuje pobrania; po błędzie „Spróbuj ponownie”', () => {
-    setModelState({ kind: 'missing', wait: 'mobile' });
+  test('przy oszczędzaniu danych mówi, czemu czeka; bez sieci nie proponuje pobrania; po błędzie „Spróbuj ponownie”', () => {
+    setModelState({ kind: 'missing', wait: 'saver' });
     render(<PhotoMode date={DATE} onLogged={vi.fn()} onDone={vi.fn()} />);
     const card = screen.getByRole('region', { name: 'Model rozpoznawania' });
-    expect(card).toHaveTextContent(/na danych komórkowych/);
+    expect(card).toHaveTextContent(/oszczędzanie danych/);
     expect(within(card).getByRole('button', { name: /Pobierz teraz/ })).toBeInTheDocument();
     act(() => setModelState({ kind: 'missing', wait: 'offline' }));
     expect(card).toHaveTextContent(/nie ma internetu/);
@@ -428,9 +434,9 @@ describe('Model rozpoznawania', () => {
 });
 
 describe('Po zamknięciu aplikacji przez telefon', () => {
-  test('w trakcie aparatu: wyjaśnienie i podpowiedź „Z galerii”', () => {
+  test('w trakcie aparatu telefonu: wyjaśnienie i wskazanie aparatu w aplikacji', () => {
     render(<PhotoMode date={DATE} resume={{ stage: 'camera', tries: 0 }} onLogged={vi.fn()} onDone={vi.fn()} />);
-    expect(screen.getByRole('alert')).toHaveTextContent(/Telefon zamknął aplikację, kiedy był otwarty aparat.*„Z galerii”/);
+    expect(screen.getByRole('alert')).toHaveTextContent(/nie dotarło — telefon zamknął aplikację.*„Zrób zdjęcie”: aparat w aplikacji/);
   });
 
   test('w trakcie analizy: zachowane zdjęcie i „Spróbuj ponownie”; za drugim razem rada, żeby wyszukać', async () => {
@@ -446,5 +452,74 @@ describe('Po zamknięciu aplikacji przez telefon', () => {
     await user.click(screen.getByRole('button', { name: 'Spróbuj ponownie' }));
     expect(recognize.mock.calls[0]![0]).toBe(kept.photo);
     expect(await screen.findByText(/Pad thai — pewne/)).toBeInTheDocument();
+  });
+});
+
+/** A camera that gives a stream with one track; `fail` makes `getUserMedia` refuse. */
+function fakeCamera(fail?: string) {
+  const stop = vi.fn();
+  const track = { stop, getCapabilities: () => ({}) };
+  const stream = { getTracks: () => [track], getVideoTracks: () => [track] };
+  const getUserMedia = vi.fn(() => (fail ? Promise.reject(new DOMException('no', fail)) : Promise.resolve(stream)));
+  Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: { getUserMedia } });
+  return { stop, getUserMedia };
+}
+
+describe('Aparat w aplikacji i model', () => {
+  test('bez modelu nie da się zrobić zdjęcia: mówi czemu; w trakcie pobierania procent; z modelem przyciski działają', () => {
+    setModelState({ kind: 'missing', wait: null });
+    render(<PhotoMode date={DATE} onLogged={vi.fn()} onDone={vi.fn()} />);
+    expect(screen.getByRole('button', { name: /Zrób zdjęcie/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Z galerii/ })).toBeDisabled();
+    expect(screen.getByText(/Najpierw pobierz model/)).toBeInTheDocument();
+    act(() => setModelState({ kind: 'downloading', share: 0.4 }));
+    expect(screen.getByText('Zdjęcie zrobisz, gdy model się pobierze (40%).')).toBeInTheDocument();
+    act(() => setModelState({ kind: 'ready' }));
+    expect(screen.getByRole('button', { name: /Zrób zdjęcie/ })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /Z galerii/ })).toBeEnabled();
+  });
+
+  test('„Zrób zdjęcie” otwiera aparat w aplikacji, model wczytuje się w tym czasie; migawka od razu rozpoznaje, aparat gaśnie', async () => {
+    setModelState({ kind: 'ready' });
+    const cam = fakeCamera();
+    const shot = new Blob([new Uint8Array([7])], { type: 'image/jpeg' });
+    grabFrame.mockResolvedValue(shot);
+    recognize.mockResolvedValue([{ dish: dishById('padThai')!, score: 0.9, cos: 0.17 }]);
+    const user = userEvent.setup();
+    render(<PhotoMode date={DATE} onLogged={vi.fn()} onDone={vi.fn()} />);
+    await user.click(screen.getByRole('button', { name: /Zrób zdjęcie/ }));
+    expect(preload).toHaveBeenCalled();
+    expect(cam.getUserMedia).toHaveBeenCalled();
+    const shutter = await screen.findByRole('button', { name: 'Zrób zdjęcie' });
+    await waitFor(() => expect(shutter).toBeEnabled());
+    await user.click(shutter);
+    expect(await screen.findByText(/Pad thai — pewne/)).toBeInTheDocument();
+    expect(recognize.mock.calls[0]![0]).toBe(shot);
+    expect(cam.stop).toHaveBeenCalled();
+    // No system camera, so no marker of one.
+    expect(JSON.parse(localStorage.getItem(MARKER) ?? 'null')).toBeNull();
+  });
+
+  test('bez zgody na aparat: mówi czemu i daje aparat telefonu (z znacznikiem) oraz galerię', async () => {
+    setModelState({ kind: 'ready' });
+    fakeCamera('NotAllowedError');
+    const user = userEvent.setup();
+    const { container } = render(<PhotoMode date={DATE} onLogged={vi.fn()} onDone={vi.fn()} />);
+    await user.click(screen.getByRole('button', { name: /Zrób zdjęcie/ }));
+    expect(await screen.findByText(/Brak zgody na aparat w aplikacji/)).toBeInTheDocument();
+    const system = vi.spyOn(inputs(container)[0]!, 'click').mockImplementation(() => undefined);
+    await user.click(screen.getByRole('button', { name: /Aparat telefonu/ }));
+    expect(system).toHaveBeenCalled();
+    expect(JSON.parse(localStorage.getItem(MARKER)!)).toMatchObject({ stage: 'camera' });
+  });
+
+  test('po pierwszej przerwanej analizie zachowane zdjęcie wraca do modelu samo, raz', async () => {
+    setModelState({ kind: 'ready' });
+    kept.photo = new Blob([new Uint8Array([9])], { type: 'image/jpeg' });
+    recognize.mockResolvedValue([{ dish: dishById('padThai')!, score: 0.8 }]);
+    render(<PhotoMode date={DATE} resume={{ stage: 'reading', tries: 1 }} onLogged={vi.fn()} onDone={vi.fn()} />);
+    expect(await screen.findByText(/Pad thai — pewne/)).toBeInTheDocument();
+    expect(recognize).toHaveBeenCalledTimes(1);
+    expect(recognize.mock.calls[0]![0]).toBe(kept.photo);
   });
 });

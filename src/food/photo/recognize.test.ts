@@ -186,7 +186,7 @@ describe('prepare', () => {
     const before = FakeWorker.last;
     prepare();
     expect(FakeWorker.last).toBe(before);
-    setModelState({ kind: 'missing', wait: 'mobile' });
+    setModelState({ kind: 'missing', wait: 'saver' });
     prepare();
     expect(FakeWorker.last.sent.at(-1)).toMatchObject({ type: 'save', fetchMissing: true });
     // The camera is open: nothing may load the model now.

@@ -88,6 +88,15 @@ function start(): Worker {
 
 const send = (req: Request) => start().postMessage(req);
 
+/** Whether the service worker keeps the copy; before it takes over (the first start) the photo worker writes it. */
+function controlled(): boolean {
+  try {
+    return !!navigator.serviceWorker?.controller;
+  } catch {
+    return false;
+  }
+}
+
 function ask(req: (id: number) => Request): Promise<Reply> {
   const id = ++next;
   return new Promise<Reply>((resolve, reject) => {
@@ -107,6 +116,18 @@ export function prepare(): void {
   saveModel(true).catch(() => undefined);
 }
 
+/**
+ * The in-app viewfinder is open: the model goes into memory now, so the result follows the shutter
+ * by about a second. Safe here — the page stays in front, unlike with the system camera app.
+ * Failures are left for the photo itself to report.
+ */
+export function preload(): void {
+  held = true;
+  loaded = true;
+  listen = undefined;
+  ask((id) => ({ type: 'warm', id, base: document.baseURI, controlled: controlled() })).catch(() => undefined);
+}
+
 /** „Pobierz teraz”: the download by hand, also on mobile data. */
 export const downloadModel = (): Promise<boolean> => saveModel(true);
 
@@ -117,7 +138,7 @@ export function recognize(image: Blob, onProgress?: (p: Progress) => void): Prom
   const done = () => {
     if (listen === onProgress) listen = undefined;
   };
-  return ask((id) => ({ type: 'read', id, base: document.baseURI, image }))
+  return ask((id) => ({ type: 'read', id, base: document.baseURI, image, controlled: controlled() }))
     .then(
       (r) => {
         // The photo downloaded the model itself: the service worker kept a copy on the way.
@@ -150,7 +171,7 @@ export function saveModel(fetchMissing = true): Promise<boolean> {
     const kind = modelState().kind;
     if (kind === 'missing' || kind === 'failed') setModelState({ kind: 'downloading', share: null });
   }
-  return ask((id) => ({ type: 'save', id, base: document.baseURI, fetchMissing }))
+  return ask((id) => ({ type: 'save', id, base: document.baseURI, fetchMissing, controlled: controlled() }))
     .then(
       (r) => {
         const saved = r.type === 'saved' && r.saved;

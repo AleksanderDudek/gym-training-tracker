@@ -468,7 +468,8 @@ table.fd-diet-weeks th:first-child{min-width:84px;white-space:nowrap}
 /* ---------------- Zdjęcie posiłku: propozycje, talerz, porcja i skale ---------------- */
 
 .fd-diet-photo{display:grid;gap:8px}
-.fd-diet-photo-row{display:flex;gap:10px;align-items:center}
+.fd-diet-photo-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.fd-diet-photo-wait{flex-basis:100%}
 .fd-diet-photo-img{width:88px;height:88px;object-fit:cover;border-radius:var(--r);border:1px solid var(--line);flex:none}
 .fd-diet-photo-btns{display:flex;flex-wrap:wrap;gap:8px}
 .fd-diet-dishes{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
@@ -506,6 +507,14 @@ table.fd-diet-weeks th:first-child{min-width:84px;white-space:nowrap}
 .fd-diet-photo-result{scroll-margin-top:12px}
 .fd-diet-photo-result details{margin-top:4px}
 .fd-diet-photo-result{display:grid;gap:8px}
+.fd-diet-shot{display:grid;gap:10px}
+.fd-diet-shot .fd-cam{max-height:min(440px,55vh)}
+.fd-diet-shot-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.fd-diet-shutter{width:68px;height:68px;border-radius:50%;border:4px solid var(--steel);background:var(--surface);padding:5px;cursor:pointer;flex:none}
+.fd-diet-shutter span{display:block;width:100%;height:100%;border-radius:50%;background:var(--steel)}
+.fd-diet-shutter:disabled{opacity:.45;cursor:default}
+.fd-diet-shutter:focus-visible{outline:2px solid var(--steel);outline-offset:3px}
+@media (prefers-reduced-motion:no-preference){.fd-diet-shutter:not(:disabled):active span{transform:scale(.88);transition:transform .08s}}
 .fd-diet-answer{display:grid;gap:4px;justify-items:start;padding:12px;border:1px solid var(--steel);border-radius:var(--r);background:var(--surface)}
 .fd-diet-answer p{margin:0}
 .fd-diet-answer-what{font-size:14px;font-weight:600}

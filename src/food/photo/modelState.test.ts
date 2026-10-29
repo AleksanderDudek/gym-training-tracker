@@ -11,18 +11,17 @@ afterEach(() => {
 });
 
 describe('checkModel', () => {
-  it('without a service worker the model cannot be kept', async () => {
-    controlled('none');
-    vi.stubGlobal('caches', { match: async () => undefined });
+  it('without the Cache API the model cannot be kept', async () => {
+    vi.stubGlobal('caches', undefined);
     await checkModel();
     expect(modelState()).toEqual({ kind: 'unsupported' });
   });
 
-  it('the first visit, before the service worker takes over: not there yet', async () => {
+  it('before the service worker takes over (the first start) it still looks in the copy the photo worker fills', async () => {
     controlled(false);
-    vi.stubGlobal('caches', { match: async () => undefined });
+    vi.stubGlobal('caches', { match: async () => new Response('') });
     await checkModel();
-    expect(modelState()).toEqual({ kind: 'missing', wait: null });
+    expect(modelState()).toEqual({ kind: 'ready' });
   });
 
   it('looks for the model file in the service worker’s copy', async () => {

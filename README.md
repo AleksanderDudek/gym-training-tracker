@@ -899,9 +899,12 @@ jedno lub kilka dań, każde z suwakiem porcji (¼–3 typowej porcji, z gramami
 których zdjęcie nie widzi — „Jak tłuste?”, „Jak słodkie?”, „Ile sosu?” (tylko tam, gdzie mają
 znaczenie). Wynik to szacunek z zakresem („ok. 630 kcal (498–762)”); ostatnia porcja i odpowiedzi
 dla dania zostają na urządzeniu i wracają przy następnym zdjęciu. Model (ok. 59 MB) pobiera się sam
-w tle, kilka sekund po starcie aplikacji, gdy nic innego się nie dzieje (`src/food/photo/background.ts`)
-— nie przy „Oszczędzaniu danych”, na znanym połączeniu komórkowym ani na 2G; wtedy dopiero po zmianie
-sieci albo przy pierwszym zdjęciu. Potem działa z kopii service workera, także bez sieci; zdjęcie
+w tle, ok. 2 s po starcie aplikacji — także przy pierwszym uruchomieniu (zanim przejmie ją service worker,
+pliki zapisuje sam worker zdjęć) i na danych komórkowych; zatrzymuje go tylko „Oszczędzanie danych”
+(`src/food/photo/background.ts`). Póki modelu nie ma, „Zrób zdjęcie” i „Z galerii” czekają (z procentem
+pobierania albo „Pobierz model”). „Zrób zdjęcie” otwiera aparat w aplikacji (`PhotoCamera.tsx`,
+`getUserMedia`): strona nie idzie w tło, więc telefon jej nie zamyka, a klatka od razu idzie do modelu,
+który wczytuje się, gdy kadrujesz; aparat telefonu i galeria zostają na wypadek braku zgody na aparat. Potem działa z kopii service workera, także bez sieci; zdjęcie
 nie wychodzi z telefonu. Karta „Model rozpoznawania” na górze zakładki mówi, czy model jest w telefonie,
 ile się już pobrało i czemu czeka (dane komórkowe, brak sieci), z przyciskiem „Pobierz teraz”; zdjęcie
 przechodzi przez widoczne kroki (zdjęcie odebrane → model → uruchamianie → rozpoznawanie), a pewne
