@@ -25,7 +25,7 @@ class FakeWorker {
 }
 
 vi.stubGlobal('Worker', FakeWorker);
-const { failureOf, prepare, recognize, release, saveModel } = await import('./recognize');
+const { failureOf, preload, prepare, recognize, release, restartDownload, saveModel } = await import('./recognize');
 
 const lastId = () => (FakeWorker.last.sent.at(-1) as { id: number }).id;
 
@@ -186,7 +186,7 @@ describe('prepare', () => {
     const before = FakeWorker.last;
     prepare();
     expect(FakeWorker.last).toBe(before);
-    setModelState({ kind: 'missing', wait: 'mobile' });
+    setModelState({ kind: 'missing', wait: 'saver' });
     prepare();
     expect(FakeWorker.last.sent.at(-1)).toMatchObject({ type: 'save', fetchMissing: true });
     // The camera is open: nothing may load the model now.
@@ -204,3 +204,36 @@ describe('failureOf', () => {
     online.mockRestore();
   });
 });
+
+describe('restartDownload', () => {
+  it('ends a stalled download and starts again; the ended one changes nothing any more', async () => {
+    setModelState({ kind: 'missing', wait: null });
+    const stalled = saveModel().catch((e: Error) => e.message);
+    const old = FakeWorker.last;
+    const again = restartDownload();
+    expect(old.terminated).toBe(true);
+    await expect(stalled).resolves.toBe('released');
+    expect(modelState()).toEqual({ kind: 'downloading', share: null });
+    expect(FakeWorker.last).not.toBe(old);
+    FakeWorker.last.reply({ type: 'saved', id: lastId(), saved: true });
+    await expect(again).resolves.toBe(true);
+    expect(modelState()).toEqual({ kind: 'ready' });
+  });
+});
+
+describe('preload', () => {
+  it('a load that fails (the copy gone, the network too) does not leave the card on "downloading"', async () => {
+    vi.stubGlobal('caches', { match: async () => undefined });
+    preload();
+    const w = FakeWorker.last;
+    expect(w.sent.at(-1)).toMatchObject({ type: 'warm' });
+    w.reply({ type: 'progress', step: 'load', share: 0.2, source: 'network' });
+    expect(modelState()).toEqual({ kind: 'downloading', share: 0.2 });
+    w.reply({ type: 'error', id: lastId(), message: 'Failed to fetch' });
+    await vi.waitFor(() => expect(modelState()).toMatchObject({ kind: 'failed' }), { timeout: 8000 });
+    vi.unstubAllGlobals();
+    vi.stubGlobal('Worker', FakeWorker);
+    // settleModel looks in the copy for up to 5 s before it gives up.
+  }, 10_000);
+});
+

@@ -34,7 +34,10 @@ const T = text({
   },
 });
 
-type CameraState = 'starting' | 'loading' | 'scanning' | 'denied' | 'none' | 'busy' | 'unsupported' | 'engine';
+type CameraState = 'starting' | 'loading' | 'scanning' | CameraFailure | 'engine';
+
+/** Why the camera did not start (shared with the meal-photo viewfinder). */
+export type CameraFailure = 'denied' | 'none' | 'busy' | 'unsupported';
 
 const MESSAGE: Record<CameraState, string> = {
   starting: T.starting,
@@ -52,7 +55,7 @@ const INTERVAL_MS = 180;
 /** The same code is reported again only after it was out of view this long. */
 const QUIET_MS = 2500;
 
-function cameraError(error: unknown): CameraState {
+export function cameraError(error: unknown): CameraFailure {
   const name = error instanceof DOMException || error instanceof Error ? error.name : '';
   if (name === 'NotAllowedError' || name === 'SecurityError') return 'denied';
   if (name === 'NotFoundError' || name === 'OverconstrainedError') return 'none';
@@ -66,7 +69,7 @@ function subscribeVisibility(onChange: () => void): () => void {
 }
 
 /** Whether the page is on screen: the camera is off while it is not. */
-function usePageVisible(): boolean {
+export function usePageVisible(): boolean {
   return useSyncExternalStore(
     subscribeVisibility,
     () => document.visibilityState !== 'hidden',

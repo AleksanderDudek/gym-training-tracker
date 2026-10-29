@@ -11,8 +11,8 @@ export type ModelState =
   | { kind: 'unknown' }
   | { kind: 'ready' }
   | { kind: 'downloading'; share: number | null }
-  /** `wait`: why the background download has not run — mobile data or no network; `null` when it simply has not yet. */
-  | { kind: 'missing'; wait: 'mobile' | 'offline' | null }
+  /** `wait`: why the background download has not run — data saving on, or no network; `null` when it simply has not yet. */
+  | { kind: 'missing'; wait: 'saver' | 'offline' | null }
   | { kind: 'failed'; reason: 'offline' | 'storage' | 'error' }
   /** No service worker or Cache API (plain http, a private window in some browsers): every photo downloads it. */
   | { kind: 'unsupported' };
@@ -41,15 +41,8 @@ export const modelHref = (base: string = document.baseURI) => new URL(`${PHOTO_M
 /** The page itself looks in the copy — no worker, no download. Only while nothing better is known. */
 export async function checkModel(): Promise<void> {
   if (state.kind !== 'unknown') return;
-  let sw: ServiceWorkerContainer | undefined;
-  try {
-    sw = navigator.serviceWorker ?? undefined;
-  } catch {
-    // A sandboxed frame throws on the getter.
-  }
-  if (!sw || typeof caches === 'undefined') return setModelState({ kind: 'unsupported' });
-  // The first visit: the service worker takes over in a moment, and the background download follows.
-  if (!sw.controller) return setModelState({ kind: 'missing', wait: null });
+  // Without a service worker the photo worker keeps the copy itself; only no Cache API means no copy at all.
+  if (typeof caches === 'undefined') return setModelState({ kind: 'unsupported' });
   try {
     const hit = await caches.match(modelHref());
     // A download may have started while the cache answered; its state wins.

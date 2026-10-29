@@ -369,7 +369,7 @@ describe('Dziennik', () => {
     const dialog = (await screen.findByRole('dialog', { name: 'Dodaj zjedzone' })) as HTMLDialogElement;
     await waitFor(() => expect(dialog.open).toBe(true));
     expect(within(dialog).getByRole('button', { name: 'Zdjęcie', pressed: true })).toBeInTheDocument();
-    expect(within(dialog).getByRole('alert')).toHaveTextContent(/Telefon zamknął aplikację/);
+    expect(within(dialog).getByRole('alert')).toHaveTextContent(/telefon zamknął aplikację/);
     await user.click(within(dialog).getByRole('button', { name: 'Zamknij' }));
     expect(localStorage.getItem('gt-photo-run')).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Dodaj zjedzone' }));

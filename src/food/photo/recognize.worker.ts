@@ -13,17 +13,20 @@ import * as ort from 'onnxruntime-web/wasm';
 import wasm from 'onnxruntime-web/ort-wasm-simd-threaded.wasm?url';
 import tableUrl from './data/dish-embeddings.bin?url';
 import meta from './data/dish-embeddings.json';
-import { PHOTO_MODEL } from './model';
+import { PHOTO_CACHE, PHOTO_MODEL } from './model';
 import { loadTable, rank, type DishTable } from './score';
 
+/** `controlled`: the page is under the service worker, which keeps the copy; otherwise this worker writes it. */
 export type Request =
-  | { type: 'save'; id: number; base: string; fetchMissing: boolean }
-  | { type: 'read'; id: number; base: string; image: Blob };
+  | { type: 'warm'; id: number; base: string; controlled: boolean }
+  | { type: 'save'; id: number; base: string; fetchMissing: boolean; controlled: boolean }
+  | { type: 'read'; id: number; base: string; image: Blob; controlled: boolean };
 export type Reply =
   /** `load`: the model file (`source` says from where); `start`: ONNX Runtime builds the session; `read`: the photo itself. */
   | { type: 'progress'; step: 'load' | 'start' | 'read'; share: number | null; source?: 'network' | 'copy' }
   | { type: 'result'; id: number; top: { id: string; score: number; cos: number }[] }
   | { type: 'saved'; id: number; saved: boolean }
+  | { type: 'warmed'; id: number }
   | { type: 'error'; id: number; message: string };
 
 // The app's types are the page's (DOM); a worker's own global is only this much of it.
@@ -41,32 +44,77 @@ ort.env.wasm.proxy = false;
 /**
  * The model file with progress. Counted against its known size: a server that compresses it
  * reports the compressed length, while the stream yields the file's own bytes. `keep: false` only
- * reads it through, for the service worker's copy, without holding 55 MB here.
+ * reads it through, for the copy, without holding 55 MB here. Without the service worker (the
+ * first start, before it takes over) the copy is written here, from a second branch of the stream.
  */
-async function download(url: string, keep = true): Promise<Uint8Array> {
+async function download(url: string, keep: boolean, controlled: boolean): Promise<Uint8Array> {
   const source = typeof caches !== 'undefined' && (await has(url)) ? 'copy' : 'network';
   post({ type: 'progress', step: 'load', share: 0, source });
-  const res = await fetch(url);
+  const res = await fromCopyOrNet(url, controlled);
   if (!res.ok || !res.body) throw new Error(`HTTP ${res.status} for ${url}`);
   const total = PHOTO_MODEL.bytes;
   const out = new Uint8Array(keep ? total : 0);
-  const reader = res.body.getReader();
+  let body = res.body;
+  let stored: Promise<void> | null = null;
+  if (!controlled && source === 'network' && typeof caches !== 'undefined') {
+    const [mine, copy] = body.tee();
+    body = mine;
+    stored = caches.open(PHOTO_CACHE).then((c) => c.put(url, new Response(copy, { headers: res.headers })));
+  }
+  const reader = body.getReader();
   let got = 0;
   let last = -1;
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    if (got + value.length > total) throw new Error(`model is larger than ${total} bytes`);
-    if (keep) out.set(value, got);
-    got += value.length;
-    const share = got / total;
-    if (share - last >= 0.01) {
-      last = share;
-      post({ type: 'progress', step: 'load', share, source });
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (got + value.length > total) throw new Error(`model is larger than ${total} bytes`);
+      if (keep) out.set(value, got);
+      got += value.length;
+      const share = got / total;
+      if (share - last >= 0.01) {
+        last = share;
+        post({ type: 'progress', step: 'load', share, source });
+      }
     }
+    if (got !== total) throw new Error(`model is ${got} bytes, expected ${total}`);
+    await stored;
+  } catch (e) {
+    // A cut or wrong answer (a captive portal's page, a dropped connection) must not stay in the copy
+    // as if it were the model — whoever wrote it, this worker or the service worker. The next try
+    // downloads it afresh.
+    void reader.cancel().catch(ignore);
+    await stored?.catch(ignore);
+    if (typeof caches !== 'undefined') await caches.open(PHOTO_CACHE).then((c) => c.delete(url)).catch(ignore);
+    throw e;
   }
-  if (got !== total) throw new Error(`model is ${got} bytes, expected ${total}`);
   return out;
+}
+
+/** Under the service worker its `CacheFirst` reads the copy; without it, this worker does. */
+async function fromCopyOrNet(url: string, controlled: boolean): Promise<Response> {
+  if (!controlled && typeof caches !== 'undefined') {
+    const hit = await caches.match(url);
+    if (hit) return hit;
+  }
+  return fetch(url);
+}
+
+/** A small file into the copy: through the service worker, or written here when there is none yet. */
+async function fetchInto(url: string, controlled: boolean): Promise<void> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
+  if (controlled) await res.arrayBuffer();
+  else await (await caches.open(PHOTO_CACHE)).put(url, res);
+}
+
+/** The files of an older app version in the copy: the ones this worker wrote are not the expiration plugin's to remove. */
+const PHOTO_FILE = /\/assets\/(?:recognize\.worker|ort-wasm-simd-threaded|dish-embeddings)-[\w-]+\.(?:js|wasm|bin)$|\/models\/[\w.-]+\/vision\.onnx$/;
+
+async function prune(base: string): Promise<void> {
+  const keep = new Set(files(base));
+  const cache = await caches.open(PHOTO_CACHE);
+  for (const req of await cache.keys()) if (PHOTO_FILE.test(new URL(req.url).pathname) && !keep.has(req.url)) await cache.delete(req);
 }
 
 let ready: Promise<{ session: ort.InferenceSession; table: DishTable }> | null = null;
@@ -77,8 +125,8 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const has = async (url: string) => (await caches.match(url)) !== undefined;
 
 /** The service worker writes its copy just after the response is read; this waits for it a little. */
-async function landed(url: string): Promise<boolean> {
-  for (let i = 0; i < 20; i++) {
+async function landed(url: string, tries = 20): Promise<boolean> {
+  for (let i = 0; i < tries; i++) {
     if (await has(url)) return true;
     await sleep(250);
   }
@@ -100,7 +148,7 @@ async function inCopy(base: string): Promise<boolean> {
  * no memory. True when all of it is in the copy; false without one (no Cache API, a full disk).
  * `fetchMissing: false` only looks (offline, mobile data).
  */
-function save(base: string, fetchMissing: boolean): Promise<boolean> {
+function save(base: string, fetchMissing: boolean, controlled: boolean): Promise<boolean> {
   if (!fetchMissing) return (saving ?? Promise.resolve()).catch(ignore).then(() => inCopy(base));
   saving ??= (async () => {
     // A photo already loading the model fetches it now; the copy is checked once it has.
@@ -108,10 +156,12 @@ function save(base: string, fetchMissing: boolean): Promise<boolean> {
     if (typeof caches === 'undefined') return false;
     for (const url of files(base)) {
       if (await has(url)) continue;
-      if (url === modelUrl(base)) await download(url, false);
-      else await fetch(url).then((r) => r.arrayBuffer());
+      if (url === modelUrl(base)) await download(url, false, controlled);
+      else await fetchInto(url, controlled);
     }
-    for (const url of files(base)) if (!(await landed(url))) return false;
+    // Writing 55 MB takes a slow phone a while: up to half a minute for the model, 5 s for the rest.
+    for (const url of files(base)) if (!(await landed(url, url === modelUrl(base) ? 120 : 20))) return false;
+    await prune(base).catch(ignore);
     return true;
   })().catch((e: unknown) => {
     saving = null;
@@ -120,15 +170,15 @@ function save(base: string, fetchMissing: boolean): Promise<boolean> {
   return saving;
 }
 
-function load(base: string) {
+function load(base: string, controlled: boolean) {
   ready ??= (async () => {
     post({ type: 'progress', step: 'load', share: null });
     // The background save is on its way: its model is read from the copy once it is in, not
     // downloaded a second time alongside.
     await saving?.catch(ignore);
     const [model, bytes] = await Promise.all([
-      download(modelUrl(base)),
-      fetch(tableHref).then(async (r) => {
+      download(modelUrl(base), true, controlled),
+      fromCopyOrNet(tableHref, controlled).then(async (r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status} for the dish table`);
         return new Int8Array(await r.arrayBuffer());
       }),
@@ -168,10 +218,15 @@ async function pixels(image: Blob): Promise<ort.Tensor> {
 scope.onmessage = async ({ data: req }) => {
   try {
     if (req.type === 'save') {
-      post({ type: 'saved', id: req.id, saved: await save(req.base, req.fetchMissing) });
+      post({ type: 'saved', id: req.id, saved: await save(req.base, req.fetchMissing, req.controlled) });
       return;
     }
-    const { session, table } = await load(req.base);
+    if (req.type === 'warm') {
+      await load(req.base, req.controlled);
+      post({ type: 'warmed', id: req.id });
+      return;
+    }
+    const { session, table } = await load(req.base, req.controlled);
     post({ type: 'progress', step: 'read', share: null });
     const out = await session.run({ pixel_values: await pixels(req.image) });
     const pooled = out.pooler_output;

@@ -25,5 +25,8 @@ export const PHOTO_MODEL = {
   logitScale: 112.67,
 } as const;
 
+/** The cache that keeps the model and its runtime on the phone (`src/sw.ts` uses the same name). */
+export const PHOTO_CACHE = 'gt-photo-model';
+
 /** What a phrase is wrapped in before it is embedded; the best of the templates measured for SigLIP 2. */
 export const promptOf = (phrase: string) => `a photo of ${phrase}.`;

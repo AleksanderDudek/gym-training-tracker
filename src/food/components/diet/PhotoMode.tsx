@@ -8,7 +8,7 @@ import { FAT_SCALE, SAUCE_SCALE, SWEET_SCALE, type Choices, type Dish, type FatL
 import type { Food } from '../../diet/foods';
 import { PHOTO_MODEL } from '../../photo/model';
 import { NOT_FOOD_COS } from '../../photo/score';
-import { checkModel, useModelState, type ModelState } from '../../photo/modelState';
+import { checkModel, modelState, useModelState, type ModelState } from '../../photo/modelState';
 import { clearCamera, clearRun, clearRunOnLeave, consumeRun, markCamera, markReading, pendingPhoto, type Interrupted } from '../../photo/pending';
 import {
   PORTION_STEPS,
@@ -25,8 +25,21 @@ import {
   similarFoods,
   type PlateItem,
 } from '../../photo/plate';
-import { MODEL_MB, downloadModel, failureOf, prepare, recognize, release, type Failure, type Progress, type Suggestion } from '../../photo/recognize';
+import {
+  MODEL_MB,
+  downloadModel,
+  failureOf,
+  preload,
+  prepare,
+  recognize,
+  release,
+  restartDownload,
+  type Failure,
+  type Progress,
+  type Suggestion,
+} from '../../photo/recognize';
 import { useKcalShown } from './kcalShown';
+import { PhotoCamera } from './PhotoCamera';
 
 const MODEL_FILE_MB = Math.round(PHOTO_MODEL.bytes / 1e6);
 
@@ -41,10 +54,13 @@ const T = text({
     modelReady: `Jest w telefonie (${MODEL_FILE_MB} MB) — rozpoznawanie działa też bez internetu.`,
     modelDownloading: (pct: number | null, got: number | null) =>
       pct === null ? 'Pobieram…' : `Pobieram: ${pct}% (${got} z ${MODEL_FILE_MB} MB).`,
-    modelDownloadingNote: 'Możesz już zrobić zdjęcie — poczeka na model.',
-    modelMissing: (mb: number) => `Jeszcze go nie ma w telefonie (ok. ${mb} MB). Pobiorę go sam przy pierwszym zdjęciu albo od razu:`,
-    modelMobile: (mb: number) =>
-      `Jeszcze go nie ma w telefonie. Nie pobieram sam ok. ${mb} MB na danych komórkowych ani przy oszczędzaniu danych — zrobię to po połączeniu z Wi-Fi, przy pierwszym zdjęciu albo od razu:`,
+    modelDownloadingNote: 'Zdjęcie zrobisz, gdy się pobierze. W międzyczasie możesz wyszukać danie poniżej.',
+    modelStalled: 'Pobieranie stoi od pół minuty — pewnie słaby zasięg. Spróbuj ponownie.',
+    modelMissing: (mb: number) => `Jeszcze go nie ma w telefonie (ok. ${mb} MB) — bez niego zdjęcie nie rozpozna dania.`,
+    modelSaver: (mb: number) => `Jeszcze go nie ma w telefonie. Masz włączone oszczędzanie danych, więc nie pobieram sam ok. ${mb} MB.`,
+    waitModel: (pct: number | null) => (pct === null ? 'Zdjęcie zrobisz, gdy model się pobierze.' : `Zdjęcie zrobisz, gdy model się pobierze (${pct}%).`),
+    needModel: 'Najpierw pobierz model rozpoznawania — przycisk wyżej.',
+    checkingModel: 'Sprawdzam model rozpoznawania…',
     modelOffline: 'Jeszcze go nie ma w telefonie, a teraz nie ma internetu. Pobiorę go, gdy sieć wróci.',
     modelFailed: (reason: 'offline' | 'storage' | 'error'): string =>
       reason === 'offline'
@@ -72,7 +88,7 @@ const T = text({
     details: 'Szczegóły',
     retry: 'Spróbuj ponownie',
     lostCamera:
-      'Telefon zamknął aplikację, kiedy był otwarty aparat — tak zwalnia pamięć dla aparatu. Zdjęcie do mnie nie dotarło. Spróbuj jeszcze raz, a jeśli to się powtarza: zrób zdjęcie zwykłym aparatem i wybierz je przyciskiem „Z galerii”.',
+      'Poprzednie zdjęcie do mnie nie dotarło — telefon zamknął aplikację, kiedy był otwarty aparat telefonu albo galeria. Zrób je jeszcze raz przyciskiem „Zrób zdjęcie”: aparat w aplikacji tego problemu nie ma.',
     lostReading: 'Analiza poprzedniego zdjęcia została przerwana — telefon zamknął aplikację, pewnie z braku pamięci.',
     lostAgain: (n: number) => `Przerwało się już ${n} razy z rzędu — na tym telefonie model może się nie mieścić w pamięci. Zamknij inne aplikacje albo wyszukaj danie poniżej.`,
     lostPhoto: 'Zdjęcie jest zachowane:',
@@ -128,10 +144,13 @@ const T = text({
     modelReady: `On the phone (${MODEL_FILE_MB} MB) — recognition also works offline.`,
     modelDownloading: (pct: number | null, got: number | null) =>
       pct === null ? 'Downloading…' : `Downloading: ${pct}% (${got} of ${MODEL_FILE_MB} MB).`,
-    modelDownloadingNote: 'You can take the photo now — it will wait for the model.',
-    modelMissing: (mb: number) => `Not on the phone yet (about ${mb} MB). I’ll download it with the first photo, or now:`,
-    modelMobile: (mb: number) =>
-      `Not on the phone yet. I don’t download about ${mb} MB by myself on mobile data or with data saver on — I’ll do it on Wi-Fi, with the first photo, or now:`,
+    modelDownloadingNote: 'You can take the photo once it is downloaded. Meanwhile you can search for the dish below.',
+    modelStalled: 'The download hasn’t moved for half a minute — probably a weak signal. Try again.',
+    modelMissing: (mb: number) => `Not on the phone yet (about ${mb} MB) — without it a photo can’t recognise the dish.`,
+    modelSaver: (mb: number) => `Not on the phone yet. Data saver is on, so I don’t download about ${mb} MB by myself.`,
+    waitModel: (pct: number | null) => (pct === null ? 'You can take the photo once the model is downloaded.' : `You can take the photo once the model is downloaded (${pct}%).`),
+    needModel: 'Download the recognition model first — the button above.',
+    checkingModel: 'Checking the recognition model…',
     modelOffline: 'Not on the phone yet, and there is no internet right now. I’ll download it when the connection is back.',
     modelFailed: (reason: 'offline' | 'storage' | 'error') =>
       reason === 'offline'
@@ -159,7 +178,7 @@ const T = text({
     details: 'Details',
     retry: 'Try again',
     lostCamera:
-      'The phone closed the app while the camera was open — that is how it frees memory for the camera. The photo never reached me. Try again, and if it keeps happening: take the photo with the camera app and pick it with “From gallery”.',
+      'The last photo never reached me — the phone closed the app while its camera or gallery was open. Take it again with “Take a photo”: the camera inside the app doesn’t have this problem.',
     lostReading: 'The analysis of the last photo was cut short — the phone closed the app, probably for lack of memory.',
     lostAgain: (n: number) => `It has stopped ${n} times in a row — the model may not fit in this phone’s memory. Close other apps, or search for the dish below.`,
     lostPhoto: 'The photo is kept:',
@@ -265,6 +284,10 @@ export function PhotoMode({ date, resume = null, find, findLoading = false, onLo
   const result = useRef<HTMLDivElement>(null);
   const run = useRef(0);
   const mounted = useRef(true);
+  /** The in-app viewfinder is open. */
+  const [viewfinder, setViewfinder] = useState(false);
+  /** The first interrupted analysis is retried by itself, once (`2026-10-29-zdjecie-aparat-design.md`). */
+  const autoRetry = useRef(resume?.stage === 'reading' && resume.tries === 1);
   /** Analyses in a row the phone cut short: carried into the next marker, back to 0 after a result. */
   const tries = useRef(resume?.tries ?? 0);
   /** The kept photo has been read (or there is none): from now on closing the sheet may delete it. */
@@ -364,7 +387,37 @@ export function PhotoMode({ date, resume = null, find, findLoading = false, onLo
     }
   };
 
-  // The download (not the model itself) starts while the person frames the shot.
+  // Photos only once the model is on the phone (or where it cannot be kept at all and comes with each photo).
+  const canShoot = model.kind === 'ready' || model.kind === 'unsupported';
+
+  /** The in-app camera; the model goes into memory while the person frames the shot. */
+  const openCamera = () => {
+    setViewfinder(true);
+    if (model.kind === 'ready') preload();
+  };
+  /**
+   * The viewfinder closed without a photo: the preloaded model goes too — above all before the
+   * phone's camera app or the gallery sends the browser to the background.
+   */
+  const closeCamera = () => {
+    setViewfinder(false);
+    release();
+  };
+
+  // A hidden page with the viewfinder open holds no model (the phone may close a background tab
+  // that does); it comes back with the page.
+  useEffect(() => {
+    if (!viewfinder) return;
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') release();
+      else if (modelState().kind === 'ready') preload();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, [viewfinder]);
+
+  // The phone's camera app or the gallery: the browser goes to the background, so only the download
+  // (not the model itself) may start, and a marker is left in case the phone closes the page.
   const pick = (input: HTMLInputElement | null) => {
     // A photo already in the model keeps its marker until another one arrives.
     if (stage.kind !== 'working') markCamera(tries.current);
@@ -416,6 +469,13 @@ export function PhotoMode({ date, resume = null, find, findLoading = false, onLo
     setStage({ ...stage, notFood: false });
     place(stage.suggestions);
   };
+
+  // The kept photo of an analysis the phone cut short goes back to the model by itself, once.
+  useEffect(() => {
+    if (!autoRetry.current || !file || stage.kind !== 'interrupted' || model.kind !== 'ready') return;
+    autoRetry.current = false;
+    void onFile(file);
+  });
 
   const save = async () => {
     if (busy || !items.length) return;
@@ -473,7 +533,7 @@ export function PhotoMode({ date, resume = null, find, findLoading = false, onLo
   return (
     <div className="fd-diet-photo">
       {/* Once the answer is here and the model is on the phone, the card would only push it down. */}
-      {!(stage.kind === 'done' && model.kind === 'ready') && <ModelCard />}
+      {(model.kind !== 'ready' || (stage.kind === 'start' && !viewfinder && !items.length)) && <ModelCard />}
       {stage.kind === 'interrupted' && (
         <div className="fd-diet-photo-note" role="alert">
           <p>{stage.at === 'camera' ? T.lostCamera : T.lostReading}</p>
@@ -482,22 +542,50 @@ export function PhotoMode({ date, resume = null, find, findLoading = false, onLo
         </div>
       )}
       {stage.kind === 'start' && !items.length && <p className="fd-diet-hint">{T.lead}</p>}
-      <div className="fd-diet-photo-row">
-        {photo && <img className="fd-diet-photo-img" src={photo} alt={T.photo} />}
-        <div className="fd-diet-photo-btns">
-          {file && (stage.kind === 'failed' || stage.kind === 'interrupted') && (
-            <button type="button" className="btn sm" onClick={() => void onFile(file)}>
-              <RotateCcw aria-hidden="true" size={18} /> {T.retry}
+      {viewfinder ? (
+        <PhotoCamera
+          onShot={(shot) => {
+            setViewfinder(false);
+            void onFile(shot);
+          }}
+          onSystemCamera={() => {
+            closeCamera();
+            pick(camera.current);
+          }}
+          onGallery={() => {
+            closeCamera();
+            pick(gallery.current);
+          }}
+          onCancel={closeCamera}
+        />
+      ) : (
+        <div className="fd-diet-photo-row">
+          {photo && <img className="fd-diet-photo-img" src={photo} alt={T.photo} />}
+          <div className="fd-diet-photo-btns">
+            {file && (stage.kind === 'failed' || stage.kind === 'interrupted') && (
+              <button type="button" className="btn sm" disabled={!canShoot} onClick={() => void onFile(file)}>
+                <RotateCcw aria-hidden="true" size={18} /> {T.retry}
+              </button>
+            )}
+            <button
+              type="button"
+              className={file && (stage.kind === 'failed' || stage.kind === 'interrupted') ? 'btn ghost sm' : 'btn sm'}
+              disabled={!canShoot || stage.kind === 'working'}
+              onClick={openCamera}
+            >
+              <Camera aria-hidden="true" size={18} /> {photo ? T.newPhoto : T.take}
             </button>
+            <button type="button" className="btn ghost sm" disabled={!canShoot || stage.kind === 'working'} onClick={() => pick(gallery.current)}>
+              <ImagePlus aria-hidden="true" size={18} /> {T.gallery}
+            </button>
+          </div>
+          {!canShoot && (
+            <p className="fd-diet-meta fd-diet-photo-wait">
+              {model.kind === 'downloading' ? T.waitModel(pct(model.share)) : model.kind === 'unknown' ? T.checkingModel : T.needModel}
+            </p>
           )}
-          <button type="button" className={file && (stage.kind === 'failed' || stage.kind === 'interrupted') ? 'btn ghost sm' : 'btn sm'} onClick={() => pick(camera.current)}>
-            <Camera aria-hidden="true" size={18} /> {photo ? T.newPhoto : T.take}
-          </button>
-          <button type="button" className="btn ghost sm" onClick={() => pick(gallery.current)}>
-            <ImagePlus aria-hidden="true" size={18} /> {T.gallery}
-          </button>
         </div>
-      </div>
+      )}
       {/* Dwa pola: jedno otwiera od razu aparat (tylne), drugie galerię — zrzut ekranu z menu też się liczy. */}
       <input ref={camera} type="file" accept="image/*" capture="environment" hidden onChange={(e) => pickFile(e, onFile)} />
       <input ref={gallery} type="file" accept="image/*" hidden onChange={(e) => pickFile(e, onFile)} />
@@ -588,12 +676,25 @@ export function PhotoMode({ date, resume = null, find, findLoading = false, onLo
 }
 
 /** Where the model stands on this phone, and the button to fetch it when it is not there. */
+/** No progress for this long: the download has stalled, and the card offers to start it again. */
+const STALL_MS = 30_000;
+
 function ModelCard() {
   const state = useModelState();
+  const share = state.kind === 'downloading' ? state.share : undefined;
+  // The share the download stood still at; any progress makes it a different one.
+  const [stuckAt, setStuckAt] = useState<number | null | undefined>(undefined);
+  useEffect(() => {
+    if (share === undefined) return;
+    const t = window.setTimeout(() => setStuckAt(share), STALL_MS);
+    return () => window.clearTimeout(t);
+  }, [share]);
+  const stalled = share !== undefined && stuckAt === share;
   // The card itself shows how it went; the promise has nothing to add.
   const fetchNow = () => void downloadModel().catch(() => undefined);
+  // Without the model there is no photo, so fetching it is the screen's main action.
   const button = (label: string) => (
-    <button type="button" className="btn ghost sm" onClick={fetchNow}>
+    <button type="button" className="btn sm" onClick={fetchNow}>
       <Download aria-hidden="true" size={18} /> {label}
     </button>
   );
@@ -618,7 +719,12 @@ function ModelCard() {
             aria-label={T.model}
             aria-valuetext={modelLine(state)}
           />
-          <p className="fd-diet-meta">{T.modelDownloadingNote}</p>
+          <p className="fd-diet-meta">{stalled ? T.modelStalled : T.modelDownloadingNote}</p>
+          {stalled && (
+            <button type="button" className="btn sm" onClick={() => void restartDownload().catch(() => undefined)}>
+              <RotateCcw aria-hidden="true" size={18} /> {T.retryDownload}
+            </button>
+          )}
         </>
       )}
       {state.kind === 'missing' && state.wait !== 'offline' && button(T.download(MODEL_MB))}
@@ -636,7 +742,7 @@ function modelLine(state: ModelState): string {
     case 'downloading':
       return T.modelDownloading(pct(state.share), state.share === null ? null : Math.round((state.share * PHOTO_MODEL.bytes) / 1e6));
     case 'missing':
-      return state.wait === 'mobile' ? T.modelMobile(MODEL_MB) : state.wait === 'offline' ? T.modelOffline : T.modelMissing(MODEL_MB);
+      return state.wait === 'saver' ? T.modelSaver(MODEL_MB) : state.wait === 'offline' ? T.modelOffline : T.modelMissing(MODEL_MB);
     case 'failed':
       return T.modelFailed(state.reason);
     case 'unsupported':
