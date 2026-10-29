@@ -903,8 +903,11 @@ w tle, ok. 2 s po starcie aplikacji — także przy pierwszym uruchomieniu (zani
 pliki zapisuje sam worker zdjęć) i na danych komórkowych; zatrzymuje go tylko „Oszczędzanie danych”
 (`src/food/photo/background.ts`). Póki modelu nie ma, „Zrób zdjęcie” i „Z galerii” czekają (z procentem
 pobierania albo „Pobierz model”). „Zrób zdjęcie” otwiera aparat w aplikacji (`PhotoCamera.tsx`,
-`getUserMedia`): strona nie idzie w tło, więc telefon jej nie zamyka, a klatka od razu idzie do modelu,
-który wczytuje się, gdy kadrujesz; aparat telefonu i galeria zostają na wypadek braku zgody na aparat. Potem działa z kopii service workera, także bez sieci; zdjęcie
+`getUserMedia`): strona nie idzie w tło, więc telefon jej nie zamyka, a klatka od razu idzie do modelu
+(wczytuje się po migawce, przy wyłączonym aparacie — oba naraz to za dużo pamięci dla telefonu);
+aparat telefonu i galeria zostają na wypadek braku zgody na aparat. Jedzenie słabo widoczne (patelnia
+na kuchence) dostaje wstępny szacunek z „sprawdź i popraw”, a „nie widzę jedzenia” — tylko wyraźnie
+inne zdjęcia (`NOT_FOOD_COS`, `WEAK_FOOD_COS`). Potem działa z kopii service workera, także bez sieci; zdjęcie
 nie wychodzi z telefonu. Karta „Model rozpoznawania” na górze zakładki mówi, czy model jest w telefonie,
 ile się już pobrało i czemu czeka (dane komórkowe, brak sieci), z przyciskiem „Pobierz teraz”; zdjęcie
 przechodzi przez widoczne kroki (zdjęcie odebrane → model → uruchamianie → rozpoznawanie), a pewne
@@ -916,7 +919,7 @@ lokali o podobnej nazwie z kcal/100 g, z „Użyj”, które liczy z ich wartoś
 aparacie albo w czasie analizy), po ponownym otwarciu „Dodaj zjedzone” wraca na „Zdjęcie” z wyjaśnieniem
 i zachowanym zdjęciem (`src/food/photo/pending.ts`). Plik modelu nie jest w gicie: build pobiera przypiętą wersję z Hugging Face
 (`vite/photoModel.ts`, SHA-256), a wektory fraz robi `npm run food:dish-embeddings` (test pilnuje,
-żeby pasowały do katalogu). Szczegóły: `docs/superpowers/specs/2026-10-27-zdjecie-posilku-design.md`, `…/2026-10-28-zdjecie-status-design.md` i `…/2026-10-29-zdjecie-szacunek-design.md`,
+żeby pasowały do katalogu). Szczegóły: `docs/superpowers/specs/2026-10-27-zdjecie-posilku-design.md`, `…/2026-10-28-zdjecie-status-design.md`, `…/2026-10-29-zdjecie-szacunek-design.md`, `…/2026-10-29-zdjecie-aparat-design.md` i `…/2026-10-30-zdjecie-pamiec-design.md`,
 pomiary modeli: `docs/research/zdjecie-posilku-modele.md`.
 
 **Badania — dieta pod wyniki** (`#/jedzenie/badania`, piąty kafelek pod dziennikiem). Wyniki krwi

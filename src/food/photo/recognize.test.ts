@@ -25,7 +25,7 @@ class FakeWorker {
 }
 
 vi.stubGlobal('Worker', FakeWorker);
-const { failureOf, preload, prepare, recognize, release, restartDownload, saveModel } = await import('./recognize');
+const { failureOf, prepare, recognize, release, restartDownload, saveModel } = await import('./recognize');
 
 const lastId = () => (FakeWorker.last.sent.at(-1) as { id: number }).id;
 
@@ -221,19 +221,5 @@ describe('restartDownload', () => {
   });
 });
 
-describe('preload', () => {
-  it('a load that fails (the copy gone, the network too) does not leave the card on "downloading"', async () => {
-    vi.stubGlobal('caches', { match: async () => undefined });
-    preload();
-    const w = FakeWorker.last;
-    expect(w.sent.at(-1)).toMatchObject({ type: 'warm' });
-    w.reply({ type: 'progress', step: 'load', share: 0.2, source: 'network' });
-    expect(modelState()).toEqual({ kind: 'downloading', share: 0.2 });
-    w.reply({ type: 'error', id: lastId(), message: 'Failed to fetch' });
-    await vi.waitFor(() => expect(modelState()).toMatchObject({ kind: 'failed' }), { timeout: 8000 });
-    vi.unstubAllGlobals();
-    vi.stubGlobal('Worker', FakeWorker);
-    // settleModel looks in the copy for up to 5 s before it gives up.
-  }, 10_000);
-});
+
 

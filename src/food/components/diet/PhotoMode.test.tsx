@@ -14,7 +14,6 @@ import { PhotoMode } from './PhotoMode';
 const recognize = vi.hoisted(() => vi.fn());
 const downloadModel = vi.hoisted(() => vi.fn(() => Promise.resolve(true)));
 const prepare = vi.hoisted(() => vi.fn());
-const preload = vi.hoisted(() => vi.fn());
 const release = vi.hoisted(() => vi.fn());
 const restartDownload = vi.hoisted(() => vi.fn(() => Promise.resolve(true)));
 const grabFrame = vi.hoisted(() => vi.fn());
@@ -35,7 +34,6 @@ vi.mock('../../photo/recognize', () => ({
   MODEL_MB: 20,
   recognize,
   prepare,
-  preload,
   downloadModel,
   release,
   restartDownload,
@@ -63,7 +61,6 @@ beforeEach(async () => {
   recognize.mockReset();
   downloadModel.mockClear();
   prepare.mockClear();
-  preload.mockClear();
   release.mockClear();
   restartDownload.mockClear();
   grabFrame.mockReset();
@@ -439,9 +436,11 @@ describe('Model rozpoznawania', () => {
 });
 
 describe('Po zamknięciu aplikacji przez telefon', () => {
-  test('w trakcie aparatu telefonu: wyjaśnienie i wskazanie aparatu w aplikacji', () => {
+  test('w trakcie aparatu: wyjaśnienie, a „Zrób zdjęcie” od razu pod spodem', () => {
+    setModelState({ kind: 'ready' });
     render(<PhotoMode date={DATE} resume={{ stage: 'camera', tries: 0 }} onLogged={vi.fn()} onDone={vi.fn()} />);
-    expect(screen.getByRole('alert')).toHaveTextContent(/nie dotarło — telefon zamknął aplikację.*„Zrób zdjęcie”: aparat w aplikacji/);
+    expect(screen.getByRole('alert')).toHaveTextContent(/nie dotarło — telefon zamknął aplikację, kiedy był włączony aparat/);
+    expect(screen.getByRole('button', { name: /Zrób zdjęcie/ })).toBeEnabled();
   });
 
   test('w trakcie analizy: zachowane zdjęcie i „Spróbuj ponownie”; za drugim razem rada, żeby wyszukać', async () => {
@@ -493,8 +492,10 @@ describe('Aparat w aplikacji i model', () => {
     const user = userEvent.setup();
     render(<PhotoMode date={DATE} onLogged={vi.fn()} onDone={vi.fn()} />);
     await user.click(screen.getByRole('button', { name: /Zrób zdjęcie/ }));
-    expect(preload).toHaveBeenCalled();
     expect(cam.getUserMedia).toHaveBeenCalled();
+    // A marker while the camera is on, so a closed tab comes back here; no model yet.
+    expect(JSON.parse(localStorage.getItem(MARKER)!)).toMatchObject({ stage: 'camera' });
+    expect(recognize).not.toHaveBeenCalled();
     const shutter = await screen.findByRole('button', { name: 'Zrób zdjęcie' });
     // No shutter before the camera shows a picture.
     expect(shutter).toBeDisabled();
@@ -503,9 +504,9 @@ describe('Aparat w aplikacji i model', () => {
     await user.click(shutter);
     expect(await screen.findByText(/Pad thai — pewne/)).toBeInTheDocument();
     expect(recognize.mock.calls[0]![0]).toBe(shot);
-    expect(cam.stop).toHaveBeenCalled();
-    // No system camera, so no marker of one.
-    expect(JSON.parse(localStorage.getItem(MARKER) ?? 'null')).toBeNull();
+    // The camera was off before the model started.
+    expect(cam.stop.mock.invocationCallOrder[0]).toBeLessThan(recognize.mock.invocationCallOrder[0]!);
+    expect(localStorage.getItem(MARKER)).toBeNull();
   });
 
   test('bez zgody na aparat: mówi czemu i daje aparat telefonu (z znacznikiem) oraz galerię', async () => {
@@ -531,7 +532,7 @@ describe('Aparat w aplikacji i model', () => {
     expect(recognize.mock.calls[0]![0]).toBe(kept.photo);
   });
 
-  test('wizjer zamknięty bez zdjęcia zwalnia model — także zanim otworzy się galeria; spóźniona klatka po „Anuluj” nic nie uruchamia', async () => {
+  test('wizjer zamknięty bez zdjęcia zdejmuje znacznik; spóźniona klatka po zamknięciu wyjścia nic nie psuje', async () => {
     setModelState({ kind: 'ready' });
     fakeCamera();
     let frame: (b: Blob) => void = () => undefined;
@@ -539,22 +540,23 @@ describe('Aparat w aplikacji i model', () => {
     const user = userEvent.setup();
     const { container } = render(<PhotoMode date={DATE} onLogged={vi.fn()} onDone={vi.fn()} />);
     await user.click(screen.getByRole('button', { name: /Zrób zdjęcie/ }));
-    const gallery = vi.spyOn(inputs(container)[1]!, 'click').mockImplementation(() => {
-      // The model must be gone before the browser goes to the background.
-      expect(release).toHaveBeenCalled();
-    });
+    expect(JSON.parse(localStorage.getItem(MARKER)!)).toMatchObject({ stage: 'camera' });
+    await user.click(await screen.findByRole('button', { name: /Anuluj/ }));
+    expect(localStorage.getItem(MARKER)).toBeNull();
+
+    // From the viewfinder to the gallery: the gallery leaves its own marker.
+    await user.click(screen.getByRole('button', { name: /Zrób zdjęcie/ }));
+    const gallery = vi.spyOn(inputs(container)[1]!, 'click').mockImplementation(() => undefined);
     await user.click(await screen.findByRole('button', { name: /Z galerii/ }));
     expect(gallery).toHaveBeenCalled();
+    expect(JSON.parse(localStorage.getItem(MARKER)!)).toMatchObject({ stage: 'camera' });
 
-    release.mockClear();
     await user.click(screen.getByRole('button', { name: /Zrób zdjęcie/ }));
     fireEvent(document.querySelector('video')!, new Event('playing'));
     const shutter = await screen.findByRole('button', { name: 'Zrób zdjęcie' });
     await waitFor(() => expect(shutter).toBeEnabled());
     await user.click(shutter);
-    // While the frame is being taken the way out is closed; afterwards „Anuluj” is the only one that counts.
     expect(screen.getByRole('button', { name: /Anuluj/ })).toBeDisabled();
-    fireEvent(document, new Event('visibilitychange'));
     expect(recognize).not.toHaveBeenCalled();
     await act(async () => frame(new Blob([new Uint8Array([1])])));
     expect(recognize).toHaveBeenCalledTimes(1);
@@ -592,4 +594,19 @@ describe('Aparat w aplikacji i model', () => {
     expect(restartDownload).toHaveBeenCalled();
     vi.useRealTimers();
   });
+
+  test('słabo widać jedzenie (patelnia na kuchence): i tak szacunek, ale wstępny, z „sprawdź i popraw”', async () => {
+    recognize.mockResolvedValue([
+      { dish: dishById('stirFry')!, score: 0.7, cos: 0.106 },
+      { dish: dishById('padThai')!, score: 0.2, cos: 0.1 },
+    ]);
+    const user = userEvent.setup();
+    const { container } = render(<PhotoMode date={DATE} onLogged={vi.fn()} onDone={vi.fn()} />);
+    await user.upload(inputs(container)[1]!, photo());
+    const answer = await screen.findByRole('region', { name: 'Wynik ze zdjęcia' });
+    expect(answer).toHaveTextContent(/Słabo widać tu jedzenie — może to/);
+    expect(answer).toHaveTextContent(/ok\. \d+ kcal/);
+    expect(within(screen.getByRole('region', { name: 'Na talerzu' })).getByText('wstępnie')).toBeInTheDocument();
+  });
 });
+
