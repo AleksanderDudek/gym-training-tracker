@@ -6,6 +6,7 @@ import { db } from '../../diet/db';
 import { clearAll } from '../../diet/store';
 import { dishById } from '../../photo/dishes';
 import { resetModelState, setModelState } from '../../photo/modelState';
+import type { Food } from '../../diet/foods';
 import type { Progress } from '../../photo/recognize';
 import { KcalShown } from './kcalShown';
 import { PhotoMode } from './PhotoMode';
@@ -77,9 +78,13 @@ describe('Zdjęcie posiłku', () => {
     const { container } = render(<PhotoMode date={DATE} onLogged={onLogged} onDone={onDone} />);
     await user.upload(inputs(container)[1]!, photo());
 
-    expect(await screen.findByText('To chyba Pierogi ruskie (62%) — już na talerzu. Jeśli to coś innego, stuknij właściwe:')).toBeInTheDocument();
+    const answer = await screen.findByRole('region', { name: 'Wynik ze zdjęcia' });
+    expect(answer).toHaveTextContent('Pierogi ruskie — pewne (62%)');
+    expect(answer).toHaveTextContent(/ok\. \d+ kcal\s*\d+–\d+ kcal/);
+    expect(answer).toHaveTextContent(/B [\d,]+ g · W [\d,]+ g · T [\d,]+ g/);
     expect(screen.getByRole('button', { name: /^Pierogi ruskie/ })).toHaveAttribute('aria-pressed', 'true');
     const plate = screen.getByRole('region', { name: 'Na talerzu' });
+    expect(within(plate).queryByText('wstępnie')).toBeNull();
     expect(within(plate).getByText(/ok\. \d+ kcal/)).toBeInTheDocument();
     const slider = within(plate).getByRole('slider', { name: 'Porcja' });
     expect(slider).toHaveAttribute('aria-valuetext', expect.stringContaining('zwykła porcja'));
@@ -96,19 +101,27 @@ describe('Zdjęcie posiłku', () => {
     expect(onLogged).toHaveBeenCalledWith(expect.stringMatching(/ze zdjęcia — ok\. \d/));
   });
 
-  test('niepewny model: prośba o wybór (z kcal na porcję); wyszukiwanie dań; dwa dania na talerzu z sumą', async () => {
+  test('niepewny model: i tak szacunek (wstępny, z zakresem na inne dania); stuknięta propozycja go zastępuje; wyszukane dochodzi', async () => {
     recognize.mockResolvedValue([
       { dish: dishById('padThai')!, score: 0.21 },
       { dish: dishById('ramen')!, score: 0.19 },
+      { dish: dishById('pho')!, score: 0.01 },
     ]);
     const user = userEvent.setup();
     const { container } = render(<PhotoMode date={DATE} onLogged={vi.fn()} onDone={vi.fn()} />);
     await user.upload(inputs(container)[0]!, photo());
-    expect(await screen.findByText(/Nie jestem pewien/)).toBeInTheDocument();
-    expect(screen.queryByRole('region', { name: 'Na talerzu' })).toBeNull();
-    const padThai = screen.getByRole('button', { name: /^Pad thai/ });
-    expect(padThai).toHaveTextContent(/\d+ kcal/);
-    await user.click(padThai);
+    const answer = await screen.findByRole('region', { name: 'Wynik ze zdjęcia' });
+    // Pho has too little of the probability to count as one of the other likely dishes.
+    expect(answer).toHaveTextContent('Najpewniej Pad thai (21%), może też: ramen');
+    expect(answer).toHaveTextContent(/ok\. \d+ kcal/);
+    expect(answer).toHaveTextContent(/Wstępny szacunek/);
+    const plate = screen.getByRole('region', { name: 'Na talerzu' });
+    expect(within(plate).getByText('wstępnie')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Pad thai/ })).toHaveTextContent(/\d+ kcal/);
+    await user.click(screen.getByRole('button', { name: /^Ramen/ }));
+    expect(within(plate).queryByText('Pad thai')).toBeNull();
+    expect(within(plate).getByText('Ramen')).toBeInTheDocument();
+    expect(within(plate).queryByText('wstępnie')).toBeNull();
     await user.type(screen.getByLabelText('Szukaj dania'), 'sajgonki');
     await user.click(await screen.findByRole('button', { name: /Sajgonki/ }));
     expect(screen.getByText(/Razem:/)).toBeInTheDocument();
@@ -123,7 +136,8 @@ describe('Zdjęcie posiłku', () => {
     ]);
     const { container } = render(<PhotoMode date={DATE} onLogged={vi.fn()} onDone={vi.fn()} />);
     await userEvent.setup().upload(inputs(container)[1]!, photo());
-    expect(await screen.findByText('To chyba pierogi — wybierz rodzaj:')).toBeInTheDocument();
+    expect(await screen.findByText('To chyba pierogi — rodzaj niepewny')).toBeInTheDocument();
+    expect(within(screen.getByRole('region', { name: 'Na talerzu' })).getByText('Pierogi ruskie')).toBeInTheDocument();
   });
 
   test('zapis przerwany w połowie: zapisane schodzi z talerza, ponowne „Dodaj” nie dubluje', async () => {
@@ -135,8 +149,10 @@ describe('Zdjęcie posiłku', () => {
     const user = userEvent.setup();
     const { container } = render(<PhotoMode date={DATE} onLogged={vi.fn()} onDone={vi.fn()} />);
     await user.upload(inputs(container)[1]!, photo());
-    await user.click(await screen.findByRole('button', { name: /^Pad thai/ }));
-    await user.click(screen.getByRole('button', { name: /^Sajgonki/ }));
+    // Pad thai is on the plate already (a first guess); spring rolls come from the search.
+    await screen.findByRole('region', { name: 'Na talerzu' });
+    await user.type(screen.getByLabelText('Szukaj dania'), 'sajgonki');
+    await user.click((await screen.findAllByRole('button', { name: /^Sajgonki/ })).at(-1)!);
     Object.assign(failLog, { after: 1, calls: 0 });
     await user.click(screen.getByRole('button', { name: 'Dodaj 2 pozycje' }));
     expect(await screen.findByRole('alert')).toHaveTextContent(/Nie udało się zapisać/);
@@ -161,7 +177,7 @@ describe('Zdjęcie posiłku', () => {
     expect(alert).toHaveTextContent(/could not allocate memory/);
     expect(localStorage.getItem(MARKER)).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Spróbuj ponownie' }));
-    expect(await screen.findByText(/To chyba Pad thai/)).toBeInTheDocument();
+    expect(await screen.findByText(/Pad thai — pewne/)).toBeInTheDocument();
     expect(recognize).toHaveBeenCalledTimes(2);
     expect(recognize.mock.calls[1]![0]).toBe(recognize.mock.calls[0]![0]);
     expect(screen.queryByText(/kcal/)).toBeNull();
@@ -205,6 +221,136 @@ describe('Zdjęcie posiłku', () => {
     expect(JSON.parse(localStorage.getItem(MARKER)!)).toMatchObject({ stage: 'camera' });
     fireEvent(camera, new Event('cancel'));
     expect(localStorage.getItem(MARKER)).toBeNull();
+  });
+});
+
+describe('Nie jedzenie i porównanie z bazą', () => {
+  test('na zdjęciu nie ma jedzenia: mówi to i nic nie kładzie na talerz; „To jednak jedzenie” pokazuje propozycje', async () => {
+    recognize.mockResolvedValue([
+      { dish: dishById('padThai')!, score: 0.3, cos: 0.06 },
+      { dish: dishById('ramen')!, score: 0.2, cos: 0.05 },
+    ]);
+    const user = userEvent.setup();
+    const { container } = render(<PhotoMode date={DATE} onLogged={vi.fn()} onDone={vi.fn()} />);
+    await user.upload(inputs(container)[1]!, photo());
+    expect(await screen.findByText(/nie widzę jedzenia/)).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Na talerzu' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /^Pad thai/ })).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'To jednak jedzenie — pokaż propozycje' }));
+    expect(within(screen.getByRole('region', { name: 'Na talerzu' })).getByText('Pad thai')).toBeInTheDocument();
+  });
+
+  test('podobne w bazie: zakres kcal/100 g obok wartości dania; „Użyj” liczy z produktu, wpis mówi skąd', async () => {
+    recognize.mockResolvedValue([{ dish: dishById('pierogiRuskie')!, score: 0.9, cos: 0.17 }]);
+    const food = (key: string, name: string, kcal: number): Food => ({
+      key,
+      name,
+      detail: 'produkt',
+      source: 'product',
+      amountLabel: '100 g',
+      nutrients: { kcal, protein: 7, carbs: 30, fat: 8 },
+      per100: { kcal, protein: 7, carbs: 30, fat: 8 },
+      grams: 100,
+      stores: [],
+      atHome: false,
+      role: 'main',
+    });
+    const find = vi.fn((q: string) => (/pierogi/i.test(q) ? [food('product:1', 'Pierogi ruskie Jawo', 220), food('product:2', 'Pierogi z serem', 180)] : []));
+    const onDone = vi.fn();
+    const user = userEvent.setup();
+    const { container } = render(<PhotoMode date={DATE} find={find} onLogged={vi.fn()} onDone={onDone} />);
+    await user.upload(inputs(container)[1]!, photo());
+    const plate = await screen.findByRole('region', { name: 'Na talerzu' });
+    expect(find).toHaveBeenCalledWith('Pierogi ruskie');
+    expect(within(plate).getByText(/Podobne w bazie \(2\): 180–220 kcal\/100 g · to danie \d+ kcal\/100 g/)).toBeInTheDocument();
+    const before = within(plate).getByText(/^ok\. \d+ kcal \(/).textContent;
+    await user.click(within(plate).getByRole('button', { name: 'Użyj wartości: Pierogi ruskie Jawo' }));
+    expect(within(plate).getByText(/Liczę z wartości: Pierogi ruskie Jawo/)).toBeInTheDocument();
+    const after = within(plate).getByText(/^ok\. \d+ kcal \(/).textContent;
+    expect(after).not.toBe(before);
+    // 280 g at 220 kcal/100 g.
+    expect(after).toMatch(/^ok\. 616 kcal/);
+    await user.click(within(plate).getByRole('button', { name: 'Dodaj do dziennika' }));
+    await waitFor(() => expect(onDone).toHaveBeenCalled());
+    const [entry] = await db.entries.toArray();
+    expect(entry).toMatchObject({ kcal: 616, amountLabel: '280 g, wartości jak Pierogi ruskie Jawo' });
+  });
+
+  test('baza się jeszcze wczytuje: nie mówi „nic nie ma”; wybrane wartości da się cofnąć, nawet gdy listy już nie ma', async () => {
+    recognize.mockResolvedValue([{ dish: dishById('pierogiRuskie')!, score: 0.9, cos: 0.17 }]);
+    const ref = { key: 'product:1', name: 'Pierogi ruskie Jawo', detail: '', source: 'product', amountLabel: '100 g', nutrients: { kcal: 220, protein: 7, carbs: 30, fat: 8 }, per100: { kcal: 220, protein: 7, carbs: 30, fat: 8 }, grams: 100, stores: [], atHome: false, role: 'main' } satisfies Food;
+    const user = userEvent.setup();
+    const { container, rerender } = render(<PhotoMode date={DATE} find={() => []} findLoading onLogged={vi.fn()} onDone={vi.fn()} />);
+    await user.upload(inputs(container)[1]!, photo());
+    const plate = await screen.findByRole('region', { name: 'Na talerzu' });
+    expect(within(plate).getByText(/Szukam podobnych/)).toBeInTheDocument();
+    rerender(<PhotoMode date={DATE} find={() => [ref]} onLogged={vi.fn()} onDone={vi.fn()} />);
+    await user.click(within(plate).getByRole('button', { name: 'Użyj wartości: Pierogi ruskie Jawo' }));
+    rerender(<PhotoMode date={DATE} find={() => []} onLogged={vi.fn()} onDone={vi.fn()} />);
+    expect(within(plate).getByText(/W bazie nie ma nic/)).toBeInTheDocument();
+    await user.click(within(plate).getByRole('button', { name: 'Wróć do wartości dania' }));
+    expect(within(plate).queryByText(/Liczę z wartości/)).toBeNull();
+  });
+});
+
+describe('Wstępne danie przy kilku zdjęciach', () => {
+  test('stuknięte wstępne danie zostaje, potwierdzone', async () => {
+    recognize.mockResolvedValue([
+      { dish: dishById('padThai')!, score: 0.3 },
+      { dish: dishById('ramen')!, score: 0.25 },
+    ]);
+    const user = userEvent.setup();
+    const { container } = render(<PhotoMode date={DATE} onLogged={vi.fn()} onDone={vi.fn()} />);
+    await user.upload(inputs(container)[1]!, photo());
+    const plate = await screen.findByRole('region', { name: 'Na talerzu' });
+    await user.click(screen.getByRole('button', { name: /^Pad thai/ }));
+    expect(within(plate).getByText('Pad thai')).toBeInTheDocument();
+    expect(within(plate).queryByText('wstępnie')).toBeNull();
+  });
+
+  test('drugie zdjęcie nie zastępuje dania z pierwszego', async () => {
+    recognize
+      .mockResolvedValueOnce([
+        { dish: dishById('pierogiRuskie')!, score: 0.4 },
+        { dish: dishById('pierogiMeat')!, score: 0.1 },
+      ])
+      .mockResolvedValueOnce([
+        { dish: dishById('padThai')!, score: 0.3 },
+        { dish: dishById('ramen')!, score: 0.25 },
+      ]);
+    const user = userEvent.setup();
+    const { container } = render(<PhotoMode date={DATE} onLogged={vi.fn()} onDone={vi.fn()} />);
+    await user.upload(inputs(container)[1]!, photo());
+    const plate = await screen.findByRole('region', { name: 'Na talerzu' });
+    expect(within(plate).getByText('wstępnie')).toBeInTheDocument();
+    // The first photo's guess is left untouched; the second photo's chip is about the second photo.
+    await user.upload(inputs(container)[1]!, photo());
+    await screen.findByText(/Najpewniej Pad thai/);
+    await user.click(screen.getByRole('button', { name: /^Ramen/ }));
+    const names = within(plate).getAllByText(/^(Pierogi ruskie|Pad thai|Ramen)$/).map((n) => n.textContent);
+    expect(names).toEqual(['Pierogi ruskie', 'Ramen']);
+  });
+
+  test('zdjęcie bez jedzenia po zdjęciu z daniem: talerz zostaje, ale bez „wstępnie”; pusty wynik to też „nie widzę”', async () => {
+    recognize
+      .mockResolvedValueOnce([
+        { dish: dishById('padThai')!, score: 0.3 },
+        { dish: dishById('ramen')!, score: 0.25 },
+      ])
+      .mockResolvedValueOnce([{ dish: dishById('padThai')!, score: 0.3, cos: 0.05 }])
+      .mockResolvedValueOnce([]);
+    const user = userEvent.setup();
+    const { container } = render(<PhotoMode date={DATE} onLogged={vi.fn()} onDone={vi.fn()} />);
+    await user.upload(inputs(container)[1]!, photo());
+    const plate = await screen.findByRole('region', { name: 'Na talerzu' });
+    expect(within(plate).getByText('wstępnie')).toBeInTheDocument();
+    await user.upload(inputs(container)[1]!, photo());
+    expect(await screen.findByText(/nie widzę jedzenia/)).toBeInTheDocument();
+    expect(within(plate).queryByText('wstępnie')).toBeNull();
+    await user.upload(inputs(container)[1]!, photo());
+    await waitFor(() => expect(recognize).toHaveBeenCalledTimes(3));
+    expect(await screen.findByText(/nie widzę jedzenia/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /To jednak jedzenie/ })).toBeNull();
   });
 });
 
@@ -299,6 +445,6 @@ describe('Po zamknięciu aplikacji przez telefon', () => {
     expect(screen.getByRole('img', { name: 'Zdjęcie posiłku' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Spróbuj ponownie' }));
     expect(recognize.mock.calls[0]![0]).toBe(kept.photo);
-    expect(await screen.findByText(/To chyba Pad thai/)).toBeInTheDocument();
+    expect(await screen.findByText(/Pad thai — pewne/)).toBeInTheDocument();
   });
 });

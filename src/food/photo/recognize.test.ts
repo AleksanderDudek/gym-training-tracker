@@ -40,8 +40,9 @@ describe('recognize', () => {
     const result = recognize(new Blob(), progress);
     const w = FakeWorker.last;
     w.reply({ type: 'progress', step: 'read', share: null });
-    w.reply({ type: 'result', id: 1, top: [{ id: 'pierogiRuskie', score: 0.7 }, { id: 'noSuchDish', score: 0.1 }] });
+    w.reply({ type: 'result', id: 1, top: [{ id: 'pierogiRuskie', score: 0.7, cos: 0.17 }, { id: 'noSuchDish', score: 0.1, cos: 0.12 }] });
     const [first, ...rest] = await result;
+    expect(first).toMatchObject({ score: 0.7, cos: 0.17 });
     expect(first?.dish.id).toBe('pierogiRuskie');
     expect(rest).toEqual([]);
     expect(progress).toHaveBeenCalledTimes(1);

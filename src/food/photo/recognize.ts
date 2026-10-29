@@ -38,6 +38,8 @@ export interface Suggestion {
   dish: Dish;
   /** Softmax probability over the catalog, 0–1. */
   score: number;
+  /** How well the dish fits at all (raw cosine); the first one's tells whether the photo shows food (`NOT_FOOD_COS`). */
+  cos?: number;
 }
 
 /** What the browser downloads the first time, for the notice before it does: the model and the runtime (≈ 4 MB compressed). */
@@ -120,7 +122,7 @@ export function recognize(image: Blob, onProgress?: (p: Progress) => void): Prom
       (r) => {
         // The photo downloaded the model itself: the service worker kept a copy on the way.
         if (saving === 0) void settleModel({ kind: 'missing', wait: null });
-        return (r.type === 'result' ? r.top : []).flatMap(({ id, score }) => (dishById(id) ? [{ dish: dishById(id)!, score }] : []));
+        return (r.type === 'result' ? r.top : []).flatMap(({ id, score, cos }) => (dishById(id) ? [{ dish: dishById(id)!, score, cos }] : []));
       },
       (e: unknown) => {
         // The download may have finished and the model failed later (memory): the copy decides.

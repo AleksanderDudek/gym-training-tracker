@@ -43,7 +43,16 @@ export interface Ranked {
   id: string;
   /** Softmax probability over all dishes, 0–1. */
   score: number;
+  /** The raw cosine of the photo and the dish's best phrase: how well it fits at all (`NOT_FOOD_COS`). */
+  cos: number;
 }
+
+/**
+ * Below this best cosine no dish fits: the photo shows no food. SigLIP 2's own calibrated match,
+ * sigmoid(112.67 · cos − 16.77), is under 1 % there. Measured on the shipped weights: food photos
+ * 0.128–0.190, screens, rooms, streets and cats 0.051–0.121 (`2026-10-29-zdjecie-szacunek-design.md`).
+ */
+export const NOT_FOOD_COS = 0.105;
 
 export function rank(table: DishTable, image: Float32Array, logitScale: number, top = 5): Ranked[] {
   if (image.length !== table.dim) throw new Error(`expected ${table.dim} values, got ${image.length}`);
@@ -65,7 +74,7 @@ export function rank(table: DishTable, image: Float32Array, logitScale: number, 
     return w;
   });
   return weights
-    .map((w, i) => ({ id: table.ids[i]!, score: w / sum }))
+    .map((w, i) => ({ id: table.ids[i]!, score: w / sum, cos: best[i]! }))
     .sort((a, b) => b.score - a.score)
     .slice(0, top);
 }

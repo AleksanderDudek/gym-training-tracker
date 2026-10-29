@@ -4,7 +4,7 @@ import photos from '../test/photo-vectors.json';
 import meta from './data/dish-embeddings.json';
 import { DISHES } from './dishes';
 import { PHOTO_MODEL, promptOf } from './model';
-import { loadTable, rank } from './score';
+import { NOT_FOOD_COS, loadTable, rank } from './score';
 
 const bytes = new Int8Array(readFileSync(new URL('./data/dish-embeddings.bin', import.meta.url)));
 const table = loadTable(meta, bytes);
@@ -38,5 +38,12 @@ describe('rank', () => {
     expect(top1(photos.sushi).id).toMatch(/sushi|nigiri|maki|roll/i);
     expect(top1(photos.pierogi).id).toMatch(/^pierogi/);
     expect(rank(table, Float32Array.from(photos.pizza), PHOTO_MODEL.logitScale)).toHaveLength(5);
+  });
+
+  it('a real food photo fits its dish well above the "not food" line; a vector pointing nowhere does not', () => {
+    for (const v of [photos.pizza, photos.ramen, photos.sushi, photos.pierogi]) expect(rank(table, Float32Array.from(v), PHOTO_MODEL.logitScale)[0]!.cos).toBeGreaterThan(NOT_FOOD_COS);
+    // Orthogonal to every phrase as far as it goes: a photo of nothing the catalog knows.
+    const nowhere = new Float32Array(table.dim).map((_, i) => (i % 2 ? 1 : -1));
+    expect(rank(table, nowhere, PHOTO_MODEL.logitScale)[0]!.cos).toBeLessThan(NOT_FOOD_COS);
   });
 });

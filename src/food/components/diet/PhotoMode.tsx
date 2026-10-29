@@ -5,19 +5,24 @@ import { LOCALE, num, text } from '../../../i18n';
 import { logFood } from '../../diet/store';
 import { formatNumber } from '../../lib/format';
 import { FAT_SCALE, SAUCE_SCALE, SWEET_SCALE, type Choices, type Dish, type FatLevel, type SauceLevel, type SweetLevel } from '../../photo/dishes';
+import type { Food } from '../../diet/foods';
 import { PHOTO_MODEL } from '../../photo/model';
+import { NOT_FOOD_COS } from '../../photo/score';
 import { checkModel, useModelState, type ModelState } from '../../photo/modelState';
 import { clearCamera, clearRun, clearRunOnLeave, consumeRun, markCamera, markReading, pendingPhoto, type Interrupted } from '../../photo/pending';
 import {
   PORTION_STEPS,
   gramsOf,
   itemEstimate,
+  itemRange,
+  likelyAlts,
   newItem,
   plateFood,
   plateTotal,
   portionWord,
   rememberItems,
   searchDishes,
+  similarFoods,
   type PlateItem,
 } from '../../photo/plate';
 import { MODEL_MB, downloadModel, failureOf, prepare, recognize, release, type Failure, type Progress, type Suggestion } from '../../photo/recognize';
@@ -71,11 +76,30 @@ const T = text({
     lostReading: 'Analiza poprzedniego zdjęcia została przerwana — telefon zamknął aplikację, pewnie z braku pamięci.',
     lostAgain: (n: number) => `Przerwało się już ${n} razy z rzędu — na tym telefonie model może się nie mieścić w pamięci. Zamknij inne aplikacje albo wyszukaj danie poniżej.`,
     lostPhoto: 'Zdjęcie jest zachowane:',
-    sure: (name: string, pct: number) => `To chyba ${name} (${pct}%) — już na talerzu. Jeśli to coś innego, stuknij właściwe:`,
-    sureKept: (name: string, pct: number) => `To chyba ${name} (${pct}%) — stuknij, żeby dodać na talerz:`,
-    unsure: 'Nie jestem pewien — wybierz, co pasuje, albo wyszukaj:',
-    kind: (family: string) => `To chyba ${family} — wybierz rodzaj:`,
+    result: 'Wynik ze zdjęcia',
+    sure: (name: string, pct: number) => `${name} — pewne (${pct}%)`,
+    probably: (name: string, pct: number) => `Najpewniej ${name} (${pct}%)`,
+    maybeAlso: (names: string) => `, może też: ${names}`,
+    kind: (family: string) => `To chyba ${family} — rodzaj niepewny`,
+    tentative: 'Wstępny szacunek — zakres obejmuje inne możliwe dania. Stuknij właściwe danie poniżej albo popraw porcję, a się zawęzi.',
+    confirmedNote: 'Popraw porcję i to, czego nie widać, a szacunek będzie bliżej prawdy.',
+    notFood: 'Na tym zdjęciu nie widzę jedzenia. Zrób zdjęcie talerza z bliska, z góry i w dobrym świetle — albo wyszukaj danie poniżej.',
+    showAnyway: 'To jednak jedzenie — pokaż propozycje',
+    otherDish: 'Inne możliwe dania — stuknij właściwe:',
+    otherSure: 'Jeśli to coś innego, stuknij właściwe:',
     addMore: 'Co jeszcze jest na talerzu? Stuknij wszystko, co widać.',
+    totalBig: (kcal: string) => `ok. ${kcal} kcal`,
+    range: (low: string, high: string) => `${low}–${high} kcal`,
+    tentativeTag: 'wstępnie',
+    refSummary: (n: number, low: string, high: string, own: string) => `Podobne w bazie (${n}): ${low === high ? low : `${low}–${high}`} kcal/100 g · to danie ${own}`,
+    refSummaryMacros: (n: number) => `Podobne w bazie (${n})`,
+    refNone: 'W bazie nie ma nic o podobnej nazwie.',
+    refLoading: 'Szukam podobnych w bazie produktów…',
+    refPer100: (kcal: string) => `${kcal} kcal/100 g`,
+    refUse: 'Użyj',
+    refUsing: (name: string) => `Liczę z wartości: ${name}`,
+    refBack: 'Wróć do wartości dania',
+    refUseLabel: (name: string) => `Użyj wartości: ${name}`,
     searchLabel: 'Szukaj dania',
     searchPlaceholder: 'np. pierogi, pad thai, sałatka grecka',
     nothing: 'Nie znam takiego dania — spróbuj innej nazwy albo dodaj je w „Szukaj”.',
@@ -139,11 +163,30 @@ const T = text({
     lostReading: 'The analysis of the last photo was cut short — the phone closed the app, probably for lack of memory.',
     lostAgain: (n: number) => `It has stopped ${n} times in a row — the model may not fit in this phone’s memory. Close other apps, or search for the dish below.`,
     lostPhoto: 'The photo is kept:',
-    sure: (name: string, pct: number) => `Looks like ${name} (${pct}%) — already on the plate. If it’s something else, tap the right one:`,
-    sureKept: (name: string, pct: number) => `Looks like ${name} (${pct}%) — tap to put it on the plate:`,
-    unsure: 'I’m not sure — pick what fits, or search:',
-    kind: (family: string) => `Looks like ${family} — pick the kind:`,
+    result: 'Result from the photo',
+    sure: (name: string, pct: number) => `${name} — sure (${pct}%)`,
+    probably: (name: string, pct: number) => `Most likely ${name} (${pct}%)`,
+    maybeAlso: (names: string) => `, could also be: ${names}`,
+    kind: (family: string) => `Looks like ${family} — the kind is unsure`,
+    tentative: 'A first estimate — the range covers the other possible dishes. Tap the right dish below or set the portion, and it narrows.',
+    confirmedNote: 'Set the portion and what a photo can’t show, and the estimate gets closer to the truth.',
+    notFood: 'I don’t see food in this photo. Take a close photo of the plate from above in good light — or search for the dish below.',
+    showAnyway: 'It is food — show suggestions',
+    otherDish: 'Other possible dishes — tap the right one:',
+    otherSure: 'If it’s something else, tap the right one:',
     addMore: 'What else is on the plate? Tap everything you see.',
+    totalBig: (kcal: string) => `about ${kcal} kcal`,
+    range: (low: string, high: string) => `${low}–${high} kcal`,
+    tentativeTag: 'first guess',
+    refSummary: (n: number, low: string, high: string, own: string) => `Similar in the database (${n}): ${low === high ? low : `${low}–${high}`} kcal/100 g · this dish ${own}`,
+    refSummaryMacros: (n: number) => `Similar in the database (${n})`,
+    refNone: 'Nothing with a similar name in the database.',
+    refLoading: 'Looking for similar foods in the product database…',
+    refPer100: (kcal: string) => `${kcal} kcal/100 g`,
+    refUse: 'Use',
+    refUsing: (name: string) => `Counted from: ${name}`,
+    refBack: 'Back to the dish’s values',
+    refUseLabel: (name: string) => `Use the values of ${name}`,
     searchLabel: 'Search dishes',
     searchPlaceholder: 'e.g. pierogi, pad thai, Greek salad',
     nothing: 'I don’t know that dish — try another name or add it in “Search”.',
@@ -187,7 +230,8 @@ function family(suggestions: readonly Suggestion[]): string | null {
 type Stage =
   | { kind: 'start' }
   | { kind: 'working'; progress: Progress; since: number }
-  | { kind: 'done'; suggestions: Suggestion[] }
+  /** `notFood`: no dish fits at all (`NOT_FOOD_COS`) — until the person says it is food after all. */
+  | { kind: 'done'; suggestions: Suggestion[]; notFood: boolean }
   | { kind: 'failed'; why: Failure; detail: string }
   /** The app was closed by the phone last time (`pending.ts`). */
   | { kind: 'interrupted'; at: Interrupted['stage']; tries: number };
@@ -198,12 +242,17 @@ interface Props {
   date: string;
   /** The last photo run was cut short by the system (the app started again); says so on open. */
   resume?: Interrupted | null;
+  /** The diary's search over products, recipes, menus and own foods: „Podobne w bazie” for each dish. */
+  find?: (query: string) => readonly Food[];
+  /** The product database is still loading: „nothing similar” would not be true yet. */
+  findLoading?: boolean;
   onLogged: (text: string) => void;
   onDone: () => void;
 }
 
-export function PhotoMode({ date, resume = null, onLogged, onDone }: Props) {
+export function PhotoMode({ date, resume = null, find, findLoading = false, onLogged, onDone }: Props) {
   const shown = useKcalShown();
+  const model = useModelState();
   const [stage, setStage] = useState<Stage>(resume ? { kind: 'interrupted', at: resume.stage, tries: resume.tries } : { kind: 'start' });
   const [file, setFile] = useState<Blob | null>(null);
   const [photo, setPhoto] = useState<string | null>(null);
@@ -300,10 +349,11 @@ export function PhotoMode({ date, resume = null, onLogged, onDone }: Props) {
       if (mine !== run.current) return;
       tries.current = 0;
       clearRun();
-      setStage({ kind: 'done', suggestions });
-      const first = suggestions[0];
-      // A sure guess goes onto the plate at once: kcal and macros show without another tap.
-      if (first && first.score >= SURE_SCORE) setItems((list) => (list.some((i) => i.dish.id === first.dish.id) ? list : [...list, newItem(first.dish)]));
+      const notFood = !suggestions.length || (suggestions[0]!.cos ?? 1) < NOT_FOOD_COS;
+      setStage({ kind: 'done', suggestions, notFood });
+      // A guess from an earlier photo stays on the plate as it is: this photo's chips are about this photo.
+      setItems((list) => list.map((i) => (i.alts ? { ...i, alts: undefined } : i)));
+      if (!notFood) place(suggestions);
     } catch (e) {
       // A newer photo or a closed screen ended this one; only the current photo's failure is news.
       if (mine !== run.current) return;
@@ -326,17 +376,46 @@ export function PhotoMode({ date, resume = null, onLogged, onDone }: Props) {
     }
   };
 
+  /**
+   * The first dish goes onto the plate at once, so kcal and macros show without a tap. Not sure:
+   * as a first guess (`alts`), its range covering the other likely dishes.
+   */
+  const place = (found: readonly Suggestion[]) => {
+    const first = found[0];
+    if (!first) return;
+    const alts = first.score >= SURE_SCORE ? undefined : likelyAlts(found);
+    setItems((list) => (list.some((i) => i.dish.id === first.dish.id) ? list : [...list, { ...newItem(first.dish), ...(alts && { alts }) }]));
+  };
+
   const toggle = (dish: Dish) =>
     setItems((list) => (list.some((i) => i.dish.id === dish.id) ? list.filter((i) => i.dish.id !== dish.id) : [...list, newItem(dish)]));
-  const update = (id: string, patch: Partial<PlateItem>) => setItems((list) => list.map((i) => (i.dish.id === id ? { ...i, ...patch } : i)));
+  /** A suggestion tapped while the model's first guess is unconfirmed: the right dish replaces the guess. */
+  const choose = (dish: Dish) =>
+    setItems((list) => {
+      const guess = list.findIndex((i) => i.alts);
+      const on = list.some((i) => i.dish.id === dish.id);
+      // „Stuknij właściwe”: the guess itself is confirmed, another dish takes its place.
+      if (guess >= 0 && list[guess]!.dish.id === dish.id) return list.map((i, n) => (n === guess ? { ...i, alts: undefined } : i));
+      if (guess >= 0 && !on) return list.map((i, n) => (n === guess ? newItem(dish) : i));
+      return on ? list.filter((i) => i.dish.id !== dish.id) : [...list, newItem(dish)];
+    });
+  // Touching an item confirms it: it is no longer only the model's guess.
+  const update = (id: string, patch: Partial<PlateItem>) =>
+    setItems((list) => list.map((i) => (i.dish.id === id ? { ...i, ...patch, alts: undefined } : i)));
 
   const found = useMemo(() => searchDishes(query), [query]);
   const total = items.length ? plateTotal(items) : null;
-  const suggestions = stage.kind === 'done' ? stage.suggestions : [];
+  const notFood = stage.kind === 'done' && stage.notFood;
+  const suggestions = stage.kind === 'done' && !notFood ? stage.suggestions : [];
   const lead = suggestions[0];
   const sure = (lead?.score ?? 0) >= SURE_SCORE;
   const kind = sure ? null : family(suggestions);
-  const leadOn = !!lead && items.some((i) => i.dish.id === lead.dish.id);
+  const guessing = items.some((i) => i.alts);
+  const showAnyway = () => {
+    if (stage.kind !== 'done') return;
+    setStage({ ...stage, notFood: false });
+    place(stage.suggestions);
+  };
 
   const save = async () => {
     if (busy || !items.length) return;
@@ -362,11 +441,16 @@ export function PhotoMode({ date, resume = null, onLogged, onDone }: Props) {
     }
   };
 
-  const chip = (dish: Dish, isLead = false) => {
+  const chip = (dish: Dish, isLead = false, suggested = false) => {
     const on = items.some((i) => i.dish.id === dish.id);
     return (
       <li key={dish.id}>
-        <button type="button" className={`fd-diet-dish${on ? ' fd-diet-dish-on' : ''}${isLead ? ' fd-diet-dish-lead' : ''}`} aria-pressed={on} onClick={() => toggle(dish)}>
+        <button
+          type="button"
+          className={`fd-diet-dish${on ? ' fd-diet-dish-on' : ''}${isLead ? ' fd-diet-dish-lead' : ''}`}
+          aria-pressed={on}
+          onClick={() => (suggested ? choose(dish) : toggle(dish))}
+        >
           {on && <Check aria-hidden="true" size={14} />}
           {dish.label}
           {shown && <span className="fd-diet-dish-kcal">{T.chipKcal(formatNumber(itemEstimate(newItem(dish)).kcal, 0))}</span>}
@@ -375,15 +459,21 @@ export function PhotoMode({ date, resume = null, onLogged, onDone }: Props) {
     );
   };
 
-  const question = () => {
-    if (items.length && !(sure && leadOn && items.length === 1)) return T.addMore;
-    if (sure && lead) return (leadOn ? T.sure : T.sureKept)(lead.dish.label, pct(lead.score)!);
-    return kind ? T.kind(kind) : T.unsure;
+  const question = () => (guessing ? T.otherDish : items.length > 1 ? T.addMore : sure ? T.otherSure : T.addMore);
+
+  /** What the model saw, in one line. */
+  const verdict = () => {
+    if (!lead) return '';
+    if (sure) return T.sure(lead.dish.label, pct(lead.score)!);
+    if (kind) return T.kind(kind);
+    const alts = likelyAlts(suggestions).map((d) => d.label.toLocaleLowerCase(LOCALE));
+    return T.probably(lead.dish.label, pct(lead.score)!) + (alts.length ? T.maybeAlso(alts.join(', ')) : '');
   };
 
   return (
     <div className="fd-diet-photo">
-      <ModelCard />
+      {/* Once the answer is here and the model is on the phone, the card would only push it down. */}
+      {!(stage.kind === 'done' && model.kind === 'ready') && <ModelCard />}
       {stage.kind === 'interrupted' && (
         <div className="fd-diet-photo-note" role="alert">
           <p>{stage.at === 'camera' ? T.lostCamera : T.lostReading}</p>
@@ -424,12 +514,36 @@ export function PhotoMode({ date, resume = null, onLogged, onDone }: Props) {
             </details>
           </div>
         )}
+        {notFood && (
+          <div className="fd-diet-answer" role="status">
+            <p className="fd-diet-answer-what">{T.notFood}</p>
+            {stage.kind === 'done' && stage.suggestions.length > 0 && (
+              <button type="button" className="btn ghost sm" onClick={showAnyway}>
+                {T.showAnyway}
+              </button>
+            )}
+          </div>
+        )}
         {suggestions.length > 0 && (
           <>
-            <p className="fd-diet-hint" role="status">
-              {question()}
-            </p>
-            <ul className="fd-diet-dishes">{suggestions.map((s, i) => chip(s.dish, i === 0 && sure))}</ul>
+            <section className="fd-diet-answer" aria-label={T.result}>
+              <p className="fd-diet-answer-what" role="status">
+                {verdict()}
+              </p>
+              {total && (
+                <>
+                  {shown && (
+                    <p className="fd-diet-answer-kcal">
+                      <b>{T.totalBig(formatNumber(total.kcal, 0))}</b> <span>{T.range(formatNumber(total.low, 0), formatNumber(total.high, 0))}</span>
+                    </p>
+                  )}
+                  <p className="fd-diet-answer-macros">{T.macros(num(total.protein), num(total.carbs), num(total.fat))}</p>
+                  <p className="fd-diet-meta">{guessing ? T.tentative : T.confirmedNote}</p>
+                </>
+              )}
+            </section>
+            <p className="fd-diet-hint">{question()}</p>
+            <ul className="fd-diet-dishes">{suggestions.map((s, i) => chip(s.dish, i === 0 && sure, true))}</ul>
           </>
         )}
       </div>
@@ -447,7 +561,7 @@ export function PhotoMode({ date, resume = null, onLogged, onDone }: Props) {
           </h3>
           <ul className="fd-diet-plate-list">
             {items.map((item) => (
-              <PlateRow key={item.dish.id} item={item} shown={shown} onChange={(p) => update(item.dish.id, p)} onRemove={() => toggle(item.dish)} />
+              <PlateRow key={item.dish.id} item={item} shown={shown} find={find} findLoading={findLoading} onChange={(p) => update(item.dish.id, p)} onRemove={() => toggle(item.dish)} />
             ))}
           </ul>
           {total && items.length > 1 && (
@@ -594,9 +708,19 @@ function pickFile(e: React.ChangeEvent<HTMLInputElement>, onFile: (f: File) => P
   if (file) void onFile(file);
 }
 
-function PlateRow({ item, shown, onChange, onRemove }: { item: PlateItem; shown: boolean; onChange: (p: Partial<PlateItem>) => void; onRemove: () => void }) {
+interface RowProps {
+  item: PlateItem;
+  shown: boolean;
+  find?: (query: string) => readonly Food[];
+  findLoading: boolean;
+  onChange: (p: Partial<PlateItem>) => void;
+  onRemove: () => void;
+}
+
+function PlateRow({ item, shown, find, findLoading, onChange, onRemove }: RowProps) {
   const id = useId();
   const e = itemEstimate(item);
+  const range = itemRange(item);
   const index = Math.max(0, PORTION_STEPS.indexOf(item.portion));
   const grams = gramsOf(item);
   const portionText = T.portionText(item.portion.toLocaleString(LOCALE, { maximumFractionDigits: 2 }), grams, portionWord(item.portion));
@@ -604,7 +728,10 @@ function PlateRow({ item, shown, onChange, onRemove }: { item: PlateItem; shown:
   return (
     <li className="fd-diet-plate-item">
       <div className="fd-diet-chosen-head">
-        <p className="fd-diet-name">{item.dish.label}</p>
+        <p className="fd-diet-name">
+          {item.dish.label}
+          {item.alts && <span className="fd-diet-tag">{T.tentativeTag}</span>}
+        </p>
         <button type="button" className="btn ghost sm" onClick={onRemove} aria-label={T.remove(item.dish.label)}>
           <X aria-hidden="true" size={18} />
         </button>
@@ -635,11 +762,62 @@ function PlateRow({ item, shown, onChange, onRemove }: { item: PlateItem; shown:
         <Scale label={SAUCE_SCALE.question} levels={SAUCE_SCALE.levels} value={item.choices.sauce} onChange={(sauce) => setChoice({ sauce: sauce as SauceLevel })} />
       )}
       <p className="fd-diet-meta">
-        {shown && <b>{T.estimate(formatNumber(e.kcal, 0), formatNumber(e.low, 0), formatNumber(e.high, 0))}</b>}
+        {shown && <b>{T.estimate(formatNumber(e.kcal, 0), formatNumber(range.low, 0), formatNumber(range.high, 0))}</b>}
         {shown && ' · '}
         {T.macros(num(e.protein), num(e.carbs), num(e.fat))}
       </p>
+      {find && <Similar item={item} shown={shown} find={find} findLoading={findLoading} onChange={onChange} />}
     </li>
+  );
+}
+
+/** „Podobne w bazie”: foods with a similar name and their values, to check the estimate against — or count from. */
+function Similar({ item, shown, find, findLoading, onChange }: Required<Pick<RowProps, 'item' | 'shown' | 'find' | 'findLoading' | 'onChange'>>) {
+  const refs = useMemo(() => similarFoods(item.dish, find), [item.dish, find]);
+  // Chosen values stay undoable even if the list has changed under them (the database loaded later).
+  const using = item.ref && (
+    <p className="fd-diet-ref-using">
+      {T.refUsing(item.ref.name)}{' '}
+      <button type="button" className="btn ghost sm" onClick={() => onChange({ ref: undefined })}>
+        {T.refBack}
+      </button>
+    </p>
+  );
+  if (!refs.length)
+    return (
+      <>
+        {using}
+        <p className="fd-diet-meta">{findLoading ? T.refLoading : T.refNone}</p>
+      </>
+    );
+  const kcals = refs.map((r) => r.per100.kcal);
+  const summary = shown
+    ? T.refSummary(refs.length, formatNumber(Math.min(...kcals), 0), formatNumber(Math.max(...kcals), 0), T.refPer100(formatNumber(item.dish.per100.kcal, 0)))
+    : T.refSummaryMacros(refs.length);
+  return (
+    <details className="fd-diet-ref" open={!!item.ref}>
+      <summary>{summary}</summary>
+      {using}
+      <ul className="fd-diet-ref-list">
+        {refs.map((r) => (
+          <li key={r.key}>
+            <span>
+              {r.name}
+              <span className="fd-diet-meta">
+                {' · '}
+                {shown ? T.refPer100(formatNumber(r.per100.kcal, 0)) : T.macros(num(r.per100.protein), num(r.per100.carbs), num(r.per100.fat))}
+                {r.detail ? ` · ${r.detail}` : ''}
+              </span>
+            </span>
+            {item.ref?.key !== r.key && (
+              <button type="button" className="btn ghost sm" aria-label={T.refUseLabel(r.name)} onClick={() => onChange({ ref: r })}>
+                {T.refUse}
+              </button>
+            )}
+          </li>
+        ))}
+      </ul>
+    </details>
   );
 }
 

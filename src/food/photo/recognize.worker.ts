@@ -22,7 +22,7 @@ export type Request =
 export type Reply =
   /** `load`: the model file (`source` says from where); `start`: ONNX Runtime builds the session; `read`: the photo itself. */
   | { type: 'progress'; step: 'load' | 'start' | 'read'; share: number | null; source?: 'network' | 'copy' }
-  | { type: 'result'; id: number; top: { id: string; score: number }[] }
+  | { type: 'result'; id: number; top: { id: string; score: number; cos: number }[] }
   | { type: 'saved'; id: number; saved: boolean }
   | { type: 'error'; id: number; message: string };
 
