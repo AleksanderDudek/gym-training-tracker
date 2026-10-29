@@ -1,4 +1,5 @@
 import * as generic from './generic';
+import * as med from './med';
 import type { Source } from './kit';
 
 /**
@@ -6,7 +7,7 @@ import type { Source } from './kit';
  * `DISHES` (id → source, the same ids as its half in `src/food/photo/catalog/`) and may export
  * `PARTS` (shared sub-recipes). An id in two files stops the build.
  */
-const regions: { DISHES: Record<string, Source>; PARTS?: Record<string, Source> }[] = [generic];
+const regions: { DISHES: Record<string, Source>; PARTS?: Record<string, Source> }[] = [generic, med];
 
 function merged(pick: (r: (typeof regions)[number]) => Record<string, Source> | undefined): Record<string, Source> {
   const out: Record<string, Source> = {};
