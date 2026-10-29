@@ -15,6 +15,8 @@ const recognize = vi.hoisted(() => vi.fn());
 const downloadModel = vi.hoisted(() => vi.fn(() => Promise.resolve(true)));
 const prepare = vi.hoisted(() => vi.fn());
 const preload = vi.hoisted(() => vi.fn());
+const release = vi.hoisted(() => vi.fn());
+const restartDownload = vi.hoisted(() => vi.fn(() => Promise.resolve(true)));
 const grabFrame = vi.hoisted(() => vi.fn());
 vi.mock('../../photo/frame', () => ({ grabFrame }));
 const kept = vi.hoisted(() => ({ photo: null as Blob | null, gate: null as Promise<void> | null }));
@@ -35,7 +37,8 @@ vi.mock('../../photo/recognize', () => ({
   prepare,
   preload,
   downloadModel,
-  release: vi.fn(),
+  release,
+  restartDownload,
   failureOf: (e: unknown) => (e instanceof Error && /memory/.test(e.message) ? 'memory' : 'error'),
 }));
 vi.mock('../../photo/pending', async (importOriginal) => {
@@ -61,6 +64,8 @@ beforeEach(async () => {
   downloadModel.mockClear();
   prepare.mockClear();
   preload.mockClear();
+  release.mockClear();
+  restartDownload.mockClear();
   grabFrame.mockReset();
   HTMLMediaElement.prototype.play = vi.fn(() => Promise.resolve());
   kept.photo = null;
@@ -491,6 +496,9 @@ describe('Aparat w aplikacji i model', () => {
     expect(preload).toHaveBeenCalled();
     expect(cam.getUserMedia).toHaveBeenCalled();
     const shutter = await screen.findByRole('button', { name: 'Zrób zdjęcie' });
+    // No shutter before the camera shows a picture.
+    expect(shutter).toBeDisabled();
+    fireEvent(document.querySelector('video')!, new Event('playing'));
     await waitFor(() => expect(shutter).toBeEnabled());
     await user.click(shutter);
     expect(await screen.findByText(/Pad thai — pewne/)).toBeInTheDocument();
@@ -521,5 +529,67 @@ describe('Aparat w aplikacji i model', () => {
     expect(await screen.findByText(/Pad thai — pewne/)).toBeInTheDocument();
     expect(recognize).toHaveBeenCalledTimes(1);
     expect(recognize.mock.calls[0]![0]).toBe(kept.photo);
+  });
+
+  test('wizjer zamknięty bez zdjęcia zwalnia model — także zanim otworzy się galeria; spóźniona klatka po „Anuluj” nic nie uruchamia', async () => {
+    setModelState({ kind: 'ready' });
+    fakeCamera();
+    let frame: (b: Blob) => void = () => undefined;
+    grabFrame.mockImplementation(() => new Promise((resolve) => (frame = resolve)));
+    const user = userEvent.setup();
+    const { container } = render(<PhotoMode date={DATE} onLogged={vi.fn()} onDone={vi.fn()} />);
+    await user.click(screen.getByRole('button', { name: /Zrób zdjęcie/ }));
+    const gallery = vi.spyOn(inputs(container)[1]!, 'click').mockImplementation(() => {
+      // The model must be gone before the browser goes to the background.
+      expect(release).toHaveBeenCalled();
+    });
+    await user.click(await screen.findByRole('button', { name: /Z galerii/ }));
+    expect(gallery).toHaveBeenCalled();
+
+    release.mockClear();
+    await user.click(screen.getByRole('button', { name: /Zrób zdjęcie/ }));
+    fireEvent(document.querySelector('video')!, new Event('playing'));
+    const shutter = await screen.findByRole('button', { name: 'Zrób zdjęcie' });
+    await waitFor(() => expect(shutter).toBeEnabled());
+    await user.click(shutter);
+    // While the frame is being taken the way out is closed; afterwards „Anuluj” is the only one that counts.
+    expect(screen.getByRole('button', { name: /Anuluj/ })).toBeDisabled();
+    fireEvent(document, new Event('visibilitychange'));
+    expect(recognize).not.toHaveBeenCalled();
+    await act(async () => frame(new Blob([new Uint8Array([1])])));
+    expect(recognize).toHaveBeenCalledTimes(1);
+  });
+
+  test('arkusz zamknięty w trakcie robienia zdjęcia: klatka nie trafia do modelu', async () => {
+    setModelState({ kind: 'ready' });
+    fakeCamera();
+    let frame: (b: Blob) => void = () => undefined;
+    grabFrame.mockImplementation(() => new Promise((resolve) => (frame = resolve)));
+    const user = userEvent.setup();
+    const { unmount } = render(<PhotoMode date={DATE} onLogged={vi.fn()} onDone={vi.fn()} />);
+    await user.click(screen.getByRole('button', { name: /Zrób zdjęcie/ }));
+    fireEvent(document.querySelector('video')!, new Event('playing'));
+    const shutter = await screen.findByRole('button', { name: 'Zrób zdjęcie' });
+    await waitFor(() => expect(shutter).toBeEnabled());
+    await user.click(shutter);
+    unmount();
+    await act(async () => frame(new Blob([new Uint8Array([1])])));
+    expect(recognize).not.toHaveBeenCalled();
+  });
+
+  test('pobieranie, które stoi pół minuty: wyjaśnienie i „Spróbuj ponownie” zaczyna je od nowa', () => {
+    vi.useFakeTimers();
+    setModelState({ kind: 'downloading', share: 0.3 });
+    render(<PhotoMode date={DATE} onLogged={vi.fn()} onDone={vi.fn()} />);
+    const card = screen.getByRole('region', { name: 'Model rozpoznawania' });
+    act(() => void vi.advanceTimersByTime(20_000));
+    act(() => setModelState({ kind: 'downloading', share: 0.31 }));
+    act(() => void vi.advanceTimersByTime(20_000));
+    expect(within(card).queryByRole('button')).toBeNull();
+    act(() => void vi.advanceTimersByTime(11_000));
+    expect(card).toHaveTextContent(/stoi od pół minuty/);
+    fireEvent.click(within(card).getByRole('button', { name: 'Spróbuj ponownie' }));
+    expect(restartDownload).toHaveBeenCalled();
+    vi.useRealTimers();
   });
 });

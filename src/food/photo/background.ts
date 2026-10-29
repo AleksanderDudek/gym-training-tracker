@@ -46,6 +46,7 @@ function attempt(): void {
     .then(({ saveModel }) => saveModel(now))
     .then(
       (saved) => {
+        if (saved) failures = 0;
         // Not saved although it fetched (a full disk): trying again would only download it again.
         if (saved || now) return;
         // The photo screen says why it is not there yet.
@@ -56,7 +57,7 @@ function attempt(): void {
       (e: unknown) => {
         if (e instanceof Error && e.message === 'released') return later(attempt);
         if (!navigator.onLine) addEventListener('online', () => later(attempt), { once: true });
-        else if (++failures < RETRIES) later(attempt, RETRY_MS);
+        else if (failures++ < RETRIES) later(attempt, RETRY_MS);
       },
     );
 }

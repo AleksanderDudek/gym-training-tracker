@@ -69,6 +69,14 @@ export function PhotoCamera({ onShot, onSystemCamera, onGallery, onCancel }: Pro
   const [shotFailed, setShotFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const visible = usePageVisible();
+  /** Gone (cancelled, gallery chosen) while a shot was being taken: that shot goes nowhere. */
+  const alive = useRef(true);
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!visible) return;
@@ -92,16 +100,21 @@ export function PhotoCamera({ onShot, onSystemCamera, onGallery, onCancel }: Pro
       if (stopped || !element) return s.getTracks().forEach((t) => t.stop());
       stream.current = s;
       element.srcObject = s;
-      void element.play().catch(() => {});
       const [first] = s.getVideoTracks();
       track.current = first ?? null;
       const capabilities = first?.getCapabilities?.() as (MediaTrackCapabilities & { torch?: boolean }) | undefined;
       setTorch(capabilities?.torch ? false : null);
-      setState('live');
+      // The shutter waits for a real picture: before the first frame iOS gives a 0 × 0 or black one.
+      const ready = () => !stopped && setState('live');
+      if (element.readyState >= 2) ready();
+      else element.addEventListener('playing', ready, { once: true });
+      void element.play().catch(() => {});
     })();
     return () => {
       stopped = true;
       stop();
+      // Hidden now: when the page is back, no shutter until the new stream shows a picture.
+      setState((s) => (s === 'live' || s === 'taking' ? 'starting' : s));
     };
   }, [visible, attempt]);
 
@@ -113,11 +126,13 @@ export function PhotoCamera({ onShot, onSystemCamera, onGallery, onCancel }: Pro
     setShotFailed(false);
     try {
       const photo = await grabFrame(element);
+      if (!alive.current) return;
       // The camera goes off before the model takes the memory.
       stream.current?.getTracks().forEach((t) => t.stop());
       element.srcObject = null;
       onShot(photo);
     } catch {
+      if (!alive.current) return;
       setShotFailed(true);
       setState('live');
     }
@@ -153,7 +168,7 @@ export function PhotoCamera({ onShot, onSystemCamera, onGallery, onCancel }: Pro
         </p>
       </div>
       <div className="fd-diet-shot-bar">
-        <button type="button" className="btn ghost sm" onClick={onCancel}>
+        <button type="button" className="btn ghost sm" disabled={state === 'taking'} onClick={onCancel}>
           <X aria-hidden="true" size={18} /> {T.cancel}
         </button>
         {!failed && (
@@ -161,7 +176,7 @@ export function PhotoCamera({ onShot, onSystemCamera, onGallery, onCancel }: Pro
             <span aria-hidden="true" />
           </button>
         )}
-        <button type="button" className="btn ghost sm" onClick={onGallery}>
+        <button type="button" className="btn ghost sm" disabled={state === 'taking'} onClick={onGallery}>
           <ImagePlus aria-hidden="true" size={18} /> {T.gallery}
         </button>
       </div>

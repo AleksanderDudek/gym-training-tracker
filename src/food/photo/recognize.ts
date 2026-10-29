@@ -52,6 +52,8 @@ let listen: ((p: Progress) => void) | undefined;
 let held = false;
 /** A download into the copy is on its way (`saveModel(true)`). */
 let saving = 0;
+/** Moves on with `restartDownload`: answers of the worker it ended change no state. */
+let generation = 0;
 /** The model has been loaded into this worker (a photo, not only a save). */
 let loaded = false;
 const waiting = new Map<number, { resolve: (r: Reply) => void; reject: (e: Error) => void }>();
@@ -125,11 +127,33 @@ export function preload(): void {
   held = true;
   loaded = true;
   listen = undefined;
-  ask((id) => ({ type: 'warm', id, base: document.baseURI, controlled: controlled() })).catch(() => undefined);
+  // The copy may have gone since it was checked (iOS clears storage): then this downloaded, and a
+  // failure must not leave the card on "downloading" with the photo buttons off.
+  ask((id) => ({ type: 'warm', id, base: document.baseURI, controlled: controlled() })).catch((e: unknown) => {
+    if (saving === 0 && !(e instanceof Error && e.message === 'released')) void settleModel({ kind: 'failed', reason: navigator.onLine ? 'error' : 'offline' });
+  });
 }
 
 /** „Pobierz teraz”: the download by hand, also on mobile data. */
 export const downloadModel = (): Promise<boolean> => saveModel(true);
+
+/**
+ * A download that has stopped moving (a stalled connection): the worker goes, with whatever it was
+ * fetching, and the download starts again. The ended download reports nothing (`generation`).
+ */
+export function restartDownload(): Promise<boolean> {
+  generation++;
+  // The ended saves do not count down any more.
+  saving = 0;
+  worker?.terminate();
+  worker = null;
+  loaded = false;
+  held = false;
+  listen = undefined;
+  fail(new Error('released'));
+  setModelState({ kind: 'missing', wait: null });
+  return saveModel(true);
+}
 
 export function recognize(image: Blob, onProgress?: (p: Progress) => void): Promise<Suggestion[]> {
   held = true;
@@ -164,6 +188,8 @@ export function recognize(image: Blob, onProgress?: (p: Progress) => void): Prom
  * worker first.
  */
 export function saveModel(fetchMissing = true): Promise<boolean> {
+  const mine = generation;
+  const current = () => mine === generation;
   if (fetchMissing) {
     saving++;
     // From "not there" straight to "downloading", before the first byte; a model already in the copy
@@ -175,6 +201,7 @@ export function saveModel(fetchMissing = true): Promise<boolean> {
     .then(
       (r) => {
         const saved = r.type === 'saved' && r.saved;
+        if (!current()) return saved;
         // Not saved although it fetched: no Cache API, or the disk is full.
         if (saved) setModelState({ kind: 'ready' });
         else if (fetchMissing) setModelState(typeof caches === 'undefined' ? { kind: 'unsupported' } : { kind: 'failed', reason: 'storage' });
@@ -182,6 +209,7 @@ export function saveModel(fetchMissing = true): Promise<boolean> {
         return saved;
       },
       (e: unknown) => {
+        if (!current()) throw e;
         if (e instanceof Error && e.message === 'released') {
           if (modelState().kind === 'downloading') setModelState({ kind: 'missing', wait: null });
         } else if (fetchMissing) setModelState({ kind: 'failed', reason: navigator.onLine ? 'error' : 'offline' });
@@ -189,7 +217,7 @@ export function saveModel(fetchMissing = true): Promise<boolean> {
       },
     )
     .finally(() => {
-      if (fetchMissing) saving--;
+      if (fetchMissing && current()) saving--;
       // Another request still waits on this worker (a second save, a look): it ends after that one.
       if (held || !worker || waiting.size > 0) return;
       worker.terminate();

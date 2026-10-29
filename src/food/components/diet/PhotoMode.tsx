@@ -8,7 +8,7 @@ import { FAT_SCALE, SAUCE_SCALE, SWEET_SCALE, type Choices, type Dish, type FatL
 import type { Food } from '../../diet/foods';
 import { PHOTO_MODEL } from '../../photo/model';
 import { NOT_FOOD_COS } from '../../photo/score';
-import { checkModel, useModelState, type ModelState } from '../../photo/modelState';
+import { checkModel, modelState, useModelState, type ModelState } from '../../photo/modelState';
 import { clearCamera, clearRun, clearRunOnLeave, consumeRun, markCamera, markReading, pendingPhoto, type Interrupted } from '../../photo/pending';
 import {
   PORTION_STEPS,
@@ -25,7 +25,19 @@ import {
   similarFoods,
   type PlateItem,
 } from '../../photo/plate';
-import { MODEL_MB, downloadModel, failureOf, preload, prepare, recognize, release, type Failure, type Progress, type Suggestion } from '../../photo/recognize';
+import {
+  MODEL_MB,
+  downloadModel,
+  failureOf,
+  preload,
+  prepare,
+  recognize,
+  release,
+  restartDownload,
+  type Failure,
+  type Progress,
+  type Suggestion,
+} from '../../photo/recognize';
 import { useKcalShown } from './kcalShown';
 import { PhotoCamera } from './PhotoCamera';
 
@@ -43,6 +55,7 @@ const T = text({
     modelDownloading: (pct: number | null, got: number | null) =>
       pct === null ? 'Pobieram…' : `Pobieram: ${pct}% (${got} z ${MODEL_FILE_MB} MB).`,
     modelDownloadingNote: 'Zdjęcie zrobisz, gdy się pobierze. W międzyczasie możesz wyszukać danie poniżej.',
+    modelStalled: 'Pobieranie stoi od pół minuty — pewnie słaby zasięg. Spróbuj ponownie.',
     modelMissing: (mb: number) => `Jeszcze go nie ma w telefonie (ok. ${mb} MB) — bez niego zdjęcie nie rozpozna dania.`,
     modelSaver: (mb: number) => `Jeszcze go nie ma w telefonie. Masz włączone oszczędzanie danych, więc nie pobieram sam ok. ${mb} MB.`,
     waitModel: (pct: number | null) => (pct === null ? 'Zdjęcie zrobisz, gdy model się pobierze.' : `Zdjęcie zrobisz, gdy model się pobierze (${pct}%).`),
@@ -132,6 +145,7 @@ const T = text({
     modelDownloading: (pct: number | null, got: number | null) =>
       pct === null ? 'Downloading…' : `Downloading: ${pct}% (${got} of ${MODEL_FILE_MB} MB).`,
     modelDownloadingNote: 'You can take the photo once it is downloaded. Meanwhile you can search for the dish below.',
+    modelStalled: 'The download hasn’t moved for half a minute — probably a weak signal. Try again.',
     modelMissing: (mb: number) => `Not on the phone yet (about ${mb} MB) — without it a photo can’t recognise the dish.`,
     modelSaver: (mb: number) => `Not on the phone yet. Data saver is on, so I don’t download about ${mb} MB by myself.`,
     waitModel: (pct: number | null) => (pct === null ? 'You can take the photo once the model is downloaded.' : `You can take the photo once the model is downloaded (${pct}%).`),
@@ -381,6 +395,26 @@ export function PhotoMode({ date, resume = null, find, findLoading = false, onLo
     setViewfinder(true);
     if (model.kind === 'ready') preload();
   };
+  /**
+   * The viewfinder closed without a photo: the preloaded model goes too — above all before the
+   * phone's camera app or the gallery sends the browser to the background.
+   */
+  const closeCamera = () => {
+    setViewfinder(false);
+    release();
+  };
+
+  // A hidden page with the viewfinder open holds no model (the phone may close a background tab
+  // that does); it comes back with the page.
+  useEffect(() => {
+    if (!viewfinder) return;
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') release();
+      else if (modelState().kind === 'ready') preload();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, [viewfinder]);
 
   // The phone's camera app or the gallery: the browser goes to the background, so only the download
   // (not the model itself) may start, and a marker is left in case the phone closes the page.
@@ -515,14 +549,14 @@ export function PhotoMode({ date, resume = null, find, findLoading = false, onLo
             void onFile(shot);
           }}
           onSystemCamera={() => {
-            setViewfinder(false);
+            closeCamera();
             pick(camera.current);
           }}
           onGallery={() => {
-            setViewfinder(false);
+            closeCamera();
             pick(gallery.current);
           }}
-          onCancel={() => setViewfinder(false)}
+          onCancel={closeCamera}
         />
       ) : (
         <div className="fd-diet-photo-row">
@@ -642,8 +676,20 @@ export function PhotoMode({ date, resume = null, find, findLoading = false, onLo
 }
 
 /** Where the model stands on this phone, and the button to fetch it when it is not there. */
+/** No progress for this long: the download has stalled, and the card offers to start it again. */
+const STALL_MS = 30_000;
+
 function ModelCard() {
   const state = useModelState();
+  const share = state.kind === 'downloading' ? state.share : undefined;
+  // The share the download stood still at; any progress makes it a different one.
+  const [stuckAt, setStuckAt] = useState<number | null | undefined>(undefined);
+  useEffect(() => {
+    if (share === undefined) return;
+    const t = window.setTimeout(() => setStuckAt(share), STALL_MS);
+    return () => window.clearTimeout(t);
+  }, [share]);
+  const stalled = share !== undefined && stuckAt === share;
   // The card itself shows how it went; the promise has nothing to add.
   const fetchNow = () => void downloadModel().catch(() => undefined);
   // Without the model there is no photo, so fetching it is the screen's main action.
@@ -673,7 +719,12 @@ function ModelCard() {
             aria-label={T.model}
             aria-valuetext={modelLine(state)}
           />
-          <p className="fd-diet-meta">{T.modelDownloadingNote}</p>
+          <p className="fd-diet-meta">{stalled ? T.modelStalled : T.modelDownloadingNote}</p>
+          {stalled && (
+            <button type="button" className="btn sm" onClick={() => void restartDownload().catch(() => undefined)}>
+              <RotateCcw aria-hidden="true" size={18} /> {T.retryDownload}
+            </button>
+          )}
         </>
       )}
       {state.kind === 'missing' && state.wait !== 'offline' && button(T.download(MODEL_MB))}

@@ -118,7 +118,8 @@ describe('downloadModelInBackground', () => {
     await start();
     await idle();
     await vi.advanceTimersByTimeAsync(10 * 60_000);
-    expect(saveModel).toHaveBeenCalledTimes(3);
+    // The first try and three more, a minute apart.
+    expect(saveModel).toHaveBeenCalledTimes(4);
   });
 
   it('without the Cache API there is no copy to fill', async () => {

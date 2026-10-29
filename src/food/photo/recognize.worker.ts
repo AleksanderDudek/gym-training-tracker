@@ -64,20 +64,30 @@ async function download(url: string, keep: boolean, controlled: boolean): Promis
   const reader = body.getReader();
   let got = 0;
   let last = -1;
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    if (got + value.length > total) throw new Error(`model is larger than ${total} bytes`);
-    if (keep) out.set(value, got);
-    got += value.length;
-    const share = got / total;
-    if (share - last >= 0.01) {
-      last = share;
-      post({ type: 'progress', step: 'load', share, source });
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (got + value.length > total) throw new Error(`model is larger than ${total} bytes`);
+      if (keep) out.set(value, got);
+      got += value.length;
+      const share = got / total;
+      if (share - last >= 0.01) {
+        last = share;
+        post({ type: 'progress', step: 'load', share, source });
+      }
     }
+    if (got !== total) throw new Error(`model is ${got} bytes, expected ${total}`);
+    await stored;
+  } catch (e) {
+    // A cut or wrong answer (a captive portal's page, a dropped connection) must not stay in the copy
+    // as if it were the model — whoever wrote it, this worker or the service worker. The next try
+    // downloads it afresh.
+    void reader.cancel().catch(ignore);
+    await stored?.catch(ignore);
+    if (typeof caches !== 'undefined') await caches.open(PHOTO_CACHE).then((c) => c.delete(url)).catch(ignore);
+    throw e;
   }
-  if (got !== total) throw new Error(`model is ${got} bytes, expected ${total}`);
-  await stored;
   return out;
 }
 
@@ -115,8 +125,8 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const has = async (url: string) => (await caches.match(url)) !== undefined;
 
 /** The service worker writes its copy just after the response is read; this waits for it a little. */
-async function landed(url: string): Promise<boolean> {
-  for (let i = 0; i < 20; i++) {
+async function landed(url: string, tries = 20): Promise<boolean> {
+  for (let i = 0; i < tries; i++) {
     if (await has(url)) return true;
     await sleep(250);
   }
@@ -149,7 +159,8 @@ function save(base: string, fetchMissing: boolean, controlled: boolean): Promise
       if (url === modelUrl(base)) await download(url, false, controlled);
       else await fetchInto(url, controlled);
     }
-    for (const url of files(base)) if (!(await landed(url))) return false;
+    // Writing 55 MB takes a slow phone a while: up to half a minute for the model, 5 s for the rest.
+    for (const url of files(base)) if (!(await landed(url, url === modelUrl(base) ? 120 : 20))) return false;
     await prune(base).catch(ignore);
     return true;
   })().catch((e: unknown) => {
