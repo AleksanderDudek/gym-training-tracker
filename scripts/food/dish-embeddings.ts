@@ -54,6 +54,7 @@ process.stdout.write('\n');
 
 await mkdir('src/food/photo/data', { recursive: true });
 await writeFile(`${OUT}.bin`, data);
-const meta = { repo: PHOTO_MODEL.repo, revision: PHOTO_MODEL.revision, prompt: promptOf('{}'), dim, rows: rows.map((r) => r.id), scales };
+const generic = DISHES.filter((d) => d.generic).map((d) => d.id);
+const meta = { repo: PHOTO_MODEL.repo, revision: PHOTO_MODEL.revision, prompt: promptOf('{}'), dim, rows: rows.map((r) => r.id), scales, generic };
 await writeFile(`${OUT}.json`, `${JSON.stringify(meta)}\n`);
 console.log(`${rows.length} phrases of ${DISHES.length} dishes → ${OUT}.bin (${data.length} B)`);

@@ -608,5 +608,19 @@ describe('Aparat w aplikacji i model', () => {
     expect(answer).toHaveTextContent(/ok\. \d+ kcal/);
     expect(within(screen.getByRole('region', { name: 'Na talerzu' })).getByText('wstępnie')).toBeInTheDocument();
   });
+
+  test('na pierwszym miejscu typ „inne”: „nie znam dokładnie tego dania — to chyba zupa krem”, szacunek wstępny', async () => {
+    recognize.mockResolvedValue([
+      { dish: dishById('genericCreamSoup')!, score: 0.8, cos: 0.15 },
+      { dish: dishById('zupaDyniowa')!, score: 0.1, cos: 0.14 },
+    ]);
+    const user = userEvent.setup();
+    const { container } = render(<PhotoMode date={DATE} onLogged={vi.fn()} onDone={vi.fn()} />);
+    await user.upload(inputs(container)[1]!, photo());
+    const answer = await screen.findByRole('region', { name: 'Wynik ze zdjęcia' });
+    expect(answer).toHaveTextContent('Nie znam dokładnie tego dania — to chyba zupa krem.');
+    expect(answer).toHaveTextContent(/ok\. \d+ kcal/);
+    expect(within(screen.getByRole('region', { name: 'Na talerzu' })).getByText('wstępnie')).toBeInTheDocument();
+  });
 });
 

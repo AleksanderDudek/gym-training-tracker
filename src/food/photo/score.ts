@@ -16,13 +16,24 @@ export interface DishTable {
   /** Rows × dim, L2-normalised. */
   vectors: Float32Array;
   dim: number;
+  /** For each dish in `ids`: a catch-all type (`Dish.generic`), ranked with `GENERIC_HANDICAP`. */
+  generic: Uint8Array;
 }
 
 export interface TableMeta {
   dim: number;
   rows: readonly string[];
   scales: readonly number[];
+  /** Ids of the catch-all types. */
+  generic?: readonly string[];
 }
+
+/**
+ * How much better a catch-all type („Zupa krem — inna”) must fit than a named dish to rank above
+ * it, in cosine. Without it the broad phrases ("a bowl of soup") outscore the named dish they
+ * contain on many photos. Measured in `2026-10-30-katalog-dan-design.md`.
+ */
+export const GENERIC_HANDICAP = 0.008;
 
 /** Rebuilds the float table from the stored int8 rows and their scales. */
 export function loadTable(meta: TableMeta, bytes: Int8Array): DishTable {
@@ -36,7 +47,8 @@ export function loadTable(meta: TableMeta, bytes: Int8Array): DishTable {
   });
   const vectors = new Float32Array(bytes.length);
   for (let r = 0; r < meta.rows.length; r++) for (let k = 0; k < meta.dim; k++) vectors[r * meta.dim + k] = bytes[r * meta.dim + k]! * meta.scales[r]!;
-  return { ids, rowDish, vectors, dim: meta.dim };
+  const catchAll = new Set(meta.generic ?? []);
+  return { ids, rowDish, vectors, dim: meta.dim, generic: Uint8Array.from(ids, (id) => (catchAll.has(id) ? 1 : 0)) };
 }
 
 export interface Ranked {
@@ -60,7 +72,7 @@ export interface Ranked {
 export const NOT_FOOD_COS = 0.085;
 export const WEAK_FOOD_COS = 0.12;
 
-export function rank(table: DishTable, image: Float32Array, logitScale: number, top = 5): Ranked[] {
+export function rank(table: DishTable, image: Float32Array, logitScale: number, top = 5, handicap = GENERIC_HANDICAP): Ranked[] {
   if (image.length !== table.dim) throw new Error(`expected ${table.dim} values, got ${image.length}`);
   let norm = 0;
   for (const x of image) norm += x * x;
@@ -72,9 +84,11 @@ export function rank(table: DishTable, image: Float32Array, logitScale: number, 
     const d = table.rowDish[r]!;
     if (cos / norm > best[d]!) best[d] = cos / norm;
   }
-  const max = Math.max(...best);
+  // The ranking sees catch-all types a little worse; `cos` stays the raw fit (the "not food" check).
+  const ranked = Float32Array.from(best, (c, i) => (table.generic[i] ? c - handicap : c));
+  const max = Math.max(...ranked);
   let sum = 0;
-  const weights = Array.from(best, (c) => {
+  const weights = Array.from(ranked, (c) => {
     const w = Math.exp(logitScale * (c - max));
     sum += w;
     return w;
