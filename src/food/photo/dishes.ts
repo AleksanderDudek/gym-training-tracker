@@ -219,38 +219,36 @@ export const SAUCES: Readonly<Record<SauceKind, { label: string; per100: Per100;
 
 // --- Building the list ---
 
-/** A portion: its household name (`say`) with the grams after it, „1 talerz (350 g)”. */
-const p = (g: number, label: string) => ({ g, label: `${label} (${g} g)` });
-/** A drink's portion in ml; 1 ml is taken as 1 g (milk 1.03, wine 0.99 - within the range). */
-const ml = (g: number, label: string) => ({ g, label: `${label} (${g} ml)` });
-
-const PLATE = say('1 talerz', '1 plate');
-const SOUP = say('1 talerz', '1 bowl');
-const BOWL = say('1 miska', '1 bowl');
-const SMALL_BOWL = say('1 miseczka', '1 small bowl');
-const SERVING = say('1 porcja', '1 serving');
-const PIECE = say('1 sztuka', '1 piece');
-const SLICE = say('1 kawałek', '1 slice');
-const SANDWICH = say('1 kanapka', '1 sandwich');
-const HALF_PIZZA = say('½ pizzy 32 cm', '½ of a 32 cm pizza');
-const CUTLET = say('1 kotlet', '1 cutlet');
-const MUG = say('1 kubek', '1 mug');
-const CUP = say('1 filiżanka', '1 cup');
-const GLASS = say('1 szklanka', '1 glass');
-const BIG_GLASS = say('1 duża szklanka', '1 large glass');
-const CAN = say('1 puszka', '1 can');
-const WINE_GLASS = say('1 kieliszek', '1 glass');
-const PIECES = (count: number) => `${count} ${say('sztuk', 'pieces')}`;
-const PIECES_FEW = (count: number) => `${count} ${say('sztuki', 'pieces')}`;
-
-const FAT_FRIED: FatScale = { step: 4 };
-const FAT_RICH: FatScale = { step: 3 };
-const FAT_COOKED: FatScale = { step: 2 };
-const FAT_LIGHT: FatScale = { step: 1 };
-const sweet = (step: number, base: SweetLevel = 'usual'): SweetScale => ({ step, base });
-const sauce = (kind: SauceKind, step: number, base: SauceLevel = 'usual'): SauceScale => ({ kind, step, base });
-
-type Entry = Omit<Dish, 'per100' | 'source'>;
+import {
+  p,
+  ml,
+  PLATE,
+  SOUP,
+  BOWL,
+  SMALL_BOWL,
+  SERVING,
+  PIECE,
+  SLICE,
+  SANDWICH,
+  HALF_PIZZA,
+  CUTLET,
+  MUG,
+  CUP,
+  GLASS,
+  BIG_GLASS,
+  CAN,
+  WINE_GLASS,
+  PIECES,
+  PIECES_FEW,
+  FAT_FRIED,
+  FAT_RICH,
+  FAT_COOKED,
+  FAT_LIGHT,
+  sweet,
+  sauce,
+  type Entry,
+} from './catalog/kit';
+import { REGION_ENTRIES } from './catalog';
 
 const ENTRIES: readonly Entry[] = [
   // --- Food-101 ---
@@ -644,7 +642,7 @@ const ENTRIES: readonly Entry[] = [
   { id: 'energetyk', label: say('Napój energetyczny', 'Energy drink'), prompts: ['energy drink can'], group: 'drink', portion: ml(500, CAN), adjust: {} },
 ];
 
-export const DISHES: readonly Dish[] = ENTRIES.map((e) => {
+export const DISHES: readonly Dish[] = [...ENTRIES, ...REGION_ENTRIES].map((e) => {
   const row = DISH_ROWS[e.id];
   if (!row) throw new Error(`no data for dish ${e.id} - run scripts/food/fetch-dishes.ts`);
   return { ...e, per100: row.per100, source: row.source };

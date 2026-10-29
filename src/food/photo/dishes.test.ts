@@ -38,8 +38,9 @@ const LEVELS = { fat: FAT_SCALE.levels, sweet: SWEET_SCALE.levels, sauce: SAUCE_
 const ladder = (d: Dish, scale: 'fat' | 'sweet' | 'sauce') => LEVELS[scale].map((l) => adjustedPer100(d, { [scale]: l.id } as Choices));
 
 describe('DISHES', () => {
-  it('has about 300 dishes with unique camelCase ids', () => {
+  it('has hundreds of dishes with unique camelCase ids', () => {
     expect(DISHES.length).toBeGreaterThanOrEqual(280);
+    expect(DISHES.length).toBeLessThanOrEqual(2000);
     expect(new Set(DISHES.map((d) => d.id)).size).toBe(DISHES.length);
     for (const d of DISHES) expect(d.id, d.id).toMatch(/^[a-z][a-zA-Z0-9]*$/);
   });
