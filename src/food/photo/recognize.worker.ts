@@ -18,7 +18,6 @@ import { loadTable, rank, type DishTable } from './score';
 
 /** `controlled`: the page is under the service worker, which keeps the copy; otherwise this worker writes it. */
 export type Request =
-  | { type: 'warm'; id: number; base: string; controlled: boolean }
   | { type: 'save'; id: number; base: string; fetchMissing: boolean; controlled: boolean }
   | { type: 'read'; id: number; base: string; image: Blob; controlled: boolean };
 export type Reply =
@@ -26,7 +25,6 @@ export type Reply =
   | { type: 'progress'; step: 'load' | 'start' | 'read'; share: number | null; source?: 'network' | 'copy' }
   | { type: 'result'; id: number; top: { id: string; score: number; cos: number }[] }
   | { type: 'saved'; id: number; saved: boolean }
-  | { type: 'warmed'; id: number }
   | { type: 'error'; id: number; message: string };
 
 // The app's types are the page's (DOM); a worker's own global is only this much of it.
@@ -219,11 +217,6 @@ scope.onmessage = async ({ data: req }) => {
   try {
     if (req.type === 'save') {
       post({ type: 'saved', id: req.id, saved: await save(req.base, req.fetchMissing, req.controlled) });
-      return;
-    }
-    if (req.type === 'warm') {
-      await load(req.base, req.controlled);
-      post({ type: 'warmed', id: req.id });
       return;
     }
     const { session, table } = await load(req.base, req.controlled);

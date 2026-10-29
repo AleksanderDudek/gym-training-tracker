@@ -118,22 +118,6 @@ export function prepare(): void {
   saveModel(true).catch(() => undefined);
 }
 
-/**
- * The in-app viewfinder is open: the model goes into memory now, so the result follows the shutter
- * by about a second. Safe here — the page stays in front, unlike with the system camera app.
- * Failures are left for the photo itself to report.
- */
-export function preload(): void {
-  held = true;
-  loaded = true;
-  listen = undefined;
-  // The copy may have gone since it was checked (iOS clears storage): then this downloaded, and a
-  // failure must not leave the card on "downloading" with the photo buttons off.
-  ask((id) => ({ type: 'warm', id, base: document.baseURI, controlled: controlled() })).catch((e: unknown) => {
-    if (saving === 0 && !(e instanceof Error && e.message === 'released')) void settleModel({ kind: 'failed', reason: navigator.onLine ? 'error' : 'offline' });
-  });
-}
-
 /** „Pobierz teraz”: the download by hand, also on mobile data. */
 export const downloadModel = (): Promise<boolean> => saveModel(true);
 

@@ -7,8 +7,8 @@ import { formatNumber } from '../../lib/format';
 import { FAT_SCALE, SAUCE_SCALE, SWEET_SCALE, type Choices, type Dish, type FatLevel, type SauceLevel, type SweetLevel } from '../../photo/dishes';
 import type { Food } from '../../diet/foods';
 import { PHOTO_MODEL } from '../../photo/model';
-import { NOT_FOOD_COS } from '../../photo/score';
-import { checkModel, modelState, useModelState, type ModelState } from '../../photo/modelState';
+import { NOT_FOOD_COS, WEAK_FOOD_COS } from '../../photo/score';
+import { checkModel, useModelState, type ModelState } from '../../photo/modelState';
 import { clearCamera, clearRun, clearRunOnLeave, consumeRun, markCamera, markReading, pendingPhoto, type Interrupted } from '../../photo/pending';
 import {
   PORTION_STEPS,
@@ -29,7 +29,6 @@ import {
   MODEL_MB,
   downloadModel,
   failureOf,
-  preload,
   prepare,
   recognize,
   release,
@@ -87,12 +86,12 @@ const T = text({
           : 'Nie udało się rozpoznać zdjęcia. Spróbuj ponownie albo wyszukaj danie poniżej.',
     details: 'Szczegóły',
     retry: 'Spróbuj ponownie',
-    lostCamera:
-      'Poprzednie zdjęcie do mnie nie dotarło — telefon zamknął aplikację, kiedy był otwarty aparat telefonu albo galeria. Zrób je jeszcze raz przyciskiem „Zrób zdjęcie”: aparat w aplikacji tego problemu nie ma.',
+    lostCamera: 'Poprzednie zdjęcie do mnie nie dotarło — telefon zamknął aplikację, kiedy był włączony aparat (zwykle z braku pamięci). Zrób je jeszcze raz.',
     lostReading: 'Analiza poprzedniego zdjęcia została przerwana — telefon zamknął aplikację, pewnie z braku pamięci.',
     lostAgain: (n: number) => `Przerwało się już ${n} razy z rzędu — na tym telefonie model może się nie mieścić w pamięci. Zamknij inne aplikacje albo wyszukaj danie poniżej.`,
     lostPhoto: 'Zdjęcie jest zachowane:',
     result: 'Wynik ze zdjęcia',
+    weakFood: (name: string) => `Słabo widać tu jedzenie — może to ${name}? Sprawdź i popraw poniżej.`,
     sure: (name: string, pct: number) => `${name} — pewne (${pct}%)`,
     probably: (name: string, pct: number) => `Najpewniej ${name} (${pct}%)`,
     maybeAlso: (names: string) => `, może też: ${names}`,
@@ -177,12 +176,12 @@ const T = text({
           : 'Couldn’t recognise the photo. Try again, or search for the dish below.',
     details: 'Details',
     retry: 'Try again',
-    lostCamera:
-      'The last photo never reached me — the phone closed the app while its camera or gallery was open. Take it again with “Take a photo”: the camera inside the app doesn’t have this problem.',
+    lostCamera: 'The last photo never reached me — the phone closed the app while the camera was on (usually for lack of memory). Take it again.',
     lostReading: 'The analysis of the last photo was cut short — the phone closed the app, probably for lack of memory.',
     lostAgain: (n: number) => `It has stopped ${n} times in a row — the model may not fit in this phone’s memory. Close other apps, or search for the dish below.`,
     lostPhoto: 'The photo is kept:',
     result: 'Result from the photo',
+    weakFood: (name: string) => `The food is hard to make out — maybe ${name}? Check it and correct it below.`,
     sure: (name: string, pct: number) => `${name} — sure (${pct}%)`,
     probably: (name: string, pct: number) => `Most likely ${name} (${pct}%)`,
     maybeAlso: (names: string) => `, could also be: ${names}`,
@@ -249,8 +248,11 @@ function family(suggestions: readonly Suggestion[]): string | null {
 type Stage =
   | { kind: 'start' }
   | { kind: 'working'; progress: Progress; since: number }
-  /** `notFood`: no dish fits at all (`NOT_FOOD_COS`) — until the person says it is food after all. */
-  | { kind: 'done'; suggestions: Suggestion[]; notFood: boolean }
+  /**
+   * `notFood`: no dish fits at all (`NOT_FOOD_COS`) — until the person says it is food after all.
+   * `weak`: food is hard to make out (a pan on the stove, a dark photo): every guess is only a guess.
+   */
+  | { kind: 'done'; suggestions: Suggestion[]; notFood: boolean; weak: boolean }
   | { kind: 'failed'; why: Failure; detail: string }
   /** The app was closed by the phone last time (`pending.ts`). */
   | { kind: 'interrupted'; at: Interrupted['stage']; tries: number };
@@ -372,11 +374,13 @@ export function PhotoMode({ date, resume = null, find, findLoading = false, onLo
       if (mine !== run.current) return;
       tries.current = 0;
       clearRun();
-      const notFood = !suggestions.length || (suggestions[0]!.cos ?? 1) < NOT_FOOD_COS;
-      setStage({ kind: 'done', suggestions, notFood });
+      const fit = suggestions[0]?.cos ?? 1;
+      const notFood = !suggestions.length || fit < NOT_FOOD_COS;
+      const weak = !notFood && fit < WEAK_FOOD_COS;
+      setStage({ kind: 'done', suggestions, notFood, weak });
       // A guess from an earlier photo stays on the plate as it is: this photo's chips are about this photo.
       setItems((list) => list.map((i) => (i.alts ? { ...i, alts: undefined } : i)));
-      if (!notFood) place(suggestions);
+      if (!notFood) place(suggestions, weak);
     } catch (e) {
       // A newer photo or a closed screen ended this one; only the current photo's failure is news.
       if (mine !== run.current) return;
@@ -390,31 +394,19 @@ export function PhotoMode({ date, resume = null, find, findLoading = false, onLo
   // Photos only once the model is on the phone (or where it cannot be kept at all and comes with each photo).
   const canShoot = model.kind === 'ready' || model.kind === 'unsupported';
 
-  /** The in-app camera; the model goes into memory while the person frames the shot. */
-  const openCamera = () => {
-    setViewfinder(true);
-    if (model.kind === 'ready') preload();
-  };
   /**
-   * The viewfinder closed without a photo: the preloaded model goes too — above all before the
-   * phone's camera app or the gallery sends the browser to the background.
+   * The in-app camera. The model is not loaded while it runs: a live camera and the model together
+   * are what a phone short of memory closes the tab over. It loads after the shutter, with the
+   * camera off. A marker is left meanwhile, so a closed tab still comes back to this screen.
    */
+  const openCamera = () => {
+    markCamera(tries.current);
+    setViewfinder(true);
+  };
   const closeCamera = () => {
     setViewfinder(false);
-    release();
+    clearCamera();
   };
-
-  // A hidden page with the viewfinder open holds no model (the phone may close a background tab
-  // that does); it comes back with the page.
-  useEffect(() => {
-    if (!viewfinder) return;
-    const onVisibility = () => {
-      if (document.visibilityState === 'hidden') release();
-      else if (modelState().kind === 'ready') preload();
-    };
-    document.addEventListener('visibilitychange', onVisibility);
-    return () => document.removeEventListener('visibilitychange', onVisibility);
-  }, [viewfinder]);
 
   // The phone's camera app or the gallery: the browser goes to the background, so only the download
   // (not the model itself) may start, and a marker is left in case the phone closes the page.
@@ -433,10 +425,11 @@ export function PhotoMode({ date, resume = null, find, findLoading = false, onLo
    * The first dish goes onto the plate at once, so kcal and macros show without a tap. Not sure:
    * as a first guess (`alts`), its range covering the other likely dishes.
    */
-  const place = (found: readonly Suggestion[]) => {
+  const place = (found: readonly Suggestion[], weak = false) => {
     const first = found[0];
     if (!first) return;
-    const alts = first.score >= SURE_SCORE ? undefined : likelyAlts(found);
+    // Hard to see, it stays a first guess however sure the ranking is.
+    const alts = first.score >= SURE_SCORE && !weak ? undefined : likelyAlts(found);
     setItems((list) => (list.some((i) => i.dish.id === first.dish.id) ? list : [...list, { ...newItem(first.dish), ...(alts && { alts }) }]));
   };
 
@@ -461,13 +454,15 @@ export function PhotoMode({ date, resume = null, find, findLoading = false, onLo
   const notFood = stage.kind === 'done' && stage.notFood;
   const suggestions = stage.kind === 'done' && !notFood ? stage.suggestions : [];
   const lead = suggestions[0];
-  const sure = (lead?.score ?? 0) >= SURE_SCORE;
+  const weak = stage.kind === 'done' && stage.weak;
+  const sure = (lead?.score ?? 0) >= SURE_SCORE && !weak;
   const kind = sure ? null : family(suggestions);
   const guessing = items.some((i) => i.alts);
   const showAnyway = () => {
     if (stage.kind !== 'done') return;
-    setStage({ ...stage, notFood: false });
-    place(stage.suggestions);
+    // The person says it is food; the model still could not see it well.
+    setStage({ ...stage, notFood: false, weak: true });
+    place(stage.suggestions, true);
   };
 
   // The kept photo of an analysis the phone cut short goes back to the model by itself, once.
@@ -524,6 +519,7 @@ export function PhotoMode({ date, resume = null, find, findLoading = false, onLo
   /** What the model saw, in one line. */
   const verdict = () => {
     if (!lead) return '';
+    if (weak) return T.weakFood(lead.dish.label);
     if (sure) return T.sure(lead.dish.label, pct(lead.score)!);
     if (kind) return T.kind(kind);
     const alts = likelyAlts(suggestions).map((d) => d.label.toLocaleLowerCase(LOCALE));

@@ -48,11 +48,17 @@ export interface Ranked {
 }
 
 /**
- * Below this best cosine no dish fits: the photo shows no food. SigLIP 2's own calibrated match,
- * sigmoid(112.67 · cos − 16.77), is under 1 % there. Measured on the shipped weights: food photos
- * 0.128–0.190, screens, rooms, streets and cats 0.051–0.121 (`2026-10-29-zdjecie-szacunek-design.md`).
+ * How well the best dish fits, as the raw cosine (SigLIP 2's own calibrated match is
+ * sigmoid(112.67 · cos − 16.77)). Measured on the shipped weights: plated food 0.128–0.190; food in
+ * pans and woks on the stove 0.106–0.181; screens, rooms, streets 0.051–0.092, a cat on a sofa
+ * 0.115–0.121 (`2026-10-29-zdjecie-szacunek-design.md`, `2026-10-30-zdjecie-pamiec-design.md`).
+ *
+ * Below `NOT_FOOD_COS` the photo shows no food. Between it and `WEAK_FOOD_COS` food and other
+ * things overlap: calling real food "no food" there costs the person more than a guess they can
+ * remove, so the screen guesses and says it is unsure.
  */
-export const NOT_FOOD_COS = 0.105;
+export const NOT_FOOD_COS = 0.085;
+export const WEAK_FOOD_COS = 0.12;
 
 export function rank(table: DishTable, image: Float32Array, logitScale: number, top = 5): Ranked[] {
   if (image.length !== table.dim) throw new Error(`expected ${table.dim} values, got ${image.length}`);
