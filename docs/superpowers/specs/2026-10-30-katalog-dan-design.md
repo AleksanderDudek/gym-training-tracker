@@ -42,14 +42,14 @@ compare catalogs, they are not absolute accuracy.
 | --- | --- | --- | --- | --- | --- |
 | 564 of the old 351 dishes | old (351) | 65.1 % | 85.5 % | 78.9 % | 19 % |
 | | new (947) | 55.5 % | 77.5 % | 74.3 % | 23 % |
-| 236 of new dishes | old (351) — not in it | 0 % | 0 % | 44.9 % | 39 % |
-| | new (947) | 58.5 % | 75.0 % | 75.4 % | 17 % |
+| 474 of new dishes | old (351) — not in it | 0 % | 0 % | 43.7 % | 39 % |
+| | new (947) | 60.1 % | 78.7 % | 76.6 % | 16 % |
 
 - The old dishes lose ten points of top-1, mostly to near-twins that look the same and count about
   the same: gulasz ↔ pörkölt, steak ↔ steak frites, fried rice ↔ pineapple fried rice, naan ↔ roti,
   panna cotta ↔ crème caramel. The estimate loses far less (kcal within 25 %: −4.6 points).
 - The new dishes go from always wrong to right in most cases; their kcal error halves.
-- Over both sets the estimate is within 25 % for ~75 % of photos instead of ~62 %.
+- Over both sets (1038 photos) the estimate is within 25 % for 75.4 % of photos instead of 62.8 %.
 
 ### Considered, not done now
 
