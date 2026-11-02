@@ -1,9 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import { freshState } from './plan';
 import { setBodyWeight } from './body';
-import { EVENING_AT, HORIZON_DAYS, MORNING_AT, localDay, reminderItems, remindersOf } from './reminders';
+import {
+  EVENING_AT,
+  FOOD_AT,
+  FOOD_TIMES,
+  HORIZON_DAYS,
+  MORNING_AT,
+  eveningMerged,
+  foodTimeOf,
+  localDay,
+  reminderItems,
+  remindersOf,
+} from './reminders';
 import { GOAL_PLANS } from '../data/plans';
-import { REMINDER_EVENING, REMINDER_MORNING } from './quips';
+import { REMINDER_EVENING, REMINDER_FOOD, REMINDER_MORNING, REMINDER_STEPS_FOOD } from './quips';
 import { validItem } from '../../server/api/api';
 import type { AppState, LogEntry } from '../types';
 
@@ -123,5 +134,67 @@ describe('poranne ważenie', () => {
     const items = reminderItems(withPlan(), { morning: true, evening: true, weigh: true }, MONDAY, 0);
     expect(items.length).toBeLessThanOrEqual(100);
     expect(items.every(validItem)).toBe(true);
+  });
+});
+
+describe('jedzenie z dziś', () => {
+  const food = { morning: false, evening: false, food: true };
+
+  it('domyślnie wyłączone; bez profilu diety nie ma go nawet włączonego', () => {
+    expect(remindersOf(freshState()).food).toBeFalsy();
+    expect(reminderItems(freshState(), food, MONDAY, 0)).toEqual([]);
+    expect(reminderItems(freshState(), food, MONDAY, 0, false)).toEqual([]);
+  });
+
+  it('przy profilu diety codziennie o 20:00 i otwiera dziennik jedzenia', () => {
+    const items = reminderItems(freshState(), food, MONDAY, 12 * 60, true);
+    expect(items).toHaveLength(HORIZON_DAYS);
+    expect(FOOD_AT).toBe('20:00');
+    expect(items.every((i) => i.tag === 'jedzenie' && i.time === '20:00' && i.url === '#/jedzenie')).toBe(true);
+    expect(items[0]!.title).toBe('Jedzenie z dziś');
+    expect(REMINDER_FOOD).toContain(items[0]!.body);
+    expect(items.every(validItem)).toBe(true);
+  });
+
+  it('godzina do wyboru; po niej dzisiejsze przepada', () => {
+    const items = reminderItems(freshState(), { ...food, foodAt: '21:30' }, MONDAY, 21 * 60 + 30, true);
+    expect(items[0]).toMatchObject({ date: '2026-10-06', time: '21:30' });
+    expect(FOOD_TIMES).toContain('21:30');
+    expect(FOOD_TIMES[0]).toBe('16:00');
+    expect(FOOD_TIMES.at(-1)).toBe('23:30');
+  });
+
+  it('zepsuta godzina z importu wraca do 20:00', () => {
+    expect(foodTimeOf({ ...food, foodAt: '25:00' })).toBe('20:00');
+    expect(foodTimeOf({ ...food, foodAt: 'wieczorem' })).toBe('20:00');
+    expect(foodTimeOf(food)).toBe('20:00');
+    expect(foodTimeOf({ ...food, foodAt: '18:30' })).toBe('18:30');
+  });
+
+  it('kroki i jedzenie razem — jedno powiadomienie dziennie o godzinie jedzenia, na ekran Dziś', () => {
+    const prefs = { morning: false, evening: true, food: true, foodAt: '20:30' };
+    expect(eveningMerged(prefs, true)).toBe(true);
+    const items = reminderItems(freshState(), prefs, MONDAY, 0, true);
+    expect(items).toHaveLength(HORIZON_DAYS);
+    expect(items.some((i) => i.tag === 'ruch' || i.time === EVENING_AT)).toBe(false);
+    expect(items[0]).toMatchObject({ tag: 'jedzenie', time: '20:30', url: '#/sesja', title: 'Wpisz kroki i jedzenie z dziś' });
+    expect(REMINDER_STEPS_FOOD).toContain(items[0]!.body);
+    // Jeden wpis na dzień — serwer wysyła po kluczu dzień + rodzaj.
+    expect(new Set(items.map((i) => i.date)).size).toBe(items.length);
+  });
+
+  it('bez profilu diety kroki wracają na 19:30, choć jedzenie zostało włączone', () => {
+    const prefs = { morning: false, evening: true, food: true };
+    expect(eveningMerged(prefs, false)).toBe(false);
+    const items = reminderItems(freshState(), prefs, MONDAY, 0, false);
+    expect(items.every((i) => i.tag === 'ruch' && i.time === EVENING_AT)).toBe(true);
+  });
+
+  it('wszystkie naraz mieszczą się w limicie serwera — wspólne wieczorne nie dokłada listy', () => {
+    const items = reminderItems(withPlan(), { morning: true, evening: true, weigh: true, food: true }, MONDAY, 0, true);
+    expect(items.length).toBeLessThanOrEqual(100);
+    expect(items.every(validItem)).toBe(true);
+    const keys = items.map((i) => `${i.date} ${i.time}`);
+    expect(keys).toEqual([...keys].sort());
   });
 });

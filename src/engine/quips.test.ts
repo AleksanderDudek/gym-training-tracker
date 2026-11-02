@@ -10,7 +10,9 @@ import {
   SNACK_EMPTY,
   CARDIO_EMPTY,
   REMINDER_EVENING,
+  REMINDER_FOOD,
   REMINDER_MORNING,
+  REMINDER_STEPS_FOOD,
   REMINDER_WEIGH,
   SNACK_SAVED,
   daySeed,
@@ -121,7 +123,7 @@ describe('porównania czasu i powtórzeń', () => {
 
 describe('zestawy tekstów', () => {
   it('każdy zestaw ma z czego losować i nie powtarza się w środku', () => {
-    [CHEERS, SAVED, REST, LATE, EMPTY_SHELF, LOADING, SNACK_SAVED, SNACK_EMPTY, CARDIO_EMPTY, LEVEL_UP, REMINDER_MORNING, REMINDER_EVENING, REMINDER_WEIGH].forEach((list) => {
+    [CHEERS, SAVED, REST, LATE, EMPTY_SHELF, LOADING, SNACK_SAVED, SNACK_EMPTY, CARDIO_EMPTY, LEVEL_UP, REMINDER_MORNING, REMINDER_EVENING, REMINDER_WEIGH, REMINDER_FOOD, REMINDER_STEPS_FOOD].forEach((list) => {
       expect(list.length).toBeGreaterThanOrEqual(3);
       expect(new Set(list).size).toBe(list.length);
       list.forEach((t) => expect(t.length).toBeGreaterThan(12));
@@ -146,7 +148,7 @@ describe('zestawy tekstów', () => {
   });
 
   it('przypomnienia zapraszają, nie naciskają — telefon i tak już zadzwonił', () => {
-    [...REMINDER_MORNING, ...REMINDER_EVENING, ...REMINDER_WEIGH].forEach((t) => {
+    [...REMINDER_MORNING, ...REMINDER_EVENING, ...REMINDER_WEIGH, ...REMINDER_FOOD, ...REMINDER_STEPS_FOOD].forEach((t) => {
       expect(t).not.toMatch(SHAMING);
       expect(t).not.toMatch(/musisz|koniecznie|nie zapomnij|wstyd|leń|wymówk|wreszcie|znowu/i);
       // Bez czasowników w rodzaju męskim albo żeńskim: przypomnienie dostaje Gustaw i Gosia.
@@ -159,6 +161,12 @@ describe('zestawy tekstów', () => {
     REMINDER_WEIGH.forEach((t) => {
       expect(t).not.toMatch(/kilo|brzuch|boczk|tłuszcz|jedzeni|pączk|ciast|dieta|schudn|gruby|chud|grub/i);
       expect(t).not.toMatch(/brawo|niestety|uwaga|za dużo|za mało|więcej niż wczoraj/i);
+    });
+  });
+
+  it('przypomnienie o jedzeniu prosi o wpis, nie ocenia, co i ile ktoś zjadł', () => {
+    [...REMINDER_FOOD, ...REMINDER_STEPS_FOOD].forEach((t) => {
+      expect(t).not.toMatch(/brawo|niestety|uwaga|za dużo|za mało|więcej niż wczoraj|grzesz|zdrow|niezdrow|odchudz|schudn|kalori|kilo/i);
     });
   });
 

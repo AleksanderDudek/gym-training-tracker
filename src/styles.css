@@ -955,6 +955,9 @@
   .cardio-entry label.fld{margin-top:10px}
   .cardio-entry .seg{margin-bottom:10px}
   .seg-label{display:block;font-size:11px;color:var(--ink-soft);margin:2px 0 2px}
+  /* Godzina przypomnienia o jedzeniu: podpis nad polem, jak przy przełącznikach. */
+  .rem-time{display:block;margin:6px 0 4px}
+  .rem-time span{display:block;font-size:11px;color:var(--ink-soft);margin:0 0 2px}
   .cardio-entry .snack-row{margin:12px 0 0}
   .grp p.cardio-note{margin-top:10px}
   .grp p.cardio-note.warn{color:var(--warn)}
