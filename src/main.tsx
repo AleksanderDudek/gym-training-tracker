@@ -6,6 +6,7 @@ import { RootBoundary } from './components/RootBoundary';
 import { downloadModelInBackground } from './food/photo/background';
 import { LANG, text } from './i18n';
 import { startPwa } from './pwa';
+import { applyTheme } from './theme';
 // Kroje pisma z paczki, nie z Google Fonts: działają offline od pierwszej wizyty, nie wysyłają
 // nikogo do cudzego serwera, a obrazki do udostępnienia dostają prawdziwe litery.
 import '@fontsource/oswald/500.css';
@@ -14,6 +15,10 @@ import '@fontsource/ibm-plex-sans/400.css';
 import '@fontsource/ibm-plex-sans/500.css';
 import '@fontsource/ibm-plex-sans/600.css';
 import './styles.css';
+
+// Wygląd wybrany w ustawieniach (jasny albo ciemny) staje na `<html>` przed pierwszym renderem.
+// „Automatycznie” niczego nie stawia: za systemem idzie sam arkusz, od pierwszej klatki.
+applyTheme();
 
 // Service worker rusza tu, poza Reactem: także wersja, która wywróci się przy pierwszym renderze,
 // zapyta o nowszą, a ekran awarii (`RootBoundary`) ją wpuści. W trybie deweloperskim

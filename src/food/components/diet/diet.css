@@ -184,7 +184,7 @@
 
 /* „Dodaj zjedzone”, zestaw i „Większy posiłek”: wyszukiwanie, wynik do wybrania, gramatura; albo same kalorie. */
 .fd-diet-picker input[type=search],.fd-diet-set input[type=search],.fd-diet-cheatform input[type=search]{width:100%;padding:11px 10px;font:inherit;
-  font-size:17px;border:1px solid var(--edge);border-radius:var(--r);background:#fff;color:var(--ink)}
+  font-size:17px;border:1px solid var(--edge);border-radius:var(--r);background:var(--field);color:var(--ink)}
 .fd-diet-hint,p.fd-diet-hint{margin:8px 0 0;font-size:12.5px;color:var(--ink-soft)}
 /* Wyszukiwanie i skaner kodów obok siebie; skaner rozwija się pod polem. */
 .fd-diet-search-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
@@ -306,7 +306,7 @@ fieldset.fd-diet-styles legend{float:left;width:100%;padding:0;margin:0 0 2px;fo
 /* Zapis zawsze pod ręką: przyklejony nad dolnym paskiem (a gdy klawiatura chowa pasek — do dołu). */
 .fd-diet-savebar{position:sticky;bottom:calc(64px + env(safe-area-inset-bottom));z-index:20;display:flex;align-items:center;
   gap:12px;padding:10px 14px;background:var(--surface);border-top:1px solid var(--line);
-  box-shadow:0 -6px 16px rgba(30,35,32,.06)}
+  box-shadow:0 -6px 16px rgba(var(--shade),.06)}
 @media (pointer:coarse){body:has(input:not([type=checkbox]):not([type=radio]):focus) .fd-diet-savebar{bottom:0}}
 .fd-diet-saved{display:inline-flex;align-items:center;gap:4px;font-size:14px;font-weight:600;color:var(--ok)}
 .fd-diet-danger{margin-top:14px;color:var(--c-orange-ink);border-color:var(--c-orange-ink)}
@@ -478,7 +478,7 @@ table.fd-diet-weeks th:first-child{min-width:84px;white-space:nowrap}
   background:var(--surface);color:var(--ink);font:inherit;font-size:14px;cursor:pointer}
 .fd-diet-dish:focus-visible{outline:2px solid var(--steel);outline-offset:2px}
 .fd-diet-dish-lead{border-color:var(--steel);font-weight:600}
-.fd-diet-dish-on{background:var(--steel);border-color:var(--steel);color:#fff}
+.fd-diet-dish-on{background:var(--steel);border-color:var(--steel);color:var(--on-strong)}
 .fd-diet-dish-search input{width:100%}
 .fd-diet-plate{display:grid;gap:8px;margin-top:6px}
 .fd-diet-plate-list{list-style:none;margin:0;padding:0;display:grid;gap:10px}

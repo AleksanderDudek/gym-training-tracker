@@ -43,7 +43,7 @@ describe('kontrast tokenów', () => {
     }
   });
 
-  it('czyste akcenty nie nadają się na tekst — i dlatego mają wersje ink', () => {
+  it('czyste akcenty nie nadają się na tekst — i dlatego mają wersje ink (jasny wygląd)', () => {
     // Gdyby któryś kiedyś przeskoczył próg, podział na dwa tokeny przestaje mieć sens
     // i trzeba go usunąć, a nie zostawiać jako zabobon.
     const pure = ['c-orange', 'c-blue', 'c-gold'].map((t) => ratio(token(t), token('surface')));
@@ -116,4 +116,128 @@ describe('kontrast tokenów', () => {
     // Pasek wsparcia pod paskiem aplikacji tak samo: odcina go ramka, nie wypełnienie.
     expect(css).toMatch(/\.strip\{[^}]*border-bottom:1px solid var\(--c-gold-ink\)/);
   });
+});
+
+/*
+ * Ciemny wygląd: te same nazwy tokenów, inne wartości. Blok stoi w arkuszu dwa razy — pod
+ * zapytaniem o system („Automatycznie”) i pod `data-theme="dark"` (wybór z ustawień) — i obie
+ * kopie muszą być takie same, bo inaczej wygląd zależałby od tego, jak się go wybrało.
+ */
+
+/** Treść bloku zaczynającego się od selektora — bez komentarzy, ze ściśniętymi odstępami. */
+const block = (selector: string): string => {
+  const at = css.indexOf(selector);
+  if (at < 0) throw new Error(`Brak bloku ${selector} w styles.css`);
+  const open = css.indexOf('{', at);
+  const close = css.indexOf('}', open);
+  return css
+    .slice(open + 1, close)
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+};
+
+const DARK = block(':root[data-theme=dark]');
+const DARK_AUTO = block(':root:not([data-theme=light])');
+const LIGHT = block(':root,');
+
+const valuesOf = (body: string): Map<string, string> =>
+  new Map([...body.matchAll(/--([a-z0-9-]+)\s*:\s*([^;]+);/g)].map((m) => [m[1]!, m[2]!.trim()]));
+
+const darkValues = valuesOf(DARK);
+
+/** Token w ciemnym: wartość z ciemnego bloku, a gdy jej tam nie ma — ta sama co w jasnym. */
+const darkToken = (name: string): string => {
+  const v = darkValues.get(name) ?? token(name);
+  if (!/^#[0-9a-fA-F]{6}$/.test(v)) throw new Error(`--${name} w ciemnym to nie kolor: ${v}`);
+  return v;
+};
+
+const THEMES = [
+  ['jasny', token],
+  ['ciemny', darkToken],
+] as const;
+
+describe('ciemny wygląd', () => {
+  it('blok „za systemem” i blok „wybrany ciemny” są identyczne', () => {
+    expect(DARK_AUTO).toBe(DARK);
+    expect(css).toMatch(/@media \(prefers-color-scheme:dark\)\{\s*:root:not\(\[data-theme=light\]\)\{/);
+  });
+
+  it('każdy kolor interfejsu ma ciemną wersję', () => {
+    // Czyste akcenty, neutralne palety i kolory obsady to wypełnienia i rysunki — zostają.
+    const kept = new Set(['c-orange', 'c-blue', 'c-green', 'c-gold', 'c-dark', 'c-light', 'c-mid', 'c-sand']);
+    const themed = [...valuesOf(LIGHT).entries()]
+      .filter(([name, v]) => /^#[0-9a-fA-F]{6}$/.test(v) && !kept.has(name) && !/^(fur|hide|muzzle|silver)/.test(name))
+      .map(([name]) => name);
+    expect(themed.length).toBeGreaterThanOrEqual(18);
+    for (const name of themed) expect(darkValues.has(name), `--${name}`).toBe(true);
+    expect(DARK).toContain('color-scheme:dark');
+    expect(LIGHT).toContain('color-scheme:light');
+  });
+
+  it('obsada, sceny, manekin i kafelki kettlebli dostają jasną paletę w obu wyglądach', () => {
+    // Ten sam blok co `:root`, więc rysunek wygląda tak samo jak na jasnym ekranie i na obrazku
+    // do udostępnienia — sierść, kamizelka i kolory odważników to postać, nie interfejs.
+    expect(css.startsWith(':root,')).toBe(true);
+    const selector = css.slice(0, css.indexOf('{')).replace(/\/\*[\s\S]*?\*\//g, '').replace(/\s+/g, '');
+    expect(selector).toBe(':root,.gorilla,.scene-art,.mq,.chip');
+  });
+
+  it('kafelki mapy przyciemnia filtr tylko w ciemnym, a znaczniki zostają', () => {
+    expect(valuesOf(LIGHT).get('map-tiles')).toBe('none');
+    expect(darkValues.get('map-tiles')).toMatch(/invert\(1\)/);
+  });
+});
+
+describe('kontrast w obu wyglądach', () => {
+  for (const [name, tk] of THEMES) {
+    describe(name, () => {
+      it('tekst, tekst drugiego planu, stany, stal i tusze akcentów: ≥ 4,5:1 na każdym tle', () => {
+        const inks = ['ink', 'ink-soft', 'ok', 'warn', 'steel', 'c-orange-ink', 'c-blue-ink', 'c-green-ink', 'c-gold-ink'];
+        for (const fg of inks) {
+          for (const bd of BACKDROPS) {
+            expect(ratio(tk(fg), tk(bd)), `${fg} na --${bd}`).toBeGreaterThanOrEqual(4.5);
+          }
+        }
+        expect(ratio(tk('ink'), tk('field')), 'tekst w polu').toBeGreaterThanOrEqual(4.5);
+      });
+
+      it('krawędź kontrolki ≥ 3:1 na każdym tle i na polu', () => {
+        for (const bd of [...BACKDROPS, 'field']) {
+          expect(ratio(tk('edge'), tk(bd)), `--edge na --${bd}`).toBeGreaterThanOrEqual(3);
+        }
+      });
+
+      it('napis na mocnym wypełnieniu (przyciski, wybrane segmenty, odhaczenie, kawa) ≥ 4,5:1', () => {
+        for (const fill of ['steel', 'c-gold-ink', 'c-blue-ink', 'c-green-ink', 'ok', 'ink']) {
+          expect(ratio(tk('on-strong'), tk(fill)), `--on-strong na --${fill}`).toBeGreaterThanOrEqual(4.5);
+        }
+      });
+
+      it('tekst na tłach akcentów (wsparcie, instalacja, aktywna zakładka) ≥ 4,5:1', () => {
+        for (const [fg, bg] of [
+          ['ink', 'c-gold-bg'],
+          ['c-gold-ink', 'c-gold-bg'],
+          ['ink', 'c-blue-bg'],
+          ['c-blue-ink', 'c-blue-bg'],
+          ['c-orange-ink', 'c-orange-bg'],
+        ] as const) {
+          expect(ratio(tk(fg), tk(bg)), `--${fg} na --${bg}`).toBeGreaterThanOrEqual(4.5);
+        }
+        // Ramki pasków odcinają je od karty — wypełnienie samo tego nie robi.
+        expect(ratio(tk('c-gold-ink'), tk('surface'))).toBeGreaterThanOrEqual(3);
+        expect(ratio(tk('c-blue-ink'), tk('surface'))).toBeGreaterThanOrEqual(3);
+        expect(ratio(tk('c-gold-bg'), tk('surface'))).toBeLessThan(3);
+      });
+
+      it('kropki stanu połączenia ≥ 3:1 na każdym tle', () => {
+        for (const dot of ['ok', 'warn', 'c-orange-ink', 'c-blue-ink', 'ink-soft']) {
+          for (const bd of BACKDROPS) {
+            expect(ratio(tk(dot), tk(bd)), `--${dot} na --${bd}`).toBeGreaterThanOrEqual(3);
+          }
+        }
+      });
+    });
+  }
 });

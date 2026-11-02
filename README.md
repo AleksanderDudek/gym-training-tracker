@@ -2434,6 +2434,51 @@ z błękitu, szmaragd z zieleni; srebro i złoto zostają przy neutralnych. Rysu
 jest wszędzie ciemny, „grawerowany": jasny piktogram na stopie o średniej jasności schodził
 do 2,74:1 i po prostu znikał. Ciemny trzyma od 4,16:1 wzwyż na każdym z pięciu pasm.
 
+### Tryb ciemny
+
+W **Ustawieniach** karta **„Wygląd”**: Automatycznie (domyślnie — za ustawieniem telefonu albo
+komputera), Jasny, Ciemny. Wybór leży w tej przeglądarce, tak jak język, a nie w kopii danych:
+ciemny telefon i jasny laptop tej samej osoby to dwa ekrany. Zmiana działa od razu, bez
+przeładowania (`src/theme.ts`).
+
+- **Te same tokeny, inne wartości.** Ciemny wygląd to jeden blok w `styles.css`, który przedefiniowuje
+  tokeny; reguły nie wiedzą, w którym wyglądzie są. Blok stoi dwa razy — pod
+  `@media (prefers-color-scheme: dark)` („Automatycznie”, działa od pierwszej klatki, bez skryptu)
+  i pod `data-theme="dark"` na `<html>` (wybór z ustawień, stawiany w `main.tsx` przed pierwszym
+  renderem). Test pilnuje, żeby obie kopie były identyczne. Skrypt w `index.html` odpadł: polityka
+  bezpieczeństwa wpuszcza tylko pliki z serwera.
+- **Tła odwracają kolejność**: strona najciemniejsza (`#101311`), karta jaśniejsza, wnętrze karty
+  jeszcze jaśniejsze. **Tusze akcentów** (`-ink`) są w ciemnym rozjaśnione, tła akcentów (`-bg`)
+  przyciemnione, a **czyste akcenty zostają** — to wypełnienia. Na ciemnym czysty pomarańcz dawałby
+  nawet 5:1, ale reguła jest w nazwie tokenu, nie w liczbie: tekst idzie na `-ink`, zawsze.
+- **Stal robi się jasna**, a napis na niej — nowy token `--on-strong` (biel w jasnym, prawie czerń
+  w ciemnym). Ten sam token stoi na każdym mocnym wypełnieniu: wybrany segment, przycisk kawy,
+  odhaczone ćwiczenie. Biel pól formularzy i list podpowiedzi to `--field`, cienie i przyciemnienia
+  pod oknami — `rgba(var(--shade), …)`. Gołe `#fff` zostało tylko tam, gdzie tło jest stałe:
+  kafelki kettlebli, nakładki na miniaturach filmów, podgląd aparatu i białe ramki zdjęć produktów.
+- **Obsada, sceny, manekin i kafelki kettlebli zostają jasne.** Ich klasy (`.gorilla`, `.scene-art`,
+  `.mq`, `.chip`) stoją w selektorze jasnego bloku tokenów, więc rysunek dostaje jasną paletę także
+  w ciemnym wyglądzie: sierść, kamizelka trenera i kolory odważników to tożsamość, a nie interfejs.
+  Sceny i manekin mają własne jasne tło — w ciemnym są jasną tabliczką na karcie; goryle bez tła
+  odcinają się od ciemnej karty jaśniejszym konturem sierści i srebrem trenera. Medale idą za
+  wyglądem tylko w części „niezdobytej” (płaska stopa w kolorze karty); tworzywa są stałe.
+- **Obrazki do udostępnienia zostają jasne.** Karty, plakat i świadectwo rysuje płótno z samodzielnego
+  SVG, który nie widzi arkusza strony — zmienne podmienia `inlineVars` na stałe, jasne wartości,
+  a test obsady pilnuje, żeby nie został żaden `var(`. To kartki dla innych, nie ekran.
+- **Mapa „W pobliżu”**: kafelki OSM przyciemnia filtr CSS (`--map-tiles`, odwrócenie z obrotem
+  barwy) nałożony tylko na warstwę kafelków — znaczniki, legenda i kontrolki zostają w kolorach
+  tokenów.
+- **Pasek systemowy** (`theme-color`) idzie za wyglądem: w `index.html` dwa znaczniki z `media`
+  (za systemem, przed skryptem), po starcie jeden, ustawiany z `TOP_COLORS` — tych samych wartości
+  co `--bg` i `--surface`, co sprawdza test. `color-scheme` mówi przeglądarce, w jakim wyglądzie
+  rysować paski przewijania i własne kontrolki.
+- **Progi pilnuje ten sam test kontrastu, w obu wyglądach**: tekst, `--ink-soft`, stany, stal i tusze
+  akcentów ≥ 4,5:1 na każdym z trzech teł i na polu, `--edge` ≥ 3:1, `--on-strong` ≥ 4,5:1 na każdym
+  mocnym wypełnieniu, tekst na tłach akcentów ≥ 4,5:1, kropki stanu ≥ 3:1. Do tego: każdy kolor
+  interfejsu z jasnego bloku ma ciemną wersję.
+- **Nowe komponenty biorą kolory tylko z tokenów.** Goły heks w nowej regule nie przejdzie do ciemnego
+  wyglądu — zostanie jasną plamą.
+
 ## Jak wyglądają odznaki
 
 Odznaka jest przedmiotem, nie znakiem typograficznym. Każda to sześciokątny medal z tworzywem,
@@ -2626,6 +2671,9 @@ GYM TRACKER instaluje się na ekranie głównym telefonu i działa bez sieci od 
   Open Food Facts i serwerem aplikacji (`VITE_API_URL`), ramki z YouTube'a. Test przegląda kod i pilnuje, żeby każdy adres
   `https://`, z którym aplikacja rozmawia, był w polityce.
 - **Ikony** w `public/icons/`: zwykła 192 i 512 px, maskowalna 512 px, 180 px dla iOS i wektorowa.
+- **Tryb ciemny a instalacja.** Kolory w manifeście (`theme_color`, `background_color`) zostają jasne —
+  manifest nie zna wyglądów, więc ekran startowy Androida jest jasny przez ułamek sekundy. Pasek
+  systemowy po starcie idzie już za wybranym wyglądem (o tym w części „Kolory”).
 - **iPhone instaluje ręcznie.** Android sam proponuje instalację, iOS nie zrobi tego nigdy — nie ma
   ani okna, ani zdarzenia dla strony. Dlatego na iPhonie i iPadzie poza aplikacją z ikony
   (`src/install.ts`) pod paskiem aplikacji stoi niebieski pasek „Dodaj do ekranu początkowego”,

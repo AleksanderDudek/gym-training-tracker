@@ -50,6 +50,8 @@
 .fd-near-map:has(.leaflet-container:focus-visible){outline:2px solid var(--steel);outline-offset:2px}
 .fd-near-map .leaflet-container{height:clamp(260px,45vh,440px);width:100%;background:var(--surface-2);font-family:var(--body);
   font-size:13px}
+/* Ciemny wygląd: same kafelki przyciemnione filtrem (`--map-tiles`), znaczniki i kontrolki zostają w kolorach tokenów. */
+.fd-near-map .leaflet-tile-pane{filter:var(--map-tiles)}
 .fd-near-map .leaflet-container:focus,.fd-near-map .leaflet-container:focus-visible{outline:none}
 .fd-near-map-frame{position:relative}
 

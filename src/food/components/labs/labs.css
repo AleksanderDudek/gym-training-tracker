@@ -63,7 +63,7 @@ a.fd-lab-food{color:var(--steel)}
   background:var(--surface);color:var(--steel);cursor:pointer}
 .fd-lab-icon:disabled{opacity:.4;cursor:default}
 .fd-lab-icon:focus-visible{outline:2px solid var(--steel);outline-offset:2px}
-.fd-lab-plus{background:var(--steel);border-color:var(--steel);color:#fff}
+.fd-lab-plus{background:var(--steel);border-color:var(--steel);color:var(--on-strong)}
 
 /* Wyniki */
 .fd-lab-results{list-style:none;margin:4px 0 0;padding:0}
