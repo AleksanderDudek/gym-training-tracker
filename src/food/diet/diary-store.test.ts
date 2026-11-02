@@ -1,7 +1,7 @@
 import Dexie from 'dexie';
 import { beforeEach, describe, expect, test } from 'vitest';
 import { DietDb, type Entry } from './db';
-import { addWater, completeProfile, copyEntries, deleteEntries, exportAll, restoreAll, saveFast, saveProfile, undoWater } from './store';
+import { addDrink, completeProfile, copyEntries, deleteEntries, exportAll, restoreAll, saveFast, saveProfile, undoDrink } from './store';
 import { cleanDay, cleanEntry, cleanProfile } from './validate';
 
 /*
@@ -61,39 +61,52 @@ describe('copying entries', () => {
   });
 });
 
-describe('water', () => {
-  test('+250 and +500 add up; „−” takes back the last addition', async () => {
+describe('drinks (hydration)', () => {
+  test('drinks of each kind add up; „−” takes back the last one, the rest of the day stays', async () => {
     await db.days.put({ date: '2026-11-02', steps: 4000 });
-    await addWater('2026-11-02', 250, db);
-    await addWater('2026-11-02', 500, db);
-    expect(await db.days.get('2026-11-02')).toEqual({ date: '2026-11-02', steps: 4000, water: 750, waterAdds: [250, 500] });
-    await undoWater('2026-11-02', db);
-    expect(await db.days.get('2026-11-02')).toEqual({ date: '2026-11-02', steps: 4000, water: 250, waterAdds: [250] });
-  });
-
-  test('back to nothing: the keys go, the rest of the day stays', async () => {
-    await db.days.put({ date: '2026-11-02', partial: true });
-    await addWater('2026-11-02', 250, db);
-    await undoWater('2026-11-02', db);
-    expect(await db.days.get('2026-11-02')).toEqual({ date: '2026-11-02', partial: true });
+    await addDrink('2026-11-02', 'water', 250, db);
+    await addDrink('2026-11-02', 'coffee', 250, db);
+    const day = (await db.days.get('2026-11-02'))!;
+    expect(day.steps).toBe(4000);
+    expect(day.drinks).toMatchObject([
+      { kind: 'water', ml: 250 },
+      { kind: 'coffee', ml: 250 },
+    ]);
+    expect(day.drinks![0]!.at).toMatch(/^\d{2}:\d{2}$/);
+    await undoDrink('2026-11-02', db);
+    expect((await db.days.get('2026-11-02'))!.drinks).toMatchObject([{ kind: 'water', ml: 250 }]);
+    await undoDrink('2026-11-02', db);
+    expect(await db.days.get('2026-11-02')).toEqual({ date: '2026-11-02', steps: 4000 });
     // „−” on an empty day changes nothing.
-    await undoWater('2026-11-02', db);
-    expect(await db.days.get('2026-11-02')).toEqual({ date: '2026-11-02', partial: true });
+    await undoDrink('2026-11-02', db);
+    expect(await db.days.get('2026-11-02')).toEqual({ date: '2026-11-02', steps: 4000 });
   });
 
-  test('a day that forgot its additions (a backup without them) takes back 250 ml, never below 0', async () => {
-    await db.days.put({ date: '2026-11-02', water: 400 });
-    await undoWater('2026-11-02', db);
-    expect((await db.days.get('2026-11-02'))!.water).toBe(150);
-    await undoWater('2026-11-02', db);
+  test('a sweet drink also goes into the food diary as an estimate, and „−” takes both back', async () => {
+    await addDrink('2026-11-02', 'sweet', 330, db);
+    const [e] = await db.entries.toArray();
+    expect(e).toMatchObject({ date: '2026-11-02', amountLabel: '330 ml', kcal: 139, carbs: 35, sugars: 35, protein: 0, fat: 0, source: 'quick' });
+    expect(e!.name).toMatch(/Napój słodzony/);
+    expect((await db.days.get('2026-11-02'))!.drinks).toMatchObject([{ kind: 'sweet', ml: 330, entryId: e!.id }]);
+    await undoDrink('2026-11-02', db);
+    expect(await db.entries.count()).toBe(0);
     expect(await db.days.get('2026-11-02')).toEqual({ date: '2026-11-02' });
   });
 
-  test('only the last 20 additions are remembered', async () => {
-    for (let i = 0; i < 25; i++) await addWater('2026-11-02', 250, db);
+  test('a day on the old water total becomes one water drink; the old keys go with the next drink', async () => {
+    await db.days.put({ date: '2026-11-02', water: 400, waterAdds: [400] });
+    await addDrink('2026-11-02', 'tea', 250, db);
+    expect(await db.days.get('2026-11-02')).toMatchObject({
+      date: '2026-11-02',
+      drinks: [{ kind: 'water', ml: 400 }, { kind: 'tea', ml: 250 }],
+    });
+    expect(await db.days.get('2026-11-02')).not.toHaveProperty('water');
+  });
+
+  test('never over 20 l a day; only the newest 100 drinks are kept', async () => {
+    for (let i = 0; i < 45; i++) await addDrink('2026-11-02', 'water', 500, db);
     const day = (await db.days.get('2026-11-02'))!;
-    expect(day.water).toBe(6250);
-    expect(day.waterAdds).toHaveLength(20);
+    expect(day.drinks!.reduce((s, d) => s + d.ml, 0)).toBe(20_000);
   });
 });
 
@@ -145,9 +158,9 @@ describe('Dexie version 6', () => {
 });
 
 describe('backup', () => {
-  test('water, the window and the extras go out and come back', async () => {
+  test('drinks, the window and the extras go out and come back', async () => {
     await saveProfile(completeProfile({ fastPlan: '14:10', waterMl: 2300, showWater: false, fast: { start: '2026-11-01T20:00', end: '2026-11-02T10:00' } }), db);
-    await addWater('2026-11-02', 500, db);
+    await addDrink('2026-11-02', 'coffee', 500, db);
     await db.entries.add(entry());
     const backup = JSON.parse(JSON.stringify(await exportAll(db)));
     const other = new DietDb(`test-${Math.random()}`);
@@ -158,7 +171,7 @@ describe('backup', () => {
       showWater: false,
       fast: { start: '2026-11-01T20:00', end: '2026-11-02T10:00' },
     });
-    expect(await other.days.get('2026-11-02')).toMatchObject({ water: 500, waterAdds: [500] });
+    expect(await other.days.get('2026-11-02')).toMatchObject({ drinks: [{ kind: 'coffee', ml: 500 }] });
     expect(await other.entries.toArray()).toMatchObject([{ fiber: 8, sugars: 14, salt: 0.3 }]);
   });
 
@@ -170,11 +183,17 @@ describe('backup', () => {
     expect(p).toMatchObject({ showWater: true, waterMl: null, fastPlan: null, fast: null });
   });
 
-  test('bad values are cleaned: water capped at 20 l, a negative extra unknown, a fast ending before it starts open, a split not known off', () => {
-    expect(cleanDay({ date: '2026-10-01', water: 99_999, waterAdds: [250, -5, 'x', 500] })).toEqual({
+  test('bad values are cleaned: drinks of known kinds only, 20 l at most, a negative extra unknown, a fast ending before it starts open, a split not known off', () => {
+    expect(
+      cleanDay({
+        date: '2026-10-01',
+        drinks: [{ kind: 'water', ml: 250, at: '08:00' }, { kind: 'piwo', ml: 500 }, { kind: 'tea', ml: -5 }, { kind: 'sweet', ml: 330, entryId: 7 }],
+      }),
+    ).toEqual({ date: '2026-10-01', drinks: [{ kind: 'water', ml: 250, at: '08:00' }, { kind: 'sweet', ml: 330, entryId: 7 }] });
+    // An old backup with the water total: one water drink, capped at 20 l; the old keys don't survive.
+    expect(cleanDay({ date: '2026-10-01', water: 99_999, waterAdds: [250, 500] })).toEqual({
       date: '2026-10-01',
-      water: 20_000,
-      waterAdds: [250, 500],
+      drinks: [{ kind: 'water', ml: 20_000 }],
     });
     expect(cleanEntry({ date: '2026-10-01', name: 'x', kcal: 100, fiber: -1, salt: 'dużo', sugars: 3 })).toMatchObject({
       fiber: null,

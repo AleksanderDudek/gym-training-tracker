@@ -164,44 +164,85 @@ describe('Kopiuj na…', () => {
   });
 });
 
-describe('Woda', () => {
-  test('karta pod zjedzonym: +250, +500 i „−” cofa ostatnie; cel z EFSA dla mężczyzny', async () => {
+describe('Nawodnienie', () => {
+  beforeEach(() => localStorage.removeItem('produkty-pl:napoj'));
+
+  test('karta pod zjedzonym: rodzaj napoju, +250 ml, „−” cofa ostatni; kofeina z kawy; cel z EFSA dla mężczyzny', async () => {
     await saveProfile(profile());
     const user = userEvent.setup();
     renderWithBridge(<DiaryPage />);
-    const card = await screen.findByRole('region', { name: 'Woda' });
+    const card = await screen.findByRole('region', { name: 'Nawodnienie' });
     expect(card).toHaveTextContent('0 l z 2 l');
-    expect(within(card).getByRole('button', { name: /Cofnij ostatnie/ })).toBeDisabled();
-    await user.click(within(card).getByRole('button', { name: 'Dodaj 250 ml wody' }));
-    await user.click(within(card).getByRole('button', { name: 'Dodaj 500 ml wody' }));
-    expect(await within(card).findByText('0,75 l z 2 l')).toBeInTheDocument();
-    expect(within(card).getByRole('meter', { name: 'Woda' })).toHaveAttribute('aria-valuetext', '0,75 l z 2 l');
-    await user.click(within(card).getByRole('button', { name: 'Cofnij ostatnie: 500 ml' }));
+    expect(within(card).getByRole('button', { name: 'Cofnij' })).toBeDisabled();
+    expect(within(card).getByRole('button', { name: 'Woda' })).toHaveAttribute('aria-pressed', 'true');
+    await user.click(within(card).getByRole('button', { name: 'Dodaj 250 ml — woda' }));
+    await user.click(within(card).getByRole('button', { name: 'Kawa' }));
+    expect(within(card).getByText(/Kawa w zwykłych ilościach nawadnia podobnie jak woda/)).toBeInTheDocument();
+    await user.click(within(card).getByRole('button', { name: 'Dodaj 250 ml — kawa' }));
+    expect(await within(card).findByText('0,5 l z 2 l')).toBeInTheDocument();
+    expect(within(card).getByRole('meter', { name: 'Nawodnienie' })).toHaveAttribute('aria-valuetext', '0,5 l z 2 l');
+    expect(within(card).getByText('Woda 0,25 l · Kawa 0,25 l')).toBeInTheDocument();
+    expect(within(card).getByText(/^Kofeina z kawy i herbaty: ok\. 100 mg\. EFSA uznaje za bezpieczne do 400 mg dziennie u dorosłych/)).toBeInTheDocument();
+    await user.click(within(card).getByRole('button', { name: 'Cofnij ostatnie: kawa, 250 ml' }));
     expect(await within(card).findByText('0,25 l z 2 l')).toBeInTheDocument();
-    expect(await db.days.get(TODAY)).toMatchObject({ water: 250, waterAdds: [250] });
+    expect(within(card).queryByText(/^Kofeina/)).not.toBeInTheDocument();
+    expect((await db.days.get(TODAY))!.drinks).toMatchObject([{ kind: 'water', ml: 250 }]);
+  }, 15_000);
+
+  test('napój słodzony dopisuje się do „Zjedzone” jako szacunek, z „Cofnij” w komunikacie; „−” zabiera oba', async () => {
+    await saveProfile(profile());
+    const user = userEvent.setup();
+    const { bridge } = renderWithBridge(<DiaryPage />);
+    const card = await screen.findByRole('region', { name: 'Nawodnienie' });
+    await user.click(within(card).getByRole('button', { name: 'Napój słodzony' }));
+    expect(within(card).getByText(/^Dopisze się też do „Zjedzone”: ok\. 105 kcal i 27 g cukru na 250 ml/)).toBeInTheDocument();
+    await user.click(within(card).getByRole('button', { name: 'Dodaj 330 ml — napój słodzony' }));
+    await waitFor(() =>
+      expect(bridge.toast).toHaveBeenCalledWith('Napój słodzony 330 ml — dopisany do „Zjedzone”, ok. 139 kcal.', expect.objectContaining({ label: 'Cofnij' })),
+    );
+    expect(await screen.findByText('Napój słodzony (szacunek)')).toBeInTheDocument();
+    expect(within(card).getByText(/Napój słodzony 0,33 l \(w tym ok\. 139 kcal w „Zjedzone”\)/)).toBeInTheDocument();
+    await user.click(within(card).getByRole('button', { name: 'Cofnij ostatnie: napój słodzony, 330 ml' }));
+    await waitFor(() => expect(screen.queryByText('Napój słodzony (szacunek)')).not.toBeInTheDocument());
+    expect(await db.entries.count()).toBe(0);
+  }, 15_000);
+
+  test('wybrany rodzaj zostaje na tym urządzeniu', async () => {
+    await saveProfile(profile());
+    const user = userEvent.setup();
+    const { unmount } = renderWithBridge(<DiaryPage />);
+    const card = await screen.findByRole('region', { name: 'Nawodnienie' });
+    await user.click(within(card).getByRole('button', { name: 'Herbata' }));
+    unmount();
+    renderWithBridge(<DiaryPage />);
+    const again = await screen.findByRole('region', { name: 'Nawodnienie' });
+    expect(within(again).getByRole('button', { name: 'Herbata' })).toHaveAttribute('aria-pressed', 'true');
   });
 
-  test('kobieta: 1,6 l; własny cel z profilu wygrywa', async () => {
+  test('kobieta: 1,6 l; własny cel z profilu wygrywa; dawny zapis wody liczy się jako woda', async () => {
     await saveProfile(profile({ sex: 'K' }));
+    await db.days.put({ date: TODAY, water: 750 });
     const { unmount } = renderWithBridge(<DiaryPage />);
-    expect(await screen.findByRole('region', { name: 'Woda' })).toHaveTextContent('0 l z 1,6 l');
+    const card = await screen.findByRole('region', { name: 'Nawodnienie' });
+    expect(card).toHaveTextContent('0,75 l z 1,6 l');
+    expect(card).toHaveTextContent('Woda 0,75 l');
     unmount();
     await saveProfile(profile({ sex: 'K', waterMl: 2500 }));
     renderWithBridge(<DiaryPage />);
-    expect(await screen.findByRole('region', { name: 'Woda' })).toHaveTextContent('0 l z 2,5 l');
+    expect(await screen.findByRole('region', { name: 'Nawodnienie' })).toHaveTextContent('0,75 l z 2,5 l');
   });
 
   test('wyłączona w profilu albo dzień, który dopiero nadejdzie: bez karty', async () => {
     await saveProfile(profile({ showWater: false }));
     const { unmount } = renderWithBridge(<DiaryPage />);
     await screen.findByRole('region', { name: /^Zjedzone/ });
-    expect(screen.queryByRole('region', { name: 'Woda' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Nawodnienie' })).not.toBeInTheDocument();
     unmount();
     await saveProfile(profile({ showWater: true }));
     at(`#/jedzenie?dzien=${TOMORROW}`);
     renderWithBridge(<DiaryPage />);
     await screen.findByRole('region', { name: /^Zjedzone/ });
-    expect(screen.queryByRole('region', { name: 'Woda' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Nawodnienie' })).not.toBeInTheDocument();
   });
 });
 

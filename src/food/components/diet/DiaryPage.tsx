@@ -53,7 +53,7 @@ import { planHref } from '../prep/links';
 import { PrepDayCard } from '../prep/PrepDayCard';
 import { AutoDayCard } from './AutoDayCard';
 import { ChangeNotice } from './ChangeNotice';
-import { COPY_DAY_TO, CopyMealLabel, CopySheet, FastCard, WaterCard, mealName, useCopy } from './DiaryCards';
+import { COPY_DAY_TO, CopyMealLabel, CopySheet, FastCard, HydrationCard, mealName, useCopy } from './DiaryCards';
 import { CheatMealSheet } from './CheatMealSheet';
 import { verdictText } from './cheatText';
 import { dayMonthLong } from './dietFormat';
@@ -474,7 +474,7 @@ function TodayView({ profile, plan, date, today, hour, nowMs, pickerOpen, resume
         onCopy={(meal) => setCopying({ meal })}
       />
 
-      {profile.showWater && date <= today && <WaterCard date={date} day={day} profile={profile} />}
+      {profile.showWater && date <= today && <HydrationCard date={date} day={day} profile={profile} />}
       {isToday && fastingOn(profile) && <FastCard profile={profile} today={today} entries={entries} />}
 
       {prep ? (

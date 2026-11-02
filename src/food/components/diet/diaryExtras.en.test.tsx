@@ -60,7 +60,7 @@ afterEach(() => {
 });
 
 describe('diary extras in English', () => {
-  test('copy, water, the eating window and fibre, sugars and salt', async () => {
+  test('copy, hydration, the eating window and fibre, sugars and salt', async () => {
     await saveProfile(profile({ fastPlan: '16:8' }));
     await db.entries.bulkAdd([
       entry(TODAY, '08:00', 'Oats', { fiber: 8, sugars: 12, salt: 0.4 }),
@@ -85,10 +85,14 @@ describe('diary extras in English', () => {
       expect(bridge.toast).toHaveBeenCalledWith('Copied 1 entry to tomorrow.', expect.objectContaining({ label: 'Undo' })),
     );
 
-    const water = screen.getByRole('region', { name: 'Water' });
+    const water = screen.getByRole('region', { name: 'Hydration' });
     expect(water).toHaveTextContent('0 l of 2 l');
-    await user.click(within(water).getByRole('button', { name: 'Add 500 ml of water' }));
-    expect(await within(water).findByText('0.5 l of 2 l')).toBeInTheDocument();
+    await user.click(within(water).getByRole('button', { name: 'Add 500 ml — water' }));
+    await user.click(within(water).getByRole('button', { name: 'Tea' }));
+    await user.click(within(water).getByRole('button', { name: 'Add 250 ml — tea' }));
+    expect(await within(water).findByText('0.75 l of 2 l')).toBeInTheDocument();
+    expect(within(water).getByText('Water 0.5 l · Tea 0.25 l')).toBeInTheDocument();
+    expect(within(water).getByText(/^Caffeine from coffee and tea: about 50 mg\. EFSA considers up to 400 mg a day safe for adults/)).toBeInTheDocument();
 
     const fast = screen.getByRole('region', { name: /^Eating window/ });
     expect(within(fast).getByLabelText('Fast started at')).toHaveValue('19:40');
@@ -99,11 +103,11 @@ describe('diary extras in English', () => {
     for (const region of [balance, eaten, water, fast]) expect(region.textContent).not.toMatch(POLISH);
   }, 15_000);
 
-  test('the diet profile: water and the eating window', async () => {
+  test('the diet profile: hydration and the eating window', async () => {
     await saveProfile(profile({ sex: 'K', pregnancy: true }));
     renderWithBridge(<DietProfilePage />);
-    const water = await screen.findByRole('region', { name: 'Water' });
-    expect(within(water).getByRole('checkbox', { name: 'Show water in the diary' })).toBeChecked();
+    const water = await screen.findByRole('region', { name: 'Hydration' });
+    expect(within(water).getByRole('checkbox', { name: 'Show hydration in the diary' })).toBeChecked();
     expect(water).toHaveTextContent('Empty: 1,900 ml after EFSA');
     const group = screen.getByRole('group', { name: 'Eating window' });
     expect(within(group).getByRole('radio', { name: '16:8 — 16 h fasting, 8 h for eating' })).toBeDisabled();

@@ -168,3 +168,17 @@ Decyzje podjęte po drodze, poza tym, co wyżej:
   daje komunikat zamiast pliku. Połączone wieczorne przypomnienie otwiera ekran Dziś.
 - **Scalanie**: eksport „Ciało” czyta typowany zapis obwodów z pakietu C (zamiast luźnego
   odczytu); eksport jedzenia ma kolumnę „Posiłek” z tej samej reguły zegara co dziennik.
+
+## Dopisek: woda → nawodnienie (2026-11-02, na prośbę właściciela)
+
+Karta „Woda” stała się **„Nawodnieniem”** z rodzajem napoju: Woda, Napój 0 kcal, Kawa, Herbata,
+Napój słodzony, Inne (`diet/drinks.ts`, `DayRow.drinks`). Decyzje:
+
+| Decyzja | Dlaczego |
+| --- | --- |
+| Wszystkie rodzaje liczą się do nawodnienia. | EFSA liczy wodę ze wszystkich napojów; kawa i herbata w zwykłych ilościach nawadniają podobnie jak woda (Maughan i in., 2016). Odejmowanie kawy byłoby mitem. |
+| Napój słodzony dopisuje się też do „Zjedzone” jako szacunek (42 kcal, 10,6 g cukru / 100 ml — cola wg USDA), z „Cofnij”; „−” zabiera oba. | Bez tego puszka coli nawadniałaby i znikała z bilansu kalorii — dokładnie to, przez co napoje słodzone są problemem. |
+| Kofeina z kawy (40 mg/100 ml) i herbaty (20 mg/100 ml) obok dawki EFSA 2015 (400 mg, 200 mg w ciąży/karmieniu), bez oceny. | Druga rzecz, którą rodzaj napoju naprawdę zmienia; liczba z odniesieniem, jak sól. |
+| Rodzaj wybierany raz i zapamiętany na urządzeniu; ilości +250 / +330 (puszka) / +500 ml. | Ludzie piją powtarzalnie; dwa stuknięcia zamiast trzech. |
+| Dawny zapis `water` czyta się jako jeden napój „Woda” i przepisuje przy następnym napoju; kopia ze starym polem też. | Nic zapisane pierwszą kartą nie ginie. |
+| Mleko, cukier, kefir — podpowiedź, by dopisać w „Dodaj zjedzone”, zamiast zgadywać kalorie „Innych”. | Uczciwiej niż średnia dla wszystkiego. |
