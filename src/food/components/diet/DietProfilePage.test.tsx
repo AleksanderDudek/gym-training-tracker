@@ -194,7 +194,7 @@ describe('Profil diety — nowy profil', () => {
     await user.click(radio('Schudnąć'));
     const target = screen.getByLabelText('Waga docelowa');
     await user.type(target, '55');
-    expect(screen.getByText('Najniższa waga docelowa przy Twoim wzroście to 57 kg (BMI 18,5).')).toBeInTheDocument();
+    expect(screen.getByText('Najniższa waga docelowa przy Twoim wzroście to 57,00 kg (BMI 18,5).')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Zapisz i zacznij' }));
     expect(target).toHaveFocus();
     await user.clear(target);
@@ -318,7 +318,7 @@ describe('Profil diety — zapisany profil', () => {
     for (const gone of ['Podstawowe spalanie (BMR)', '× 1.28', 'Zaawansowane', 'Kroki dziennie (plan)', 'Dopasowuj cel do ruchu', 'Deficyt'])
       expect(page, gone).not.toContain(gone);
     // Waga to trend z dziennika wagi (tu bez ważeń — waga na starcie), a start diety jest zwinięty.
-    expect(screen.getByText('Bez ważeń — liczę z wagi na starcie (80 kg).')).toBeInTheDocument();
+    expect(screen.getByText('Bez ważeń — liczę z wagi na starcie (80,00 kg).')).toBeInTheDocument();
     expect(screen.getByText('Start diety')).toBeInTheDocument();
     expect(screen.getByLabelText('Waga na starcie')).not.toBeVisible();
     expect(radio('Schudnąć')).toBeChecked();
@@ -331,7 +331,7 @@ describe('Profil diety — zapisany profil', () => {
       <DietProfilePage />,
       testBridge({ weights: [{ day: '2026-10-12', kg: 80 }, { day: '2026-10-13', kg: 81 }] }),
     );
-    expect(await screen.findByText('Waga teraz: 80,1 kg (trend z ważeń).')).toBeInTheDocument();
+    expect(await screen.findByText('Waga teraz: 80,10 kg (trend z ważeń).')).toBeInTheDocument();
   });
 
   test(

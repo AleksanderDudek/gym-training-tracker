@@ -31,7 +31,7 @@ const L = PHONE_LIMITS;
 
 const lim = (v: unknown, [min, max]: readonly [number, number]): number | null => num(v, min, max);
 
-const kgOf = (v: unknown): number | null => (validWeight(v) ? Math.round(v * 10) / 10 : null);
+const kgOf = (v: unknown): number | null => (validWeight(v) ? Math.round(v * 100) / 100 : null);
 
 /** Najwięcej dni i przejazdów w paczce — telefon wysyła dwa tygodnie. */
 const MAX_DAYS = 31;

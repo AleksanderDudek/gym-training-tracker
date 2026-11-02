@@ -17,6 +17,8 @@ const T = text({
     plain: 'Bez liczenia kalorii',
     plainHint: 'Dziennik pokaże białko i podpowie posiłki, bez kalorii. Zmienisz to w profilu.',
     workbook: 'Masz arkusz z planem? Wczytasz go w profilu diety — parametry z panelu i posiłki przyjdą razem.',
+    labsLead: 'Masz wyniki badań krwi? Wczytasz je także bez profilu:',
+    labs: 'Badania — dieta pod wyniki',
   },
   en: {
     what: 'Food diary',
@@ -32,6 +34,8 @@ const T = text({
     plain: 'No calorie counting',
     plainHint: 'The diary shows protein and suggests meals, without calories. You can change it in the profile.',
     workbook: 'Got a workbook with a plan? Import it in the diet profile — the panel settings and meals come in together.',
+    labsLead: 'Got blood test results? You can read them in without a profile too:',
+    labs: 'Lab results — diet for them',
   },
 });
 
@@ -72,6 +76,10 @@ export function Onboarding({ what = T.what }: { what?: string }) {
         </div>
         <p className="tight fd-diet-soft">{T.plainHint}</p>
         <p className="tight">{T.workbook}</p>
+        {/* Badania działają bez profilu, a bez profilu nie ma kafelków podstron. */}
+        <p className="tight">
+          {T.labsLead} <a href={dietPath('labs')}>{T.labs}</a>
+        </p>
       </div>
     </>
   );

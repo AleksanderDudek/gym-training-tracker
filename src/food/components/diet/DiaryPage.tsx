@@ -97,7 +97,7 @@ const T = text({
     myPlans: 'Moje plany',
     progress: 'Postęp',
     dietProfile: 'Profil diety',
-    labs: 'Badania — dieta pod wyniki',
+    labs: 'Badania',
     tomorrow: 'jutro',
     on: (start: string) => {
       const day = weekday(start);
@@ -171,7 +171,7 @@ const T = text({
     myPlans: 'My plans',
     progress: 'Progress',
     dietProfile: 'Diet profile',
-    labs: 'Lab results — diet for them',
+    labs: 'Lab results',
     tomorrow: 'tomorrow',
     on: (start: string) => `on ${WEEKDAY_DAY_MONTH.format(new Date(`${start}T12:00:00Z`))}`,
     nextPlan: (link: ReactNode, when: string): ReactNode => (
@@ -403,6 +403,7 @@ function TodayView({ profile, plan, date, today, hour, nowMs, pickerOpen, resume
 
   return (
     <>
+      <DietLinks date={date} today={today} />
       <DayNav date={date} today={today} onDate={onDate} />
 
       {isToday && profile.notice === 'show' && <ChangeNotice profile={profile} today={today} kgNow={kgNow} />}
@@ -505,8 +506,6 @@ function TodayView({ profile, plan, date, today, hour, nowMs, pickerOpen, resume
       </section>
 
       <StepsCard key={`${date}:${body.steps ?? ''}`} date={date} today={today} body={body} />
-
-      <DietLinks date={date} today={today} />
 
       <FoodPicker
         open={pickerOpen}
@@ -631,9 +630,11 @@ function BreakLine({ pause, target, today, kgNow }: { pause: Pause; target: numb
 }
 
 /**
- * Wejścia do podstron dziennika: pięć kafelków na dole (badania szerokie, pod czterema), każdy prowadzi w głąb (strzałka wstecz
- * wraca). Góra dziennika należy do liczb dnia, a dwa najczęstsze cele mają odnośniki na miejscu:
- * karta wagi — do postępu, plan dnia — do swojego planu. Plan posiłków dostaje oglądany dzień
+ * Wejścia do podstron dziennika: jeden rząd pięciu kafelków na samej górze, między sekcjami
+ * a przełącznikiem dnia — nawigacja przy nawigacji, a data otwiera treść dnia. Na dole długiego
+ * dziennika (cztery–pięć ekranów niżej) nikt ich nie znajdował. Pięć kolumn mieści się od 320 px
+ * bez przewijania w bok: rząd przewijany chowałby ostatni kafelek, Badania. Każdy prowadzi w głąb
+ * (strzałka wstecz wraca); karta wagi ma dodatkowo swój odnośnik do postępu. Plan posiłków dostaje oglądany dzień
  * (`?dzien=`, ten sam zapis co w dzienniku), więc otwiera się na jego tygodniu — jak w Produktach
  * PL, gdzie zmiana widoku zostawiała dzień.
  */
@@ -657,7 +658,7 @@ function DietLinks({ date, today }: { date: string; today: string }) {
         <UserRound {...ICON} />
         <span>{T.dietProfile}</span>
       </a>
-      <a className="fd-diet-subnav-wide" href={dietPath('labs')}>
+      <a href={dietPath('labs')}>
         <FlaskConical {...ICON} />
         <span>{T.labs}</span>
       </a>

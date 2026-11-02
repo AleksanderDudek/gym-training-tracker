@@ -1,7 +1,8 @@
+import { formatWeight } from '../../../engine/body';
 import { pluralEn, text } from '../../../i18n';
 import { addDays, daysBetween, shortDay } from '../../diet/model';
 import type { WeighIn } from '../../diet/trend';
-import { formatNumber, plural } from '../../lib/format';
+import { plural } from '../../lib/format';
 
 const T = text({
   pl: {
@@ -68,7 +69,7 @@ export function WeightChart({ start, today, measured, trend, projection, target 
 
   return (
     <figure className="fd-diet-chart">
-      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={T.label(measured.length, forecast, formatNumber(target, 1))}>
+      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={T.label(measured.length, forecast, formatWeight(target))}>
         {ticks.map((kg) => (
           <g key={kg}>
             <line className="fd-diet-grid" x1={PAD.left} x2={W - PAD.right} y1={y(kg)} y2={y(kg)} />
@@ -82,7 +83,7 @@ export function WeightChart({ start, today, measured, trend, projection, target 
         {measured.map((m) => (
           <circle key={m.day} className="fd-diet-raw" cx={x(m.day)} cy={y(m.kg)} r={2.4}>
             <title>
-              {shortDay(m.day)}: {formatNumber(m.kg, 1)} kg
+              {shortDay(m.day)}: {formatWeight(m.kg)} kg
             </title>
           </circle>
         ))}

@@ -44,13 +44,13 @@ const day = (over: Record<string, unknown>) => ({
 });
 
 describe('paczka z telefonu', () => {
-  it('czyta dni i przejazdy; brak pola to null, waga z jedną cyfrą po przecinku', () => {
+  it('czyta dni i przejazdy; brak pola to null, waga z dwiema cyframi po przecinku', () => {
     const p = parsePhonePayload(payload(), NOW)!;
     expect(p.t).toBe(T);
     expect(p.os).toBe('ios');
     expect(p.days).toEqual([
       day({ day: '2026-10-19', steps: 4210, m: 3120, floors: 3, rhr: 55, hrMin: 50, hrAvg: 74, hrMax: 131, sleep: 401 }),
-      day({ day: '2026-10-20', steps: 9120, m: 7340, floors: 12, active: 35, rhr: 52, sleep: 432, kg: 82.4 }),
+      day({ day: '2026-10-20', steps: 9120, m: 7340, floors: 12, active: 35, rhr: 52, sleep: 432, kg: 82.43 }),
     ]);
     expect(p.acts).toEqual([{ start: noon('2026-10-19'), sport: 2, sec: 3600, m: 25000 }]);
   });

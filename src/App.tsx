@@ -85,7 +85,7 @@ import { formatClock } from './components/Timer';
 import { GuidedSession } from './components/Guided';
 import { PromoPage } from './components/Promo';
 import type { WatchPayload } from './engine/watch';
-import { HEIGHT_RANGE, WEIGHT_RANGE, bodyOf, removeBodyWeight, setBodyWeight, validBody, validHeight, validWeight } from './engine/body';
+import { HEIGHT_RANGE, WEIGHT_RANGE, bodyOf, formatWeight, removeBodyWeight, setBodyWeight, validBody, validHeight, validWeight } from './engine/body';
 import { cardioBurn, workoutBurn } from './engine/burn';
 import { LevelUp, avatarOf } from './components/Character';
 import type { Avatar } from './components/Character';
@@ -1283,7 +1283,7 @@ export default function App() {
         : new Date(`${day}T12:00:00`).toLocaleDateString(LOCALE, { day: 'numeric', month: 'long' });
     setToastMsg(
       T.weightSaved(when) +
-        `${b.kg.toLocaleString(LOCALE)} kg. ` +
+        `${formatWeight(b.kg)} kg. ` +
         (first
           ? T.kcalFirst
           : when

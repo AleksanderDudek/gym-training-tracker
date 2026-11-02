@@ -1,6 +1,8 @@
 import { Check } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
+import { formatWeight } from '../../../engine/body';
+import { round2 } from '../../../engine/math';
 import { LANG, text } from '../../../i18n';
 import { FOOD_PATH, go } from '../../../routing';
 import { useBridge } from '../../bridge';
@@ -257,7 +259,6 @@ const T = text({
 const LEVELS: ActivityLevel[] = ['inactive', 'low', 'active', 'very'];
 const GOALS: Goal[] = ['loss', 'keep', 'gain'];
 
-const round1 = (kg: number): number => Math.round(kg * 10) / 10;
 
 /** Steps in the hint need a week of the last two with steps. */
 const HINT_MIN_DAYS = 7;
@@ -280,7 +281,7 @@ export default function DietProfilePage() {
   // gdy zmieni się tożsamość profilu, więc ważenie dopisane w trakcie nie może go podmienić.
   const [blank] = useState(() => {
     const last = [...bridge.weights].reverse().find((w) => w.day <= today)?.kg ?? null;
-    const start = last === null ? 80 : round1(last);
+    const start = last === null ? 80 : round2(last);
     return completeProfile({
       heightCm: Math.round(bridge.heightCm ?? 175),
       startWeightKg: start,
@@ -423,7 +424,7 @@ function ProfileForm({ profile, isNew, today, stores }: FormProps) {
     ...draft,
     pregnancy: pregnant,
     goalPace: chosen === 'loss' || chosen === 'gain' ? draft.goalPace : 0,
-    targetWeightKg: targetKg !== null && targetIssue?.kind !== 'min' ? targetKg : round1(kgNow),
+    targetWeightKg: targetKg !== null && targetIssue?.kind !== 'min' ? targetKg : round2(kgNow),
   };
   const effective = rebased(isNew ? null : profile, forSave, kgNow);
   const manualIssue = manualProblem(forSave, kgNow, manual);
@@ -666,8 +667,8 @@ function ProfileForm({ profile, isNew, today, stores }: FormProps) {
             <>
               <p className="tight">
                 {trend !== null
-                  ? T.weightNow(formatNumber(round1(trend), 1))
-                  : T.noWeighIns(formatNumber(draft.startWeightKg, 1))}
+                  ? T.weightNow(formatWeight(trend))
+                  : T.noWeighIns(formatWeight(draft.startWeightKg))}
               </p>
               <details className="why fd-diet-dietstart">
                 <summary>{T.startTitle}</summary>
@@ -725,7 +726,7 @@ function ProfileForm({ profile, isNew, today, stores }: FormProps) {
                           ? T.targetMissing
                           : null
                         : targetIssue?.kind === 'min'
-                          ? T.minTarget(formatNumber(targetIssue.kg, 0))
+                          ? T.minTarget(formatWeight(targetIssue.kg))
                           : targetIssue?.kind === 'side'
                             ? targetIssue.goal === 'loss'
                               ? T.targetSideLoss

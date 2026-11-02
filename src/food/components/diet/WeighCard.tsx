@@ -1,17 +1,13 @@
-import { TrendingDown } from 'lucide-react';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { WEIGHT_RANGE, validWeight } from '../../../engine/body';
-import { LANG, pluralEn, text } from '../../../i18n';
-import { dietPath } from '../../../routing';
+import { WEIGHT_RANGE, formatWeight, validWeight } from '../../../engine/body';
+import { pluralEn, text } from '../../../i18n';
 import { useBridge } from '../../bridge';
 import { daysBetween } from '../../diet/model';
-import { formatNumber } from '../../lib/format';
 
 const T = text({
   pl: {
     lastToday: (kg: string, gap: number) => `Ostatnio ${kg}, ${gap === 1 ? 'wczoraj' : `${gap} dni temu`}.`,
     lastBefore: (kg: string, gap: number) => `Poprzednie ważenie: ${kg}, ${gap === 1 ? 'dzień' : `${gap} dni`} wcześniej.`,
-    progress: 'Postęp',
     weight: (kg: string) => `Waga: ${kg} kg`,
     changeWeight: 'Zmień wagę',
     change: 'Zmień',
@@ -32,7 +28,6 @@ const T = text({
   en: {
     lastToday: (kg: string, gap: number) => `Last time ${kg}, ${gap === 1 ? 'yesterday' : `${gap} days ago`}.`,
     lastBefore: (kg: string, gap: number) => `Previous weigh-in: ${kg}, ${gap} ${pluralEn(gap, 'day', 'days')} earlier.`,
-    progress: 'Progress',
     weight: (kg: string) => `Weight: ${kg} kg`,
     changeWeight: 'Change weight',
     change: 'Change',
@@ -65,8 +60,6 @@ function kgOrNull(text: string): number | null {
   return text.trim() && Number.isFinite(n) && n > 0 ? n : null;
 }
 
-const kgText = (kg: number) => (LANG === 'pl' ? String(kg).replace('.', ',') : String(kg));
-
 /**
  * Ostatnie ważenie przed oglądanym dniem — z dziennika wagi w moście (rosnąco po dniu), więc bez
  * żadnego zapytania. Dziś mówi „2 dni temu”, a o dniu z przeszłości — „2 dni wcześniej”.
@@ -76,7 +69,7 @@ function lastBefore(weights: readonly { day: string; kg: number }[], date: strin
   for (const w of weights) if (w.day < date && (!last || w.day > last.day)) last = w;
   if (!last) return null;
   const gap = daysBetween(last.day, date);
-  const kg = `${formatNumber(last.kg, 1)} kg`;
+  const kg = `${formatWeight(last.kg)} kg`;
   if (date === today) return T.lastToday(kg, gap);
   return T.lastBefore(kg, gap);
 }
@@ -117,12 +110,6 @@ export function WeighCard({ date, today, weightKg }: Props) {
   const isToday = date === today;
   const skipped = isToday && (skippedHere || (bridge.weighSkipped?.() ?? false));
 
-  const progress = (
-    <a className="fd-diet-weigh-link" href={dietPath('progress')}>
-      <TrendingDown size={18} strokeWidth={2} aria-hidden /> {T.progress}
-    </a>
-  );
-
   const open = (value: string) => {
     setText(value);
     setEditing(true);
@@ -137,13 +124,12 @@ export function WeighCard({ date, today, weightKg }: Props) {
         <button ref={button} type="button" className="btn ghost sm" aria-label={label} onClick={onClick}>
           {action}
         </button>
-        {progress}
       </div>
     </section>
   );
 
   if (!editing) {
-    if (weightKg !== null) return line(T.weight(formatNumber(weightKg, 1)), T.change, T.changeWeight, () => open(kgText(weightKg)));
+    if (weightKg !== null) return line(T.weight(formatWeight(weightKg)), T.change, T.changeWeight, () => open(formatWeight(weightKg)));
     if (!isToday) return line(T.pastNone, T.addPast, undefined, () => open(''));
     if (skipped) return line(T.skipped, T.addToday, undefined, () => open(''));
   }
@@ -166,7 +152,6 @@ export function WeighCard({ date, today, weightKg }: Props) {
     <section className="grp fd-diet-weigh" aria-labelledby="fd-diet-weigh-title">
       <div className="fd-diet-weigh-head">
         <h2 id="fd-diet-weigh-title">{isToday ? T.askToday : T.pastTitle}</h2>
-        {progress}
       </div>
       <form className="fd-diet-body" onSubmit={save} noValidate>
         <label className="fld">

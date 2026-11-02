@@ -28,7 +28,7 @@ npm run build      # typecheck + produkcyjny build do dist/ z service workerem (
 npm run preview    # podgląd builda — tu działa też praca offline
 npm run typecheck  # tsc: aplikacja, testy, konfiguracja Vite i skrypty, service worker, filmy demo
 npm run lint       # oxlint
-npm test           # 3251 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, plan z zakupami, serwer… (vitest)
+npm test           # 3306 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, plan z zakupami, serwer… (vitest)
 ```
 
 Aplikacje na telefon (GYM TRACKER Zdrowie — `health/README.md`):
@@ -703,7 +703,7 @@ aplikacji. Dane produktów: [Open Food Facts](https://world.openfoodfacts.org), 
 **Dziennik** (`#/jedzenie`) — jeden cel kalorii na dzień i plan żywienia, który się nagina:
 
 - **Profil diety** (podstrona). „Ty”: płeć, wiek i wzrost (ten sam co w treningach), a waga to trend
-  z ważeń („Waga teraz: 82,4 kg (trend z ważeń).”). „Twój cel”: „Schudnąć”, „Utrzymać wagę” albo
+  z ważeń („Waga teraz: 82,40 kg (trend z ważeń).”). „Twój cel”: „Schudnąć”, „Utrzymać wagę” albo
   „Przybrać”, z wagą docelową po właściwej stronie obecnej (u kobiet także „Jestem w ciąży lub
   karmię piersią”). „Twój zwykły tydzień”: cztery opisy słowami — „Głównie siedzę” (domyślnie),
   „Codziennie ok. godziny ruchu”, „Dużo ruchu” i „Bardzo dużo ruchu”; średnia kroków z dwóch
@@ -732,13 +732,14 @@ aplikacji. Dane produktów: [Open Food Facts](https://world.openfoodfacts.org), 
   kolejnych dni, a niedojedzone nie wraca.
 - **Plan z Excela**: „Wczytaj plan z Excela” czyta arkusz w przeglądarce — dni wzorcowe, warianty,
   potrawy z kaloriami i makro, parametry. Plik nigdzie nie trafia.
-- **Dziś**, od góry: zawiadomienie o nowym liczeniu i poniedziałkowa karta, gdy czekają (niżej),
+- **Dziś**, od góry: **rząd pięciu kafelków** podstron — Plan posiłków, Moje plany, Postęp, Profil
+  diety i Badania — między sekcjami a przełącznikiem dnia (wcześniej stały na samym dole, cztery–pięć
+  ekranów niżej, i nikt ich nie znajdował), zawiadomienie o nowym liczeniu i poniedziałkowa karta, gdy czekają (niżej),
   **pytanie o wagę** („Ile dziś ważysz?” z ostatnim ważeniem i radą „Najlepiej rano, po toalecie,
-  przed jedzeniem.”, z „Nie dziś” wspólnym z ekranem Dziś; po zapisie jedna linijka „Waga: 82,4 kg”
+  przed jedzeniem.”, z „Nie dziś” wspólnym z ekranem Dziś; po zapisie jedna linijka „Waga: 82,40 kg”
   ze „Zmień”), bilans dnia z „Dodaj zjedzone”, „Ulubione (N)” i „Większy posiłek”, **zjedzone**
   zaraz pod nim, plan dnia (z nazwą planu z zakupami, a gdy plan zaczyna się później — „Plan „…”
-  zaczyna się …”), „Co teraz?”, kroki, na końcu wejścia do Planu posiłków, Moich planów, Postępu
-  i Profilu diety. Bilans mówi to samo zdanie co karta na ekranie Dziś — „Na dziś: 2100 kcal i 150 g
+  zaczyna się …”), „Co teraz?” i kroki. Bilans mówi to samo zdanie co karta na ekranie Dziś — „Na dziś: 2100 kcal i 150 g
   białka”, „Zostało ok. 650 kcal i 54 g białka”, „Kalorie na dziś w zakresie celu, białka jeszcze 20
   g” albo „Na dziś kalorii już wystarczy, białka jeszcze 20 g” — nad paskami białka i kalorii (dzień
   miniony: „Zjedzone 1980 kcal · cel 2100”); węglowodany i tłuszcz są zwinięte, przy keto i low carb
@@ -926,7 +927,7 @@ i zachowanym zdjęciem (`src/food/photo/pending.ts`). Plik modelu nie jest w gic
 żeby pasowały do katalogu). Szczegóły: `docs/superpowers/specs/2026-10-27-zdjecie-posilku-design.md`, `…/2026-10-28-zdjecie-status-design.md`, `…/2026-10-29-zdjecie-szacunek-design.md`, `…/2026-10-29-zdjecie-aparat-design.md` i `…/2026-10-30-zdjecie-pamiec-design.md`,
 pomiary modeli: `docs/research/zdjecie-posilku-modele.md`.
 
-**Badania — dieta pod wyniki** (`#/jedzenie/badania`, piąty kafelek pod dziennikiem). Wyniki krwi
+**Badania — dieta pod wyniki** (`#/jedzenie/badania`, piąty kafelek na górze dziennika; bez profilu diety — odnośnik na ekranie pierwszych kroków). Wyniki krwi
 i moczu wchodzą z PDF-u laboratorium (np. konto pacjenta Diagnostyki), ze zdjęcia lub zrzutu ekranu
 wydruku z przychodni, z wklejonego tekstu albo wpisane ręcznie. Czyta je telefon, bez modelu
 językowego i bez wysyłania: pdf.js daje warstwę tekstu, Tesseract (WebAssembly, polskie dane)
@@ -1645,7 +1646,9 @@ Ekran Dziś pyta o wagę raz dziennie, dopóki dzisiejszej nie ma w zapisie albo
 „Nie dziś”, i mówi, jak ważyć: rano, po toalecie, przed jedzeniem i piciem, na tej samej wadze.
 Po zapisie pokazuje dzisiejszą liczbę, **średnią z 7 dni** i zmianę średniej tydzień do tygodnia
 — bo waga z dnia na dzień skacze o kilogram czy dwa z wodą i solą, a o kierunku mówi dopiero
-średnia. Profil ma wykres ostatnich 30 ważeń. Liczby stoją bez oceny: bez „brawo” i bez
+średnia. Profil ma wykres ostatnich 30 ważeń. **Waga ciała ma wszędzie dwa miejsca po przecinku**
+(„85,00 kg”, „82,45 kg”) i tak się zapisuje — w treningach i w jedzeniu, z ręki i z telefonu
+(`formatWeight` w `engine/body.ts`). Tempo (kg na tydzień) i ciężary w treningu mają własny zapis. Liczby stoją bez oceny: bez „brawo” i bez
 „uwaga” — co z nich wynika, to rozmowa z trenerem albo lekarzem. Na życzenie przychodzi też
 przypomnienie o 7:00 (domyślnie wyłączone, żeby nikt nie dostał nagle trzeciego powiadomienia
 dziennie); pół godziny przed porannym treningiem, a w dniu, w którym waga już jest — wcale.

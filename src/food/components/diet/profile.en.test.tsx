@@ -95,7 +95,7 @@ describe('diet profile in English', () => {
     expect(screen.getByText('Choose your goal.')).toBeInTheDocument();
     await user.click(screen.getByRole('radio', { name: 'Lose weight' }));
     await user.type(screen.getByLabelText('Target weight'), '55');
-    expect(screen.getByText('The lowest target weight for your height is 57 kg (BMI 18.5).')).toBeInTheDocument();
+    expect(screen.getByText('The lowest target weight for your height is 57.00 kg (BMI 18.5).')).toBeInTheDocument();
     await user.clear(screen.getByLabelText('Target weight'));
     await user.type(screen.getByLabelText('Target weight'), '75');
     expect(screen.getByText('Target: 2,100 kcal a day · protein at least 150 g')).toBeInTheDocument();
@@ -128,7 +128,7 @@ describe('diet profile in English', () => {
     window.history.replaceState(null, '', '/#/jedzenie/profil?jak=1');
     renderWithBridge(<DietProfilePage />, testBridge({ weights: [{ day: '2026-10-12', kg: 80 }, { day: '2026-10-13', kg: 81 }] }));
     expect(await screen.findByRole('heading', { name: 'Your goal' })).toBeInTheDocument();
-    expect(screen.getByText('Weight now: 80.1 kg (trend from your weigh-ins).')).toBeInTheDocument();
+    expect(screen.getByText('Weight now: 80.10 kg (trend from your weigh-ins).')).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: 'Lose weight' })).toBeChecked();
     expect(screen.getByRole('radio', { name: /^About an hour of activity every day/ })).toBeInTheDocument();
     for (const label of ['High-protein cut', 'Balanced', 'Low carb', 'Keto', 'Athletic'])

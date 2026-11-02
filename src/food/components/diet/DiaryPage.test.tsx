@@ -158,18 +158,18 @@ describe('Dziennik', () => {
     await waitFor(() => expect(window.localStorage.getItem('gt:diet')).toBe('1'));
   });
 
-  test('kolejność od góry: dzień, waga, karta dnia z akcjami, zjedzone, plan dnia, „Co teraz?”, kroki, a na dole wejścia', async () => {
+  test('kolejność od góry: wejścia, dzień, waga, karta dnia z akcjami, zjedzone, plan dnia, „Co teraz?”, kroki', async () => {
     await saveProfile(completeProfile({ startDate: '2026-10-01', dailyKcal: 2000 }));
     renderWithBridge(<DiaryPage />);
     const blocks = [
-      await screen.findByRole('heading', { name: 'Dziś' }),
+      await screen.findByRole('navigation', { name: 'Dieta' }),
+      screen.getByRole('heading', { name: 'Dziś' }),
       screen.getByRole('region', { name: 'Ile dziś ważysz?' }),
       screen.getByRole('region', { name: 'Bilans dnia' }),
       screen.getByRole('region', { name: /^Zjedzone/ }),
       screen.getByRole('region', { name: 'Propozycja dnia' }),
       screen.getByRole('region', { name: 'Co teraz?' }),
       screen.getByRole('region', { name: 'Kroki' }),
-      screen.getByRole('navigation', { name: 'Dieta' }),
     ];
     blocks.slice(1).forEach((block, i) =>
       expect(blocks[i]!.compareDocumentPosition(block) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy(),
@@ -232,7 +232,7 @@ describe('Dziennik', () => {
     expect(screen.queryByText(/^Przerwa do/)).not.toBeInTheDocument();
   }, 15_000);
 
-  test('wejścia na dole: plan posiłków, moje plany, postęp, profil diety i badania', async () => {
+  test('wejścia na górze, przed przełącznikiem dnia: plan posiłków, moje plany, postęp, profil diety i badania', async () => {
     await saveProfile(completeProfile({ startDate: '2026-10-01' }));
     renderWithBridge(<DiaryPage />);
     const nav = await screen.findByRole('navigation', { name: 'Dieta' });
@@ -241,8 +241,12 @@ describe('Dziennik', () => {
       ['Moje plany', '#/jedzenie/plany'],
       ['Postęp', '#/jedzenie/postep'],
       ['Profil diety', '#/jedzenie/profil'],
-      ['Badania — dieta pod wyniki', '#/jedzenie/badania'],
+      ['Badania', '#/jedzenie/badania'],
     ]);
+    // Na górze: przed nagłówkiem dnia, nie pod krokami.
+    const day = screen.getByRole('heading', { name: 'Dziś' });
+    expect(nav.compareDocumentPosition(day) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getAllByRole('navigation', { name: 'Dieta' })).toHaveLength(1);
   });
 
   test('ulubione: bez nich arkusz mówi, jak je dodać; gwiazdka przy zjedzonym dodaje je, a „Zjedzone” zapisuje i zostawia arkusz otwarty', async () => {
@@ -635,8 +639,9 @@ describe('Waga na górze dziennika — przez most do dziennika wagi', () => {
     renderWithBridge(<DiaryPage />, testBridge({ weights: [{ day: '2026-10-10', kg: 83 }, { day: '2026-10-12', kg: 82.4 }] }));
     const card = await screen.findByRole('region', { name: 'Ile dziś ważysz?' });
     expect(within(card).getByLabelText('Waga, kg')).toHaveValue('');
-    expect(within(card).getByText('Ostatnio 82,4 kg, 2 dni temu. Najlepiej rano, po toalecie, przed jedzeniem.')).toBeInTheDocument();
-    expect(within(card).getByRole('link', { name: 'Postęp' })).toHaveAttribute('href', '#/jedzenie/postep');
+    expect(within(card).getByText('Ostatnio 82,40 kg, 2 dni temu. Najlepiej rano, po toalecie, przed jedzeniem.')).toBeInTheDocument();
+    // Postęp ma kafelek nad dniem — karta wagi nie powtarza odnośnika.
+    expect(within(card).queryByRole('link', { name: 'Postęp' })).not.toBeInTheDocument();
     // Nic do zapisania, dopóki pole jest puste.
     expect(within(card).getByRole('button', { name: 'Zapisz wagę' })).toBeDisabled();
   });
@@ -676,7 +681,7 @@ describe('Waga na górze dziennika — przez most do dziennika wagi', () => {
     await user.click(within(line).getByRole('button', { name: 'Dodaj' }));
     const card = screen.getByRole('region', { name: 'Waga tego dnia' });
     expect(within(card).getByLabelText('Waga, kg')).toHaveFocus();
-    expect(within(card).getByText(/^Poprzednie ważenie: 82,4 kg, dzień wcześniej\./)).toBeInTheDocument();
+    expect(within(card).getByText(/^Poprzednie ważenie: 82,40 kg, dzień wcześniej\./)).toBeInTheDocument();
     await user.type(within(card).getByLabelText('Waga, kg'), '81,4');
     await user.click(within(card).getByRole('button', { name: 'Zapisz wagę' }));
     expect(bridge.setWeight).toHaveBeenCalledWith(81.4, '2026-10-13');
@@ -703,13 +708,13 @@ describe('Waga na górze dziennika — przez most do dziennika wagi', () => {
     render(<WithScale />);
     await user.type(await screen.findByLabelText('Waga, kg'), '82,4');
     await user.click(screen.getByRole('button', { name: 'Zapisz wagę' }));
-    const card = await screen.findByRole('region', { name: 'Waga: 82,4 kg' });
+    const card = await screen.findByRole('region', { name: 'Waga: 82,40 kg' });
     expect(within(card).queryByLabelText('Waga, kg')).not.toBeInTheDocument();
     expect(within(card).getByRole('button', { name: 'Zmień wagę' })).toHaveFocus();
 
     await user.click(within(card).getByRole('button', { name: 'Zmień wagę' }));
     const field = within(card).getByLabelText('Waga, kg');
-    expect(field).toHaveValue('82,4');
+    expect(field).toHaveValue('82,40');
     expect(field).toHaveFocus();
     // Ta sama liczba to nic nowego.
     expect(within(card).getByRole('button', { name: 'Zapisz wagę' })).toBeDisabled();
@@ -719,7 +724,7 @@ describe('Waga na górze dziennika — przez most do dziennika wagi', () => {
     await user.click(within(card).getByRole('button', { name: 'Zmień wagę' }));
     await user.clear(within(card).getByLabelText('Waga, kg'));
     await user.type(within(card).getByLabelText('Waga, kg'), '82,1{Enter}');
-    expect(await screen.findByRole('heading', { name: 'Waga: 82,1 kg' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Waga: 82,10 kg' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Zmień wagę' })).toHaveFocus();
   }, 15_000);
 
@@ -727,7 +732,7 @@ describe('Waga na górze dziennika — przez most do dziennika wagi', () => {
     await saveProfile(completeProfile({ startDate: '2026-10-01' }));
     const user = userEvent.setup();
     render(<WithScale weights={[{ day: '2026-10-14', kg: 82.5 }]} />);
-    expect(await screen.findByRole('heading', { name: 'Waga: 82,5 kg' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Waga: 82,50 kg' })).toBeInTheDocument();
     expect(screen.queryByLabelText('Waga, kg')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Następny dzień' }));
     expect(await screen.findByRole('heading', { name: 'Jutro' })).toBeInTheDocument();

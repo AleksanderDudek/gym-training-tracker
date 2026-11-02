@@ -3,6 +3,7 @@ import { dayKey, daysBetween } from './schedule';
 import type { AppState, EffortKey, LogEntry } from '../types';
 
 export const round1 = (x: number): number => Math.round(x * 10) / 10;
+export const round2 = (x: number): number => Math.round(x * 100) / 100;
 
 /**
  * Wzór Epleya: 1RM = ciężar × (1 + powtórzenia / 30).

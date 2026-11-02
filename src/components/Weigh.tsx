@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { WEIGHT_RANGE, latestWeight, validWeight, weightTrend } from '../engine/body';
-import { num, text } from '../i18n';
+import { WEIGHT_RANGE, formatWeight, latestWeight, validWeight, weightTrend } from '../engine/body';
+import { text } from '../i18n';
 import type { AppState } from '../types';
 
 /**
@@ -14,8 +14,6 @@ import type { AppState } from '../types';
  * lekarzem, a nie z aplikacją.
  */
 
-const pl1 = (v: number): string => num(v, 1);
-
 const T = text({
   pl: {
     same: 'bez zmian',
@@ -24,7 +22,7 @@ const T = text({
     how: 'Najlepiej rano: po toalecie, przed jedzeniem i piciem, na tej samej wadze. Z dnia na dzień waga skacze o kilogram czy dwa — o kierunku mówi średnia z tygodnia.',
     field: 'waga, kg',
     save: 'Zapisz',
-    range: (min: number, max: number) => `Od ${min} do ${max} kg, z jedną cyfrą po przecinku.`,
+    range: (min: number, max: number) => `Od ${min} do ${max} kg, do dwóch cyfr po przecinku.`,
     skip: 'Nie dziś',
     today: (kg: string) => `Dziś ${kg} kg`,
     avg: (kg: string) => `Średnia z 7 dni: ${kg} kg`,
@@ -38,7 +36,7 @@ const T = text({
     how: 'Ideally in the morning: after the loo, before eating or drinking, on the same scales. Your weight jumps a kilo or two from day to day — the weekly average shows the direction.',
     field: 'weight, kg',
     save: 'Save',
-    range: (min: number, max: number) => `From ${min} to ${max} kg, to one decimal place.`,
+    range: (min: number, max: number) => `From ${min} to ${max} kg, up to two decimal places.`,
     skip: 'Not today',
     today: (kg: string) => `Today ${kg} kg`,
     avg: (kg: string) => `7-day average: ${kg} kg`,
@@ -48,7 +46,7 @@ const T = text({
 });
 
 /** „−0,8 kg”, „+0,3 kg”, „bez zmian”. Minus typograficzny, a nie łącznik. */
-const change = (d: number): string => (d === 0 ? T.same : `${d > 0 ? '+' : '−'}${pl1(Math.abs(d))} kg`);
+const change = (d: number): string => (d === 0 ? T.same : `${d > 0 ? '+' : '−'}${formatWeight(Math.abs(d))} kg`);
 
 export function WeighCard({
   state,
@@ -89,7 +87,7 @@ export function WeighCard({
                 inputMode="decimal"
                 className="num"
                 autoComplete="off"
-                placeholder={last ? pl1(last.kg) : ''}
+                placeholder={last ? formatWeight(last.kg) : ''}
                 value={kg}
                 onChange={(e) => setKg(e.target.value)}
                 aria-describedby="weigh-range"
@@ -108,10 +106,10 @@ export function WeighCard({
         </>
       ) : (
         <>
-          <h2 className="today-name">{T.today(pl1(t.today))}</h2>
+          <h2 className="today-name">{T.today(formatWeight(t.today))}</h2>
           <p className="tight">
-            {t.avg !== null && T.avg(pl1(t.avg))}
-            {t.delta !== null && t.prevAvg !== null ? T.prev(pl1(t.prevAvg), change(t.delta)) : T.noPrev}
+            {t.avg !== null && T.avg(formatWeight(t.avg))}
+            {t.delta !== null && t.prevAvg !== null ? T.prev(formatWeight(t.prevAvg), change(t.delta)) : T.noPrev}
           </p>
         </>
       )}
