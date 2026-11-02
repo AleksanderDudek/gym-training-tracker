@@ -1,6 +1,6 @@
 import type { DayNeeds } from './now';
 import { kcalStatus } from './target';
-import type { Nutrients } from './types';
+import { EXTRAS, roundExtra, type Extra, type Nutrients } from './types';
 
 export interface DayTotals {
   kcal: number;
@@ -28,6 +28,38 @@ export function totals(entries: Nutrients[]): DayTotals {
     fat: r(t.fat),
     unknownMacros: t.unknownMacros,
   };
+}
+
+/** One extra over the day: grams from the entries that know it, and how many entries do not. */
+export interface ExtraTotal {
+  grams: number;
+  /** Entries that know it. */
+  known: number;
+  /** Entries without it: the grams are then „at least”. */
+  missing: number;
+}
+
+/** Fibre and salt targets of the day balance: fibre 25 g (EFSA AI for adults), salt at most 5 g (WHO). */
+export const EXTRA_TARGETS = { fiber: 25, salt: 5 } as const;
+
+/**
+ * Fibre, total sugars and salt over the day's entries. An entry without a value (an old one, a
+ * blank label, a quick entry) is counted as missing, never as zero.
+ */
+export function extraTotals(entries: readonly Nutrients[]): Record<Extra, ExtraTotal> {
+  const out = {} as Record<Extra, ExtraTotal>;
+  for (const key of EXTRAS) {
+    let grams = 0;
+    let known = 0;
+    for (const e of entries) {
+      const v = e[key];
+      if (typeof v !== 'number') continue;
+      grams += v;
+      known++;
+    }
+    out[key] = { grams: roundExtra(key, grams), known, missing: entries.length - known };
+  }
+  return out;
 }
 
 /**

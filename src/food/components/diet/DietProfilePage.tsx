@@ -34,8 +34,10 @@ import {
   safety,
   snap05,
 } from '../../diet/target';
+import { FAST_HOURS, fastingAllowed } from '../../diet/fasting';
 import { trendOn } from '../../diet/trend';
-import type { ActivityLevel, Profile } from '../../diet/types';
+import { FAST_PLANS, type ActivityLevel, type FastPlan, type Profile } from '../../diet/types';
+import { defaultWaterMl } from '../../diet/water';
 import { formatNumber } from '../../lib/format';
 import { DataSection } from './DataSection';
 import { dayMonthLong, paceWord } from './dietFormat';
@@ -153,6 +155,18 @@ const T = text({
     saveStart: 'Zapisz i zacznij',
     saveProfile: 'Zapisz profil',
     saved: 'Zapisano',
+    waterTitle: 'Woda',
+    showWater: 'Pokazuj wodę w dzienniku',
+    waterField: 'Cel z napojów dziennie',
+    waterDefault: (ml: string) =>
+      `Puste pole: ${ml} ml według EFSA — z napojów kobiety ok. 1,6 l, mężczyźni ok. 2,0 l (reszta wody przychodzi z jedzeniem). W ciąży EFSA dodaje ok. 0,3 l, przy karmieniu ok. 0,7 l — przy karmieniu wpisz swój cel. Upał i długi trening to więcej.`,
+    fastTitle: 'Okno jedzenia',
+    fastOff: 'Wyłączone',
+    fastPlan: (plan: string, fast: number, eat: number) => `${plan} — ${fast} h postu, ${eat} h na jedzenie`,
+    fastWhy:
+      'Opcja, nie zalecenie: przy tej samej liczbie kalorii badania nie pokazują przewagi postu nad zwykłym jedzeniem. Dla części osób to po prostu wygodny rytm dnia. Okno nie zmienia celu dnia — w dzienniku pojawi się karta z licznikiem, a początek i koniec postu zapisujesz przyciskami w tej karcie.',
+    fastLocked:
+      'W ciąży i podczas karmienia okno jedzenia jest niedostępne: post nie jest wtedy dla Ciebie. Co i kiedy jeść, ustal z lekarzem lub położną.',
   },
   en: {
     lead: 'From these few answers I work out your daily calorie and protein target. Everything stays on this device. Got a workbook with a plan? Import it — the settings and the meal plan come along.',
@@ -258,6 +272,18 @@ const T = text({
     saveStart: 'Save and start',
     saveProfile: 'Save profile',
     saved: 'Saved',
+    waterTitle: 'Water',
+    showWater: 'Show water in the diary',
+    waterField: 'Daily target from drinks',
+    waterDefault: (ml: string) =>
+      `Empty: ${ml} ml after EFSA — from drinks about 1.6 l for women and 2.0 l for men (the rest of your water comes from food). EFSA adds about 0.3 l in pregnancy and 0.7 l while breastfeeding — while breastfeeding, enter your own target. Heat and long training mean more.`,
+    fastTitle: 'Eating window',
+    fastOff: 'Off',
+    fastPlan: (plan: string, fast: number, eat: number) => `${plan} — ${fast} h fasting, ${eat} h for eating`,
+    fastWhy:
+      'An option, not advice: at the same calories, studies don’t show fasting doing better than ordinary eating. For some people it’s simply a handy rhythm for the day. The window doesn’t change the day’s target — the diary gets a card with a timer, and you record the start and end of the fast yourself.',
+    fastLocked:
+      'In pregnancy and while breastfeeding the eating window isn’t available: fasting isn’t for you then. Agree what and when to eat with your doctor or midwife.',
   },
 });
 
@@ -428,6 +454,8 @@ function ProfileForm({ profile, isNew, today, stores }: FormProps) {
   const forSave: Profile = {
     ...draft,
     pregnancy: pregnant,
+    // W ciąży i przy karmieniu okna jedzenia nie ma — także zapisanego wcześniej.
+    fastPlan: fastingAllowed({ sex: draft.sex, pregnancy: pregnant }) ? draft.fastPlan : null,
     goalPace: chosen === 'loss' || chosen === 'gain' ? draft.goalPace : 0,
     targetWeightKg: targetKg !== null && targetIssue?.kind !== 'min' ? targetKg : round2(kgNow),
   };
@@ -864,6 +892,37 @@ function ProfileForm({ profile, isNew, today, stores }: FormProps) {
           )}
         </section>
 
+        <section className="grp" aria-labelledby="fd-diet-water-set-title">
+          <h2 id="fd-diet-water-set-title">{T.waterTitle}</h2>
+          <label className="check-row fd-diet-check">
+            <input type="checkbox" checked={draft.showWater} onChange={(e) => set({ showWater: e.target.checked })} />
+            <span>{T.showWater}</span>
+          </label>
+          {draft.showWater && (
+            <>
+              <OptionalNumber
+                label={T.waterField}
+                value={draft.waterMl}
+                onChange={(n) => set({ waterMl: n })}
+                integer
+                min={500}
+                max={5000}
+                suffix="ml"
+                error={null}
+              />
+              <p className="tight fd-diet-soft">
+                {T.waterDefault(formatNumber(defaultWaterMl({ sex: draft.sex, pregnancy: pregnant }), 0))}
+              </p>
+            </>
+          )}
+        </section>
+
+        <FastPick
+          value={forSave.fastPlan}
+          locked={!fastingAllowed({ sex: draft.sex, pregnancy: pregnant })}
+          onPick={(fastPlan) => set({ fastPlan })}
+        />
+
         <fieldset className="grp fd-diet-styles">
           <legend>{T.dietType}</legend>
           {DIET_PROFILE_IDS.map((id) => {
@@ -937,6 +996,52 @@ function ProfileForm({ profile, isNew, today, stores }: FormProps) {
         </div>
       </form>
     </>
+  );
+}
+
+/**
+ * Okno jedzenia (post przerywany): opcja, domyślnie wyłączona. W ciąży i przy karmieniu wszystkie
+ * podziały są wyłączone, a powód stoi pod spodem; zastrzeżenie z jednego źródła (`Health.tsx`).
+ */
+function FastPick({
+  value,
+  locked,
+  onPick,
+}: {
+  value: FastPlan | null;
+  locked: boolean;
+  onPick: (plan: FastPlan | null) => void;
+}) {
+  const lockedId = useId();
+  const options: { key: FastPlan | null; label: string }[] = [
+    { key: null, label: T.fastOff },
+    ...FAST_PLANS.map((plan) => ({ key: plan, label: T.fastPlan(plan, FAST_HOURS[plan], 24 - FAST_HOURS[plan]) })),
+  ];
+  return (
+    <fieldset className="grp fd-diet-fastset" aria-describedby={locked ? lockedId : undefined}>
+      <legend>{T.fastTitle}</legend>
+      <p className="tight fd-diet-soft">{T.fastWhy}</p>
+      <div className="fd-diet-goalpick">
+        {options.map((o) => (
+          <label key={o.key ?? 'off'}>
+            <input
+              type="radio"
+              name="diet-fast"
+              checked={value === o.key}
+              disabled={locked && o.key !== null}
+              onChange={() => onPick(o.key)}
+            />
+            <span>{o.label}</span>
+          </label>
+        ))}
+      </div>
+      {locked && (
+        <p className="tight" id={lockedId}>
+          {T.fastLocked}
+        </p>
+      )}
+      <HealthNote kind="fast" more className="tight fd-diet-soft" />
+    </fieldset>
   );
 }
 

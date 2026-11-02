@@ -4,7 +4,7 @@ import { packGrams } from '../lib/quantity';
 import type { Dictionaries, Product } from '../lib/types';
 import type { Macros } from '../recipes/macros';
 import type { PlanItem } from './plan';
-import type { Nutrients } from './types';
+import { EXTRAS, roundExtra, type Extras, type Nutrients } from './types';
 
 /**
  * One shape for everything that can be eaten, logged, suggested or swapped:
@@ -27,8 +27,8 @@ export interface Food {
   amountLabel: string;
   /** For one amount. */
   nutrients: Nutrients;
-  /** Per 100 g, when the amount can be changed in grams. */
-  per100: Macros | null;
+  /** Per 100 g, when the amount can be changed in grams; fibre, sugars and salt when known. */
+  per100: Per100 | null;
   grams: number | null;
   /** Chains that sell it (empty: unknown, or not bought in a shop). */
   stores: string[];
@@ -71,10 +71,30 @@ export function portionGrams(quantity: string | null): number {
   return packGrams(quantity) ?? 100;
 }
 
-const scaled = (per100: Macros, grams: number): Nutrients => {
+/** Per 100 g: the four always, fibre, sugars and salt when the source has them (null: it says unknown). */
+export type Per100 = Macros & Partial<Extras>;
+
+/** The extras a source has, at `f` times its amount; the ones it lacks stay out. */
+export function scaleExtras(from: Partial<Extras>, f: number): Partial<Extras> {
+  const out: Partial<Extras> = {};
+  for (const key of EXTRAS) {
+    const v = from[key];
+    if (v === undefined) continue;
+    out[key] = v === null ? null : roundExtra(key, v * f);
+  }
+  return out;
+}
+
+const scaled = (per100: Per100, grams: number): Nutrients => {
   const f = grams / 100;
   const r = (n: number) => Math.round(n * f * 10) / 10;
-  return { kcal: Math.round(per100.kcal * f), protein: r(per100.protein), carbs: r(per100.carbs), fat: r(per100.fat) };
+  return {
+    kcal: Math.round(per100.kcal * f),
+    protein: r(per100.protein),
+    carbs: r(per100.carbs),
+    fat: r(per100.fat),
+    ...scaleExtras(per100, f),
+  };
 };
 
 /** A food is an add-on when nearly all its energy is fat: butter, oil, cream. */
@@ -97,14 +117,16 @@ export function packagedFood(
     name: string;
     brand: string | null;
     quantity: string | null;
-    per100: { kcal: number | null; protein: number | null; carbs: number | null; fat: number | null };
+    per100: { kcal: number | null; protein: number | null; carbs: number | null; fat: number | null } & Partial<Extras>;
     stores: string[];
   },
   grams = portionGrams(item.quantity),
 ): Food | null {
   const { kcal, protein, carbs, fat } = item.per100;
   if (kcal === null || protein === null || carbs === null || fat === null) return null;
-  const per100 = { kcal, protein, carbs, fat };
+  // Fibre, sugars and salt come along as the label has them: a number, or null for unknown.
+  const extras = Object.fromEntries(EXTRAS.map((key) => [key, item.per100[key] ?? null])) as Extras;
+  const per100: Per100 = { kcal, protein, carbs, fat, ...extras };
   const nutrients = scaled(per100, grams);
   return {
     key: `product:${item.code}`,
@@ -132,12 +154,15 @@ export function recipeFood(
   perServing: Macros,
   stores: string[],
   everywhere = false,
+  /** Fibre, sugars and salt of one serving, when every ingredient's are known (`recipeExtras`). */
+  extras?: Extras,
 ): Food {
   const nutrients = {
     kcal: Math.round(perServing.kcal),
     protein: Math.round(perServing.protein * 10) / 10,
     carbs: Math.round(perServing.carbs * 10) / 10,
     fat: Math.round(perServing.fat * 10) / 10,
+    ...(extras && scaleExtras(extras, 1)),
   };
   return {
     key: `recipe:${recipe.id}`,
@@ -218,15 +243,27 @@ export function partOf(food: Food): SetPart {
   return { name: food.name, amountLabel: food.amountLabel, ...food.nutrients, key: food.key };
 }
 
-/** The parts added up; a macro unknown in any part is unknown in the sum (never counted as zero). */
+/**
+ * The parts added up; a macro unknown in any part is unknown in the sum (never counted as zero).
+ * Fibre, sugars and salt the same way — a part saved before they were known has them unknown.
+ */
 export function setTotals(parts: SetPart[]): Nutrients {
   const add = (key: 'protein' | 'carbs' | 'fat') =>
     parts.every((p) => p[key] !== null) ? Math.round(parts.reduce((sum, p) => sum + p[key]!, 0) * 10) / 10 : null;
+  const extras: Partial<Extras> = {};
+  for (const key of EXTRAS) {
+    // Parts that never knew it (all saved before) leave it out; one unknown part makes it unknown.
+    if (parts.every((p) => p[key] === undefined)) continue;
+    extras[key] = parts.every((p) => typeof p[key] === 'number')
+      ? roundExtra(key, parts.reduce((sum, p) => sum + p[key]!, 0))
+      : null;
+  }
   return {
     kcal: Math.round(parts.reduce((sum, p) => sum + p.kcal, 0)),
     protein: add('protein'),
     carbs: add('carbs'),
     fat: add('fat'),
+    ...extras,
   };
 }
 

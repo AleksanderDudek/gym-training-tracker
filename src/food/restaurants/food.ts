@@ -1,4 +1,5 @@
 import type { Food, MealRole } from '../diet/foods';
+import { roundExtra } from '../diet/types';
 import { formatNumber } from '../lib/format';
 import type { Chain, MenuItem } from './types';
 
@@ -34,7 +35,16 @@ export function restaurantFood(chain: Chain, item: MenuItem): Food {
     detail: chain.name,
     source: 'restaurant',
     amountLabel: portionLabel(item),
-    nutrients: { kcal: Math.round(item.kcal), protein: r(item.protein), carbs: r(item.carbs), fat: r(item.fat) },
+    nutrients: {
+      kcal: Math.round(item.kcal),
+      protein: r(item.protein),
+      carbs: r(item.carbs),
+      fat: r(item.fat),
+      // What the chain's table gives for the portion; a column it lacks is unknown, not zero.
+      fiber: typeof item.fiber === 'number' ? roundExtra('fiber', item.fiber) : null,
+      sugars: typeof item.sugars === 'number' ? roundExtra('sugars', item.sugars) : null,
+      salt: typeof item.salt === 'number' ? roundExtra('salt', item.salt) : null,
+    },
     per100: null,
     grams: null,
     stores: [],

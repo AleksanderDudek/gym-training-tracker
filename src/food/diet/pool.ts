@@ -2,7 +2,7 @@ import type { Dictionaries, IndexedProduct } from '../lib/types';
 import { isOnlineShop } from '../online/shops';
 import { RECIPES } from '../recipes/catalog';
 import { readyProducts } from '../recipes/ready';
-import { availableStores, bestVariant, needsStore, type Candidates } from '../recipes/resolve';
+import { availableStores, bestVariant, needsStore, recipeExtras, type Candidates } from '../recipes/resolve';
 import {
   customFood,
   planFood,
@@ -49,7 +49,13 @@ export function buildPool(input: PoolInput): Food[] {
     const variant = bestVariant(recipe, input.candidates, ranking);
     if (!variant) continue;
     foods.push(
-      recipeFood(recipe, variant.perServing, availableStores(recipe, input.candidates, ranking), !needsStore(recipe)),
+      recipeFood(
+        recipe,
+        variant.perServing,
+        availableStores(recipe, input.candidates, ranking),
+        !needsStore(recipe),
+        recipeExtras(variant),
+      ),
     );
   }
 

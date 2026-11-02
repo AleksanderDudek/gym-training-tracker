@@ -1,15 +1,31 @@
 import { say } from '../../i18n';
 import { db, type DietDb, type Entry, type Favorite } from './db';
-import type { Macros } from '../recipes/macros';
-import type { Food, MealRole } from './foods';
+import { scaleExtras, type Food, type MealRole, type Per100 } from './foods';
+import { EXTRAS, type Extras } from './types';
+
+/** Fibre, sugars and salt the entry has (an entry from before they were stored has none). */
+function entryExtras(e: Entry): Partial<Extras> {
+  const out: Partial<Extras> = {};
+  for (const key of EXTRAS) if (e[key] !== undefined) out[key] = e[key];
+  return out;
+}
 
 /** A product's entry ("150 g") with its macros back per 100 g, so its grams can still be changed. */
-function entryPer100(e: Entry): { grams: number; per100: Macros } | null {
+function entryPer100(e: Entry): { grams: number; per100: Per100 } | null {
   const grams = Number(e.amountLabel.match(/^(\d+(?:[.,]\d+)?) g$/)?.[1]?.replace(',', '.'));
   const { protein, carbs, fat } = e;
   if (e.source !== 'product' || !(grams > 0) || protein === null || carbs === null || fat === null) return null;
   const per100 = (v: number) => Math.round((v * 1000) / grams) / 10;
-  return { grams, per100: { kcal: per100(e.kcal), protein: per100(protein), carbs: per100(carbs), fat: per100(fat) } };
+  return {
+    grams,
+    per100: {
+      kcal: per100(e.kcal),
+      protein: per100(protein),
+      carbs: per100(carbs),
+      fat: per100(fat),
+      ...scaleExtras(entryExtras(e), 100 / grams),
+    },
+  };
 }
 
 /** A food from an eaten entry, as it was eaten: its amount, its macros (unknown stays unknown). */
@@ -22,7 +38,7 @@ export function entryFood(e: Entry): Food {
     detail: say('z dziennika', 'from the diary'),
     source: e.source === 'quick' ? 'custom' : e.source,
     amountLabel: e.amountLabel,
-    nutrients: { kcal: e.kcal, protein: e.protein, carbs: e.carbs, fat: e.fat },
+    nutrients: { kcal: e.kcal, protein: e.protein, carbs: e.carbs, fat: e.fat, ...entryExtras(e) },
     per100: product?.per100 ?? null,
     grams: product?.grams ?? null,
     stores: [],
