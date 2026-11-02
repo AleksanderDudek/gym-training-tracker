@@ -35,6 +35,10 @@ export interface DayRow {
   partial?: boolean;
   /** Weekly habits of the lab-results plan ticked this day: habit id → times. */
   labHabits?: Record<string, number>;
+  /** Water drunk this day, ml (the water card: „+250 ml”, „+500 ml”). */
+  water?: number;
+  /** The day's water additions in order, ml, the last 20: „−” takes back the last one. */
+  waterAdds?: number[];
 }
 
 /** A planned cheat meal: calories always, macros when known (unknown is not zero). */
@@ -65,6 +69,14 @@ export interface Entry {
   key?: string;
   /** The plan line it ticked off, when it did. */
   planIndex?: number;
+  /**
+   * Fibre, total sugars and salt (g) of the amount, when the source knew them; null when it did
+   * not. Entries made before version 6 got null in the upgrade; a backup row without them reads
+   * as unknown too.
+   */
+  fiber?: number | null;
+  sugars?: number | null;
+  salt?: number | null;
 }
 
 /**
@@ -107,6 +119,17 @@ export class DietDb extends Dexie {
     this.version(4).stores({ prep: '++id' });
     // Badania — wyniki z laboratorium (jeden wiersz na dzień pobrania) i ustawienia planu pod wyniki.
     this.version(5).stores({ labs: '++id, date', labPrefs: 'id' });
+    // Fibre, sugars and salt on diary entries: no new index, older entries get null (unknown, never zero).
+    this.version(6)
+      .stores({})
+      .upgrade((tx) =>
+        tx
+          .table('entries')
+          .toCollection()
+          .modify((entry: Entry) => {
+            for (const key of ['fiber', 'sugars', 'salt'] as const) if (entry[key] === undefined) entry[key] = null;
+          }),
+      );
   }
 }
 

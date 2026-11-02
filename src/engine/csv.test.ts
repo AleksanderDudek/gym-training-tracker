@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { BOM, bodyCsv, csvCell, csvFormat, csvName, fixed, measuresOf, toCsv, workoutsCsv } from './csv';
+import { BOM, bodyCsv, csvCell, csvFormat, csvName, fixed, toCsv, workoutsCsv } from './csv';
 import { freshState } from './plan';
 import { setBodyWeight } from './body';
-import type { AppState, LogEntry } from '../types';
+import type { LogEntry } from '../types';
 
 /**
  * Eksport do arkusza: czysty moduł CSV. Po polsku średnik i przecinek dziesiętny (tak otwiera
@@ -122,13 +122,12 @@ describe('ciało — ważenia i obwody', () => {
     expect(lines(bodyCsv(s, EN).text)[2]).toBe('2026-10-02,85.00');
   });
 
-  it('obwody, gdy zapis je ma: znane w stałej kolejności, dzień bez ważenia też jest wierszem', () => {
+  it('obwody z karty „Sylwetka”: tylko mierzone kolumny, w stałej kolejności, dzień bez ważenia też jest wierszem', () => {
     const s = freshState();
     setBodyWeight(s, 85, '2026-10-02');
-    (s as AppState & { measures: unknown }).measures = [
+    s.measures = [
       { day: '2026-10-02', waist: 91.5, thigh: 58 },
-      { day: '2026-10-09', waist: 90.2, hips: 101, note: 'rano' },
-      { day: 'zepsuty', waist: 80 },
+      { day: '2026-10-09', waist: 90.2, hips: 101 },
     ];
     expect(lines(bodyCsv(s, PL).text)).toEqual([
       'Data;Waga (kg);Talia (cm);Biodra (cm);Udo (cm)',
@@ -137,15 +136,7 @@ describe('ciało — ważenia i obwody', () => {
     ]);
   });
 
-  it('obwody czytane luźno: słownik dzień → pola, polskie klucze, nieznane pola pod własną nazwą', () => {
-    const s = freshState() as AppState & { measures: unknown };
-    s.measures = { '2026-10-03': { talia: 92, ramię: 35.5, szyja: 40 }, '2026-10-04': { talia: 'dużo' } };
-    expect(measuresOf(s)).toEqual([{ day: '2026-10-03', values: { waist: 92, arm: 35.5, szyja: 40 } }]);
-    expect(lines(bodyCsv(s, PL).text)[0]).toBe('Data;Waga (kg);Talia (cm);Ramię (cm);szyja');
-  });
-
   it('bez obwodów w zapisie — tylko waga, a bez niczego — zero wierszy', () => {
-    expect(measuresOf(freshState())).toEqual([]);
     expect(bodyCsv(freshState(), PL).rows).toBe(0);
   });
 });

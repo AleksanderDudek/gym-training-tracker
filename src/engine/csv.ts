@@ -1,8 +1,9 @@
 import { BUILTIN, EFFORT, EX } from '../data/exercises';
 import { LANG, text } from '../i18n';
 import type { Lang } from '../i18n';
-import type { AppState, EffortKey } from '../types';
+import type { AppState, BodyMeasures, EffortKey } from '../types';
 import { bodyOf } from './body';
+import { MEASURES, measuresOf } from './measures';
 import { dayKey } from './schedule';
 
 /**
@@ -147,48 +148,16 @@ export function workoutsCsv(state: AppState, f: CsvFormat = csvFormat()): { text
   return { text: toCsv(T.workouts, rows, f), rows: rows.length };
 }
 
-/** Obwody znane z nazwy — w tej kolejności, z etykietą; inne liczby idą za nimi pod własnym kluczem. */
-const MEASURE_ORDER = ['waist', 'hips', 'chest', 'arm', 'thigh'];
-// i18n-ignore: klucze możliwego zapisu obwodów po polsku, nie tekst
-const MEASURE_ALIAS: Record<string, string> = { talia: 'waist', biodra: 'hips', klatka: 'chest', ramie: 'arm', ramię: 'arm', udo: 'thigh' };
-
-type MeasureDay = { day: string; values: Record<string, number> };
-
-/**
- * Obwody z `state.measures`, jeśli zapis je ma (pakiet „Sylwetka”). Czytane luźno: lista wpisów
- * z dniem (`day` albo `date`, `yyyy-mm-dd`) i polami-liczbami albo słownik dzień → pola. Pole,
- * które nie jest skończoną liczbą, odpada; dzień bez żadnej liczby też.
- */
-export function measuresOf(state: AppState): MeasureDay[] {
-  const raw = (state as AppState & { measures?: unknown }).measures;
-  if (!raw || typeof raw !== 'object') return [];
-  const pairs: [unknown, unknown][] = Array.isArray(raw)
-    ? raw.map((m) => [(m as { day?: unknown; date?: unknown })?.day ?? (m as { date?: unknown })?.date, m])
-    : Object.entries(raw);
-  const out: MeasureDay[] = [];
-  for (const [day, m] of pairs) {
-    if (typeof day !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(day) || !m || typeof m !== 'object') continue;
-    const values: Record<string, number> = {};
-    for (const [k, v] of Object.entries(m as Record<string, unknown>)) {
-      if (k === 'day' || k === 'date' || typeof v !== 'number' || !Number.isFinite(v)) continue;
-      values[MEASURE_ALIAS[k] ?? k] = v;
-    }
-    if (Object.keys(values).length) out.push({ day, values });
-  }
-  return out;
-}
-
 /** Ciało: wiersz na dzień z ważeniem albo pomiarem obwodów. Waga z dwoma miejscami, jak w aplikacji. */
 export function bodyCsv(state: AppState, f: CsvFormat = csvFormat()): { text: string; rows: number } {
   const measures = measuresOf(state);
-  const keys = new Set(measures.flatMap((m) => Object.keys(m.values)));
-  const cols = [...MEASURE_ORDER.filter((k) => keys.has(k)), ...[...keys].filter((k) => !MEASURE_ORDER.includes(k)).sort()];
-  const days = new Map<string, { kg?: number; values?: Record<string, number> }>();
+  const cols = MEASURES.filter((k) => measures.some((m) => m[k] !== undefined));
+  const days = new Map<string, { kg?: number; m?: BodyMeasures }>();
   for (const b of bodyOf(state)) days.set(b.day, { kg: b.kg });
-  for (const m of measures) days.set(m.day, { ...days.get(m.day), values: { ...days.get(m.day)?.values, ...m.values } });
+  for (const m of measures) days.set(m.day, { ...days.get(m.day), m });
   const rows: Cell[][] = [...days.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([day, d]) => [day, d.kg === undefined ? null : fixed(d.kg, 2), ...cols.map((k) => d.values?.[k] ?? null)]);
+    .map(([day, d]) => [day, d.kg === undefined ? null : fixed(d.kg, 2), ...cols.map((k) => d.m?.[k] ?? null)]);
   const header = [T.date, T.weight, ...cols.map((k) => T.measure[k] ?? k)];
   return { text: toCsv(header, rows, f), rows: rows.length };
 }

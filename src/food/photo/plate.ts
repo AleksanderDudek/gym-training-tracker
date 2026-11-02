@@ -1,5 +1,6 @@
 import { say } from '../../i18n';
 import type { Food, MealRole } from '../diet/foods';
+import { roundExtra } from '../diet/types';
 import { normalizeForSearch } from '../lib/text';
 import {
   DISHES,
@@ -130,6 +131,7 @@ export function plateFood(item: PlateItem): Food {
   const per100 = adjustedPer100(item.dish, item.choices, baseOf(item));
   const words = choiceWords(item);
   const ref = item.ref?.name;
+  const fiber100 = item.ref ? null : item.dish.per100.fiber;
   return {
     key: `dish:${item.dish.id}`,
     name: words.length ? `${item.dish.label} (${words.join(', ')})` : item.dish.label,
@@ -137,8 +139,26 @@ export function plateFood(item: PlateItem): Food {
     source: 'dish',
     // The diary shows the amount, so that is where it says whose values were used.
     amountLabel: ref ? say(`${grams} g, wartości jak ${ref}`, `${grams} g, values as ${ref}`) : `${grams} g`,
-    nutrients: { kcal: e.kcal, protein: e.protein, carbs: e.carbs, fat: e.fat },
-    per100: { kcal: per100.kcal, protein: per100.protein, carbs: per100.carbs, fat: per100.fat },
+    // Sugars follow the scales; fibre is the catalog dish's, so with a database food's values it is unknown.
+    // The catalog has no salt values, so salt stays unknown.
+    nutrients: {
+      kcal: e.kcal,
+      protein: e.protein,
+      carbs: e.carbs,
+      fat: e.fat,
+      fiber: fiber100 === null ? null : roundExtra('fiber', (fiber100 * grams) / 100),
+      sugars: e.sugars,
+      salt: null,
+    },
+    per100: {
+      kcal: per100.kcal,
+      protein: per100.protein,
+      carbs: per100.carbs,
+      fat: per100.fat,
+      fiber: fiber100,
+      sugars: per100.sugars,
+      salt: null,
+    },
     grams,
     stores: [],
     atHome: false,

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { dayState, totals } from './day';
+import { EXTRA_TARGETS, dayState, extraTotals, totals } from './day';
 import type { PlannedCheat } from './db';
 import { dayNeeds } from './now';
 
@@ -69,5 +69,30 @@ describe('totals', () => {
       { kcal: 300, protein: null, carbs: null, fat: null },
     ]);
     expect(t).toEqual({ kcal: 800, protein: 40, carbs: 30, fat: 20, unknownMacros: 1 });
+  });
+});
+
+describe('extraTotals (fibre, sugars, salt)', () => {
+  test('the known values add up; an entry without one is missing, never zero', () => {
+    const t = extraTotals([
+      { kcal: 400, protein: 20, carbs: 50, fat: 10, fiber: 8.2, sugars: 12, salt: 1.25 },
+      { kcal: 300, protein: 10, carbs: 30, fat: 12, fiber: 10, sugars: null, salt: 0.6 },
+      // An entry from before version 6 (null) and a quick one without the keys at all.
+      { kcal: 200, protein: null, carbs: null, fat: null, fiber: null, sugars: null, salt: null },
+      { kcal: 150, protein: null, carbs: null, fat: null },
+    ]);
+    expect(t).toEqual({
+      fiber: { grams: 18.2, known: 2, missing: 2 },
+      sugars: { grams: 12, known: 1, missing: 3 },
+      salt: { grams: 1.85, known: 2, missing: 2 },
+    });
+  });
+
+  test('no entries: nothing known, nothing missing', () => {
+    expect(extraTotals([]).fiber).toEqual({ grams: 0, known: 0, missing: 0 });
+  });
+
+  test('targets: fibre 25 g (EFSA), salt at most 5 g (WHO); sugars none', () => {
+    expect(EXTRA_TARGETS).toEqual({ fiber: 25, salt: 5 });
   });
 });

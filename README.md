@@ -745,12 +745,12 @@ aplikacji. Dane produktów: [Open Food Facts](https://world.openfoodfacts.org), 
   **pytanie o wagę** („Ile dziś ważysz?” z ostatnim ważeniem i radą „Najlepiej rano, po toalecie,
   przed jedzeniem.”, z „Nie dziś” wspólnym z ekranem Dziś; po zapisie jedna linijka „Waga: 82,40 kg”
   ze „Zmień”), bilans dnia z „Dodaj zjedzone”, „Ulubione (N)” i „Większy posiłek”, **zjedzone**
-  zaraz pod nim, plan dnia (z nazwą planu z zakupami, a gdy plan zaczyna się później — „Plan „…”
+  zaraz pod nim (po porach posiłku, z „Kopiuj na…”), woda i — gdy włączone — okno jedzenia, plan dnia (z nazwą planu z zakupami, a gdy plan zaczyna się później — „Plan „…”
   zaczyna się …”), „Co teraz?” i kroki. Bilans mówi to samo zdanie co karta na ekranie Dziś — „Na dziś: 2100 kcal i 150 g
   białka”, „Zostało ok. 650 kcal i 54 g białka”, „Kalorie na dziś w zakresie celu, białka jeszcze 20
   g” albo „Na dziś kalorii już wystarczy, białka jeszcze 20 g” — nad paskami białka i kalorii (dzień
-  miniony: „Zjedzone 1980 kcal · cel 2100”); węglowodany i tłuszcz są zwinięte, przy keto i low carb
-  rozwinięte. Paski mają jeden neutralny kolor: żaden kolor nie ocenia dnia. **Jedno pasmo ±100
+  miniony: „Zjedzone 1980 kcal · cel 2100”); „Więcej: węglowodany, tłuszcz, błonnik, cukry, sól”
+  jest zwinięte, przy keto i low carb rozwinięte (niżej). Paski mają jeden neutralny kolor: żaden kolor nie ocenia dnia. **Jedno pasmo ±100
   kcal** ocenia dzień na każdym ekranie — karta Dziś, bilans, „Co teraz?”, dodawanie jedzenia,
   „Większy posiłek”, „Zjedz teraz”, skaner, wykres 14 dni: w nim kalorie są „w zakresie celu”,
   a „ponad cel” zaczyna się powyżej +100 i zawsze kończy się tym, że jeden dzień nie zmienia trendu
@@ -801,6 +801,43 @@ aplikacji. Dane produktów: [Open Food Facts](https://world.openfoodfacts.org), 
   bilans, „Co teraz?”, „Zjedz teraz” — odkłada już jego kalorie i jeden posiłek („Liczę już
   z zaplanowanym większym posiłkiem (900 kcal).”). „Zjedzone teraz” zapisuje go od razu. Bez
   liczenia kalorii przycisku nie ma.
+- **Kopiuj na… i „Jak wczoraj”** (`diet/copy.ts`). „Zjedzone” dzieli wpisy na pory posiłku według
+  godziny — śniadanie 4:00–10:59, obiad 11:00–16:59, kolacja reszta (także po północy) — i przy
+  każdej porze stoi „Kopiuj na…”, a pod listą „Kopiuj dzień na…”. Arkusz daje „Dziś”, „Jutro”
+  i „Inny dzień” (pole daty); dzień, z którego się kopiuje, nie jest do wyboru — oglądając dziś, nie
+  ma „Dziś”. Kopie mają te same ilości, wartości i godziny, więc śniadanie zostaje śniadaniem; nie
+  odhaczają za to pozycji planu na tamtym dniu. Po wyborze arkusz się zamyka, a komunikat „Skopiowano
+  3 wpisy na jutro.” ma „Cofnij” (stoi 8 s), które usuwa dokładnie te kopie. Pusty dzień dzisiejszy,
+  gdy wczoraj coś zapisano, ma w „Zjedzone” skrót **„Jak wczoraj”**: wczorajsze wpisy jednym
+  stuknięciem, też z „Cofnij”.
+- **Woda** (`diet/water.ts`) — mała karta pod „Zjedzone”: „Woda 1,25 l z 2 l”, jeden neutralny pasek
+  i przyciski „+250 ml”, „+500 ml” oraz „−”, które cofa ostatnie dodanie (dzień pamięta 20 ostatnich).
+  Zapis w dniu (`DayRow.water`, ml). Cel z napojów według EFSA (2010: odpowiednie spożycie wody
+  ogółem 2,0 l u kobiet i 2,5 l u mężczyzn, ok. 80% z napojów) — **1,6 l kobiety, 2,0 l mężczyźni**,
+  w ciąży i przy karmieniu +0,3 l (profil ma na oba jedno pole, więc dolny dodatek; przy karmieniu
+  EFSA mówi +0,7 l i opis w profilu podpowiada wpisanie własnego celu). Własny cel (500–5000 ml)
+  i „Pokazuj wodę w dzienniku” (domyślnie włączone) są w profilu diety. Bez oceny dnia, dzień
+  przyszły karty nie ma.
+- **Błonnik, cukry, sól.** Wpis zapisuje też `fiber`, `sugars` i `salt` (g), gdy źródło je zna:
+  produkt (z etykiety, przeliczone na gramaturę), przepis (gdy znane są dla każdego składnika),
+  menu lokalu, zestaw (gdy zna je każda część), zdjęcie posiłku (błonnik i cukry; soli katalog dań nie
+  ma); szybki wpis samych kalorii — nie. Bilans dnia w zwiniętym „Więcej: węglowodany, tłuszcz,
+  błonnik, cukry, sól” pokazuje błonnik z celem **25 g** (EFSA), sól z **górną granicą 5 g** (WHO)
+  i cukry bez celu — to cukry ogółem z etykiet, także z owoców i mleka, a zalecenie WHO dotyczy
+  dodanych. Wpis bez danych nie liczy się jako zero: „co najmniej 18 z 25 g (bez danych w 2
+  wpisach)”. Bez liczenia kalorii tej sekcji nie ma, jak węglowodanów i tłuszczu.
+- **Okno jedzenia (post przerywany)** (`diet/fasting.ts`) — opcja w profilu diety, **domyślnie
+  wyłączona**: 12:12, 14:10, 16:8 albo 18:6. Włączona daje w dzienniku (tylko dziś) kartę z licznikiem
+  na własnym zegarze co 30 s: „Post od 20:15 · zostało 3 h 40 min”, po końcu postu „Okno jedzenia do
+  18:00”, z „Zaczynam post” i „Kończę post”. Start podpowiada godzina ostatniego wpisu (albo teraz),
+  ale zapisuje go człowiek — godzinę da się poprawić; wpisana godzina późniejsza niż teraz to wczoraj
+  wieczorem. Post zostawiony na ponad 48 h i okno zamknięte ponad dobę temu karta pomija. **Okno nie
+  zmienia celu kalorii** — jeden cel na dzień zostaje jedyną regułą. Karta i profil mają linijkę
+  zastrzeżenia (nie w ciąży, przy karmieniu, przy cukrzycy leczonej lekami ani przy zaburzeniach
+  odżywiania — najpierw rozmowa z lekarzem) z odnośnikiem do `#/zdrowie`; przy „Jestem w ciąży lub
+  karmię piersią” podziały są wyłączone z wyjaśnieniem, a zapis profilu wyłącza okno zapisane
+  wcześniej. Opcja, nie domyślnie: przy tej samej kaloryczności badania nie pokazują przewagi postu
+  nad zwykłym deficytem; dla części ludzi to po prostu wygodny rytm dnia.
 - **Poniedziałkowe sprawdzenie** (`diet/calibrate.ts`). Rusza raz w tygodniu, przy pierwszym
   otwarciu karty jedzenia na ekranie Dziś, dziennika albo „Zjedz teraz” (w poniedziałek od 4:00 —
   niedzielna kolacja może jeszcze czekać na wpis; póki trwa, najwyżej 3 s, w miejscu celu stoi
@@ -1889,7 +1926,7 @@ src/
     chains/                 sieci z własnymi danymi (Selgros): rejestr, dane (`data/*.json`), scalanie po EAN bez oferty online, kontrola liczb — 10 testów
     nearby/                 w pobliżu: reguła obiektów OSM (`osmTags`), drzewo kawałków i wybór wokół zaokrąglonej pozycji (`osmGrid`), format danych (`osmFormat`), dane aplikacji (`staticData`), zapytanie Overpass dla obu widoków (`live`) z przerwami i budżetem czasu, kopia na dobę i zapas na tydzień, promień
     scan/                   skaner kodów: kody GS1 (cyfra kontrolna, UPC-E, warianty w bazie), Open Food Facts dla kodów spoza bazy, porównanie pod cel diety, lista porównania znikająca godzinę po ostatnim skanie, czytnik (wbudowany albo WebAssembly) — 16 testów
-    diet/                   dieta: baza Dexie (`produkty-pl-dieta`, wersja 4 z zestawami, ulubionymi i planami z zakupami), jeden cel na dzień z historią celów i szacunkiem NASEM (`target.ts`), trend wagi i tempo (`trend.ts`), poniedziałkowe sprawdzenie (`calibrate.ts`), przejście starych profili (`upgrade.ts`), zapis profilu (`edit.ts`), sposoby odżywiania, dzień, plan z Excela, zestawy, ulubione, wyszukiwanie, podpowiedzi, większy posiłek (`cheat.ts`) — 170 testów
+    diet/                   dieta: baza Dexie (`produkty-pl-dieta`, wersja 6 z zestawami, ulubionymi, planami z zakupami, badaniami oraz błonnikiem, cukrami i solą we wpisach), jeden cel na dzień z historią celów i szacunkiem NASEM (`target.ts`), trend wagi i tempo (`trend.ts`), poniedziałkowe sprawdzenie (`calibrate.ts`), przejście starych profili (`upgrade.ts`), zapis profilu (`edit.ts`), sposoby odżywiania, dzień, plan z Excela, zestawy, ulubione, wyszukiwanie, podpowiedzi, większy posiłek (`cheat.ts`), kopiowanie wpisów (`copy.ts`), woda (`water.ts`), okno jedzenia (`fasting.ts`) — 359 testów
     prep/                   plan z zakupami (meal prep): bloki gotowania, przepisy z koszyka, wybór ról i lista zamienników, porcje i dodatki, cele dni z dzisiejszego celu, lista zakupów, nazwa, przesuwanie dat, pierwszeństwo w dzienniku, migawka w bazie, odczyt z kopii — 120 testów
     restaurants/            lokale: dane sieci (`data/*.json`), kontrola liczb, wyszukiwanie, kolejność, „Najwięcej białka”, stan w adresie — 101 testów
     hooks/                  baza produktów, menu lokali, dieta na żywo i scalona z treningiem, poniedziałkowe sprawdzenie, stan w adresie, lokalizacja, sklepy w pobliżu (z zapasem i samoczynnym ponowieniem), szukanie kodu, porównanie — 26 testów
@@ -2836,7 +2873,10 @@ i imporcie zepsuty zegar albo czas odpada, a trening zostaje.
 
 **Jedzenie leży osobno, w IndexedDB** (baza `produkty-pl-dieta`, Dexie): profil diety, dni, wpisy,
 plan z Excela, własne potrawy, zestawy i ulubione (wersje 2 i 3 bazy; starsza baza i starsza kopia
-bez nich wczytują się bez zmian) — jest ich za dużo i są po dniach, więc nie pasują do jednego zapisu
+bez nich wczytują się bez zmian). Wersja 6 dokłada wpisom błonnik, cukry i sól (wpisy sprzed niej
+dostają `null` — nieznane, nie zero), dniom wodę (`water`, `waterAdds`), a profilowi „Pokazuj wodę”,
+cel wody i okno jedzenia z ostatnim postem; to wszystko jedzie w kopii zapasowej, a kopia bez tych
+pól wczytuje się z pustymi wartościami — jest ich za dużo i są po dniach, więc nie pasują do jednego zapisu
 `localStorage`. Waga ma jedno źródło: ważenia z diety, z kopii diety albo z planu z Excela przy
 wejściu w Jedzenie przechodzą do dziennika wagi i znikają z diety; kroki dieta czyta z wpisów
 i zegarka. Eksport z Ustawień zapisuje jeden plik — trening, a gdy dziennik jedzenia ma cokolwiek
@@ -2858,9 +2898,9 @@ same. Service worker zdjęć nie trzyma, więc nie ma tu nic do zapomnienia po j
 **Eksport do arkusza (CSV).** Ustawienia → „Eksport do arkusza (CSV)” zapisuje jeden z trzech
 plików: treningi (wiersz na serię: data, trening, ćwiczenie, seria, powtórzenia albo sekundy,
 ciężar, wysiłek i zapas powtórzeń, czas treningu), ciało (dzień z ważeniem i obwodami, waga z dwoma miejscami po przecinku)
-i jedzenie (wiersz na wpis: data, godzina, nazwa, ilość, kcal, białko, węglowodany, tłuszcz,
-a błonnik, cukry i sól tylko wtedy, gdy któryś wpis je zna). Wpis jedzenia nie zapisuje pory
-posiłku, więc plik jej nie ma — jest godzina. Brak danych to pusta komórka, nie zero. Format idzie
+i jedzenie (wiersz na wpis: data, godzina, posiłek, nazwa, ilość, kcal, białko, węglowodany, tłuszcz,
+a błonnik, cukry i sól tylko wtedy, gdy któryś wpis je zna). Posiłek idzie z zegara, tak samo jak
+w dzienniku: śniadanie przed 11:00, obiad do 17:00, kolacja potem. Brak danych to pusta komórka, nie zero. Format idzie
 za językiem: po polsku średnik i przecinek dziesiętny (tak otwiera plik polski Excel), po angielsku
 przecinek i kropka; UTF-8 z BOM, wiersze kończy CRLF. Tekst zaczynający się od `=`, `+`, `-` albo
 `@` dostaje apostrof, żeby nazwa potrawy nie stała się formułą. Plik powstaje w przeglądarce

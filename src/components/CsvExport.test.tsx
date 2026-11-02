@@ -93,7 +93,7 @@ describe('eksport do arkusza', () => {
     await waitFor(() => expect(files).toHaveLength(1));
     expect(files[0]!.name).toMatch(/^gym-tracker-jedzenie-/);
     const food = await read(files[0]!.blob);
-    expect(food).toContain('2026-10-05;08:00;Jajecznica;3 jaja;270;19;1;21\r\n');
+    expect(food).toContain('2026-10-05;08:00;Śniadanie;Jajecznica;3 jaja;270;19;1;21\r\n');
     expect(toasts.at(-1)).toBe('Plik gotowy: 2 wiersze.');
   }, 15_000);
 

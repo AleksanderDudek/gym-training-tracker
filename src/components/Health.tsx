@@ -50,6 +50,7 @@ const T = text({
     ) as ReactNode,
     food: 'Cele, plany i propozycje jedzenia to ogólne wskazówki, nie zalecenie dla Ciebie. Każdy organizm jest inny — co i ile jeść, ustal z lekarzem lub dietetykiem.',
     labs: 'To informacje, nie diagnoza ani leczenie. Propozycje jedzenia wynikają z ogólnych zaleceń, nie z oceny Twojego zdrowia — wyniki i każdą zmianę diety, leków czy suplementów omów z lekarzem. Zakresy dotyczą dorosłych; w ciąży i u dzieci są inne.',
+    fast: 'Post przerywany nie jest dla osób w ciąży, karmiących piersią, z cukrzycą na lekach ani z zaburzeniami odżywiania — jeśli to Ciebie dotyczy, najpierw porozmawiaj z lekarzem.',
     more: 'Więcej o zdrowiu i bezpieczeństwie',
     ackTitle: 'Zanim skorzystasz z podpowiedzi o jedzeniu',
     ack: [
@@ -83,6 +84,8 @@ const T = text({
           lat, albo chcesz schudnąć dużo lub szybko.
         </>
       ) as ReactNode,
+      foodFast:
+        'Okno jedzenia (post przerywany) w profilu diety jest opcją, nie zaleceniem: przy tej samej liczbie kalorii badania nie pokazują przewagi postu nad zwykłym jedzeniem. Okno nie zmienia celu kalorii. Nie korzystaj z niego w ciąży, podczas karmienia, przy cukrzycy leczonej lekami ani przy zaburzeniach odżywiania bez rozmowy z lekarzem.',
       edTitle: 'Relacja z jedzeniem',
       ed: 'Liczenie kalorii i ważenie nie każdemu służą. Jeśli budzą niepokój albo poczucie winy, jeśli pomijasz posiłki, objadasz się, prowokujesz wymioty albo ćwiczysz, żeby „spalić” jedzenie — albo masz za sobą zaburzenia odżywiania — nie korzystaj z celu kalorii bez opieki specjalisty. W profilu diety możesz włączyć tryb „Bez liczenia kalorii”. Z tym, co się dzieje, możesz pójść do lekarza rodzinnego, psychologa lub psychiatry.',
       labsTitle: 'Wyniki badań',
@@ -132,6 +135,7 @@ const T = text({
     ),
     food: 'Targets, plans and food suggestions are general guidance, not advice for you. Every body is different — what and how much to eat is something to settle with a doctor or a dietitian.',
     labs: 'This is information, not a diagnosis or treatment. Food suggestions follow general guidelines, not an assessment of your health — discuss your results and any change to diet, medicines or supplements with a doctor. Ranges are for adults; they differ in pregnancy and for children.',
+    fast: 'Intermittent fasting isn’t for people who are pregnant, breastfeeding, have diabetes treated with medicines or have an eating disorder — if that’s you, talk to a doctor first.',
     more: 'More on health and safety',
     ackTitle: 'Before you use the food suggestions',
     ack: [
@@ -165,6 +169,8 @@ const T = text({
           lot of weight or lose it fast.
         </>
       ),
+      foodFast:
+        'The eating window (intermittent fasting) in the diet profile is an option, not advice: at the same calories, studies don’t show fasting doing better than ordinary eating. The window doesn’t change your calorie target. Don’t use it in pregnancy, while breastfeeding, with diabetes treated with medicines or with an eating disorder without talking to a doctor.',
       edTitle: 'Your relationship with food',
       ed: 'Counting calories and weighing yourself don’t suit everyone. If they bring anxiety or guilt, if you skip meals, binge, make yourself sick or exercise to “burn off” food — or you have had an eating disorder — don’t use the calorie target without a specialist’s care. In the diet profile you can turn on “No calorie counting”. You can take what is going on to a GP, a psychologist or a psychiatrist.',
       labsTitle: 'Lab results',
@@ -202,9 +208,12 @@ export const FOOD_SHORT = T.food;
 /** Krótka wersja przy badaniach — mocniejsza, bo wnioski idą z wyników tej osoby. */
 export const LABS_SHORT = T.labs;
 
-type NoteKind = 'train' | 'food' | 'labs';
+/** Przy oknie jedzenia (post przerywany): komu post nie służy bez rozmowy z lekarzem. */
+export const FAST_SHORT = T.fast;
 
-const SHORT: Record<NoteKind, string> = { train: T.short, food: T.food, labs: T.labs };
+type NoteKind = 'train' | 'food' | 'labs' | 'fast';
+
+const SHORT: Record<NoteKind, string> = { train: T.short, food: T.food, labs: T.labs, fast: T.fast };
 
 /**
  * Jedna linijka przy podpowiedzi. `more` dokłada odnośnik do pełnej strony — przy jedzeniu
@@ -305,6 +314,7 @@ export function HealthPage() {
         <h2 id="health-food">{P.foodTitle}</h2>
         <p className="tight">{P.foodEstimate}</p>
         <p className="tight">{P.foodFirst}</p>
+        <p className="tight">{P.foodFast}</p>
       </section>
 
       <section className="grp" aria-labelledby="health-ed">

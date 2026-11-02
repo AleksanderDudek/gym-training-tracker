@@ -879,6 +879,9 @@
 
   .banner.with-cast{display:grid;grid-template-columns:44px 1fr;gap:12px;align-items:start}
   .toast.with-cast{display:flex;gap:10px;align-items:center;padding:8px 14px 8px 8px}
+  /* Komunikat z przyciskiem („Cofnij”): tekst bierze resztę miejsca, przycisk odwrócony jak w pasku nowej wersji. */
+  .toast-text{flex:1 1 auto;min-width:0}
+  .toast .toast-action{flex:0 0 auto;background:var(--surface);border-color:var(--surface);color:var(--steel)}
   /* Okrągłe okno w kolorze karty: na stalowym pasku sama sierść byłaby plamą. */
   .toast.with-cast .cast-face{background:var(--surface);border-radius:50%;padding:2px}
   .mbox.with-cast{position:relative;padding-top:18px}

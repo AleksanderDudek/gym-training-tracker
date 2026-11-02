@@ -124,7 +124,7 @@ import { withExtension, withWeekdays } from './engine/planedit';
 import { BridgeContext } from './food/bridge';
 import { measuresOf, removeMeasures, restoreMeasures, setMeasures, type MeasureInput } from './engine/measures';
 import { countPhotos, forgetPhotos } from './silhouette';
-import type { GymBridge } from './food/bridge';
+import type { GymBridge, ToastAction } from './food/bridge';
 import { LoadBoundary } from './components/LoadBoundary';
 import { WorkoutNote } from './components/Notes';
 import { restoreNotes, setLogNotes, setSessionNote } from './engine/notes';
@@ -711,7 +711,13 @@ export default function App() {
   useEffect(() => {
     trail.view(`${currentPath()} · ${screenOf(route).title}`);
   }, [route]);
-  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  // Komunikat na dole ekranu; jedzenie może dołożyć do niego przycisk („Cofnij” po skopiowaniu dnia).
+  const [toast, setToast] = useState<{ msg: string; action: ToastAction | null } | null>(null);
+  const setToastMsg = useCallback((msg: string | null) => setToast(msg === null ? null : { msg, action: null }), []);
+  const showToast = useCallback(
+    (msg: string, action?: ToastAction) => setToast({ msg, action: action ?? null }),
+    [],
+  );
   const [saveBroken, setSaveBroken] = useState(false);
   const [replayIntro, setReplayIntro] = useState(false);
   // Wejście linkiem do karty urządzenia (`#/zegarek?model=…` z opisu w Connect IQ Store,
@@ -832,12 +838,12 @@ export default function App() {
         snacks: snacksOn(state, day).length,
         outings: outingsOn(state, day),
       }),
-      toast: setToastMsg,
+      toast: showToast,
       // To samo pominięcie co karta ważenia na ekranie Dziś (`cfg.weighSkip`, dzień jak w `Weigh`).
       weighSkipped: () => state.cfg.weighSkip === weighDay(),
       skipWeigh: () => bridgeWrites.current?.skipWeigh(),
     };
-  }, [state]);
+  }, [state, showToast]);
 
   /*
    * Ważenia z dziennika diety (dawne Produkty PL na tej samej domenie, kopia diety albo plan
@@ -884,7 +890,7 @@ export default function App() {
         moving.current = false;
       }
     })();
-  }, [onFood, loaded, commit]);
+  }, [onFood, loaded, commit, setToastMsg]);
 
   // Lista przypomnień na serwerze idzie za stanem: po zmianie planu albo zapisanym treningu
   // i po powrocie do aplikacji następnego dnia. Bez serwera w buildzie, bez zgody albo bez
@@ -2371,7 +2377,7 @@ export default function App() {
       {/* Nowa wersja czeka na koniec treningu: przeładowanie w środku serii zgubiłoby miejsce. */}
       <UpdateBar hold={!!state.session} />
       <Modal req={req} />
-      <Toast msg={toastMsg} onDone={() => setToastMsg(null)} />
+      <Toast msg={toast?.msg ?? null} action={toast?.action} onDone={() => setToastMsg(null)} />
     </>
   );
 }

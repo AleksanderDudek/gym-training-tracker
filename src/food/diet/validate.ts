@@ -7,12 +7,15 @@ import type { Plan, PlanItem, PlanVariant } from './plan';
 import { DIET_PROFILE_IDS } from './profiles';
 import { safePace, setTarget, targetFor, targetOn } from './target';
 import {
+  EXTRAS,
+  FAST_PLANS,
   MODEL_DEFAULTS,
   type ActivityLevel,
   type CheckFacts,
   type CheckNote,
   type CheckReason,
   type CheckStatus,
+  type Fast,
   type GoalBy,
   type GoalChange,
   type Hold,
@@ -61,6 +64,8 @@ export const PROFILE_RANGES = {
   goalPace: [-0.5, 1],
   /** What the Monday check learned, kcal a day. */
   burnOffset: [-1500, 1500],
+  /** The own drinks target, ml a day. */
+  waterMl: [500, 5000],
 } as const satisfies Partial<Record<keyof Profile, readonly [number, number]>>;
 
 /**
@@ -153,6 +158,10 @@ export function newProfile(partial: Partial<Profile & LegacyFields>, today: stri
     notice: null,
     dietProfile: 'redukcja' as const,
     preferredStore: null,
+    showWater: true,
+    waterMl: null,
+    fastPlan: null,
+    fast: null,
     ...partial,
   };
   const goalPace = partial.goalPace ?? safePace(merged, merged.startWeightKg, FIRST_PACE[goalDirection(merged)]);
@@ -347,7 +356,23 @@ function v2Fields(raw: Record<string, unknown>): Partial<Profile> {
   if (settle) out.settle = settle;
   out.reached = cleanReached(raw.reached);
   if (raw.notice === 'show' || raw.notice === 'seen' || raw.notice === null) out.notice = raw.notice;
+  if (typeof raw.showWater === 'boolean') out.showWater = raw.showWater;
+  if (raw.waterMl === null) out.waterMl = null;
+  else if (finite(raw.waterMl)) out.waterMl = Math.round(clamp(raw.waterMl, PROFILE_RANGES.waterMl) / 50) * 50;
+  if (raw.fastPlan === null || oneOf(FAST_PLANS, raw.fastPlan)) out.fastPlan = raw.fastPlan;
+  out.fast = cleanFast(raw.fast);
   return out;
+}
+
+/** A local time as the fasting card stores it: a real day and HH:MM. */
+const isLocalTime = (v: unknown): v is string =>
+  typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T([01]\d|2[0-3]):[0-5]\d$/.test(v) && isCalendarDate(v.slice(0, 10));
+
+/** The current or last fast: a start, and an end not before it (or none while it lasts). */
+function cleanFast(raw: unknown): Fast | null {
+  if (!isObject(raw) || !isLocalTime(raw.start)) return null;
+  const end = isLocalTime(raw.end) && raw.end >= raw.start ? raw.end : null;
+  return { start: raw.start, end };
 }
 
 /**
@@ -408,9 +433,26 @@ export function cleanProfile(input: unknown, ctx: CleanContext): Profile & Legac
   );
 }
 
+/** Fibre, sugars and salt that the row has: a readable amount, or null; a key the row lacks stays out. */
+function cleanExtras(raw: Record<string, unknown>): Partial<Pick<Nutrients, 'fiber' | 'sugars' | 'salt'>> {
+  const out: Partial<Pick<Nutrients, 'fiber' | 'sugars' | 'salt'>> = {};
+  for (const key of EXTRAS) {
+    if (!(key in raw)) continue;
+    const value = raw[key];
+    out[key] = finite(value) && value >= 0 ? value : null;
+  }
+  return out;
+}
+
 function cleanNutrients(raw: Record<string, unknown>): Nutrients | null {
   if (!finite(raw.kcal) || raw.kcal < 0) return null;
-  return { kcal: raw.kcal, protein: orNull(raw.protein), carbs: orNull(raw.carbs), fat: orNull(raw.fat) };
+  return {
+    kcal: raw.kcal,
+    protein: orNull(raw.protein),
+    carbs: orNull(raw.carbs),
+    fat: orNull(raw.fat),
+    ...cleanExtras(raw),
+  };
 }
 
 export function cleanEntry(raw: unknown): Entry | null {
@@ -462,8 +504,17 @@ export function cleanDay(raw: unknown): DayRow | null {
     ...(cheat && { cheat }),
     ...(typeof raw.partial === 'boolean' && { partial: raw.partial }),
     ...(isObject(raw.labHabits) && { labHabits: cleanHabits(raw.labHabits) }),
+    ...(finite(raw.water) && raw.water > 0 && { water: Math.min(Math.round(raw.water), WATER_MAX_ML) }),
+    ...(Array.isArray(raw.waterAdds) && {
+      waterAdds: raw.waterAdds.filter((v): v is number => finite(v) && v > 0 && v <= 2000).slice(-WATER_ADDS_KEPT),
+    }),
   };
 }
+
+/** A day's water stops here (20 l): more is a typo, not a day. */
+export const WATER_MAX_ML = 20_000;
+/** Additions „−” can take back, the newest. */
+export const WATER_ADDS_KEPT = 20;
 
 /** Habit ticks of a day: small whole counts under short keys. */
 function cleanHabits(raw: Record<string, unknown>): Record<string, number> {
@@ -578,7 +629,13 @@ function cleanFood(raw: unknown): Food | null {
   const p = isObject(raw.per100) ? raw.per100 : null;
   const per100 =
     p && [p.kcal, p.protein, p.carbs, p.fat].every(finite)
-      ? { kcal: p.kcal as number, protein: p.protein as number, carbs: p.carbs as number, fat: p.fat as number }
+      ? {
+          kcal: p.kcal as number,
+          protein: p.protein as number,
+          carbs: p.carbs as number,
+          fat: p.fat as number,
+          ...cleanExtras(p),
+        }
       : null;
   return {
     key: raw.key,

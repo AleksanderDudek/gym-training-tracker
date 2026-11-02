@@ -57,8 +57,23 @@ describe('foods', () => {
       makeProduct({ code: '2', name: 'Skyr', quantity: '150 g', nutrition: n(63, 11, 4, 0.2) }),
       dict,
     )!;
-    expect(skyr.nutrients).toEqual({ kcal: 95, protein: 16.5, carbs: 6, fat: 0.3 });
+    // A label without fibre, sugars and salt: unknown, never zero.
+    expect(skyr.nutrients).toEqual({ kcal: 95, protein: 16.5, carbs: 6, fat: 0.3, fiber: null, sugars: null, salt: null });
     expect(withGrams(skyr, 300).nutrients.protein).toBe(33);
+  });
+
+  test('fibre, sugars and salt from the label scale with the grams', () => {
+    const oats = productFood(
+      makeProduct({
+        code: '3',
+        name: 'Płatki owsiane',
+        quantity: '50 g',
+        nutrition: { ...n(372, 13, 60, 7), fiber: 10, sugars: 1.2, salt: 0.02 },
+      }),
+      dict,
+    )!;
+    expect(oats.nutrients).toMatchObject({ fiber: 5, sugars: 0.6, salt: 0.01 });
+    expect(withGrams(oats, 100).nutrients).toMatchObject({ fiber: 10, sugars: 1.2, salt: 0.02 });
   });
 
   test('a product without full nutrition cannot be planned', () => {

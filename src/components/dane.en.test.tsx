@@ -67,8 +67,8 @@ describe('spreadsheet export (English)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Food' }));
     await waitFor(() => expect(files).toHaveLength(2));
     const food = await read(files[1]!.blob);
-    expect(food).toContain('Date,Time,Name,Amount,kcal,Protein (g),Carbs (g),Fat (g)\r\n');
-    expect(food).toContain('2026-10-05,08:00,"Eggs, scrambled",3 eggs,270,19,1.5,21\r\n');
+    expect(food).toContain('Date,Time,Meal,Name,Amount,kcal,Protein (g),Carbs (g),Fat (g)\r\n');
+    expect(food).toContain('2026-10-05,08:00,Breakfast,"Eggs, scrambled",3 eggs,270,19,1.5,21\r\n');
 
     fireEvent.click(screen.getByRole('button', { name: 'Workouts' }));
     await waitFor(() => expect(toasts.at(-1)).toBe('There are no workouts saved yet — the file would be empty.'));

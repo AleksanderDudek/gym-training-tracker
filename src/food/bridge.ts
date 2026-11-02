@@ -30,8 +30,11 @@ export interface GymBridge {
    * ich nie liczy. Ruch nie zmienia celu jedzenia: dieta go pokazuje (tabela tygodni), nic nie dolicza.
    */
   moveOn(day: string): MoveDay;
-  /** Krótka wiadomość na dole ekranu — ta sama, co po zapisie w treningach. */
-  toast(message: string): void;
+  /**
+   * Krótka wiadomość na dole ekranu — ta sama, co po zapisie w treningach. Z `action` dostaje
+   * przycisk (np. „Cofnij” po skopiowaniu dnia) i stoi dłużej, żeby dało się go stuknąć.
+   */
+  toast(message: string, action?: ToastAction): void;
   /**
    * Czy dziś ktoś odpowiedział „Nie dziś” na pytanie o wagę — w dzienniku albo na ekranie Dziś:
    * jedno pytanie, jedno pominięcie. Opcjonalne: brak to „nie pominięto”.
@@ -39,6 +42,12 @@ export interface GymBridge {
   weighSkipped?(): boolean;
   /** „Nie dziś” w karcie wagi dziennika: zapamiętuje pominięcie na dziś, jak karta na ekranie Dziś. */
   skipWeigh?(): void;
+}
+
+/** Przycisk w komunikacie: etykieta i to, co robi. Komunikat znika po stuknięciu. */
+export interface ToastAction {
+  label: string;
+  run: () => void;
 }
 
 export interface MoveDay {

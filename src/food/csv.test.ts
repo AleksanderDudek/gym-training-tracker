@@ -24,25 +24,25 @@ const entry = (over: Partial<Entry> & Record<string, unknown> = {}): Entry => ({
 });
 
 describe('jedzenie — wiersz na wpis', () => {
-  it('data, godzina, nazwa, ilość, kcal i makro; brak makro to pusta komórka', () => {
+  it('data, godzina, posiłek z zegara, nazwa, ilość, kcal i makro; brak makro to pusta komórka', () => {
     const out = foodCsv(
       [entry({ date: '2026-10-05', time: '13:00', name: 'Zupa; pomidorowa', amountLabel: '1,5 talerza', kcal: 180, protein: null, carbs: null, fat: null, source: 'quick' }), entry()],
       PL,
     );
     expect(out.rows).toBe(2);
     expect(lines(out.text)).toEqual([
-      'Data;Godzina;Nazwa;Ilość;kcal;Białko (g);Węglowodany (g);Tłuszcz (g)',
-      '2026-10-05;08:10;Owsianka z bananem;1 porcja (350 g);412;14,2;68;9,5',
-      '2026-10-05;13:00;"Zupa; pomidorowa";1,5 talerza;180;;;',
+      'Data;Godzina;Posiłek;Nazwa;Ilość;kcal;Białko (g);Węglowodany (g);Tłuszcz (g)',
+      '2026-10-05;08:10;Śniadanie;Owsianka z bananem;1 porcja (350 g);412;14,2;68;9,5',
+      '2026-10-05;13:00;Obiad;"Zupa; pomidorowa";1,5 talerza;180;;;',
     ]);
   });
 
   it('błonnik, cukry i sól — gdy wpisy je mają; wpis bez nich ma puste komórki', () => {
     const out = foodCsv([entry({ fiber: 7.1, sugars: 15, salt: 0.4 }), entry({ time: '19:00' })], PL);
     expect(lines(out.text)).toEqual([
-      'Data;Godzina;Nazwa;Ilość;kcal;Białko (g);Węglowodany (g);Tłuszcz (g);Błonnik (g);Cukry (g);Sól (g)',
-      '2026-10-05;08:10;Owsianka z bananem;1 porcja (350 g);412;14,2;68;9,5;7,1;15;0,4',
-      '2026-10-05;19:00;Owsianka z bananem;1 porcja (350 g);412;14,2;68;9,5;;;',
+      'Data;Godzina;Posiłek;Nazwa;Ilość;kcal;Białko (g);Węglowodany (g);Tłuszcz (g);Błonnik (g);Cukry (g);Sól (g)',
+      '2026-10-05;08:10;Śniadanie;Owsianka z bananem;1 porcja (350 g);412;14,2;68;9,5;7,1;15;0,4',
+      '2026-10-05;19:00;Kolacja;Owsianka z bananem;1 porcja (350 g);412;14,2;68;9,5;;;',
     ]);
   });
 
@@ -53,7 +53,7 @@ describe('jedzenie — wiersz na wpis', () => {
 
   it('po angielsku przecinek i kropka, nazwa z przecinkiem w cudzysłowie', () => {
     const out = foodCsv([entry({ name: 'Chicken, rice', amountLabel: '300 g' })], EN);
-    expect(lines(out.text)[1]).toBe('2026-10-05,08:10,"Chicken, rice",300 g,412,14.2,68,9.5');
+    expect(lines(out.text)[1]).toBe('2026-10-05,08:10,Śniadanie,"Chicken, rice",300 g,412,14.2,68,9.5');
   });
 
   it('po dniu i godzinie, niezależnie od kolejności w bazie', () => {

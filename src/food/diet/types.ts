@@ -166,6 +166,24 @@ export interface Profile {
   dietProfile: DietProfileId;
   /** Chain key to plan around when nothing nearby is known (null: any). */
   preferredStore: string | null;
+  /** „Pokazuj wodę”: the water card in the diary (on by default). */
+  showWater: boolean;
+  /** The person's own drinks target, ml a day; null: the EFSA value for sex and pregnancy (`water.ts`). */
+  waterMl: number | null;
+  /** „Okno jedzenia” (intermittent fasting): the chosen split, null while off (the default). */
+  fastPlan: FastPlan | null;
+  /** The current or the last fast, as the person started and ended it; null before the first. */
+  fast: Fast | null;
+}
+
+/** Fasting hours : eating-window hours. */
+export const FAST_PLANS = ['12:12', '14:10', '16:8', '18:6'] as const;
+export type FastPlan = (typeof FAST_PLANS)[number];
+
+/** A fast: local times `YYYY-MM-DDTHH:MM`; `end` null while it lasts. Never touches a food target. */
+export interface Fast {
+  start: string;
+  end: string | null;
 }
 
 /** The model's defaults for what a person does not have to know. */
@@ -177,6 +195,22 @@ export interface Nutrients {
   protein: number | null;
   carbs: number | null;
   fat: number | null;
+  /**
+   * Fibre, total sugars and salt (g), when the source knows them. Optional: foods made before they
+   * were known (a set, a favourite, an old entry) have none, and none is unknown, never zero.
+   */
+  fiber?: number | null;
+  sugars?: number | null;
+  salt?: number | null;
 }
+
+/** The three extras of the day balance („Więcej: …”). */
+export const EXTRAS = ['fiber', 'sugars', 'salt'] as const;
+export type Extra = (typeof EXTRAS)[number];
+export type Extras = Record<Extra, number | null>;
+
+/** Grams of an extra rounded as the labels print them: salt to 0.01 g, fibre and sugars to 0.1 g. */
+export const roundExtra = (key: Extra, grams: number): number =>
+  key === 'salt' ? Math.round(grams * 100) / 100 : Math.round(grams * 10) / 10;
 
 export type { Macros };

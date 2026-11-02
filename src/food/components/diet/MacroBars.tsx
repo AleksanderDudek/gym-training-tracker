@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
 import { pluralEn, text } from '../../../i18n';
-import { dayState, type DayTotals } from '../../diet/day';
+import { EXTRA_TARGETS, dayState, type DayTotals, type ExtraTotal } from '../../diet/day';
 import type { DayNeeds } from '../../diet/now';
 import { kcalStatus } from '../../diet/target';
+import type { Extra } from '../../diet/types';
 import { formatNumber, plural } from '../../lib/format';
 import { dayLines, gramsOf, kcalOf, overLine } from './dayText';
 import { DT } from './dietText';
@@ -19,8 +20,20 @@ const T = text({
     unknown: (count: number) =>
       `${count} ${plural(count, 'wpis ma', 'wpisy mają', 'wpisów ma')} tylko kalorie – suma białka może być zaniżona.`,
     carbsFat: 'Węglowodany i tłuszcz',
+    more: 'Więcej: węglowodany, tłuszcz, błonnik, cukry, sól',
     limit: (eaten: string, max: string) => `${eaten} z ${max} g (limit)`,
     overLimit: (eaten: string, max: string, over: string) => `${eaten} z ${max} g — ${over} g ponad limit`,
+    fiber: 'Błonnik',
+    sugars: 'Cukry',
+    salt: 'Sól',
+    atLeast: (value: string) => `co najmniej ${value}`,
+    of: (eaten: string, target: string) => `${eaten} z ${target} g`,
+    grams: (eaten: string) => `${eaten} g`,
+    ceiling: 'górna granica',
+    missing: (count: number) => `bez danych w ${count} ${count === 1 ? 'wpisie' : 'wpisach'}`,
+    noData: 'bez danych we wpisach',
+    extrasNote:
+      'Błonnik: co najmniej 25 g dziennie (EFSA). Sól: najwyżej 5 g dziennie (WHO). Cukry to cukry ogółem z etykiet, także te z owoców i mleka — zalecenie WHO dotyczy cukrów dodanych, więc tu nie ma celu. Wpisy bez tych danych (szybkie, starsze, puste etykiety) nie wchodzą do sumy.',
   },
   en: {
     balance: 'Day balance',
@@ -30,8 +43,20 @@ const T = text({
     unknown: (count: number) =>
       `${count} ${pluralEn(count, 'entry has', 'entries have')} calories only – the protein total may be too low.`,
     carbsFat: 'Carbs and fat',
+    more: 'More: carbs, fat, fibre, sugars, salt',
     limit: (eaten: string, max: string) => `${eaten} of ${max} g (limit)`,
     overLimit: (eaten: string, max: string, over: string) => `${eaten} of ${max} g — ${over} g over the limit`,
+    fiber: 'Fibre',
+    sugars: 'Sugars',
+    salt: 'Salt',
+    atLeast: (value: string) => `at least ${value}`,
+    of: (eaten: string, target: string) => `${eaten} of ${target} g`,
+    grams: (eaten: string) => `${eaten} g`,
+    ceiling: 'upper limit',
+    missing: (count: number) => `no data in ${count} ${pluralEn(count, 'entry', 'entries')}`,
+    noData: 'no data in the entries',
+    extrasNote:
+      'Fibre: at least 25 g a day (EFSA). Salt: at most 5 g a day (WHO). Sugars are total sugars from the labels, including those from fruit and milk — the WHO advice is about added sugars, so there is no target here. Entries without these values (quick ones, older ones, blank labels) are left out of the sum.',
   },
 });
 
@@ -40,7 +65,20 @@ const T = text({
  * it do. A minimum to reach (protein) simply fills up when it is done; a ceiling (calories) stops
  * full, and the sentence above says by how much it went over.
  */
-export function Bar({ value, target, label, unit }: { value: number; target: number; label: string; unit: 'g' | 'kcal' }) {
+export function Bar({
+  value,
+  target,
+  label,
+  unit,
+  valueText,
+}: {
+  value: number;
+  target: number;
+  label: string;
+  unit: 'g' | 'kcal';
+  /** Słowami dla czytnika ekranu, gdy liczby nie są całe (sól, woda); bez tego „96 z 150 g”. */
+  valueText?: string;
+}) {
   const share = target > 0 ? Math.min(1, Math.max(0, value / target)) : 0;
   return (
     <div
@@ -50,7 +88,7 @@ export function Bar({ value, target, label, unit }: { value: number; target: num
       aria-valuemin={0}
       aria-valuemax={Math.round(target)}
       aria-valuenow={Math.round(Math.min(Math.max(0, value), target))}
-      aria-valuetext={unit === 'g' ? gramsOf(value, target) : kcalOf(value, target)}
+      aria-valuetext={valueText ?? (unit === 'g' ? gramsOf(value, target) : kcalOf(value, target))}
     >
       <i style={{ width: `${share * 100}%` }} />
     </div>
@@ -58,7 +96,7 @@ export function Bar({ value, target, label, unit }: { value: number; target: num
 }
 
 /** One macro: its name and „96 z 150 g” in a row, the bar under them. */
-function Row({ label, value, children }: { label: string; value: string; children: ReactNode }) {
+function Row({ label, value, children }: { label: string; value: string; children?: ReactNode }) {
   return (
     <div className="fd-diet-macro">
       <div className="fd-diet-macro-head">
@@ -77,18 +115,35 @@ interface Props {
   eaten: DayTotals;
   /** Today says what is left; a closed day what was eaten; a day still to come its target. */
   when: 'today' | 'past' | 'future';
+  /** Błonnik, cukry i sól z wpisów dnia (`extraTotals`); bez nich zwinięta sekcja ma tylko węglowodany i tłuszcz. */
+  extras?: Record<Extra, ExtraTotal>;
   /** The day's actions under the numbers — „Dodaj zjedzone”, „Ulubione”, „Większy posiłek”. */
   children?: ReactNode;
+}
+
+/** Gramy dodatku tak, jak na etykiecie: sól do 0,1 g, błonnik i cukry do 1 g (od 10 g w górę) albo 0,1 g. */
+const extraNum = (key: Extra, grams: number) => formatNumber(grams, key === 'salt' || grams < 10 ? 1 : 0);
+
+/**
+ * Wiersz dodatku: „18 z 25 g”, „co najmniej 18 z 25 g (bez danych w 2 wpisach)”, sól z „górną
+ * granicą”, cukry same gramy. Wpis bez danych nie liczy się jako zero — suma jest wtedy „co najmniej”.
+ */
+function extraText(key: Extra, t: ExtraTotal): string {
+  if (t.known === 0 && t.missing > 0) return T.noData;
+  const target = key === 'sugars' ? null : EXTRA_TARGETS[key];
+  const amount = target === null ? T.grams(extraNum(key, t.grams)) : T.of(extraNum(key, t.grams), formatNumber(target, 0));
+  const notes = [key === 'salt' ? T.ceiling : null, t.missing > 0 ? T.missing(t.missing) : null].filter(Boolean);
+  return `${t.missing > 0 ? T.atLeast(amount) : amount}${notes.length ? ` (${notes.join('; ')})` : ''}`;
 }
 
 /**
  * The day card (spec §4.2): the same headline as the Today card („Zostało ok. 650 kcal i 54 g
  * białka”), protein and calories with their numbers, the calm over and planned-meal lines, and
- * carbohydrates and fat folded away — open for diets with a carb limit. A closed day says what was
+ * carbohydrates, fat, fibre, sugars and salt folded away — open for diets with a carb limit. A closed day says what was
  * eaten against its own target; ±100 kcal is still the target there too. Without calories on
  * screen only the protein row is left.
  */
-export function MacroBars({ needs, eaten, when, children }: Props) {
+export function MacroBars({ needs, eaten, when, extras, children }: Props) {
   const shown = useKcalShown();
   const { targets } = needs;
   const today = when === 'today' ? dayLines(dayState(needs, eaten), shown) : null;
@@ -129,7 +184,7 @@ export function MacroBars({ needs, eaten, when, children }: Props) {
       {shown && (
         // Diets with a carb limit (keto, low carb) watch carbohydrates every day: open from the start.
         <details className="fd-diet-carbsfat" open={carbsMax !== null}>
-          <summary>{T.carbsFat}</summary>
+          <summary>{extras ? T.more : T.carbsFat}</summary>
           <div className="fd-diet-macros">
             <Row label={DT.carbs} value={carbs}>
               <Bar value={eaten.carbs} target={carbsMax ?? targets.carbs.target} label={DT.carbs} unit="g" />
@@ -137,7 +192,32 @@ export function MacroBars({ needs, eaten, when, children }: Props) {
             <Row label={DT.fat} value={gramsOf(eaten.fat, targets.fat.target)}>
               <Bar value={eaten.fat} target={targets.fat.target} label={DT.fat} unit="g" />
             </Row>
+            {extras && (
+              <>
+                <Row label={T.fiber} value={extraText('fiber', extras.fiber)}>
+                  <Bar
+                    value={extras.fiber.grams}
+                    target={EXTRA_TARGETS.fiber}
+                    label={T.fiber}
+                    unit="g"
+                    valueText={extraText('fiber', extras.fiber)}
+                  />
+                </Row>
+                {/* Cukry bez celu: same gramy, bez paska — pasek bez końca niczego nie mówi. */}
+                <Row label={T.sugars} value={extraText('sugars', extras.sugars)} />
+                <Row label={T.salt} value={extraText('salt', extras.salt)}>
+                  <Bar
+                    value={extras.salt.grams}
+                    target={EXTRA_TARGETS.salt}
+                    label={T.salt}
+                    unit="g"
+                    valueText={extraText('salt', extras.salt)}
+                  />
+                </Row>
+              </>
+            )}
           </div>
+          {extras && <p className="tight fd-diet-soft">{T.extrasNote}</p>}
         </details>
       )}
       {children}
