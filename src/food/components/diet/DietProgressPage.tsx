@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { pluralEn, text } from '../../../i18n';
 import { formatWeight } from '../../../engine/body';
+import { formatCm, formatCmChange } from '../../../engine/measures';
 import { STEP_GOAL } from '../../../engine/cardio';
 import { useBridge } from '../../bridge';
 import { totals, type DayTotals } from '../../diet/day';
@@ -32,6 +33,9 @@ const T = text({
     keeping: 'utrzymanie',
     targetWeight: (kg: string) => `waga docelowa ${kg}`,
     weight: 'Waga',
+    waistTitle: 'Talia',
+    waistSince: (d: string, day: string) => `${d} cm od ${day}`,
+    waistOnce: (day: string) => `pomiar ${day}`,
     pace: (weeks: number, kg: string, se: string) => `Tempo z ostatnich ${weeks} tygodni: ${kg} na tydzień (±${se}).`,
     noPace:
       'Za mało ważeń, żeby policzyć tempo — potrzebuję co najmniej 5 z 2 tygodni. Najlepiej waż się rano, kilka razy w tygodniu.',
@@ -76,6 +80,9 @@ const T = text({
     keeping: 'maintenance',
     targetWeight: (kg: string) => `target weight ${kg}`,
     weight: 'Weight',
+    waistTitle: 'Waist',
+    waistSince: (d: string, day: string) => `${d} cm since ${day}`,
+    waistOnce: (day: string) => `measured ${day}`,
     pace: (weeks: number, kg: string, se: string) => `Pace over the last ${weeks} weeks: ${kg} a week (±${se}).`,
     noPace:
       'Too few weigh-ins to work out a pace — I need at least 5 over 2 weeks. Weigh yourself in the morning, a few times a week.',
@@ -194,7 +201,10 @@ function projectionOf(trendKg: number, target: number, pace: number | null, toda
 
 function ProgressView({ profile, today, history }: { profile: Profile; today: string; history: History }) {
   const bridge = useBridge();
-  const { weights, stepsOn, moveOn } = bridge;
+  const { weights, waists, stepsOn, moveOn } = bridge;
+  // Talia z dziennika obwodów w profilu: ta sama liczba i ta sama zmiana od pierwszego pomiaru.
+  const waistFirst = waists[0];
+  const waistLast = waists.at(-1);
   const showKcal = !hidesKcal(profile);
   const direction = directionOf(profile.goalPace);
 
@@ -267,7 +277,7 @@ function ProgressView({ profile, today, history }: { profile: Profile; today: st
   return (
     <>
       <div className="wrap">
-        <div className="tiles fd-diet-stats">
+        <div className={`tiles fd-diet-stats${waistLast ? ' fd-diet-four' : ''}`}>
           <div className="tile">
             <b>{kg(trendKg)}</b>
             <span>
@@ -286,6 +296,17 @@ function ProgressView({ profile, today, history }: { profile: Profile; today: st
               {T.toGoTitle} · {T.targetWeight(kg(target))}
             </span>
           </div>
+          {waistLast && waistFirst && (
+            <div className="tile">
+              <b>{formatCm(waistLast.cm)} cm</b>
+              <span>
+                {T.waistTitle} ·{' '}
+                {waists.length > 1
+                  ? T.waistSince(formatCmChange(waistLast.cm - waistFirst.cm), dayMonth(waistFirst.day))
+                  : T.waistOnce(dayMonth(waistLast.day))}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 

@@ -23,6 +23,8 @@ import { durationText, timed, transitions } from '../engine/clock';
 import { formatClock } from './Timer';
 import { BodyCard, CardioSummary, kcalText } from './Cardio';
 import { PromoCard } from './Promo';
+import { SilhouetteCard } from './Silhouette';
+import type { MeasureInput } from '../engine/measures';
 import { LOCALE, pluralEn, text } from '../i18n';
 import type { AppState, ExerciseId, LogTime } from '../types';
 
@@ -303,6 +305,8 @@ export function ProfileView({
   onWeight,
   onHeight,
   onDeleteWeight,
+  onMeasures,
+  onDeleteMeasures,
   onToast,
 }: {
   state: AppState;
@@ -310,6 +314,8 @@ export function ProfileView({
   onWeight: (kg: number, day?: string) => void;
   onHeight: (cm: number | null) => void;
   onDeleteWeight: (day: string) => void;
+  onMeasures: (input: MeasureInput) => void;
+  onDeleteMeasures: (day: string) => void;
   onToast: (m: string) => void;
 }) {
   const m = metrics(state);
@@ -362,6 +368,7 @@ export function ProfileView({
         onDeleteWeight={onDeleteWeight}
         onToast={onToast}
       />
+      <SilhouetteCard state={state} onMeasures={onMeasures} onDeleteMeasures={onDeleteMeasures} onToast={onToast} />
       <LoadGauge state={state} />
       <SnackSummary state={state} />
       <CardioSummary state={state} />

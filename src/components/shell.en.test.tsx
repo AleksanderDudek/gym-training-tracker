@@ -225,7 +225,7 @@ describe('profile (English visit)', () => {
   it('profile tab: tiles, history and exercise list in English', async () => {
     const { state } = await withHistory();
     const { ProfileView } = await import('./Profile');
-    render(<ProfileView state={state} onAvatar={noop} onWeight={noop} onHeight={noop} onDeleteWeight={noop} onToast={noop} />);
+    render(<ProfileView state={state} onAvatar={noop} onWeight={noop} onHeight={noop} onDeleteWeight={noop} onMeasures={noop} onDeleteMeasures={noop} onToast={noop} />);
     expect(screen.getByText('Your exercises')).toBeInTheDocument();
     expect(screen.getByText('Workout history')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Exercise snacks' })).toBeInTheDocument();

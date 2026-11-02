@@ -3,8 +3,8 @@ import { createContext, useContext } from 'react';
 /**
  * Most między zakładką Jedzenie a danymi treningowymi: jedno ciało, jedno źródło prawdy.
  *
- * Dieta potrzebuje wagi, wzrostu, kroków i tego, czy był trening — a to wszystko gym tracker
- * już zapisuje (`state.body`, `cfg.height`, wpisy kroków i zegarek, dziennik treningów). Zamiast
+ * Dieta potrzebuje wagi, talii, wzrostu, kroków i tego, czy był trening — a to wszystko gym tracker
+ * już zapisuje (`state.body`, `state.measures`, `cfg.height`, wpisy kroków i zegarek, dziennik treningów). Zamiast
  * drugiej kopii w IndexedDB ekrany jedzenia czytają i piszą przez ten most, a App buduje go
  * ze swojego stanu. Moduły diety zostają czyste: scalony dzień podaje `useMergedDay`.
  *
@@ -14,6 +14,8 @@ import { createContext, useContext } from 'react';
 export interface GymBridge {
   /** Ważenia z dziennika wagi, rosnąco po dniu. */
   weights: readonly { day: string; kg: number }[];
+  /** Obwód talii z dziennika obwodów (`state.measures`), rosnąco po dniu — tylko dni z talią. */
+  waists: readonly { day: string; cm: number }[];
   /** Ważenie z danego dnia (`yyyy-mm-dd`); drugie tego samego dnia zastępuje pierwsze. */
   setWeight(kg: number, day: string): void;
   /** Wzrost z profilu; `null`, gdy nikt go nie wpisał. */
