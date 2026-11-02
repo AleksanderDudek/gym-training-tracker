@@ -7,6 +7,7 @@ import { clearAll, completeProfile, saveProfile } from '../../diet/store';
 import { exportAll, restoreAll } from '../../diet/store';
 import { loadReports, saveReport } from '../../labs/store';
 import { renderWithBridge } from '../../test/bridge';
+import { labsDataAck } from '../../../components/healthAck';
 import LabsPage from './LabsPage';
 
 const TODAY = '2026-10-14';
@@ -32,6 +33,26 @@ afterEach(() => {
 });
 
 describe('Badania', () => {
+  test('ramka o przechowywaniu wyników stoi na górze, a po „Rozumiem” zwija się do nagłówka', async () => {
+    labsDataAck.reset();
+    await saveProfile(completeProfile({ sex: 'K', age: 34 }));
+    const { container } = renderWithBridge(<LabsPage />);
+    const box = await screen.findByRole('heading', { name: 'Jak przechowywane są Twoje wyniki' });
+    expect(container.querySelector('.fd-lab-data')).toBe(container.firstElementChild);
+    expect(screen.getByText(/Tylko w tej przeglądarce/)).toBeVisible();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Rozumiem' }));
+    expect(box).not.toBeInTheDocument();
+    expect(window.localStorage.getItem(labsDataAck.key)).toBe('1');
+    const summary = screen.getByText('Jak przechowywane są Twoje wyniki');
+    expect(summary.closest('details')).not.toHaveAttribute('open');
+    expect(screen.getByText(/Tylko w tej przeglądarce/)).not.toBeVisible();
+    expect(container.querySelector('.fd-lab-data')).toBe(container.firstElementChild);
+
+    await userEvent.click(summary);
+    expect(screen.getByText(/Tylko w tej przeglądarce/)).toBeVisible();
+  });
+
   test('bez wyników: wstęp, sposoby dodania i „Co zbadać” z NFZ i pakietami', async () => {
     await saveProfile(completeProfile({ sex: 'K', age: 34 }));
     renderWithBridge(<LabsPage />);

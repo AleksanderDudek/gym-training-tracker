@@ -5,8 +5,15 @@
 .fd-lab-doctor{border-left:4px solid var(--warn)}
 .fd-lab-doctor h2 svg{color:var(--warn)}
 .fd-lab-data{border-left:4px solid var(--steel)}
-.fd-lab-data h2{display:flex;align-items:center;gap:6px;font-size:15px}
-.fd-lab-data h2 svg{color:var(--steel)}
+.fd-lab-data h2,.fd-lab-data summary{display:flex;align-items:center;gap:6px;font-size:15px;font-weight:600;margin:0}
+.fd-lab-data h2 svg,.fd-lab-data summary svg{color:var(--steel);flex:none}
+/* Zwinięta po „Rozumiem”: sam nagłówek jest celem dotykowym (44 px) z własną strzałką. */
+.fd-lab-data summary{cursor:pointer;min-height:44px;list-style:none;-webkit-tap-highlight-color:transparent}
+.fd-lab-data summary::-webkit-details-marker{display:none}
+.fd-lab-data summary::after{content:'▾';margin-left:auto;color:var(--ink-soft)}
+.fd-lab-data[open] summary::after{content:'▴'}
+.fd-lab-data summary:focus-visible{outline:2px solid var(--steel);outline-offset:2px}
+details.fd-lab-data{padding-top:4px;padding-bottom:4px}
 .fd-lab-data .fd-lab-list{color:var(--ink-soft)}
 
 .fd-lab-list{margin:4px 0 8px;padding-left:18px;font-size:13.5px;color:var(--ink)}

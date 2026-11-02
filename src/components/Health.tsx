@@ -1,7 +1,7 @@
 import { useSyncExternalStore, type CSSProperties, type ReactNode } from 'react';
 import { text } from '../i18n';
 import { HEALTH_PATH } from '../routing';
-import { acknowledgeHealth, ackSnapshot, subscribeAck } from './healthAck';
+import { healthAck } from './healthAck';
 
 /**
  * Zastrzeżenie zdrowotne — jedno źródło tekstu dla wprowadzenia, ustawień, startu planu,
@@ -239,7 +239,7 @@ export function HealthNote({
  * Nie zasłania strony — treść pod nią działa, a karta znika na „Rozumiem” wszędzie naraz.
  */
 export function HealthAck() {
-  const done = useSyncExternalStore(subscribeAck, ackSnapshot, () => true);
+  const done = useSyncExternalStore(healthAck.subscribe, healthAck.snapshot, () => true);
   if (done) return null;
   return (
     <section className="grp health-ack" aria-labelledby="health-ack-title">
@@ -250,7 +250,7 @@ export function HealthAck() {
         ))}
       </ul>
       <div className="actions">
-        <button type="button" className="btn" onClick={acknowledgeHealth}>
+        <button type="button" className="btn" onClick={healthAck.acknowledge}>
           {T.ackOk}
         </button>
         <a className="btn ghost" href={HEALTH_PATH}>
