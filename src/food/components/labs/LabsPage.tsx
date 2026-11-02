@@ -1,8 +1,9 @@
 import { FlaskConical, Plus, ShieldCheck } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useSyncExternalStore } from 'react';
 import { text } from '../../../i18n';
 import { HealthAck, HealthNote } from '../../../components/Health';
+import { labsDataAck } from '../../../components/healthAck';
 import { Segmented } from '../../../components/ui';
 import { useBridge } from '../../bridge';
 import type { Sex } from '../../diet/types';
@@ -31,6 +32,7 @@ const T = text({
     ],
     private: 'Wszystko zostaje na tym urządzeniu — plik i zdjęcie czyta telefon, bez wysyłania.',
     dataTitle: 'Jak przechowywane są Twoje wyniki',
+    dataOk: 'Rozumiem',
     data: [
       'Tylko w tej przeglądarce na tym urządzeniu (IndexedDB). Nie ma konta ani serwera — wyniki nie trafiają do nikogo, także do twórcy aplikacji.',
       'PDF i zdjęcie czyta telefon. Zapisuję tylko wartości, które potwierdzisz (badanie, wynik, zakres, data, laboratorium); sam plik nie jest przechowywany.',
@@ -64,6 +66,7 @@ const T = text({
     ],
     private: 'Everything stays on this device — the phone reads the file and the photo, nothing is sent.',
     dataTitle: 'How your results are stored',
+    dataOk: 'I understand',
     data: [
       'Only in this browser on this device (IndexedDB). There is no account and no server — results reach no one, the app’s author included.',
       'The phone reads the PDF and the photo. I keep only the values you confirm (test, result, range, date, lab); the file itself is not stored.',
@@ -179,6 +182,7 @@ export default function LabsPage() {
 
   return (
     <>
+      <DataNote />
       <HealthAck />
       <section className="grp fd-lab-head" aria-labelledby="fd-lab-title">
         <h2 id="fd-lab-title">
@@ -262,17 +266,6 @@ export default function LabsPage() {
       )}
       {view === 'co-zbadac' && <GuideView latest={latest} today={today} missing={assessment?.missing ?? []} />}
 
-      <section className="grp fd-lab-data" aria-labelledby="fd-lab-data-title" role="note">
-        <h2 id="fd-lab-data-title">
-          <ShieldCheck aria-hidden="true" size={18} /> {T.dataTitle}
-        </h2>
-        <ul className="fd-lab-list">
-          {T.data.map((d) => (
-            <li key={d}>{d}</li>
-          ))}
-        </ul>
-      </section>
-
       <HealthNote kind="labs" more className="wrap disclaimer" />
 
       {sheetOpen && (
@@ -291,5 +284,41 @@ export default function LabsPage() {
         />
       )}
     </>
+  );
+}
+
+/**
+ * Jak przechowywane są wyniki — na górze strony. Do pierwszego „Rozumiem” otwarta, potem zwinięta
+ * do nagłówka: kto raz przeczytał, nie przewija jej przy każdej wizycie, ale zawsze ją rozwinie.
+ */
+function DataNote() {
+  const acked = useSyncExternalStore(labsDataAck.subscribe, labsDataAck.snapshot, () => true);
+  const title = (
+    <>
+      <ShieldCheck aria-hidden="true" size={18} /> {T.dataTitle}
+    </>
+  );
+  const list = (
+    <ul className="fd-lab-list">
+      {T.data.map((d) => (
+        <li key={d}>{d}</li>
+      ))}
+    </ul>
+  );
+  if (acked)
+    return (
+      <details className="grp fd-lab-data" role="note">
+        <summary>{title}</summary>
+        {list}
+      </details>
+    );
+  return (
+    <section className="grp fd-lab-data" aria-labelledby="fd-lab-data-title" role="note">
+      <h2 id="fd-lab-data-title">{title}</h2>
+      {list}
+      <button type="button" className="btn" onClick={labsDataAck.acknowledge}>
+        {T.dataOk}
+      </button>
+    </section>
   );
 }
