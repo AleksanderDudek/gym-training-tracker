@@ -331,6 +331,7 @@ export function SessionView({
   onSave,
   onClear,
   onSkip,
+  onNote,
   onFinish,
   onCancel,
   onToast,
@@ -348,6 +349,7 @@ export function SessionView({
   onSave: (id: ExerciseId, rows: SetResult[], effort: EffortKey) => void;
   onClear: (id: ExerciseId) => void;
   onSkip: (id: ExerciseId) => void;
+  onNote: (id: ExerciseId, note: string) => void;
   onFinish: () => void;
   onCancel: () => void;
   onToast: (m: string) => void;
@@ -404,6 +406,7 @@ export function SessionView({
               onSave={onSave}
               onClear={onClear}
               onSkip={onSkip}
+              onNote={onNote}
               onToast={onToast}
             />
           ));

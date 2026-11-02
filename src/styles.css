@@ -1499,3 +1499,45 @@
   .promo-img{display:block;width:100%;aspect-ratio:1/1;height:auto;border:1px solid var(--line);border-radius:var(--r)}
   .promo-wait{display:grid;place-items:center;background:var(--surface-2);color:var(--ink-soft);font-size:15px;
     text-align:center;padding:24px}
+
+  /* ---------------- Notatki do treningu i ćwiczenia ---------------- */
+
+  /* „Ostatnio (12.10): wyżej siodełko” — w sesji przycięte do dwóch linijek, żeby nie zepchnąć „Zrobione”. */
+  .grp p.note-last,p.note-last{margin:0 0 10px;font-size:13.5px;color:var(--ink);background:var(--surface-2);
+    border-left:3px solid var(--c-blue);padding:6px 10px;border-radius:var(--r);overflow-wrap:anywhere;max-width:none}
+  p.note-last b{font-weight:600;color:var(--c-blue-ink)}
+  p.note-last.clamp{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .trans-next p.note-last{margin:4px 0 0}
+  .note-ed{margin:0 0 10px}
+  .note-ed .btn.note-btn,.btn.note-btn{gap:6px}
+  .grp p.note-now,p.note-now{margin:0 0 4px;font-size:13.5px;color:var(--ink);overflow-wrap:anywhere;white-space:pre-line}
+  .note-fld{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-soft);margin:8px 0 3px}
+  .note-area{width:100%;font:inherit;font-size:16px;padding:9px 10px;border:1px solid var(--edge);
+    border-radius:var(--r);background:var(--surface);color:var(--ink);resize:vertical;min-height:48px}
+  .note-area:focus{outline:2px solid var(--steel);outline-offset:-1px}
+  .grp p.note-count,p.note-count{margin:2px 0 8px;font-size:12px;color:var(--ink-soft)}
+  .note-workout{margin-top:12px}
+  .h-notes{margin-top:4px}
+  .h-note{margin:2px 0 0;font-size:13px;color:var(--ink);overflow-wrap:anywhere;white-space:pre-line}
+  .h-note-row{grid-column:1/-1;margin-top:-4px}
+  .h-note-row .note-ed{margin:0}
+
+  /* ---------------- Mięśnie w tym tygodniu ---------------- */
+
+  .mw-figs{display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:330px;margin:10px auto 6px}
+  .mw-fig{margin:0;min-width:0}
+  .mw-fig svg{display:block;width:100%;height:auto}
+  .mw-fig figcaption{text-align:center;font-size:12.5px;color:var(--ink-soft);margin-top:2px}
+  .mw-body{fill:var(--surface-2);stroke:var(--edge);stroke-width:.6;stroke-linejoin:round}
+  .mw-m{stroke:var(--steel);stroke-width:.35}
+  /* Skala z tokenów: brak serii zostaje jasny, kolejne stopnie to coraz pełniejszy błękit. */
+  .mw-l0{fill:var(--surface)}
+  .mw-l1{fill:var(--c-blue);fill-opacity:.28}
+  .mw-l2{fill:var(--c-blue);fill-opacity:.55}
+  .mw-l3{fill:var(--c-blue);fill-opacity:.85}
+  .mw-l4{fill:var(--c-blue-ink)}
+  .mw-legend{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center;font-size:12.5px;color:var(--ink-soft);margin:4px 0 6px}
+  .mw-legend-h{font-weight:600}
+  .mw-key{display:inline-flex;align-items:center;gap:5px}
+  .mw-key svg{flex:none}
+  .grp p.mw-note{margin:8px 0 0;font-size:12.5px}

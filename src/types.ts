@@ -134,6 +134,8 @@ export interface Session {
    * „Zaczynam”; taka sesja zamyka się bez czasu.
    */
   clock?: SessionClock;
+  /** Notatki ćwiczeń wpisane w trakcie — przy zamknięciu idą do dziennika razem z wynikiem. */
+  notes?: Record<ExerciseId, string>;
 }
 
 /**
@@ -167,6 +169,8 @@ export interface LogItem {
   id: ExerciseId;
   sets: SetResult[];
   effort: EffortKey;
+  /** Notatka do ćwiczenia z tej sesji („wyżej siodełko”), do 500 znaków. Wraca przy następnej sesji. */
+  note?: string;
 }
 
 export interface LogEntry {
@@ -180,6 +184,8 @@ export interface LogEntry {
   items: LogItem[];
   /** Czas treningu z zegara sesji. Brak — trening sprzed zegara albo zamknięty bez „Zaczynam”. */
   time?: LogTime;
+  /** Notatka do całego treningu, do 500 znaków — z podsumowania po zamknięciu albo z historii. */
+  note?: string;
 }
 
 /**

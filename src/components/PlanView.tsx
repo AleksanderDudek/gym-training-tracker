@@ -26,6 +26,7 @@ import { PlanCatalog, Weekdays } from './Plans';
 import { BoostCard } from './Boost';
 import { PlanArt } from './SceneArt';
 import { HealthNote } from './Health';
+import { MuscleWeekCard } from './MuscleWeek';
 import { SectionSwitch } from './Design';
 import { PLANS_PATH, go } from '../routing';
 import type {
@@ -738,6 +739,8 @@ function ActivePlanView({
         </p>
         <p style={{ marginTop: 8 }}>{T.breaks}</p>
       </div>
+
+      <MuscleWeekCard state={state} />
 
       {weeks.map((w) => {
         const rows = days.filter((d) => d.week === w);

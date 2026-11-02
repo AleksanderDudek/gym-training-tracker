@@ -126,6 +126,8 @@ import { measuresOf, removeMeasures, restoreMeasures, setMeasures, type MeasureI
 import { countPhotos, forgetPhotos } from './silhouette';
 import type { GymBridge } from './food/bridge';
 import { LoadBoundary } from './components/LoadBoundary';
+import { WorkoutNote } from './components/Notes';
+import { restoreNotes, setLogNotes, setSessionNote } from './engine/notes';
 import { LOCALE, pluralEn, text } from './i18n';
 import { TOP_COLORS, setThemeColor, useTheme } from './theme';
 
@@ -628,6 +630,9 @@ function restoreExtras(next: AppState, saved: Partial<AppState>): void {
   next.log.forEach((e) => {
     if (e?.time !== undefined && !validLogTime(e.time)) delete e.time;
   });
+  // Notatki: tylko tekst, bez pustych i przycięty do 500 znaków — ręcznie poprawiony plik
+  // z liczbą albo obiektem w notatce nie może wywrócić historii.
+  restoreNotes(next);
   if (next.cfg.weighSkip !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(String(next.cfg.weighSkip))) delete next.cfg.weighSkip;
   const r = next.cfg.reminders;
   if (r !== undefined && (typeof r !== 'object' || typeof r.morning !== 'boolean' || typeof r.evening !== 'boolean'))
@@ -1069,6 +1074,23 @@ export default function App() {
     commit(next);
   };
 
+  /** Notatka ćwiczenia w trakcie sesji — trafi do dziennika razem z wynikiem. */
+  const noteExercise = (id: ExerciseId, note: string) => {
+    const next = clone(live.current ?? state);
+    if (!next.session) return;
+    setSessionNote(next.session, id, note);
+    commit(next);
+  };
+
+  /**
+   * Notatki zapisanego treningu: z podsumowania po zamknięciu i z historii w profilu. Zaczyna od
+   * `live.current`, bo podsumowanie stoi w oknie otwartym jeszcze przed zapisem treningu.
+   */
+  const noteLog = (date: string, notes: Parameters<typeof setLogNotes>[2]) => {
+    const next = clone(live.current ?? state);
+    if (setLogNotes(next, date, notes)) commit(next);
+  };
+
   /** Cała część, która czeka na start, pominięta na dziś — bez przełączania, w przeciwieństwie do listy. */
   const skipPart = (ids: ExerciseId[]) => {
     const next = clone(state);
@@ -1461,17 +1483,22 @@ export default function App() {
         if (c) changes.push(c);
       });
 
+    const date = new Date().toISOString();
     next.log.push({
-      date: new Date().toISOString(),
+      date,
       workout: w.name,
       wid: w.id,
       ...(session.deload ? { deload: true } : {}),
       ready: session.ready,
-      items: logged.map((i) => ({
-        id: i.ex,
-        sets: next.session!.res[i.ex]!.rows,
-        effort: next.session!.res[i.ex]!.effort,
-      })),
+      items: logged.map((i) => {
+        const note = next.session!.notes?.[i.ex];
+        return {
+          id: i.ex,
+          sets: next.session!.res[i.ex]!.rows,
+          effort: next.session!.res[i.ex]!.effort,
+          ...(note ? { note } : {}),
+        };
+      }),
       ...(time ? { time } : {}),
     });
     next.session = null;
@@ -1523,6 +1550,7 @@ export default function App() {
           <p>{T.noChanges}</p>
         )}
         {time && <TimeSummary time={time} />}
+        <WorkoutNote onSave={(note) => noteLog(date, { note })} />
         <p className="xpline">
           {T.xpLine(gained, after.level, after.title, after.level > before.level, after.toNext)}
         </p>
@@ -2195,6 +2223,7 @@ export default function App() {
             onEffort={rateExercise}
             onRest={restControl}
             onSkip={skipExercise}
+            onNote={noteExercise}
             onFinish={() => void finishSession()}
             onList={() => setSessionView('list')}
             onToast={setToastMsg}
@@ -2214,6 +2243,7 @@ export default function App() {
             onSave={saveExercise}
             onClear={clearExercise}
             onSkip={skipExercise}
+            onNote={noteExercise}
             onFinish={() => void finishSession()}
             onCancel={() => void cancelSession()}
             onToast={setToastMsg}
@@ -2243,6 +2273,7 @@ export default function App() {
           onDeleteWeight={deleteWeight}
           onMeasures={saveMeasures}
           onDeleteMeasures={deleteMeasures}
+          onNotes={noteLog}
           onToast={setToastMsg}
         />
       )}
