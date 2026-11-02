@@ -3,8 +3,8 @@ import { createContext, useContext } from 'react';
 /**
  * Most między zakładką Jedzenie a danymi treningowymi: jedno ciało, jedno źródło prawdy.
  *
- * Dieta potrzebuje wagi, wzrostu, kroków i tego, czy był trening — a to wszystko gym tracker
- * już zapisuje (`state.body`, `cfg.height`, wpisy kroków i zegarek, dziennik treningów). Zamiast
+ * Dieta potrzebuje wagi, talii, wzrostu, kroków i tego, czy był trening — a to wszystko gym tracker
+ * już zapisuje (`state.body`, `state.measures`, `cfg.height`, wpisy kroków i zegarek, dziennik treningów). Zamiast
  * drugiej kopii w IndexedDB ekrany jedzenia czytają i piszą przez ten most, a App buduje go
  * ze swojego stanu. Moduły diety zostają czyste: scalony dzień podaje `useMergedDay`.
  *
@@ -14,6 +14,8 @@ import { createContext, useContext } from 'react';
 export interface GymBridge {
   /** Ważenia z dziennika wagi, rosnąco po dniu. */
   weights: readonly { day: string; kg: number }[];
+  /** Obwód talii z dziennika obwodów (`state.measures`), rosnąco po dniu — tylko dni z talią. */
+  waists: readonly { day: string; cm: number }[];
   /** Ważenie z danego dnia (`yyyy-mm-dd`); drugie tego samego dnia zastępuje pierwsze. */
   setWeight(kg: number, day: string): void;
   /** Wzrost z profilu; `null`, gdy nikt go nie wpisał. */
@@ -28,8 +30,11 @@ export interface GymBridge {
    * ich nie liczy. Ruch nie zmienia celu jedzenia: dieta go pokazuje (tabela tygodni), nic nie dolicza.
    */
   moveOn(day: string): MoveDay;
-  /** Krótka wiadomość na dole ekranu — ta sama, co po zapisie w treningach. */
-  toast(message: string): void;
+  /**
+   * Krótka wiadomość na dole ekranu — ta sama, co po zapisie w treningach. Z `action` dostaje
+   * przycisk (np. „Cofnij” po skopiowaniu dnia) i stoi dłużej, żeby dało się go stuknąć.
+   */
+  toast(message: string, action?: ToastAction): void;
   /**
    * Czy dziś ktoś odpowiedział „Nie dziś” na pytanie o wagę — w dzienniku albo na ekranie Dziś:
    * jedno pytanie, jedno pominięcie. Opcjonalne: brak to „nie pominięto”.
@@ -37,6 +42,12 @@ export interface GymBridge {
   weighSkipped?(): boolean;
   /** „Nie dziś” w karcie wagi dziennika: zapamiętuje pominięcie na dziś, jak karta na ekranie Dziś. */
   skipWeigh?(): void;
+}
+
+/** Przycisk w komunikacie: etykieta i to, co robi. Komunikat znika po stuknięciu. */
+export interface ToastAction {
+  label: string;
+  run: () => void;
 }
 
 export interface MoveDay {

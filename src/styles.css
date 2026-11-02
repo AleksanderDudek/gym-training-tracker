@@ -1,4 +1,10 @@
-:root{
+:root,
+  /*
+   * Rysunki, które są postacią, a nie interfejsem — obsada, sceny treningów, manekin i kafelek
+   * kettlebla — dostają jasne tokeny także w ciemnym wyglądzie (o tym niżej, przy ciemnym bloku).
+   * Ten sam blok, więc jasna paleta ma jedno źródło.
+   */
+  .gorilla,.scene-art,.mq,.chip{
     --bg:#D7D9D3; --surface:#FAFAF8; --surface-2:#EFF0EC;
     /*
      * Trzy tusze przyciemnione względem pierwszej wersji, bo na najciemniejszym tle
@@ -49,6 +55,61 @@
     --silver:#b9bcc2;   --silver-fur:#a4a7ae;
     --display:"Oswald","Arial Narrow",system-ui,sans-serif;
     --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+
+    /*
+     * Tokeny, które w jasnym wyglądzie były gołymi wartościami w regułach: napis na mocnym
+     * wypełnieniu (stal, tusze akcentów, `--ok` — w jasnym biel, w ciemnym prawie czerń),
+     * tło pola formularza i listy podpowiedzi (biel) i kolor cieni oraz przyciemnień pod oknami
+     * (jako trzy liczby, bo wchodzi do `rgba(var(--shade), …)`).
+     */
+    --on-strong:#FFFFFF; --field:#FFFFFF; --shade:30,35,32;
+    /* Kafelki mapy „W pobliżu” — w ciemnym przyciemnione filtrem, tu bez zmian. */
+    --map-tiles:none;
+    color-scheme:light;
+  }
+
+  /*
+   * Ciemny wygląd. Te same nazwy tokenów, inne wartości — reguły niżej nie wiedzą, w którym
+   * wyglądzie są. Dwa bloki o identycznej treści (pilnuje tego test): „Automatycznie” to brak
+   * `data-theme` i zapytanie o system, wybór z ustawień to `data-theme="dark"`. Bez skryptu, więc
+   * ciemny system dostaje ciemną stronę od pierwszej klatki.
+   *
+   * - Tła odwracają kolejność: strona najciemniejsza, karta jaśniejsza, wnętrze karty jeszcze
+   *   jaśniejsze — jak cień i światło, a nie jak w jasnym, gdzie karta jest najjaśniejsza.
+   * - Tusze akcentów (`-ink`) to rozjaśnione wersje tych samych barw: tekst na ciemnym musi być
+   *   jasny. Tła akcentów (`-bg`) — przyciemnione. Czyste akcenty zostają: to wypełnienia.
+   * - Stal, kolor akcji, robi się jasna, a napis na niej (`--on-strong`) ciemny. Przycisk dalej
+   *   jest najmocniejszą plamą na ekranie.
+   * - Obsada, sceny, manekin i kafelki kettlebli zostają jasne (selektor bloku jasnego wyżej):
+   *   sierść, kamizelka i kolory odważników to tożsamość, a nie interfejs.
+   */
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme=light]){
+      --bg:#101311; --surface:#1C201D; --surface-2:#262B27;
+      --ink:#E7E9E4; --ink-soft:#A8AEA6; --line:#363C37; --steel:#C5CDC4;
+      --ok:#74C394; --warn:#E3A65E;
+      --edge:#7F877E;
+      --c-orange-ink:#EE9C80; --c-orange-bg:#3B2A22;
+      --c-blue-ink:#93BBE3;   --c-blue-bg:#1E2B38;
+      --c-green-ink:#AABF8D;
+      --c-gold-ink:#E2B66F;   --c-gold-bg:#352B18;
+      --on-strong:#141614; --field:#161917; --shade:0,0,0;
+      --map-tiles:invert(1) hue-rotate(180deg) brightness(.92) contrast(.88) saturate(.7);
+      color-scheme:dark;
+    }
+  }
+  :root[data-theme=dark]{
+    --bg:#101311; --surface:#1C201D; --surface-2:#262B27;
+    --ink:#E7E9E4; --ink-soft:#A8AEA6; --line:#363C37; --steel:#C5CDC4;
+    --ok:#74C394; --warn:#E3A65E;
+    --edge:#7F877E;
+    --c-orange-ink:#EE9C80; --c-orange-bg:#3B2A22;
+    --c-blue-ink:#93BBE3;   --c-blue-bg:#1E2B38;
+    --c-green-ink:#AABF8D;
+    --c-gold-ink:#E2B66F;   --c-gold-bg:#352B18;
+    --on-strong:#141614; --field:#161917; --shade:0,0,0;
+    --map-tiles:invert(1) hue-rotate(180deg) brightness(.92) contrast(.88) saturate(.7);
+    color-scheme:dark;
   }
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
@@ -81,7 +142,7 @@
 
   .topbar{position:sticky;top:0;z-index:35;background:var(--surface);
     padding-top:env(safe-area-inset-top);transition:box-shadow .2s ease-out}
-  .topbar.scrolled{box-shadow:0 1px 0 var(--line),0 6px 16px rgba(30,35,32,.08)}
+  .topbar.scrolled{box-shadow:0 1px 0 var(--line),0 6px 16px rgba(var(--shade),.08)}
 
   /* Pasek na całą szerokość, a jego zawartość w tej samej kolumnie 640 px co treść. */
   .appbar{background:var(--surface);min-height:56px;display:flex;align-items:center;gap:10px;
@@ -117,7 +178,7 @@
   .strip-text{flex:1;min-width:0;font-size:13px;line-height:1.3;
     display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   .strip-cta{flex:none;font-family:var(--body);font-weight:600;font-size:12.5px;line-height:1;
-    white-space:nowrap;color:#fff;background:var(--c-gold-ink);border-radius:999px;padding:8px 11px}
+    white-space:nowrap;color:var(--on-strong);background:var(--c-gold-ink);border-radius:999px;padding:8px 11px}
   .strip-cta::after{content:' \2192'}
   .cta-short{display:none}
   .strip-link:hover .strip-cta{background:var(--ink)}
@@ -125,7 +186,7 @@
     margin-right:max(0px,calc((100vw - 640px) / 2));
     color:var(--c-gold-ink);font-size:20px;line-height:1;cursor:pointer;
     -webkit-tap-highlight-color:transparent}
-  .strip-close:active{background:rgba(116,81,26,.1)}
+  .strip-close:active{background:color-mix(in srgb,var(--c-gold-ink) 10%,transparent)}
   .strip-close:focus-visible{outline:2px solid var(--steel);outline-offset:-2px}
   /*
    * Na telefonie przycisk mówi krótko „Espresso →” — pełne „Postaw espresso” zabierało żartowi
@@ -149,7 +210,7 @@
   .strip.install .strip-cta::after{content:none}
   @media (hover:hover){.strip.install .strip-link:hover .strip-cta{background:var(--ink)}}
   .strip.install .strip-close{color:var(--c-blue-ink)}
-  .strip.install .strip-close:active{background:rgba(56,94,132,.1)}
+  .strip.install .strip-close:active{background:color-mix(in srgb,var(--c-blue-ink) 10%,transparent)}
   .install-steps ol{margin:0 0 12px;padding-left:22px;display:grid;gap:8px}
   .install-steps p{margin:0 0 10px}
   .install-share{display:inline-flex;vertical-align:-4px;margin-right:4px;color:var(--c-blue-ink)}
@@ -205,7 +266,7 @@
   .ex-target{font-size:14px;color:var(--ink-soft)}
   .tick{width:26px;height:26px;flex:none;border:1.5px solid var(--line);border-radius:50%;
     display:grid;place-items:center;font-size:14px;color:transparent;margin-right:2px}
-  .ex.done .tick{background:var(--ok);border-color:var(--ok);color:#fff}
+  .ex.done .tick{background:var(--ok);border-color:var(--ok);color:var(--on-strong)}
   .ex.skipped{opacity:.5}
   .ex.skipped .tick{border-style:dashed;color:var(--ink-soft)}
 
@@ -228,7 +289,7 @@
   label.fld{display:block}
   label.fld span{display:block;font-size:11px;color:var(--ink-soft);margin-bottom:2px}
   input[type=number],input[type=text],input[type=date],select{width:100%;padding:11px 10px;font:inherit;font-size:17px;
-    border:1px solid var(--edge);border-radius:var(--r);background:#fff;color:var(--ink)}
+    border:1px solid var(--edge);border-radius:var(--r);background:var(--field);color:var(--ink)}
   /* Pole liczby z przecinkiem jest tekstowe (`inputMode="decimal"`), ale wygląda jak liczbowe. */
   input[type=number],input.num{font-family:var(--display)}
   input:focus,select:focus,button:focus-visible{outline:2px solid var(--steel);outline-offset:-1px}
@@ -240,14 +301,14 @@
     border:1px solid var(--edge);border-radius:var(--r);cursor:pointer;color:var(--ink-soft);
     line-height:1.25;-webkit-tap-highlight-color:transparent}
   .seg button:active{background:var(--line)}
-  .seg button[aria-pressed=true]{background:var(--steel);border-color:var(--steel);color:#fff;font-weight:600}
+  .seg button[aria-pressed=true]{background:var(--steel);border-color:var(--steel);color:var(--on-strong);font-weight:600}
   /* Druga linijka opcji — doprecyzowanie, nie osobna etykieta; kolor dziedziczy, żeby kontrast szedł za przyciskiem. */
   .seg button small{display:block;font-size:11.5px;font-weight:400;margin-top:2px}
 
   /* Reguła celuje w klasę, nie w znacznik: przyciskiem bywa też odnośnik i etykieta pola. */
   .btn{font:inherit;font-weight:600;font-size:15px;padding:13px 18px;min-height:48px;
     border-radius:var(--r);cursor:pointer;border:1px solid var(--steel);background:var(--steel);
-    color:#fff;-webkit-tap-highlight-color:transparent;
+    color:var(--on-strong);-webkit-tap-highlight-color:transparent;
     display:inline-flex;align-items:center;justify-content:center;text-align:center;
     text-decoration:none;box-sizing:border-box}
   .btn:active{transform:translateY(1px)}
@@ -312,7 +373,7 @@
   .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--surface);
     border-top:1px solid var(--line);display:flex;
     padding-bottom:env(safe-area-inset-bottom);
-    box-shadow:0 -1px 0 rgba(30,35,32,.04),0 -6px 18px rgba(30,35,32,.06)}
+    box-shadow:0 -1px 0 rgba(var(--shade),.04),0 -6px 18px rgba(var(--shade),.06)}
   .tabbar a{flex:1;min-width:0;min-height:64px;display:flex;flex-direction:column;
     align-items:center;justify-content:center;gap:4px;
     padding:8px 2px 9px;background:none;border:0;font:inherit;font-size:12px;line-height:1.15;
@@ -349,14 +410,14 @@
     .tabbar a{flex:0 1 128px}
   }
 
-  #modal{position:fixed;inset:0;background:rgba(30,35,32,.55);display:grid;place-items:center;padding:18px;z-index:50}
+  #modal{position:fixed;inset:0;background:rgba(var(--shade),.55);display:grid;place-items:center;padding:18px;z-index:50}
   #modal.hidden{display:none}
   /*
    * Treść okna przewija się, przyciski zostają. Bez tego długa lista ćwiczeń albo wysoka
    * scena z medalem spychały główną akcję pod krawędź na niższych ekranach.
    */
   /* Okno „Napisz do autora”: na telefonie od dołu, jak arkusz; wyżej — wyśrodkowane. */
-  .fb{position:fixed;inset:0;background:rgba(30,35,32,.55);display:flex;align-items:flex-end;
+  .fb{position:fixed;inset:0;background:rgba(var(--shade),.55);display:flex;align-items:flex-end;
     justify-content:center;z-index:60}
   .fb-box{background:var(--surface);width:100%;max-width:520px;max-height:92vh;overflow:auto;
     padding:18px 16px calc(16px + env(safe-area-inset-bottom));border-radius:var(--r) var(--r) 0 0}
@@ -390,16 +451,16 @@
     /* Cień krawędzi pojawia się sam, tylko gdy jest co przewijać — warstwy `local`
        jadą z treścią i zasłaniają warstwy `scroll` przyklejone do ramki. */
     background:
-      linear-gradient(var(--surface) 30%, rgba(250,250,248,0)) top / 100% 16px no-repeat local,
-      linear-gradient(rgba(250,250,248,0), var(--surface) 70%) bottom / 100% 16px no-repeat local,
-      radial-gradient(farthest-side at 50% 0, rgba(30,35,32,.16), rgba(30,35,32,0))
+      linear-gradient(var(--surface) 30%, transparent) top / 100% 16px no-repeat local,
+      linear-gradient(transparent, var(--surface) 70%) bottom / 100% 16px no-repeat local,
+      radial-gradient(farthest-side at 50% 0, rgba(var(--shade),.16), rgba(var(--shade),0))
         top / 100% 7px no-repeat scroll,
-      radial-gradient(farthest-side at 50% 100%, rgba(30,35,32,.16), rgba(30,35,32,0))
+      radial-gradient(farthest-side at 50% 100%, rgba(var(--shade),.16), rgba(var(--shade),0))
         bottom / 100% 7px no-repeat scroll}
   .mtext ul{margin:10px 0 0;padding-left:0;list-style:none;color:var(--ink)}
   .mtext li{margin-bottom:6px;padding-left:16px;text-indent:-16px;font-size:14.5px}
   .toast{position:fixed;left:14px;right:14px;bottom:calc(76px + env(safe-area-inset-bottom));max-width:612px;margin:0 auto;background:var(--steel);
-    color:#fff;padding:12px 14px;border-radius:var(--r);font-size:14px;z-index:40}
+    color:var(--on-strong);padding:12px 14px;border-radius:var(--r);font-size:14px;z-index:40}
   /*
    * Nowa wersja aplikacji: nad dolnym paskiem, w tej samej kolumnie co treść. Nad paskiem (30),
    * pod komunikatem (40), który i tak znika po chwili, i pod oknami (50). W trakcie treningu go nie
@@ -407,13 +468,13 @@
    * przycisk na stalowym pasku byłby niewidoczny.
    */
   .updatebar{position:fixed;left:14px;right:14px;bottom:calc(80px + env(safe-area-inset-bottom));max-width:612px;
-    margin:0 auto;background:var(--steel);color:#fff;padding:8px 8px 8px 14px;border-radius:var(--r);
+    margin:0 auto;background:var(--steel);color:var(--on-strong);padding:8px 8px 8px 14px;border-radius:var(--r);
     display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:14px;z-index:38;
-    box-shadow:0 6px 18px rgba(30,35,32,.18)}
+    box-shadow:0 6px 18px rgba(var(--shade),.18)}
   .updatebar-text{flex:1 1 auto;min-width:0}
-  .updatebar .btn{background:#fff;border-color:#fff;color:var(--steel)}
-  .updatebar .btn.ghost{background:transparent;border-color:transparent;color:#fff}
-  .updatebar button:focus-visible{outline:2px solid #fff;outline-offset:2px}
+  .updatebar .btn{background:var(--on-strong);border-color:var(--on-strong);color:var(--steel)}
+  .updatebar .btn.ghost{background:transparent;border-color:transparent;color:var(--on-strong)}
+  .updatebar button:focus-visible{outline:2px solid var(--on-strong);outline-offset:2px}
 
   .hidden{display:none}
   .empty{background:var(--surface);padding:26px 16px;text-align:center;color:var(--ink-soft);font-size:14px}
@@ -445,7 +506,7 @@
   ol.stages li{margin-bottom:5px}
   ol.stages li.past{text-decoration:line-through;opacity:.6}
   ol.stages li.now{color:var(--ink);font-weight:600}
-  .badge{display:inline-block;margin-left:8px;background:var(--steel);color:#fff;font-weight:600;
+  .badge{display:inline-block;margin-left:8px;background:var(--steel);color:var(--on-strong);font-weight:600;
     font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:2px 6px;border-radius:var(--r)}
 
   /* ---------------- Wideo ---------------- */
@@ -472,7 +533,7 @@
   .vid-sub a{color:var(--steel);text-decoration:underline}
   .tag{font-family:var(--display);font-size:10px;letter-spacing:.08em;background:var(--surface-2);
     border:1px solid var(--line);color:var(--ink-soft);padding:1px 5px;border-radius:2px}
-  .tag.pl{background:var(--steel);border-color:var(--steel);color:#fff}
+  .tag.pl{background:var(--steel);border-color:var(--steel);color:var(--on-strong)}
 
   .vidlink{display:inline-flex;align-items:center;min-height:44px;font-size:13px;
     color:var(--steel);font-weight:600;text-decoration:underline;padding-right:8px;
@@ -485,10 +546,10 @@
     min-height:48px;background:var(--surface-2);border:1px solid var(--edge);
     border-radius:var(--r);cursor:pointer;color:var(--ink-soft);
     -webkit-tap-highlight-color:transparent}
-  .freq button[aria-pressed=true]{background:var(--steel);border-color:var(--steel);color:#fff}
+  .freq button[aria-pressed=true]{background:var(--steel);border-color:var(--steel);color:var(--on-strong)}
 
   .wtag{display:inline-block;font-family:var(--display);font-size:13px;min-width:22px;
-    text-align:center;background:var(--steel);color:#fff;border-radius:2px;padding:1px 5px;margin-right:4px}
+    text-align:center;background:var(--steel);color:var(--on-strong);border-radius:2px;padding:1px 5px;margin-right:4px}
   .wtag.light{background:var(--surface-2);color:var(--ink-soft);border:1px solid var(--line)}
 
   .wk-head{width:100%;min-height:52px;display:flex;justify-content:space-between;align-items:center;
@@ -521,7 +582,7 @@
     min-height:48px;background:var(--surface-2);border:1px solid var(--edge);
     border-radius:var(--r);cursor:pointer;color:var(--ink-soft);
     -webkit-tap-highlight-color:transparent}
-  .wdays button[aria-pressed=true]{background:var(--steel);border-color:var(--steel);color:#fff}
+  .wdays button[aria-pressed=true]{background:var(--steel);border-color:var(--steel);color:var(--on-strong)}
 
   .rankline{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
   .rank-name{font-family:var(--display);font-size:22px}
@@ -580,7 +641,7 @@
   .pd-tick::before{content:'';position:absolute;width:24px;height:24px;border-radius:50%;
     border:1px solid var(--line);background:var(--surface)}
   .pd-tick span{position:relative}
-  .pd-tick[aria-pressed=true]{color:#fff}
+  .pd-tick[aria-pressed=true]{color:var(--on-strong)}
   .pd-tick[aria-pressed=true]::before{background:var(--ok);border-color:var(--ok)}
   .pd-tick:active::before{background:var(--surface-2)}
   .pd-tick:focus-visible{outline:2px solid var(--steel);outline-offset:1px}
@@ -633,7 +694,7 @@
     background:var(--surface-2);border:1px solid var(--edge);border-radius:var(--r);
     cursor:pointer;color:var(--ink-soft);-webkit-tap-highlight-color:transparent}
   .gearfilter button[aria-pressed=true]{background:var(--steel);border-color:var(--steel);
-    color:#fff;font-weight:600}
+    color:var(--on-strong);font-weight:600}
 
   /* ---------------- Odznaki: medale i moment zdobycia ---------------- */
 
@@ -818,6 +879,9 @@
 
   .banner.with-cast{display:grid;grid-template-columns:44px 1fr;gap:12px;align-items:start}
   .toast.with-cast{display:flex;gap:10px;align-items:center;padding:8px 14px 8px 8px}
+  /* Komunikat z przyciskiem („Cofnij”): tekst bierze resztę miejsca, przycisk odwrócony jak w pasku nowej wersji. */
+  .toast-text{flex:1 1 auto;min-width:0}
+  .toast .toast-action{flex:0 0 auto;background:var(--surface);border-color:var(--surface);color:var(--steel)}
   /* Okrągłe okno w kolorze karty: na stalowym pasku sama sierść byłaby plamą. */
   .toast.with-cast .cast-face{background:var(--surface);border-radius:50%;padding:2px}
   .mbox.with-cast{position:relative;padding-top:18px}
@@ -873,7 +937,7 @@
     margin:0 0 10px;max-width:62ch}
 
 
-  .btn.coffee{background:var(--c-gold-ink);border-color:var(--c-gold-ink);color:#fff}
+  .btn.coffee{background:var(--c-gold-ink);border-color:var(--c-gold-ink);color:var(--on-strong)}
 
   .grp h2 .ico,.grp h3 .ico{vertical-align:-3px;margin-right:5px;color:var(--c-orange)}
   .mq-sweat path{fill:var(--c-blue);stroke:none;opacity:.7}
@@ -955,6 +1019,9 @@
   .cardio-entry label.fld{margin-top:10px}
   .cardio-entry .seg{margin-bottom:10px}
   .seg-label{display:block;font-size:11px;color:var(--ink-soft);margin:2px 0 2px}
+  /* Godzina przypomnienia o jedzeniu: podpis nad polem, jak przy przełącznikach. */
+  .rem-time{display:block;margin:6px 0 4px}
+  .rem-time span{display:block;font-size:11px;color:var(--ink-soft);margin:0 0 2px}
   .cardio-entry .snack-row{margin:12px 0 0}
   .grp p.cardio-note{margin-top:10px}
   .grp p.cardio-note.warn{color:var(--warn)}
@@ -1026,8 +1093,8 @@
   .wc-clear:focus-visible{outline:2px solid var(--steel);outline-offset:-2px}
   .wc-row .btn{min-height:44px}
   /* Podpowiedzi nad treścią, jak lista wyboru ćwiczenia; 5–8 pozycji mieści się nad klawiaturą. */
-  .wc-pop{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:25;background:#fff;border:1px solid var(--edge);
-    border-radius:var(--r);box-shadow:0 8px 24px rgba(30,35,32,.16);overflow:hidden}
+  .wc-pop{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:25;background:var(--field);border:1px solid var(--edge);
+    border-radius:var(--r);box-shadow:0 8px 24px rgba(var(--shade),.16);overflow:hidden}
   .wc-opts{list-style:none;margin:0;padding:4px 0;max-height:min(400px,52vh);overflow-y:auto;overscroll-behavior:contain}
   .wc-opt{display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:44px;padding:8px 12px 8px 11px;
     border-left:3px solid transparent;cursor:pointer;-webkit-tap-highlight-color:transparent}
@@ -1104,6 +1171,52 @@
   .phone-weight p.tight{margin:0}
   .body-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;margin:10px 0}
   .body-list{margin-top:6px}
+
+  /* ---------------- Profil: sylwetka (obwody i zdjęcia) ---------------- */
+  /* Obwody w dwóch kolumnach od ok. 340 px treści, w jednej na najwęższych telefonach. */
+  .sil-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px 12px;margin-top:10px}
+  .sil-m{min-width:0}
+  .sil-m-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+  .sil-m-head span{font-weight:600;font-size:14px}
+  .sil-m-head b{font-family:var(--display);font-weight:500;font-size:18px;white-space:nowrap}
+  p.sil-m-change{margin:2px 0 0;font-size:12.5px;color:var(--ink-soft);line-height:1.4}
+  .sil-m .trendbox{margin-top:6px}
+  .sil-how{margin:6px 0 0}
+  .sil-how p{margin:0}
+  .sil-how ul{margin:6px 0 0;padding-left:18px}
+  .sil-form fieldset{border:0;margin:0;padding:0;min-width:0}
+  .sil-form legend{padding:0;font-size:13px;color:var(--ink-soft);margin-bottom:6px}
+  .sil-fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px}
+  .sil-form > .btn{margin-top:10px}
+  .sil-day{display:grid;grid-template-columns:auto 1fr 44px;gap:10px;align-items:center;border-top:1px solid var(--line)}
+  .sil-day-vals{font-size:13.5px;overflow-wrap:anywhere}
+  .sil-day .cardio-name{font-size:14px;white-space:nowrap}
+  .sil-photos{margin-top:16px;padding-top:12px;border-top:1px solid var(--line)}
+  .sil-add{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+  .grp p.sil-killed{border-left:3px solid var(--c-blue);background:var(--c-blue-bg);padding:8px 10px;
+    font-size:13.5px;margin:8px 0}
+  .sil-soft{color:var(--ink-soft)}
+  .sil-thumbs{list-style:none;margin:10px 0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  .sil-thumb{display:block;width:100%;padding:0;border:1px solid var(--line);border-radius:var(--r);
+    background:var(--surface-2);cursor:pointer;font:inherit;color:var(--ink);overflow:hidden;
+    -webkit-tap-highlight-color:transparent}
+  .sil-thumb[aria-pressed=true]{outline:2px solid var(--steel);outline-offset:1px}
+  .sil-thumb:focus-visible{outline:2px solid var(--steel);outline-offset:2px}
+  .sil-thumb img,.sil-thumb .sil-ph{display:block;width:100%;aspect-ratio:3/4;object-fit:cover}
+  .sil-thumb-day{display:block;font-size:12px;padding:4px 2px;text-align:center}
+  .sil-view,.sil-compare{margin:10px 0;padding:10px;background:var(--surface-2);border:1px solid var(--line);
+    border-radius:var(--r)}
+  .sil-frame{width:100%;max-height:60vh;display:flex;align-items:center;justify-content:center;
+    background:var(--bg);border-radius:var(--r);overflow:hidden}
+  .sil-frame img{display:block;width:100%;height:100%;object-fit:contain}
+  .sil-view .fld{margin-top:10px}
+  .sil-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  .sil-pick{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .sil-pair{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+  .sil-fig{margin:0;min-width:0}
+  .sil-fig figcaption{font-size:12px;color:var(--ink-soft);margin-top:4px;text-align:center;overflow-wrap:anywhere}
+  .sil-ph{color:var(--ink-soft);font-size:13px;padding:20px 0;text-align:center}
+  .sil-compare-btn{margin-top:4px}
   .kcal-line{display:block;color:var(--c-blue-ink);font-family:var(--display)}
   /* Rozbicie kalorii treningu na ćwiczenia — drobnym drukiem, pod główną liczbą. */
   p.kcal-split{margin:4px 0 0;font-size:12.5px;color:var(--ink-soft);line-height:1.45}
@@ -1116,7 +1229,7 @@
     min-height:48px;background:var(--surface-2);border:1px solid var(--edge);border-radius:var(--r);
     color:var(--ink-soft);text-decoration:none;text-align:center;line-height:1.2;
     -webkit-tap-highlight-color:transparent}
-  .seg a[aria-current=page]{background:var(--steel);border-color:var(--steel);color:#fff;font-weight:600}
+  .seg a[aria-current=page]{background:var(--steel);border-color:var(--steel);color:var(--on-strong);font-weight:600}
   .seg a:focus-visible{outline:2px solid var(--steel);outline-offset:2px}
   /*
    * Cztery sekcje na ekranie 320 px to po 68 px na pozycję: „W pobliżu” pogrubione przy 13,5 px
@@ -1131,7 +1244,7 @@
   .chips button{font:inherit;font-size:13.5px;padding:9px 12px;min-height:44px;background:var(--surface-2);
     border:1px solid var(--edge);border-radius:22px;color:var(--ink-soft);cursor:pointer;
     -webkit-tap-highlight-color:transparent}
-  .chips button[aria-pressed=true]{background:var(--steel);border-color:var(--steel);color:#fff;font-weight:600}
+  .chips button[aria-pressed=true]{background:var(--steel);border-color:var(--steel);color:var(--on-strong);font-weight:600}
   /* Filtr długości i filtr sprzętu jeden pod drugim — z odstępem, żeby nie czytały się jak jeden rząd. */
   .chips + .seg,.seg + .chips{margin-top:10px}
 
@@ -1145,7 +1258,7 @@
     border-radius:var(--r);padding:10px 12px}
   details.prep-session summary{cursor:pointer;font-weight:600;min-height:28px}
   .ex-tag{display:inline-block;min-width:22px;margin-right:6px;padding:0 4px;border-radius:2px;
-    background:var(--steel);color:#fff;font-family:var(--display);font-size:13px;text-align:center}
+    background:var(--steel);color:var(--on-strong);font-family:var(--display);font-size:13px;text-align:center}
   .ex-cue{display:block;font-size:12.5px;color:var(--ink-soft);margin-top:2px}
   /* Para: ramka z nagłówkiem, nie kreska z lewej — tę system projektowy odrzuca jako szablon. */
   .pairbox{border:1px solid var(--edge);border-radius:var(--r);background:var(--surface);margin:10px 0;overflow:hidden}
@@ -1153,7 +1266,7 @@
     border-bottom:1px solid var(--line)}
   .pair-head b{display:block;font-family:var(--display);font-size:15px;color:var(--c-blue-ink)}
   .pair-head span{color:var(--ink-soft)}
-  .bl-item .bl-pair[aria-pressed=true]{background:var(--steel);border-color:var(--steel);color:#fff}
+  .bl-item .bl-pair[aria-pressed=true]{background:var(--steel);border-color:var(--steel);color:var(--on-strong)}
   .boost{padding:8px 0;border-bottom:1px solid var(--line)}
   .boost:last-of-type{border-bottom:0}
   .boost b{display:block;margin-bottom:2px}
@@ -1308,9 +1421,9 @@
     color:var(--ink-soft);pointer-events:none;font-size:14px}
   /* Lista nad treścią, ale pod dolnym paskiem; na telefonie z klawiaturą mieści się w połowie ekranu. */
   .picker-list{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:25;margin:0;padding:4px 0;
-    list-style:none;background:#fff;border:1px solid var(--edge);border-radius:var(--r);
+    list-style:none;background:var(--field);border:1px solid var(--edge);border-radius:var(--r);
     max-height:min(340px,46vh);overflow-y:auto;overscroll-behavior:contain;
-    box-shadow:0 8px 24px rgba(30,35,32,.16)}
+    box-shadow:0 8px 24px rgba(var(--shade),.16)}
   .picker-opt{display:grid;gap:1px;padding:8px 12px 8px 11px;min-height:48px;cursor:pointer;
     border-left:3px solid transparent;-webkit-tap-highlight-color:transparent}
   .picker-opt[aria-selected=true]{background:var(--surface-2);border-left-color:var(--steel)}
@@ -1389,3 +1502,45 @@
   .promo-img{display:block;width:100%;aspect-ratio:1/1;height:auto;border:1px solid var(--line);border-radius:var(--r)}
   .promo-wait{display:grid;place-items:center;background:var(--surface-2);color:var(--ink-soft);font-size:15px;
     text-align:center;padding:24px}
+
+  /* ---------------- Notatki do treningu i ćwiczenia ---------------- */
+
+  /* „Ostatnio (12.10): wyżej siodełko” — w sesji przycięte do dwóch linijek, żeby nie zepchnąć „Zrobione”. */
+  .grp p.note-last,p.note-last{margin:0 0 10px;font-size:13.5px;color:var(--ink);background:var(--surface-2);
+    border-left:3px solid var(--c-blue);padding:6px 10px;border-radius:var(--r);overflow-wrap:anywhere;max-width:none}
+  p.note-last b{font-weight:600;color:var(--c-blue-ink)}
+  p.note-last.clamp{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .trans-next p.note-last{margin:4px 0 0}
+  .note-ed{margin:0 0 10px}
+  .note-ed .btn.note-btn,.btn.note-btn{gap:6px}
+  .grp p.note-now,p.note-now{margin:0 0 4px;font-size:13.5px;color:var(--ink);overflow-wrap:anywhere;white-space:pre-line}
+  .note-fld{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-soft);margin:8px 0 3px}
+  .note-area{width:100%;font:inherit;font-size:16px;padding:9px 10px;border:1px solid var(--edge);
+    border-radius:var(--r);background:var(--surface);color:var(--ink);resize:vertical;min-height:48px}
+  .note-area:focus{outline:2px solid var(--steel);outline-offset:-1px}
+  .grp p.note-count,p.note-count{margin:2px 0 8px;font-size:12px;color:var(--ink-soft)}
+  .note-workout{margin-top:12px}
+  .h-notes{margin-top:4px}
+  .h-note{margin:2px 0 0;font-size:13px;color:var(--ink);overflow-wrap:anywhere;white-space:pre-line}
+  .h-note-row{grid-column:1/-1;margin-top:-4px}
+  .h-note-row .note-ed{margin:0}
+
+  /* ---------------- Mięśnie w tym tygodniu ---------------- */
+
+  .mw-figs{display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:330px;margin:10px auto 6px}
+  .mw-fig{margin:0;min-width:0}
+  .mw-fig svg{display:block;width:100%;height:auto}
+  .mw-fig figcaption{text-align:center;font-size:12.5px;color:var(--ink-soft);margin-top:2px}
+  .mw-body{fill:var(--surface-2);stroke:var(--edge);stroke-width:.6;stroke-linejoin:round}
+  .mw-m{stroke:var(--steel);stroke-width:.35}
+  /* Skala z tokenów: brak serii zostaje jasny, kolejne stopnie to coraz pełniejszy błękit. */
+  .mw-l0{fill:var(--surface)}
+  .mw-l1{fill:var(--c-blue);fill-opacity:.28}
+  .mw-l2{fill:var(--c-blue);fill-opacity:.55}
+  .mw-l3{fill:var(--c-blue);fill-opacity:.85}
+  .mw-l4{fill:var(--c-blue-ink)}
+  .mw-legend{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center;font-size:12.5px;color:var(--ink-soft);margin:4px 0 6px}
+  .mw-legend-h{font-weight:600}
+  .mw-key{display:inline-flex;align-items:center;gap:5px}
+  .mw-key svg{flex:none}
+  .grp p.mw-note{margin:8px 0 0;font-size:12.5px}

@@ -28,7 +28,7 @@ npm run build      # typecheck + produkcyjny build do dist/ z service workerem (
 npm run preview    # podgląd builda — tu działa też praca offline
 npm run typecheck  # tsc: aplikacja, testy, konfiguracja Vite i skrypty, service worker, filmy demo
 npm run lint       # oxlint
-npm test           # 3306 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, plan z zakupami, serwer… (vitest)
+npm test           # 3498 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, plan z zakupami, serwer… (vitest)
 ```
 
 Aplikacje na telefon (GYM TRACKER Zdrowie — `health/README.md`):
@@ -482,6 +482,13 @@ zamiast rysować trend z trzech punktów.
 wielkości: linia od początku do końca pokazuje to samo, inaczej skakałaby przy każdej
 zmianie obciążenia.
 
+**Notatki w historii.** Wiersz treningu pokazuje jego notatkę i notatki ćwiczeń, a ołówek
+„Notatki” otwiera je wszystkie naraz do poprawki. Zmiana zapisuje się dopiero po „Zapisz notatki”
+— w historii nic nie zmienia się przypadkiem.
+
+**Mięśnie w tym tygodniu** stoją w profilu, gdy plan nie trwa; w trakcie planu karta jest
+w zakładce Plan (opis niżej, przy doradcy).
+
 **Liczone jest z dziennika, nie z `prog[id].hist`.** Dziennik jest źródłem — `hist` bywa
 przycinany przez silnik progresji, bo służy do wyliczania następnej sesji, a nie do pamiętania
 wszystkiego. Spadek po przerwie nie jest tu opisany jako porażka: wykres liczy, nie ocenia.
@@ -738,12 +745,12 @@ aplikacji. Dane produktów: [Open Food Facts](https://world.openfoodfacts.org), 
   **pytanie o wagę** („Ile dziś ważysz?” z ostatnim ważeniem i radą „Najlepiej rano, po toalecie,
   przed jedzeniem.”, z „Nie dziś” wspólnym z ekranem Dziś; po zapisie jedna linijka „Waga: 82,40 kg”
   ze „Zmień”), bilans dnia z „Dodaj zjedzone”, „Ulubione (N)” i „Większy posiłek”, **zjedzone**
-  zaraz pod nim, plan dnia (z nazwą planu z zakupami, a gdy plan zaczyna się później — „Plan „…”
+  zaraz pod nim (po porach posiłku, z „Kopiuj na…”), woda i — gdy włączone — okno jedzenia, plan dnia (z nazwą planu z zakupami, a gdy plan zaczyna się później — „Plan „…”
   zaczyna się …”), „Co teraz?” i kroki. Bilans mówi to samo zdanie co karta na ekranie Dziś — „Na dziś: 2100 kcal i 150 g
   białka”, „Zostało ok. 650 kcal i 54 g białka”, „Kalorie na dziś w zakresie celu, białka jeszcze 20
   g” albo „Na dziś kalorii już wystarczy, białka jeszcze 20 g” — nad paskami białka i kalorii (dzień
-  miniony: „Zjedzone 1980 kcal · cel 2100”); węglowodany i tłuszcz są zwinięte, przy keto i low carb
-  rozwinięte. Paski mają jeden neutralny kolor: żaden kolor nie ocenia dnia. **Jedno pasmo ±100
+  miniony: „Zjedzone 1980 kcal · cel 2100”); „Więcej: węglowodany, tłuszcz, błonnik, cukry, sól”
+  jest zwinięte, przy keto i low carb rozwinięte (niżej). Paski mają jeden neutralny kolor: żaden kolor nie ocenia dnia. **Jedno pasmo ±100
   kcal** ocenia dzień na każdym ekranie — karta Dziś, bilans, „Co teraz?”, dodawanie jedzenia,
   „Większy posiłek”, „Zjedz teraz”, skaner, wykres 14 dni: w nim kalorie są „w zakresie celu”,
   a „ponad cel” zaczyna się powyżej +100 i zawsze kończy się tym, że jeden dzień nie zmienia trendu
@@ -794,6 +801,43 @@ aplikacji. Dane produktów: [Open Food Facts](https://world.openfoodfacts.org), 
   bilans, „Co teraz?”, „Zjedz teraz” — odkłada już jego kalorie i jeden posiłek („Liczę już
   z zaplanowanym większym posiłkiem (900 kcal).”). „Zjedzone teraz” zapisuje go od razu. Bez
   liczenia kalorii przycisku nie ma.
+- **Kopiuj na… i „Jak wczoraj”** (`diet/copy.ts`). „Zjedzone” dzieli wpisy na pory posiłku według
+  godziny — śniadanie 4:00–10:59, obiad 11:00–16:59, kolacja reszta (także po północy) — i przy
+  każdej porze stoi „Kopiuj na…”, a pod listą „Kopiuj dzień na…”. Arkusz daje „Dziś”, „Jutro”
+  i „Inny dzień” (pole daty); dzień, z którego się kopiuje, nie jest do wyboru — oglądając dziś, nie
+  ma „Dziś”. Kopie mają te same ilości, wartości i godziny, więc śniadanie zostaje śniadaniem; nie
+  odhaczają za to pozycji planu na tamtym dniu. Po wyborze arkusz się zamyka, a komunikat „Skopiowano
+  3 wpisy na jutro.” ma „Cofnij” (stoi 8 s), które usuwa dokładnie te kopie. Pusty dzień dzisiejszy,
+  gdy wczoraj coś zapisano, ma w „Zjedzone” skrót **„Jak wczoraj”**: wczorajsze wpisy jednym
+  stuknięciem, też z „Cofnij”.
+- **Woda** (`diet/water.ts`) — mała karta pod „Zjedzone”: „Woda 1,25 l z 2 l”, jeden neutralny pasek
+  i przyciski „+250 ml”, „+500 ml” oraz „−”, które cofa ostatnie dodanie (dzień pamięta 20 ostatnich).
+  Zapis w dniu (`DayRow.water`, ml). Cel z napojów według EFSA (2010: odpowiednie spożycie wody
+  ogółem 2,0 l u kobiet i 2,5 l u mężczyzn, ok. 80% z napojów) — **1,6 l kobiety, 2,0 l mężczyźni**,
+  w ciąży i przy karmieniu +0,3 l (profil ma na oba jedno pole, więc dolny dodatek; przy karmieniu
+  EFSA mówi +0,7 l i opis w profilu podpowiada wpisanie własnego celu). Własny cel (500–5000 ml)
+  i „Pokazuj wodę w dzienniku” (domyślnie włączone) są w profilu diety. Bez oceny dnia, dzień
+  przyszły karty nie ma.
+- **Błonnik, cukry, sól.** Wpis zapisuje też `fiber`, `sugars` i `salt` (g), gdy źródło je zna:
+  produkt (z etykiety, przeliczone na gramaturę), przepis (gdy znane są dla każdego składnika),
+  menu lokalu, zestaw (gdy zna je każda część), zdjęcie posiłku (błonnik i cukry; soli katalog dań nie
+  ma); szybki wpis samych kalorii — nie. Bilans dnia w zwiniętym „Więcej: węglowodany, tłuszcz,
+  błonnik, cukry, sól” pokazuje błonnik z celem **25 g** (EFSA), sól z **górną granicą 5 g** (WHO)
+  i cukry bez celu — to cukry ogółem z etykiet, także z owoców i mleka, a zalecenie WHO dotyczy
+  dodanych. Wpis bez danych nie liczy się jako zero: „co najmniej 18 z 25 g (bez danych w 2
+  wpisach)”. Bez liczenia kalorii tej sekcji nie ma, jak węglowodanów i tłuszczu.
+- **Okno jedzenia (post przerywany)** (`diet/fasting.ts`) — opcja w profilu diety, **domyślnie
+  wyłączona**: 12:12, 14:10, 16:8 albo 18:6. Włączona daje w dzienniku (tylko dziś) kartę z licznikiem
+  na własnym zegarze co 30 s: „Post od 20:15 · zostało 3 h 40 min”, po końcu postu „Okno jedzenia do
+  18:00”, z „Zaczynam post” i „Kończę post”. Start podpowiada godzina ostatniego wpisu (albo teraz),
+  ale zapisuje go człowiek — godzinę da się poprawić; wpisana godzina późniejsza niż teraz to wczoraj
+  wieczorem. Post zostawiony na ponad 48 h i okno zamknięte ponad dobę temu karta pomija. **Okno nie
+  zmienia celu kalorii** — jeden cel na dzień zostaje jedyną regułą. Karta i profil mają linijkę
+  zastrzeżenia (nie w ciąży, przy karmieniu, przy cukrzycy leczonej lekami ani przy zaburzeniach
+  odżywiania — najpierw rozmowa z lekarzem) z odnośnikiem do `#/zdrowie`; przy „Jestem w ciąży lub
+  karmię piersią” podziały są wyłączone z wyjaśnieniem, a zapis profilu wyłącza okno zapisane
+  wcześniej. Opcja, nie domyślnie: przy tej samej kaloryczności badania nie pokazują przewagi postu
+  nad zwykłym deficytem; dla części ludzi to po prostu wygodny rytm dnia.
 - **Poniedziałkowe sprawdzenie** (`diet/calibrate.ts`). Rusza raz w tygodniu, przy pierwszym
   otwarciu karty jedzenia na ekranie Dziś, dziennika albo „Zjedz teraz” (w poniedziałek od 4:00 —
   niedzielna kolacja może jeszcze czekać na wpis; póki trwa, najwyżej 3 s, w miejscu celu stoi
@@ -854,7 +898,9 @@ aplikacji. Dane produktów: [Open Food Facts](https://world.openfoodfacts.org), 
   poniżej 1500 albo 1200 kcal — to minimum (każdy z linijką w zawiadomieniu); cel między minimum
   a podstawową przemianą materii zostaje, a zawiadomienie pyta: „Podnieś do … kcal” albo „Zostaw —
   ustalony z lekarzem albo dietetykiem”.
-- **Postęp** (podstrona): kafelki „Teraz (trend)”, „Od startu” i „Do celu” i wykres wagi —
+- **Postęp** (podstrona): kafelki „Teraz (trend)”, „Od startu” i „Do celu” (a gdy w profilu są
+  obwody — czwarty, „Talia”: ostatni pomiar i zmiana od pierwszego, ta sama liczba co w karcie
+  „Sylwetka”, przez most `waists`) i wykres wagi —
   ważenia jako blade kropki, linia trendu, prognoza i waga docelowa. **Trend zamiast pojedynczych
   ważeń**: średnia wykładnicza, w której każde ważenie przesuwa trend o 1 − 0,9^dni drogi (dzień po
   dniu o dziesiątą część, po tygodniu przerwy mniej więcej o połowę), a jeden krok najwyżej o 3 kg,
@@ -1595,6 +1641,18 @@ stacja na brzuch dawała 12 serii na jedną partię. Do nich doszły cztery ćwi
 ciała: wyskoki z przysiadu, brzuszki, unoszenie nóg w leżeniu i scyzoryki. Ustalone przez
 trenera 10/10/10 to punkt wyjścia — dalej powtórzenia i ciężar prowadzi progresja.
 
+**Notatki do ćwiczenia i treningu.** Pod „Zrobione” (nigdy nad nim) stoi ołówek „Notatka”: pole na
+rzecz do zapamiętania — „wyżej siodełko”, „chwyt szerzej”, „lewe kolano ucieka”. Notatka czeka
+w sesji i przy „Zamknij trening” trafia do dziennika razem z wynikiem. **Wraca przy następnej sesji
+tego ćwiczenia** jako „Ostatnio (12.10): …” — przy serii (przycięte do dwóch linijek, żeby nie
+zepchnąć „Zrobione” z ekranu), w przerwie przed pierwszą serią, na liście ćwiczeń i na podstronie
+ćwiczenia w profilu. Bierze się z najpóźniejszej sesji, w której ją wpisano, a nie tylko z ostatniej:
+siodełko ustawione raz obowiązuje, dopóki ktoś nie zapisze czegoś nowego. Notatka całego treningu
+(„po nocce”, „siłownia pełna”) ma pole od razu w podsumowaniu po zamknięciu i zapisuje się sama,
+także gdy podsumowanie zamyka się jednym „OK”. Obie mają do 500 znaków — dość na wskazówkę, za mało
+na pamiętnik. Pomysł ze Strong i Hevy, gdzie notatka przy ćwiczeniu bywa najczęściej używaną
+drobnostką.
+
 ## Czas treningu
 
 **Zegar w pasku.** Od „Zaczynam” do „Zamknij trening” w pasku aplikacji stoi licznik całego
@@ -1652,6 +1710,43 @@ Po zapisie pokazuje dzisiejszą liczbę, **średnią z 7 dni** i zmianę średni
 „uwaga” — co z nich wynika, to rozmowa z trenerem albo lekarzem. Na życzenie przychodzi też
 przypomnienie o 7:00 (domyślnie wyłączone, żeby nikt nie dostał nagle trzeciego powiadomienia
 dziennie); pół godziny przed porannym treningiem, a w dniu, w którym waga już jest — wcale.
+
+## Sylwetka: obwody i zdjęcia
+
+Waga mówi o masie, nie o kształcie: przy treningu siłowym mięśni przybywa, tłuszczu ubywa, a liczba
+na wadze potrafi stać w miejscu. Dlatego w Profilu, pod kartą wagi, stoi karta **„Sylwetka”** —
+osobna, bo ważenie zostaje tam, gdzie było, ze swoim formularzem.
+
+**Obwody** (`engine/measures.ts`): talia, biodra, klatka, ramię i udo, w centymetrach do 0,1.
+Każde pole jest opcjonalne — kto mierzy samą talię, wpisuje samą talię. Dziennik działa jak ważenia:
+**jeden wpis na dzień**, a drugi pomiar tego samego dnia dopisuje albo poprawia pola pierwszego
+(wieczorem dopisane ramię nie kasuje porannej talii); puste pole w formularzu zostaje, jak było.
+Karta pokazuje przy każdym zmierzonym obwodzie ostatnią liczbę, **zmianę od pierwszego pomiaru**
+ze znakiem zawsze („−2,3 cm od 3 wrz · 3 pomiary”) i mini wykres (ten sam `Trendline` co przy
+wadze), a pod formularzem pięć ostatnich pomiarów z usuwaniem dnia. Zakresy pól (talia 40–250 cm,
+ramię 10–80 cm…) łapią literówki, nie oceniają: **bez progów zdrowotnych i bez ocen**, tak jak przy
+wadze. „Jak mierzyć” mówi, jak dostać powtarzalną liczbę: rano, przed jedzeniem, taśma poziomo, na
+spokojnym wydechu, talia w połowie między dolnym żebrem a górą kości biodrowej (miejsce pomiaru WHO),
+za każdym razem ta sama strona ciała. Postęp diety dostaje z tego kafelek „Talia”.
+
+**Zdjęcia** leżą w osobnej bazie IndexedDB `gt-sylwetka` (`src/silhouette.ts`) — nie w zapisie
+treningów i nie w bazie diety. „Aparat” otwiera aparat telefonu (pole pliku z `capture`), „Z galerii”
+bierze jedno albo kilka zdjęć; zdjęcie z galerii dostaje dzień z daty pliku, a w podglądzie dzień da się
+poprawić. Przeglądarka zmniejsza każde zdjęcie do 1080 px dłuższego boku, JPEG
+(`silhouetteImage.ts`), i robi miniaturę: lista czyta same miniatury (kilkanaście kilobajtów sztuka),
+pełne zdjęcie wczytuje się dopiero przy oglądaniu, porównaniu albo pobraniu, jako adres `blob:`
+oddawany razem z widokiem. Kilka zdjęć z galerii przechodzi po jednym, żeby w pamięci nie było
+naraz dwunastu pełnych obrazów. **Porównanie** stawia „Przed” i „Po” obok siebie (domyślnie pierwsze
+i ostatnie, do zmiany), przy każdym zdjęciu jest „Pobierz” i „Usuń” z potwierdzeniem.
+
+Telefon z małą ilością pamięci potrafi zamknąć kartę, kiedy z przodu jest aparat systemu. Przed
+otwarciem aparatu zostaje więc znacznik w pamięci karty; zwykły powrót go zdejmuje, a gdy strona
+wczyta się od nowa ze znacznikiem (do kwadransa), karta mówi, że zdjęcie zwykle czeka w galerii
+telefonu.
+
+**Zdjęcia nie wchodzą do kopii zapasowej** — są za duże na jeden plik JSON — i karta mówi to wprost,
+razem z tym, że nigdzie ich nie wysyłamy. Kopię daje „Pobierz”. „Usuń wszystkie dane” kasuje bazę
+zdjęć razem z resztą, a pytanie przed resetem mówi, ile zdjęć zniknie.
 
 ## Ćwiczenia na czas
 
@@ -1831,7 +1926,7 @@ src/
     chains/                 sieci z własnymi danymi (Selgros): rejestr, dane (`data/*.json`), scalanie po EAN bez oferty online, kontrola liczb — 10 testów
     nearby/                 w pobliżu: reguła obiektów OSM (`osmTags`), drzewo kawałków i wybór wokół zaokrąglonej pozycji (`osmGrid`), format danych (`osmFormat`), dane aplikacji (`staticData`), zapytanie Overpass dla obu widoków (`live`) z przerwami i budżetem czasu, kopia na dobę i zapas na tydzień, promień
     scan/                   skaner kodów: kody GS1 (cyfra kontrolna, UPC-E, warianty w bazie), Open Food Facts dla kodów spoza bazy, porównanie pod cel diety, lista porównania znikająca godzinę po ostatnim skanie, czytnik (wbudowany albo WebAssembly) — 16 testów
-    diet/                   dieta: baza Dexie (`produkty-pl-dieta`, wersja 4 z zestawami, ulubionymi i planami z zakupami), jeden cel na dzień z historią celów i szacunkiem NASEM (`target.ts`), trend wagi i tempo (`trend.ts`), poniedziałkowe sprawdzenie (`calibrate.ts`), przejście starych profili (`upgrade.ts`), zapis profilu (`edit.ts`), sposoby odżywiania, dzień, plan z Excela, zestawy, ulubione, wyszukiwanie, podpowiedzi, większy posiłek (`cheat.ts`) — 170 testów
+    diet/                   dieta: baza Dexie (`produkty-pl-dieta`, wersja 6 z zestawami, ulubionymi, planami z zakupami, badaniami oraz błonnikiem, cukrami i solą we wpisach), jeden cel na dzień z historią celów i szacunkiem NASEM (`target.ts`), trend wagi i tempo (`trend.ts`), poniedziałkowe sprawdzenie (`calibrate.ts`), przejście starych profili (`upgrade.ts`), zapis profilu (`edit.ts`), sposoby odżywiania, dzień, plan z Excela, zestawy, ulubione, wyszukiwanie, podpowiedzi, większy posiłek (`cheat.ts`), kopiowanie wpisów (`copy.ts`), woda (`water.ts`), okno jedzenia (`fasting.ts`) — 359 testów
     prep/                   plan z zakupami (meal prep): bloki gotowania, przepisy z koszyka, wybór ról i lista zamienników, porcje i dodatki, cele dni z dzisiejszego celu, lista zakupów, nazwa, przesuwanie dat, pierwszeństwo w dzienniku, migawka w bazie, odczyt z kopii — 120 testów
     restaurants/            lokale: dane sieci (`data/*.json`), kontrola liczb, wyszukiwanie, kolejność, „Najwięcej białka”, stan w adresie — 101 testów
     hooks/                  baza produktów, menu lokali, dieta na żywo i scalona z treningiem, poniedziałkowe sprawdzenie, stan w adresie, lokalizacja, sklepy w pobliżu (z zapasem i samoczynnym ponowieniem), szukanie kodu, porównanie — 26 testów
@@ -2118,6 +2213,17 @@ pomocniczy pół. Seria wybuchowa (swing) i podchód na czas (deska, spacer) nie
 same liczą się za pół. Przysiad nie liczy się tyłowi uda — u Kubo i in. (2019) nie urósł ani
 przy płytkim, ani przy głębokim.
 
+**Mięśnie w tym tygodniu.** Karta w zakładce Plan (a bez planu — w profilu) rysuje ciało z przodu
+i z tyłu i barwi szesnaście partii liczbą serii od poniedziałku: ten sam model co doradca, więc
+główny mięsień dostaje całą serię, pomocniczy pół. Liczą się serie naprawdę zrobione, z zamkniętych
+treningów; przekąski ruchowe nie wchodzą do serii (przekąska to nie trening) — karta mówi tylko,
+ile ich było. Skala ma pięć stopni z liczb doradcy (0, poniżej 4, 4–10, 10–20, ponad 20) i kolory
+z tokenów, więc idzie za motywem. **Rysunek nie jest jedynym nośnikiem**: pod nim stoi lista
+liczbowa od najmocniej pracującej partii, z pasem 10–20 serii (Schoenfeld, Ogborn i Krieger 2017)
+jako odniesieniem z badań, i zdanie, które partie są bez serii. Bez słów „za mało” i „za dużo”
+— to tydzień w liczbach, nie ocena. Tydzień jest tygodniem silnika (dni w UTC, od poniedziałku),
+tak jak kalendarz planu, więc karta i plan nie różnią się o trening z niedzieli wieczorem.
+
 **Zasady doradcy — i skąd się biorą:**
 
 | Zasada | Próg | Źródło |
@@ -2395,6 +2501,51 @@ z błękitu, szmaragd z zieleni; srebro i złoto zostają przy neutralnych. Rysu
 jest wszędzie ciemny, „grawerowany": jasny piktogram na stopie o średniej jasności schodził
 do 2,74:1 i po prostu znikał. Ciemny trzyma od 4,16:1 wzwyż na każdym z pięciu pasm.
 
+### Tryb ciemny
+
+W **Ustawieniach** karta **„Wygląd”**: Automatycznie (domyślnie — za ustawieniem telefonu albo
+komputera), Jasny, Ciemny. Wybór leży w tej przeglądarce, tak jak język, a nie w kopii danych:
+ciemny telefon i jasny laptop tej samej osoby to dwa ekrany. Zmiana działa od razu, bez
+przeładowania (`src/theme.ts`).
+
+- **Te same tokeny, inne wartości.** Ciemny wygląd to jeden blok w `styles.css`, który przedefiniowuje
+  tokeny; reguły nie wiedzą, w którym wyglądzie są. Blok stoi dwa razy — pod
+  `@media (prefers-color-scheme: dark)` („Automatycznie”, działa od pierwszej klatki, bez skryptu)
+  i pod `data-theme="dark"` na `<html>` (wybór z ustawień, stawiany w `main.tsx` przed pierwszym
+  renderem). Test pilnuje, żeby obie kopie były identyczne. Skrypt w `index.html` odpadł: polityka
+  bezpieczeństwa wpuszcza tylko pliki z serwera.
+- **Tła odwracają kolejność**: strona najciemniejsza (`#101311`), karta jaśniejsza, wnętrze karty
+  jeszcze jaśniejsze. **Tusze akcentów** (`-ink`) są w ciemnym rozjaśnione, tła akcentów (`-bg`)
+  przyciemnione, a **czyste akcenty zostają** — to wypełnienia. Na ciemnym czysty pomarańcz dawałby
+  nawet 5:1, ale reguła jest w nazwie tokenu, nie w liczbie: tekst idzie na `-ink`, zawsze.
+- **Stal robi się jasna**, a napis na niej — nowy token `--on-strong` (biel w jasnym, prawie czerń
+  w ciemnym). Ten sam token stoi na każdym mocnym wypełnieniu: wybrany segment, przycisk kawy,
+  odhaczone ćwiczenie. Biel pól formularzy i list podpowiedzi to `--field`, cienie i przyciemnienia
+  pod oknami — `rgba(var(--shade), …)`. Gołe `#fff` zostało tylko tam, gdzie tło jest stałe:
+  kafelki kettlebli, nakładki na miniaturach filmów, podgląd aparatu i białe ramki zdjęć produktów.
+- **Obsada, sceny, manekin i kafelki kettlebli zostają jasne.** Ich klasy (`.gorilla`, `.scene-art`,
+  `.mq`, `.chip`) stoją w selektorze jasnego bloku tokenów, więc rysunek dostaje jasną paletę także
+  w ciemnym wyglądzie: sierść, kamizelka trenera i kolory odważników to tożsamość, a nie interfejs.
+  Sceny i manekin mają własne jasne tło — w ciemnym są jasną tabliczką na karcie; goryle bez tła
+  odcinają się od ciemnej karty jaśniejszym konturem sierści i srebrem trenera. Medale idą za
+  wyglądem tylko w części „niezdobytej” (płaska stopa w kolorze karty); tworzywa są stałe.
+- **Obrazki do udostępnienia zostają jasne.** Karty, plakat i świadectwo rysuje płótno z samodzielnego
+  SVG, który nie widzi arkusza strony — zmienne podmienia `inlineVars` na stałe, jasne wartości,
+  a test obsady pilnuje, żeby nie został żaden `var(`. To kartki dla innych, nie ekran.
+- **Mapa „W pobliżu”**: kafelki OSM przyciemnia filtr CSS (`--map-tiles`, odwrócenie z obrotem
+  barwy) nałożony tylko na warstwę kafelków — znaczniki, legenda i kontrolki zostają w kolorach
+  tokenów.
+- **Pasek systemowy** (`theme-color`) idzie za wyglądem: w `index.html` dwa znaczniki z `media`
+  (za systemem, przed skryptem), po starcie jeden, ustawiany z `TOP_COLORS` — tych samych wartości
+  co `--bg` i `--surface`, co sprawdza test. `color-scheme` mówi przeglądarce, w jakim wyglądzie
+  rysować paski przewijania i własne kontrolki.
+- **Progi pilnuje ten sam test kontrastu, w obu wyglądach**: tekst, `--ink-soft`, stany, stal i tusze
+  akcentów ≥ 4,5:1 na każdym z trzech teł i na polu, `--edge` ≥ 3:1, `--on-strong` ≥ 4,5:1 na każdym
+  mocnym wypełnieniu, tekst na tłach akcentów ≥ 4,5:1, kropki stanu ≥ 3:1. Do tego: każdy kolor
+  interfejsu z jasnego bloku ma ciemną wersję.
+- **Nowe komponenty biorą kolory tylko z tokenów.** Goły heks w nowej regule nie przejdzie do ciemnego
+  wyglądu — zostanie jasną plamą.
+
 ## Jak wyglądają odznaki
 
 Odznaka jest przedmiotem, nie znakiem typograficznym. Każda to sześciokątny medal z tworzywem,
@@ -2587,6 +2738,9 @@ GYM TRACKER instaluje się na ekranie głównym telefonu i działa bez sieci od 
   Open Food Facts i serwerem aplikacji (`VITE_API_URL`), ramki z YouTube'a. Test przegląda kod i pilnuje, żeby każdy adres
   `https://`, z którym aplikacja rozmawia, był w polityce.
 - **Ikony** w `public/icons/`: zwykła 192 i 512 px, maskowalna 512 px, 180 px dla iOS i wektorowa.
+- **Tryb ciemny a instalacja.** Kolory w manifeście (`theme_color`, `background_color`) zostają jasne —
+  manifest nie zna wyglądów, więc ekran startowy Androida jest jasny przez ułamek sekundy. Pasek
+  systemowy po starcie idzie już za wybranym wyglądem (o tym w części „Kolory”).
 - **iPhone instaluje ręcznie.** Android sam proponuje instalację, iOS nie zrobi tego nigdy — nie ma
   ani okna, ani zdarzenia dla strony. Dlatego na iPhonie i iPadzie poza aplikacją z ikony
   (`src/install.ts`) pod paskiem aplikacji stoi niebieski pasek „Dodaj do ekranu początkowego”,
@@ -2631,8 +2785,12 @@ i ochrona przed botami: `server/api/README.md`.
 
 Rano o 7:30 — w dni, w które plan ma trening („Dziś trening: Trening A”). Wieczorem o 19:30 —
 codziennie, żeby wpisać kroki, bieżnię, rower albo taniec z całego dnia. Na życzenie o 7:00 —
-o porannym ważeniu (domyślnie wyłączone; patrz „Ważenie”). Godziny według zegara
-telefonu, na Androidzie i na iPhonie. Włącza się je w Ustawieniach, każde osobno.
+o porannym ważeniu (domyślnie wyłączone; patrz „Ważenie”). Przy profilu diety także
+„Jedzenie z dziś” — domyślnie wyłączone, o 20:00 albo o wybranej godzinie (od 16:00 do 23:30, co
+pół godziny). **Gdy włączone są i kroki, i jedzenie, przychodzi jedno powiadomienie** o godzinie
+jedzenia: „Wpisz kroki i jedzenie z dziś” — trzy powiadomienia dziennie to za dużo, ta sama
+zasada co przy ważeniu. Godziny według zegara telefonu, na Androidzie i na iPhonie. Włącza się
+je w Ustawieniach, każde osobno.
 
 **Dlaczego potrzebny jest serwer.** Strona nie umie zaplanować powiadomienia na 7:30. API, które
 miało to robić (Notification Triggers), wycofano z Chrome, Safari nigdy go nie miał, a iOS
@@ -2682,7 +2840,10 @@ wczytaniu i imporcie odpadają wpisy z nieznanym ćwiczeniem, zepsutą datą alb
 Doświadczenie i poziom postaci — jak punkty planu — są wyprowadzane, nie zapisywane.
 
 Kroki, bieżnia i rower mają listę `cardio`, a ważenia — listę `body` (po dniu, jedno na dzień);
-wzrost siedzi w `cfg.height`. Zapisywane są liczby z wyświetlacza, **nigdy kalorie**: kalorie
+wzrost siedzi w `cfg.height`. Obwody mają listę `measures` (po dniu, jeden wpis na dzień, każde pole
+opcjonalne); przy wczytaniu i imporcie odpadają pola spoza zakresów i wpisy z zepsutą datą, a dwa
+wpisy z tego samego dnia łączą się. Leżą w zapisie, więc wchodzą do kopii same; starsza kopia bez nich
+wczytuje się z pustym dziennikiem. Zapisywane są liczby z wyświetlacza, **nigdy kalorie**: kalorie
 liczą się przy każdym otwarciu z wpisu i wagi z jego dnia, więc poprawka wzoru albo pierwsze
 ważenie od razu obejmuje całą historię. Przy wczytaniu i imporcie odpadają wpisy spoza zakresów
 (to literówki) i ważenia z zepsutą datą; wzrost spoza ludzkiego zakresu jest pomijany.
@@ -2699,6 +2860,12 @@ Dane z telefonu mają pole `phone` tej samej budowy: system (`ios`/`android`), d
 tętnem, snem i wagą, przejazdy rowerem, czas paczki i chwila odbioru. Klucz telefonu leży
 w `gt-phone-key`, też poza eksportem.
 
+Notatki leżą w dzienniku treningów: `note` przy wpisie (cały trening) i przy ćwiczeniu, a w trakcie
+sesji — `session.notes` po ćwiczeniu. Dlatego same wchodzą do kopii zapasowej i znikają z „Usuń
+wszystkie dane”. Przy wczytaniu i imporcie notatka, która nie jest tekstem, albo pusta odpada,
+a za długa jest przycinana do 500 znaków; trening zostaje. Starsza kopia bez notatek wczytuje się
+bez zmian.
+
 Trwająca sesja trzyma zegar (`session.clock`): start i części jako chwile, nie liczniki — tak jak
 koniec przerwy, więc odświeżenie strony i zgaszony ekran niczego nie gubią. Zamknięty trening
 zapisuje w dzienniku `time`: sekundy całości i części (początek i koniec od startu). Przy wczytaniu
@@ -2706,7 +2873,10 @@ i imporcie zepsuty zegar albo czas odpada, a trening zostaje.
 
 **Jedzenie leży osobno, w IndexedDB** (baza `produkty-pl-dieta`, Dexie): profil diety, dni, wpisy,
 plan z Excela, własne potrawy, zestawy i ulubione (wersje 2 i 3 bazy; starsza baza i starsza kopia
-bez nich wczytują się bez zmian) — jest ich za dużo i są po dniach, więc nie pasują do jednego zapisu
+bez nich wczytują się bez zmian). Wersja 6 dokłada wpisom błonnik, cukry i sól (wpisy sprzed niej
+dostają `null` — nieznane, nie zero), dniom wodę (`water`, `waterAdds`), a profilowi „Pokazuj wodę”,
+cel wody i okno jedzenia z ostatnim postem; to wszystko jedzie w kopii zapasowej, a kopia bez tych
+pól wczytuje się z pustymi wartościami — jest ich za dużo i są po dniach, więc nie pasują do jednego zapisu
 `localStorage`. Waga ma jedno źródło: ważenia z diety, z kopii diety albo z planu z Excela przy
 wejściu w Jedzenie przechodzą do dziennika wagi i znikają z diety; kroki dieta czyta z wpisów
 i zegarka. Eksport z Ustawień zapisuje jeden plik — trening, a gdy dziennik jedzenia ma cokolwiek
@@ -2719,6 +2889,23 @@ pobrania czekające na przejęcie strony przez service worker, i miejsce wybrane
 `FORGET_TRAIL`) kasuje te kopie i nie zapisuje już niczego, o co poproszono przed resetem — także gdy
 strona zaraz się przeładuje albo zamknie. Reset nie pobiera przy tym niczego z sieci. Baza ma tę samą nazwę co
 w Produktach PL — na tej samej domenie dawny dziennik pojawia się w aplikacji sam.
+
+**Zdjęcia sylwetki mają trzecią bazę**, `gt-sylwetka` (IndexedDB, bez Dexie): miniatura i pełne zdjęcie
+w dwóch magazynach, bajty jako `ArrayBuffer`. Do pliku kopii nie trafiają (część „Sylwetka”), ale „Usuń
+wszystkie dane” kasuje całą bazę — najpierw zamyka własne połączenie, połączenia z innych kart ustępują
+same. Service worker zdjęć nie trzyma, więc nie ma tu nic do zapomnienia po jego stronie.
+
+**Eksport do arkusza (CSV).** Ustawienia → „Eksport do arkusza (CSV)” zapisuje jeden z trzech
+plików: treningi (wiersz na serię: data, trening, ćwiczenie, seria, powtórzenia albo sekundy,
+ciężar, wysiłek i zapas powtórzeń, czas treningu), ciało (dzień z ważeniem i obwodami, waga z dwoma miejscami po przecinku)
+i jedzenie (wiersz na wpis: data, godzina, posiłek, nazwa, ilość, kcal, białko, węglowodany, tłuszcz,
+a błonnik, cukry i sól tylko wtedy, gdy któryś wpis je zna). Posiłek idzie z zegara, tak samo jak
+w dzienniku: śniadanie przed 11:00, obiad do 17:00, kolacja potem. Brak danych to pusta komórka, nie zero. Format idzie
+za językiem: po polsku średnik i przecinek dziesiętny (tak otwiera plik polski Excel), po angielsku
+przecinek i kropka; UTF-8 z BOM, wiersze kończy CRLF. Tekst zaczynający się od `=`, `+`, `-` albo
+`@` dostaje apostrof, żeby nazwa potrawy nie stała się formułą. Plik powstaje w przeglądarce
+(`engine/csv.ts`, jedzenie w `food/csv.ts`, ładowane dopiero przy pobraniu); pusty zapis daje
+komunikat zamiast pustego pliku. To plik do czytania — z powrotem wczytuje się tylko kopię zapasową.
 
 ## Zastrzeżenie
 

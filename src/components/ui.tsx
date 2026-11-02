@@ -84,24 +84,39 @@ export function Modal({ req }: { req: ModalRequest | null }) {
 export function Toast({
   msg,
   onDone,
+  action,
   cast = { who: 'gustaw', mood: 'content' },
 }: {
   msg: string | null;
   onDone: () => void;
+  /** Przycisk w komunikacie („Cofnij”): komunikat stoi wtedy dłużej i znika po stuknięciu. */
+  action?: { label: string; run: () => void } | null;
   cast?: Cast;
 }) {
   useEffect(() => {
     if (!msg) return;
-    const t = setTimeout(onDone, 3200);
+    const t = setTimeout(onDone, action ? 8000 : 3200);
     return () => clearTimeout(t);
-  }, [msg, onDone]);
+  }, [msg, onDone, action]);
   if (!msg) return null;
   return (
-    <div className="toast with-cast">
+    <div className="toast with-cast" role={action ? 'status' : undefined}>
       <span className="cast-face" aria-hidden="true">
         <Gorilla who={cast.who} mood={cast.mood} crop="face" size={30} />
       </span>
-      <span>{msg}</span>
+      <span className="toast-text">{msg}</span>
+      {action && (
+        <button
+          type="button"
+          className="btn sm toast-action"
+          onClick={() => {
+            action.run();
+            onDone();
+          }}
+        >
+          {action.label}
+        </button>
+      )}
     </div>
   );
 }

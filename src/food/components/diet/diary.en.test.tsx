@@ -198,7 +198,7 @@ describe('diary in English', () => {
     expect(balance).toHaveTextContent('Protein24 of 150 g');
     expect(balance).toHaveTextContent('Calories730 of 2,000 kcal');
     expect(balance).toHaveTextContent('This already counts the planned bigger meal (900 kcal).');
-    expect(balance).toHaveTextContent('Carbs and fat');
+    expect(balance).toHaveTextContent('More: carbs, fat, fibre, sugars, salt');
     expect(screen.getByText('1 entry has calories only – the protein total may be too low.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Add food' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Favourites' })).toBeInTheDocument();

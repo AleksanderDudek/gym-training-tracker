@@ -5,6 +5,7 @@ import { isOnlineShop } from '../online/shops';
 import { RECIPES, passesRule, servingsOf, type Recipe, type RecipeItem } from './catalog';
 import { INGREDIENTS, type IngredientDef } from './ingredients';
 import { divideMacros, macrosOf, scale, sumMacros, type Macros } from './macros';
+import { roundExtra, type Extra, type Extras } from '../diet/types';
 
 /** Ingredient id -> the products that can play it, best first. */
 export type Candidates = Map<string, IndexedProduct[]>;
@@ -183,6 +184,29 @@ export function resolveRecipe(
     perServing,
     passes: passesRule(recipe, perServing),
   };
+}
+
+/** Ingredients that are only water: nothing of fibre, sugars or salt in them. */
+const PLAIN_WATER = new Set(['water', 'ice']);
+
+/**
+ * Fibre, total sugars and salt of one serving (g), each only when every ingredient's is known: the
+ * chosen product's label, or nothing in plain water. An ingredient on typical values (no product
+ * here) or with a blank on its label makes that one unknown — never counted as zero.
+ */
+export function recipeExtras(resolved: ResolvedRecipe): Extras {
+  const servings = servingsOf(resolved.recipe);
+  const one = (key: Extra): number | null => {
+    let sum = 0;
+    for (const i of resolved.items) {
+      if (PLAIN_WATER.has(i.def.id)) continue;
+      const per100 = i.product?.nutrition[key];
+      if (per100 === null || per100 === undefined) return null;
+      sum += (per100 * i.grams) / 100;
+    }
+    return roundExtra(key, sum / servings);
+  };
+  return { fiber: one('fiber'), sugars: one('sugars'), salt: one('salt') };
 }
 
 /** Stores where the recipe can be bought in full AND still passes the rule. */

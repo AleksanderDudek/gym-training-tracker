@@ -19,7 +19,8 @@ export type IconName =
   | 'back'
   | 'feedback'
   | 'share'
-  | 'contact';
+  | 'contact'
+  | 'note';
 
 const PATHS: Record<IconName, ReactNode> = {
   // Hantla: dwa obciążniki i gryf.
@@ -114,6 +115,13 @@ const PATHS: Record<IconName, ReactNode> = {
     <>
       <circle cx="12" cy="12" r="3.6" />
       <path d="M15.6 12v1.4a2.3 2.3 0 0 0 4.6 0V12a8.2 8.2 0 1 0-3.2 6.5" />
+    </>
+  ),
+  // Ołówek — notatka do ćwiczenia albo treningu.
+  note: (
+    <>
+      <path d="M4.5 19.5h4l10-10-4-4-10 10v4Z" />
+      <path d="M13 7l4 4" />
     </>
   ),
   // Suwaki — czytelniejsze w małym rozmiarze niż zębatka.

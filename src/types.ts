@@ -134,6 +134,8 @@ export interface Session {
    * „Zaczynam”; taka sesja zamyka się bez czasu.
    */
   clock?: SessionClock;
+  /** Notatki ćwiczeń wpisane w trakcie — przy zamknięciu idą do dziennika razem z wynikiem. */
+  notes?: Record<ExerciseId, string>;
 }
 
 /**
@@ -167,6 +169,8 @@ export interface LogItem {
   id: ExerciseId;
   sets: SetResult[];
   effort: EffortKey;
+  /** Notatka do ćwiczenia z tej sesji („wyżej siodełko”), do 500 znaków. Wraca przy następnej sesji. */
+  note?: string;
 }
 
 export interface LogEntry {
@@ -180,6 +184,8 @@ export interface LogEntry {
   items: LogItem[];
   /** Czas treningu z zegara sesji. Brak — trening sprzed zegara albo zamknięty bez „Zaczynam”. */
   time?: LogTime;
+  /** Notatka do całego treningu, do 500 znaków — z podsumowania po zamknięciu albo z historii. */
+  note?: string;
 }
 
 /**
@@ -246,6 +252,18 @@ export interface BodyWeight {
   /** `yyyy-mm-dd`. Jeden wpis na dzień — kolejny tego samego dnia go zastępuje. */
   day: string;
   kg: number;
+}
+
+/** Obwody ciała: talia, biodra, klatka, ramię (w połowie między barkiem a łokciem) i udo. */
+export type MeasureKey = 'waist' | 'hips' | 'chest' | 'arm' | 'thigh';
+
+/**
+ * Pomiar obwodów z jednego dnia, w cm do 0,1. Każde pole opcjonalne; jeden wpis na dzień —
+ * kolejny tego samego dnia dopisuje albo poprawia pola.
+ */
+export interface BodyMeasures extends Partial<Record<MeasureKey, number>> {
+  /** `yyyy-mm-dd`. */
+  day: string;
 }
 
 /** Dzień z krokomierza zegarka. */
@@ -619,6 +637,8 @@ export interface AppState {
   cardio: Cardio[];
   /** Waga ciała w czasie, rosnąco po dniu. Z niej liczą się kalorie. */
   body: BodyWeight[];
+  /** Obwody ciała w czasie, rosnąco po dniu. Brak w zapisach sprzed tej funkcji — pusty dziennik. */
+  measures?: BodyMeasures[];
   /** Dane z zegarka Garmin: liczby, nie wpisy — wpisy ruchu wyprowadza z nich `cardioOf`. */
   watch?: WatchData;
   /** Dane z telefonu (Apple Zdrowie, Health Connect): liczby, nie wpisy — jak `watch`. */
@@ -642,6 +662,10 @@ export interface ReminderPrefs {
   evening: boolean;
   /** Ważenie o 7:00. Brak u wyborów sprzed tej opcji — wtedy wyłączone. */
   weigh?: boolean;
+  /** „Jedzenie z dziś” — tylko przy profilu diety. Brak — wyłączone. */
+  food?: boolean;
+  /** Godzina przypomnienia o jedzeniu, `HH:MM`. Brak albo zepsuta — 20:00. */
+  foodAt?: string;
 }
 
 /** Pojedyncza zmiana poziomu po zamkniętym treningu. */

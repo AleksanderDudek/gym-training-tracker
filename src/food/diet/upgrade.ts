@@ -157,6 +157,10 @@ export function upgradeProfile(row: LegacyRow, ctx: UpgradeContext): Profile & L
     lastCheck: null,
     reached: null,
     notice: ctx.fresh ? null : 'show',
+    showWater: true,
+    waterMl: null,
+    fastPlan: null,
+    fast: null,
   };
 
   // Safety exceptions: each a second entry from today.

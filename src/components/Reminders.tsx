@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { EVENING_AT, MORNING_AT, WEIGH_AT, remindersOf } from '../engine/reminders';
+import { EVENING_AT, FOOD_TIMES, MORNING_AT, WEIGH_AT, eveningMerged, foodTimeOf, remindersOf } from '../engine/reminders';
+import { hasDiet } from '../food/dietFlag';
 import { currentPushState, disablePush, enablePush, pushConfigured } from '../push';
 import { text } from '../i18n';
 import type { PushState } from '../push';
@@ -38,6 +39,13 @@ const T = text({
     eveningLabel: (at: string) => `Przypomnienie wieczorem o ${at} o krokach i ruchu`,
     weigh: (at: string) => `rano, ${at} — ważenie`,
     weighLabel: (at: string) => `Przypomnienie o ważeniu o ${at}`,
+    introFood: (at: string) =>
+      `Przy profilu diety także „Jedzenie z dziś” — domyślnie o ${at}, godzina do wyboru.`,
+    food: (at: string) => `wieczorem, ${at} — jedzenie z dziś`,
+    foodLabel: (at: string) => `Przypomnienie o ${at} o jedzeniu z dziś`,
+    foodAt: 'Godzina przypomnienia o jedzeniu',
+    merged: (at: string) =>
+      `Kroki i jedzenie przyjdą razem, w jednym powiadomieniu o ${at}: „Wpisz kroki i jedzenie z dziś”. Trzy powiadomienia dziennie to za dużo.`,
     disabled: 'Przypomnienia wyłączone na tym telefonie.',
     disable: 'Wyłącz przypomnienia na tym telefonie',
     how: 'Przypomnienia wysyła mały serwer, bo strona sama nie umie obudzić telefonu o konkretnej godzinie. Dostaje adres powiadomień tego telefonu, strefę czasową i teksty przypomnień na trzy tygodnie naprzód — bez historii treningów i bez danych o tobie. Gdy przestaniesz otwierać aplikację, przypomnienia same się skończą.',
@@ -67,6 +75,12 @@ const T = text({
     eveningLabel: (at: string) => `Evening reminder at ${at} about steps and activity`,
     weigh: (at: string) => `morning, ${at} — weigh-in`,
     weighLabel: (at: string) => `Weigh-in reminder at ${at}`,
+    introFood: (at: string) => `With a diet profile, also “Today’s food” — at ${at} by default, at a time you choose.`,
+    food: (at: string) => `evening, ${at} — today’s food`,
+    foodLabel: (at: string) => `Reminder at ${at} about today’s food`,
+    foodAt: 'Time of the food reminder',
+    merged: (at: string) =>
+      `Steps and food come together in one notification at ${at}: “Log today’s steps and food”. Three notifications a day is too many.`,
     disabled: 'Reminders off on this phone.',
     disable: 'Turn off reminders on this phone',
     how: 'Reminders are sent by a small server, because a website can’t wake your phone at a set time on its own. It gets this phone’s notification address, your time zone and the reminder texts for three weeks ahead — no workout history and no data about you. If you stop opening the app, the reminders stop by themselves.',
@@ -106,6 +120,9 @@ export function RemindersCard({
   if (!pushConfigured() || status === null || status === 'unconfigured') return null;
 
   const prefs = remindersOf(state);
+  // Jedzenie tylko przy profilu diety — znacznik w pamięci strony, bez wczytywania bazy.
+  const diet = hasDiet();
+  const foodAt = foodTimeOf(prefs);
   /** Komunikat tylko wtedy, gdy telefon naprawdę doszedł do stanu, o który chodziło. */
   const run = async (job: () => Promise<PushState>, want: PushState, ok: string, otherwise?: string) => {
     setBusy(true);
@@ -124,7 +141,10 @@ export function RemindersCard({
   return (
     <div className="grp">
       <h2>{T.title}</h2>
-      <p className="tight">{T.intro(hhmm(MORNING_AT), hhmm(EVENING_AT), hhmm(WEIGH_AT))}</p>
+      <p className="tight">
+        {T.intro(hhmm(MORNING_AT), hhmm(EVENING_AT), hhmm(WEIGH_AT))}
+        {diet && ` ${T.introFood(hhmm(foodAt))}`}
+      </p>
 
       {BLOCKED[status] && <p className="tight cardio-note">{BLOCKED[status]}</p>}
 
@@ -169,6 +189,33 @@ export function RemindersCard({
             value={prefs.evening ? 'on' : 'off'}
             onChange={(v) => onPrefs({ ...prefs, evening: v === 'on' })}
           />
+          {diet && (
+            <>
+              <span className="seg-label" aria-hidden="true">
+                {T.food(hhmm(foodAt))}
+              </span>
+              <Segmented
+                label={T.foodLabel(hhmm(foodAt))}
+                options={ON_OFF}
+                value={prefs.food ? 'on' : 'off'}
+                onChange={(v) => onPrefs({ ...prefs, food: v === 'on', foodAt })}
+              />
+              {prefs.food && (
+                <label className="rem-time">
+                  <span>{T.foodAt}</span>
+                  <select value={foodAt} onChange={(e) => onPrefs({ ...prefs, foodAt: e.target.value })}>
+                    {/* Godzina spoza listy (np. z importu) też musi dać się zobaczyć. */}
+                    {(FOOD_TIMES.includes(foodAt) ? FOOD_TIMES : [...FOOD_TIMES, foodAt].sort()).map((t) => (
+                      <option key={t} value={t}>
+                        {hhmm(t)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              {eveningMerged(prefs, diet) && <p className="tight cardio-note">{T.merged(hhmm(foodAt))}</p>}
+            </>
+          )}
           <span className="seg-label" aria-hidden="true">
             {T.weigh(hhmm(WEIGH_AT))}
           </span>

@@ -122,9 +122,14 @@ import { ContactDialog } from './components/Contact';
 import { UpdateBar } from './components/UpdateBar';
 import { withExtension, withWeekdays } from './engine/planedit';
 import { BridgeContext } from './food/bridge';
-import type { GymBridge } from './food/bridge';
+import { measuresOf, removeMeasures, restoreMeasures, setMeasures, type MeasureInput } from './engine/measures';
+import { countPhotos, forgetPhotos } from './silhouette';
+import type { GymBridge, ToastAction } from './food/bridge';
 import { LoadBoundary } from './components/LoadBoundary';
+import { WorkoutNote } from './components/Notes';
+import { restoreNotes, setLogNotes, setSessionNote } from './engine/notes';
 import { LOCALE, pluralEn, text } from './i18n';
+import { TOP_COLORS, setThemeColor, useTheme } from './theme';
 
 /**
  * Zakładka Jedzenie w osobnej paczce (razem z Dexie, Leafletem i kodem bazy produktów): ekrany
@@ -190,6 +195,8 @@ const T = text({
     kcalFromDay: 'Kalorie od tego dnia liczą się z niej.',
     kcalFromToday: 'Kalorie od dziś liczą się z niej.',
     weighDeleted: 'Ważenie usunięte.',
+    measuresSaved: 'Pomiar zapisany.',
+    measuresDeleted: 'Pomiar usunięty.',
     heightRemoved: 'Wzrost usunięty — krok liczony dla 170 cm.',
     heightSaved: (cm: number) => `Wzrost zapisany: ${cm} cm.`,
     weightRange: (min: number, max: number) => `Waga poza zakresem ${min}–${max} kg.`,
@@ -315,10 +322,11 @@ const T = text({
     loadFailed: 'Nie udało się wczytać',
     loadFailedText: 'Wybierz plik JSON wyeksportowany z tej aplikacji.',
     resetQ: 'Usunąć wszystkie dane?',
-    resetText: (food: boolean, watch: boolean, phone: boolean) =>
+    resetText: (food: boolean, watch: boolean, phone: boolean, photos: number) =>
       'Historia, poziomy ćwiczeń i własne treningi znikną bezpowrotnie' +
       (food ? ' — razem z dziennikiem jedzenia i profilem diety' : '') +
       '.' +
+      (photos ? ` Zdjęcia sylwetki (${photos}) też — nie ma ich w kopii zapasowej, więc jeśli chcesz je zachować, najpierw je pobierz.` : '') +
       (watch ? ' Zegarek Garmin zostanie odłączony — inaczej przysłałby ostatni tydzień z powrotem.' : '') +
       (phone ? ' Telefon zostanie odłączony — inaczej przysłałby ostatnie dwa tygodnie z powrotem.' : ''),
     resetAll: 'Usuń wszystko',
@@ -389,6 +397,8 @@ const T = text({
     kcalFromDay: 'Calories from that day on use it.',
     kcalFromToday: 'Calories from today on use it.',
     weighDeleted: 'Weigh-in deleted.',
+    measuresSaved: 'Measurement saved.',
+    measuresDeleted: 'Measurement deleted.',
     heightRemoved: 'Height removed — stride worked out for 170 cm.',
     heightSaved: (cm: number) => `Height saved: ${cm} cm.`,
     weightRange: (min: number, max: number) => `Weight out of range: ${min}–${max} kg.`,
@@ -510,10 +520,11 @@ const T = text({
     loadFailed: 'Couldn’t load the file',
     loadFailedText: 'Choose a JSON file exported from this app.',
     resetQ: 'Delete all data?',
-    resetText: (food: boolean, watch: boolean, phone: boolean) =>
+    resetText: (food: boolean, watch: boolean, phone: boolean, photos: number) =>
       'Your history, exercise levels and custom workouts will be gone for good' +
       (food ? ' — along with your food diary and diet profile' : '') +
       '.' +
+      (photos ? ` Your progress photos (${photos}) too — they aren’t in the backup file, so download any you want to keep first.` : '') +
       (watch ? ' Your Garmin watch will be disconnected — otherwise it would send the last week back.' : '') +
       (phone ? ' Your phone will be disconnected — otherwise it would send the last two weeks back.' : ''),
     resetAll: 'Delete everything',
@@ -563,6 +574,8 @@ function restoreExtras(next: AppState, saved: Partial<AppState>): void {
   const byDay = new Map<string, NonNullable<AppState['body']>[number]>();
   (Array.isArray(saved.body) ? saved.body.filter(validBody) : []).forEach((b) => byDay.set(b.day, b));
   next.body = [...byDay.values()].sort((a, b) => a.day.localeCompare(b.day));
+  // Obwody tak samo: przesiane pole po polu, jeden wpis na dzień, po dniu.
+  next.measures = restoreMeasures(saved.measures);
   // Dane z zegarka: przesiane jak paczka — zepsuty dzień odpada, reszta zostaje.
   const watch = restoreWatch(saved.watch);
   if (watch) next.watch = watch;
@@ -617,6 +630,9 @@ function restoreExtras(next: AppState, saved: Partial<AppState>): void {
   next.log.forEach((e) => {
     if (e?.time !== undefined && !validLogTime(e.time)) delete e.time;
   });
+  // Notatki: tylko tekst, bez pustych i przycięty do 500 znaków — ręcznie poprawiony plik
+  // z liczbą albo obiektem w notatce nie może wywrócić historii.
+  restoreNotes(next);
   if (next.cfg.weighSkip !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(String(next.cfg.weighSkip))) delete next.cfg.weighSkip;
   const r = next.cfg.reminders;
   if (r !== undefined && (typeof r !== 'object' || typeof r.morning !== 'boolean' || typeof r.evening !== 'boolean'))
@@ -695,7 +711,13 @@ export default function App() {
   useEffect(() => {
     trail.view(`${currentPath()} · ${screenOf(route).title}`);
   }, [route]);
-  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  // Komunikat na dole ekranu; jedzenie może dołożyć do niego przycisk („Cofnij” po skopiowaniu dnia).
+  const [toast, setToast] = useState<{ msg: string; action: ToastAction | null } | null>(null);
+  const setToastMsg = useCallback((msg: string | null) => setToast(msg === null ? null : { msg, action: null }), []);
+  const showToast = useCallback(
+    (msg: string, action?: ToastAction) => setToast({ msg, action: action ?? null }),
+    [],
+  );
   const [saveBroken, setSaveBroken] = useState(false);
   const [replayIntro, setReplayIntro] = useState(false);
   // Wejście linkiem do karty urządzenia (`#/zegarek?model=…` z opisu w Connect IQ Store,
@@ -777,12 +799,14 @@ export default function App() {
     !showIntro &&
     !installStrip &&
     !supportSnoozed(state, dayKey(Date.now()));
-  // Kolor paska systemowego idzie za tym, co stoi na samej górze: tło wprowadzenia albo jasny
-  // pasek aplikacji — pasek wsparcia stoi pod nim, więc go nie zmienia. Przed wczytaniem zostaje
-  // kolor z `index.html`, ten sam co paska aplikacji, żeby start nie mrugał.
-  const topColor = !state ? null : showIntro ? '#D7D9D3' : '#FAFAF8';
+  // Kolor paska systemowego idzie za tym, co stoi na samej górze: tło wprowadzenia albo pasek
+  // aplikacji — pasek wsparcia stoi pod nim, więc go nie zmienia — w kolorach wybranego wyglądu
+  // (jasny albo ciemny, `src/theme.ts`). Przed wczytaniem zostaje kolor z `index.html`, ten sam co
+  // paska aplikacji, żeby start nie mrugał.
+  const theme = useTheme();
+  const topColor = !state ? null : TOP_COLORS[theme][showIntro ? 'bg' : 'surface'];
   useEffect(() => {
-    if (topColor) document.querySelector('meta[name="theme-color"]')?.setAttribute('content', topColor);
+    if (topColor) setThemeColor(topColor);
   }, [topColor]);
 
   /** Zatwierdza stan; obietnica mówi, czy trafił na dysk (prawie wszyscy jej nie potrzebują). */
@@ -802,6 +826,7 @@ export default function App() {
     if (!state) return null;
     return {
       weights: bodyOf(state),
+      waists: measuresOf(state).flatMap((m) => (m.waist !== undefined ? [{ day: m.day, cm: m.waist }] : [])),
       setWeight: (kg, day) => bridgeWrites.current?.setWeight(kg, day),
       heightCm: state.cfg.height ?? null,
       setHeight: (cm) => bridgeWrites.current?.setHeight(cm),
@@ -813,12 +838,12 @@ export default function App() {
         snacks: snacksOn(state, day).length,
         outings: outingsOn(state, day),
       }),
-      toast: setToastMsg,
+      toast: showToast,
       // To samo pominięcie co karta ważenia na ekranie Dziś (`cfg.weighSkip`, dzień jak w `Weigh`).
       weighSkipped: () => state.cfg.weighSkip === weighDay(),
       skipWeigh: () => bridgeWrites.current?.skipWeigh(),
     };
-  }, [state]);
+  }, [state, showToast]);
 
   /*
    * Ważenia z dziennika diety (dawne Produkty PL na tej samej domenie, kopia diety albo plan
@@ -865,7 +890,7 @@ export default function App() {
         moving.current = false;
       }
     })();
-  }, [onFood, loaded, commit]);
+  }, [onFood, loaded, commit, setToastMsg]);
 
   // Lista przypomnień na serwerze idzie za stanem: po zmianie planu albo zapisanym treningu
   // i po powrocie do aplikacji następnego dnia. Bez serwera w buildzie, bez zgody albo bez
@@ -1053,6 +1078,23 @@ export default function App() {
     // Pominięcie to nie trening — zegara nie startuje (inaczej powrót do prowadzenia ominąłby „Zaczynam”).
     settleClock(next, current!, [id], now);
     commit(next);
+  };
+
+  /** Notatka ćwiczenia w trakcie sesji — trafi do dziennika razem z wynikiem. */
+  const noteExercise = (id: ExerciseId, note: string) => {
+    const next = clone(live.current ?? state);
+    if (!next.session) return;
+    setSessionNote(next.session, id, note);
+    commit(next);
+  };
+
+  /**
+   * Notatki zapisanego treningu: z podsumowania po zamknięciu i z historii w profilu. Zaczyna od
+   * `live.current`, bo podsumowanie stoi w oknie otwartym jeszcze przed zapisem treningu.
+   */
+  const noteLog = (date: string, notes: Parameters<typeof setLogNotes>[2]) => {
+    const next = clone(live.current ?? state);
+    if (setLogNotes(next, date, notes)) commit(next);
   };
 
   /** Cała część, która czeka na start, pominięta na dziś — bez przełączania, w przeciwieństwie do listy. */
@@ -1300,6 +1342,26 @@ export default function App() {
     setToastMsg(T.weighDeleted);
   };
 
+  /** Pomiar obwodów z dziś: drugi tego samego dnia dopisuje albo poprawia pola pierwszego. */
+  const saveMeasures = (input: MeasureInput) => {
+    const next = clone(state);
+    try {
+      setMeasures(next, dayKey(Date.now()), input);
+    } catch (e) {
+      setToastMsg(e instanceof Error ? e.message : T.measuresSaved);
+      return;
+    }
+    commit(next);
+    setToastMsg(T.measuresSaved);
+  };
+
+  const deleteMeasures = (day: string) => {
+    const next = clone(state);
+    if (!removeMeasures(next, day)) return;
+    commit(next);
+    setToastMsg(T.measuresDeleted);
+  };
+
   const setHeight = (cm: number | null, from: AppState = state) => {
     const next = clone(from);
     if (cm === null) delete next.cfg.height;
@@ -1427,17 +1489,22 @@ export default function App() {
         if (c) changes.push(c);
       });
 
+    const date = new Date().toISOString();
     next.log.push({
-      date: new Date().toISOString(),
+      date,
       workout: w.name,
       wid: w.id,
       ...(session.deload ? { deload: true } : {}),
       ready: session.ready,
-      items: logged.map((i) => ({
-        id: i.ex,
-        sets: next.session!.res[i.ex]!.rows,
-        effort: next.session!.res[i.ex]!.effort,
-      })),
+      items: logged.map((i) => {
+        const note = next.session!.notes?.[i.ex];
+        return {
+          id: i.ex,
+          sets: next.session!.res[i.ex]!.rows,
+          effort: next.session!.res[i.ex]!.effort,
+          ...(note ? { note } : {}),
+        };
+      }),
       ...(time ? { time } : {}),
     });
     next.session = null;
@@ -1489,6 +1556,7 @@ export default function App() {
           <p>{T.noChanges}</p>
         )}
         {time && <TimeSummary time={time} />}
+        <WorkoutNote onSave={(note) => noteLog(date, { note })} />
         <p className="xpline">
           {T.xpLine(gained, after.level, after.title, after.level > before.level, after.toNext)}
         </p>
@@ -1912,9 +1980,10 @@ export default function App() {
     // Pytanie wymienia dziennik jedzenia, gdy baza naprawdę coś ma — znacznik diety nie widzi
     // dziennika bez profilu. Gdy bazy nie da się odczytać, nie ma czego wymieniać.
     const food = await import('./food/backup').then((m) => m.hasFoodData()).catch(() => false);
+    const photos = await countPhotos();
     const ok = await ask(
       T.resetQ,
-      <p>{T.resetText(food, watch, phone)}</p>,
+      <p>{T.resetText(food, watch, phone, photos)}</p>,
       T.resetAll,
       { who: 'siwy', mood: 'wise' },
     );
@@ -1926,6 +1995,8 @@ export default function App() {
     forgetWatchModel();
     // Jedzenie też: inaczej stare ważenia z diety wróciłyby do dziennika wagi przy następnym wejściu.
     await import('./food/backup').then((m) => m.clearFood()).catch(() => undefined);
+    // Zdjęcia sylwetki: osobna baza, poza kopią zapasową — ale to też dane tej osoby.
+    await forgetPhotos();
     forgetSections();
     commit(freshState());
   };
@@ -2158,6 +2229,7 @@ export default function App() {
             onEffort={rateExercise}
             onRest={restControl}
             onSkip={skipExercise}
+            onNote={noteExercise}
             onFinish={() => void finishSession()}
             onList={() => setSessionView('list')}
             onToast={setToastMsg}
@@ -2177,6 +2249,7 @@ export default function App() {
             onSave={saveExercise}
             onClear={clearExercise}
             onSkip={skipExercise}
+            onNote={noteExercise}
             onFinish={() => void finishSession()}
             onCancel={() => void cancelSession()}
             onToast={setToastMsg}
@@ -2204,6 +2277,9 @@ export default function App() {
           onWeight={(kg, day) => setWeight(kg, day)}
           onHeight={(cm) => setHeight(cm)}
           onDeleteWeight={deleteWeight}
+          onMeasures={saveMeasures}
+          onDeleteMeasures={deleteMeasures}
+          onNotes={noteLog}
           onToast={setToastMsg}
         />
       )}
@@ -2301,7 +2377,7 @@ export default function App() {
       {/* Nowa wersja czeka na koniec treningu: przeładowanie w środku serii zgubiłoby miejsce. */}
       <UpdateBar hold={!!state.session} />
       <Modal req={req} />
-      <Toast msg={toastMsg} onDone={() => setToastMsg(null)} />
+      <Toast msg={toast?.msg ?? null} action={toast?.action} onDone={() => setToastMsg(null)} />
     </>
   );
 }

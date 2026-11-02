@@ -184,7 +184,7 @@
 
 /* „Dodaj zjedzone”, zestaw i „Większy posiłek”: wyszukiwanie, wynik do wybrania, gramatura; albo same kalorie. */
 .fd-diet-picker input[type=search],.fd-diet-set input[type=search],.fd-diet-cheatform input[type=search]{width:100%;padding:11px 10px;font:inherit;
-  font-size:17px;border:1px solid var(--edge);border-radius:var(--r);background:#fff;color:var(--ink)}
+  font-size:17px;border:1px solid var(--edge);border-radius:var(--r);background:var(--field);color:var(--ink)}
 .fd-diet-hint,p.fd-diet-hint{margin:8px 0 0;font-size:12.5px;color:var(--ink-soft)}
 /* Wyszukiwanie i skaner kodów obok siebie; skaner rozwija się pod polem. */
 .fd-diet-search-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
@@ -306,7 +306,7 @@ fieldset.fd-diet-styles legend{float:left;width:100%;padding:0;margin:0 0 2px;fo
 /* Zapis zawsze pod ręką: przyklejony nad dolnym paskiem (a gdy klawiatura chowa pasek — do dołu). */
 .fd-diet-savebar{position:sticky;bottom:calc(64px + env(safe-area-inset-bottom));z-index:20;display:flex;align-items:center;
   gap:12px;padding:10px 14px;background:var(--surface);border-top:1px solid var(--line);
-  box-shadow:0 -6px 16px rgba(30,35,32,.06)}
+  box-shadow:0 -6px 16px rgba(var(--shade),.06)}
 @media (pointer:coarse){body:has(input:not([type=checkbox]):not([type=radio]):focus) .fd-diet-savebar{bottom:0}}
 .fd-diet-saved{display:inline-flex;align-items:center;gap:4px;font-size:14px;font-weight:600;color:var(--ok)}
 .fd-diet-danger{margin-top:14px;color:var(--c-orange-ink);border-color:var(--c-orange-ink)}
@@ -449,6 +449,8 @@ details.fd-diet-how > summary{display:flex;align-items:center;min-height:44px;fo
 
 /* Trzy kafelki postępu w jednym rzędzie, także na telefonie. */
 .tiles.fd-diet-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+/* With the waist tile: four tiles in two rows of two rather than three and a lonely one. */
+.tiles.fd-diet-stats.fd-diet-four{grid-template-columns:repeat(2,minmax(0,1fr))}
 /* Wykres wagi: pomiary blado, trend linią ciągłą; prognoza i waga docelowa mają reguły wyżej. */
 .fd-diet-chart .fd-diet-raw{fill:var(--c-green-ink);opacity:.35}
 .fd-diet-chart path.fd-diet-trend{stroke:var(--c-green-ink);stroke-width:2;stroke-linejoin:round}
@@ -476,7 +478,7 @@ table.fd-diet-weeks th:first-child{min-width:84px;white-space:nowrap}
   background:var(--surface);color:var(--ink);font:inherit;font-size:14px;cursor:pointer}
 .fd-diet-dish:focus-visible{outline:2px solid var(--steel);outline-offset:2px}
 .fd-diet-dish-lead{border-color:var(--steel);font-weight:600}
-.fd-diet-dish-on{background:var(--steel);border-color:var(--steel);color:#fff}
+.fd-diet-dish-on{background:var(--steel);border-color:var(--steel);color:var(--on-strong)}
 .fd-diet-dish-search input{width:100%}
 .fd-diet-plate{display:grid;gap:8px;margin-top:6px}
 .fd-diet-plate-list{list-style:none;margin:0;padding:0;display:grid;gap:10px}
@@ -528,3 +530,50 @@ table.fd-diet-weeks th:first-child{min-width:84px;white-space:nowrap}
 .fd-diet-ref-list{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:6px}
 .fd-diet-ref-list li{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .fd-diet-ref-list .fd-diet-meta{display:inline}
+
+/* ---------------- Kopiuj na…, woda, okno jedzenia ---------------- */
+
+/* „Zjedzone” po porach posiłku: nagłówek pory z „Kopiuj na…” w tej samej liście co wpisy. */
+.fd-diet-list > li.fd-diet-mealhead{display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:10px 0 2px;border-top:0}
+.fd-diet-list > li.fd-diet-mealhead + li{border-top:0}
+.fd-diet-list > li.fd-diet-eaten + li.fd-diet-mealhead{margin-top:6px;border-top:1px solid var(--surface-2)}
+.fd-diet-mealhead h3{margin:0;font-family:var(--display);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-soft)}
+.fd-diet-mealhead .btn,.fd-diet-copyday .btn{min-height:44px;white-space:nowrap}
+.fd-diet-mealhead .btn svg,.fd-diet-copyday .btn svg,.fd-diet-like .btn svg{vertical-align:-4px;margin-right:6px}
+.fd-diet-copyday{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 0}
+.fd-diet-like{display:grid;gap:4px;justify-items:start;margin-top:6px}
+.fd-diet-like .btn{min-height:44px}
+
+/* Arkusz „Kopiuj na…”: dwa duże przyciski dni i pole na inny dzień. */
+.fd-diet-copy-days{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin:8px 0 14px}
+.fd-diet-copy-days .btn{min-height:48px}
+.fd-diet-copy-other{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px 10px}
+.fd-diet-copy-other .fld{flex:1 1 170px;margin:0}
+.fd-diet-copy-other input[type=date]{width:100%;min-height:44px}
+.fd-diet-copy-other .btn{min-height:44px}
+.fd-diet-copy-other .btn svg{vertical-align:-4px;margin-right:6px}
+.fd-diet-copy-other .fd-diet-err{flex-basis:100%}
+.fd-diet-copy-other input[aria-invalid=true]{border-color:var(--warn);box-shadow:inset 0 0 0 1px var(--warn)}
+
+/* Woda: liczba w nagłówku, jeden neutralny pasek, przyciski w rzędzie. */
+.fd-diet-water-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:2px 10px}
+.fd-diet-water-head h2,.fd-diet-fast h2{display:flex;align-items:center;gap:8px;margin:0}
+/* Krój tekstu, nie wąski krój liczb: w nim „l” wygląda jak „I”, a „0 l z 2 l” zlewa się w jedno słowo. */
+.fd-diet-water-num{font-weight:600;font-variant-numeric:tabular-nums;color:var(--ink-soft)}
+.fd-diet-water-acts{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 6px}
+.fd-diet-water-acts .btn{min-height:44px;min-width:44px;padding-inline:14px}
+.fd-diet-water-acts .fd-diet-water-undo{display:grid;place-items:center;padding-inline:10px}
+.fd-diet-water-acts .btn:disabled{opacity:.45;cursor:default;transform:none}
+
+/* Okno jedzenia: stan jednym zdaniem, start z godziną do poprawienia, zastrzeżenie pod spodem. */
+.fd-diet-fast h2{margin-bottom:6px}
+.grp p.fd-diet-fast-now{font-family:var(--display);font-size:16px;font-weight:600;color:var(--ink);margin:4px 0 8px}
+.fd-diet-fast-row{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px 10px;margin:6px 0 4px}
+.fd-diet-fast-row .fld{flex:0 1 170px;margin:0}
+.fd-diet-fast-row input[type=time]{width:100%;min-height:44px}
+.fd-diet-fast-row .btn,.fd-diet-fast .actions .btn{min-height:44px}
+.grp p.fd-diet-fast-note{font-size:12.5px;margin-top:6px}
+fieldset.fd-diet-fastset{margin:0;border:0;min-width:0}
+fieldset.fd-diet-fastset legend{float:left;width:100%;padding:0;margin:0 0 4px;font-size:15px;font-weight:600}

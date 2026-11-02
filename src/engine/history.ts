@@ -24,6 +24,8 @@ export interface ExerciseRow {
   effort: EffortKey;
   /** Szacowane maksimum z najcięższej serii. `null`, gdy ciężaru nie ma. */
   e1rm: number | null;
+  /** Notatka do ćwiczenia z tej sesji. */
+  note?: string;
 }
 
 const rowFrom = (entry: LogEntry, id: ExerciseId): ExerciseRow | null => {
@@ -44,6 +46,7 @@ const rowFrom = (entry: LogEntry, id: ExerciseId): ExerciseRow | null => {
     tonnage: item.sets.reduce((a, s) => a + s.reps * (s.w ?? 0), 0),
     effort: item.effort,
     e1rm: w !== null && top.length ? Math.round(e1rmFromSession(w, top, item.effort)) : null,
+    ...(item.note ? { note: item.note } : {}),
   };
 };
 

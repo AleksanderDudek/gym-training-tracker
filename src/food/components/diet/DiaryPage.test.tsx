@@ -844,7 +844,10 @@ describe('Plan z zakupami w dzienniku', () => {
     renderWithBridge(<DiaryPage />);
     const card = await screen.findByRole('region', { name: 'Plan na ten dzień: Tydzień w biurze · dzień 2 z 7' });
     expect(within(card).getByRole('link', { name: 'Tydzień w biurze' })).toHaveAttribute('href', `#/jedzenie/plan?plan=${id}`);
-    expect(screen.getByRole('region', { name: /^Zjedzone/ }).nextElementSibling).toBe(card);
+    // Pod zjedzonym mała karta wody, zaraz pod nią plan dnia.
+    const water = screen.getByRole('region', { name: /^Zjedzone/ }).nextElementSibling;
+    expect(water).toBe(screen.getByRole('region', { name: 'Woda' }));
+    expect(water!.nextElementSibling).toBe(card);
     expect(screen.queryByRole('heading', { name: 'Propozycja dnia' })).not.toBeInTheDocument();
   });
 

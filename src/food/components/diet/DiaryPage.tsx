@@ -4,7 +4,9 @@ import {
   ChevronLeft,
   ChevronRight,
   ClipboardList,
+  Copy,
   MapPin,
+  Repeat,
   Plus,
   Star,
   TrendingDown,
@@ -21,11 +23,13 @@ import { useBridge } from '../../bridge';
 import { MISSING_DATA_MESSAGE } from '../../data';
 import { hashWith } from '../../hash';
 import { simulateCheat } from '../../diet/cheat';
-import { dayState, totals } from '../../diet/day';
+import { mealGroups, type Meal } from '../../diet/copy';
+import { dayState, extraTotals, totals } from '../../diet/day';
 import { db, type DayRow, type Entry, type PlannedCheat } from '../../diet/db';
 import { entryFood } from '../../diet/favorites';
 import { planFood, type Food } from '../../diet/foods';
 import { addDays, dayLabel, longDay, mealsLeftAt } from '../../diet/model';
+import { fastingOn } from '../../diet/fasting';
 import { dayNeeds } from '../../diet/now';
 import { plannedDay, plannedKcal, type Plan, type PlannedItem, type PlanItem } from '../../diet/plan';
 import { dropCheat, eatCheat, endPause, logFood, markDay, updateChoices, updateDay } from '../../diet/store';
@@ -49,6 +53,7 @@ import { planHref } from '../prep/links';
 import { PrepDayCard } from '../prep/PrepDayCard';
 import { AutoDayCard } from './AutoDayCard';
 import { ChangeNotice } from './ChangeNotice';
+import { COPY_DAY_TO, CopyMealLabel, CopySheet, FastCard, WaterCard, mealName, useCopy } from './DiaryCards';
 import { CheatMealSheet } from './CheatMealSheet';
 import { verdictText } from './cheatText';
 import { dayMonthLong } from './dietFormat';
@@ -115,6 +120,8 @@ const T = text({
     drop: 'Usuń',
     eaten: 'Zjedzone',
     nothingYet: 'Nic jeszcze nie zapisane. Odhacz pozycję planu albo dodaj jedzenie — liczy się to, co naprawdę zjedzone.',
+    likeYesterday: 'Jak wczoraj',
+    likeYesterdayHint: (count: number) => `Kopiuje wczorajsze wpisy (${count}) z ich godzinami — „Cofnij” w komunikacie.`,
     macrosUnknown: ' · makro nieznane',
     macrosUnknownPlain: 'makro nieznane',
     deleteEntry: (name: string) => `Usuń: ${name}`,
@@ -186,6 +193,8 @@ const T = text({
     drop: 'Delete',
     eaten: 'Eaten',
     nothingYet: 'Nothing logged yet. Tick off a plan item or add food — what counts is what you really ate.',
+    likeYesterday: 'Same as yesterday',
+    likeYesterdayHint: (count: number) => `Copies yesterday’s entries (${count}) with their times — “Undo” in the message.`,
     macrosUnknown: ' · macros unknown',
     macrosUnknownPlain: 'macros unknown',
     deleteEntry: (name: string) => `Delete: ${name}`,
@@ -225,8 +234,9 @@ const T = text({
  * Dziennik — korzeń zakładki Jedzenie (w Produktach PL widok „Dziś” zakładki Dieta). Od góry: dzień,
  * na dziś to, na co dziennik czeka (zmiany w liczeniu, poniedziałkowe sprawdzenie celu, przerwa),
  * pytanie o wagę (rano, raz dziennie), karta dnia z „Dodaj zjedzone”, „Ulubione” i „Większy
- * posiłek”, zaraz pod nią to, co zjedzone — dopisane pojawia się tam, gdzie się stuknęło — potem
- * plan dnia (z zakupami, z arkusza albo propozycja), „Co teraz?”, kroki, a na dole wejścia do
+ * posiłek”, zaraz pod nią to, co zjedzone — dopisane pojawia się tam, gdzie się stuknęło — woda
+ * i okno jedzenia (gdy włączone), potem plan dnia (z zakupami, z arkusza albo propozycja), „Co
+ * teraz?”, kroki, a na dole wejścia do
  * podstron (plan posiłków, moje plany, postęp, profil diety). Cel dnia to jedna liczba z historii
  * celów (`targetOn`): ruch ani reszta tygodnia go nie przesuwają. Oglądany dzień siedzi w adresie
  * (`?dzien=`), a `?dodaj=1` z karty na ekranie Dziś otwiera „Dodaj zjedzone” i znika z adresu.
@@ -327,8 +337,13 @@ function TodayView({ profile, plan, date, today, hour, nowMs, pickerOpen, resume
   const [nowView, setNowView] = useState<'rest' | 'one' | null>(null);
   const [restRoll, setRestRoll] = useState(0);
   const [swapping, setSwapping] = useState<PlannedItem | null>(null);
+  // „Kopiuj na…”: pora posiłku albo cały dzień (`meal: null`); null — arkusz zamknięty.
+  const [copying, setCopying] = useState<{ meal: Meal | null } | null>(null);
+  // Wczorajsze wpisy dla „Jak wczoraj” na pustym dniu dzisiejszym.
+  const yesterday = useEntries(addDays(date, -1));
 
   const eaten = useMemo(() => totals(entries ?? []), [entries]);
+  const extras = useMemo(() => extraTotals(entries ?? []), [entries]);
   // Jeden cel na dzień, z historii celów: ten sam od rana do wieczora, bez ruchu i bez reszty tygodnia.
   const target = targetOn(profile, date);
   // Zaplanowany większy posiłek rezerwuje swoje kalorie i jeden posiłek: reszta dnia liczy się już z nim.
@@ -415,7 +430,7 @@ function TodayView({ profile, plan, date, today, hour, nowMs, pickerOpen, resume
       {/* Kluczem dzień: pole i „Zmień” zaczynają od nowa na każdym dniu. */}
       <WeighCard key={date} date={date} today={today} weightKg={body.weightKg ?? null} />
 
-      <MacroBars needs={needs} eaten={eaten} when={isToday ? 'today' : date < today ? 'past' : 'future'}>
+      <MacroBars needs={needs} eaten={eaten} extras={extras} when={isToday ? 'today' : date < today ? 'past' : 'future'}>
         <div className="actions fd-diet-dayacts">
           <button type="button" className="btn" onClick={() => onPicker(true)}>
             <Plus {...ICON} /> {DT.addEaten}
@@ -448,7 +463,19 @@ function TodayView({ profile, plan, date, today, hour, nowMs, pickerOpen, resume
         />
       )}
 
-      <EatenCard entries={entries} kcal={eaten.kcal} date={date} today={today} partial={day.partial} target={target} />
+      <EatenCard
+        entries={entries}
+        yesterday={isToday ? (yesterday ?? []) : []}
+        kcal={eaten.kcal}
+        date={date}
+        today={today}
+        partial={day.partial}
+        target={target}
+        onCopy={(meal) => setCopying({ meal })}
+      />
+
+      {profile.showWater && date <= today && <WaterCard date={date} day={day} profile={profile} />}
+      {isToday && fastingOn(profile) && <FastCard profile={profile} today={today} entries={entries} />}
 
       {prep ? (
         <PrepDayCard plan={prep} date={date} entries={entries} />
@@ -551,6 +578,14 @@ function TodayView({ profile, plan, date, today, hour, nowMs, pickerOpen, resume
           }}
         />
       )}
+      <CopySheet
+        open={copying !== null}
+        meal={copying?.meal ?? null}
+        entries={copying?.meal ? (mealGroups(entries).find((g) => g.meal === copying.meal)?.entries ?? []) : entries}
+        from={date}
+        today={today}
+        onClose={() => setCopying(null)}
+      />
       <FavoritesSheet
         open={favoritesOpen}
         date={date}
@@ -759,26 +794,42 @@ function CheatCard({
 }
 
 /**
- * „Zjedzone”: wpisy dnia, a pod nimi słowo osoby o dniu (`DayRow.partial`) — dzień zapisany tylko
+ * „Zjedzone”: wpisy dnia po porach posiłku, każda z „Kopiuj na…”, pod nimi „Kopiuj dzień na…”,
+ * a na pustym dniu dzisiejszym „Jak wczoraj”. Pod tym słowo osoby o dniu (`DayRow.partial`) — dzień zapisany tylko
  * w części nie liczy się do dopasowania celu ani do średnich. Bez tego słowa decyduje 60 % celu:
  * zamknięty dzień z mniejszą sumą mówi to od razu i pozwala policzyć go jako cały.
  */
 function EatenCard({
   entries,
+  yesterday,
   kcal,
   date,
   today,
   partial,
   target,
+  onCopy,
 }: {
   entries: Entry[];
+  /** Wczorajsze wpisy, gdy oglądany jest dziś — dla „Jak wczoraj”; inaczej pusto. */
+  yesterday: Entry[];
   kcal: number;
   date: string;
   today: string;
   partial: boolean | undefined;
   target: number;
+  /** „Kopiuj na…”: pora posiłku albo cały dzień (`null`). */
+  onCopy: (meal: Meal | null) => void;
 }) {
   const shown = useKcalShown();
+  const copy = useCopy();
+  const [busy, setBusy] = useState(false);
+  // Jedna płaska lista z nagłówkami pór jako `li`: wpis usunięty z granicy pory nie gubi fokusu listy.
+  const groups = mealGroups(entries);
+  const likeYesterday = () => {
+    if (busy) return;
+    setBusy(true);
+    void copy(yesterday, today, today).finally(() => setBusy(false));
+  };
   return (
     <section className="grp" aria-labelledby="fd-diet-eaten-title">
       <h2 id="fd-diet-eaten-title">
@@ -786,10 +837,28 @@ function EatenCard({
         {shown && <span className="fd-diet-h-meta"> · {formatNumber(kcal, 0)} kcal</span>}
       </h2>
       {entries.length === 0 ? (
-        <p className="tight">{T.nothingYet}</p>
+        <>
+          <p className="tight">{T.nothingYet}</p>
+          {/* Pusty dzień dzisiejszy, a wczoraj coś zapisane: jedno stuknięcie i dzień jak wczoraj. */}
+          {date === today && yesterday.length > 0 && (
+            <div className="fd-diet-like">
+              <button type="button" className="btn ghost" disabled={busy} onClick={likeYesterday}>
+                <Repeat {...ICON} /> {T.likeYesterday}
+              </button>
+              <p className="tight fd-diet-soft">{T.likeYesterdayHint(yesterday.length)}</p>
+            </div>
+          )}
+        </>
       ) : (
         <ul className="fd-diet-list">
-          {entries.map((e) => (
+          {groups.flatMap((g) => [
+            <li key={`meal:${g.meal}`} className="fd-diet-mealhead">
+              <h3>{mealName(g.meal)}</h3>
+              <button type="button" className="btn ghost sm" onClick={() => onCopy(g.meal)}>
+                <Copy {...ICON} /> <CopyMealLabel meal={g.meal} />
+              </button>
+            </li>,
+            ...g.entries.map((e) => (
             <li key={e.id} className="fd-diet-eaten">
               <span className="fd-diet-time">{e.time}</span>
               <div className="fd-diet-row-main">
@@ -817,8 +886,16 @@ function EatenCard({
                 <Trash2 {...ICON} />
               </button>
             </li>
-          ))}
+            )),
+          ])}
         </ul>
+      )}
+      {entries.length > 0 && (
+        <div className="actions fd-diet-copyday">
+          <button type="button" className="btn ghost sm" onClick={() => onCopy(null)}>
+            <Copy {...ICON} /> {COPY_DAY_TO}
+          </button>
+        </div>
       )}
       {shown && entries.length > 0 && date <= today && (
         <PartialFooter date={date} today={today} partial={partial} eaten={kcal} target={target} />

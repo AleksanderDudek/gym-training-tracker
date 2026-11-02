@@ -359,6 +359,44 @@ export const REMINDER_WEIGH: readonly string[] = text({
   ],
 });
 
+/**
+ * Wieczorne przypomnienie o jedzeniu z dnia (tylko przy profilu diety). Prosi o wpis, nigdy
+ * nie ocenia, co i ile ktoś zjadł — dzień z pizzą też zapisuje się tak samo.
+ */
+export const REMINDER_FOOD: readonly string[] = text({
+  pl: [
+    'Co było dziś na talerzu? Kilka stuknięć i bilans dnia się domknie.',
+    'Wpis z całego dnia, póki pamięć świeża — śniadanie, obiad, to, co po drodze.',
+    'Dziennik jedzenia czeka na dzisiejsze wpisy. Ulubione i zestawy skracają to do minuty.',
+    'Na koniec dnia: jedzenie z dziś do dziennika, a średnia z tygodnia policzy się sama.',
+  ],
+  en: [
+    'What was on the plate today? A few taps and the day’s balance is complete.',
+    'Log the whole day while it’s fresh — breakfast, lunch and whatever happened in between.',
+    'The food diary is waiting for today’s entries. Favourites and sets make it a minute’s job.',
+    'To end the day: today’s food into the diary, and the weekly average works itself out.',
+  ],
+});
+
+/**
+ * Jedno wieczorne zamiast dwóch, gdy włączone są i kroki, i jedzenie: trzecie powiadomienie
+ * dziennie to za dużo. Te same zasady co oba osobno.
+ */
+export const REMINDER_STEPS_FOOD: readonly string[] = text({
+  pl: [
+    'Kroki z telefonu i jedzenie z dziś — dwa krótkie wpisy na koniec dnia.',
+    'Ile kroków, co na talerzu? Ekran Dziś ma oba wpisy pod ręką.',
+    'Przepisz kroki, zanim licznik się wyzeruje, i dopisz jedzenie z całego dnia.',
+    'Krótkie podsumowanie dnia: ruch poza treningiem i to, co było do jedzenia.',
+  ],
+  en: [
+    'Steps from your phone and today’s food — two quick entries to end the day.',
+    'How many steps, what was on the plate? The Today screen has both entries to hand.',
+    'Copy your steps over before the counter resets, and add the whole day’s food.',
+    'A quick wrap-up of the day: activity outside training and what you ate.',
+  ],
+});
+
 /** Awans postaci. Żart o goryla i o stadzie, nigdy o tym, ile komuś brakowało. */
 export const LEVEL_UP: readonly string[] = text({
   pl: [

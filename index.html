@@ -2,9 +2,13 @@
 <html lang="pl">
   <head>
     <meta charset="utf-8" />
-    <!-- Kolor paska systemowego: jasny, jak pasek aplikacji pod nim. Pod wprowadzeniem
-         aplikacja przestawia go w locie na kolor tła. -->
-    <meta name="theme-color" content="#FAFAF8" />
+    <!-- Kolor paska systemowego: ten sam co pasek aplikacji pod nim, jasny albo ciemny za systemem.
+         Po starcie aplikacja zostawia jeden znacznik i ustawia go za wybranym wyglądem (`src/theme.ts`),
+         a pod wprowadzeniem przestawia go w locie na kolor tła. -->
+    <meta name="theme-color" content="#FAFAF8" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1C201D" media="(prefers-color-scheme: dark)" />
+    <!-- Kontrolki przeglądarki (paski przewijania, pola) i tło przed arkuszem — w obu wyglądach. -->
+    <meta name="color-scheme" content="light dark" />
     <meta name="description" content="Trening siłowy z automatyczną progresją: plan, terminy, przekąski ruchowe i osiągnięcia." />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>GYM TRACKER</title>

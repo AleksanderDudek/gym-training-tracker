@@ -10,8 +10,10 @@ import type { DayChoices, Plan, PlanItem } from './plan';
 import { importPlan, type ImportedPlan } from './plan-import';
 import { floorOf, hardMinOf, maintenanceOf, pauseOn, setTarget, targetOn } from './target';
 import type { WeighIn } from './trend';
-import type { LegacyFields, Profile, WeekCheck } from './types';
+import { EXTRAS, type Extra, type Fast, type LegacyFields, type Nutrients, type Profile, type WeekCheck } from './types';
 import {
+  WATER_ADDS_KEPT,
+  WATER_MAX_ML,
   cleanCustomFood,
   cleanDay,
   cleanEntry,
@@ -249,6 +251,8 @@ export async function logFood(
     protein: food.nutrients.protein,
     carbs: food.nutrients.carbs,
     fat: food.nutrients.fat,
+    // Fibre, sugars and salt when the food came with them (a number, or null for a blank label).
+    ...pickExtras(food.nutrients),
     source: food.source,
     key: food.key,
     ...extra,
@@ -259,6 +263,13 @@ export async function logFood(
     await bumpFavorite(entry.key, database);
     return id;
   });
+}
+
+/** The extras a food's nutrients carry; keys it lacks stay out of the entry (unknown). */
+function pickExtras(n: Nutrients): Partial<Pick<Entry, Extra>> {
+  const out: Partial<Pick<Entry, Extra>> = {};
+  for (const key of EXTRAS) if (n[key] !== undefined) out[key] = n[key];
+  return out;
 }
 
 /** "Something outside the plan: 650 kcal" - the workbook's "extra kcal", macros optional. */
@@ -357,6 +368,70 @@ export async function updateChoices(
   await database.transaction('rw', database.days, async () => {
     const current = (await database.days.get(date)) ?? { date };
     await database.days.put({ ...current, choices: change(current.choices ?? {}), date });
+  });
+}
+
+/*
+ * Copying entries („Kopiuj na…”, „Jak wczoraj”), water and the eating window: the diary's own
+ * small writes. None of them touches a target — one target a day stays the only calorie rule.
+ */
+
+/**
+ * Copies entries onto another day as they are: name, amount, values and time (the meal stays the
+ * meal). Not the plan line they ticked off — the other day's plan is its own. One transaction; the
+ * new ids come back for „Cofnij”.
+ */
+export async function copyEntries(entries: readonly Entry[], to: string, database: DietDb = db): Promise<number[]> {
+  const copies = entries.map(({ id: _id, planIndex: _line, ...rest }) => ({ ...rest, date: to }));
+  if (!copies.length) return [];
+  return database.transaction('rw', database.entries, async () => {
+    const ids: number[] = [];
+    for (const copy of copies) ids.push(await database.entries.add(copy));
+    return ids;
+  });
+}
+
+/** „Cofnij” after a copy: the copied entries go, nothing else. */
+export async function deleteEntries(ids: readonly number[], database: DietDb = db): Promise<void> {
+  await database.entries.bulkDelete([...ids]);
+}
+
+/** „+250 ml” / „+500 ml”: water on the day, the addition remembered for „−”. */
+export async function addWater(date: string, ml: number, database: DietDb = db): Promise<void> {
+  await database.transaction('rw', database.days, async () => {
+    const current = (await database.days.get(date)) ?? { date };
+    await database.days.put({
+      ...current,
+      water: Math.min(WATER_MAX_ML, (current.water ?? 0) + ml),
+      waterAdds: [...(current.waterAdds ?? []), ml].slice(-WATER_ADDS_KEPT),
+      date,
+    });
+  });
+}
+
+/** „−”: takes back the last addition (250 ml when the day does not remember it), never below 0. */
+export async function undoWater(date: string, database: DietDb = db): Promise<void> {
+  await database.transaction('rw', database.days, async () => {
+    const current = await database.days.get(date);
+    if (!current?.water) return;
+    const adds = current.waterAdds ?? [];
+    const last = adds.at(-1) ?? 250;
+    const { water: _water, waterAdds: _adds, ...rest } = current;
+    const water = Math.max(0, current.water - last);
+    const left = adds.slice(0, -1);
+    await database.days.put({ ...rest, ...(water > 0 && { water }), ...(left.length && water > 0 && { waterAdds: left }) });
+  });
+}
+
+/**
+ * The person's „Zaczynam post” / „Kończę post”: the fast as they set it, on the stored profile. A
+ * row not yet upgraded is left alone (the diary upgrades it before it shows the card).
+ */
+export async function saveFast(fast: Fast | null, database: DietDb = db): Promise<void> {
+  await database.transaction('rw', database.profile, async () => {
+    const row = await database.profile.get('me');
+    if (!row || row.version !== 2) return;
+    await database.profile.put({ ...row, fast, id: 'me' });
   });
 }
 
