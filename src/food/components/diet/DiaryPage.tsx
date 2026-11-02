@@ -64,6 +64,7 @@ import { RestVariants } from './RestVariants';
 import { SuggestionList } from './SuggestionList';
 import { SwapDialog } from './SwapDialog';
 import { useDietBase, useFoodPool, type FoodPool } from './useDietPage';
+import { HealthAck, HealthNote } from '../../../components/Health';
 import { WeekCheckCard } from './WeekCheckCard';
 import { WeighCard } from './WeighCard';
 import './diet.css';
@@ -262,6 +263,7 @@ export default function DiaryPage() {
 
   return (
     <KcalShown.Provider value={!hidesKcal(profile)}>
+      <HealthAck />
       <TodayView
         profile={profile}
         plan={plan}
@@ -506,6 +508,8 @@ function TodayView({ profile, plan, date, today, hour, nowMs, pickerOpen, resume
       </section>
 
       <StepsCard key={`${date}:${body.steps ?? ''}`} date={date} today={today} body={body} />
+
+      <HealthNote kind="food" more className="wrap disclaimer" />
 
       <FoodPicker
         open={pickerOpen}

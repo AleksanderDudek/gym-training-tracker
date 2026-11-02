@@ -4,6 +4,7 @@ import {
   PLAN_CLASSIC_PATH,
   PLAN_NEW_PATH,
   PROMO_PATH,
+  HEALTH_PATH,
   SECTIONS,
   SETTINGS_PATH,
   TABS,
@@ -417,5 +418,11 @@ describe('trasy', () => {
     expect(parseHash(PROMO_PATH)).toEqual({ kind: 'promo' });
     expect(screenOf({ kind: 'promo' })).toEqual({ title: 'Poleć znajomym', parent: SETTINGS_PATH });
     expect(activeTab({ kind: 'promo' })).toBe('prog' as TabKey);
+  });
+
+  it('zdrowie i bezpieczeństwo ma własny adres i wraca do ustawień', () => {
+    expect(parseHash(HEALTH_PATH)).toEqual({ kind: 'health' });
+    expect(screenOf({ kind: 'health' })).toEqual({ title: 'Zdrowie i bezpieczeństwo', parent: SETTINGS_PATH });
+    expect(activeTab({ kind: 'health' })).toBe('prog' as TabKey);
   });
 });

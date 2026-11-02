@@ -531,7 +531,7 @@ export function WorkoutPreview({
       </div>
 
       <div className="wrap">
-        <HealthNote style={{ marginTop: 12 }} />
+        <HealthNote more style={{ marginTop: 12 }} />
       </div>
 
       {plans.length > 0 && (

@@ -1,7 +1,8 @@
-import { FlaskConical, Plus } from 'lucide-react';
+import { FlaskConical, Plus, ShieldCheck } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useMemo, useState } from 'react';
 import { text } from '../../../i18n';
+import { HealthAck, HealthNote } from '../../../components/Health';
 import { Segmented } from '../../../components/ui';
 import { useBridge } from '../../bridge';
 import type { Sex } from '../../diet/types';
@@ -21,14 +22,23 @@ import './labs.css';
 
 const T = text({
   pl: {
-    title: 'Dieta pod wyniki badań',
-    lead: 'Wgraj wyniki krwi lub moczu, a ułożę dietę pod to, czego brakuje — z produktami, przepisami i datą badania kontrolnego.',
+    title: 'Jedzenie a wyniki badań',
+    lead: 'Wgraj wyniki krwi lub moczu, a podpowiem, w jakich produktach i przepisach jest to, czego może brakować, i kiedy zwykle powtarza się badanie — jako punkt wyjścia do rozmowy z lekarzem.',
     ways: [
       'PDF z laboratorium (np. z konta pacjenta Diagnostyki)',
       'zdjęcie albo zrzut ekranu wydruku z przychodni',
       'tekst skopiowany z portalu lub wpisane ręcznie',
     ],
     private: 'Wszystko zostaje na tym urządzeniu — plik i zdjęcie czyta telefon, bez wysyłania.',
+    dataTitle: 'Jak przechowywane są Twoje wyniki',
+    data: [
+      'Tylko w tej przeglądarce na tym urządzeniu (IndexedDB). Nie ma konta ani serwera — wyniki nie trafiają do nikogo, także do twórcy aplikacji.',
+      'PDF i zdjęcie czyta telefon. Zapisuję tylko wartości, które potwierdzisz (badanie, wynik, zakres, data, laboratorium); sam plik nie jest przechowywany.',
+      'Baza nie ma osobnego szyfrowania — chroni ją blokada telefonu. Każdy z dostępem do odblokowanego urządzenia i tej przeglądarki może je zobaczyć.',
+      'Kopia danych (Ustawienia → Kopia danych) zawiera wyniki w zwykłym pliku JSON. Traktuj ją jak dokumentację medyczną.',
+      'Zgłoszenie z dołączonym zrzutem ekranu wysyła to, co na nim widać — na tej stronie zrzut pokaże wyniki.',
+      'Usuwasz je sam: pojedyncze badanie w „Wyniki”, wszystko — „Usuń wszystko” w profilu diety. Wyczyszczenie danych przeglądarki też je skasuje.',
+    ],
     add: 'Dodaj wyniki',
     views: 'Widok',
     diet: 'Dieta',
@@ -40,21 +50,28 @@ const T = text({
     man: 'Mężczyzna',
     age: 'Wiek',
     sex: 'Płeć',
-    disclaimer:
-      'To informacje, nie diagnoza ani leczenie. Zakresy dotyczą dorosłych; w ciąży i u dzieci są inne. Wyniki zawsze omów z lekarzem, a zmiany w lekach i suplementach — z lekarzem lub farmaceutą.',
     deleted: 'Usunięto badanie.',
     saved: 'Zapisano wyniki.',
     failed: 'Nie udało się zapisać.',
   },
   en: {
-    title: 'A diet for your lab results',
-    lead: 'Add your blood or urine results and I will build a diet for what is short — with foods, recipes and a retest date.',
+    title: 'Food and your lab results',
+    lead: 'Add your blood or urine results and I will show which foods and recipes contain what may be short, and when a retest is usual — as a starting point for a talk with your doctor.',
     ways: [
       'a PDF from the lab (e.g. a Diagnostyka patient account)',
       'a photo or screenshot of a clinic printout',
       'text copied from a portal, or typed in',
     ],
     private: 'Everything stays on this device — the phone reads the file and the photo, nothing is sent.',
+    dataTitle: 'How your results are stored',
+    data: [
+      'Only in this browser on this device (IndexedDB). There is no account and no server — results reach no one, the app’s author included.',
+      'The phone reads the PDF and the photo. I keep only the values you confirm (test, result, range, date, lab); the file itself is not stored.',
+      'The database has no encryption of its own — the phone’s lock protects it. Anyone with the unlocked device and this browser can see them.',
+      'A data backup (Settings → Data backup) holds the results in a plain JSON file. Treat it like a medical record.',
+      'Feedback with a screenshot attached sends what it shows — on this page, the screenshot shows your results.',
+      'You delete them yourself: one test under “Results”, everything with “Delete everything” in the diet profile. Clearing the browser’s data also erases them.',
+    ],
     add: 'Add results',
     views: 'View',
     diet: 'Diet',
@@ -66,8 +83,6 @@ const T = text({
     man: 'Man',
     age: 'Age',
     sex: 'Sex',
-    disclaimer:
-      'This is information, not a diagnosis or treatment. Ranges are for adults; they differ in pregnancy and for children. Always discuss results with a doctor, and changes to medicines and supplements with a doctor or pharmacist.',
     deleted: 'Test deleted.',
     saved: 'Results saved.',
     failed: 'Could not save.',
@@ -164,6 +179,7 @@ export default function LabsPage() {
 
   return (
     <>
+      <HealthAck />
       <section className="grp fd-lab-head" aria-labelledby="fd-lab-title">
         <h2 id="fd-lab-title">
           <FlaskConical aria-hidden="true" size={18} /> {T.title}
@@ -246,7 +262,18 @@ export default function LabsPage() {
       )}
       {view === 'co-zbadac' && <GuideView latest={latest} today={today} missing={assessment?.missing ?? []} />}
 
-      <p className="wrap disclaimer">{T.disclaimer}</p>
+      <section className="grp fd-lab-data" aria-labelledby="fd-lab-data-title" role="note">
+        <h2 id="fd-lab-data-title">
+          <ShieldCheck aria-hidden="true" size={18} /> {T.dataTitle}
+        </h2>
+        <ul className="fd-lab-list">
+          {T.data.map((d) => (
+            <li key={d}>{d}</li>
+          ))}
+        </ul>
+      </section>
+
+      <HealthNote kind="labs" more className="wrap disclaimer" />
 
       {sheetOpen && (
         <AddSheet

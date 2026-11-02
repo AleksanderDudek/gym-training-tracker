@@ -50,6 +50,7 @@ const T = text({
     snack: 'Przekąska',
     cardio: 'Kroki i cardio',
     promo: 'Poleć znajomym',
+    health: 'Zdrowie i bezpieczeństwo',
     menu: 'Menu',
     restaurants: 'Lokale',
   },
@@ -91,6 +92,7 @@ const T = text({
     snack: 'Snack',
     cardio: 'Steps & cardio',
     promo: 'Recommend to friends',
+    health: 'Health and safety',
     menu: 'Menu',
     restaurants: 'Restaurants',
   },
@@ -125,6 +127,12 @@ export const SETTINGS_PATH = '#/ustawienia';
 
 /** Plakat polecający aplikację — z ustawień i z profilu. */
 export const PROMO_PATH = '#/polec';
+
+/**
+ * Zdrowie i bezpieczeństwo: pełne zastrzeżenie (trening, jedzenie, badania, gdzie szukać pomocy).
+ * Prowadzą tu karta w ustawieniach i odnośnik „Więcej” przy każdej podpowiedzi o jedzeniu.
+ */
+export const HEALTH_PATH = '#/zdrowie';
 
 /**
  * „Czy mój zegarek jest obsługiwany?” — ustawienia z kartą zegarka. Krótki adres do wklejenia
@@ -359,6 +367,8 @@ export function screenOf(route: Route): Screen {
       return { title: SPORT_TITLE[route.sport ?? 'steps'], parent: '#/sesja' };
     case 'promo':
       return { title: T.promo, parent: SETTINGS_PATH };
+    case 'health':
+      return { title: T.health, parent: SETTINGS_PATH };
     case 'food':
       return { title: FOOD_TITLE[route.section], parent: null };
     case 'diet':
@@ -540,6 +550,7 @@ export function parseHash(hash: string): Route {
     return third === 'edytuj' ? { kind: 'planEdit', id: second } : { kind: 'planDetail', id: second };
   }
   if (head === 'polec') return { kind: 'promo' };
+  if (head === 'zdrowie') return { kind: 'health' };
   if (head === 'cardio') {
     if (!second) return { kind: 'cardio' };
     // Nieznany rodzaj otwiera kroki — zapis zawsze ma dokąd prowadzić. `hasOwn`, bo ręcznie
@@ -626,6 +637,7 @@ export function activeTab(route: Route): TabKey {
       return route.tab === 'atlas' || route.tab === 'plan' ? 'work' : route.tab;
     case 'exstats':
     case 'promo':
+    case 'health':
       return 'prog';
     case 'snacks':
     case 'snackAdd':

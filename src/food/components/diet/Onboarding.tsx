@@ -1,3 +1,4 @@
+import { HealthAck, HealthNote } from '../../../components/Health';
 import { dietPath } from '../../../routing';
 import { LOADING, daySeed, pick } from '../../../engine/quips';
 import { text } from '../../../i18n';
@@ -56,6 +57,7 @@ export function Loading() {
 export function Onboarding({ what = T.what }: { what?: string }) {
   return (
     <>
+      <HealthAck />
       <div className="grp fd-diet-onboard">
         <div className="today-tag light">{T.tag}</div>
         <h2 className="today-name">{what}</h2>
@@ -81,6 +83,7 @@ export function Onboarding({ what = T.what }: { what?: string }) {
           {T.labsLead} <a href={dietPath('labs')}>{T.labs}</a>
         </p>
       </div>
+      <HealthNote kind="food" more className="wrap disclaimer" />
     </>
   );
 }
