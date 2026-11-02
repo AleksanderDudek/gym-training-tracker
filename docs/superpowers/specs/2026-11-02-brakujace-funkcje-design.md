@@ -144,3 +144,27 @@ i łatwe… masz wolną rękę, pick recommended”). Źródło listy: porównan
 
 Licznik kalorii z AI głosem/tekstem (wymaga modelu w chmurze), widżet i Apple Watch (PWA),
 społeczność.
+
+## Wynik i odstępstwa (2026-11-02)
+
+Pięć pakietów zrobionych równolegle na osobnych gałęziach (`feat/bf-*`), scalonych do
+`feat/brakujace-funkcje`; całość: 3498 testów, typecheck, lint (0 błędów), skan i18n 0.
+Decyzje podjęte po drodze, poza tym, co wyżej:
+
+- **A**: posiłek w dzienniku wynika z godziny wpisu (śniadanie 4–11, obiad 11–17, kolacja reszta),
+  bo wpis nie zapisuje pory — „Zjedzone” jest teraz pogrupowane według posiłków. Woda na dniach
+  przeszłych i dziś, nigdy na przyszłych. Jedna flaga ciąża/karmienie, więc domyślnie +0,3 l;
+  przy karmieniu profil podpowiada wpisanie własnego celu. Post trwający ponad 48 h uznany za
+  zapomniany. Dexie v6 bez nowych tabel — wszystko w `profile`, `days`, `entries`.
+- **B**: przekąski ruchowe nie wchodzą do serii na mapie mięśni (karta mówi, ile ich było). Notatka
+  ćwiczenia „Ostatnio” to najnowsza notatka tego ćwiczenia w ogóle. Notatka do pominiętego
+  ćwiczenia (bez zapisanych serii) nie przechodzi do historii.
+- **C**: „Sylwetka” to osobna karta pod wagą. Pomiar zawsze z dziś. Zdjęcie z aparatu otwiera
+  przedni aparat (`capture="user"`), z galerii — kilka naraz, data z pliku do poprawienia.
+- **D**: postacie, sceny i manekin zostają jasne także w ciemnym motywie (jasne panele); medale —
+  metale stałe. Bez skryptu w `index.html` (CSP) — „Automatycznie” załatwia CSS, wybór ręczny
+  stawia `data-theme` w `main.tsx`. Ekran startowy Androida (manifest) zostaje jasny.
+- **E**: komórki zaczynające się od `=`, `+`, `-`, `@` dostają apostrof (formuły). Pusty eksport
+  daje komunikat zamiast pliku. Połączone wieczorne przypomnienie otwiera ekran Dziś.
+- **Scalanie**: eksport „Ciało” czyta typowany zapis obwodów z pakietu C (zamiast luźnego
+  odczytu); eksport jedzenia ma kolumnę „Posiłek” z tej samej reguły zegara co dziennik.
