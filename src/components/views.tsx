@@ -20,6 +20,7 @@ import { altsFor } from '../engine/structure';
 import { HealthCard } from './Health';
 import { ON_OFF, RemindersCard } from './Reminders';
 import { LanguageCard } from './Language';
+import { ThemeCard } from './Theme';
 import { GarminCard } from './Garmin';
 import { PhoneCard } from './Phone';
 import { PromoCard } from './Promo';
@@ -522,6 +523,7 @@ export function SettingsView({
       {/* Polecenie na samej górze: ustawienia odwiedza ten, kto już aplikację zna i lubi. */}
       <PromoCard />
       <LanguageCard />
+      <ThemeCard />
       {onInstall && (
         <div className="grp">
           <h2>{T.home}</h2>

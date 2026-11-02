@@ -125,6 +125,7 @@ import { BridgeContext } from './food/bridge';
 import type { GymBridge } from './food/bridge';
 import { LoadBoundary } from './components/LoadBoundary';
 import { LOCALE, pluralEn, text } from './i18n';
+import { TOP_COLORS, setThemeColor, useTheme } from './theme';
 
 /**
  * Zakładka Jedzenie w osobnej paczce (razem z Dexie, Leafletem i kodem bazy produktów): ekrany
@@ -777,12 +778,14 @@ export default function App() {
     !showIntro &&
     !installStrip &&
     !supportSnoozed(state, dayKey(Date.now()));
-  // Kolor paska systemowego idzie za tym, co stoi na samej górze: tło wprowadzenia albo jasny
-  // pasek aplikacji — pasek wsparcia stoi pod nim, więc go nie zmienia. Przed wczytaniem zostaje
-  // kolor z `index.html`, ten sam co paska aplikacji, żeby start nie mrugał.
-  const topColor = !state ? null : showIntro ? '#D7D9D3' : '#FAFAF8';
+  // Kolor paska systemowego idzie za tym, co stoi na samej górze: tło wprowadzenia albo pasek
+  // aplikacji — pasek wsparcia stoi pod nim, więc go nie zmienia — w kolorach wybranego wyglądu
+  // (jasny albo ciemny, `src/theme.ts`). Przed wczytaniem zostaje kolor z `index.html`, ten sam co
+  // paska aplikacji, żeby start nie mrugał.
+  const theme = useTheme();
+  const topColor = !state ? null : TOP_COLORS[theme][showIntro ? 'bg' : 'surface'];
   useEffect(() => {
-    if (topColor) document.querySelector('meta[name="theme-color"]')?.setAttribute('content', topColor);
+    if (topColor) setThemeColor(topColor);
   }, [topColor]);
 
   /** Zatwierdza stan; obietnica mówi, czy trafił na dysk (prawie wszyscy jej nie potrzebują). */

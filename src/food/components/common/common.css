@@ -75,9 +75,11 @@
 .fd-sheet{position:fixed;inset:auto 0 0;margin:0 auto;width:100%;max-width:640px;
   max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);padding:0;border:0;
   border-radius:var(--r) var(--r) 0 0;background:var(--surface);color:var(--ink);
-  box-shadow:0 -8px 30px rgba(30,35,32,.22);overflow:hidden}
+  box-shadow:0 -8px 30px rgba(var(--shade),.22);overflow:hidden}
 .fd-sheet[open]{display:flex;flex-direction:column}
 .fd-sheet.full{top:max(8px,env(safe-area-inset-top));height:auto;max-height:none}
+/* Na sztywno, nie z `--shade`: `::backdrop` w starszych przeglądarkach nie dziedziczy zmiennych ze strony.
+   Przyciemnienie tuszem działa w obu wyglądach. */
 .fd-sheet::backdrop{background:rgba(30,35,32,.55)}
 /* Strona pod arkuszem się nie przewija — inaczej przeciągnięcie palcem za krawędź listy jechałoby nią. */
 html:has(.fd-sheet[open]){overflow:hidden}
