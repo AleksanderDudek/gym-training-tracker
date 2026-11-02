@@ -119,6 +119,7 @@ describe('settings (English visit)', () => {
       'Starting levels',
       'Introduction',
       'Data backup',
+      'Export to a spreadsheet (CSV)',
       'How progression works',
       'Health and safety',
       'Reset',

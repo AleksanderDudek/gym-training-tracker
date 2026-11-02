@@ -19,6 +19,7 @@ import { plan } from '../engine/plan';
 import { altsFor } from '../engine/structure';
 import { HealthCard } from './Health';
 import { ON_OFF, RemindersCard } from './Reminders';
+import { CsvExportCard } from './CsvExport';
 import { LanguageCard } from './Language';
 import { GarminCard } from './Garmin';
 import { PhoneCard } from './Phone';
@@ -664,6 +665,8 @@ export function SettingsView({
           </label>
         </div>
       </div>
+
+      <CsvExportCard state={state} onToast={onToast} />
 
       <div className="grp">
         <h2>{T.how}</h2>

@@ -2724,6 +2724,18 @@ pobrania czekające na przejęcie strony przez service worker, i miejsce wybrane
 strona zaraz się przeładuje albo zamknie. Reset nie pobiera przy tym niczego z sieci. Baza ma tę samą nazwę co
 w Produktach PL — na tej samej domenie dawny dziennik pojawia się w aplikacji sam.
 
+**Eksport do arkusza (CSV).** Ustawienia → „Eksport do arkusza (CSV)” zapisuje jeden z trzech
+plików: treningi (wiersz na serię: data, trening, ćwiczenie, seria, powtórzenia albo sekundy,
+ciężar, wysiłek i zapas powtórzeń, czas treningu), ciało (dzień z ważeniem i obwodami, waga z dwoma miejscami po przecinku)
+i jedzenie (wiersz na wpis: data, godzina, nazwa, ilość, kcal, białko, węglowodany, tłuszcz,
+a błonnik, cukry i sól tylko wtedy, gdy któryś wpis je zna). Wpis jedzenia nie zapisuje pory
+posiłku, więc plik jej nie ma — jest godzina. Brak danych to pusta komórka, nie zero. Format idzie
+za językiem: po polsku średnik i przecinek dziesiętny (tak otwiera plik polski Excel), po angielsku
+przecinek i kropka; UTF-8 z BOM, wiersze kończy CRLF. Tekst zaczynający się od `=`, `+`, `-` albo
+`@` dostaje apostrof, żeby nazwa potrawy nie stała się formułą. Plik powstaje w przeglądarce
+(`engine/csv.ts`, jedzenie w `food/csv.ts`, ładowane dopiero przy pobraniu); pusty zapis daje
+komunikat zamiast pustego pliku. To plik do czytania — z powrotem wczytuje się tylko kopię zapasową.
+
 ## Zastrzeżenie
 
 Aplikacja nie zastępuje fizjoterapeuty, dietetyka ani konsultacji lekarskiej. Zanim zaczniesz,
