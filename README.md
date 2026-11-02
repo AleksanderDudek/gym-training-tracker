@@ -28,7 +28,7 @@ npm run build      # typecheck + produkcyjny build do dist/ z service workerem (
 npm run preview    # podgląd builda — tu działa też praca offline
 npm run typecheck  # tsc: aplikacja, testy, konfiguracja Vite i skrypty, service worker, filmy demo
 npm run lint       # oxlint
-npm test           # 3498 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, plan z zakupami, serwer… (vitest)
+npm test           # 3507 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, plan z zakupami, serwer… (vitest)
 ```
 
 Aplikacje na telefon (GYM TRACKER Zdrowie — `health/README.md`):
@@ -745,7 +745,7 @@ aplikacji. Dane produktów: [Open Food Facts](https://world.openfoodfacts.org), 
   **pytanie o wagę** („Ile dziś ważysz?” z ostatnim ważeniem i radą „Najlepiej rano, po toalecie,
   przed jedzeniem.”, z „Nie dziś” wspólnym z ekranem Dziś; po zapisie jedna linijka „Waga: 82,40 kg”
   ze „Zmień”), bilans dnia z „Dodaj zjedzone”, „Ulubione (N)” i „Większy posiłek”, **zjedzone**
-  zaraz pod nim (po porach posiłku, z „Kopiuj na…”), woda i — gdy włączone — okno jedzenia, plan dnia (z nazwą planu z zakupami, a gdy plan zaczyna się później — „Plan „…”
+  zaraz pod nim (po porach posiłku, z „Kopiuj na…”), nawodnienie i — gdy włączone — okno jedzenia, plan dnia (z nazwą planu z zakupami, a gdy plan zaczyna się później — „Plan „…”
   zaczyna się …”), „Co teraz?” i kroki. Bilans mówi to samo zdanie co karta na ekranie Dziś — „Na dziś: 2100 kcal i 150 g
   białka”, „Zostało ok. 650 kcal i 54 g białka”, „Kalorie na dziś w zakresie celu, białka jeszcze 20
   g” albo „Na dziś kalorii już wystarczy, białka jeszcze 20 g” — nad paskami białka i kalorii (dzień
@@ -810,14 +810,28 @@ aplikacji. Dane produktów: [Open Food Facts](https://world.openfoodfacts.org), 
   3 wpisy na jutro.” ma „Cofnij” (stoi 8 s), które usuwa dokładnie te kopie. Pusty dzień dzisiejszy,
   gdy wczoraj coś zapisano, ma w „Zjedzone” skrót **„Jak wczoraj”**: wczorajsze wpisy jednym
   stuknięciem, też z „Cofnij”.
-- **Woda** (`diet/water.ts`) — mała karta pod „Zjedzone”: „Woda 1,25 l z 2 l”, jeden neutralny pasek
-  i przyciski „+250 ml”, „+500 ml” oraz „−”, które cofa ostatnie dodanie (dzień pamięta 20 ostatnich).
-  Zapis w dniu (`DayRow.water`, ml). Cel z napojów według EFSA (2010: odpowiednie spożycie wody
-  ogółem 2,0 l u kobiet i 2,5 l u mężczyzn, ok. 80% z napojów) — **1,6 l kobiety, 2,0 l mężczyźni**,
-  w ciąży i przy karmieniu +0,3 l (profil ma na oba jedno pole, więc dolny dodatek; przy karmieniu
-  EFSA mówi +0,7 l i opis w profilu podpowiada wpisanie własnego celu). Własny cel (500–5000 ml)
-  i „Pokazuj wodę w dzienniku” (domyślnie włączone) są w profilu diety. Bez oceny dnia, dzień
-  przyszły karty nie ma.
+- **Nawodnienie** (`diet/drinks.ts`, cel w `diet/water.ts`) — karta pod „Zjedzone”: „1,25 l z 2 l”,
+  jeden neutralny pasek, pod nim co wypite („Woda 0,75 l · Kawa 0,5 l”). Rodzaj napoju wybiera się
+  raz — **Woda, Napój 0 kcal, Kawa, Herbata, Napój słodzony, Inne** — i zostaje zapamiętany na tym
+  urządzeniu, bo kto pije kawę, pije ją co dzień; potem „+250”, „+330” (puszka), „+500 ml” i „−”,
+  które cofa ostatni napój. **Do nawodnienia liczą się wszystkie napoje**: EFSA liczy wodę ze
+  wszystkich napojów, a kawa i herbata w zwykłych ilościach nawadniają podobnie jak woda (Maughan
+  i in., 2016, Beverage Hydration Index). Rodzaj ma znaczenie gdzie indziej:
+  - **napój słodzony dopisuje się też do „Zjedzone”** jako szacunek — 42 kcal i 10,6 g cukru na
+    100 ml (cola wg USDA; sok i słodzona herbata wychodzą podobnie), komunikat z „Cofnij”, a „−” na
+    karcie zabiera napój razem z wpisem. Inaczej puszka coli nawadniałaby i znikała z bilansu;
+  - **kawa i herbata dokładają kofeinę**: ok. 40 i 20 mg na 100 ml (USDA), pokazaną obok dawki,
+    którą EFSA (2015) uznaje za bezpieczną — 400 mg dziennie u dorosłych, 200 mg w ciąży i przy
+    karmieniu. Bez oceny, sama liczba i odniesienie;
+  - przy kawie, herbacie i „Inne” podpowiedź, że mleko, cukier czy kefir dopisuje się w „Dodaj zjedzone”.
+  Zapis w dniu (`DayRow.drinks`: rodzaj, ml, godzina, id wpisu słodzonego napoju; najwyżej 100
+  napojów i 20 l). Dzień zapisany jeszcze pierwszą kartą wody (`water`) czyta się jako jeden napój
+  „Woda” i przepisuje przy następnym napoju. Cel z napojów według EFSA (2010: odpowiednie spożycie
+  wody ogółem 2,0 l u kobiet i 2,5 l u mężczyzn, ok. 80% z napojów) — **1,6 l kobiety, 2,0 l
+  mężczyźni**, w ciąży i przy karmieniu +0,3 l (profil ma na oba jedno pole, więc dolny dodatek; przy
+  karmieniu EFSA mówi +0,7 l i opis w profilu podpowiada wpisanie własnego celu). Własny cel
+  (500–5000 ml) i „Pokazuj nawodnienie w dzienniku” (domyślnie włączone) są w profilu diety. Bez
+  oceny dnia, dzień przyszły karty nie ma.
 - **Błonnik, cukry, sól.** Wpis zapisuje też `fiber`, `sugars` i `salt` (g), gdy źródło je zna:
   produkt (z etykiety, przeliczone na gramaturę), przepis (gdy znane są dla każdego składnika),
   menu lokalu, zestaw (gdy zna je każda część), zdjęcie posiłku (błonnik i cukry; soli katalog dań nie
@@ -1926,7 +1940,7 @@ src/
     chains/                 sieci z własnymi danymi (Selgros): rejestr, dane (`data/*.json`), scalanie po EAN bez oferty online, kontrola liczb — 10 testów
     nearby/                 w pobliżu: reguła obiektów OSM (`osmTags`), drzewo kawałków i wybór wokół zaokrąglonej pozycji (`osmGrid`), format danych (`osmFormat`), dane aplikacji (`staticData`), zapytanie Overpass dla obu widoków (`live`) z przerwami i budżetem czasu, kopia na dobę i zapas na tydzień, promień
     scan/                   skaner kodów: kody GS1 (cyfra kontrolna, UPC-E, warianty w bazie), Open Food Facts dla kodów spoza bazy, porównanie pod cel diety, lista porównania znikająca godzinę po ostatnim skanie, czytnik (wbudowany albo WebAssembly) — 16 testów
-    diet/                   dieta: baza Dexie (`produkty-pl-dieta`, wersja 6 z zestawami, ulubionymi, planami z zakupami, badaniami oraz błonnikiem, cukrami i solą we wpisach), jeden cel na dzień z historią celów i szacunkiem NASEM (`target.ts`), trend wagi i tempo (`trend.ts`), poniedziałkowe sprawdzenie (`calibrate.ts`), przejście starych profili (`upgrade.ts`), zapis profilu (`edit.ts`), sposoby odżywiania, dzień, plan z Excela, zestawy, ulubione, wyszukiwanie, podpowiedzi, większy posiłek (`cheat.ts`), kopiowanie wpisów (`copy.ts`), woda (`water.ts`), okno jedzenia (`fasting.ts`) — 359 testów
+    diet/                   dieta: baza Dexie (`produkty-pl-dieta`, wersja 6 z zestawami, ulubionymi, planami z zakupami, badaniami oraz błonnikiem, cukrami i solą we wpisach), jeden cel na dzień z historią celów i szacunkiem NASEM (`target.ts`), trend wagi i tempo (`trend.ts`), poniedziałkowe sprawdzenie (`calibrate.ts`), przejście starych profili (`upgrade.ts`), zapis profilu (`edit.ts`), sposoby odżywiania, dzień, plan z Excela, zestawy, ulubione, wyszukiwanie, podpowiedzi, większy posiłek (`cheat.ts`), kopiowanie wpisów (`copy.ts`), nawodnienie (`drinks.ts`, `water.ts`), okno jedzenia (`fasting.ts`) — 359 testów
     prep/                   plan z zakupami (meal prep): bloki gotowania, przepisy z koszyka, wybór ról i lista zamienników, porcje i dodatki, cele dni z dzisiejszego celu, lista zakupów, nazwa, przesuwanie dat, pierwszeństwo w dzienniku, migawka w bazie, odczyt z kopii — 120 testów
     restaurants/            lokale: dane sieci (`data/*.json`), kontrola liczb, wyszukiwanie, kolejność, „Najwięcej białka”, stan w adresie — 101 testów
     hooks/                  baza produktów, menu lokali, dieta na żywo i scalona z treningiem, poniedziałkowe sprawdzenie, stan w adresie, lokalizacja, sklepy w pobliżu (z zapasem i samoczynnym ponowieniem), szukanie kodu, porównanie — 26 testów
@@ -2874,8 +2888,8 @@ i imporcie zepsuty zegar albo czas odpada, a trening zostaje.
 **Jedzenie leży osobno, w IndexedDB** (baza `produkty-pl-dieta`, Dexie): profil diety, dni, wpisy,
 plan z Excela, własne potrawy, zestawy i ulubione (wersje 2 i 3 bazy; starsza baza i starsza kopia
 bez nich wczytują się bez zmian). Wersja 6 dokłada wpisom błonnik, cukry i sól (wpisy sprzed niej
-dostają `null` — nieznane, nie zero), dniom wodę (`water`, `waterAdds`), a profilowi „Pokazuj wodę”,
-cel wody i okno jedzenia z ostatnim postem; to wszystko jedzie w kopii zapasowej, a kopia bez tych
+dostają `null` — nieznane, nie zero), dniom napoje (`drinks`; dawne `water` czyta się jako wodę), a profilowi „Pokazuj nawodnienie”,
+cel nawodnienia i okno jedzenia z ostatnim postem; to wszystko jedzie w kopii zapasowej, a kopia bez tych
 pól wczytuje się z pustymi wartościami — jest ich za dużo i są po dniach, więc nie pasują do jednego zapisu
 `localStorage`. Waga ma jedno źródło: ważenia z diety, z kopii diety albo z planu z Excela przy
 wejściu w Jedzenie przechodzą do dziennika wagi i znikają z diety; kroki dieta czyta z wpisów

@@ -1,4 +1,5 @@
 import Dexie, { type Table } from 'dexie';
+import type { Drink } from './drinks';
 import type { CustomFood, Food, FoodSet, FoodSource } from './foods';
 import type { LabPrefs, LabReport } from '../labs/types';
 import type { PrepPlan } from '../prep/types';
@@ -35,9 +36,14 @@ export interface DayRow {
   partial?: boolean;
   /** Weekly habits of the lab-results plan ticked this day: habit id → times. */
   labHabits?: Record<string, number>;
-  /** Water drunk this day, ml (the water card: „+250 ml”, „+500 ml”). */
+  /** The day's drinks in order, with their kind (the hydration card, `drinks.ts`): „−” takes back the last one. */
+  drinks?: Drink[];
+  /**
+   * Legacy (the first water card, before drink kinds): water drunk this day, ml. Read as one water
+   * drink (`drinksOf`); the next drink logged rewrites the day with `drinks` and drops these.
+   */
   water?: number;
-  /** The day's water additions in order, ml, the last 20: „−” takes back the last one. */
+  /** Legacy, with `water`: its additions. */
   waterAdds?: number[];
 }
 

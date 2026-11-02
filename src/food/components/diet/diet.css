@@ -562,8 +562,11 @@ table.fd-diet-weeks th:first-child{min-width:84px;white-space:nowrap}
 .fd-diet-water-head h2,.fd-diet-fast h2{display:flex;align-items:center;gap:8px;margin:0}
 /* Krój tekstu, nie wąski krój liczb: w nim „l” wygląda jak „I”, a „0 l z 2 l” zlewa się w jedno słowo. */
 .fd-diet-water-num{font-weight:600;font-variant-numeric:tabular-nums;color:var(--ink-soft)}
-.fd-diet-water-acts{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 6px}
-.fd-diet-water-acts .btn{min-height:44px;min-width:44px;padding-inline:14px}
+.fd-diet-water-kinds{font-size:13px;color:var(--ink-soft)}
+.fd-diet-water-pick{margin:10px 0 4px}
+/* Trzy ilości i „−” zawsze w jednym rzędzie — od 320 px; „−” sam w drugim wierszu wyglądał na osobną akcję. */
+.fd-diet-water-acts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) 48px;gap:8px;margin:4px 0 6px}
+.fd-diet-water-acts .btn{min-height:44px;min-width:44px;padding-inline:6px;white-space:nowrap}
 .fd-diet-water-acts .fd-diet-water-undo{display:grid;place-items:center;padding-inline:10px}
 .fd-diet-water-acts .btn:disabled{opacity:.45;cursor:default;transform:none}
 

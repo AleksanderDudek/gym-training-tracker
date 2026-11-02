@@ -1,6 +1,7 @@
 import { say } from '../../i18n';
 import type { CustomFood, Food, FoodSet, FoodSource, MealRole, SetPart } from './foods';
 import type { DayRow, Entry, Favorite, PlannedCheat } from './db';
+import { DRINKS_KEPT, DRINKS_MAX_ML, cleanDrink, type Drink } from './drinks';
 import { goalDirection } from './energy';
 import { addDays, mondayOf } from './model';
 import type { Plan, PlanItem, PlanVariant } from './plan';
@@ -483,6 +484,7 @@ export function cleanDay(raw: unknown): DayRow | null {
   if (!isObject(raw) || !isCalendarDate(raw.date)) return null;
   const choices = isObject(raw.choices) ? raw.choices : null;
   const cheat = cleanCheat(raw.cheat);
+  const drinks = cleanDrinks(raw);
   return {
     date: raw.date,
     ...('weightKg' in raw && { weightKg: finite(raw.weightKg) && raw.weightKg > 0 ? raw.weightKg : null }),
@@ -504,17 +506,24 @@ export function cleanDay(raw: unknown): DayRow | null {
     ...(cheat && { cheat }),
     ...(typeof raw.partial === 'boolean' && { partial: raw.partial }),
     ...(isObject(raw.labHabits) && { labHabits: cleanHabits(raw.labHabits) }),
-    ...(finite(raw.water) && raw.water > 0 && { water: Math.min(Math.round(raw.water), WATER_MAX_ML) }),
-    ...(Array.isArray(raw.waterAdds) && {
-      waterAdds: raw.waterAdds.filter((v): v is number => finite(v) && v > 0 && v <= 2000).slice(-WATER_ADDS_KEPT),
-    }),
+    ...(drinks.length && { drinks }),
   };
 }
 
-/** A day's water stops here (20 l): more is a typo, not a day. */
-export const WATER_MAX_ML = 20_000;
-/** Additions „−” can take back, the newest. */
-export const WATER_ADDS_KEPT = 20;
+/**
+ * A day's drinks from a backup: known kinds only, the newest `DRINKS_KEPT`, never over 20 l. A row
+ * from before the kinds (`water` total) becomes one water drink — the old fields do not survive.
+ */
+function cleanDrinks(raw: Record<string, unknown>): Drink[] {
+  const list = Array.isArray(raw.drinks)
+    ? raw.drinks.map(cleanDrink).filter((d): d is Drink => d !== null)
+    : finite(raw.water) && raw.water > 0
+      ? [{ kind: 'water' as const, ml: Math.min(Math.round(raw.water), DRINKS_MAX_ML) }]
+      : [];
+  const kept = list.slice(-DRINKS_KEPT);
+  let total = 0;
+  return kept.filter((d) => (total += d.ml) <= DRINKS_MAX_ML);
+}
 
 /** Habit ticks of a day: small whole counts under short keys. */
 function cleanHabits(raw: Record<string, unknown>): Record<string, number> {

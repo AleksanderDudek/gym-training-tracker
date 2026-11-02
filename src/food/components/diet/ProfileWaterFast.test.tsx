@@ -8,7 +8,7 @@ import type { Profile } from '../../diet/types';
 import { renderWithBridge } from '../../test/bridge';
 import DietProfilePage from './DietProfilePage';
 
-/* Profil diety w tej rundzie: „Pokazuj wodę” z celem napojów i „Okno jedzenia”. */
+/* Profil diety w tej rundzie: „Pokazuj nawodnienie” z celem napojów i „Okno jedzenia”. */
 
 vi.mock('../../data', async () => {
   const { DATASET, INDEXED } = await import('../../test/fixtures');
@@ -44,13 +44,13 @@ afterEach(() => {
 
 const save = (user: ReturnType<typeof userEvent.setup>) => user.click(screen.getByRole('button', { name: 'Zapisz profil' }));
 
-describe('Woda w profilu', () => {
+describe('Nawodnienie w profilu', () => {
   test('domyślnie włączona, cel pusty z wartością EFSA w opisie; własny cel się zapisuje', async () => {
     await saveProfile(stored({ sex: 'K' }));
     const user = userEvent.setup();
     renderWithBridge(<DietProfilePage />);
-    const section = await screen.findByRole('region', { name: 'Woda' });
-    expect(within(section).getByRole('checkbox', { name: 'Pokazuj wodę w dzienniku' })).toBeChecked();
+    const section = await screen.findByRole('region', { name: 'Nawodnienie' });
+    expect(within(section).getByRole('checkbox', { name: 'Pokazuj nawodnienie w dzienniku' })).toBeChecked();
     const field = within(section).getByLabelText('Cel z napojów dziennie');
     expect(field).toHaveValue('');
     expect(section).toHaveTextContent('Puste pole: 1600 ml według EFSA');
@@ -71,11 +71,11 @@ describe('Woda w profilu', () => {
     expect((await db.profile.get('me'))!.waterMl).toBeNull();
   });
 
-  test('„Pokazuj wodę” wyłączone: pole znika, zapis to pamięta', async () => {
+  test('„Pokazuj nawodnienie” wyłączone: pole znika, zapis to pamięta', async () => {
     await saveProfile(stored());
     const user = userEvent.setup();
     renderWithBridge(<DietProfilePage />);
-    await user.click(await screen.findByRole('checkbox', { name: 'Pokazuj wodę w dzienniku' }));
+    await user.click(await screen.findByRole('checkbox', { name: 'Pokazuj nawodnienie w dzienniku' }));
     expect(screen.queryByLabelText('Cel z napojów dziennie')).not.toBeInTheDocument();
     await save(user);
     await waitFor(async () => expect((await db.profile.get('me'))!.showWater).toBe(false));

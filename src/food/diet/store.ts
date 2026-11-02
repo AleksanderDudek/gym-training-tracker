@@ -3,6 +3,7 @@ import { cleanLabPrefs, cleanLabReport } from '../labs/validate';
 import { cleanPrepPlan } from '../prep/validate';
 import { applyAnswer, CHECK, checkDue, weeklyCheck } from './calibrate';
 import { db, type DayRow, type DietDb, type Entry, type PlannedCheat } from './db';
+import { DRINKS_KEPT, DRINKS_MAX_ML, drinksOf, sweetValues, type Drink, type DrinkKind } from './drinks';
 import { bumpFavorite } from './favorites';
 import type { Food } from './foods';
 import { addDays, mondayOf } from './model';
@@ -12,8 +13,6 @@ import { floorOf, hardMinOf, maintenanceOf, pauseOn, setTarget, targetOn } from 
 import type { WeighIn } from './trend';
 import { EXTRAS, type Extra, type Fast, type LegacyFields, type Nutrients, type Profile, type WeekCheck } from './types';
 import {
-  WATER_ADDS_KEPT,
-  WATER_MAX_ML,
   cleanCustomFood,
   cleanDay,
   cleanEntry,
@@ -372,7 +371,7 @@ export async function updateChoices(
 }
 
 /*
- * Copying entries („Kopiuj na…”, „Jak wczoraj”), water and the eating window: the diary's own
+ * Copying entries („Kopiuj na…”, „Jak wczoraj”), drinks and the eating window: the diary's own
  * small writes. None of them touches a target — one target a day stays the only calorie rule.
  */
 
@@ -396,30 +395,52 @@ export async function deleteEntries(ids: readonly number[], database: DietDb = d
   await database.entries.bulkDelete([...ids]);
 }
 
-/** „+250 ml” / „+500 ml”: water on the day, the addition remembered for „−”. */
-export async function addWater(date: string, ml: number, database: DietDb = db): Promise<void> {
-  await database.transaction('rw', database.days, async () => {
+/**
+ * „+250 ml” on the hydration card: a drink of a kind on the day. A sweet drink also goes into the
+ * food diary as an estimate (`sweetValues`) — one transaction, the entry id kept on the drink so
+ * „−” takes both back. A day still on the old water total is rewritten with drink kinds.
+ */
+export async function addDrink(date: string, kind: DrinkKind, ml: number, database: DietDb = db): Promise<void> {
+  await database.transaction('rw', database.days, database.entries, async () => {
     const current = (await database.days.get(date)) ?? { date };
-    await database.days.put({
-      ...current,
-      water: Math.min(WATER_MAX_ML, (current.water ?? 0) + ml),
-      waterAdds: [...(current.waterAdds ?? []), ml].slice(-WATER_ADDS_KEPT),
-      date,
-    });
+    const drinks = drinksOf(current);
+    if (drinks.reduce((s, d) => s + d.ml, 0) + ml > DRINKS_MAX_ML) return;
+    const { time } = now();
+    let entryId: number | undefined;
+    if (kind === 'sweet') {
+      const v = sweetValues(ml);
+      entryId = await database.entries.add({
+        date,
+        time,
+        name: say('Napój słodzony (szacunek)', 'Sweetened drink (estimate)'),
+        amountLabel: `${ml} ml`,
+        kcal: v.kcal,
+        protein: 0,
+        carbs: v.sugars,
+        fat: 0,
+        fiber: 0,
+        sugars: v.sugars,
+        salt: 0,
+        source: 'quick',
+      });
+    }
+    const { water: _water, waterAdds: _adds, ...rest } = current;
+    const drink: Drink = { kind, ml, at: time, ...(entryId !== undefined && { entryId }) };
+    await database.days.put({ ...rest, drinks: [...drinks, drink].slice(-DRINKS_KEPT), date });
   });
 }
 
-/** „−”: takes back the last addition (250 ml when the day does not remember it), never below 0. */
-export async function undoWater(date: string, database: DietDb = db): Promise<void> {
-  await database.transaction('rw', database.days, async () => {
+/** „−”: takes back the day's last drink, and the food-diary entry a sweet drink added with it. */
+export async function undoDrink(date: string, database: DietDb = db): Promise<void> {
+  await database.transaction('rw', database.days, database.entries, async () => {
     const current = await database.days.get(date);
-    if (!current?.water) return;
-    const adds = current.waterAdds ?? [];
-    const last = adds.at(-1) ?? 250;
-    const { water: _water, waterAdds: _adds, ...rest } = current;
-    const water = Math.max(0, current.water - last);
-    const left = adds.slice(0, -1);
-    await database.days.put({ ...rest, ...(water > 0 && { water }), ...(left.length && water > 0 && { waterAdds: left }) });
+    const drinks = drinksOf(current);
+    const last = drinks.at(-1);
+    if (!current || !last) return;
+    if (last.entryId !== undefined) await database.entries.delete(last.entryId);
+    const { water: _water, waterAdds: _adds, drinks: _drinks, ...rest } = current;
+    const left = drinks.slice(0, -1);
+    await database.days.put({ ...rest, ...(left.length && { drinks: left }) });
   });
 }
 

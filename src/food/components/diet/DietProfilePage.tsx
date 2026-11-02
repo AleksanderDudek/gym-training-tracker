@@ -155,8 +155,8 @@ const T = text({
     saveStart: 'Zapisz i zacznij',
     saveProfile: 'Zapisz profil',
     saved: 'Zapisano',
-    waterTitle: 'Woda',
-    showWater: 'Pokazuj wodę w dzienniku',
+    waterTitle: 'Nawodnienie',
+    showWater: 'Pokazuj nawodnienie w dzienniku',
     waterField: 'Cel z napojów dziennie',
     waterDefault: (ml: string) =>
       `Puste pole: ${ml} ml według EFSA — z napojów kobiety ok. 1,6 l, mężczyźni ok. 2,0 l (reszta wody przychodzi z jedzeniem). W ciąży EFSA dodaje ok. 0,3 l, przy karmieniu ok. 0,7 l — przy karmieniu wpisz swój cel. Upał i długi trening to więcej.`,
@@ -272,8 +272,8 @@ const T = text({
     saveStart: 'Save and start',
     saveProfile: 'Save profile',
     saved: 'Saved',
-    waterTitle: 'Water',
-    showWater: 'Show water in the diary',
+    waterTitle: 'Hydration',
+    showWater: 'Show hydration in the diary',
     waterField: 'Daily target from drinks',
     waterDefault: (ml: string) =>
       `Empty: ${ml} ml after EFSA — from drinks about 1.6 l for women and 2.0 l for men (the rest of your water comes from food). EFSA adds about 0.3 l in pregnancy and 0.7 l while breastfeeding — while breastfeeding, enter your own target. Heat and long training mean more.`,
