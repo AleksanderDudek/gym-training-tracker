@@ -24,7 +24,7 @@ const T = text({
     restoreFailed: 'Nie udało się przywrócić.',
     wipeTitle: 'Usunąć wszystkie dane diety?',
     wipeBody:
-      'Profil diety, zapisy jedzenia, plan, moje jedzenie, zestawy i ulubione znikną z tego urządzenia. Tego nie da się cofnąć. Waga i kroki zostają w treningach.',
+      'Profil diety, zapisy jedzenia, plan, moje jedzenie, zestawy, ulubione i wyniki badań znikną z tego urządzenia. Tego nie da się cofnąć. Waga i kroki zostają w treningach.',
     wipe: 'Usuń wszystko',
     title: 'Twoje dane',
     lead: 'Profil, zapisy i plan są tylko w tej przeglądarce na tym urządzeniu – nic nie jest wysyłane. Wyczyszczenie danych przeglądarki je usunie, więc zrób kopię.',
@@ -53,7 +53,7 @@ const T = text({
     restoreFailed: 'Couldn’t restore.',
     wipeTitle: 'Delete all diet data?',
     wipeBody:
-      'The diet profile, food logs, plan, my food, sets and favourites will disappear from this device. This can’t be undone. Weight and steps stay in training.',
+      'The diet profile, food logs, plan, my food, sets, favourites and lab results will disappear from this device. This can’t be undone. Weight and steps stay in training.',
     wipe: 'Delete everything',
     title: 'Your data',
     lead: 'The profile, logs and plan live only in this browser on this device – nothing is sent anywhere. Clearing the browser’s data deletes them, so make a backup.',
