@@ -482,6 +482,13 @@ zamiast rysować trend z trzech punktów.
 wielkości: linia od początku do końca pokazuje to samo, inaczej skakałaby przy każdej
 zmianie obciążenia.
 
+**Notatki w historii.** Wiersz treningu pokazuje jego notatkę i notatki ćwiczeń, a ołówek
+„Notatki” otwiera je wszystkie naraz do poprawki. Zmiana zapisuje się dopiero po „Zapisz notatki”
+— w historii nic nie zmienia się przypadkiem.
+
+**Mięśnie w tym tygodniu** stoją w profilu, gdy plan nie trwa; w trakcie planu karta jest
+w zakładce Plan (opis niżej, przy doradcy).
+
 **Liczone jest z dziennika, nie z `prog[id].hist`.** Dziennik jest źródłem — `hist` bywa
 przycinany przez silnik progresji, bo służy do wyliczania następnej sesji, a nie do pamiętania
 wszystkiego. Spadek po przerwie nie jest tu opisany jako porażka: wykres liczy, nie ocenia.
@@ -1595,6 +1602,18 @@ stacja na brzuch dawała 12 serii na jedną partię. Do nich doszły cztery ćwi
 ciała: wyskoki z przysiadu, brzuszki, unoszenie nóg w leżeniu i scyzoryki. Ustalone przez
 trenera 10/10/10 to punkt wyjścia — dalej powtórzenia i ciężar prowadzi progresja.
 
+**Notatki do ćwiczenia i treningu.** Pod „Zrobione” (nigdy nad nim) stoi ołówek „Notatka”: pole na
+rzecz do zapamiętania — „wyżej siodełko”, „chwyt szerzej”, „lewe kolano ucieka”. Notatka czeka
+w sesji i przy „Zamknij trening” trafia do dziennika razem z wynikiem. **Wraca przy następnej sesji
+tego ćwiczenia** jako „Ostatnio (12.10): …” — przy serii (przycięte do dwóch linijek, żeby nie
+zepchnąć „Zrobione” z ekranu), w przerwie przed pierwszą serią, na liście ćwiczeń i na podstronie
+ćwiczenia w profilu. Bierze się z najpóźniejszej sesji, w której ją wpisano, a nie tylko z ostatniej:
+siodełko ustawione raz obowiązuje, dopóki ktoś nie zapisze czegoś nowego. Notatka całego treningu
+(„po nocce”, „siłownia pełna”) ma pole od razu w podsumowaniu po zamknięciu i zapisuje się sama,
+także gdy podsumowanie zamyka się jednym „OK”. Obie mają do 500 znaków — dość na wskazówkę, za mało
+na pamiętnik. Pomysł ze Strong i Hevy, gdzie notatka przy ćwiczeniu bywa najczęściej używaną
+drobnostką.
+
 ## Czas treningu
 
 **Zegar w pasku.** Od „Zaczynam” do „Zamknij trening” w pasku aplikacji stoi licznik całego
@@ -2117,6 +2136,17 @@ liczą się **ułamkowo**, jak w metaanalizie Pelland i in. (2025): główny mi�
 pomocniczy pół. Seria wybuchowa (swing) i podchód na czas (deska, spacer) nie idą do upadku, więc
 same liczą się za pół. Przysiad nie liczy się tyłowi uda — u Kubo i in. (2019) nie urósł ani
 przy płytkim, ani przy głębokim.
+
+**Mięśnie w tym tygodniu.** Karta w zakładce Plan (a bez planu — w profilu) rysuje ciało z przodu
+i z tyłu i barwi szesnaście partii liczbą serii od poniedziałku: ten sam model co doradca, więc
+główny mięsień dostaje całą serię, pomocniczy pół. Liczą się serie naprawdę zrobione, z zamkniętych
+treningów; przekąski ruchowe nie wchodzą do serii (przekąska to nie trening) — karta mówi tylko,
+ile ich było. Skala ma pięć stopni z liczb doradcy (0, poniżej 4, 4–10, 10–20, ponad 20) i kolory
+z tokenów, więc idzie za motywem. **Rysunek nie jest jedynym nośnikiem**: pod nim stoi lista
+liczbowa od najmocniej pracującej partii, z pasem 10–20 serii (Schoenfeld, Ogborn i Krieger 2017)
+jako odniesieniem z badań, i zdanie, które partie są bez serii. Bez słów „za mało” i „za dużo”
+— to tydzień w liczbach, nie ocena. Tydzień jest tygodniem silnika (dni w UTC, od poniedziałku),
+tak jak kalendarz planu, więc karta i plan nie różnią się o trening z niedzieli wieczorem.
 
 **Zasady doradcy — i skąd się biorą:**
 
@@ -2698,6 +2728,12 @@ zapomina.
 Dane z telefonu mają pole `phone` tej samej budowy: system (`ios`/`android`), dni z krokami,
 tętnem, snem i wagą, przejazdy rowerem, czas paczki i chwila odbioru. Klucz telefonu leży
 w `gt-phone-key`, też poza eksportem.
+
+Notatki leżą w dzienniku treningów: `note` przy wpisie (cały trening) i przy ćwiczeniu, a w trakcie
+sesji — `session.notes` po ćwiczeniu. Dlatego same wchodzą do kopii zapasowej i znikają z „Usuń
+wszystkie dane”. Przy wczytaniu i imporcie notatka, która nie jest tekstem, albo pusta odpada,
+a za długa jest przycinana do 500 znaków; trening zostaje. Starsza kopia bez notatek wczytuje się
+bez zmian.
 
 Trwająca sesja trzyma zegar (`session.clock`): start i części jako chwile, nie liczniki — tak jak
 koniec przerwy, więc odświeżenie strony i zgaszony ekran niczego nie gubią. Zamknięty trening

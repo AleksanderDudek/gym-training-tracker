@@ -15,6 +15,8 @@ import type { AppState, Session } from '../types';
 import { AtlasView, ExercisePage } from './atlas';
 import { CharacterCard } from './Character';
 import { GuidedSession } from './Guided';
+import { MuscleWeekCard } from './MuscleWeek';
+import { LogNotesEditor, WorkoutNote } from './Notes';
 import { PlanDetail } from './Plans';
 import { PlanView } from './PlanView';
 import { SessionHome } from './SessionHome';
@@ -69,6 +71,12 @@ const POLISH = [
   'Twoja postać',
   'Skąd się bierze doświadczenie',
   'Start odliczania',
+  'Mięśnie w tym tygodniu',
+  'Odniesienie z badań',
+  'Ostatnio (',
+  'Notatka do treningu',
+  'Notatka do ćwiczenia',
+  'Zapisz notatki',
 ];
 
 const expectNoPolish = () => {
@@ -114,6 +122,7 @@ const guidedProps = (state: AppState) => ({
   onEffort: noop,
   onRest: noop,
   onSkip: noop,
+  onNote: noop,
   onFinish: noop,
   onList: noop,
   onToast: noop,
@@ -280,6 +289,47 @@ describe('training screens in English', () => {
     expect(screen.getByRole('button', { name: 'Start countdown' })).toBeInTheDocument();
     expect(screen.getByText('of 30 s', { exact: false })).toBeInTheDocument();
     expectNoPolish();
+  });
+
+  it('notes and muscles this week', async () => {
+    const state = freshState();
+    const e = {
+      date: '2026-10-13T18:00:00.000Z',
+      workout: A.name,
+      wid: A.id,
+      ready: 'ok' as const,
+      items: A.items.map((i) => ({ id: i.ex, sets: [{ reps: 10, w: 16 }], effort: 'solid' as const, note: 'seat higher' })),
+      note: 'after a night shift',
+    };
+    state.log = [e];
+
+    const card = render(<MuscleWeekCard state={state} />);
+    expect(screen.getByRole('heading', { name: 'Muscles this week' })).toBeInTheDocument();
+    expect(screen.getByText('12/10 – 18/10 · 1 workout')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: /^Body drawing — front\./ })).toBeInTheDocument();
+    expect(screen.getByRole('list', { name: 'Sets this week per muscle group' })).toBeInTheDocument();
+    expect(screen.getByText(/^Research reference: 10–20 sets per muscle group a week/)).toBeInTheDocument();
+    expectNoPolish();
+    card.unmount();
+
+    const now = Date.now();
+    state.session = session({ clock: { begin: now, parts: { 1: { start: now } } } });
+    const guided = render(<GuidedSession {...guidedProps(state)} />);
+    expect(screen.getByText(/^Last time \(13\/10\):/).closest('p')).toHaveTextContent('seat higher');
+    expect(screen.getByRole('button', { name: /^Note for / })).toHaveTextContent('Note');
+    expectNoPolish();
+    guided.unmount();
+
+    const notes = render(
+      <>
+        <WorkoutNote onSave={noop} />
+        <LogNotesEditor entry={e} name={A.name} onSave={noop} />
+      </>,
+    );
+    expect(screen.getByRole('textbox', { name: 'Workout note' })).toHaveAttribute('placeholder', expect.stringMatching(/^For example/));
+    expect(screen.getByRole('button', { name: `Notes for ${A.name} on 13/10` })).toHaveTextContent('Edit notes');
+    expectNoPolish();
+    notes.unmount();
   });
 });
 

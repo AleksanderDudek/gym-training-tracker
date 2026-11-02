@@ -23,6 +23,10 @@ import { durationText, timed, transitions } from '../engine/clock';
 import { formatClock } from './Timer';
 import { BodyCard, CardioSummary, kcalText } from './Cardio';
 import { PromoCard } from './Promo';
+import { LastNote, LogNotesEditor } from './Notes';
+import { MuscleWeekCard } from './MuscleWeek';
+import { lastNote } from '../engine/notes';
+import { snapshot } from '../engine/snapshot';
 import { LOCALE, pluralEn, text } from '../i18n';
 import type { AppState, ExerciseId, LogTime } from '../types';
 
@@ -303,6 +307,7 @@ export function ProfileView({
   onWeight,
   onHeight,
   onDeleteWeight,
+  onNotes,
   onToast,
 }: {
   state: AppState;
@@ -310,6 +315,8 @@ export function ProfileView({
   onWeight: (kg: number, day?: string) => void;
   onHeight: (cm: number | null) => void;
   onDeleteWeight: (day: string) => void;
+  /** Notatki zapisanego treningu (po dacie wpisu). Bez niej historia tylko je pokazuje. */
+  onNotes?: (date: string, notes: { note: string; items: Record<ExerciseId, string> }) => void;
   onToast: (m: string) => void;
 }) {
   const m = metrics(state);
@@ -363,6 +370,8 @@ export function ProfileView({
         onToast={onToast}
       />
       <LoadGauge state={state} />
+      {/* W trakcie planu karta stoi w zakładce Plan — tu tylko, gdy plan nie trwa. */}
+      {!snapshot(state) && <MuscleWeekCard state={state} />}
       <SnackSummary state={state} />
       <CardioSummary state={state} />
       <PromoCard />
@@ -401,13 +410,15 @@ export function ProfileView({
         <>
           {shownHistory.map((e, idx) => {
             const burn = workoutBurn(state, e);
+            const name = BUILTIN.find((w) => w.id === e.wid)?.name ?? e.workout;
+            const noted = e.items.filter((i) => i.note);
             return (
               <div className="h-item" key={`${e.date}-${idx}`}>
                 <div className="h-date">{dm(e.date)}</div>
                 <div>
                   <div>
                     {/* Gotowy trening — nazwą z biblioteki w języku wizyty; własny — tak, jak go nazwano. */}
-                    <b>{BUILTIN.find((w) => w.id === e.wid)?.name ?? e.workout}</b>
+                    <b>{name}</b>
                     {/* Czas stoi zawsze, gdy był zegar; spoza 3 min – 4 h tylko nie wchodzi do statystyk i odznak. */}
                     {e.time && (
                       <span className="h-time">
@@ -423,11 +434,27 @@ export function ProfileView({
                       .join(' · ')}
                   </div>
                   {e.time && e.time.parts.length > 0 && <TimeLine time={e.time} />}
+                  {(e.note || noted.length > 0) && (
+                    <div className="h-notes">
+                      {e.note && <p className="h-note">{e.note}</p>}
+                      {noted.map((i) => (
+                        <p className="h-note" key={i.id}>
+                          <b>{EX[i.id]?.name ?? i.id}:</b> {i.note}
+                        </p>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div className="streak">
                   {num(sessionTonnage(e))} {T.kgReps}
                   {burn && <span className="kcal-line">{kcalText(burn.active)}</span>}
                 </div>
+                {/* Na całą szerokość wiersza: pola notatek w środkowej kolumnie byłyby na 320 px za wąskie. */}
+                {onNotes && (
+                  <div className="h-note-row">
+                    <LogNotesEditor key={e.date} entry={e} name={name} onSave={(n) => onNotes(e.date, n)} />
+                  </div>
+                )}
               </div>
             );
           })}
@@ -602,6 +629,7 @@ export function ExerciseStatsPage({ state, id }: { state: AppState; id: Exercise
             <div className="ex-target">{planLabel(state, id)}</div>
           </div>
         </div>
+        <LastNote note={lastNote(state.log, id)} />
       </div>
 
       <div className="grp">
@@ -683,6 +711,7 @@ function SessionRow({ row, unit, kcal }: { row: ExerciseRow; unit: string; kcal:
           {row.e1rm !== null && ` · 1RM ≈ ${row.e1rm} kg`}
           {kcal !== null && ` · ${kcalText(kcal)}`}
         </div>
+        {row.note && <p className="h-note">{row.note}</p>}
       </div>
       <div className="streak">
         {row.total} {unit}

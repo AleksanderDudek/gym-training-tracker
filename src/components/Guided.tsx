@@ -8,12 +8,14 @@ import { plan, planLabel } from '../engine/plan';
 import { plural } from '../engine/quips';
 import { restBetween, restLabel } from '../engine/rests';
 import { cursorOf, loggedSets, sessionSteps } from '../engine/steps';
+import { lastNote, sessionNote } from '../engine/notes';
 import type { Step } from '../engine/steps';
 import type { RestPlan } from '../engine/rests';
 import { keepAwake, signalOnce, unlockSound } from '../coach';
 import { exercisePath } from '../routing';
 import { PartStrip, secsSince, useSecondTick } from './SessionClock';
 import { PrepContent } from './Structure';
+import { LastNote, NoteEditor } from './Notes';
 import { Segmented } from './ui';
 import { Timer, formatClock } from './Timer';
 import type { AppState, EffortKey, ExerciseId, ReadyKey, Session, SetResult, Workout } from '../types';
@@ -200,6 +202,8 @@ interface Props {
   onEffort: (id: ExerciseId, effort: EffortKey) => void;
   onRest: (cmd: 'more' | 'skip') => void;
   onSkip: (id: ExerciseId) => void;
+  /** Notatka ćwiczenia w tej sesji; pusty tekst ją usuwa. */
+  onNote: (id: ExerciseId, note: string) => void;
   onFinish: () => void;
   onList: () => void;
   onToast: (m: string) => void;
@@ -342,6 +346,7 @@ export function GuidedSession(props: Props) {
             props.onSkip(step.ex);
             props.onToast(T.skipped(ex(step.ex).name));
           }}
+          onNote={(note) => props.onNote(step.ex, note)}
         />
       ) : (
         <div className="grp guide-done">
@@ -450,6 +455,7 @@ function SetPanel({
   rested,
   onDone,
   onSkip,
+  onNote,
 }: {
   state: AppState;
   step: Step;
@@ -458,6 +464,7 @@ function SetPanel({
   rested: boolean;
   onDone: (row: SetResult) => void;
   onSkip: () => void;
+  onNote: (note: string) => void;
 }) {
   const m = ex(step.ex);
   const rows = plan(state, step.ex);
@@ -481,6 +488,8 @@ function SetPanel({
       </div>
       <h2 className="guide-name">{m.name}</h2>
       <p className="guide-target">{targetText(state, step)}</p>
+      {/* Przycięta do dwóch linijek: długa notatka nie może zepchnąć „Zrobione” poza ekran. */}
+      <LastNote note={lastNote(state.log, step.ex)} clamp />
 
       <div className="guide-entry">
         <button className="btn ghost step" aria-label={T.less} onClick={() => setValue(String(Math.max(0, n - 1)))}>
@@ -522,6 +531,9 @@ function SetPanel({
       >
         {T.done}
       </button>
+
+      {/* Ołówek pod „Zrobione”, nigdy nad nim: notatka to dodatek, seria jest najważniejsza. */}
+      <NoteEditor value={sessionNote(state.session, step.ex)} name={m.name} onSave={onNote} />
 
       <details className="why">
         <summary>{T.technique}</summary>
@@ -576,6 +588,8 @@ function RestPanel({
       {next && (
         <p className="guide-up">{T.getReady(ex(next.ex).name, where(next, steps).toLowerCase(), targetText(state, next))}</p>
       )}
+      {/* Przed pierwszą serią ćwiczenia, w trakcie przerwy — wtedy ustawia się siodełko. */}
+      {next && next.set === 1 && <LastNote note={lastNote(state.log, next.ex)} />}
     </div>
   );
 }
@@ -660,6 +674,7 @@ function TransitionPanel({
         {open.map((st) => (
           <li key={st.ex}>
             <b className="ex-tag">{st.tag}</b> <b>{ex(st.ex).name}</b> · {targetText(state, st)}
+            {st.set === 1 && <LastNote note={lastNote(state.log, st.ex)} />}
           </li>
         ))}
       </ul>

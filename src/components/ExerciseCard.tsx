@@ -4,6 +4,8 @@ import { EX_JOKES } from '../data/exjokes';
 import { levelHint, whyText } from '../engine/hints';
 import { P, plan, planLabel } from '../engine/plan';
 import { exercisePath } from '../routing';
+import { lastNote, sessionNote } from '../engine/notes';
+import { LastNote, NoteEditor } from './Notes';
 import { Chip, Segmented } from './ui';
 import { Timer } from './Timer';
 import type { AppState, EffortKey, ExerciseId, SetResult } from '../types';
@@ -76,6 +78,8 @@ interface Props {
   onSave: (id: ExerciseId, rows: SetResult[], effort: EffortKey) => void;
   onClear: (id: ExerciseId) => void;
   onSkip: (id: ExerciseId) => void;
+  /** Notatka ćwiczenia w tej sesji; pusty tekst ją usuwa. */
+  onNote?: ((id: ExerciseId, note: string) => void) | undefined;
   onToast: (msg: string) => void;
   /** Miejsce w treningu: „3” albo „2A” w parze. */
   tag?: string | undefined;
@@ -86,7 +90,7 @@ interface Props {
   onSwap?: ((orig: ExerciseId, to: ExerciseId) => void) | undefined;
 }
 
-export function ExerciseCard({ state, id, onSave, onClear, onSkip, onToast, tag, cue, swaps, onSwap }: Props) {
+export function ExerciseCard({ state, id, onSave, onClear, onSkip, onNote, onToast, tag, cue, swaps, onSwap }: Props) {
   const session = state.session!;
   const m = ex(id);
   const p = P(state, id);
@@ -147,6 +151,7 @@ export function ExerciseCard({ state, id, onSave, onClear, onSkip, onToast, tag,
 
       {open && (
         <div className="ex-body">
+          <LastNote note={lastNote(state.log, id)} />
           <p className="hint">{m.hint}</p>
           {EX_JOKES[id] && <p className="exjoke">{EX_JOKES[id]}</p>}
           <a className="vidlink" href={exercisePath(id)}>
@@ -255,6 +260,7 @@ export function ExerciseCard({ state, id, onSave, onClear, onSkip, onToast, tag,
           <button className="btn wide" onClick={save}>
             {prev ? T.update : T.save}
           </button>
+          {onNote && <NoteEditor value={sessionNote(session, id)} name={m.name} onSave={(note) => onNote(id, note)} />}
           <div style={{ height: 9 }} />
           {prev && (
             <>
