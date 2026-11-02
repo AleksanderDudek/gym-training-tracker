@@ -1,5 +1,6 @@
 import { API_URL, apiConfigured } from './api';
 import { localDay, reminderItems, remindersOf } from './engine/reminders';
+import { hasDiet } from './food/dietFlag';
 import type { AppState } from './types';
 
 /**
@@ -142,7 +143,8 @@ export async function syncReminders(state: AppState, force = false): Promise<boo
     const body = JSON.stringify({
       subscription: sub.toJSON(),
       tz: deviceTimeZone(),
-      items: reminderItems(state, remindersOf(state), localDay(now), now.getHours() * 60 + now.getMinutes()),
+      // Przypomnienie o jedzeniu tylko przy profilu diety — znacznik zna ekran Dziś bez wczytywania bazy.
+      items: reminderItems(state, remindersOf(state), localDay(now), now.getHours() * 60 + now.getMinutes(), hasDiet()),
     });
     const mark = fingerprint(body);
     if (!force && recalled() === mark) return true;

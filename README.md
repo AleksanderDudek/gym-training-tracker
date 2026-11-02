@@ -2670,8 +2670,12 @@ i ochrona przed botami: `server/api/README.md`.
 
 Rano o 7:30 — w dni, w które plan ma trening („Dziś trening: Trening A”). Wieczorem o 19:30 —
 codziennie, żeby wpisać kroki, bieżnię, rower albo taniec z całego dnia. Na życzenie o 7:00 —
-o porannym ważeniu (domyślnie wyłączone; patrz „Ważenie”). Godziny według zegara
-telefonu, na Androidzie i na iPhonie. Włącza się je w Ustawieniach, każde osobno.
+o porannym ważeniu (domyślnie wyłączone; patrz „Ważenie”). Przy profilu diety także
+„Jedzenie z dziś” — domyślnie wyłączone, o 20:00 albo o wybranej godzinie (od 16:00 do 23:30, co
+pół godziny). **Gdy włączone są i kroki, i jedzenie, przychodzi jedno powiadomienie** o godzinie
+jedzenia: „Wpisz kroki i jedzenie z dziś” — trzy powiadomienia dziennie to za dużo, ta sama
+zasada co przy ważeniu. Godziny według zegara telefonu, na Androidzie i na iPhonie. Włącza się
+je w Ustawieniach, każde osobno.
 
 **Dlaczego potrzebny jest serwer.** Strona nie umie zaplanować powiadomienia na 7:30. API, które
 miało to robić (Notification Triggers), wycofano z Chrome, Safari nigdy go nie miał, a iOS
@@ -2766,6 +2770,18 @@ w Produktach PL — na tej samej domenie dawny dziennik pojawia się w aplikacji
 w dwóch magazynach, bajty jako `ArrayBuffer`. Do pliku kopii nie trafiają (część „Sylwetka”), ale „Usuń
 wszystkie dane” kasuje całą bazę — najpierw zamyka własne połączenie, połączenia z innych kart ustępują
 same. Service worker zdjęć nie trzyma, więc nie ma tu nic do zapomnienia po jego stronie.
+
+**Eksport do arkusza (CSV).** Ustawienia → „Eksport do arkusza (CSV)” zapisuje jeden z trzech
+plików: treningi (wiersz na serię: data, trening, ćwiczenie, seria, powtórzenia albo sekundy,
+ciężar, wysiłek i zapas powtórzeń, czas treningu), ciało (dzień z ważeniem i obwodami, waga z dwoma miejscami po przecinku)
+i jedzenie (wiersz na wpis: data, godzina, nazwa, ilość, kcal, białko, węglowodany, tłuszcz,
+a błonnik, cukry i sól tylko wtedy, gdy któryś wpis je zna). Wpis jedzenia nie zapisuje pory
+posiłku, więc plik jej nie ma — jest godzina. Brak danych to pusta komórka, nie zero. Format idzie
+za językiem: po polsku średnik i przecinek dziesiętny (tak otwiera plik polski Excel), po angielsku
+przecinek i kropka; UTF-8 z BOM, wiersze kończy CRLF. Tekst zaczynający się od `=`, `+`, `-` albo
+`@` dostaje apostrof, żeby nazwa potrawy nie stała się formułą. Plik powstaje w przeglądarce
+(`engine/csv.ts`, jedzenie w `food/csv.ts`, ładowane dopiero przy pobraniu); pusty zapis daje
+komunikat zamiast pustego pliku. To plik do czytania — z powrotem wczytuje się tylko kopię zapasową.
 
 ## Zastrzeżenie
 

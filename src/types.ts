@@ -656,6 +656,10 @@ export interface ReminderPrefs {
   evening: boolean;
   /** Ważenie o 7:00. Brak u wyborów sprzed tej opcji — wtedy wyłączone. */
   weigh?: boolean;
+  /** „Jedzenie z dziś” — tylko przy profilu diety. Brak — wyłączone. */
+  food?: boolean;
+  /** Godzina przypomnienia o jedzeniu, `HH:MM`. Brak albo zepsuta — 20:00. */
+  foodAt?: string;
 }
 
 /** Pojedyncza zmiana poziomu po zamkniętym treningu. */

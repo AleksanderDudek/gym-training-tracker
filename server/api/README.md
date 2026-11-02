@@ -3,7 +3,9 @@
 Cloudflare Worker z trzema zadaniami:
 
 - **przypomnienia** — o 7:30 o treningu z planu, o 19:30 o wpisaniu kroków i ruchu z dnia,
-  o czasie lokalnym telefonu, na Androidzie i iPhonie;
+  na życzenie o 7:00 o ważeniu i wieczorem o jedzeniu z dziś (rodzaje `trening`, `ruch`, `waga`,
+  `jedzenie`; serwer przyjmuje każdy rodzaj z małych liter i nic o nich nie wie), o czasie
+  lokalnym telefonu, na Androidzie i iPhonie;
 - **uwagi od użytkowników** — wiadomość z formularza w aplikacji (e-mail, treść, zrzut ekranu,
   ślad wizyty) i lista dla autora za hasłem;
 - **skrzynki zegarka Garmin i telefonu** — zaszyfrowana paczka z zegarka albo z aplikacji GYM TRACKER
