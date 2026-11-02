@@ -248,6 +248,18 @@ export interface BodyWeight {
   kg: number;
 }
 
+/** Obwody ciała: talia, biodra, klatka, ramię (w połowie między barkiem a łokciem) i udo. */
+export type MeasureKey = 'waist' | 'hips' | 'chest' | 'arm' | 'thigh';
+
+/**
+ * Pomiar obwodów z jednego dnia, w cm do 0,1. Każde pole opcjonalne; jeden wpis na dzień —
+ * kolejny tego samego dnia dopisuje albo poprawia pola.
+ */
+export interface BodyMeasures extends Partial<Record<MeasureKey, number>> {
+  /** `yyyy-mm-dd`. */
+  day: string;
+}
+
 /** Dzień z krokomierza zegarka. */
 export interface WatchDay {
   /** `yyyy-mm-dd` według zegara zegarka. */
@@ -619,6 +631,8 @@ export interface AppState {
   cardio: Cardio[];
   /** Waga ciała w czasie, rosnąco po dniu. Z niej liczą się kalorie. */
   body: BodyWeight[];
+  /** Obwody ciała w czasie, rosnąco po dniu. Brak w zapisach sprzed tej funkcji — pusty dziennik. */
+  measures?: BodyMeasures[];
   /** Dane z zegarka Garmin: liczby, nie wpisy — wpisy ruchu wyprowadza z nich `cardioOf`. */
   watch?: WatchData;
   /** Dane z telefonu (Apple Zdrowie, Health Connect): liczby, nie wpisy — jak `watch`. */

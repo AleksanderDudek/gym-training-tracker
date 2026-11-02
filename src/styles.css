@@ -1104,6 +1104,52 @@
   .phone-weight p.tight{margin:0}
   .body-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;margin:10px 0}
   .body-list{margin-top:6px}
+
+  /* ---------------- Profil: sylwetka (obwody i zdjęcia) ---------------- */
+  /* Obwody w dwóch kolumnach od ok. 340 px treści, w jednej na najwęższych telefonach. */
+  .sil-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px 12px;margin-top:10px}
+  .sil-m{min-width:0}
+  .sil-m-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+  .sil-m-head span{font-weight:600;font-size:14px}
+  .sil-m-head b{font-family:var(--display);font-weight:500;font-size:18px;white-space:nowrap}
+  p.sil-m-change{margin:2px 0 0;font-size:12.5px;color:var(--ink-soft);line-height:1.4}
+  .sil-m .trendbox{margin-top:6px}
+  .sil-how{margin:6px 0 0}
+  .sil-how p{margin:0}
+  .sil-how ul{margin:6px 0 0;padding-left:18px}
+  .sil-form fieldset{border:0;margin:0;padding:0;min-width:0}
+  .sil-form legend{padding:0;font-size:13px;color:var(--ink-soft);margin-bottom:6px}
+  .sil-fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px}
+  .sil-form > .btn{margin-top:10px}
+  .sil-day{display:grid;grid-template-columns:auto 1fr 44px;gap:10px;align-items:center;border-top:1px solid var(--line)}
+  .sil-day-vals{font-size:13.5px;overflow-wrap:anywhere}
+  .sil-day .cardio-name{font-size:14px;white-space:nowrap}
+  .sil-photos{margin-top:16px;padding-top:12px;border-top:1px solid var(--line)}
+  .sil-add{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+  .grp p.sil-killed{border-left:3px solid var(--c-blue);background:var(--c-blue-bg);padding:8px 10px;
+    font-size:13.5px;margin:8px 0}
+  .sil-soft{color:var(--ink-soft)}
+  .sil-thumbs{list-style:none;margin:10px 0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  .sil-thumb{display:block;width:100%;padding:0;border:1px solid var(--line);border-radius:var(--r);
+    background:var(--surface-2);cursor:pointer;font:inherit;color:var(--ink);overflow:hidden;
+    -webkit-tap-highlight-color:transparent}
+  .sil-thumb[aria-pressed=true]{outline:2px solid var(--steel);outline-offset:1px}
+  .sil-thumb:focus-visible{outline:2px solid var(--steel);outline-offset:2px}
+  .sil-thumb img,.sil-thumb .sil-ph{display:block;width:100%;aspect-ratio:3/4;object-fit:cover}
+  .sil-thumb-day{display:block;font-size:12px;padding:4px 2px;text-align:center}
+  .sil-view,.sil-compare{margin:10px 0;padding:10px;background:var(--surface-2);border:1px solid var(--line);
+    border-radius:var(--r)}
+  .sil-frame{width:100%;max-height:60vh;display:flex;align-items:center;justify-content:center;
+    background:var(--bg);border-radius:var(--r);overflow:hidden}
+  .sil-frame img{display:block;width:100%;height:100%;object-fit:contain}
+  .sil-view .fld{margin-top:10px}
+  .sil-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  .sil-pick{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .sil-pair{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+  .sil-fig{margin:0;min-width:0}
+  .sil-fig figcaption{font-size:12px;color:var(--ink-soft);margin-top:4px;text-align:center;overflow-wrap:anywhere}
+  .sil-ph{color:var(--ink-soft);font-size:13px;padding:20px 0;text-align:center}
+  .sil-compare-btn{margin-top:4px}
   .kcal-line{display:block;color:var(--c-blue-ink);font-family:var(--display)}
   /* Rozbicie kalorii treningu na ćwiczenia — drobnym drukiem, pod główną liczbą. */
   p.kcal-split{margin:4px 0 0;font-size:12.5px;color:var(--ink-soft);line-height:1.45}

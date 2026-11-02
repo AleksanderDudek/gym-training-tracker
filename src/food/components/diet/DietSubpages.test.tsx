@@ -230,6 +230,32 @@ describe('Postęp', () => {
     expect(screen.getByText('Średnio 120 g dziennie (cel 156 g), z 1 dnia z pełnymi danymi.')).toBeInTheDocument();
   });
 
+  test('kafelek „Talia” z dziennika obwodów (przez most), ze zmianą od pierwszego pomiaru; bez pomiarów go nie ma', async () => {
+    await saveProfile(loser());
+    const weights = [{ day: '2026-10-12', kg: 82.4 }];
+    const none = await openProgress(testBridge({ weights }));
+    await screen.findByRole('heading', { name: 'Waga' });
+    expect(screen.queryByText(/^Talia/)).not.toBeInTheDocument();
+    expect(document.querySelector('.fd-diet-four')).toBeNull();
+    none.unmount();
+
+    await openProgress(
+      testBridge({
+        weights,
+        waists: [
+          { day: '2026-09-03', cm: 92 },
+          { day: '2026-10-01', cm: 90.5 },
+          { day: '2026-10-12', cm: 89.5 },
+        ],
+      }),
+    );
+    const tile = (await screen.findByText('89,5 cm')).closest('.tile')!;
+    expect(tile).toHaveTextContent('Talia · −2,5 cm od 3.09');
+    expect(document.querySelector('.fd-diet-stats.fd-diet-four')).not.toBeNull();
+    // A number, not a verdict.
+    expect(tile.textContent).not.toMatch(/brawo|uwaga|ryzyk|norm/i);
+  });
+
   test('kiedy waga docelowa: przed pierwszym dopasowaniem z zakładanego tempa, po nim zakres miesięcy z tempa ± niepewność', async () => {
     await saveProfile(loser({ startDate: '2026-09-01', targetWeightKg: 77.7 }));
     const plain = await openProgress(testBridge({ weights: losingDaily }));

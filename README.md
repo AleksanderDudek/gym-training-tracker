@@ -854,7 +854,9 @@ aplikacji. Dane produktów: [Open Food Facts](https://world.openfoodfacts.org), 
   poniżej 1500 albo 1200 kcal — to minimum (każdy z linijką w zawiadomieniu); cel między minimum
   a podstawową przemianą materii zostaje, a zawiadomienie pyta: „Podnieś do … kcal” albo „Zostaw —
   ustalony z lekarzem albo dietetykiem”.
-- **Postęp** (podstrona): kafelki „Teraz (trend)”, „Od startu” i „Do celu” i wykres wagi —
+- **Postęp** (podstrona): kafelki „Teraz (trend)”, „Od startu” i „Do celu” (a gdy w profilu są
+  obwody — czwarty, „Talia”: ostatni pomiar i zmiana od pierwszego, ta sama liczba co w karcie
+  „Sylwetka”, przez most `waists`) i wykres wagi —
   ważenia jako blade kropki, linia trendu, prognoza i waga docelowa. **Trend zamiast pojedynczych
   ważeń**: średnia wykładnicza, w której każde ważenie przesuwa trend o 1 − 0,9^dni drogi (dzień po
   dniu o dziesiątą część, po tygodniu przerwy mniej więcej o połowę), a jeden krok najwyżej o 3 kg,
@@ -1652,6 +1654,43 @@ Po zapisie pokazuje dzisiejszą liczbę, **średnią z 7 dni** i zmianę średni
 „uwaga” — co z nich wynika, to rozmowa z trenerem albo lekarzem. Na życzenie przychodzi też
 przypomnienie o 7:00 (domyślnie wyłączone, żeby nikt nie dostał nagle trzeciego powiadomienia
 dziennie); pół godziny przed porannym treningiem, a w dniu, w którym waga już jest — wcale.
+
+## Sylwetka: obwody i zdjęcia
+
+Waga mówi o masie, nie o kształcie: przy treningu siłowym mięśni przybywa, tłuszczu ubywa, a liczba
+na wadze potrafi stać w miejscu. Dlatego w Profilu, pod kartą wagi, stoi karta **„Sylwetka”** —
+osobna, bo ważenie zostaje tam, gdzie było, ze swoim formularzem.
+
+**Obwody** (`engine/measures.ts`): talia, biodra, klatka, ramię i udo, w centymetrach do 0,1.
+Każde pole jest opcjonalne — kto mierzy samą talię, wpisuje samą talię. Dziennik działa jak ważenia:
+**jeden wpis na dzień**, a drugi pomiar tego samego dnia dopisuje albo poprawia pola pierwszego
+(wieczorem dopisane ramię nie kasuje porannej talii); puste pole w formularzu zostaje, jak było.
+Karta pokazuje przy każdym zmierzonym obwodzie ostatnią liczbę, **zmianę od pierwszego pomiaru**
+ze znakiem zawsze („−2,3 cm od 3 wrz · 3 pomiary”) i mini wykres (ten sam `Trendline` co przy
+wadze), a pod formularzem pięć ostatnich pomiarów z usuwaniem dnia. Zakresy pól (talia 40–250 cm,
+ramię 10–80 cm…) łapią literówki, nie oceniają: **bez progów zdrowotnych i bez ocen**, tak jak przy
+wadze. „Jak mierzyć” mówi, jak dostać powtarzalną liczbę: rano, przed jedzeniem, taśma poziomo, na
+spokojnym wydechu, talia w połowie między dolnym żebrem a górą kości biodrowej (miejsce pomiaru WHO),
+za każdym razem ta sama strona ciała. Postęp diety dostaje z tego kafelek „Talia”.
+
+**Zdjęcia** leżą w osobnej bazie IndexedDB `gt-sylwetka` (`src/silhouette.ts`) — nie w zapisie
+treningów i nie w bazie diety. „Aparat” otwiera aparat telefonu (pole pliku z `capture`), „Z galerii”
+bierze jedno albo kilka zdjęć; zdjęcie z galerii dostaje dzień z daty pliku, a w podglądzie dzień da się
+poprawić. Przeglądarka zmniejsza każde zdjęcie do 1080 px dłuższego boku, JPEG
+(`silhouetteImage.ts`), i robi miniaturę: lista czyta same miniatury (kilkanaście kilobajtów sztuka),
+pełne zdjęcie wczytuje się dopiero przy oglądaniu, porównaniu albo pobraniu, jako adres `blob:`
+oddawany razem z widokiem. Kilka zdjęć z galerii przechodzi po jednym, żeby w pamięci nie było
+naraz dwunastu pełnych obrazów. **Porównanie** stawia „Przed” i „Po” obok siebie (domyślnie pierwsze
+i ostatnie, do zmiany), przy każdym zdjęciu jest „Pobierz” i „Usuń” z potwierdzeniem.
+
+Telefon z małą ilością pamięci potrafi zamknąć kartę, kiedy z przodu jest aparat systemu. Przed
+otwarciem aparatu zostaje więc znacznik w pamięci karty; zwykły powrót go zdejmuje, a gdy strona
+wczyta się od nowa ze znacznikiem (do kwadransa), karta mówi, że zdjęcie zwykle czeka w galerii
+telefonu.
+
+**Zdjęcia nie wchodzą do kopii zapasowej** — są za duże na jeden plik JSON — i karta mówi to wprost,
+razem z tym, że nigdzie ich nie wysyłamy. Kopię daje „Pobierz”. „Usuń wszystkie dane” kasuje bazę
+zdjęć razem z resztą, a pytanie przed resetem mówi, ile zdjęć zniknie.
 
 ## Ćwiczenia na czas
 
@@ -2682,7 +2721,10 @@ wczytaniu i imporcie odpadają wpisy z nieznanym ćwiczeniem, zepsutą datą alb
 Doświadczenie i poziom postaci — jak punkty planu — są wyprowadzane, nie zapisywane.
 
 Kroki, bieżnia i rower mają listę `cardio`, a ważenia — listę `body` (po dniu, jedno na dzień);
-wzrost siedzi w `cfg.height`. Zapisywane są liczby z wyświetlacza, **nigdy kalorie**: kalorie
+wzrost siedzi w `cfg.height`. Obwody mają listę `measures` (po dniu, jeden wpis na dzień, każde pole
+opcjonalne); przy wczytaniu i imporcie odpadają pola spoza zakresów i wpisy z zepsutą datą, a dwa
+wpisy z tego samego dnia łączą się. Leżą w zapisie, więc wchodzą do kopii same; starsza kopia bez nich
+wczytuje się z pustym dziennikiem. Zapisywane są liczby z wyświetlacza, **nigdy kalorie**: kalorie
 liczą się przy każdym otwarciu z wpisu i wagi z jego dnia, więc poprawka wzoru albo pierwsze
 ważenie od razu obejmuje całą historię. Przy wczytaniu i imporcie odpadają wpisy spoza zakresów
 (to literówki) i ważenia z zepsutą datą; wzrost spoza ludzkiego zakresu jest pomijany.
@@ -2719,6 +2761,11 @@ pobrania czekające na przejęcie strony przez service worker, i miejsce wybrane
 `FORGET_TRAIL`) kasuje te kopie i nie zapisuje już niczego, o co poproszono przed resetem — także gdy
 strona zaraz się przeładuje albo zamknie. Reset nie pobiera przy tym niczego z sieci. Baza ma tę samą nazwę co
 w Produktach PL — na tej samej domenie dawny dziennik pojawia się w aplikacji sam.
+
+**Zdjęcia sylwetki mają trzecią bazę**, `gt-sylwetka` (IndexedDB, bez Dexie): miniatura i pełne zdjęcie
+w dwóch magazynach, bajty jako `ArrayBuffer`. Do pliku kopii nie trafiają (część „Sylwetka”), ale „Usuń
+wszystkie dane” kasuje całą bazę — najpierw zamyka własne połączenie, połączenia z innych kart ustępują
+same. Service worker zdjęć nie trzyma, więc nie ma tu nic do zapomnienia po jego stronie.
 
 ## Zastrzeżenie
 

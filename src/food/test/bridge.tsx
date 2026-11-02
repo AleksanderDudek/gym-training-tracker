@@ -15,6 +15,7 @@ export const testMove = (over: Partial<MoveDay> = {}): MoveDay => ({
 export function testBridge(over: Partial<GymBridge> = {}): GymBridge {
   return {
     weights: [],
+    waists: [],
     setWeight: vi.fn(),
     heightCm: null,
     setHeight: vi.fn(),

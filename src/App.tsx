@@ -122,6 +122,8 @@ import { ContactDialog } from './components/Contact';
 import { UpdateBar } from './components/UpdateBar';
 import { withExtension, withWeekdays } from './engine/planedit';
 import { BridgeContext } from './food/bridge';
+import { measuresOf, removeMeasures, restoreMeasures, setMeasures, type MeasureInput } from './engine/measures';
+import { countPhotos, forgetPhotos } from './silhouette';
 import type { GymBridge } from './food/bridge';
 import { LoadBoundary } from './components/LoadBoundary';
 import { LOCALE, pluralEn, text } from './i18n';
@@ -190,6 +192,8 @@ const T = text({
     kcalFromDay: 'Kalorie od tego dnia liczą się z niej.',
     kcalFromToday: 'Kalorie od dziś liczą się z niej.',
     weighDeleted: 'Ważenie usunięte.',
+    measuresSaved: 'Pomiar zapisany.',
+    measuresDeleted: 'Pomiar usunięty.',
     heightRemoved: 'Wzrost usunięty — krok liczony dla 170 cm.',
     heightSaved: (cm: number) => `Wzrost zapisany: ${cm} cm.`,
     weightRange: (min: number, max: number) => `Waga poza zakresem ${min}–${max} kg.`,
@@ -315,10 +319,11 @@ const T = text({
     loadFailed: 'Nie udało się wczytać',
     loadFailedText: 'Wybierz plik JSON wyeksportowany z tej aplikacji.',
     resetQ: 'Usunąć wszystkie dane?',
-    resetText: (food: boolean, watch: boolean, phone: boolean) =>
+    resetText: (food: boolean, watch: boolean, phone: boolean, photos: number) =>
       'Historia, poziomy ćwiczeń i własne treningi znikną bezpowrotnie' +
       (food ? ' — razem z dziennikiem jedzenia i profilem diety' : '') +
       '.' +
+      (photos ? ` Zdjęcia sylwetki (${photos}) też — nie ma ich w kopii zapasowej, więc jeśli chcesz je zachować, najpierw je pobierz.` : '') +
       (watch ? ' Zegarek Garmin zostanie odłączony — inaczej przysłałby ostatni tydzień z powrotem.' : '') +
       (phone ? ' Telefon zostanie odłączony — inaczej przysłałby ostatnie dwa tygodnie z powrotem.' : ''),
     resetAll: 'Usuń wszystko',
@@ -389,6 +394,8 @@ const T = text({
     kcalFromDay: 'Calories from that day on use it.',
     kcalFromToday: 'Calories from today on use it.',
     weighDeleted: 'Weigh-in deleted.',
+    measuresSaved: 'Measurement saved.',
+    measuresDeleted: 'Measurement deleted.',
     heightRemoved: 'Height removed — stride worked out for 170 cm.',
     heightSaved: (cm: number) => `Height saved: ${cm} cm.`,
     weightRange: (min: number, max: number) => `Weight out of range: ${min}–${max} kg.`,
@@ -510,10 +517,11 @@ const T = text({
     loadFailed: 'Couldn’t load the file',
     loadFailedText: 'Choose a JSON file exported from this app.',
     resetQ: 'Delete all data?',
-    resetText: (food: boolean, watch: boolean, phone: boolean) =>
+    resetText: (food: boolean, watch: boolean, phone: boolean, photos: number) =>
       'Your history, exercise levels and custom workouts will be gone for good' +
       (food ? ' — along with your food diary and diet profile' : '') +
       '.' +
+      (photos ? ` Your progress photos (${photos}) too — they aren’t in the backup file, so download any you want to keep first.` : '') +
       (watch ? ' Your Garmin watch will be disconnected — otherwise it would send the last week back.' : '') +
       (phone ? ' Your phone will be disconnected — otherwise it would send the last two weeks back.' : ''),
     resetAll: 'Delete everything',
@@ -563,6 +571,8 @@ function restoreExtras(next: AppState, saved: Partial<AppState>): void {
   const byDay = new Map<string, NonNullable<AppState['body']>[number]>();
   (Array.isArray(saved.body) ? saved.body.filter(validBody) : []).forEach((b) => byDay.set(b.day, b));
   next.body = [...byDay.values()].sort((a, b) => a.day.localeCompare(b.day));
+  // Obwody tak samo: przesiane pole po polu, jeden wpis na dzień, po dniu.
+  next.measures = restoreMeasures(saved.measures);
   // Dane z zegarka: przesiane jak paczka — zepsuty dzień odpada, reszta zostaje.
   const watch = restoreWatch(saved.watch);
   if (watch) next.watch = watch;
@@ -802,6 +812,7 @@ export default function App() {
     if (!state) return null;
     return {
       weights: bodyOf(state),
+      waists: measuresOf(state).flatMap((m) => (m.waist !== undefined ? [{ day: m.day, cm: m.waist }] : [])),
       setWeight: (kg, day) => bridgeWrites.current?.setWeight(kg, day),
       heightCm: state.cfg.height ?? null,
       setHeight: (cm) => bridgeWrites.current?.setHeight(cm),
@@ -1298,6 +1309,26 @@ export default function App() {
     if (!removeBodyWeight(next, day)) return;
     commit(next);
     setToastMsg(T.weighDeleted);
+  };
+
+  /** Pomiar obwodów z dziś: drugi tego samego dnia dopisuje albo poprawia pola pierwszego. */
+  const saveMeasures = (input: MeasureInput) => {
+    const next = clone(state);
+    try {
+      setMeasures(next, dayKey(Date.now()), input);
+    } catch (e) {
+      setToastMsg(e instanceof Error ? e.message : T.measuresSaved);
+      return;
+    }
+    commit(next);
+    setToastMsg(T.measuresSaved);
+  };
+
+  const deleteMeasures = (day: string) => {
+    const next = clone(state);
+    if (!removeMeasures(next, day)) return;
+    commit(next);
+    setToastMsg(T.measuresDeleted);
   };
 
   const setHeight = (cm: number | null, from: AppState = state) => {
@@ -1912,9 +1943,10 @@ export default function App() {
     // Pytanie wymienia dziennik jedzenia, gdy baza naprawdę coś ma — znacznik diety nie widzi
     // dziennika bez profilu. Gdy bazy nie da się odczytać, nie ma czego wymieniać.
     const food = await import('./food/backup').then((m) => m.hasFoodData()).catch(() => false);
+    const photos = await countPhotos();
     const ok = await ask(
       T.resetQ,
-      <p>{T.resetText(food, watch, phone)}</p>,
+      <p>{T.resetText(food, watch, phone, photos)}</p>,
       T.resetAll,
       { who: 'siwy', mood: 'wise' },
     );
@@ -1926,6 +1958,8 @@ export default function App() {
     forgetWatchModel();
     // Jedzenie też: inaczej stare ważenia z diety wróciłyby do dziennika wagi przy następnym wejściu.
     await import('./food/backup').then((m) => m.clearFood()).catch(() => undefined);
+    // Zdjęcia sylwetki: osobna baza, poza kopią zapasową — ale to też dane tej osoby.
+    await forgetPhotos();
     forgetSections();
     commit(freshState());
   };
@@ -2204,6 +2238,8 @@ export default function App() {
           onWeight={(kg, day) => setWeight(kg, day)}
           onHeight={(cm) => setHeight(cm)}
           onDeleteWeight={deleteWeight}
+          onMeasures={saveMeasures}
+          onDeleteMeasures={deleteMeasures}
           onToast={setToastMsg}
         />
       )}

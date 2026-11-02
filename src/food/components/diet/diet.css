@@ -449,6 +449,8 @@ details.fd-diet-how > summary{display:flex;align-items:center;min-height:44px;fo
 
 /* Trzy kafelki postępu w jednym rzędzie, także na telefonie. */
 .tiles.fd-diet-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+/* With the waist tile: four tiles in two rows of two rather than three and a lonely one. */
+.tiles.fd-diet-stats.fd-diet-four{grid-template-columns:repeat(2,minmax(0,1fr))}
 /* Wykres wagi: pomiary blado, trend linią ciągłą; prognoza i waga docelowa mają reguły wyżej. */
 .fd-diet-chart .fd-diet-raw{fill:var(--c-green-ink);opacity:.35}
 .fd-diet-chart path.fd-diet-trend{stroke:var(--c-green-ink);stroke-width:2;stroke-linejoin:round}

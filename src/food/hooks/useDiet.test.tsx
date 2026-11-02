@@ -10,6 +10,7 @@ import { useHistory, useMergedDay, useProfile } from './useDiet';
 
 const bridge = (over: Partial<GymBridge> = {}): GymBridge => ({
   weights: [],
+  waists: [],
   setWeight: vi.fn(),
   heightCm: null,
   setHeight: vi.fn(),
