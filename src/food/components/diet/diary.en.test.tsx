@@ -467,7 +467,7 @@ describe('one target a day, in English', () => {
           lastCheck: { ...CHANGED, status: 'reached', reason: 'reached', from: 1860, to: 2550, facts: null, goalPace: 0 },
         },
         'Target weight reached',
-        ['Weight trend: 74.9 kg, target weight: 75 kg. From today the target is maintenance: 2,550 kcal a day.', 'I want to keep losing'],
+        ['Weight trend: 74.90 kg, target weight: 75.00 kg. From today the target is maintenance: 2,550 kcal a day.', 'I want to keep losing'],
       ],
       [
         {

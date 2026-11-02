@@ -110,7 +110,7 @@ describe('steps & cardio in English', () => {
     expect(screen.getByText('From your watch')).toBeInTheDocument();
     expect(screen.getByText(/^resting heart rate 52 · heart rate 48–142, average 71 · stress 30/)).toBeInTheDocument();
     expect(screen.getByText('From your phone')).toBeInTheDocument();
-    expect(screen.getByText('resting heart rate 55 · heart rate 50–130, average 70 · sleep 7 h · weight 81.9 kg')).toBeInTheDocument();
+    expect(screen.getByText('resting heart rate 55 · heart rate 50–130, average 70 · sleep 7 h · weight 81.90 kg')).toBeInTheDocument();
     expect(screen.getByRole('list', { name: 'Calories from movement in the last seven days' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'How we count calories and movement minutes' })).toBeInTheDocument();
     expect(screen.getByText(/the Compendium of Physical Activities 2024 table \(codes 01018–01060\)/)).toBeInTheDocument();
@@ -222,7 +222,7 @@ describe('steps & cardio in English', () => {
     const onToast = vi.fn();
     render(<BodyCard state={richState()} onWeight={vi.fn()} onHeight={vi.fn()} onDeleteWeight={vi.fn()} onToast={onToast} />);
     expect(screen.getByRole('heading', { name: 'Weight and height' })).toBeInTheDocument();
-    expect(screen.getByText(/^Last weigh-in: 81\.2 kg, \d\d\/\d\d\. 7-day average: [\d.]+ kg\. Calories use your weight/)).toBeInTheDocument();
+    expect(screen.getByText(/^Last weigh-in: 81\.20 kg, \d\d\/\d\d\. 7-day average: [\d.]+ kg\. Calories use your weight/)).toBeInTheDocument();
     expect(screen.getByRole('img', { name: /^Weight from the last 4 weigh-ins, kg: / })).toBeInTheDocument();
     expect(screen.getByLabelText('Recent weigh-ins')).toBeInTheDocument();
     await user.type(screen.getByLabelText('height, cm — for stride length (optional)'), '0');
@@ -346,15 +346,15 @@ describe('exercise snacks and weigh-ins in English', () => {
     const { unmount } = render(<WeighCard state={s} today={today} onWeigh={vi.fn()} onSkip={vi.fn()} />);
     expect(screen.getByText('Weigh-in')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Today’s weight' })).toBeInTheDocument();
-    expect(screen.getByText('From 30 to 300 kg, to one decimal place.')).toBeInTheDocument();
+    expect(screen.getByText('From 30 to 300 kg, up to two decimal places.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Not today' })).toBeInTheDocument();
     expect(screen.queryByText('Waga z dziś')).not.toBeInTheDocument();
     unmount();
     setBodyWeight(s, 82.4, addDays(today, -8));
     setBodyWeight(s, 81.6, today);
     render(<WeighCard state={s} today={today} onWeigh={vi.fn()} onSkip={vi.fn()} />);
-    expect(screen.getByRole('heading', { name: 'Today 81.6 kg' })).toBeInTheDocument();
-    expect(screen.getByText('7-day average: 81.6 kg · a week earlier 82.4 kg (−0.8 kg).')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Today 81.60 kg' })).toBeInTheDocument();
+    expect(screen.getByText('7-day average: 81.60 kg · a week earlier 82.40 kg (−0.80 kg).')).toBeInTheDocument();
   });
 });
 

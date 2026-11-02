@@ -3,6 +3,7 @@ import type { ChangeEvent, FormEvent } from 'react';
 import {
   HEIGHT_RANGE,
   WEIGHT_RANGE,
+  formatWeight,
   bodyOf,
   weightTrend,
   heightOf,
@@ -798,7 +799,7 @@ function PhoneHealthDays({ state, today, now }: { state: AppState; today: string
             )
           : null,
         h.sleep !== null && h.sleep > 0 ? T.sleep(sleepText(h.sleep)) : null,
-        h.kg !== null ? T.weight(decimal(h.kg)) : null,
+        h.kg !== null ? T.weight(formatWeight(h.kg)) : null,
       ]
         .filter(Boolean)
         .join(' · '),
@@ -893,7 +894,7 @@ export function CardioPage({
         <CardioShortcuts state={state} today={today} />
         <WatchLink />
         <p className="tight" style={{ marginTop: 8 }}>
-          {latest ? T.kgFor(decimal(latest.kg), dm(latest.day)) : T.noKg}
+          {latest ? T.kgFor(formatWeight(latest.kg), dm(latest.day)) : T.noKg}
         </p>
         <a className="vidlink" href="#/profil">
           {latest ? T.kgLink : T.noKgLink}
@@ -1031,19 +1032,19 @@ export function BodyCard({
       <h2>{T.body}</h2>
       <p className="tight">
         {latest
-          ? T.bodyLast(decimal(latest.kg), dm(latest.day), trend.avg !== null ? decimal(trend.avg) : null)
+          ? T.bodyLast(formatWeight(latest.kg), dm(latest.day), trend.avg !== null ? formatWeight(trend.avg) : null)
           : T.bodyNone}
       </p>
       {offer && (
         <div className="cardio-note phone-weight">
-          <p className="tight">{T.phoneOffer(decimal(offer.kg), dm(offer.day))}</p>
+          <p className="tight">{T.phoneOffer(formatWeight(offer.kg), dm(offer.day))}</p>
           <button className="btn sm ghost" onClick={() => onWeight(offer.kg, offer.day)}>
             {T.phoneOfferBtn}
           </button>
         </div>
       )}
       {weights.length >= 3 && (
-        <Trendline values={weights} label={T.trend(weights.length)} noun={T.trendNoun} fmt={(v) => decimal(v)} />
+        <Trendline values={weights} label={T.trend(weights.length)} noun={T.trendNoun} fmt={formatWeight} />
       )}
       <form className="body-row" onSubmit={saveKg} noValidate>
         <label className="fld">
@@ -1053,7 +1054,7 @@ export function BodyCard({
             inputMode="decimal"
             className="num"
             autoComplete="off"
-            placeholder={latest ? decimal(latest.kg) : ''}
+            placeholder={latest ? formatWeight(latest.kg) : ''}
             value={kg}
             onChange={(e) => setKg(e.target.value)}
           />
@@ -1082,7 +1083,7 @@ export function BodyCard({
           {recent.map((b) => (
             <div className="cardio-item" key={b.day}>
               <span className="cardio-name">{dm(b.day)}</span>
-              <span className="snack-amt">{decimal(b.kg)} kg</span>
+              <span className="snack-amt">{formatWeight(b.kg)} kg</span>
               <button
                 className="snack-del"
                 onClick={() => onDeleteWeight(b.day)}

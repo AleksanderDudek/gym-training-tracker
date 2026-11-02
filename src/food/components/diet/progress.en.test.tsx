@@ -85,10 +85,10 @@ describe('progress in English', () => {
 
     expect(await screen.findByRole('heading', { name: 'Weight' })).toBeInTheDocument();
     expect(screen.getByText('Now (trend) · last weigh-in 14 Oct')).toBeInTheDocument();
-    expect(screen.getByText('To go · target weight 77.7 kg')).toBeInTheDocument();
+    expect(screen.getByText('To go · target weight 77.70 kg')).toBeInTheDocument();
     expect(screen.getByText('Pace over the last 4 weeks: −0.5 kg a week (±0.1).')).toBeInTheDocument();
     expect(screen.getByText('At this pace, the target weight: around December 2026 – January 2027.')).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: 'Weight chart: 28 weigh-ins, the trend, a forecast and the target weight 77.7 kg.' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Weight chart: 28 weigh-ins, the trend, a forecast and the target weight 77.70 kg.' })).toBeInTheDocument();
     const history = screen.getByRole('region', { name: 'Calorie target — changes' });
     expect(within(history).getByText('14 Oct · 2,000 kcal · start')).toBeInTheDocument();
     const weeks = screen.getByRole('region', { name: 'Week by week' });

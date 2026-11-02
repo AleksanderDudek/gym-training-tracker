@@ -246,7 +246,7 @@ describe('karta: każdy stan swoje odpowiedzi', () => {
     const { bridge } = card(p);
     const week = screen.getByRole('region', { name: 'Waga docelowa osiągnięta' });
     expect(week).toHaveTextContent(
-      'Trend wagi: 74,9 kg, waga docelowa: 75 kg. Od dziś cel to utrzymanie: 2550 kcal dziennie. Przez pierwsze dni waga może pokazać trochę więcej — to woda i glikogen, nie tłuszcz.',
+      'Trend wagi: 74,90 kg, waga docelowa: 75,00 kg. Od dziś cel to utrzymanie: 2550 kcal dziennie. Przez pierwsze dni waga może pokazać trochę więcej — to woda i glikogen, nie tłuszcz.',
     );
     expect(within(week).getByRole('button', { name: 'Dobrze' })).toBeInTheDocument();
     await user.click(within(week).getByRole('button', { name: 'Chcę dalej chudnąć' }));
@@ -271,7 +271,7 @@ describe('karta: każdy stan swoje odpowiedzi', () => {
       lastCheck: check({ status: 'reached', reason: 'reached', from: 1860, to: 2550, facts: null }),
     });
     card(proposal);
-    expect(screen.getByText('Trend wagi: 74,9 kg, waga docelowa: 75 kg. Na utrzymanie wystarczy ok. 2550 kcal dziennie.')).toBeInTheDocument();
+    expect(screen.getByText('Trend wagi: 74,90 kg, waga docelowa: 75,00 kg. Na utrzymanie wystarczy ok. 2550 kcal dziennie.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Przejdź na utrzymanie' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Jeszcze nie' })).toBeInTheDocument();
     cleanup();

@@ -207,16 +207,16 @@ describe('Postęp', () => {
       }),
     );
 
-    // 83,6 then 82,4 ten days later: the trend has moved about two thirds of the way — 82,8, not 82,4.
+    // 83,6 then 82,4 ten days later: the trend has moved about two thirds of the way — 82,82, not 82,40.
     await screen.findByRole('heading', { name: 'Waga' });
-    const now = screen.getByText('82,8 kg').closest('.tile')!;
+    const now = screen.getByText('82,82 kg').closest('.tile')!;
     expect(now).toHaveTextContent('Teraz (trend) · ostatnie ważenie 12.10');
-    expect(screen.queryByText('82,4 kg')).not.toBeInTheDocument();
-    expect(screen.getByText('−1,2 kg')).toBeInTheDocument();
+    expect(screen.queryByText('82,40 kg')).not.toBeInTheDocument();
+    expect(screen.getByText('−1,18 kg')).toBeInTheDocument();
     expect(screen.getByText(/^Od startu · od 1 paź 2026$/)).toBeInTheDocument();
-    expect(screen.getByText('4,8 kg')).toBeInTheDocument();
-    expect(screen.getByText('Do celu · waga docelowa 78 kg')).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: 'Wykres wagi: 2 pomiary, trend, prognoza i waga docelowa 78 kg.' })).toBeInTheDocument();
+    expect(screen.getByText('4,82 kg')).toBeInTheDocument();
+    expect(screen.getByText('Do celu · waga docelowa 78,00 kg')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Wykres wagi: 2 pomiary, trend, prognoza i waga docelowa 78,00 kg.' })).toBeInTheDocument();
     expect(screen.getByText(/^Za mało ważeń, żeby policzyć tempo/)).toBeInTheDocument();
     // 2500 against 2000 is a bar like any other: no verdict.
     const days = within(screen.getByRole('list', { name: 'Zjedzone kalorie dzień po dniu' })).getAllByRole('listitem');
@@ -247,7 +247,7 @@ describe('Postęp', () => {
     // 4,98 kg at 0,5 ± 0,11: between 8 and 13 weeks — December to January, not a day.
     expect(await screen.findByText('W tym tempie waga docelowa: ok. grudzień 2026 – styczeń 2027.')).toBeInTheDocument();
     expect(screen.queryByText(/Przy zakładanym tempie/)).not.toBeInTheDocument();
-    expect(screen.getByRole('img', { name: /Wykres wagi: 28 pomiarów, trend, prognoza i waga docelowa 77,7 kg\./ })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: /Wykres wagi: 28 pomiarów, trend, prognoza i waga docelowa 77,70 kg\./ })).toBeInTheDocument();
   });
 
   test('cel kalorii zmieniony w połowie dwóch tygodni: każdy dzień ma swój cel, a historia celu mówi kiedy i dlaczego', async () => {
@@ -336,8 +336,8 @@ describe('Postęp', () => {
   test('cel w górę: do celu liczy się w górę; utrzymanie wagi to jedno zdanie', async () => {
     await saveProfile(loser({ startWeightKg: 70, targetWeightKg: 74, dailyKcal: 3200 }));
     const gaining = await openProgress(testBridge({ weights: [{ day: '2026-10-12', kg: 71 }] }));
-    expect(await screen.findByText('3 kg')).toBeInTheDocument();
-    expect(screen.getByText('Do celu · waga docelowa 74 kg')).toBeInTheDocument();
+    expect(await screen.findByText('3,00 kg')).toBeInTheDocument();
+    expect(screen.getByText('Do celu · waga docelowa 74,00 kg')).toBeInTheDocument();
     // −0,25 kg a week planned: 3 kg is 12 weeks.
     expect(screen.getByText(/^Przy zakładanym tempie \(\+0,25 kg na tydzień\) to ok\. 12 tygodni\./)).toBeInTheDocument();
     gaining.unmount();
@@ -346,7 +346,7 @@ describe('Postęp', () => {
     await openProgress(testBridge({ weights: [{ day: '2026-10-12', kg: 75.2 }] }));
     expect(await screen.findByText('Cel to utrzymanie wagi.')).toBeInTheDocument();
     expect(screen.getByText('utrzymanie')).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: 'Wykres wagi: 1 pomiar, trend i waga docelowa 75 kg.' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Wykres wagi: 1 pomiar, trend i waga docelowa 75,00 kg.' })).toBeInTheDocument();
   });
 
   test('bez liczenia kalorii: bez historii celu, bez kalorii z 14 dni i bez kolumny jedzenia — waga, tempo i białko zostają', async () => {

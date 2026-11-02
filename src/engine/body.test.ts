@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { avgWeight, setBodyWeight, weightTrend } from './body';
+import { avgWeight, formatWeight, setBodyWeight, weightTrend } from './body';
 import { freshState } from './plan';
 
 /**
@@ -21,7 +21,7 @@ describe('średnia z 7 dni i zmiana tydzień do tygodnia', () => {
       ['2026-10-08', 102.6],
       ['2026-10-09', 102.1],
     ]);
-    expect(avgWeight(s, '2026-10-09')).toBe(102.8);
+    expect(avgWeight(s, '2026-10-09')).toBe(102.77);
     expect(avgWeight(s, '2026-10-02')).toBe(104);
     expect(avgWeight(s, '2026-09-20')).toBeNull();
   });
@@ -33,12 +33,22 @@ describe('średnia z 7 dni i zmiana tydzień do tygodnia', () => {
       ['2026-10-08', 102.6],
       ['2026-10-09', 102.1],
     ]);
-    expect(weightTrend(s, '2026-10-09')).toEqual({ today: 102.1, avg: 102.4, prevAvg: 103.8, delta: -1.4, n: 2 });
+    expect(weightTrend(s, '2026-10-09')).toEqual({ today: 102.1, avg: 102.35, prevAvg: 103.8, delta: -1.45, n: 2 });
     expect(weightTrend(s, '2026-10-10').today).toBeNull();
   });
 
   it('bez ważeń sprzed tygodnia zmiany nie ma — jest tylko bieżąca średnia', () => {
     const s = weighed([['2026-10-09', 102.1]]);
     expect(weightTrend(s, '2026-10-09')).toMatchObject({ avg: 102.1, prevAvg: null, delta: null, n: 1 });
+  });
+});
+
+describe('zapis wagi ciała', () => {
+  it('zawsze dwa miejsca po przecinku, a zapis z dokładnością do 0,01 kg', () => {
+    expect(formatWeight(85)).toBe('85,00');
+    expect(formatWeight(82.4)).toBe('82,40');
+    expect(formatWeight(82.456)).toBe('82,46');
+    const s = weighed([['2026-10-09', 82.456]]);
+    expect(s.body).toEqual([{ day: '2026-10-09', kg: 82.46 }]);
   });
 });

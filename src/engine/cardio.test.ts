@@ -210,12 +210,13 @@ describe('waga ciała', () => {
     const s = freshState();
     setBodyWeight(s, 82, '2026-09-10');
     setBodyWeight(s, 84, '2026-08-01');
-    setBodyWeight(s, 81.46, '2026-09-10');
+    // Zapis do 0,01 kg — tyle pokazuje aplikacja.
+    setBodyWeight(s, 81.456, '2026-09-10');
     expect(s.body).toEqual([
       { day: '2026-08-01', kg: 84 },
-      { day: '2026-09-10', kg: 81.5 },
+      { day: '2026-09-10', kg: 81.46 },
     ]);
-    expect(latestWeight(s)?.kg).toBe(81.5);
+    expect(latestWeight(s)?.kg).toBe(81.46);
   });
 
   it('dzień bierze ostatnie ważenie przed nim, a czas sprzed pierwszego — pierwsze', () => {

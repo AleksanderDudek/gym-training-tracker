@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { pluralEn, text } from '../../../i18n';
+import { formatWeight } from '../../../engine/body';
 import { STEP_GOAL } from '../../../engine/cardio';
 import { useBridge } from '../../bridge';
 import { totals, type DayTotals } from '../../diet/day';
@@ -121,9 +122,9 @@ const FAR_DAYS = 730;
 /** Changes of the target listed, newest first. */
 const HISTORY = 6;
 
-const kg = (n: number) => `${formatNumber(n, 1)} kg`;
+const kg = (n: number) => `${formatWeight(n)} kg`;
 /** „−1,6 kg”, „+0,4 kg”: the sign always, so a gain never reads as a loss. */
-const signedKg = (n: number) => `${n >= 0.05 ? '+' : n <= -0.05 ? '−' : ''}${formatNumber(Math.abs(n), 1)} kg`;
+const signedKg = (n: number) => `${n >= 0.005 ? '+' : n <= -0.005 ? '−' : ''}${formatWeight(Math.abs(n))} kg`;
 /** The observed pace as a weight change a week, to 0.05 kg: „−0,5 kg” is losing. */
 function weekKg(pace: number): string {
   const p = snap05(pace);

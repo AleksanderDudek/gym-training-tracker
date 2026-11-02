@@ -1,3 +1,4 @@
+import { round2 } from '../../engine/math';
 import { addDays, mondayOf } from './model';
 import {
   burnOf,
@@ -66,7 +67,6 @@ const bodyChanged = (a: Profile, b: Profile): boolean => BODY.some((k) => a[k] !
 
 const isDate = (s: string): boolean => /^\d{4}-\d{2}-\d{2}$/.test(s);
 
-const round1 = (kg: number): number => Math.round(kg * 10) / 10;
 
 /** No pace to choose: under 18, pregnant or breastfeeding. */
 const paceLocked = (p: Pick<Profile, 'age' | 'pregnancy'>): boolean => p.age < 18 || p.pregnancy;
@@ -123,7 +123,7 @@ export function applyProfileEdit(prev: Profile | null, draft: Profile, ctx: Edit
   const { today, kgNow } = ctx;
   const locked = paceLocked(draft);
   const keep = locked || draft.goalPace === 0;
-  const body: Profile = { ...rebased(prev, draft, kgNow), ...(keep && { targetWeightKg: round1(kgNow) }) };
+  const body: Profile = { ...rebased(prev, draft, kgNow), ...(keep && { targetWeightKg: round2(kgNow) }) };
   // A typed target is kept as typed (to 10), but never under the hard minimum, and under the BMR
   // floor only when it is agreed with a doctor or dietitian (`belowFloorOk`).
   const manual =
@@ -237,7 +237,7 @@ export function targetWeightProblem(
   if (targetKg === null) return { kind: 'missing' };
   const min = minHealthyKg(heightCm);
   if (targetKg < min) return { kind: 'min', kg: min };
-  const now = round1(kgNow);
+  const now = round2(kgNow);
   if (goal === 'loss' ? targetKg >= now : targetKg <= now) return { kind: 'side', goal };
   return null;
 }

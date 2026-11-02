@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { formatWeight } from '../../../engine/body';
 import { pluralEn, text } from '../../../i18n';
 import { useBridge } from '../../bridge';
 import { keepAllowed, reachedApplied } from '../../diet/calibrate';
@@ -320,7 +321,7 @@ function Card({ profile, check: c, today, kgNow }: { profile: Profile; check: We
   const body = reached
     ? !shown || trend === null
       ? T.reachedPlain
-      : (applied ? T.reachedBody : T.reachedProposal)(formatNumber(trend, 1), formatNumber(profile.targetWeightKg, 1), n(c.to))
+      : (applied ? T.reachedBody : T.reachedProposal)(formatWeight(trend), formatWeight(profile.targetWeightKg), n(c.to))
     : reasonText(c, floor);
   const choices = choicesOf(profile, c, kgNow, shown, applied);
 

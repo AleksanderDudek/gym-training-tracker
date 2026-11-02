@@ -1,6 +1,6 @@
-import { text } from '../i18n';
+import { num, text } from '../i18n';
 import type { AppState, BodyWeight } from '../types';
-import { round1 } from './math';
+import { round2 } from './math';
 import { addDays } from './schedule';
 
 const T = text({
@@ -17,6 +17,13 @@ const T = text({
  */
 
 export const WEIGHT_RANGE = { min: 30, max: 300 } as const;
+
+/**
+ * Waga ciała tak, jak ją pokazujemy wszędzie — w treningach i w jedzeniu: zawsze dwie cyfry po
+ * przecinku („85,00”, „82,45”), bez jednostki. Stała liczba cyfr nie skacze w historii ważeń.
+ * Tempo (kg na tydzień) i ciężary w treningu to nie waga ciała — mają własny zapis.
+ */
+export const formatWeight = (kg: number): string => num(kg, 2);
 export const HEIGHT_RANGE = { min: 120, max: 230 } as const;
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
@@ -40,7 +47,7 @@ export const validBody = (b: Partial<BodyWeight> | null | undefined): b is BodyW
 export function setBodyWeight(state: AppState, kg: number, day: string): BodyWeight {
   if (!validWeight(kg))
     throw new Error(T.outOfRange(WEIGHT_RANGE.min, WEIGHT_RANGE.max));
-  const entry: BodyWeight = { day, kg: Math.round(kg * 10) / 10 };
+  const entry: BodyWeight = { day, kg: round2(kg) };
   state.body = [...bodyOf(state).filter((b) => b.day !== day), entry].sort((a, b) =>
     a.day.localeCompare(b.day),
   );
@@ -89,7 +96,7 @@ export const heightOf = (state: AppState): number | undefined =>
 export function avgWeight(state: AppState, day: string, days = 7): number | null {
   const from = addDays(day, -(days - 1));
   const list = bodyOf(state).filter((b) => b.day >= from && b.day <= day);
-  return list.length ? round1(list.reduce((s, b) => s + b.kg, 0) / list.length) : null;
+  return list.length ? round2(list.reduce((s, b) => s + b.kg, 0) / list.length) : null;
 }
 
 export interface WeightTrend {
@@ -113,7 +120,7 @@ export function weightTrend(state: AppState, day: string): WeightTrend {
     today: bodyOf(state).find((b) => b.day === day)?.kg ?? null,
     avg,
     prevAvg,
-    delta: avg !== null && prevAvg !== null ? round1(avg - prevAvg) : null,
+    delta: avg !== null && prevAvg !== null ? round2(avg - prevAvg) : null,
     n: bodyOf(state).filter((b) => b.day >= from && b.day <= day).length,
   };
 }

@@ -157,7 +157,7 @@ describe('ekran kroków i cardio z telefonem', () => {
     expect(screen.queryByRole('button', { name: /Usuń wpis/ })).not.toBeInTheDocument();
     expect(screen.getByText('Z telefonu')).toBeInTheDocument();
     expect(
-      screen.getByText('tętno spoczynkowe 52 · tętno 48–142, średnio 71 · sen 7 h 12 min · waga 82,4 kg'),
+      screen.getByText('tętno spoczynkowe 52 · tętno 48–142, średnio 71 · sen 7 h 12 min · waga 82,40 kg'),
     ).toBeInTheDocument();
     expect(screen.getByText('sen 45 min')).toBeInTheDocument();
     expect(screen.getByText(/Liczby z Apple Zdrowie albo Health Connect/)).toBeInTheDocument();
@@ -180,7 +180,7 @@ describe('ważenie z telefonu', () => {
     const day = addDays(today, -1);
     const user = userEvent.setup();
     const onWeight = body(withPhone([{ day, kg: 82.4 }]));
-    expect(screen.getByText(/Telefon ma nowsze ważenie: 82,4 kg/)).toBeInTheDocument();
+    expect(screen.getByText(/Telefon ma nowsze ważenie: 82,40 kg/)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Wpisz do dziennika' }));
     expect(onWeight).toHaveBeenCalledWith(82.4, day);
   });

@@ -52,7 +52,7 @@ describe('a new profile', () => {
   test('keeping the weight: maintenance, and the target weight is today’s weight', () => {
     const p = applyProfileEdit(null, completeProfile({ startDate: TODAY, goalPace: 0, targetWeightKg: 70 }), ctx({ kgNow: 79.26 }));
     expect(p.goalPace).toBe(0);
-    expect(p.targetWeightKg).toBe(79.3);
+    expect(p.targetWeightKg).toBe(79.26);
     expect(p.dailyKcal).toBe(2650);
   });
 
@@ -129,7 +129,7 @@ describe('an existing profile', () => {
     const prev = stored(2100, { goalPace: 0.5 });
     const p = applyProfileEdit(prev, { ...prev, goalPace: 0 }, ctx({ kgNow: 78.04 }));
     expect(p.goalPace).toBe(0);
-    expect(p.targetWeightKg).toBe(78);
+    expect(p.targetWeightKg).toBe(78.04);
     expect(p.dailyKcal).toBe(2600);
   });
 });
@@ -206,7 +206,7 @@ describe('checks that block a save', () => {
   test('the target weight: required, BMI 18,5 at least, on the right side of today’s weight', () => {
     expect(targetWeightProblem('loss', null, 80, 175)).toEqual({ kind: 'missing' });
     expect(targetWeightProblem('loss', 55, 80, 175)).toEqual({ kind: 'min', kg: 57 });
-    expect(targetWeightProblem('loss', 80, 80.04, 175)).toEqual({ kind: 'side', goal: 'loss' });
+    expect(targetWeightProblem('loss', 80, 80.004, 175)).toEqual({ kind: 'side', goal: 'loss' });
     expect(targetWeightProblem('gain', 79, 80, 175)).toEqual({ kind: 'side', goal: 'gain' });
     expect(targetWeightProblem('loss', 75, 80, 175)).toBeNull();
     expect(targetWeightProblem('keep', null, 80, 175)).toBeNull();
