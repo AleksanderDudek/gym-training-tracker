@@ -25,6 +25,12 @@ if (typeof window !== 'undefined') {
   // dopiero z `globals: true`.
   afterEach(() => cleanup());
 
+  // Karta „Zanim skorzystasz z podpowiedzi o jedzeniu” jest raz na urządzenie: testy ekranów
+  // biegną jak u kogoś, kto ją już potwierdził (pamięć podręczna modułu przetrwa
+  // `localStorage.clear()` w testach). Jej własne testy zaczynają od `resetHealthAckCache()`.
+  const { acknowledgeHealth } = await import('../components/healthAck');
+  acknowledgeHealth();
+
   // Każdy test to nowa karta: jej pamięć (`sessionStorage`, np. miejsce wybrane ręcznie, które
   // przetrwałoby przeładowanie) nie przechodzi do następnego.
   afterEach(() => window.sessionStorage.clear());

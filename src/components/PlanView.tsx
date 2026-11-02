@@ -485,7 +485,7 @@ export function Catalogue({
             </button>
           )}
         </div>
-        <HealthNote style={{ marginTop: 10 }} />
+        <HealthNote more style={{ marginTop: 10 }} />
       </div>
     </>
   );

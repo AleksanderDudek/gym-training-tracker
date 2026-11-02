@@ -1,6 +1,7 @@
 import { Check } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
+import { HealthAck, HealthNote } from '../../../components/Health';
 import { formatWeight } from '../../../engine/body';
 import { round2 } from '../../../engine/math';
 import { LANG, text } from '../../../i18n';
@@ -131,6 +132,8 @@ const T = text({
     autoAdjust:
       'Dopasowuj cel co tydzień — w poniedziałki, o 100 kcal, zawsze z wyjaśnieniem; zanim obniżę cel z powodu niższego spalania, pytam. Wyłączone: tylko podpowiadam.',
     hideKcal: 'Bez liczenia kalorii — dziennik pokaże białko i podpowie posiłki, ale bez kalorii.',
+    hideKcalWhy:
+      'Liczenie kalorii nie każdemu służy. Jeśli budzi niepokój albo masz za sobą zaburzenia odżywiania, wybierz tę opcję i porozmawiaj ze specjalistą.',
     pause: 'Przerwa',
     pauseText: 'Na urlop albo chorobę: cel to utrzymanie wagi, a dopasowanie czeka.',
     pauseWeek: 'Przerwa na tydzień',
@@ -235,6 +238,8 @@ const T = text({
     autoAdjust:
       'Fit the target every week — on Mondays, by 100 kcal, always with an explanation; I ask before lowering it because you seem to burn less. Off: I only suggest.',
     hideKcal: 'No calorie counting — the diary shows protein and suggests meals, but no calories.',
+    hideKcalWhy:
+      'Counting calories doesn’t suit everyone. If it brings anxiety or you have had an eating disorder, choose this and talk to a specialist.',
     pause: 'Break',
     pauseText: 'For a holiday or illness: your target is maintenance and fitting waits.',
     pauseWeek: 'A week’s break',
@@ -582,6 +587,7 @@ function ProfileForm({ profile, isNew, today, stores }: FormProps) {
 
   return (
     <>
+      <HealthAck />
       {isNew && (
         <div className="wrap">
           <p className="lead">{T.lead}</p>
@@ -828,6 +834,7 @@ function ProfileForm({ profile, isNew, today, stores }: FormProps) {
             />
             <span>{T.hideKcal}</span>
           </label>
+          <p className="tight fd-diet-soft">{T.hideKcalWhy}</p>
           {!isNew && (
             <div className="fd-diet-breaks">
               <h3>{T.pause}</h3>
@@ -913,6 +920,8 @@ function ProfileForm({ profile, isNew, today, stores }: FormProps) {
           </label>
           <p className="tight">{T.nearbyFirst}</p>
         </section>
+
+        <HealthNote kind="food" more className="wrap disclaimer" />
 
         <div className="fd-diet-savebar">
           <button type="submit" className="btn">

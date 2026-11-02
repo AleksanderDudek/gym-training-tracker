@@ -84,6 +84,7 @@ import {
 import { formatClock } from './components/Timer';
 import { GuidedSession } from './components/Guided';
 import { PromoPage } from './components/Promo';
+import { HealthPage } from './components/Health';
 import type { WatchPayload } from './engine/watch';
 import { HEIGHT_RANGE, WEIGHT_RANGE, bodyOf, formatWeight, removeBodyWeight, setBodyWeight, validBody, validHeight, validWeight } from './engine/body';
 import { cardioBurn, workoutBurn } from './engine/burn';
@@ -2125,6 +2126,7 @@ export default function App() {
 
       {route.kind === 'cardio' && <CardioPage state={state} onDelete={deleteCardio} />}
       {route.kind === 'promo' && <PromoPage onToast={setToastMsg} />}
+      {route.kind === 'health' && <HealthPage />}
       {route.kind === 'cardioAdd' && (
         // Klucz za adresem: skrót z innym rodzajem ruchu zaczyna czysty formularz.
         <CardioEntry

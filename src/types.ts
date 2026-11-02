@@ -702,6 +702,7 @@ export type Route =
   | { kind: 'cardioAdd'; sport?: CardioSport | undefined }
   /** Plakat polecający aplikację. */
   | { kind: 'promo' }
+  | { kind: 'health' }
   /** Sekcja zakładki Jedzenie. Stan strony (filtry, otwarty produkt) siedzi w zapytaniu hasha, poza trasą. */
   | { kind: 'food'; section: FoodSection }
   /** Plan posiłków, postęp albo profil diety — podstrony dziennika. */

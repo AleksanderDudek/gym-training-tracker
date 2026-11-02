@@ -35,7 +35,7 @@ describe('Badania', () => {
   test('bez wyników: wstęp, sposoby dodania i „Co zbadać” z NFZ i pakietami', async () => {
     await saveProfile(completeProfile({ sex: 'K', age: 34 }));
     renderWithBridge(<LabsPage />);
-    expect(await screen.findByRole('heading', { name: 'Dieta pod wyniki badań' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Jedzenie a wyniki badań' })).toBeInTheDocument();
     expect(screen.getByText(/zdjęcie albo zrzut ekranu/)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Podstawowe — od lekarza rodzinnego (NFZ)' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /Moje Zdrowie/ })).toBeInTheDocument();

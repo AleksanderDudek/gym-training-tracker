@@ -1,4 +1,5 @@
 import { ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
+import { HealthNote } from '../../../components/Health';
 import { Modal, useModal } from '../../../components/ui';
 import { FOOD_PATH } from '../../../routing';
 import { hashWith } from '../../hash';
@@ -122,6 +123,7 @@ export default function DietPlanPage() {
           onDate={(next) => update({ date: next === today ? null : next })}
         />
       )}
+      <HealthNote kind="food" more className="wrap disclaimer" />
     </>
   );
 }

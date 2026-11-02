@@ -22,6 +22,8 @@ export async function seed(page: Page, scenario: Scenario): Promise<void> {
   state.introSeen = backup.introSeen ?? scenario.clock.slice(0, 10);
   scenario.patch?.(state);
   await page.evaluate(([key, value]) => localStorage.setItem(key!, value!), [STATE_KEY, JSON.stringify(state)]);
+  // The one-time „Zanim skorzystasz z podpowiedzi o jedzeniu” card: a returning person has confirmed it.
+  await page.evaluate(() => localStorage.setItem('gt:health-ack', '1'));
   await page.evaluate(() => sessionStorage.clear());
   await page.goto('about:blank');
   // The one-off „Liczenie kalorii jest teraz prostsze” notice greets profiles from before the

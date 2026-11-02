@@ -1,4 +1,5 @@
 import { NotebookPen, Plus } from 'lucide-react';
+import { HealthNote } from '../../../components/Health';
 import { pluralEn, text } from '../../../i18n';
 import { dietPath } from '../../../routing';
 import { useBridge } from '../../bridge';
@@ -85,6 +86,7 @@ export default function PlansPage() {
           ))}
         </ul>
       )}
+      <HealthNote kind="food" more className="wrap disclaimer" />
     </>
   );
 }

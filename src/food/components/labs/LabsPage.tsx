@@ -2,6 +2,7 @@ import { FlaskConical, Plus, ShieldCheck } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useMemo, useState } from 'react';
 import { text } from '../../../i18n';
+import { HealthAck, HealthNote } from '../../../components/Health';
 import { Segmented } from '../../../components/ui';
 import { useBridge } from '../../bridge';
 import type { Sex } from '../../diet/types';
@@ -21,8 +22,8 @@ import './labs.css';
 
 const T = text({
   pl: {
-    title: 'Dieta pod wyniki badań',
-    lead: 'Wgraj wyniki krwi lub moczu, a ułożę dietę pod to, czego brakuje — z produktami, przepisami i datą badania kontrolnego.',
+    title: 'Jedzenie a wyniki badań',
+    lead: 'Wgraj wyniki krwi lub moczu, a podpowiem, w jakich produktach i przepisach jest to, czego może brakować, i kiedy zwykle powtarza się badanie — jako punkt wyjścia do rozmowy z lekarzem.',
     ways: [
       'PDF z laboratorium (np. z konta pacjenta Diagnostyki)',
       'zdjęcie albo zrzut ekranu wydruku z przychodni',
@@ -49,15 +50,13 @@ const T = text({
     man: 'Mężczyzna',
     age: 'Wiek',
     sex: 'Płeć',
-    disclaimer:
-      'To informacje, nie diagnoza ani leczenie. Zakresy dotyczą dorosłych; w ciąży i u dzieci są inne. Wyniki zawsze omów z lekarzem, a zmiany w lekach i suplementach — z lekarzem lub farmaceutą.',
     deleted: 'Usunięto badanie.',
     saved: 'Zapisano wyniki.',
     failed: 'Nie udało się zapisać.',
   },
   en: {
-    title: 'A diet for your lab results',
-    lead: 'Add your blood or urine results and I will build a diet for what is short — with foods, recipes and a retest date.',
+    title: 'Food and your lab results',
+    lead: 'Add your blood or urine results and I will show which foods and recipes contain what may be short, and when a retest is usual — as a starting point for a talk with your doctor.',
     ways: [
       'a PDF from the lab (e.g. a Diagnostyka patient account)',
       'a photo or screenshot of a clinic printout',
@@ -84,8 +83,6 @@ const T = text({
     man: 'Man',
     age: 'Age',
     sex: 'Sex',
-    disclaimer:
-      'This is information, not a diagnosis or treatment. Ranges are for adults; they differ in pregnancy and for children. Always discuss results with a doctor, and changes to medicines and supplements with a doctor or pharmacist.',
     deleted: 'Test deleted.',
     saved: 'Results saved.',
     failed: 'Could not save.',
@@ -182,6 +179,7 @@ export default function LabsPage() {
 
   return (
     <>
+      <HealthAck />
       <section className="grp fd-lab-head" aria-labelledby="fd-lab-title">
         <h2 id="fd-lab-title">
           <FlaskConical aria-hidden="true" size={18} /> {T.title}
@@ -275,7 +273,7 @@ export default function LabsPage() {
         </ul>
       </section>
 
-      <p className="wrap disclaimer">{T.disclaimer}</p>
+      <HealthNote kind="labs" more className="wrap disclaimer" />
 
       {sheetOpen && (
         <AddSheet
