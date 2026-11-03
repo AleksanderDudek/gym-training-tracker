@@ -1,12 +1,13 @@
 import { AlertTriangle, CalendarClock, Minus, Plus, Stethoscope } from 'lucide-react';
 import { num, text } from '../../../i18n';
 import { Segmented } from '../../../components/ui';
-import { addDays, daysBetween } from '../../diet/model';
+import { daysBetween } from '../../diet/model';
 import { formatDate, plural } from '../../lib/format';
 import { hashWith } from '../../hash';
 import type { Assessment, Finding, Focus, FocusId } from '../../labs/assess';
 import { FOCUS, habitsFor, type Habit } from '../../labs/focus';
 import { MARKERS } from '../../labs/markers';
+import { planFocus, retestMarkers, retestOf, retestWeeks } from '../../labs/retest';
 import { NUTRIENT_LABELS, NUTRIENT_UNITS, normFor } from '../../labs/norms';
 import { exampleDay, topFoods, topRecipes, type Person } from '../../labs/recommend';
 import { savePrefs, tickHabit } from '../../labs/store';
@@ -406,10 +407,10 @@ function PlanCard({
   onStop: () => void;
   onTick: (habit: string, delta: 1 | -1) => void;
 }) {
-  const ids: FocusId[] = plan ? (plan.focus.filter((f) => f in FOCUS) as FocusId[]) : focus.map((f) => f.id);
-  const weeks = Math.max(...ids.map((id) => FOCUS[id].retestWeeks), 4);
-  const retestMarkers = [...new Set(ids.flatMap((id) => FOCUS[id].retest))].filter((m) => MARKERS[m]);
-  const names = retestMarkers.map((m) => MARKERS[m]!.short ?? MARKERS[m]!.name).join(', ');
+  const ids: FocusId[] = plan ? planFocus(plan) : focus.map((f) => f.id);
+  const weeks = retestWeeks(ids);
+  const markers = retestMarkers(ids);
+  const names = markers.map((m) => MARKERS[m]!.short ?? MARKERS[m]!.name).join(', ');
   if (!plan) {
     return (
       <section className="grp fd-lab-plan" aria-labelledby="fd-lab-plan">
@@ -423,11 +424,11 @@ function PlanCard({
       </section>
     );
   }
-  const retestOn = addDays(plan.start, weeks * 7);
+  const retestOn = retestOf(plan).date;
   const week = Math.min(weeks, Math.floor(daysBetween(plan.start, today) / 7) + 1);
   const list: Habit[] = [];
   for (const id of ids) for (const h of habitsFor(FOCUS[id], person.eats)) if (!list.some((x) => x.id === h.id)) list.push(h);
-  const effect = retestMarkers.flatMap((m) => {
+  const effect = markers.flatMap((m) => {
     const history = historyOf(reports, m);
     const before = [...history].reverse().find((h) => h.date <= plan.basedOn);
     const after = [...history].reverse().find((h) => h.date > plan.start);

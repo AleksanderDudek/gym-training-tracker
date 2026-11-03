@@ -206,4 +206,12 @@ describe('backup', () => {
     );
     expect(p).toMatchObject({ fastPlan: null, waterMl: 5000, fast: { start: '2026-11-02T10:00', end: null } });
   });
+
+  test('the shopping rhythm goes through a backup; a broken one is none', () => {
+    const ctx = { today: '2026-11-02', weightKg: 80 };
+    const shopping = { kind: 'weekdays', days: [2, 6], at: '18:00' } as const;
+    expect(cleanProfile({ ...completeProfile({}), shopping }, ctx).shopping).toEqual(shopping);
+    expect(cleanProfile({ ...completeProfile({}), shopping: { kind: 'every', days: 0 } }, ctx).shopping).toBeNull();
+    expect(cleanProfile(completeProfile({}), ctx)).not.toHaveProperty('shopping');
+  });
 });
