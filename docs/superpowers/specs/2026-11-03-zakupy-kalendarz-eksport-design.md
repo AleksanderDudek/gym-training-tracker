@@ -55,6 +55,42 @@ Reguła listy (`src/food/shop/history.ts`, czysta funkcja):
 Uczciwość: nagłówek mówi, z czego to policzone („z 19 zapisanych dni z ostatnich 4 tygodni”), stopka: „to średnia
 z dziennika, nie zapas w domu — zajrzyj do lodówki”.
 
+## Wynik i odstępstwa — A
+
+Zrobione na gałęzi `feat/zakupy-z-dziennika`: silnik `src/food/shop/history.ts` (`historyList`, `historyAmount`,
+`historyText`), zapis `src/food/shop/store.ts`, ekran `components/prep/DiaryShopping.tsx` + `RhythmCard.tsx`,
+wiersze listy wyjęte do `ShoppingRows.tsx` (wspólne dla obu źródeł), kafelek „Zakupy” w dzienniku.
+
+Doprecyzowania i odstępstwa:
+
+- Rytm zapisuje `saveShopping` (tylko pole `shopping` w zapisanym wierszu, jak `saveFast`), nie `saveProfile`
+  z całym profilem z `useProfile` — tamten zapisałby z powrotem `dailyKcal` i resztę z chwili odczytu.
+- Składniki przepisów idą przez `shoppingList` z listy planu (jako `SideUse` na dzień zakupów), więc mają produkt
+  z koszyka (`preferredStore` profilu, bez niego „dowolny sklep”), opakowania, sztuki, dział i cenę jak plan. Bez
+  podpowiedzi „zamroź” — z dziennika nie wiadomo, którego dnia co zostanie zjedzone. Jedna lista działami, bez
+  podziału na wizytę i zamówienie (koszyk to jeden sklep).
+- Produkt z dziennika, który jest tym samym produktem, co wybrany dla składnika przepisu (skyr w misce i skyr
+  osobno), to jedna linia z sumą obu ilości (pierwszy przegląd na danych demo pokazał dwie linie „Skyr Natural”).
+- Produkt zapisany bez gramów („1 opak.”): gramy z kcal wpisu i kcal/100 g z etykiety. Własne jedzenie bez gramów:
+  porcje jak w dzienniku („7 × 1 kromka”). Przepis w zestawie rozpisany na składniki.
+- Liczone są tylko składniki przepisów, `product:` i `custom:`; wszystko inne (lokale, zdjęcia, plan, szybkie wpisy,
+  przepis usunięty z katalogu) pominięte, a stopka mówi, ile wpisów pominięto.
+- „Sprawdź w domu” = składniki `pantry`, niezależnie od tego, ile dni były jedzone; „Czasem” = reszta jedzona
+  jednego dnia (zwinięte `<details>`, też do odhaczenia).
+- Źródło: bez otwartego planu zawsze dziennik (bez przełącznika). Z planem: `?z=` z adresu, potem `?plan=` (odnośnik
+  z planu → lista planu), potem ostatni wybór na urządzeniu (`gt:zakupy-zrodlo`), domyślnie plan. Przełącznik to
+  odnośniki (`seg`), jak `PlanSwitch`. Odhaczenia: `gt:zakupy-dziennik` = `{shop, keys}` — następne zakupy zaczynają
+  od zera.
+- Strzałka wstecz z `#/jedzenie/zakupy` wraca do dziennika (była do planu): wejście jest teraz z kafelka dziennika.
+- Póki baza produktów się wczytuje, lista liczy się bez niej (wartości typowe, bez opakowań i cen) z dopiskiem
+  „Wczytuję bazę produktów…”; po wczytaniu linie dostają produkty — klucze odhaczeń się nie zmieniają.
+- W „co kilka dni” pole daty pokazuje najbliższy dzień rytmu (a nie zapisane `from`); kafelki dziennika w siatce
+  3×2 bez osobnego mniejszego pisma poniżej 360 px.
+- Link „Kalendarz — zakupy, treningi, badania” na dole listy (oba źródła) do `#/kalendarz`.
+
+Uwaga dla prowadzącego: fundament dodał `shopping?: ShopRhythm | null` także do interfejsu `Reached` w
+`diet/types.ts` — wygląda na przypadek (rytm siedzi w `Profile`); nie ruszałem.
+
 ## B. Kalendarz (`#/kalendarz`)
 
 Strona z miesiącem (pn–nd, 7 kolumn) i listą „Najbliższe 14 dni”. Na dniu: trening z planu (zaplanowany / zrobiony /

@@ -126,7 +126,7 @@ describe('zakładki i sekcje', () => {
     expect(screenOf(parseHash('#/jedzenie/postep'))).toEqual({ title: 'Postęp', parent: '#/jedzenie' });
     expect(screenOf(parseHash('#/jedzenie/profil'))).toEqual({ title: 'Profil diety', parent: '#/jedzenie' });
     // Lista zakupów wraca do planu, z którego powstała.
-    expect(screenOf(parseHash('#/jedzenie/zakupy'))).toEqual({ title: 'Lista zakupów', parent: '#/jedzenie/plan' });
+    expect(screenOf(parseHash('#/jedzenie/zakupy'))).toEqual({ title: 'Lista zakupów', parent: '#/jedzenie' });
   });
 
   it('przełącznik sekcji: Plan · Treningi · Ćwiczenia i Dziennik · Przepisy · Produkty · W pobliżu', () => {
