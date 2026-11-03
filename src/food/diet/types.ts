@@ -43,8 +43,6 @@ export interface Reached {
   prevPace: number;
   prevKcal: number;
   askAgain: string | null;
-  /** When the person shops (`shop/rhythm.ts`): the list from the diary and the calendar follow it. Absent: not set yet. */
-  shopping?: ShopRhythm | null;
 }
 
 export type CheckStatus =
