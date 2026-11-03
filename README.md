@@ -28,7 +28,7 @@ npm run build      # typecheck + produkcyjny build do dist/ z service workerem (
 npm run preview    # podgląd builda — tu działa też praca offline
 npm run typecheck  # tsc: aplikacja, testy, konfiguracja Vite i skrypty, service worker, filmy demo
 npm run lint       # oxlint
-npm test           # 3507 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, plan z zakupami, serwer… (vitest)
+npm test           # 3641 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, plan z zakupami, serwer… (vitest)
 ```
 
 Aplikacje na telefon (GYM TRACKER Zdrowie — `health/README.md`):
@@ -372,6 +372,8 @@ Podstrony mają własne adresy i strzałkę wstecz w pasku aplikacji:
 | Postęp — trend wagi, tempo i termin celu, zmiany celu, tydzień po tygodniu, kalorie z 14 dni, białko z tygodnia | `#/jedzenie/postep` | Jedzenie |
 | Profil diety — cel, zwykły tydzień i tempo, „Jak liczę cel”, ustawienia liczenia, sposób odżywiania, plan z Excela, dane | `#/jedzenie/profil` | Jedzenie |
 | Badania — wyniki z PDF, zdjęcia lub tekstu, dieta pod wyniki, historia, co zbadać | `#/jedzenie/badania` | Jedzenie |
+| Lista zakupów — z dziennika (rytm zakupów) albo z planu | `#/jedzenie/zakupy` | Jedzenie |
+| Kalendarz — treningi, zakupy, badania; Kalendarz Google i plik .ics | `#/kalendarz` | Dziś |
 | Produkt — zdjęcia, wartości, skład, ceny | `#/produkty?p=<kod>` (arkusz nad listą) | Jedzenie |
 | Historia ćwiczenia | `#/profil/<id>` | Profil |
 | Ustawienia | `#/ustawienia` | przycisk w pasku aplikacji |
@@ -739,8 +741,8 @@ aplikacji. Dane produktów: [Open Food Facts](https://world.openfoodfacts.org), 
   kolejnych dni, a niedojedzone nie wraca.
 - **Plan z Excela**: „Wczytaj plan z Excela” czyta arkusz w przeglądarce — dni wzorcowe, warianty,
   potrawy z kaloriami i makro, parametry. Plik nigdzie nie trafia.
-- **Dziś**, od góry: **rząd pięciu kafelków** podstron — Plan posiłków, Moje plany, Postęp, Profil
-  diety i Badania — między sekcjami a przełącznikiem dnia (wcześniej stały na samym dole, cztery–pięć
+- **Dziś**, od góry: **sześć kafelków** podstron (3×2) — Plan posiłków, Moje plany, Postęp, Profil
+  diety, Badania i Zakupy — między sekcjami a przełącznikiem dnia (wcześniej stały na samym dole, cztery–pięć
   ekranów niżej, i nikt ich nie znajdował), zawiadomienie o nowym liczeniu i poniedziałkowa karta, gdy czekają (niżej),
   **pytanie o wagę** („Ile dziś ważysz?” z ostatnim ważeniem i radą „Najlepiej rano, po toalecie,
   przed jedzeniem.”, z „Nie dziś” wspólnym z ekranem Dziś; po zapisie jedna linijka „Waga: 82,40 kg”
@@ -1048,7 +1050,14 @@ dokłada), „Bez mięsa”, „Bez ryb i owoców morza”, „Bez jajek”.
   w dzienniku, dla wszystkich; zmiana o 100 kcal nie rusza ułożonego planu — uwaga „Od ułożenia
   planu zmienił się cel w profilu diety (…)” pojawia się dopiero przy różnicy co najmniej 200 kcal
   albo innym sposobie odżywiania, a kupione zostaje kupione.
-- **Lista zakupów** (`#/jedzenie/zakupy`, także skrót aplikacji): wizyta w sklepie dział po dziale,
+- **Zakupy z dziennika** (`shop/history.ts`, rytm w `shop/rhythm.ts`): lista na najbliższe zakupy z tego,
+  co się jadło przez 4 tygodnie — średnia na zapisany dzień (dzień bez zapisu to brak danych, nie post)
+  razy dni do następnych zakupów. Rytm na profilu diety: stałe dni tygodnia („wt i pt”) albo co N dni,
+  z godziną. Przepisy rozpisane na składniki i kupowane regułami listy z planu (dział, opakowania, ceny),
+  produkty ze skanu po swoich opakowaniach; jedzone w ≥ 2 dni to lista, raz — „Czasem”, przyprawy
+  i olej — „Sprawdź w domu”. Pomijane: lokale, zdjęcia, catering, szybkie wpisy. Przełącznik „Z dziennika
+  / Z planu”, gdy jest otwarty plan. Odhaczanie per dzień zakupów.
+- **Lista zakupów z planu** (`#/jedzenie/zakupy`, także skrót aplikacji): wizyta w sklepie dział po dziale,
   zamówienie przez internet z odnośnikami do produktów, „Sprawdź w domu” (oliwa, przyprawy, białko
   w proszku). Opakowania wybranego produktu („3 opak. · po 450 g”, puszki tuńczyka i fasoli liczone po
   odsączeniu), sztuki zaokrąglone w górę („10 szt.” jajek) albo gramy; ceny orientacyjne, a suma
@@ -2908,6 +2917,24 @@ w Produktach PL — na tej samej domenie dawny dziennik pojawia się w aplikacji
 w dwóch magazynach, bajty jako `ArrayBuffer`. Do pliku kopii nie trafiają (część „Sylwetka”), ale „Usuń
 wszystkie dane” kasuje całą bazę — najpierw zamyka własne połączenie, połączenia z innych kart ustępują
 same. Service worker zdjęć nie trzyma, więc nie ma tu nic do zapomnienia po jego stronie.
+
+**Raport dla dietetyka lub lekarza (Excel).** Ustawienia → „Raport dla dietetyka lub lekarza (Excel)”
+zapisuje jeden plik `.xlsx` (własny zapis w `engine/xlsx.ts` na fflate, składanie w `food/report.ts`):
+Informacje, Dni, Jedzenie, Składniki, Napoje, Treningi, Serie, Ruch, Pomiary, Badania i — gdy jest
+zegarek albo telefon — Urządzenia. Typowane komórki (daty i godziny jako daty, liczby jako liczby),
+pogrubiony i zamrożony nagłówek, autofiltr. Zakres 30 / 90 dni / wszystko. Pusta komórka to „nie
+zapisano”, nigdy zero; szacunki (kofeina, napój słodzony, kcal ruchu) mają to w nagłówku. Godzina
+rozpoczęcia treningu to zakończenie minus czas z zegara sesji. Tekst zawsze jako tekst, więc nazwa
+potrawy nie staje się formułą.
+
+**Kalendarz** (`#/kalendarz`, karta na Dziś, odnośnik w Przypomnieniach i na liście zakupów;
+`engine/calendar.ts`, `engine/ics.ts`). Miesiąc od poniedziałku: trening z planu / zrobiony /
+opuszczony, zakupy z rytmu (od dziś), badanie kontrolne (`labs/retest.ts`) i dni pobrania.
+Do Google bez serwera: „Dodaj … do Kalendarza Google” otwiera wypełniony formularz wydarzenia
+(`recur=RRULE:…`, `ctz` strefy telefonu), „Pobierz plik .ics” daje 12 tygodni pojedynczych wydarzeń
+w UTC z przypomnieniami (trening 60 min, zakupy 30 min przed, badanie wieczorem dzień przed)
+i stałymi UID. Subskrypcji nie ma — wymagałaby serwera z harmonogramem zdrowia. Push: opcjonalnie
+zakupy (30 min przed) i badanie kontrolne (19:00 dzień przed).
 
 **Eksport do arkusza (CSV).** Ustawienia → „Eksport do arkusza (CSV)” zapisuje jeden z trzech
 plików: treningi (wiersz na serię: data, trening, ćwiczenie, seria, powtórzenia albo sekundy,
