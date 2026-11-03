@@ -94,6 +94,16 @@ describe('CSP', () => {
     expect(connect.join(' ')).not.toContain('/v1');
   });
 
+  it('dopisuje do connect-src bazę GYM TRACKER Sztab (współpraca z prowadzącym), także lokalną', () => {
+    const connect = directives(csp('https://api.example.com', 'https://abc.supabase.co/')).get('connect-src')!;
+    expect(connect).toContain('https://api.example.com');
+    expect(connect).toContain('https://abc.supabase.co');
+    expect(directives(csp(undefined, 'http://127.0.0.1:54321')).get('connect-src')).toContain('http://127.0.0.1:54321');
+    // Ten sam adres dwa razy stoi w polityce raz.
+    expect(directives(csp('https://x.example', 'https://x.example/rest')).get('connect-src')!.filter((o) => o === 'https://x.example')).toHaveLength(1);
+    expect(csp(undefined, '')).toBe(csp());
+  });
+
   it('bez serwera albo z niepoprawnym adresem nie dopisuje niczego i się nie wywraca', () => {
     expect(csp('')).toBe(csp());
     expect(csp('   ')).toBe(csp());

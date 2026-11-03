@@ -28,7 +28,7 @@ npm run build      # typecheck + produkcyjny build do dist/ z service workerem (
 npm run preview    # podgląd builda — tu działa też praca offline
 npm run typecheck  # tsc: aplikacja, testy, konfiguracja Vite i skrypty, service worker, filmy demo
 npm run lint       # oxlint
-npm test           # 3641 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, plan z zakupami, serwer… (vitest)
+npm test           # 3720 testów: silnik, doradca, kalorie, odznaki, zegar sesji, trasy, jedzenie, plan z zakupami, współpraca, serwer… (vitest)
 ```
 
 Aplikacje na telefon (GYM TRACKER Zdrowie — `health/README.md`):
@@ -53,6 +53,17 @@ Filmy demo (po jednym na potrzebę użytkownika, 25–45 s, z opisami do postpro
 npm run demo:videos         # build i nagranie wszystkich filmów do demo-videos/ (Playwright + ffmpeg)
 npm run demo:videos -- 08   # tylko wybrane; --skip-build bez budowania, --describe-only same opisy
 npm run demo:seed           # osoba demo (7 tygodni treningów i dziennik jedzenia) — tylko po zmianie modelu danych
+```
+
+Repozytorium jest monorepo (workspaces npm). GYM TRACKER zostaje w korzeniu, bez przenosin — wdrożenie,
+filmy demo i testy działają jak dotąd. Obok leżą `packages/link` (`@gymtracker/link`: protokół
+współpracy — ID podopiecznego, szyfrowanie, zaproszenia, obszary, paczka danych, zalecenia) i
+`apps/sztab` (GYM TRACKER Sztab, aplikacja dla prowadzących; uruchomienie i wdrożenie w
+`apps/sztab/README.md`). Sztab bierze atlas, plany i silnik wprost z `src/` — to jedno źródło.
+
+```bash
+npm run sztab               # Sztab na http://localhost:5190 (wymaga `npm run db:start -w @gymtracker/sztab`)
+npm run test:sztab          # testy Sztabu; testy bazy: npm run test:db -w @gymtracker/sztab
 ```
 
 Build jest w pełni statyczny (`base: './'`), więc `dist/` można wrzucić na dowolny hosting plików
@@ -376,6 +387,10 @@ Podstrony mają własne adresy i strzałkę wstecz w pasku aplikacji:
 | Kalendarz — treningi, zakupy, badania; Kalendarz Google i plik .ics | `#/kalendarz` | Dziś |
 | Produkt — zdjęcia, wartości, skład, ceny | `#/produkty?p=<kod>` (arkusz nad listą) | Jedzenie |
 | Historia ćwiczenia | `#/profil/<id>` | Profil |
+| Współpraca z prowadzącym — kto prowadzi, co widzi, zalecenia | `#/wspolpraca` | Profil |
+| Zaproszenie od prowadzącego | `#/wspolpraca/zaproszenie?i=<numer>&f=<odcisk>` | Profil |
+| Jedna współpraca — obszary, ID, zakres danych, zakończenie | `#/wspolpraca/<numer>` | Profil |
+| Zalecenie — plan, trening, cele, badania, notatka z listą | `#/wspolpraca/zalecenie/<numer>` | Profil |
 | Ustawienia | `#/ustawienia` | przycisk w pasku aplikacji |
 
 **Trening ma trzy sekcje, Jedzenie — cztery.** Pięć zakładek to górna granica obu wytycznych —
@@ -494,6 +509,61 @@ w zakładce Plan (opis niżej, przy doradcy).
 **Liczone jest z dziennika, nie z `prog[id].hist`.** Dziennik jest źródłem — `hist` bywa
 przycinany przez silnik progresji, bo służy do wyliczania następnej sesji, a nie do pamiętania
 wszystkiego. Spadek po przerwie nie jest tu opisany jako porażka: wykres liczy, nie ocenia.
+
+## Współpraca z prowadzącym
+
+Trener, dietetyk, fizjoterapeuta albo lekarz może prowadzić kogoś z GYM TRACKERem z osobnej aplikacji
+dla prowadzących — **GYM TRACKER Sztab** (`apps/sztab`). Podopieczny nadal nie ma konta: dostaje link
+zaproszenia, przyjmuje go w GYM TRACKERze i od tej chwili telefon wysyła prowadzącemu zaszyfrowaną paczkę
+tego, co podopieczny pokazuje, a odbiera od niego zaszyfrowane zalecenia: plan, trening, cele, badania do
+zrobienia, notatkę z listą. Wejścia: karta „Współpraca z prowadzącym” w Profilu i w Ustawieniach, a na
+ekranie Dziś jedna linia — tylko wtedy, gdy przyszło coś nowego albo prowadzący zakończył współpracę.
+Bez nowej zakładki: należy do Profilu, jak historia ćwiczeń.
+
+**Bez Sztabu w buildzie nie ma jej wcale.** Adres bazy (`VITE_SZTAB_URL`, w GitHubie zmienna `SZTAB_URL`;
+lokalnie np. `http://127.0.0.1:54321`) i jej klucz publiczny (`VITE_SZTAB_ANON_KEY` / `SZTAB_ANON_KEY`)
+włączają karty i synchronizację; adres aplikacji dla prowadzących (`VITE_SZTAB_APP_URL` / `SZTAB_APP_URL`)
+dokłada tylko odnośnik „Prowadzisz innych?”. Pusty build działa jak dotąd, a link zaproszenia mówi, że ta
+wersja się nie łączy. Rozmowa to zwykły `fetch` na funkcje RPC (PostgREST), bez klienta Supabase:
+`src/link/rpc.ts`.
+
+**Co widzi serwer: szyfrogram.** Telefon tworzy dla każdej współpracy własną parę kluczy ECDH P-256,
+klucz współpracy liczą obie strony same (ECDH → HKDF → AES-256-GCM, `@gymtracker/link`), a każdy
+szyfrogram jest związany z miejscem (paczka z tą współpracą, zalecenie i potwierdzenie z tym numerem) —
+podłożony pod inny wiersz się nie otworzy. Link zaproszenia niesie za `#` odcisk klucza prowadzącego;
+telefon porównuje go z kluczem, który podał serwer, i przy niezgodności odmawia: przejęty serwer nie
+podstawi własnego klucza. Prowadzący nie dostaje imienia, maila ani numeru telefonu — tylko ID
+(`GT-XXXX-…`, 20 znaków), liczone na telefonie z jego sekretu i numeru prowadzącego: ten sam prowadzący
+zawsze widzi to samo ID, dwóch prowadzących — dwa różne, których nie połączą.
+
+**Co i z jakiego okresu.** Zakres wybiera podopieczny przy przyjęciu i zmienia w każdej chwili, słowami:
+treningi, serie i plan; kroki, cardio, zegarek i telefon; jedzenie i napoje; waga i obwody; badania.
+Paczka niesie tylko zaznaczone części i tylko z ostatniego pół roku (`SNAPSHOT_DAYS`); większa niż limit
+traci najstarsze dni, aż się zmieści. Jedzenie i badania czyta z bazy dziennika ten sam kod co raport
+dla dietetyka, ładowany leniwie. Węższy zakres działa od razu: serwer kasuje starą paczkę, zanim przyjdzie
+nowa. Paczka idzie przy przyjęciu, co najmniej kwadrans po poprzedniej przy otwarciu i powrocie do
+aplikacji, od razu po zamkniętym treningu i na „Wyślij dane teraz” — nigdy w trakcie treningu i po cichu:
+bez sieci nic się nie dzieje, następne otwarcie spróbuje znowu.
+
+**Jeden prowadzący na obszar.** Trening, żywienie i rehabilitację prowadzi jedna osoba naraz, wgląd
+(lekarz zlecający badania) — do trzech. Pilnuje tego telefon, bo tylko on wie, kto kogo prowadzi. Obszar
+zajęty przez kogoś innego stoi na zaproszeniu odznaczony, z nazwiskiem prowadzącego; zaznaczenie go to
+zamiana, a ekran mówi, czy dawna współpraca straci jeden obszar, czy skończy się cała. Zamiana dzieje się
+dopiero po udanym przyjęciu — nieudane nie zabierze nikomu jego obszaru. Nowe zaproszenie od tego samego
+prowadzącego zastępuje dawną współpracę i daje to samo ID.
+
+**Zalecenia.** Plan i trening stają się planem i treningiem własnym (numery `coach-<8 znaków>-…`, więc
+nie nadpiszą niczego, co podopieczny ułożył sam), a „Uruchom plan od prowadzącego” prowadzi na zwykły
+podgląd planu ze startem — progresja, kalendarz i odznaki działają jak dla każdego planu. Ćwiczenia spoza
+atlasu tej wersji odpadają, a ekran mówi które; filmy prowadzącego stoją przy ćwiczeniach. Cele, badania
+i notatka to karty do przeczytania, z „Zrobione”, „Nie tym razem” i odhaczaniem listy. Prowadzący dostaje
+zaszyfrowane potwierdzenie: zobaczone, w trakcie, zrobione, odrzucone. Wycofane zalecenie znika.
+
+**Koniec współpracy** — z dowolnej strony — kasuje na serwerze od razu paczkę, zalecenia i token. Telefon
+pyta na stronie, zanim zakończy, i mówi wprost, że prowadzący traci dane od razu, a to, co jest na
+telefonie, zostaje. Koniec po stronie prowadzącego telefon poznaje po odrzuconym tokenie, sprawdza stan
+i pokazuje uwagę na ekranie Dziś. Bez sieci zakończenie zapisuje się od razu u siebie, a serwer dowiaduje
+się przy następnym połączeniu.
 
 ## Przekąski ruchowe
 
@@ -1989,7 +2059,20 @@ src/
   swNavigation.ts           które nawigacje nie dostają index.html (polityka prywatności, pliki spod data/) — od zakresu service workera
   swPlugins.ts              wtyczka kopii kawałków OSM bez nagłówka Date (wiek od ostatniego użycia)
   swWarm.ts                 pierwsza wizyta: pliki pobrane przed przejęciem strony jeszcze raz przez service worker
-  csp.test.ts               5 testów polityki bezpieczeństwa: każdy obcy adres z kodu przepuszczony, serwer aplikacji, miejsce znacznika
+  csp.test.ts               7 testów polityki bezpieczeństwa: każdy obcy adres z kodu przepuszczony, serwer aplikacji i baza Sztabu, miejsce znacznika
+  link/                     współpraca z prowadzącym (GYM TRACKER Sztab), na protokole z `packages/link` (`@gymtracker/link`)
+    config.ts               adresy z buildu: baza Sztabu, klucz anon, aplikacja dla prowadzących; bez nich współpracy nie ma
+    rpc.ts                  funkcje RPC przez `fetch` (PostgREST): odpowiedzi sprawdzone pole po polu, kody błędów bazy
+    store.ts                współprace i zalecenia w `gt-link` (poza kopią), sekret ID z kopii — bez kryptografii, w głównej paczce
+    accept.ts               przyjęcie zaproszenia: kontrola klucza z linku, wyłączność obszarów, ID z licznikiem przy kolizji
+    sync.ts                 w tle: zaległe zmiany, odbiór i odszyfrowanie zaleceń, koniec po stronie prowadzącego, paczka, potwierdzenia
+    snapshot.ts             paczka dla prowadzącego: zakresy, okno pół roku, limit wielkości; jedzenie i badania z bazy dziennika
+    assign.ts               plan i trening od prowadzącego jako własne: osobne numery, pominięte ćwiczenia spoza atlasu
+    *.test.ts               43 testy przyjęcia, wyłączności, synchronizacji, paczki, zaleceń, zapisu i tras
+  components/Link.tsx       strony współpracy (osobna paczka): lista, zaproszenie, współpraca z zakresem i zakończeniem, zalecenie
+  components/LinkEntry.tsx  karta w profilu i ustawieniach, uwaga na ekranie Dziś
+  components/Link*.test.tsx 13 testów stron pod jsdom (także po angielsku) i współpracy w całej aplikacji: link na świeżym profilu, start, reset
+  test/linkServer.ts        Sztab w pamięci dla testów: funkcje RPC z migracji, prowadzący z prawdziwym kluczem
   styles.css                arkusz stylów
   styles.contrast.test.ts   10 testów kontrastu tokenów (także kropki stanu połączenia), liczonych wprost z arkusza
   vite-env.d.ts             typy modułu `virtual:food-data`
@@ -2878,6 +2961,13 @@ z zegarka. Klucza do zegarka w zapisie nie ma: leży osobno w pamięci strony (`
 więc eksport niesie liczby, które już przyszły, ale nie otwiera skrzynki z nowymi. Model wybrany
 w sprawdzeniu zegarka leży obok (`gt-garmin-model`), też poza eksportem; „Usuń wszystkie dane” go
 zapomina.
+
+**Współpraca z prowadzącym** ma w zapisie tylko sekret ID (`cfg.linkSecret`, 32 bajty base64url,
+powstaje przy pierwszym przyjętym zaproszeniu): jedzie z kopią, więc telefon odtworzony z kopii pokaże temu
+samemu prowadzącemu to samo ID, a import kopii sprzed współpracy nie kasuje sekretu, który telefon już ma.
+Zepsuty sekret odpada przy wczytaniu. Same współprace — klucze prywatne, tokeny, zalecenia — leżą osobno
+w `gt-link`, poza eksportem, jak klucz zegarka. „Usuń wszystkie dane” najpierw kończy trwające współprace
+na serwerze (prowadzący traci dane od razu), potem zapomina je na telefonie.
 
 Dane z telefonu mają pole `phone` tej samej budowy: system (`ios`/`android`), dni z krokami,
 tętnem, snem i wagą, przejazdy rowerem, czas paczki i chwila odbioru. Klucz telefonu leży

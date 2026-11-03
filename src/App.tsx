@@ -32,6 +32,8 @@ import {
   goBack,
   isDeviceLink,
   isFoodRoute,
+  isLinkInvite,
+  isLinkRoute,
   isTabRoot,
   screenOf,
   tabHref,
@@ -130,6 +132,8 @@ import { LoadBoundary } from './components/LoadBoundary';
 import { WorkoutNote } from './components/Notes';
 import { restoreNotes, setLogNotes, setSessionNote } from './engine/notes';
 import { LOCALE, pluralEn, text } from './i18n';
+import { linkConfigured } from './link/config';
+import { activeConnections, clearLink, hasLinkWork, linkState, validLinkSecret } from './link/store';
 import { TOP_COLORS, setThemeColor, useTheme } from './theme';
 
 /**
@@ -141,6 +145,13 @@ const FoodRoot = lazy(() => import('./food/FoodRoot'));
 
 /** Kalendarz (`#/kalendarz`) w osobnej paczce — otwiera się raz na jakiś czas, ekran Dziś go nie potrzebuje. */
 const CalendarPage = lazy(() => import('./components/Calendar'));
+
+/**
+ * Współpraca z prowadzącym (`#/wspolpraca…`) w osobnej paczce — razem z kryptografią
+ * (`@gymtracker/link`). Synchronizacja w tle (`link/sync.ts`) też wczytuje się dopiero wtedy,
+ * gdy jest jakaś współpraca.
+ */
+const LinkPages = lazy(() => import('./components/Link'));
 
 /** Zapisy, które ekrany jedzenia robią w danych treningowych. Podmieniane co render — zawsze ze świeżym stanem. */
 type BridgeWrites = Pick<GymBridge, 'setWeight' | 'setHeight' | 'setSteps'> & Required<Pick<GymBridge, 'skipWeigh'>>;
@@ -326,13 +337,18 @@ const T = text({
     loadFailed: 'Nie udało się wczytać',
     loadFailedText: 'Wybierz plik JSON wyeksportowany z tej aplikacji.',
     resetQ: 'Usunąć wszystkie dane?',
-    resetText: (food: boolean, watch: boolean, phone: boolean, photos: number) =>
+    resetText: (food: boolean, watch: boolean, phone: boolean, photos: number, coaches: number) =>
       'Historia, poziomy ćwiczeń i własne treningi znikną bezpowrotnie' +
       (food ? ' — razem z dziennikiem jedzenia i profilem diety' : '') +
       '.' +
       (photos ? ` Zdjęcia sylwetki (${photos}) też — nie ma ich w kopii zapasowej, więc jeśli chcesz je zachować, najpierw je pobierz.` : '') +
       (watch ? ' Zegarek Garmin zostanie odłączony — inaczej przysłałby ostatni tydzień z powrotem.' : '') +
-      (phone ? ' Telefon zostanie odłączony — inaczej przysłałby ostatnie dwa tygodnie z powrotem.' : ''),
+      (phone ? ' Telefon zostanie odłączony — inaczej przysłałby ostatnie dwa tygodnie z powrotem.' : '') +
+      (coaches
+        ? coaches === 1
+          ? ' Współpraca z prowadzącym się zakończy: twoje dane znikną także z jego strony.'
+          : ` Współpraca z prowadzącymi (${coaches}) się zakończy: twoje dane znikną także z ich strony.`
+        : ''),
     resetAll: 'Usuń wszystko',
     // Pasek aplikacji
     setOf: (n: number, of: number) => `seria ${n} z ${of}`,
@@ -360,6 +376,7 @@ const T = text({
       'Możesz zalogować kolejną sesję, ale te same wzorce ruchowe dwa razy w ciągu dnia nie dadzą lepszej progresji.',
     foodTab: 'zakładki Jedzenie',
     calendarPage: 'kalendarza',
+    linkPage: 'współpracy z prowadzącym',
     nav: 'Główna nawigacja',
   },
   en: {
@@ -525,13 +542,14 @@ const T = text({
     loadFailed: 'Couldn’t load the file',
     loadFailedText: 'Choose a JSON file exported from this app.',
     resetQ: 'Delete all data?',
-    resetText: (food: boolean, watch: boolean, phone: boolean, photos: number) =>
+    resetText: (food: boolean, watch: boolean, phone: boolean, photos: number, coaches: number) =>
       'Your history, exercise levels and custom workouts will be gone for good' +
       (food ? ' — along with your food diary and diet profile' : '') +
       '.' +
       (photos ? ` Your progress photos (${photos}) too — they aren’t in the backup file, so download any you want to keep first.` : '') +
       (watch ? ' Your Garmin watch will be disconnected — otherwise it would send the last week back.' : '') +
-      (phone ? ' Your phone will be disconnected — otherwise it would send the last two weeks back.' : ''),
+      (phone ? ' Your phone will be disconnected — otherwise it would send the last two weeks back.' : '') +
+      (coaches ? ` Working with your ${coaches === 1 ? 'coach' : 'coaches'} will end: your data disappears from their side too.` : ''),
     resetAll: 'Delete everything',
     setOf: (n: number, of: number) => `set ${n} of ${of}`,
     partOf: (n: number, of: number, sets: string) => `Part ${n} of ${of} · ${sets}`,
@@ -558,6 +576,7 @@ const T = text({
       'You can log another session, but the same movement patterns twice in one day won’t give you better progress.',
     foodTab: 'the Food tab',
     calendarPage: 'the calendar',
+    linkPage: 'working with a coach',
     nav: 'Main navigation',
   },
 });
@@ -643,6 +662,8 @@ function restoreExtras(next: AppState, saved: Partial<AppState>): void {
   const r = next.cfg.reminders;
   if (r !== undefined && (typeof r !== 'object' || typeof r.morning !== 'boolean' || typeof r.evening !== 'boolean'))
     delete next.cfg.reminders;
+  // Sekret ID u prowadzących: 32 bajty base64url albo nic — zepsuty dałby inne ID niż wcześniej.
+  if (next.cfg.linkSecret !== undefined && !validLinkSecret(next.cfg.linkSecret)) delete next.cfg.linkSecret;
   // Kalendarz: tylko godzina `HH:MM`; zepsuty wpis znika w całości, a strona wraca do 18:00.
   const cal = cleanCalendarCfg(next.cfg.calendar);
   if (cal) next.cfg.calendar = cal;
@@ -732,7 +753,8 @@ export default function App() {
   const [replayIntro, setReplayIntro] = useState(false);
   // Wejście linkiem do karty urządzenia (`#/zegarek?model=…` z opisu w Connect IQ Store,
   // `#/ustawienia?karta=…`): adres z chwili otwarcia, raz na wizytę.
-  const [deviceLink] = useState(() => isDeviceLink(window.location.hash));
+  // Tak samo link zaproszenia od prowadzącego: ktoś przyszedł przyjąć zaproszenie, nie oglądać ekranów.
+  const [deviceLink] = useState(() => isDeviceLink(window.location.hash) || isLinkInvite(window.location.hash));
   // iPhone poza aplikacją z ikony — to się nie zmienia, dopóki karta jest otwarta.
   const [installPlace] = useState(currentInstallPlace);
   const medalBox = useRef<HTMLDivElement>(null);
@@ -949,6 +971,30 @@ export default function App() {
       document.removeEventListener('visibilitychange', back);
     };
   }, [ready, training]);
+
+  // Współpraca z prowadzącym: odbiór zaleceń i paczka danych przy otwarciu, po powrocie do
+  // aplikacji i od razu po zamkniętym treningu (dziennik urósł). Nigdy w trakcie treningu — tak jak
+  // zegarek. Bez Sztabu w buildzie albo bez współpracy moduł synchronizacji się nie wczytuje.
+  const logCount = state?.log.length ?? 0;
+  const lastLog = useRef<number | null>(null);
+  useEffect(() => {
+    if (!ready || training || !linkConfigured()) return;
+    const grew = lastLog.current !== null && logCount > lastLog.current;
+    lastLog.current = logCount;
+    const run = (force: boolean) => {
+      if (!hasLinkWork()) return;
+      void import('./link/sync').then((m) => m.syncAll(() => live.current, { force })).catch(() => undefined);
+    };
+    const t = window.setTimeout(() => run(grew), grew ? 500 : 2500);
+    const back = () => {
+      if (document.visibilityState === 'visible') run(false);
+    };
+    document.addEventListener('visibilitychange', back);
+    return () => {
+      window.clearTimeout(t);
+      document.removeEventListener('visibilitychange', back);
+    };
+  }, [ready, training, logCount]);
 
   if (!state) return <div className="empty">{pick(LOADING, daySeed())}</div>;
 
@@ -1970,6 +2016,9 @@ export default function App() {
           badges: migrateBadges(parsed.award?.badges ?? {}),
         };
         restoreExtras(next, parsed);
+        // Kopia sprzed współpracy nie zna sekretu ID — ten z telefonu zostaje, inaczej trwające
+        // współprace i nowe zaproszenia rozjechałyby się na dwa różne ID u tego samego prowadzącego.
+        if (!next.cfg.linkSecret && state.cfg.linkSecret) next.cfg.linkSecret = state.cfg.linkSecret;
         commit(next);
         forgetSections();
         const diet = (parsed as AppState & { diet?: unknown }).diet;
@@ -1997,9 +2046,10 @@ export default function App() {
     // dziennika bez profilu. Gdy bazy nie da się odczytać, nie ma czego wymieniać.
     const food = await import('./food/backup').then((m) => m.hasFoodData()).catch(() => false);
     const photos = await countPhotos();
+    const coaches = linkConfigured() ? activeConnections(linkState()).length : 0;
     const ok = await ask(
       T.resetQ,
-      <p>{T.resetText(food, watch, phone, photos)}</p>,
+      <p>{T.resetText(food, watch, phone, photos, coaches)}</p>,
       T.resetAll,
       { who: 'siwy', mood: 'wise' },
     );
@@ -2009,12 +2059,33 @@ export default function App() {
     if (phone) await forgetPhone();
     // Model zegarka wybrany w sprawdzaniu — też dane tej osoby, choć nie trafia do kopii.
     forgetWatchModel();
+    // Współprace: najpierw koniec na serwerze (prowadzący traci dane od razu), potem klucze i zalecenia tutaj.
+    if (coaches)
+      await import('./link/sync')
+        .then((m) => Promise.all(activeConnections(linkState()).map((c) => m.endConnection(c.id))))
+        .catch(() => undefined);
+    clearLink();
     // Jedzenie też: inaczej stare ważenia z diety wróciłyby do dziennika wagi przy następnym wejściu.
     await import('./food/backup').then((m) => m.clearFood()).catch(() => undefined);
     // Zdjęcia sylwetki: osobna baza, poza kopią zapasową — ale to też dane tej osoby.
     await forgetPhotos();
     forgetSections();
     commit(freshState());
+  };
+
+  /** Sekret ID u prowadzących — zapisany przy pierwszym przyjętym zaproszeniu, potem zawsze ten sam. */
+  const ensureLinkSecret = (candidate: string): string => {
+    const base = live.current ?? state;
+    if (base.cfg.linkSecret) return base.cfg.linkSecret;
+    const next = clone(base);
+    next.cfg.linkSecret = candidate;
+    void commit(next);
+    return candidate;
+  };
+
+  /** Plan i trening od prowadzącego — od najświeższego stanu, na kopii. */
+  const applyLink = (f: (s: AppState) => AppState) => {
+    void commit(f(clone(live.current ?? state)));
   };
 
   /* ---------- pasek aplikacji ---------- */
@@ -2213,6 +2284,13 @@ export default function App() {
 
       {route.kind === 'cardio' && <CardioPage state={state} onDelete={deleteCardio} />}
       {route.kind === 'promo' && <PromoPage onToast={setToastMsg} />}
+      {isLinkRoute(route) && (
+        <LoadBoundary what={T.linkPage}>
+          <Suspense fallback={<div className="empty">{pick(LOADING, daySeed())}</div>}>
+            <LinkPages route={route} state={state} ensureSecret={ensureLinkSecret} apply={applyLink} onToast={setToastMsg} />
+          </Suspense>
+        </LoadBoundary>
+      )}
       {route.kind === 'health' && <HealthPage />}
       {route.kind === 'calendar' && (
         <LoadBoundary what={T.calendarPage}>

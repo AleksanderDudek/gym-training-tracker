@@ -7,11 +7,15 @@
   "engines": {
     "node": ">=22.12"
   },
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "npm run typecheck && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json && tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.sw.json && tsc --noEmit -p tsconfig.demo.json",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json && tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.sw.json && tsc --noEmit -p tsconfig.demo.json && npm run typecheck -w @gymtracker/sztab",
     "test": "vitest run",
     "lint": "oxlint",
     "food:taxonomies": "tsx scripts/food/fetch-taxonomies.ts",
@@ -29,7 +33,9 @@
     "food:nutrients": "tsx scripts/food/fetch-nutrients.ts",
     "garmin:watches": "tsx scripts/garmin/watches.ts",
     "demo:seed": "TZ=Europe/Warsaw vitest run --config scripts/demo-videos/seed/vitest.config.ts",
-    "demo:videos": "tsx scripts/demo-videos/record.ts"
+    "demo:videos": "tsx scripts/demo-videos/record.ts",
+    "sztab": "npm run dev -w @gymtracker/sztab",
+    "test:sztab": "npm test -w @gymtracker/sztab"
   },
   "dependencies": {
     "@fontsource/ibm-plex-sans": "^5.3.0",

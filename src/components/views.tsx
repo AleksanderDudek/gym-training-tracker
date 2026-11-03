@@ -25,6 +25,7 @@ import { LanguageCard } from './Language';
 import { ThemeCard } from './Theme';
 import { GarminCard } from './Garmin';
 import { PhoneCard } from './Phone';
+import { LinkCard } from './LinkEntry';
 import { PromoCard } from './Promo';
 import type { PullResult } from '../garmin';
 import type { PhonePull } from '../phone';
@@ -541,6 +542,7 @@ export function SettingsView({
       <RemindersCard state={state} onPrefs={onReminders} onToast={onToast} />
       <GarminCard state={state} onSync={onWatchSync} onToast={onToast} onFeedback={onFeedback} />
       <PhoneCard state={state} onSync={onPhoneSync} onToast={onToast} />
+      <LinkCard />
 
       <div className="grp">
         <h2>{T.clock}</h2>

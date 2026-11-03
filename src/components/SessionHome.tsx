@@ -10,6 +10,7 @@ import { plannedBurn } from '../engine/burn';
 import { dayKey } from '../engine/schedule';
 import { BoostCard } from './Boost';
 import { WeighCard } from './Weigh';
+import { LinkNotice } from './LinkEntry';
 import { CalendarCard } from './CalendarCard';
 import { hasDiet } from '../food/dietFlag';
 import { FoodCardPlaceholder } from '../food/FoodCardPlaceholder';
@@ -169,6 +170,9 @@ export function SessionHome({
         </p>
         <CharacterStrip state={state} />
       </div>
+
+      {/* Nowe od prowadzącego (albo koniec współpracy z jego strony) — jedna linia, tylko gdy coś przyszło. */}
+      <LinkNotice />
 
       {today.kind === 'due' && w && (
         <div className="grp today">
