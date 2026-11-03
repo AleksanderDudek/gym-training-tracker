@@ -112,3 +112,78 @@ lekarza (Excel)” nad kartą CSV (CSV zostaje dla prostych arkuszy).
 
 - Subskrypcja kalendarza przez URL (wymaga serwera z danymi zdrowotnymi).
 - Odejmowanie zapasów z domu od listy zakupów (aplikacja nie wie, co jest w lodówce).
+
+## Wynik i odstępstwa — C
+
+Zrobione (gałąź `feat/eksport-excel`):
+
+- `src/engine/xlsx.ts` — zapis .xlsx (fflate `zipSync`): `[Content_Types].xml`, `_rels`, `docProps` (tytuł,
+  data utworzenia), skoroszyt, `sharedStrings`, `styles.xml` (pogrubiony nagłówek z wypełnieniem i dolną kreską,
+  formaty `yyyy-mm-dd`, `hh:mm`, `yyyy-mm-dd hh:mm`, `0`, `0.0`, `0.00`), na arkuszu szerokości kolumn, zamrożony
+  pierwszy wiersz, autofiltr (+ `_xlnm._FilterDatabase`). Komórki: tekst, liczba, `int`, `dec(n, 1|2)`, `day`,
+  `clock`, `stamp` (chwila lokalna); brak / NaN / zepsuta data → brak komórki. Znaki zakazane w XML 1.0 wycinane,
+  nazwy arkuszy bez `[]:*?/\`, ≤ 31 znaków, bez powtórek. Tekst zawsze `t="s"`, więc „=SUMA(…)” w nazwie potrawy
+  nie jest formułą. Sprawdzone: obieg przez `readWorkbook`, openpyxl 3.1.5 (venv w scratchpadzie) i Quick Look.
+- `src/food/report.ts` — `buildReport` (czysta funkcja) i `reportFromDb` (Dexie przez te same sita co kopia:
+  `cleanProfile`, `cleanEntry`, `cleanDay`, `cleanSet`, `loadReports`). Ładowany dynamicznie z karty (osobny
+  chunk `report-*.js`, razem z fflate i Dexie).
+- Karta „Raport dla dietetyka lub lekarza (Excel)” nad kartą CSV (`src/components/ReportExport.tsx`): co jest
+  w pliku, uwaga o prywatności, zakres 30 dni / 90 dni / Wszystko (domyślnie wszystko), „Pobierz plik .xlsx”,
+  komunikat „Raport gotowy: 8 arkuszy, 1200 wierszy danych.”. Plik `gym-tracker-raport-YYYY-MM-DD.xlsx`
+  (po angielsku `gym-tracker-report-…`), dzień lokalny. Kotwica `#/ustawienia?karta=raport` (przewija do karty jak
+  karty urządzeń). Karta CSV została bez zmian (bez nagłówka „Inne formaty” — dwie karty obok siebie czytają się
+  dobrze).
+
+Arkusze (pusty arkusz wypada; „Informacje” mówią, których nie ma w zakresie):
+
+1. Informacje — raport, utworzono, zakres (z datami), płeć, wiek, wzrost, początek diety, waga startowa
+   i docelowa, profil diety, tempo, dzisiejszy cel kcal i makro, cel napojów, ciąża/karmienie, cel uzgodniony
+   z lekarzem, okno jedzenia; lista arkuszy z liczbą wierszy, „Bez danych w zakresie”, 12 objaśnień, uwaga
+   „nie jest wyrobem medycznym; plik nie zawiera diagnozy ani zaleceń”.
+2. Dni — Data, Dzień tygodnia, kcal, Cel kcal, Białko, Cel białka, Węglowodany, Tłuszcz, Błonnik, Cukry, Sól,
+   Wpisy jedzenia, Wpisy bez makro, Pierwszy wpis, Ostatni wpis, Okno jedzenia (h), Napoje (ml), Woda (ml),
+   Kofeina (mg, szacunek), Dziennik dnia (cały / nie wszystko), Waga, Kroki, Treningi, Trening (min),
+   Cardio (min), Przekąski ruchowe, Notatka dnia.
+3. Jedzenie — Data, Godzina, Pora (wg godziny), Nazwa, Ilość, Gramy, Źródło danych, Kod EAN, kcal, Białko,
+   Węglowodany, Tłuszcz, Błonnik, Cukry, Sól.
+4. Składniki — Data, Godzina, Wpis, Rodzaj (przepis / zestaw), Składnik, Gramy, Ilość, Kod EAN.
+5. Napoje — Data, Godzina, Rodzaj, ml, Kofeina (mg, szacunek), kcal (szacunek), Cukry (g, szacunek).
+6. Treningi — Data, Rozpoczęcie, Zakończenie, Czas (min), Trening, Tydzień lżejszy, Samopoczucie przed,
+   Ćwiczenia, Serie, Powtórzenia, Sekundy (ćwiczenia na czas), Objętość (kg × powt.), Notatka.
+7. Serie — Data, Rozpoczęcie, Trening, Ćwiczenie, Partia, Seria, Powtórzenia, Sekundy, Ciężar, Wysiłek,
+   Zapas powtórzeń, Notatka do ćwiczenia.
+8. Ruch — Data, Godzina, Rodzaj, Kroki, Minuty, Prędkość, Nachylenie, Moc, Taniec, Droga (km), Ćwiczenie,
+   Powtórzenia, Sekundy, Ciężar, kcal ruchu (szacunek), Źródło (wpisane ręcznie / zegarek / telefon).
+9. Pomiary — Data, Waga (kg), BMI, Talia, Biodra, Klatka, Ramię, Udo.
+10. Badania — Data pobrania, Laboratorium, Grupa, Badanie, Wynik, Znak (< >), Wynik opisowy, Jednostka,
+    Wynik z wydruku, Zakres od, Zakres do, Źródło zakresu, Względem zakresu, Względem celu z wytycznych,
+    Wprowadzono z.
+
+Odstępstwa i doprecyzowania:
+
+- **Jedenasty arkusz „Urządzenia”** (tylko gdy są dane): dzień po dniu z zegarka i telefonu — kroki, droga,
+  piętra, minuty intensywne, tętno spoczynkowe / min / śr. / maks., stres, Body Battery, sen (wynik zegarka,
+  minuty z telefonu), waga z telefonu. Prośba mówiła „maksymalnie pełny” — to fakty, które aplikacja już ma.
+- **Czas treningu**: dziennik zapisuje chwilę zamknięcia (ISO) i `time.secs`. Rozpoczęcie = zamknięcie − czas,
+  w czasie lokalnym; trening bez zegara sesji ma tylko „Zakończenie”. Dzień treningu w raporcie to dzień lokalny
+  rozpoczęcia, nie `dayKey` (UTC) z historii treningów — między północą a 1:00/2:00 różnią się o dzień
+  (znane ograniczenie, opisane w nagłówku modułu).
+- **Biegi i marsze z zegarka** mają w „Ruchu” własne wiersze z godziną, drogą i prędkością („w krokach dnia”, bez
+  kcal — liczą się w krokach). Kroki nie mają godziny (suma dnia; `at` wpisu z urządzenia to umowne 23:59).
+- **Nieznane ≠ zero**: dzień bez wpisów ma puste kcal; makro / błonnik / sól to suma z wpisów, które je znają
+  (żaden nie zna → pusto). Napoje: woda i napój bez cukru mają kcal 0, kawa i herbata puste kcal (mleko, cukier
+  nieznane); kofeina tylko kawa, herbata (szacunek) i woda (0).
+- **Napój słodzony** w „Jedzeniu” ma źródło „Napój słodzony (szacunek)” (rozpoznany po `entryId` w napojach dnia).
+- **Tryb „bez liczenia kalorii”** (i poniżej 18 lat): bez kolumn celów (puste) i bez celów w „Informacjach”;
+  zjedzone kcal zostają, bo to zapis, a plik jest dla specjalisty.
+- **Ocena badania** to porównanie z zakresem („poniżej zakresu / w zakresie / powyżej zakresu / bez zakresu”),
+  słowami innymi niż w aplikacji („Za nisko”), żeby nie brzmiało jak diagnoza. Bez płci zakres z katalogu nie jest
+  stosowany — tylko zakres z wydruku. Wartości wyliczane przez aplikację (eGFR, HOMA-IR, non-HDL) nie trafiają do
+  pliku — są tylko wyniki z wydruku.
+- **Zakres** 30/90 dni liczy dzień dzisiejszy jako ostatni (30 dni = dziś i 29 wcześniej); nic po dziś (np.
+  zaplanowany cheat meal) do pliku nie trafia. Pomijane są też plany (meal prep, plan badań) — to plany, nie fakty.
+- **„Informacje”** mają liczby jako tekst w formacie języka (np. „82,00”): w szerokiej kolumnie objaśnień liczba
+  stałaby przy prawym brzegu, daleko od etykiety. Daty i liczby w arkuszach danych są typowane.
+- **Strona Badań**: pod wynikami zdanie z odnośnikiem „Ustawienia → Raport (Excel)” (`#/ustawienia?karta=raport`),
+  tylko gdy jest choć jedno badanie. Bez osobnego pobierania z tej strony — raport potrzebuje stanu treningów,
+  którego strona badań nie ma.
