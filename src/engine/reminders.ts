@@ -5,6 +5,8 @@ import { latestWeight } from './body';
 import { REMINDER_EVENING, REMINDER_FOOD, REMINDER_MORNING, REMINDER_STEPS_FOOD, REMINDER_WEIGH, pick } from './quips';
 import { addDays, daysBetween } from './schedule';
 import { snapshot } from './snapshot';
+import { shopDays } from '../food/shop/rhythm';
+import type { DietCalendar } from './calendar';
 
 /**
  * Przypomnienia: o 7:30 w dni, w które plan ma trening, i o 19:30 codziennie — o krokach,
@@ -28,6 +30,10 @@ const T = text({
     evening: 'Kroki i ruch z dziś',
     food: 'Jedzenie z dziś',
     both: 'Wpisz kroki i jedzenie z dziś',
+    shop: (at: string) => `Dziś zakupy, ${at}`,
+    shopBody: 'Lista zakupów z dziennika czeka w aplikacji — zajrzyj jeszcze do lodówki.',
+    lab: 'Jutro badanie kontrolne',
+    labBody: 'Termin z planu pod wyniki. Zapytaj w laboratorium o przygotowanie.',
   },
   en: {
     workout: (name: string) => `Workout today: ${name}`,
@@ -36,6 +42,10 @@ const T = text({
     evening: 'Today’s steps and movement',
     food: 'Today’s food',
     both: 'Log today’s steps and food',
+    shop: (at: string) => `Shopping today, ${at}`,
+    shopBody: 'The shopping list from your diary is waiting in the app — check the fridge too.',
+    lab: 'Follow-up lab test tomorrow',
+    labBody: 'The date from your plan for the results. Ask the lab how to prepare.',
   },
 });
 
@@ -72,7 +82,7 @@ export const remindersOf = (state: AppState): ReminderPrefs => state.cfg.reminde
 
 /** Kształt, który przyjmuje serwer (`server/api/schedule.ts`). */
 export interface ReminderItem {
-  tag: 'trening' | 'ruch' | 'waga' | 'jedzenie';
+  tag: 'trening' | 'ruch' | 'waga' | 'jedzenie' | 'zakupy' | 'badanie';
   date: string;
   time: string;
   title: string;
@@ -86,6 +96,16 @@ const TITLE_MAX = 80;
 const clip = (s: string, n: number): string => (s.length <= n ? s : `${s.slice(0, n - 1).trimEnd()}…`);
 
 const minutesOf = (hhmm: string): number => Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3, 5));
+
+const hhmmOf = (min: number): string => `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
+
+/** Godzina w tytule bez zera z przodu: „9:30”, jak na karcie przypomnień. */
+const hhmm = (t: string): string => t.replace(/^0/, '');
+
+/** Zakupy: pół godziny przed wyjściem z rytmu (wyjście przed 0:30 — o samej godzinie wyjścia). */
+export const SHOP_BEFORE_MIN = 30;
+/** Badanie kontrolne: wieczorem dzień przed — laboratoria pobierają rano. */
+export const LAB_EVE_AT = '19:00';
 
 /**
  * Dzień w czasie lokalnym telefonu. Reszta aplikacji liczy dni w UTC (`dayKey`), ale
@@ -106,6 +126,8 @@ export function reminderItems(
   today: string,
   nowMin: number,
   diet = false,
+  /** Zakupy i badanie z bazy diety (`food/calendar.ts`); bez nich tych przypomnień nie ma. */
+  extras: DietCalendar | null = null,
 ): ReminderItem[] {
   const last = addDays(today, HORIZON_DAYS - 1);
   const ahead = (date: string, at: string): boolean => date > today || nowMin < minutesOf(at);
@@ -180,6 +202,23 @@ export function reminderItems(
         url: '#/cardio',
       });
     }
+  }
+
+  const rhythm = diet && prefs.shop ? extras?.shop : null;
+  if (rhythm) {
+    const trip = minutesOf(rhythm.at);
+    const at = hhmmOf(trip >= SHOP_BEFORE_MIN ? trip - SHOP_BEFORE_MIN : trip);
+    for (const date of shopDays(rhythm, today, last)) {
+      if (!ahead(date, at)) continue;
+      out.push({ tag: 'zakupy', date, time: at, title: T.shop(hhmm(rhythm.at)), body: T.shopBody, url: '#/jedzenie/zakupy' });
+    }
+  }
+
+  const retest = prefs.labs ? extras?.retest : null;
+  if (retest && !extras!.labDays.includes(retest.date)) {
+    const date = addDays(retest.date, -1);
+    if (date >= today && date <= last && ahead(date, LAB_EVE_AT))
+      out.push({ tag: 'badanie', date, time: LAB_EVE_AT, title: T.lab, body: T.labBody, url: '#/jedzenie/badania' });
   }
 
   return out.sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`));

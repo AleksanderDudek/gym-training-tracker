@@ -51,6 +51,8 @@ const NAVIGATION = new Set([
   // „Prowadź” w karcie lokalu: trasa w aplikacji map urządzenia — Apple Maps albo Google Maps.
   'maps.apple.com',
   'www.google.com',
+  // Kalendarz: „Dodaj do Kalendarza Google” otwiera formularz wydarzenia (`engine/ics.ts`) — nic nie pobieramy.
+  'calendar.google.com',
   // Sklepy internetowe: odnośniki do sklepów i stron produktów, nic z nich nie jest pobierane.
   ...ONLINE_SHOPS.map((shop) => new URL(shop.url).hostname),
 ]);

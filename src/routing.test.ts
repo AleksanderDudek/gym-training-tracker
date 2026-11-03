@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
+  CALENDAR_PATH,
   PLANS_PATH,
   PLAN_CLASSIC_PATH,
   PLAN_NEW_PATH,
@@ -424,5 +425,12 @@ describe('trasy', () => {
     expect(parseHash(HEALTH_PATH)).toEqual({ kind: 'health' });
     expect(screenOf({ kind: 'health' })).toEqual({ title: 'Zdrowie i bezpieczeństwo', parent: SETTINGS_PATH });
     expect(activeTab({ kind: 'health' })).toBe('prog' as TabKey);
+  });
+
+  it('kalendarz ma własny adres, wraca do ekranu Dziś i podświetla Dziś', () => {
+    expect(CALENDAR_PATH).toBe('#/kalendarz');
+    expect(parseHash(CALENDAR_PATH)).toEqual({ kind: 'calendar' });
+    expect(screenOf({ kind: 'calendar' })).toEqual({ title: 'Kalendarz', parent: '#/sesja' });
+    expect(activeTab({ kind: 'calendar' })).toBe('train' as TabKey);
   });
 });

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { EVENING_AT, FOOD_TIMES, MORNING_AT, WEIGH_AT, eveningMerged, foodTimeOf, remindersOf } from '../engine/reminders';
+import { EVENING_AT, FOOD_TIMES, LAB_EVE_AT, MORNING_AT, SHOP_BEFORE_MIN, WEIGH_AT, eveningMerged, foodTimeOf, remindersOf } from '../engine/reminders';
+import { CALENDAR_PATH } from '../routing';
 import { hasDiet } from '../food/dietFlag';
 import { currentPushState, disablePush, enablePush, pushConfigured } from '../push';
 import { text } from '../i18n';
@@ -46,6 +47,12 @@ const T = text({
     foodAt: 'Godzina przypomnienia o jedzeniu',
     merged: (at: string) =>
       `Kroki i jedzenie przyjdą razem, w jednym powiadomieniu o ${at}: „Wpisz kroki i jedzenie z dziś”. Trzy powiadomienia dziennie to za dużo.`,
+    shop: (min: number) => `zakupy — ${min} min przed wyjściem z rytmu zakupów`,
+    shopLabel: (min: number) => `Przypomnienie o zakupach ${min} minut przed wyjściem`,
+    labs: (at: string) => `badanie kontrolne — dzień przed, ${at}`,
+    labsLabel: (at: string) => `Przypomnienie o badaniu kontrolnym dzień przed o ${at}`,
+    calendar: 'Treningi, zakupy i badania w kalendarzu — także w Kalendarzu Google albo pliku .ics:',
+    calendarLink: 'Kalendarz',
     disabled: 'Przypomnienia wyłączone na tym telefonie.',
     disable: 'Wyłącz przypomnienia na tym telefonie',
     how: 'Przypomnienia wysyła mały serwer, bo strona sama nie umie obudzić telefonu o konkretnej godzinie. Dostaje adres powiadomień tego telefonu, strefę czasową i teksty przypomnień na trzy tygodnie naprzód — bez historii treningów i bez danych o tobie. Gdy przestaniesz otwierać aplikację, przypomnienia same się skończą.',
@@ -81,6 +88,12 @@ const T = text({
     foodAt: 'Time of the food reminder',
     merged: (at: string) =>
       `Steps and food come together in one notification at ${at}: “Log today’s steps and food”. Three notifications a day is too many.`,
+    shop: (min: number) => `shopping — ${min} min before you leave, from your shopping rhythm`,
+    shopLabel: (min: number) => `Shopping reminder ${min} minutes before you leave`,
+    labs: (at: string) => `follow-up lab test — the day before, ${at}`,
+    labsLabel: (at: string) => `Follow-up lab test reminder the day before at ${at}`,
+    calendar: 'Workouts, shopping and lab tests in a calendar — in Google Calendar or an .ics file too:',
+    calendarLink: 'Calendar',
     disabled: 'Reminders off on this phone.',
     disable: 'Turn off reminders on this phone',
     how: 'Reminders are sent by a small server, because a website can’t wake your phone at a set time on its own. It gets this phone’s notification address, your time zone and the reminder texts for three weeks ahead — no workout history and no data about you. If you stop opening the app, the reminders stop by themselves.',
@@ -214,6 +227,25 @@ export function RemindersCard({
                 </label>
               )}
               {eveningMerged(prefs, diet) && <p className="tight cardio-note">{T.merged(hhmm(foodAt))}</p>}
+              {/* Zakupy z rytmu na liście zakupów, badanie z planu pod wyniki — oba z bazy diety. */}
+              <span className="seg-label" aria-hidden="true">
+                {T.shop(SHOP_BEFORE_MIN)}
+              </span>
+              <Segmented
+                label={T.shopLabel(SHOP_BEFORE_MIN)}
+                options={ON_OFF}
+                value={prefs.shop ? 'on' : 'off'}
+                onChange={(v) => onPrefs({ ...prefs, shop: v === 'on' })}
+              />
+              <span className="seg-label" aria-hidden="true">
+                {T.labs(hhmm(LAB_EVE_AT))}
+              </span>
+              <Segmented
+                label={T.labsLabel(hhmm(LAB_EVE_AT))}
+                options={ON_OFF}
+                value={prefs.labs ? 'on' : 'off'}
+                onChange={(v) => onPrefs({ ...prefs, labs: v === 'on' })}
+              />
             </>
           )}
           <span className="seg-label" aria-hidden="true">
@@ -237,6 +269,9 @@ export function RemindersCard({
 
       <p className="hint" style={{ marginTop: 10 }}>
         {T.how}
+      </p>
+      <p className="hint rem-cal">
+        {T.calendar} <a href={CALENDAR_PATH}>{T.calendarLink}</a>
       </p>
     </div>
   );

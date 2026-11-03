@@ -84,3 +84,25 @@ describe('przypomnienie o jedzeniu', () => {
     expect(within(time).getAllByRole('option').map((o) => o.textContent)).toContain('20:15');
   });
 });
+
+describe('przypomnienia o zakupach i badaniu oraz kalendarz', () => {
+  it('przy profilu diety: zakupy i badanie, oba domyślnie wyłączone', async () => {
+    localStorage.setItem(DIET_FLAG, '1');
+    const seen: ReminderPrefs[] = [];
+    render(<Harness onPrefs={(p) => seen.push(p)} />);
+    const shop = await screen.findByRole('group', { name: 'Przypomnienie o zakupach 30 minut przed wyjściem' });
+    const labs = screen.getByRole('group', { name: 'Przypomnienie o badaniu kontrolnym dzień przed o 19:00' });
+    expect(within(shop).getByRole('button', { name: 'Wył.' })).toHaveAttribute('aria-pressed', 'true');
+    expect(within(labs).getByRole('button', { name: 'Wył.' })).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(within(shop).getByRole('button', { name: 'Wł.' }));
+    expect(seen.at(-1)).toMatchObject({ shop: true });
+    fireEvent.click(within(labs).getByRole('button', { name: 'Wł.' }));
+    expect(seen.at(-1)).toMatchObject({ shop: true, labs: true });
+  });
+
+  it('bez profilu diety ich nie ma, a odnośnik do kalendarza jest zawsze', async () => {
+    render(<Harness />);
+    expect(await screen.findByRole('link', { name: 'Kalendarz' })).toHaveAttribute('href', '#/kalendarz');
+    expect(screen.queryByRole('group', { name: /o zakupach/ })).toBeNull();
+  });
+});

@@ -624,6 +624,8 @@ export interface AppState {
      * liczy dalej, bo odznaki czasu nie mogą zależeć od tego, co widać na ekranie.
      */
     clock?: boolean;
+    /** Kalendarz (`#/kalendarz`): godzina treningu w wydarzeniach, `HH:MM`. Brak albo zepsuta — 18:00. */
+    calendar?: { trainAt?: string };
   };
   prog: Record<ExerciseId, Progress>;
   workouts: Workout[];
@@ -666,6 +668,10 @@ export interface ReminderPrefs {
   food?: boolean;
   /** Godzina przypomnienia o jedzeniu, `HH:MM`. Brak albo zepsuta — 20:00. */
   foodAt?: string;
+  /** Zakupy według rytmu z profilu diety — pół godziny przed wyjściem. Brak — wyłączone. */
+  shop?: boolean;
+  /** Badanie kontrolne z planu pod wyniki — wieczorem dzień przed. Brak — wyłączone. */
+  labs?: boolean;
 }
 
 /** Pojedyncza zmiana poziomu po zamkniętym treningu. */
@@ -727,6 +733,8 @@ export type Route =
   /** Plakat polecający aplikację. */
   | { kind: 'promo' }
   | { kind: 'health' }
+  /** Kalendarz: treningi, zakupy i badania na miesiąc, z eksportem do Kalendarza Google i pliku .ics. */
+  | { kind: 'calendar' }
   /** Sekcja zakładki Jedzenie. Stan strony (filtry, otwarty produkt) siedzi w zapytaniu hasha, poza trasą. */
   | { kind: 'food'; section: FoodSection }
   /** Plan posiłków, postęp albo profil diety — podstrony dziennika. */
