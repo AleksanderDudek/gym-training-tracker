@@ -20,6 +20,7 @@ import { altsFor } from '../engine/structure';
 import { HealthCard } from './Health';
 import { ON_OFF, RemindersCard } from './Reminders';
 import { CsvExportCard } from './CsvExport';
+import { ReportExportCard } from './ReportExport';
 import { LanguageCard } from './Language';
 import { ThemeCard } from './Theme';
 import { GarminCard } from './Garmin';
@@ -670,6 +671,8 @@ export function SettingsView({
           </label>
         </div>
       </div>
+
+      <ReportExportCard state={state} onToast={onToast} />
 
       <CsvExportCard state={state} onToast={onToast} />
 
