@@ -53,6 +53,11 @@ jobs:
           VITE_GARMIN_APP_URL: ${{ vars.GARMIN_APP_URL }}
           VITE_HEALTH_IOS_URL: ${{ vars.HEALTH_IOS_URL }}
           VITE_HEALTH_ANDROID_URL: ${{ vars.HEALTH_ANDROID_URL }}
+          # Współpraca z prowadzącym (GYM TRACKER Sztab): adres Supabase i jego klucz publiczny (anon),
+          # adres aplikacji dla prowadzących (tylko odnośnik). Puste — bez współpracy, reszta jak dotąd.
+          VITE_SZTAB_URL: ${{ vars.SZTAB_URL }}
+          VITE_SZTAB_ANON_KEY: ${{ vars.SZTAB_ANON_KEY }}
+          VITE_SZTAB_APP_URL: ${{ vars.SZTAB_APP_URL }}
 
       - uses: actions/configure-pages@v5
 

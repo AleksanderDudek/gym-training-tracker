@@ -1609,3 +1609,23 @@
   /* Link do kalendarza w karcie przypomnień. */
   .grp p.rem-cal{margin:10px 0 0}
   .rem-cal a{color:var(--steel);text-decoration:underline}
+
+  /* ---------------- Współpraca z prowadzącym ---------------- */
+
+  .link-list{margin:6px 0 0;padding-left:18px;font-size:14px}
+  .link-list li{margin:3px 0}
+  .link-list a{color:var(--steel);text-decoration:underline;display:inline-block;min-height:44px;line-height:44px}
+  .link-chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+  .link-conn{padding:10px 0;border-top:1px solid var(--line)}
+  .link-conn:first-of-type{border-top:0}
+  .link-items{list-style:none;margin:0;padding:0}
+  .link-items a{display:flex;flex-direction:column;justify-content:center;min-height:52px;padding:6px 0;
+    border-top:1px solid var(--line);color:var(--ink);text-decoration:none}
+  .link-items li:first-child a{border-top:0}
+  .link-item-title{font-weight:600}
+  .link-item-sub{font-size:13px;color:var(--ink-soft)}
+  .link-text{white-space:pre-wrap;margin:0}
+  .link-id{font-family:var(--display);font-size:18px;letter-spacing:.06em;margin:4px 0 0;font-variant-numeric:tabular-nums}
+  .link-error{color:var(--warn);font-weight:600;margin:0 0 10px}
+  .link-summary{cursor:pointer;color:var(--steel);font-weight:600;min-height:44px;display:flex;align-items:center}
+  .link-notice{display:flex;flex-direction:column}

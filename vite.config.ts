@@ -21,9 +21,9 @@ const shortcut = (name: string, url: string, shortName?: string) => ({
 export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
-    // Adres serwera aplikacji z tego samego źródła, z którego Vite wpisuje go do kodu (`.env*` i
-    // zmienne środowiska) — polityka przepuszcza dokładnie ten serwer, z którym aplikacja rozmawia.
-    cspPlugin(loadEnv(mode, '.', 'VITE_').VITE_API_URL),
+    // Adres serwera aplikacji i bazy Sztabu z tego samego źródła, z którego Vite wpisuje je do kodu
+    // (`.env*` i zmienne środowiska) — polityka przepuszcza dokładnie te serwery, z którymi aplikacja rozmawia.
+    cspPlugin(loadEnv(mode, '.', 'VITE_').VITE_API_URL, loadEnv(mode, '.', 'VITE_').VITE_SZTAB_URL),
     // Baza produktów (`data/food/products.json.gz`) jako plik z wersją w nazwie i `virtual:food-data`.
     foodData(),
     // Lokale i sklepy „W pobliżu” (`data/osm/places-pl.tsv`) pocięte na kawałki i `virtual:osm-places`.
@@ -116,5 +116,6 @@ export default defineConfig(({ mode }) => ({
   // po Testing Library w testach z `@vitest-environment jsdom`.
   // `.claude/**`: robocze kopie repozytorium (git worktree) leżą w katalogu projektu — ich testy
   // to cudza gałąź, nie ta.
-  test: { css: true, setupFiles: ['src/test/setup.ts'], exclude: [...configDefaults.exclude, '.claude/**', 'scripts/demo-videos/**'] },
+  // `apps/**`: GYM TRACKER Sztab ma własną konfigurację Vitesta (`npm run test:sztab`).
+  test: { css: true, setupFiles: ['src/test/setup.ts'], exclude: [...configDefaults.exclude, '.claude/**', 'scripts/demo-videos/**', 'apps/**'] },
 }));

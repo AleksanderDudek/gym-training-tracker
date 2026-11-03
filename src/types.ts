@@ -626,6 +626,12 @@ export interface AppState {
     clock?: boolean;
     /** Kalendarz (`#/kalendarz`): godzina treningu w wydarzeniach, `HH:MM`. Brak albo zepsuta — 18:00. */
     calendar?: { trainAt?: string };
+    /**
+     * Sekret telefonu do ID u prowadzących (`pseudonymFor`, 32 bajty base64url). Powstaje przy
+     * pierwszym przyjętym zaproszeniu i jedzie z kopią zapasową: telefon odtworzony z kopii pokaże
+     * temu samemu prowadzącemu to samo ID. Same współprace (klucze, tokeny) leżą poza kopią (`gt-link`).
+     */
+    linkSecret?: string;
   };
   prog: Record<ExerciseId, Progress>;
   workouts: Workout[];
@@ -740,7 +746,15 @@ export type Route =
   /** Plan posiłków, postęp albo profil diety — podstrony dziennika. */
   | { kind: 'diet'; page: DietPage }
   /** Lokale — sieci gastronomiczne pod Produktami; z siecią — jej menu. Stan strony w zapytaniu hasha. */
-  | { kind: 'restaurants'; chain: string | null };
+  | { kind: 'restaurants'; chain: string | null }
+  /** Współpraca z prowadzącym: lista współprac i zaleceń. */
+  | { kind: 'link' }
+  /** Zaproszenie od prowadzącego — numer i odcisk klucza w zapytaniu hasha (`?i=…&f=…`). */
+  | { kind: 'linkInvite' }
+  /** Jedna współpraca: zakres danych, zakończenie, jej zalecenia. */
+  | { kind: 'linkConnection'; id: string }
+  /** Jedno zalecenie od prowadzącego. */
+  | { kind: 'linkAssignment'; id: string };
 
 /** Materiał wideo pokazujący technikę ćwiczenia. */
 export interface VideoRef {

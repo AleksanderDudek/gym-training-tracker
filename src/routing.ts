@@ -54,6 +54,9 @@ const T = text({
     calendar: 'Kalendarz',
     menu: 'Menu',
     restaurants: 'Lokale',
+    link: 'Współpraca',
+    invite: 'Zaproszenie',
+    assignment: 'Zalecenie',
   },
   en: {
     tabs: { train: 'Today', work: 'Training', food: 'Food', ach: 'Awards', prog: 'Profile' },
@@ -97,6 +100,9 @@ const T = text({
     calendar: 'Calendar',
     menu: 'Menu',
     restaurants: 'Restaurants',
+    link: 'Working with a coach',
+    invite: 'Invitation',
+    assignment: 'From your coach',
   },
 });
 
@@ -194,6 +200,24 @@ export const NEARBY_PATH = '#/w-poblizu';
  */
 export const RESTAURANTS_PATH = '#/lokale';
 export const restaurantPath = (chain: string): string => `${RESTAURANTS_PATH}/${encodeURIComponent(chain)}`;
+
+/**
+ * Współpraca z prowadzącym (GYM TRACKER Sztab). Bez własnej zakładki — należy do profilu, jak
+ * historia ćwiczeń. Zaproszenie przychodzi linkiem `#/wspolpraca/zaproszenie?i=…&f=…`
+ * (`INVITE_PATH` w `@gymtracker/link`); jedna współpraca pod swoim numerem, zalecenie pod
+ * `#/wspolpraca/zalecenie/<numer>`.
+ */
+export const LINK_PATH = '#/wspolpraca';
+export const LINK_INVITE_PATH = '#/wspolpraca/zaproszenie';
+export const linkConnectionPath = (id: string): string => `${LINK_PATH}/${encodeURIComponent(id)}`;
+export const linkAssignmentPath = (id: string): string => `${LINK_PATH}/zalecenie/${encodeURIComponent(id)}`;
+
+/** Czy adres to link zaproszenia — wprowadzenie dla nowych go wtedy nie zasłania. */
+export const isLinkInvite = (hash: string): boolean => hashPath(hash) === LINK_INVITE_PATH;
+
+export type LinkRoute = Extract<Route, { kind: 'link' } | { kind: 'linkInvite' } | { kind: 'linkConnection' } | { kind: 'linkAssignment' }>;
+export const isLinkRoute = (route: Route): route is LinkRoute =>
+  route.kind === 'link' || route.kind === 'linkInvite' || route.kind === 'linkConnection' || route.kind === 'linkAssignment';
 
 /** Trasy zakładki Jedzenie: sekcje, podstrony dziennika i lokale. */
 export type FoodRoute = Extract<Route, { kind: 'food' } | { kind: 'diet' } | { kind: 'restaurants' }>;
@@ -391,6 +415,14 @@ export function screenOf(route: Route): Screen {
     case 'restaurants':
       // Nazwa sieci stoi dużą czcionką w treści — w pasku, jak przy ćwiczeniu, rodzaj strony.
       return route.chain ? { title: T.menu, parent: RESTAURANTS_PATH } : { title: T.restaurants, parent: PRODUCTS_PATH };
+    case 'link':
+      return { title: T.link, parent: '#/profil' };
+    case 'linkInvite':
+      return { title: T.invite, parent: LINK_PATH };
+    case 'linkConnection':
+      return { title: T.link, parent: LINK_PATH };
+    case 'linkAssignment':
+      return { title: T.assignment, parent: LINK_PATH };
   }
 }
 
@@ -560,6 +592,12 @@ export function parseHash(hash: string): Route {
     if (second === 'nowy') return { kind: 'planEdit' };
     return third === 'edytuj' ? { kind: 'planEdit', id: second } : { kind: 'planDetail', id: second };
   }
+  if (head === 'wspolpraca') {
+    if (!second) return { kind: 'link' };
+    if (second === 'zaproszenie') return { kind: 'linkInvite' };
+    if (second === 'zalecenie') return parts[2] ? { kind: 'linkAssignment', id: parts[2] } : { kind: 'link' };
+    return { kind: 'linkConnection', id: second };
+  }
   if (head === 'polec') return { kind: 'promo' };
   if (head === 'zdrowie') return { kind: 'health' };
   if (head === 'kalendarz') return { kind: 'calendar' };
@@ -650,6 +688,10 @@ export function activeTab(route: Route): TabKey {
     case 'exstats':
     case 'promo':
     case 'health':
+    case 'link':
+    case 'linkInvite':
+    case 'linkConnection':
+    case 'linkAssignment':
       return 'prog';
     case 'snacks':
     case 'snackAdd':

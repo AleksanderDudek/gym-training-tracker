@@ -39,21 +39,23 @@ function originOf(url?: string): string | null {
 
 /**
  * Polityka bezpieczeństwa treści dla zbudowanej aplikacji. Serwer aplikacji (`VITE_API_URL`)
- * dochodzi do `connect-src`, gdy jest: w CI zmienna bywa pusta i wtedy aplikacja działa bez niego.
+ * i baza GYM TRACKER Sztab (`VITE_SZTAB_URL`, współpraca z prowadzącym) dochodzą do `connect-src`,
+ * gdy są: w CI zmienne bywają puste i wtedy aplikacja działa bez nich. Adres aplikacji Sztabu dla
+ * prowadzących (`VITE_SZTAB_APP_URL`) jest tylko odnośnikiem — tam nic nie pobieramy.
  * Style z `'unsafe-inline'`, bo React i rysunki do udostępniania ustawiają atrybut `style`.
  * Skrypty z `'wasm-unsafe-eval'`: skaner kodów w przeglądarce bez własnego czytnika kodów
  * kompiluje czytnik WebAssembly (z tego samego serwera) — to pozwala tylko na WebAssembly,
  * nie na `eval` w JavaScripcie.
  */
-export function csp(apiUrl?: string): string {
-  const api = originOf(apiUrl);
+export function csp(apiUrl?: string, sztabUrl?: string): string {
+  const servers = [...new Set([originOf(apiUrl), originOf(sztabUrl)].filter((o): o is string => !!o))];
   return [
     "default-src 'self'",
     "script-src 'self' 'wasm-unsafe-eval'",
     "style-src 'self' 'unsafe-inline'",
     "font-src 'self' data:",
     `img-src 'self' data: blob: ${ORIGINS.img.join(' ')}`,
-    `connect-src 'self' ${[...ORIGINS.connect, ...(api ? [api] : [])].join(' ')}`,
+    `connect-src 'self' ${[...ORIGINS.connect, ...servers].join(' ')}`,
     `frame-src ${ORIGINS.frame.join(' ')}`,
     "worker-src 'self'",
     "manifest-src 'self'",
@@ -79,8 +81,8 @@ export function withCsp(html: string, policy: string): string {
  * CSP jako `<meta>` (GitHub Pages nie ustawia nagłówków). Tylko w buildzie: tryb deweloperski
  * Vite'a wstrzykuje własne skrypty, które polityka by zablokowała.
  */
-export function cspPlugin(apiUrl?: string): Plugin {
-  const policy = csp(apiUrl);
+export function cspPlugin(apiUrl?: string, sztabUrl?: string): Plugin {
+  const policy = csp(apiUrl, sztabUrl);
   return {
     name: 'gym-tracker:csp',
     apply: 'build',

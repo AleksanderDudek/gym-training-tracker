@@ -1,0 +1,36 @@
+name: Sztab
+
+# GYM TRACKER Sztab (apps/sztab) i protokół współpracy (packages/link): typy, testy logiki,
+# testy bazy na lokalnym Supabase i build. Bez wdrożenia — hosting Sztabu ustawia się osobno
+# (apps/sztab/README.md, „Wdrożenie”).
+
+on:
+  push:
+    branches: [main]
+    paths: ['apps/**', 'packages/**', 'src/**', 'package-lock.json', '.github/workflows/sztab.yml']
+  pull_request:
+    paths: ['apps/**', 'packages/**', 'src/**', 'package-lock.json', '.github/workflows/sztab.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck -w @gymtracker/sztab
+      - run: npx vitest run packages/link
+      - run: npm test -w @gymtracker/sztab
+      - name: Lokalny Supabase i testy bazy
+        working-directory: apps/sztab
+        run: |
+          npx supabase start -x studio,imgproxy,vector,logflare,edge-runtime,realtime,supavisor,postgres-meta,storage-api
+          npm run test:db
+      - run: npm run build -w @gymtracker/sztab

@@ -1,0 +1,28 @@
+{
+  "name": "@gymtracker/sztab",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "GYM TRACKER Sztab — aplikacja dla prowadzących: trenerów, dietetyków, fizjoterapeutów i lekarzy",
+  "scripts": {
+    "dev": "vite",
+    "build": "npm run typecheck && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "test:db": "SZTAB_DB_TESTS=1 vitest run test/db",
+    "db:start": "supabase start -x studio,imgproxy,vector,logflare,edge-runtime,realtime,supavisor,postgres-meta",
+    "db:stop": "supabase stop",
+    "db:reset": "supabase db reset"
+  },
+  "dependencies": {
+    "@gymtracker/link": "1.0.0",
+    "@supabase/supabase-js": "2.118.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "uqr": "0.1.3"
+  },
+  "devDependencies": {
+    "supabase": "3.0.0"
+  }
+}

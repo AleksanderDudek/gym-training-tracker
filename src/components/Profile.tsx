@@ -23,6 +23,7 @@ import { durationText, timed, transitions } from '../engine/clock';
 import { formatClock } from './Timer';
 import { BodyCard, CardioSummary, kcalText } from './Cardio';
 import { PromoCard } from './Promo';
+import { LinkCard } from './LinkEntry';
 import { SilhouetteCard } from './Silhouette';
 import type { MeasureInput } from '../engine/measures';
 import { LastNote, LogNotesEditor } from './Notes';
@@ -381,6 +382,8 @@ export function ProfileView({
       {!snapshot(state) && <MuscleWeekCard state={state} />}
       <SnackSummary state={state} />
       <CardioSummary state={state} />
+      {/* Bez Sztabu w buildzie karta nie rysuje się wcale. */}
+      <LinkCard />
       <PromoCard />
 
       <div className="sect-label">{T.yourExercises}</div>
