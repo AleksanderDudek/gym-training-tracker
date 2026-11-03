@@ -16,6 +16,7 @@ import { AtlasView, ExercisePage } from './components/atlas';
 import { Catalogue, PlanView } from './components/PlanView';
 import { Achievements } from './components/Achievements';
 import { dayKey, daysBetween } from './engine/schedule';
+import { cleanCalendarCfg } from './engine/calendar';
 import { bankPoints, snapshot } from './engine/snapshot';
 import { achCtx, migrateBadges, revokeUnmet, syncBadges } from './engine/badges';
 import { pointsToday, rankFor } from './engine/score';
@@ -137,6 +138,9 @@ import { TOP_COLORS, setThemeColor, useTheme } from './theme';
  * workera albo z sieci.
  */
 const FoodRoot = lazy(() => import('./food/FoodRoot'));
+
+/** Kalendarz (`#/kalendarz`) w osobnej paczce — otwiera się raz na jakiś czas, ekran Dziś go nie potrzebuje. */
+const CalendarPage = lazy(() => import('./components/Calendar'));
 
 /** Zapisy, które ekrany jedzenia robią w danych treningowych. Podmieniane co render — zawsze ze świeżym stanem. */
 type BridgeWrites = Pick<GymBridge, 'setWeight' | 'setHeight' | 'setSteps'> & Required<Pick<GymBridge, 'skipWeigh'>>;
@@ -355,6 +359,7 @@ const T = text({
     trainedTodayText:
       'Możesz zalogować kolejną sesję, ale te same wzorce ruchowe dwa razy w ciągu dnia nie dadzą lepszej progresji.',
     foodTab: 'zakładki Jedzenie',
+    calendarPage: 'kalendarza',
     nav: 'Główna nawigacja',
   },
   en: {
@@ -552,6 +557,7 @@ const T = text({
     trainedTodayText:
       'You can log another session, but the same movement patterns twice in one day won’t give you better progress.',
     foodTab: 'the Food tab',
+    calendarPage: 'the calendar',
     nav: 'Main navigation',
   },
 });
@@ -637,6 +643,10 @@ function restoreExtras(next: AppState, saved: Partial<AppState>): void {
   const r = next.cfg.reminders;
   if (r !== undefined && (typeof r !== 'object' || typeof r.morning !== 'boolean' || typeof r.evening !== 'boolean'))
     delete next.cfg.reminders;
+  // Kalendarz: tylko godzina `HH:MM`; zepsuty wpis znika w całości, a strona wraca do 18:00.
+  const cal = cleanCalendarCfg(next.cfg.calendar);
+  if (cal) next.cfg.calendar = cal;
+  else delete next.cfg.calendar;
 }
 
 const isDay = (n: unknown): boolean => Number.isInteger(n) && (n as number) >= 1 && (n as number) <= 7;
@@ -1172,6 +1182,12 @@ export default function App() {
   const setClockPref = (on: boolean) => {
     const next = clone(state);
     next.cfg.clock = on;
+    commit(next);
+  };
+
+  const setTrainAt = (at: string) => {
+    const next = clone(state);
+    next.cfg.calendar = { ...next.cfg.calendar, trainAt: at };
     commit(next);
   };
 
@@ -2198,6 +2214,13 @@ export default function App() {
       {route.kind === 'cardio' && <CardioPage state={state} onDelete={deleteCardio} />}
       {route.kind === 'promo' && <PromoPage onToast={setToastMsg} />}
       {route.kind === 'health' && <HealthPage />}
+      {route.kind === 'calendar' && (
+        <LoadBoundary what={T.calendarPage}>
+          <Suspense fallback={<div className="empty">{pick(LOADING, daySeed())}</div>}>
+            <CalendarPage state={state} onTrainAt={setTrainAt} onToast={setToastMsg} />
+          </Suspense>
+        </LoadBoundary>
+      )}
       {route.kind === 'cardioAdd' && (
         // Klucz za adresem: skrót z innym rodzajem ruchu zaczyna czysty formularz.
         <CardioEntry

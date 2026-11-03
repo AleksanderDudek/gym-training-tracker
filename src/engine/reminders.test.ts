@@ -198,3 +198,53 @@ describe('jedzenie z dziś', () => {
     expect(keys).toEqual([...keys].sort());
   });
 });
+
+describe('przypomnienia o zakupach i badaniu kontrolnym', () => {
+  const extras = {
+    shop: { kind: 'weekdays' as const, days: [6], at: '10:00' },
+    retest: { date: '2026-10-20', markers: ['Ferrytyna'] },
+    labDays: [],
+  };
+
+  it('zakupy: pół godziny przed wyjściem w dni rytmu, tylko przy profilu diety i gdy włączone', () => {
+    const items = reminderItems(freshState(), { morning: false, evening: false, shop: true }, MONDAY, 0, true, extras);
+    expect(items.map((i) => [i.date, i.time, i.tag])).toEqual([
+      ['2026-10-10', '09:30', 'zakupy'],
+      ['2026-10-17', '09:30', 'zakupy'],
+      ['2026-10-24', '09:30', 'zakupy'],
+    ]);
+    expect(items[0]!.title).toBe('Dziś zakupy, 10:00');
+    expect(items[0]!.url).toBe('#/jedzenie/zakupy');
+    expect(items.every(validItem)).toBe(true);
+    expect(reminderItems(freshState(), { morning: false, evening: false, shop: true }, MONDAY, 0, false, extras)).toEqual([]);
+    expect(reminderItems(freshState(), { morning: false, evening: false }, MONDAY, 0, true, extras)).toEqual([]);
+  });
+
+  it('zakupy tuż po północy przypominają o samej godzinie wyjścia', () => {
+    const night = { ...extras, shop: { kind: 'every' as const, days: 1, from: MONDAY, at: '00:15' } };
+    const items = reminderItems(freshState(), { morning: false, evening: false, shop: true }, MONDAY, 0, true, night);
+    expect(items[0]!.time).toBe('00:15');
+  });
+
+  it('badanie: wieczorem dzień przed, o 19:00, bez porad — tylko „zapytaj w laboratorium”', () => {
+    const items = reminderItems(freshState(), { morning: false, evening: false, labs: true }, MONDAY, 0, true, extras);
+    expect(items).toEqual([
+      expect.objectContaining({ tag: 'badanie', date: '2026-10-19', time: '19:00', url: '#/jedzenie/badania', title: 'Jutro badanie kontrolne' }),
+    ]);
+    expect(items[0]!.body).toContain('Zapytaj w laboratorium o przygotowanie');
+    expect(items.every(validItem)).toBe(true);
+  });
+
+  it('badanie poza trzema tygodniami, już po czasie albo z zapisanymi wynikami — bez przypomnienia', () => {
+    const on = { morning: false, evening: false, labs: true };
+    expect(reminderItems(freshState(), on, MONDAY, 0, true, { ...extras, retest: { date: '2026-12-01', markers: [] } })).toEqual([]);
+    expect(reminderItems(freshState(), on, MONDAY, 0, true, { ...extras, retest: { date: MONDAY, markers: [] } })).toEqual([]);
+    expect(reminderItems(freshState(), on, MONDAY, 0, true, { ...extras, labDays: ['2026-10-20'] })).toEqual([]);
+  });
+
+  it('wszystko naraz mieści się w limicie serwera', () => {
+    const all = { morning: true, evening: true, weigh: true, food: true, shop: true, labs: true };
+    const daily = { ...extras, shop: { kind: 'every' as const, days: 1, from: MONDAY, at: '10:00' } };
+    expect(reminderItems(withPlan(), all, MONDAY, 0, true, daily).length).toBeLessThanOrEqual(100);
+  });
+});

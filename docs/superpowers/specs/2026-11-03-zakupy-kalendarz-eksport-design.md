@@ -117,6 +117,49 @@ zdrowotny i odpowiada Google'owi co kilka godzin; aplikacja trzyma dane na telef
 
 Strona mówi wprost: Google nie widzi zmian na bieżąco — po zmianie planu dodaj wydarzenia jeszcze raz.
 
+## Wynik i odstępstwa — B
+
+Zrobione na gałęzi `feat/kalendarz`.
+
+- Silnik: `src/engine/calendar.ts` (model wydarzeń, plik .ics, odnośniki Google), `src/engine/ics.ts` (zapis RFC 5545
+  i adres formularza Google, bez wiedzy o treningach), `src/food/calendar.ts` (część diety z IndexedDB: rytm z profilu,
+  `retestOf` z planu pod wyniki, dni pobrania z raportów). Ekran: `src/components/Calendar.tsx` (osobna paczka, `lazy`),
+  karta Dziś i wspólne kawałki w `src/components/CalendarCard.tsx`. Trasa `{ kind: 'calendar' }`, `#/kalendarz`,
+  rodzic — ekran Dziś, podświetlona zakładka Dziś.
+- `cfg.calendar?: { trainAt?: string }`, czyszczone przy wczytaniu i imporcie (`cleanCalendarCfg` w `restoreExtras`):
+  zła godzina usuwa cały wpis, strona wraca do 18:00. Wybór co pół godziny 5:00–22:00, widoczny tylko przy planie.
+- Treningi w miesiącu: termin zrobiony stoi w dniu, w którym się odbył (z dopiskiem „termin z 26.10”, gdy był
+  nadrabiany albo zrobiony dzień wcześniej); sesje poza terminem — „poza planem”, a sprzed startu planu bez dopisku;
+  bez planu — każdy dzień z zapisanym treningiem. Kilka treningów jednego dnia to jedno wydarzenie („A + B”).
+  Nazwa „Trening A” nie dostaje drugiego „Trening:” z przodu.
+- Odstępstwo: zakupy pokazuję tylko od dziś. Rytm to zamiar, nie zapis — wstecz kalendarz nie wie, czy zakupy się
+  odbyły, a zakupy w każdą przeszłą sobotę wyglądały jak historia.
+- Badanie kontrolne znika, gdy po starcie planu jest raport nowszy niż ten, z którego plan powstał (badanie zrobione,
+  także kilka dni wcześniej), albo gdy z jego dnia są już wyniki. Dni pobrania pokazane jako „Badanie — wyniki zapisane”.
+- Dostęp do bazy: strona kalendarza pyta o dietę zawsze, ale `loadDietCalendar` otwiera Dexie tylko przy znaczniku
+  `gt:diet` albo gdy baza już istnieje (`indexedDB.databases()`), więc kto tylko trenuje, nie dostaje pustej bazy.
+  Karta na ekranie Dziś czyta dietę tylko przy znaczniku. Dexie nie trafia do głównej paczki (sprawdzone w `dist`).
+- Plik .ics: `SEQUENCE` = minuty od 2026-01-01 (rośnie z każdym zapisem, więc ponowny import to nowsza wersja tego
+  samego `UID`), `TRANSP:OPAQUE`, `X-WR-CALNAME`, zakupy 60 min. Badanie kontrolne dalej niż 12 tygodni i tak wchodzi do
+  pliku. Sprawdzone biblioteką Python `icalendar` 7.3.0 (venv w scratchpadzie): 36 wydarzeń, parsowanie i obieg
+  zapis → odczyt bez błędów.
+- Google: tytuł treningów „Trening: <nazwa planu>”, `UNTIL` to 23:59 ostatniego dnia planu w strefie telefonu zapisane
+  w UTC; zakupy co 1 dzień to `FREQ=DAILY` bez `INTERVAL`. Pierwsze zakupy mogą wypaść dziś, nawet po godzinie wyjścia
+  (powtarzanie i tak idzie dalej).
+- Rozszerzenie (zrobione): przypomnienia push o zakupach (30 min przed wyjściem z rytmu, `tag: 'zakupy'`, otwiera listę
+  zakupów) i o badaniu kontrolnym (19:00 dzień przed, `tag: 'badanie'`, otwiera Badania). Serwer przyjmuje każdy tag
+  pasujący do `^[a-z][a-z0-9-]{0,31}$`, więc bez zmian po stronie serwera; wszystko naraz mieści się w `MAX_ITEMS` 100
+  (test). Oba domyślnie wyłączone (jak ważenie) i widoczne w karcie Przypomnienia tylko przy profilu diety;
+  `syncReminders` wczytuje bazę diety tylko wtedy, gdy któreś jest włączone. Ograniczenie: badania bez profilu diety
+  nie mają przypomnienia push (karta nie pokazuje przełącznika bez znacznika diety) — kalendarz i .ics je mają.
+  Rytm i plan pod wyniki zmienione w diecie trafiają na serwer przy następnym otwarciu aplikacji.
+- Wejścia: karta „Kalendarz” na końcu ekranu Dziś (trzy najbliższe wydarzenia jednym wierszem i odnośnik), odnośnik
+  w karcie Przypomnienia (karta istnieje tylko przy skonfigurowanym serwerze push). Odnośnik z listy zakupów dokłada
+  agent A.
+- Dostępność: znaki różnią się kształtem (hantla, ptaszek, krzyżyk, wózek, probówka), legenda słowami; dziś — gruba
+  ramka i pogrubiona liczba; dzień czytany w całości („wtorek, 3 listopada: trening zaplanowany, zakupy”),
+  `aria-pressed` dla wybranego, `aria-current="date"` dla dziś. CSP test zna `calendar.google.com` jako nawigację.
+
 ## C. Raport Excel dla dietetyka / lekarza
 
 Prawdziwy plik `.xlsx` (nie CSV): wiele arkuszy w jednym pliku, typowane komórki (daty jako daty, liczby jako liczby —
