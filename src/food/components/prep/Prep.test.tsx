@@ -241,10 +241,12 @@ describe('dwa plany: ten tydzień i następny', () => {
 });
 
 describe('lista zakupów', () => {
-  test('bez planu — zaproszenie do planu', async () => {
+  test('bez planu — lista z dziennika, bez przełącznika źródeł, i zaproszenie do planu', async () => {
+    await saveProfile(prepProfile());
     at('#/jedzenie/zakupy');
     renderWithBridge(<ShoppingPage />);
-    expect(await screen.findByText('Nie masz planu z listą zakupów.')).toBeInTheDocument();
+    expect(await screen.findByText('Za mało zapisów na listę')).toBeInTheDocument();
+    expect(screen.queryByRole('navigation', { name: 'Skąd lista' })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Ułóż plan' })).toHaveAttribute('href', '#/jedzenie/plan');
   });
 

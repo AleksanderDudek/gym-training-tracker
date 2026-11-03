@@ -372,10 +372,11 @@ export function screenOf(route: Route): Screen {
     case 'food':
       return { title: FOOD_TITLE[route.section], parent: null };
     case 'diet':
-      // Lista zakupów i lista planów należą do planu posiłków: strzałka wraca do niego, nie do dziennika.
+      // Lista planów należy do planu posiłków: strzałka wraca do niego. Lista zakupów liczy się
+      // też z dziennika (kafelek „Zakupy”), więc wraca do dziennika, jak inne podstrony diety.
       return {
         title: DIET_TITLE[route.page],
-        parent: route.page === 'shopping' || route.page === 'plans' ? dietPath('plan') : FOOD_PATH,
+        parent: route.page === 'plans' ? dietPath('plan') : FOOD_PATH,
       };
     case 'restaurants':
       // Nazwa sieci stoi dużą czcionką w treści — w pasku, jak przy ćwiczeniu, rodzaj strony.

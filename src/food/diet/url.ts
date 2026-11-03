@@ -52,15 +52,26 @@ export function planPageFromParams(params: URLSearchParams): PlanPageState {
   return { ...diaryFromParams(params), form: params.get('nowy') === '1', plan: planIdOf(params) };
 }
 
-/** The list of one plan (`#/jedzenie/zakupy?plan=3`); `null`: the plan running today. */
+/**
+ * The shopping page: the list from the diary (`?z=dziennik`) or of one plan (`?plan=3`, `?z=plan`).
+ * `plan` null: the plan running today; `source` null: the last list chosen on this device.
+ */
 export interface ShoppingState {
   plan: number | null;
+  source?: 'dziennik' | 'plan' | null;
 }
 
-export const shoppingToParams = (state: ShoppingState): URLSearchParams =>
-  new URLSearchParams(state.plan === null ? '' : { plan: String(state.plan) });
+export function shoppingToParams(state: ShoppingState): URLSearchParams {
+  const params = new URLSearchParams();
+  if (state.source) params.set('z', state.source);
+  if (state.plan !== null) params.set('plan', String(state.plan));
+  return params;
+}
 
-export const shoppingFromParams = (params: URLSearchParams): ShoppingState => ({ plan: planIdOf(params) });
+export function shoppingFromParams(params: URLSearchParams): ShoppingState {
+  const z = params.get('z');
+  return { plan: planIdOf(params), source: z === 'dziennik' || z === 'plan' ? z : null };
+}
 
 /** A plan id from the address: a positive whole number, or nothing. */
 function planIdOf(params: URLSearchParams): number | null {

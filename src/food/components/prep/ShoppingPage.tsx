@@ -1,35 +1,34 @@
-import { Check, ExternalLink, Share2, Snowflake } from 'lucide-react';
-import { Fragment, useState } from 'react';
+import { CalendarDays, Share2 } from 'lucide-react';
+import { useState } from 'react';
 import { text } from '../../../i18n';
-import { EmptyState } from '../../../components/ui';
 import { dietPath } from '../../../routing';
 import { useBridge } from '../../bridge';
 import { shoppingFromParams, shoppingToParams } from '../../diet/url';
-import { useClock } from '../../hooks/useDiet';
+import { hashWith } from '../../hash';
+import { useClock, useProfile } from '../../hooks/useDiet';
 import { usePrepPlans } from '../../hooks/usePrep';
 import { useUrlState } from '../../hooks/useUrlState';
-import { formatNumber, formatPrice } from '../../lib/format';
-import { AISLE_LABELS } from '../../prep/aisles';
-import { gramsLabel, rangeLabel, shortDate } from '../../prep/format';
+import { formatNumber } from '../../lib/format';
+import { rangeLabel } from '../../prep/format';
 import { shoppingProgress } from '../../prep/meals';
-import { amountText, itemName, priceSum, pricedEnough, shoppingText } from '../../prep/shopping';
+import { shoppingText } from '../../prep/shopping';
 import { clearBought, markBought, openPlans, planEnd, planName, shownPlan } from '../../prep/store';
-import type { PrepPlan, PrepShop, ShoppingItem } from '../../prep/types';
+import type { PrepPlan } from '../../prep/types';
+import { readSource, writeSource, type ShopSource } from '../../shop/store';
 import { Loading } from '../diet/Onboarding';
+import { DiaryShopping } from './DiaryShopping';
 import { shoppingHref } from './links';
 import { PlanSwitch } from './PlanSwitch';
-import { COMMON } from '../common/text';
+import { Group, shareList } from './ShoppingRows';
 import './prep.css';
 
 const T = text({
   pl: {
-    noPlan: 'Nie masz planu z listą zakupów.',
-    noPlanText: 'Ułóż plan na kolejne dni — lista zakupów powstanie razem z nim.',
-    make: 'Ułóż plan',
+    sources: 'Skąd lista',
+    fromDiary: 'Z dziennika',
+    fromPlan: 'Z planu',
+    calendar: 'Kalendarz — zakupy, treningi, badania',
     tickFailed: 'Nie udało się zapisać odhaczenia na tym urządzeniu.',
-    list: 'Lista zakupów',
-    copied: 'Lista skopiowana — wklej ją, gdzie chcesz.',
-    shareFailed: 'Nie udało się udostępnić listy.',
     title: (range: string) => `Zakupy na ${range}`,
     bought: (done: string, total: string) => `Kupione ${done} z ${total}`,
     all: ' — wszystko w koszyku.',
@@ -40,21 +39,13 @@ const T = text({
     home: 'Sprawdź w domu',
     homeLead: 'Zwykle stoi w szafce: zajrzyj przed wyjściem, kup, czego brakuje.',
     foot: 'Ceny orientacyjne: z Open Prices, Selgrosa i stron sklepów internetowych, z datą sprawdzenia przy produkcie. Ilości są na cały plan; ostatnie opakowanie może zostać na następny.',
-    sum: (price: string) => `Ok. ${price}`,
-    known: (known: number, all: number) => ` (ceny znane dla ${known} z ${all} pozycji)`,
-    shop: (name: string) => `Sklep ${name}`,
-    about: (price: string) => ` · ok. ${price}`,
-    freeze: (grams: string, date: string) => `zamroź ${grams} na ${date}`,
-    page: (name: string) => `Strona produktu: ${name}`,
   },
   en: {
-    noPlan: 'You have no plan with a shopping list.',
-    noPlanText: 'Make a plan for the coming days — the shopping list comes with it.',
-    make: 'Make a plan',
+    sources: 'Where the list comes from',
+    fromDiary: 'From the diary',
+    fromPlan: 'From the plan',
+    calendar: 'Calendar — shopping, workouts, lab tests',
     tickFailed: 'Couldn’t save the tick on this device.',
-    list: 'Shopping list',
-    copied: 'List copied — paste it wherever you like.',
-    shareFailed: 'Couldn’t share the list.',
     title: (range: string) => `Shopping for ${range}`,
     bought: (done: string, total: string) => `Bought ${done} of ${total}`,
     all: ' — everything’s in the basket.',
@@ -65,48 +56,66 @@ const T = text({
     home: 'Check at home',
     homeLead: 'Usually in the cupboard: take a look before you go and buy what’s missing.',
     foot: 'Prices are approximate: from Open Prices, Selgros and online shops’ sites, with the date they were checked next to the product. Amounts cover the whole plan; the last pack may be left for the next one.',
-    sum: (price: string) => `About ${price}`,
-    known: (known: number, all: number) => ` (prices known for ${known} of ${all} items)`,
-    shop: (name: string) => `${name} website`,
-    about: (price: string) => ` · about ${price}`,
-    freeze: (grams: string, date: string) => `freeze ${grams} for ${date}`,
-    page: (name: string) => `Product page: ${name}`,
   },
 });
 
 const ICON = { size: 20, strokeWidth: 2, 'aria-hidden': true } as const;
 
+/** Kalendarz (zakupy z rytmu, treningi, badania) — osobna strona aplikacji. */
+const CALENDAR_PATH = '#/kalendarz';
+
 /**
- * Lista zakupów planu — do odhaczania w sklepie. Działa z migawki planu: bez bazy produktów
- * i bez zasięgu. Najpierw wizyta w sklepie (dział po dziale, tak jak się idzie przez sklep),
- * potem zamówienie przez internet, na końcu to, co zwykle jest w domu.
+ * Lista zakupów — z dziennika (średnia z ostatnich tygodni na dni do następnych zakupów) albo
+ * z planu meal prep. Przełącznik źródeł stoi tylko wtedy, gdy jest otwarty plan; bez planu lista
+ * jest z dziennika. Ostatni wybór zostaje na urządzeniu, a adres (`?z=`) go niesie.
+ *
+ * Lista planu działa z migawki planu: bez bazy produktów i bez zasięgu. Najpierw wizyta w sklepie
+ * (dział po dziale, tak jak się idzie przez sklep), potem zamówienie przez internet, na końcu to,
+ * co zwykle jest w domu.
  */
 export default function ShoppingPage() {
   const [state] = useUrlState(shoppingFromParams, shoppingToParams);
   const plans = usePrepPlans();
+  const profile = useProfile();
   const { date: today } = useClock();
-  if (!plans) return <Loading />;
+  const [remembered] = useState(readSource);
+  if (!plans || profile === undefined) return <Loading />;
   const plan = shownPlan(plans, today, state.plan);
-  if (!plan || plan.id === undefined)
-    return (
-      <div className="wrap">
-        <EmptyState
-          title={T.noPlan}
-          text={T.noPlanText}
-          action={
-            <a className="btn sm" href={dietPath('plan')}>
-              {T.make}
-            </a>
-          }
-        />
-      </div>
-    );
+  const hasPlan = !!plan && plan.id !== undefined;
+  // Odnośnik z planu (`?plan=3`) prowadzi do listy tego planu; inaczej adres, potem pamięć urządzenia.
+  const source: ShopSource = !hasPlan ? 'dziennik' : (state.source ?? (state.plan !== null ? 'plan' : (remembered ?? 'plan')));
   return (
     <>
-      <PlanSwitch plans={openPlans(plans, today)} shown={plan} today={today} href={shoppingHref} />
-      {/* Another plan, another list: ticks shown before IndexedDB answers belong to one plan. */}
-      <ShoppingList key={plan.id} plan={plan as PrepPlan & { id: number }} />
+      {hasPlan && <SourceSwitch source={source} plan={state.plan} />}
+      {source === 'plan' && hasPlan ? (
+        <>
+          <PlanSwitch plans={openPlans(plans, today)} shown={plan} today={today} href={shoppingHref} />
+          {/* Another plan, another list: ticks shown before IndexedDB answers belong to one plan. */}
+          <ShoppingList key={plan.id} plan={plan as PrepPlan & { id: number }} />
+        </>
+      ) : (
+        <DiaryShopping profile={profile} today={today} hasPlan={hasPlan} />
+      )}
+      <p className="wrap fd-prep-all fd-prep-calendar">
+        <a href={CALENDAR_PATH}>
+          <CalendarDays {...ICON} /> {T.calendar}
+        </a>
+      </p>
     </>
+  );
+}
+
+/** „Z dziennika” / „Z planu” — odnośniki, bo każde źródło ma własny adres; wybór zostaje na urządzeniu. */
+function SourceSwitch({ source, plan }: { source: ShopSource; plan: number | null }) {
+  const href = (z: ShopSource) => hashWith(dietPath('shopping'), shoppingToParams({ plan: z === 'plan' ? plan : null, source: z }));
+  return (
+    <nav className="wrap seg fd-prep-switch" aria-label={T.sources}>
+      {(['dziennik', 'plan'] as const).map((z) => (
+        <a key={z} href={href(z)} aria-current={z === source ? 'page' : undefined} onClick={() => writeSource(z)}>
+          {z === 'dziennik' ? T.fromDiary : T.fromPlan}
+        </a>
+      ))}
+    </nav>
   );
 }
 
@@ -138,21 +147,7 @@ function ShoppingList({ plan }: { plan: PrepPlan & { id: number } }) {
   };
   const { done, total } = shoppingProgress(plan, bought);
 
-  const share = async () => {
-    const text = shoppingText(plan);
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: T.list, text });
-        return;
-      }
-      await navigator.clipboard.writeText(text);
-      bridge.toast(T.copied);
-    } catch (e) {
-      // Zamknięte okno udostępniania to nie błąd; brak schowka — tak.
-      if (e instanceof DOMException && e.name === 'AbortError') return;
-      bridge.toast(T.shareFailed);
-    }
-  };
+  const share = () => shareList(shoppingText(plan), (m) => bridge.toast(m));
 
   return (
     <>
@@ -213,92 +208,5 @@ function ShoppingList({ plan }: { plan: PrepPlan & { id: number } }) {
       )}
       <p className="wrap fd-prep-soft fd-prep-foot">{T.foot}</p>
     </>
-  );
-}
-
-interface GroupProps {
-  id: string;
-  title: string;
-  lead?: string;
-  shop?: PrepShop;
-  items: ShoppingItem[];
-  bought: Set<string>;
-  onTick: (key: string, on: boolean) => void;
-  /** Headings by aisle: one walk through the shop. */
-  aisles?: boolean;
-}
-
-function Group({ id, title, lead, shop, items, bought, onTick, aisles = false }: GroupProps) {
-  if (!items.length) return null;
-  const sum = priceSum(items);
-  return (
-    <section className="grp" aria-labelledby={id}>
-      <h2 id={id}>{title}</h2>
-      {lead && <p className="tight">{lead}</p>}
-      {pricedEnough(sum) && (
-        <p className="tight fd-prep-nums">
-          {T.sum(formatPrice(sum.total))}
-          {sum.unknown > 0 && T.known(sum.known, items.length)}
-        </p>
-      )}
-      {shop?.url && (
-        <p className="tight">
-          <a href={shop.url} target="_blank" rel="noopener noreferrer">
-            {T.shop(shop.name)}
-            <ExternalLink size={14} strokeWidth={2} aria-hidden />
-            <span className="sr-only">{COMMON.newTab}</span>
-          </a>
-        </p>
-      )}
-      <ul className="fd-prep-list">
-        {items.map((item, i) => (
-          <Fragment key={item.key}>
-            {aisles && item.aisle !== items[i - 1]?.aisle && (
-              <li className="fd-prep-aisle">
-                <h3>{AISLE_LABELS[item.aisle]}</h3>
-              </li>
-            )}
-            <Item item={item} done={bought.has(item.key)} onTick={onTick} />
-          </Fragment>
-        ))}
-      </ul>
-    </section>
-  );
-}
-
-function Item({ item, done, onTick }: { item: ShoppingItem; done: boolean; onTick: (key: string, on: boolean) => void }) {
-  const name = itemName(item);
-  return (
-    <li className={`fd-prep-item${done ? ' fd-prep-done' : ''}`}>
-      <label>
-        <input type="checkbox" checked={done} onChange={(e) => onTick(item.key, e.target.checked)} />
-        <span className="fd-prep-item-main">
-          <span className="fd-prep-name">
-            {done && <Check size={16} strokeWidth={2} aria-hidden className="fd-prep-tick" />}
-            {name}
-          </span>
-          <span className="fd-prep-meta">
-            {amountText(item)}
-            {item.product && item.product.name !== item.label && ` · ${item.label}`}
-            {item.product?.brand && ` · ${item.product.brand}`}
-            {item.price !== null && T.about(formatPrice(item.price))}
-          </span>
-          {item.freeze.map((f) => (
-            <span key={f.date} className="fd-prep-meta fd-prep-cold">
-              <Snowflake size={14} strokeWidth={2} aria-hidden /> {T.freeze(gramsLabel(f.grams), shortDate(f.date))}
-            </span>
-          ))}
-        </span>
-      </label>
-      {item.product?.url && (
-        <a className="fd-prep-link" href={item.product.url} target="_blank" rel="noopener noreferrer">
-          <ExternalLink {...ICON} />
-          <span className="sr-only">
-            {T.page(name)}
-            {COMMON.newTab}
-          </span>
-        </a>
-      )}
-    </li>
   );
 }

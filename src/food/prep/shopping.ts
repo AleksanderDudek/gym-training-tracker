@@ -118,7 +118,7 @@ export function packsFor(grams: number, pack: number): number {
   return Math.max(1, Math.ceil(grams / pack - 0.05));
 }
 
-function priceOf(product: IndexedProduct, shop: string | null, packs: number | null, packG: number | null, grams: number): number | null {
+export function priceOf(product: IndexedProduct, shop: string | null, packs: number | null, packG: number | null, grams: number): number | null {
   const offer = shop ? product.online?.find((o) => o.shop === shop) : undefined;
   if (offer?.price != null && packs !== null) return Math.round(offer.price * packs * 100) / 100;
   const price = product.price;

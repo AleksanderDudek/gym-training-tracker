@@ -232,7 +232,7 @@ describe('Dziennik', () => {
     expect(screen.queryByText(/^Przerwa do/)).not.toBeInTheDocument();
   }, 15_000);
 
-  test('wejścia na górze, przed przełącznikiem dnia: plan posiłków, moje plany, postęp, profil diety i badania', async () => {
+  test('wejścia na górze, przed przełącznikiem dnia: plan posiłków, moje plany, postęp, profil diety, badania i zakupy', async () => {
     await saveProfile(completeProfile({ startDate: '2026-10-01' }));
     renderWithBridge(<DiaryPage />);
     const nav = await screen.findByRole('navigation', { name: 'Dieta' });
@@ -242,6 +242,7 @@ describe('Dziennik', () => {
       ['Postęp', '#/jedzenie/postep'],
       ['Profil diety', '#/jedzenie/profil'],
       ['Badania', '#/jedzenie/badania'],
+      ['Zakupy', '#/jedzenie/zakupy'],
     ]);
     // Na górze: przed nagłówkiem dnia, nie pod krokami.
     const day = screen.getByRole('heading', { name: 'Dziś' });
