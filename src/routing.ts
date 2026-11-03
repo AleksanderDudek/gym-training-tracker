@@ -51,6 +51,7 @@ const T = text({
     cardio: 'Kroki i cardio',
     promo: 'Poleć znajomym',
     health: 'Zdrowie i bezpieczeństwo',
+    calendar: 'Kalendarz',
     menu: 'Menu',
     restaurants: 'Lokale',
   },
@@ -93,6 +94,7 @@ const T = text({
     cardio: 'Steps & cardio',
     promo: 'Recommend to friends',
     health: 'Health and safety',
+    calendar: 'Calendar',
     menu: 'Menu',
     restaurants: 'Restaurants',
   },
@@ -133,6 +135,12 @@ export const PROMO_PATH = '#/polec';
  * Prowadzą tu karta w ustawieniach i odnośnik „Więcej” przy każdej podpowiedzi o jedzeniu.
  */
 export const HEALTH_PATH = '#/zdrowie';
+
+/**
+ * Kalendarz: treningi, zakupy i badania na miesiąc, z eksportem do Kalendarza Google i pliku .ics.
+ * Prowadzą tu karta na ekranie Dziś, karta przypomnień w ustawieniach i lista zakupów.
+ */
+export const CALENDAR_PATH = '#/kalendarz';
 
 /**
  * „Czy mój zegarek jest obsługiwany?” — ustawienia z kartą zegarka. Krótki adres do wklejenia
@@ -369,13 +377,16 @@ export function screenOf(route: Route): Screen {
       return { title: T.promo, parent: SETTINGS_PATH };
     case 'health':
       return { title: T.health, parent: SETTINGS_PATH };
+    case 'calendar':
+      return { title: T.calendar, parent: HOME };
     case 'food':
       return { title: FOOD_TITLE[route.section], parent: null };
     case 'diet':
-      // Lista zakupów i lista planów należą do planu posiłków: strzałka wraca do niego, nie do dziennika.
+      // Lista planów należy do planu posiłków: strzałka wraca do niego. Lista zakupów liczy się
+      // też z dziennika (kafelek „Zakupy”), więc wraca do dziennika, jak inne podstrony diety.
       return {
         title: DIET_TITLE[route.page],
-        parent: route.page === 'shopping' || route.page === 'plans' ? dietPath('plan') : FOOD_PATH,
+        parent: route.page === 'plans' ? dietPath('plan') : FOOD_PATH,
       };
     case 'restaurants':
       // Nazwa sieci stoi dużą czcionką w treści — w pasku, jak przy ćwiczeniu, rodzaj strony.
@@ -551,6 +562,7 @@ export function parseHash(hash: string): Route {
   }
   if (head === 'polec') return { kind: 'promo' };
   if (head === 'zdrowie') return { kind: 'health' };
+  if (head === 'kalendarz') return { kind: 'calendar' };
   if (head === 'cardio') {
     if (!second) return { kind: 'cardio' };
     // Nieznany rodzaj otwiera kroki — zapis zawsze ma dokąd prowadzić. `hasOwn`, bo ręcznie
@@ -643,6 +655,7 @@ export function activeTab(route: Route): TabKey {
     case 'snackAdd':
     case 'cardio':
     case 'cardioAdd':
+    case 'calendar':
       return 'train';
     case 'plans':
     case 'planClassic':

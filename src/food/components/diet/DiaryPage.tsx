@@ -13,6 +13,7 @@ import {
   Trash2,
   UserRound,
   FlaskConical,
+  ShoppingCart,
   UtensilsCrossed,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
@@ -104,6 +105,7 @@ const T = text({
     progress: 'Postęp',
     dietProfile: 'Profil diety',
     labs: 'Badania',
+    shopping: 'Zakupy',
     tomorrow: 'jutro',
     on: (start: string) => {
       const day = weekday(start);
@@ -180,6 +182,7 @@ const T = text({
     progress: 'Progress',
     dietProfile: 'Diet profile',
     labs: 'Lab results',
+    shopping: 'Shopping',
     tomorrow: 'tomorrow',
     on: (start: string) => `on ${WEEKDAY_DAY_MONTH.format(new Date(`${start}T12:00:00Z`))}`,
     nextPlan: (link: ReactNode, when: string): ReactNode => (
@@ -700,6 +703,10 @@ function DietLinks({ date, today }: { date: string; today: string }) {
       <a href={dietPath('labs')}>
         <FlaskConical {...ICON} />
         <span>{T.labs}</span>
+      </a>
+      <a href={dietPath('shopping')}>
+        <ShoppingCart {...ICON} />
+        <span>{T.shopping}</span>
       </a>
     </nav>
   );

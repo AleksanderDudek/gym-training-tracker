@@ -140,11 +140,19 @@ export async function syncReminders(state: AppState, force = false): Promise<boo
     const sub = await (await registration())?.pushManager.getSubscription();
     if (!sub) return false;
     const now = new Date();
+    const prefs = remindersOf(state);
+    const diet = hasDiet();
+    // Zakupy i badanie kontrolne leżą w bazie diety: wczytywana dopiero wtedy, gdy któreś z tych
+    // przypomnień jest włączone. Baza nie odpowiada — lista idzie bez nich.
+    const extras =
+      diet && (prefs.shop || prefs.labs)
+        ? await import('./food/calendar').then((m) => m.loadDietCalendar()).catch(() => null)
+        : null;
     const body = JSON.stringify({
       subscription: sub.toJSON(),
       tz: deviceTimeZone(),
       // Przypomnienie o jedzeniu tylko przy profilu diety — znacznik zna ekran Dziś bez wczytywania bazy.
-      items: reminderItems(state, remindersOf(state), localDay(now), now.getHours() * 60 + now.getMinutes(), hasDiet()),
+      items: reminderItems(state, prefs, localDay(now), now.getHours() * 60 + now.getMinutes(), diet, extras),
     });
     const mark = fingerprint(body);
     if (!force && recalled() === mark) return true;

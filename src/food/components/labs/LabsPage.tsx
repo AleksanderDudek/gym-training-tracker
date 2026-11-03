@@ -4,6 +4,7 @@ import { useMemo, useState, useSyncExternalStore } from 'react';
 import { text } from '../../../i18n';
 import { HealthAck, HealthNote } from '../../../components/Health';
 import { labsDataAck } from '../../../components/healthAck';
+import { REPORT_CARD_PATH } from '../../../components/ReportExport';
 import { Segmented } from '../../../components/ui';
 import { useBridge } from '../../bridge';
 import type { Sex } from '../../diet/types';
@@ -55,6 +56,8 @@ const T = text({
     deleted: 'Usunięto badanie.',
     saved: 'Zapisano wyniki.',
     failed: 'Nie udało się zapisać.',
+    report: 'Wszystkie wyniki z datami i zakresami, razem z jedzeniem, napojami i treningami, są też w pliku Excel do pokazania lekarzowi:',
+    reportLink: 'Ustawienia → Raport (Excel)',
   },
   en: {
     title: 'Food and your lab results',
@@ -89,6 +92,8 @@ const T = text({
     deleted: 'Test deleted.',
     saved: 'Results saved.',
     failed: 'Could not save.',
+    report: 'All results with their dates and ranges, together with food, drinks and workouts, are also in an Excel file to show your doctor:',
+    reportLink: 'Settings → Report (Excel)',
   },
 });
 
@@ -265,6 +270,12 @@ export default function LabsPage() {
         />
       )}
       {view === 'co-zbadac' && <GuideView latest={latest} today={today} missing={assessment?.missing ?? []} />}
+
+      {reports.length > 0 && (
+        <p className="wrap disclaimer">
+          {T.report} <a href={REPORT_CARD_PATH}>{T.reportLink}</a>
+        </p>
+      )}
 
       <HealthNote kind="labs" more className="wrap disclaimer" />
 

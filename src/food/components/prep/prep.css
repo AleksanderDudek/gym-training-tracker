@@ -117,3 +117,27 @@ p.fd-prep-foot{margin:10px auto 18px;font-size:12.5px;max-width:62ch}
 .fd-prep-plan-link .fd-prep-tag{margin-top:4px}
 .fd-prep-plan-note{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 10px;padding:0 14px 12px}
 .fd-prep-plan-note .btn{gap:6px}
+
+/* ---------------- Lista z dziennika: rytm zakupów, „Czasem” ---------------- */
+
+.fd-prep-rhythm-top{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.fd-prep-rhythm-top h2{margin:0;display:flex;align-items:center;gap:4px}
+.fd-prep-rhythm-top .btn{flex:none}
+.grp p.fd-prep-rhythm-now{margin-top:6px;font-weight:600;color:var(--ink)}
+.fd-prep-rhythm-edit{margin-top:10px;padding-top:10px;border-top:1px solid var(--surface-2)}
+.fd-prep-rhythm-edit .seg{margin-bottom:10px}
+.fd-prep-rhythm-edit .fd-prep-fields{margin:0 0 10px}
+.fd-prep-rhythm-edit select,.fd-prep-rhythm-edit input{width:100%}
+/* Siedem dni w jednym rzędzie od 360 px; węższy ekran zawija resztę pod spód. */
+.fd-prep-days{margin:0 0 10px}
+.fd-prep-days button{min-width:44px;padding:9px 8px;text-align:center}
+/* Godzina wygląda jak pozostałe pola (aplikacja stylizuje tylko liczby, tekst, daty i listy). */
+.fd-prep-rhythm-at{max-width:12rem}
+.fd-prep-rhythm-at input{padding:11px 10px;min-height:44px;font:inherit;font-size:17px;border:1px solid var(--edge);
+  border-radius:var(--r);background:var(--field);color:var(--ink)}
+.fd-prep-sometimes summary{display:flex;align-items:center;min-height:44px;cursor:pointer;list-style-position:inside}
+.fd-prep-sometimes summary h2{display:inline;margin:0}
+.fd-prep-sometimes details[open] summary{margin-bottom:4px}
+.fd-prep-calendar a{flex-wrap:wrap}
+p.fd-prep-toplan{margin-top:0}
+.fd-prep-toplan a{color:var(--steel);font-weight:600;text-underline-offset:2px}

@@ -10,6 +10,7 @@ import { plannedBurn } from '../engine/burn';
 import { dayKey } from '../engine/schedule';
 import { BoostCard } from './Boost';
 import { WeighCard } from './Weigh';
+import { CalendarCard } from './CalendarCard';
 import { hasDiet } from '../food/dietFlag';
 import { FoodCardPlaceholder } from '../food/FoodCardPlaceholder';
 import { trail } from '../trail';
@@ -259,6 +260,8 @@ export function SessionHome({
       {/* Przekąska pod treningiem, nie nad nim: kto przyszedł trenować, najpierw widzi trening. */}
       <SnackCard state={state} />
       <CardioCard state={state} />
+      {/* Kalendarz na końcu: to spojrzenie w przód, nie coś do zrobienia teraz. */}
+      <CalendarCard state={state} />
 
       <div className="wrap">
         {/*

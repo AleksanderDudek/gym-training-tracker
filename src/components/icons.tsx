@@ -20,7 +20,10 @@ export type IconName =
   | 'feedback'
   | 'share'
   | 'contact'
-  | 'note';
+  | 'note'
+  | 'cart'
+  | 'flask'
+  | 'calendar';
 
 const PATHS: Record<IconName, ReactNode> = {
   // Hantla: dwa obciążniki i gryf.
@@ -122,6 +125,29 @@ const PATHS: Record<IconName, ReactNode> = {
     <>
       <path d="M4.5 19.5h4l10-10-4-4-10 10v4Z" />
       <path d="M13 7l4 4" />
+    </>
+  ),
+  // Wózek sklepowy — zakupy w kalendarzu.
+  cart: (
+    <>
+      <path d="M3 4.5h2.6l2.2 10.5h10.4l2-7.5H6.6" />
+      <circle cx="9.5" cy="19" r="1.5" />
+      <circle cx="16.5" cy="19" r="1.5" />
+    </>
+  ),
+  // Probówka — badanie w kalendarzu. Probówka, a nie strzykawka: pobranie to nie zastrzyk.
+  flask: (
+    <>
+      <path d="M9 3.5h6M10 3.5v6.2L5.2 18a1.8 1.8 0 0 0 1.6 2.5h10.4a1.8 1.8 0 0 0 1.6-2.5L14 9.7V3.5" />
+      <path d="M7.6 14.5h8.8" />
+    </>
+  ),
+  // Kartka kalendarza z kropkami dni — kalendarz bez odhaczenia (odhaczony to plan).
+  calendar: (
+    <>
+      <rect x="3.5" y="5.5" width="17" height="15" rx="2" />
+      <path d="M3.5 10h17M8 3.5v4M16 3.5v4" />
+      <path d="M8 14h.01M12 14h.01M16 14h.01M8 17.5h.01M12 17.5h.01" />
     </>
   ),
   // Suwaki — czytelniejsze w małym rozmiarze niż zębatka.

@@ -58,6 +58,7 @@ describe('Badania', () => {
     renderWithBridge(<LabsPage />);
     expect(await screen.findByRole('heading', { name: 'Jedzenie a wyniki badań' })).toBeInTheDocument();
     expect(screen.getByText(/zdjęcie albo zrzut ekranu/)).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Raport \(Excel\)/ })).toBeNull();
     expect(screen.getByRole('heading', { name: 'Podstawowe — od lekarza rodzinnego (NFZ)' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /Moje Zdrowie/ })).toBeInTheDocument();
     expect(screen.getByText(/Witaminy D, magnezu, insuliny/)).toBeInTheDocument();
@@ -110,6 +111,8 @@ describe('Badania', () => {
     await user.click(await screen.findByRole('button', { name: 'Wegańsko' }));
     expect(await screen.findByText(/B12 z jedzenia nie wystarczy/)).toBeInTheDocument();
     expect(screen.queryByText(/Wątróbka/)).toBeNull();
+    // Wszystkie wyniki w jednym pliku: odnośnik do karty raportu w ustawieniach.
+    expect(screen.getByRole('link', { name: 'Ustawienia → Raport (Excel)' })).toHaveAttribute('href', '#/ustawienia?karta=raport');
   });
 
   test('ręcznie: wynik w innej jednostce zapisany po przeliczeniu', async () => {

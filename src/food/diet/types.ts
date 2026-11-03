@@ -1,4 +1,5 @@
 import type { Macros } from '../recipes/macros';
+import type { ShopRhythm } from '../shop/rhythm';
 
 export type Sex = 'M' | 'K';
 export type DietProfileId = 'redukcja' | 'zbilansowana' | 'lowcarb' | 'keto' | 'sportowa';
@@ -174,6 +175,8 @@ export interface Profile {
   fastPlan: FastPlan | null;
   /** The current or the last fast, as the person started and ended it; null before the first. */
   fast: Fast | null;
+  /** When the person shops (`shop/rhythm.ts`): the list from the diary and the calendar follow it. Absent: not set yet. */
+  shopping?: ShopRhythm | null;
 }
 
 /** Fasting hours : eating-window hours. */

@@ -1544,3 +1544,68 @@
   .mw-key{display:inline-flex;align-items:center;gap:5px}
   .mw-key svg{flex:none}
   .grp p.mw-note{margin:8px 0 0;font-size:12.5px}
+
+  /* ---------------- Kalendarz ---------------- */
+
+  /* Miesiąc: siedem kolumn od poniedziałku. Komórka ma 44 px wysokości — cel dotykowy — a przy 320 px ok. 40 px szerokości. */
+  .cal-head{display:grid;grid-template-columns:48px 1fr 48px;align-items:center;margin:0 0 6px}
+  .cal-head h2{text-align:center;margin:0;font-family:var(--display);font-size:19px;font-weight:500;text-transform:capitalize}
+  .cal-nav{min-width:48px;min-height:48px;background:none;border:0;color:var(--steel);cursor:pointer;
+    display:inline-flex;align-items:center;justify-content:center;border-radius:var(--r);-webkit-tap-highlight-color:transparent}
+  .cal-nav:focus-visible,.cal-day:focus-visible{outline:2px solid var(--steel);outline-offset:1px}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}
+  .cal-wd{text-align:center;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);padding:2px 0 4px}
+  .cal-day{font:inherit;min-height:48px;min-width:0;padding:4px 0 3px;background:var(--surface-2);border:1px solid transparent;
+    border-radius:var(--r);color:var(--ink);cursor:pointer;display:flex;flex-direction:column;align-items:center;
+    justify-content:flex-start;gap:2px;-webkit-tap-highlight-color:transparent}
+  .cal-day.cal-past .cal-num{color:var(--ink-soft)}
+  /* Dziś: gruba ramka i pogrubiona liczba — nie sam kolor. */
+  .cal-day.cal-today{border:2px solid var(--steel)}
+  .cal-day.cal-today .cal-num{font-weight:700;color:var(--ink)}
+  .cal-day[aria-pressed=true]{background:var(--steel);border-color:var(--steel)}
+  .cal-day[aria-pressed=true] .cal-num,.cal-day[aria-pressed=true] .cal-mark{color:var(--on-strong)}
+  .cal-num{font-size:14px;line-height:1.2;font-variant-numeric:tabular-nums}
+  .cal-marks{display:flex;gap:1px;justify-content:center;flex-wrap:wrap;min-height:12px}
+  .cal-blank{min-height:48px}
+  .cal-mark{display:inline-flex;align-items:center;flex:none;line-height:0}
+  .cal-mark .ico{stroke-width:2.2}
+  .cal-mark-train{color:var(--c-orange-ink)}
+  .cal-mark-train.cal-mark-done{color:var(--ok)}
+  .cal-mark-train.cal-mark-missed{color:var(--warn)}
+  .cal-mark-train.cal-mark-open{color:var(--warn)}
+  .cal-mark-shop{color:var(--c-blue-ink)}
+  .cal-mark-lab{color:var(--c-gold-ink)}
+  .cal-back{margin-top:8px}
+  .cal-legend{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px;color:var(--ink-soft)}
+  .cal-legend li{display:inline-flex;align-items:center;gap:5px}
+  .cal-legend-today{display:inline-block;width:14px;height:14px;border:2px solid var(--steel);border-radius:var(--r)}
+
+  /* Wydarzenia dnia i lista na dwa tygodnie. */
+  .grp.cal-picked h2::first-letter{text-transform:uppercase}
+  .cal-events{list-style:none;margin:4px 0 0;padding:0}
+  .cal-ev{display:grid;grid-template-columns:22px 1fr;gap:8px;align-items:start;padding:7px 0;border-top:1px solid var(--surface-2)}
+  .cal-ev:first-child{border-top:0}
+  .cal-ev .cal-mark{padding-top:2px}
+  .cal-ev-title{display:block;font-size:15px;font-weight:600;overflow-wrap:anywhere}
+  .cal-ev-missed .cal-ev-title{font-weight:500;color:var(--ink-soft)}
+  .cal-ev-detail{display:block;font-size:13px;color:var(--ink-soft);overflow-wrap:anywhere}
+  .cal-ev-link{display:inline-flex;align-items:center;min-height:44px;font-size:13px;color:var(--steel);text-decoration:underline}
+  .cal-soon-day{margin-top:8px}
+  .grp .cal-soon-day h3{margin:0;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);font-weight:600}
+  .grp p.cal-hint{margin:10px 0 0}
+  .grp .cal-hint a{color:var(--steel);text-decoration:underline}
+  .cal-actions{display:grid;gap:9px;margin:12px 0}
+  .cal-actions .btn.ghost{color:var(--steel)}
+  .cal-export .hint a{color:var(--steel);text-decoration:underline}
+
+  /* Karta na ekranie Dziś: trzy wiersze, każdy jedną linijką. */
+  .cal-next{list-style:none;margin:6px 0 0;padding:0}
+  .cal-next li{display:grid;grid-template-columns:18px auto 1fr auto;gap:7px;align-items:center;padding:4px 0;font-size:14px}
+  .cal-next-day{font-family:var(--display);font-size:14px;color:var(--ink-soft);white-space:nowrap}
+  .cal-next-what{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cal-next-at{font-variant-numeric:tabular-nums;color:var(--ink-soft);font-size:13px}
+  .cal-card .vidlink{gap:6px}
+
+  /* Link do kalendarza w karcie przypomnień. */
+  .grp p.rem-cal{margin:10px 0 0}
+  .rem-cal a{color:var(--steel);text-decoration:underline}

@@ -3,6 +3,7 @@ import type { CustomFood, Food, FoodSet, FoodSource, MealRole, SetPart } from '.
 import type { DayRow, Entry, Favorite, PlannedCheat } from './db';
 import { DRINKS_KEPT, DRINKS_MAX_ML, cleanDrink, type Drink } from './drinks';
 import { goalDirection } from './energy';
+import { cleanRhythm } from '../shop/rhythm';
 import { addDays, mondayOf } from './model';
 import type { Plan, PlanItem, PlanVariant } from './plan';
 import { DIET_PROFILE_IDS } from './profiles';
@@ -362,6 +363,7 @@ function v2Fields(raw: Record<string, unknown>): Partial<Profile> {
   else if (finite(raw.waterMl)) out.waterMl = Math.round(clamp(raw.waterMl, PROFILE_RANGES.waterMl) / 50) * 50;
   if (raw.fastPlan === null || oneOf(FAST_PLANS, raw.fastPlan)) out.fastPlan = raw.fastPlan;
   out.fast = cleanFast(raw.fast);
+  if (raw.shopping !== undefined) out.shopping = cleanRhythm(raw.shopping);
   return out;
 }
 
