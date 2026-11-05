@@ -4,7 +4,10 @@ import stepsPl from './steps.pl.json';
 import stepsEn from './steps.en.json';
 import { EQ_LABEL, GEAR_OF, SECONDARY_OF, TARGET_OF, catalogId, defOf, deltOf, musclesOf } from './derive';
 import type { CatalogRow } from './derive';
-import { adopt, isAdopted, registerCatalog, resetCatalogForTests, restoreCatalog, syncCatalog } from './adopt';
+import { adopt, isAdopted, pruneUnknownCatalog, registerCatalog, resetCatalogForTests, restoreCatalog, syncCatalog } from './adopt';
+import { ALPHABETICAL } from '../../engine/find';
+import { trend } from '../../engine/history';
+import { exFamiliesOf } from '../../engine/exbadges';
 import { ALL, EX, ex } from '../exercises';
 import { EX_MUSCLES } from '../muscles';
 import { P, freshState } from '../../engine/plan';
@@ -127,6 +130,29 @@ describe('adopcja', () => {
     // Pusty gryf: połowa z 20 kg schodzi na najbliższy stopień drabiny sztangi.
     expect(s.prog['kat-0025']?.weight).toBe(20);
     expect(EX['kat-0025']).toBeDefined();
+  });
+
+  it('startuje od połowy ciężaru, jak ćwiczenia z biblioteki', () => {
+    const id = adopt(rows.find((r) => r.e === 'dumbbell' && !/stretch|hold/.test(r.n[1]))!);
+    expect(P(freshState(), id).weight).toBeLessThan(6);
+  });
+
+  it('trafia do alfabetu wyszukiwarki i dostaje odznaki ćwiczenia', () => {
+    const id = adopt(row('pull-up'));
+    expect(ALPHABETICAL).toContain(id);
+    expect(exFamiliesOf(id)).toHaveLength(4);
+  });
+
+  it('zapisany trening z ćwiczeniem bez definicji nie wywraca startu', () => {
+    const s = freshState();
+    s.workouts = [{ id: 'w1', name: 'A', items: [{ ex: 'kat-0001' }, { ex: 'swing2' }] } as never];
+    pruneUnknownCatalog(s);
+    expect(s.workouts[0]!.items.map((i) => i.ex)).toEqual(['swing2']);
+  });
+
+  it('kierunek zmiany nie wymaga rejestracji (Sztab)', () => {
+    const r = (reps: number) => ({ date: '2026-11-01', day: '2026-11-01', w: null, reps: [reps], e1rm: null }) as never;
+    expect(() => trend([r(5), r(6), r(7), r(8)], 'kat-0001')).not.toThrow();
   });
 
   it('nie nadpisuje ćwiczeń z biblioteki', () => {

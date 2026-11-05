@@ -44,6 +44,22 @@ function snap(): SnapshotV1 {
 }
 
 describe('Pulpit z paczki', () => {
+  it('ćwiczenie z katalogu podopiecznego: nazwa z paczki, bez wywrotki', async () => {
+    const { defOf } = await import('@gt/data/catalog/derive');
+    const rows = (await import('@gt/data/catalog/index.json')).default as Parameters<typeof defOf>[0][];
+    const row = rows.find((r) => r.n[1] === 'pull-up')!;
+    const s = snap();
+    s.training!.catalog = { 'kat-0652': defOf(row) };
+    s.training!.log = [3, 6, 10, 13].map((n) => ({
+      ...s.training!.log[0]!,
+      date: new Date(NOW - n * DAY).toISOString(),
+      items: [{ id: 'kat-0652', effort: 'solid', sets: [{ reps: 8, w: null }] }],
+    })) as NonNullable<SnapshotV1['training']>['log'];
+    expect(() => overview(s, NOW)).not.toThrow();
+    const { EX } = await import('@gt/data/exercises');
+    expect(EX['kat-0652']?.name).toMatch(/^(pull-up|Podciąganie nachwytem)$/);
+  });
+
   it('liczy z silnika GYM TRACKERa: treningi w tygodniu, tonaż, waga, białko', () => {
     const ov = overview(snap(), NOW);
     expect(ov.perWeek).toBe(1);

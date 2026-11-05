@@ -78,6 +78,30 @@ describe('„Jak to zrobić?” w treningu prowadzonym', () => {
   });
 });
 
+describe('arkusz w przerwie', () => {
+  it('nie znika, gdy przerwa mija i panel przerwy zamienia się w serię', async () => {
+    const state = freshState();
+    const now = Date.now();
+    const base: Session = {
+      workout: A.id,
+      started: new Date().toISOString(),
+      ready: 'ok',
+      res: {},
+      done: {},
+      skip: {},
+      clock: { begin: now, parts: { 1: { start: now } } },
+    };
+    state.session = { ...base, rest: { until: now + 60_000, secs: 90 } };
+    const view = render(<GuidedSession {...guidedProps(state)} />);
+    fireEvent.click(screen.getByRole('button', { name: /^Technika: / }));
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    const after = { ...state, session: { ...base, rest: { until: now - 1_000, secs: 90 } } };
+    view.rerender(<GuidedSession {...guidedProps(after)} />);
+    expect(screen.getByRole('button', { name: 'Zrobione' })).toBeInTheDocument();
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+  });
+});
+
 describe('strona ćwiczenia', () => {
   it('ma mapę mięśni między torem ruchu a filmami', () => {
     render(<ExercisePage state={freshState()} id="swing2" />);

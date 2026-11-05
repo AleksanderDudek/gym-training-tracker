@@ -16,7 +16,7 @@ import { PrepContent } from './Structure';
 import { LastNote, NoteEditor } from './Notes';
 import { Segmented } from './ui';
 import { Timer, formatClock } from './Timer';
-import { TechniqueButton } from './TechniqueButton';
+import { TechniqueButton, TechniqueHost } from './TechniqueButton';
 import type { AppState, EffortKey, ExerciseId, ReadyKey, Session, SetResult, Workout } from '../types';
 import { pluralEn, text } from '../i18n';
 
@@ -297,6 +297,7 @@ export function GuidedSession(props: Props) {
   const efforts = pendingEffort.map((id) => <EffortAsk key={id} id={id} onEffort={(e) => props.onEffort(id, e)} />);
 
   return (
+    <TechniqueHost state={state}>
     <div className="wrap guide">
       {waiting === null && step && session.clock && (
         <PartStrip session={session} steps={steps} blocks={blocks} current={step.block} />
@@ -382,6 +383,7 @@ export function GuidedSession(props: Props) {
         </button>
       </div>
     </div>
+    </TechniqueHost>
   );
 }
 

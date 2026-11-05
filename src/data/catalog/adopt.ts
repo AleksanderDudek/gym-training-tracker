@@ -1,5 +1,7 @@
 import type { AppState, Exercise, ExerciseId, Gear, Mode, Unit } from '../../types';
-import { freshProgress } from '../../engine/plan';
+import { startProgress } from '../../engine/plan';
+import { registerExerciseBadges } from '../../engine/badges';
+import { ALPHABETICAL, insertAlphabetical } from '../../engine/find';
 import { LANG } from '../../i18n';
 import { ALL, EX, WEIGHTED } from '../exercises';
 import { EX_MUSCLES, MUSCLES } from '../muscles';
@@ -39,6 +41,8 @@ export function registerCatalog(defs: Record<ExerciseId, CatalogDef> | undefined
     EX_MUSCLES[id] = d.muscles;
     ALL.push(id);
     if (d.def.w !== undefined) WEIGHTED.push(id);
+    insertAlphabetical(id);
+    registerExerciseBadges(id);
   }
 }
 
@@ -52,16 +56,21 @@ export function adopt(row: CatalogRow): ExerciseId {
 export const isAdopted = (id: ExerciseId): boolean => registered.has(id);
 export const adoptedDef = (id: ExerciseId): CatalogDef | undefined => registered.get(id);
 
-/** Ćwiczenia z katalogu, do których odwołuje się zapis — po surowym tekście, bo miejsc jest wiele. */
+/**
+ * Ćwiczenia z katalogu, do których odwołuje się zapis — po surowym tekście, bo miejsc jest wiele.
+ * Bez dziennika: do historii ćwiczenie trafia tylko przez sesję, a ta jest skanowana, zanim się
+ * zamknie. Dziennik z kilku lat to największa część zapisu, a skan biegnie przy każdym zapisie,
+ * dopóki w rejestrze wisi ćwiczenie wybrane i porzucone w kreatorze.
+ */
 function referenced(state: AppState): Set<ExerciseId> {
-  const blob = JSON.stringify([state.workouts, state.session, state.log, state.snacks, state.plans ?? null]);
+  const blob = JSON.stringify([state.workouts, state.session, state.snacks, state.plans ?? null]);
   return new Set(blob.match(/"kat-[0-9a-z]+"/g)?.map((s) => s.slice(1, -1)) ?? []);
 }
 
 /**
  * Przed zapisem: dopisuje do `state.catalog` zarejestrowane ćwiczenia, do których coś się
  * odwołuje. Raz zapisanych nie usuwa — historia może je pamiętać. Zwykle nic nie czeka, więc
- * kosztuje jedno porównanie; skan zapisu tylko wtedy, gdy jest świeża adopcja.
+ * kosztuje jedno porównanie; skan (bez dziennika) tylko wtedy, gdy w rejestrze jest coś niezapisanego.
  */
 export function syncCatalog(state: AppState): void {
   const saved = state.catalog ?? {};
@@ -72,7 +81,7 @@ export function syncCatalog(state: AppState): void {
   if (!add.length) return;
   state.catalog = { ...saved, ...Object.fromEntries(add.map((id) => [id, registered.get(id)!])) };
   // Progresja powstaje razem z zapisem definicji, nawet gdy nikt jeszcze nie zapytał o `P`.
-  for (const id of add) state.prog[id] ??= freshProgress(id);
+  for (const id of add) state.prog[id] ??= startProgress(id, state.cfg.weights);
 }
 
 const GEARS: readonly Gear[] = ['kettlebell', 'dumbbell', 'barbell', 'machine', 'band', 'bodyweight'];
@@ -115,6 +124,20 @@ export function restoreCatalog(raw: unknown): Record<ExerciseId, CatalogDef> | u
   return Object.keys(out).length ? out : undefined;
 }
 
+/**
+ * Po wczytaniu: pozycje treningów wskazujące ćwiczenie z katalogu bez definicji (zepsuta albo
+ * ręcznie wycięta z pliku) odpadają. Bez tego pierwszy ekran, który zawoła `ex(id)`, wywróciłby
+ * aplikację przy każdym starcie, aż do pełnego resetu.
+ */
+export function pruneUnknownCatalog(state: AppState): void {
+  const known = (id: ExerciseId) => !isCatalogId(id) || Object.hasOwn(EX, id);
+  for (const w of state.workouts) {
+    if (w.items.every((i) => known(i.ex))) continue;
+    w.items = w.items.filter((i) => known(i.ex));
+  }
+  state.snacks = state.snacks.filter((s) => known(s.ex));
+}
+
 /** Tylko dla testów: rejestr wraca do biblioteki. */
 export function resetCatalogForTests(): void {
   for (const id of registered.keys()) {
@@ -124,6 +147,8 @@ export function resetCatalogForTests(): void {
     if (a >= 0) ALL.splice(a, 1);
     const w = WEIGHTED.indexOf(id);
     if (w >= 0) WEIGHTED.splice(w, 1);
+    const a2 = ALPHABETICAL.indexOf(id);
+    if (a2 >= 0) ALPHABETICAL.splice(a2, 1);
   }
   registered.clear();
 }

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from 'react';
+import { createContext, lazy, Suspense, useContext, useState, type ReactNode } from 'react';
 import { CirclePlay } from 'lucide-react';
 import { ANIM } from '../data/anim';
 import { ex } from '../data/exercises';
@@ -25,6 +25,34 @@ const T = text({
   },
 });
 
+/** Otwieracz arkusza z wyższego poziomu (`TechniqueHost`); bez niego przycisk trzyma arkusz sam. */
+const HostContext = createContext<((id: ExerciseId) => void) | null>(null);
+
+/**
+ * Arkusz techniki trzymany ponad tym, co się przełącza. W treningu prowadzonym panel przerwy
+ * znika w chwili, gdy przerwa mija — arkusz otwarty z niego („Jak zrobić: …”) nie może zniknąć
+ * razem z nim w połowie czytania.
+ */
+export function TechniqueHost({ state, children }: { state: AppState; children: ReactNode }) {
+  const [id, setId] = useState<ExerciseId | null>(null);
+  const [open, setOpen] = useState(false);
+  return (
+    <HostContext.Provider
+      value={(x) => {
+        setId(x);
+        setOpen(true);
+      }}
+    >
+      {children}
+      {id && (
+        <Suspense fallback={null}>
+          <TechniqueSheet key={id} state={state} id={id} open={open} onClose={() => setOpen(false)} />
+        </Suspense>
+      )}
+    </HostContext.Provider>
+  );
+}
+
 /**
  * Wyraźne wejście do techniki w treningu. Dawniej było tu szare „Technika” na dole karty, które
  * nie wyglądało na klikalne i po rozwinięciu dawało jedno zdanie. Teraz to przycisk z ikoną
@@ -32,6 +60,7 @@ const T = text({
  * `next` — wariant w przerwie, dla ćwiczenia, które zaraz się zacznie.
  */
 export function TechniqueButton({ state, id, next = false }: { state: AppState; id: ExerciseId; next?: boolean }) {
+  const host = useContext(HostContext);
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const name = ex(id).name;
@@ -43,6 +72,7 @@ export function TechniqueButton({ state, id, next = false }: { state: AppState; 
         aria-haspopup="dialog"
         aria-label={T.aria(name)}
         onClick={() => {
+          if (host) return host(id);
           setMounted(true);
           setOpen(true);
         }}
@@ -56,7 +86,7 @@ export function TechniqueButton({ state, id, next = false }: { state: AppState; 
           ›
         </span>
       </button>
-      {mounted && (
+      {!host && mounted && (
         <Suspense fallback={null}>
           <TechniqueSheet state={state} id={id} open={open} onClose={() => setOpen(false)} />
         </Suspense>

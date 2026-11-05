@@ -34,6 +34,13 @@ export const ALPHABETICAL: ExerciseId[] = Object.keys(EX).sort((a, b) =>
   collator.compare(EX[a]!.name, EX[b]!.name),
 );
 
+/** Ćwiczenie dodane później (katalog) wchodzi na swoje miejsce w alfabecie. */
+export function insertAlphabetical(id: ExerciseId): void {
+  if (ALPHABETICAL.includes(id) || !EX[id]) return;
+  const at = ALPHABETICAL.findIndex((x) => collator.compare(EX[x]!.name, EX[id]!.name) > 0);
+  ALPHABETICAL.splice(at < 0 ? ALPHABETICAL.length : at, 0, id);
+}
+
 /** Fragment nazwy do podświetlenia: od której litery i ile. */
 export interface Hit {
   start: number;

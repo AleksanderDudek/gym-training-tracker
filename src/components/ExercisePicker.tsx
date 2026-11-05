@@ -93,6 +93,8 @@ export function ExercisePicker({
   const cat: Option[] =
     open && catalog && query.trim().length >= 2
       ? searchCatalog(catalog, { query, muscle: null, gear: null })
+          // Już dodane do treningu stoją wyżej, w bibliotece — drugi raz ich nie pokazujemy.
+          .filter((c) => !Object.hasOwn(EX, catalogId(c.row.i)))
           .slice(0, 40)
           .map((c) => ({ id: catalogId(c.row.i), hits: c.hits, row: c.row }))
       : [];
