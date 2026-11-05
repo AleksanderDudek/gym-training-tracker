@@ -163,6 +163,9 @@ const GROUP_LABEL: Record<string, string> = {
   [LEGS]: say(LEGS, 'Legs — extras'),
 };
 
+/** Klucze partii dla ćwiczeń spoza tego pliku (katalog: `data/catalog/derive.ts`). */
+export const GROUPS = { HINGE, SQUAT, PULL, PUSH, FULL, CORE, LEGS } as const;
+
 /** Partia ruchu na ekran: `group` ćwiczenia jest kluczem po polsku, etykieta idzie za językiem. */
 export const groupLabel = (group: string): string => GROUP_LABEL[group] ?? group;
 

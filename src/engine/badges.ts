@@ -4,7 +4,7 @@ import type { PlanStats, Schedule } from './schedule';
 import { metrics } from './metrics';
 import type { Metrics } from './metrics';
 import { countCleanWeeks } from './score';
-import { EX_DEFS } from './exbadges';
+import { EX_DEFS, addExFamilies } from './exbadges';
 import { LOCALE, say, text } from '../i18n';
 
 /**
@@ -1202,6 +1202,14 @@ export const ACHIEVEMENTS: Achievement[] = DEFS;
 /** Wszystkie rodziny, łącznie z odznakami ćwiczeń — pod zdobywanie i formatowanie. */
 const EVERY: AchDef[] = [...DEFS, ...EX_DEFS];
 const BY_ID = new Map<string, AchDef>(EVERY.map((d) => [d.id, d]));
+
+/** Odznaki ćwiczenia z katalogu — dopinane przy rejestracji, przed pierwszym `syncBadges`. */
+export function registerExerciseBadges(id: string): void {
+  addExFamilies(id).forEach((d) => {
+    EVERY.push(d);
+    BY_ID.set(d.id, d);
+  });
+}
 
 export const GROUP_LABEL: Record<Achievement['group'], string> = text({
   pl: {

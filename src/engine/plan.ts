@@ -60,19 +60,25 @@ export function freshProgress(id: ExerciseId): Progress {
   };
 }
 
+/**
+ * Stan startowy ćwiczenia w nowym zapisie albo przy dodaniu z katalogu. Próba startuje od połowy
+ * domyślnego obciążenia. Od dna listy nie ma sensu: przy 4 kg ogranicznikiem przestaje być siła,
+ * a zaczyna cierpliwość, więc wynik nic nie mierzy. Drabina i tak dojdzie w obie strony — 4 i 6 kg
+ * dają początkującemu dokąd zejść, gdy 8 kg okaże się za dużo.
+ */
+export function startProgress(id: ExerciseId, kbWeights: number[]): Progress {
+  const p = freshProgress(id);
+  const gear = gearOf(id);
+  const list = gear === 'kettlebell' ? kbWeights : LADDERS[gear];
+  if (p.weight !== null && list.length) p.weight = nearestWeight(list, p.weight * 0.5);
+  return p;
+}
+
 export function freshState(): AppState {
   const weights = [4, 6, 8, 12, 16, 20, 24, 28, 32];
   const prog: Record<ExerciseId, Progress> = {};
   ALL.forEach((id) => {
-    const p = freshProgress(id);
-    // Próba startuje od połowy domyślnego obciążenia. Od dna listy nie ma sensu: przy 4 kg
-    // ogranicznikiem przestaje być siła, a zaczyna cierpliwość, więc wynik nic nie mierzy.
-    // Drabina i tak dojdzie w obie strony — od tej wersji także w dół, bo 4 i 6 kg dają
-    // początkującemu dokąd zejść, gdy 8 kg okaże się za dużo.
-    const gear = gearOf(id);
-    const list = gear === 'kettlebell' ? weights : LADDERS[gear];
-    if (p.weight !== null && list.length) p.weight = nearestWeight(list, p.weight * 0.5);
-    prog[id] = p;
+    prog[id] = startProgress(id, weights);
   });
   return {
     cfg: { weights },
@@ -92,8 +98,11 @@ export function freshState(): AppState {
 
 export const P = (state: AppState, id: ExerciseId): Progress => {
   const p = state.prog[id];
-  if (!p) throw new Error(`Brak stanu progresji dla: ${id}`);
-  return p;
+  if (p) return p;
+  // Ćwiczenie z katalogu wybrane przed chwilą (`data/catalog/adopt.ts`) ma już definicję, ale
+  // jeszcze nie stan: dostaje świeży, zapisany w tym samym obiekcie, żeby zmiany na nim nie ginęły.
+  if (Object.hasOwn(EX, id)) return (state.prog[id] = startProgress(id, state.cfg.weights));
+  throw new Error(`Brak stanu progresji dla: ${id}`);
 };
 
 /**

@@ -1,9 +1,14 @@
 import { useState, type ReactNode } from 'react';
-import { EX, GEAR_LABEL, STAGES, ex, gearOf, groupLabel, NO_EQUIPMENT } from '../data/exercises';
+import { ALL, EX, GEAR_LABEL, STAGES, ex, gearOf, groupLabel, NO_EQUIPMENT } from '../data/exercises';
 import { VIDEOS } from '../data/videos';
 import { ANIM } from '../data/anim';
 import { EX_JOKES } from '../data/exjokes';
 import { AnimatedMannequin } from './Mannequin';
+import { EX_MUSCLES } from '../data/muscles';
+import { adopt, adoptedDef } from '../data/catalog/adopt';
+import { isCatalogId } from '../data/catalog/derive';
+import { CatalogBrowser, CatalogExercisePage, CatalogSource, CatalogSteps, stepsSrcOf, youtubeSearch } from './Catalog';
+import { ExerciseMuscles, sexOf } from './ExerciseMuscles';
 import { MODE_NAMES } from '../engine/hints';
 import { P, exercisesByGroup, levelLabel, planLabel } from '../engine/plan';
 import { exercisePath, go, snackAddPath, workoutEditPath, workoutNewPath } from '../routing';
@@ -61,6 +66,13 @@ const T = text({
     newWith: 'Nowy trening z tym ćwiczeniem',
     noOwn:
       'Własnych treningów jeszcze nie ma. Zacznij nowy od tego ćwiczenia — albo skopiuj gotowy trening w sekcji Treningi i dopisz je tam.',
+    viewAria: 'Co pokazać',
+    library: (n: number) => `Biblioteka · ${n}`,
+    catalog: 'Katalog · 1300+',
+    muscles: 'Pracujące mięśnie',
+    musclesText: 'Te same partie liczą się do „Mięśni w tym tygodniu” — główne w całości, pomocnicze w połowie serii.',
+    steps: 'Krok po kroku',
+    ytSearch: 'Szukaj nagrań w YouTube →',
   },
   en: {
     lead: 'Every exercise has its own page with a technique description, and the ones from the original library have videos too. You can share a page’s address or bookmark it.',
@@ -104,6 +116,13 @@ const T = text({
     newWith: 'New workout with this exercise',
     noOwn:
       'You don’t have any workouts of your own yet. Start a new one with this exercise — or copy a ready-made workout in the Workouts section and add it there.',
+    viewAria: 'What to show',
+    library: (n: number) => `Library · ${n}`,
+    catalog: 'Catalogue · 1,300+',
+    muscles: 'Working muscles',
+    musclesText: 'The same groups count towards “Muscles this week” — main ones in full, helpers as half a set.',
+    steps: 'Step by step',
+    ytSearch: 'Search YouTube →',
   },
 });
 
@@ -132,7 +151,50 @@ const forLang = <V extends { lang: string }>(list: V[]): V[] => {
   return rest.length ? rest : list;
 };
 
+/** Biblioteka czy katalog — pamiętane w karcie, żeby powrót strzałką z ćwiczenia trafiał w to samo. */
+const VIEW_KEY = 'gt:atlas-view';
+const readView = (): 'lib' | 'cat' => {
+  try {
+    return sessionStorage.getItem(VIEW_KEY) === 'cat' ? 'cat' : 'lib';
+  } catch {
+    return 'lib';
+  }
+};
+
 export function AtlasView({ state }: { state: AppState }) {
+  const [view, setView] = useState<'lib' | 'cat'>(readView);
+  const pick = (v: 'lib' | 'cat') => {
+    setView(v);
+    try {
+      sessionStorage.setItem(VIEW_KEY, v);
+    } catch {
+      /* bez pamięci karty — przełącznik działa do przeładowania */
+    }
+  };
+  const switcher = (
+    <div className="gearfilter atlas-view" role="group" aria-label={T.viewAria}>
+      <button aria-pressed={view === 'lib'} onClick={() => pick('lib')}>
+        {T.library(ALL.length)}
+      </button>
+      <button aria-pressed={view === 'cat'} onClick={() => pick('cat')}>
+        {T.catalog}
+      </button>
+    </div>
+  );
+  if (view === 'cat')
+    return (
+      <>
+        <div className="wrap">
+          <SectionSwitch on="atlas" />
+          {switcher}
+        </div>
+        <CatalogBrowser />
+      </>
+    );
+  return <LibraryView state={state} switcher={switcher} />;
+}
+
+function LibraryView({ state, switcher }: { state: AppState; switcher: ReactNode }) {
   const groups = exercisesByGroup();
   const [gear, setGear] = useState<AtlasFilter>('all');
   const match = (id: ExerciseId): boolean =>
@@ -146,6 +208,7 @@ export function AtlasView({ state }: { state: AppState }) {
     <>
       <div className="wrap">
         <SectionSwitch on="atlas" />
+        {switcher}
         <p className="lead">{T.lead}</p>
         <div className="gearfilter">
           {GEAR_FILTERS.map((g) => (
@@ -217,6 +280,16 @@ export function ExercisePage({ state, id }: { state: AppState; id: ExerciseId })
   // `hasOwn`, bo ręcznie wpisane `#/cwiczenia/constructor` trafiłoby w prototyp obiektu.
   const m = Object.hasOwn(EX, id) ? EX[id] : undefined;
 
+  if (!m && isCatalogId(id)) {
+    return (
+      <CatalogExercisePage
+        state={state}
+        id={id}
+        add={(row) => <AddToWorkout state={state} id={id} prepare={() => adopt(row)} />}
+      />
+    );
+  }
+
   if (!m) {
     return (
       <div className="wrap">
@@ -234,6 +307,9 @@ export function ExercisePage({ state, id }: { state: AppState; id: ExerciseId })
   const all = VIDEOS[id] ?? { main: [], kb: [] };
   const videos = { main: forLang(all.main), kb: forLang(all.kb) };
   const stages = m.stages ? STAGES[m.stages] : null;
+  const stepsSrc = stepsSrcOf(id);
+  const adopted = adoptedDef(id);
+  const use = EX_MUSCLES[id];
 
   return (
     <>
@@ -251,8 +327,8 @@ export function ExercisePage({ state, id }: { state: AppState; id: ExerciseId })
       </div>
 
       <div className="grp">
-        <h2>{T.watch}</h2>
-        <p>{m.hint}</p>
+        <h2>{m.hint ? T.watch : T.steps}</h2>
+        {m.hint ? <p>{m.hint}</p> : stepsSrc && <CatalogSteps src={stepsSrc} />}
         {EX_JOKES[id] && <p className="exjoke">{EX_JOKES[id]}</p>}
         <p className="tight">{T.mode(MODE_NAMES[m.mode] ?? '', !!m.side)}</p>
         <p className="tight">{T.unit(m.unit === 'secs', GEAR_LABEL[gearOf(id)])}</p>
@@ -281,6 +357,13 @@ export function ExercisePage({ state, id }: { state: AppState; id: ExerciseId })
         </div>
       )}
 
+      {m.hint && stepsSrc && (
+        <details className="grp cat-more">
+          <summary>{T.steps}</summary>
+          <CatalogSteps src={stepsSrc} />
+        </details>
+      )}
+
       {move && (
         <>
           <div className="sect-label">{T.path}</div>
@@ -289,6 +372,16 @@ export function ExercisePage({ state, id }: { state: AppState; id: ExerciseId })
             <p className="tight" style={{ marginTop: 10 }}>
               {T.pathText}
             </p>
+          </div>
+        </>
+      )}
+
+      {use && (
+        <>
+          <div className="sect-label">{T.muscles}</div>
+          <div className="grp">
+            <ExerciseMuscles use={use} sex={sexOf(state)} />
+            <p className="mw-note">{T.musclesText}</p>
           </div>
         </>
       )}
@@ -305,7 +398,14 @@ export function ExercisePage({ state, id }: { state: AppState; id: ExerciseId })
             </div>
           </>
         ) : (
-          <p>{T.noVideo}</p>
+          <>
+            <p>{T.noVideo}</p>
+            {adopted && (
+              <a className="vidlink" href={youtubeSearch(adopted.name[1])} target="_blank" rel="noopener noreferrer">
+                {T.ytSearch}
+              </a>
+            )}
+          </>
         )}
       </div>
 
@@ -325,6 +425,7 @@ export function ExercisePage({ state, id }: { state: AppState; id: ExerciseId })
 
       <div className="wrap">
         <p className="disclaimer">{T.disclaimer}</p>
+        {stepsSrc && <CatalogSource />}
       </div>
     </>
   );
@@ -335,7 +436,7 @@ export function ExercisePage({ state, id }: { state: AppState; id: ExerciseId })
  * z ćwiczeniem dopisanym na końcu — nic nie zapisuje, dopóki ktoś nie stuknie „Zapisz trening”,
  * więc da się jeszcze przesunąć ćwiczenie, zamienić je albo zrezygnować.
  */
-function AddToWorkout({ state, id }: { state: AppState; id: ExerciseId }) {
+function AddToWorkout({ state, id, prepare }: { state: AppState; id: ExerciseId; prepare?: () => void }) {
   const own = state.workouts;
   const [target, setTarget] = useState<string>(own[0]?.id ?? '');
   const already = own.find((w) => w.id === target)?.items.some((i) => i.ex === id) ?? false;
@@ -356,10 +457,16 @@ function AddToWorkout({ state, id }: { state: AppState; id: ExerciseId }) {
           </label>
           {already && <p className="tight">{T.already}</p>}
           <div className="btnrow" style={{ marginTop: 8 }}>
-            <button className="btn sm" disabled={already} onClick={() => go(workoutEditPath(target, id))}>
+            <button className="btn sm" disabled={already} onClick={() => {
+                prepare?.();
+                go(workoutEditPath(target, id));
+              }}>
               {T.addOpen}
             </button>
-            <button className="btn ghost sm" onClick={() => go(workoutNewPath(undefined, id))}>
+            <button className="btn ghost sm" onClick={() => {
+              prepare?.();
+              go(workoutNewPath(undefined, id));
+            }}>
               {T.newWith}
             </button>
           </div>
@@ -367,7 +474,10 @@ function AddToWorkout({ state, id }: { state: AppState; id: ExerciseId }) {
       ) : (
         <>
           <p className="tight">{T.noOwn}</p>
-          <button className="btn sm" style={{ marginTop: 8 }} onClick={() => go(workoutNewPath(undefined, id))}>
+          <button className="btn sm" style={{ marginTop: 8 }} onClick={() => {
+              prepare?.();
+              go(workoutNewPath(undefined, id));
+            }}>
             {T.newWith}
           </button>
         </>

@@ -279,3 +279,12 @@ EX_DEFS.forEach((f) => {
 });
 
 export const exFamiliesOf = (id: ExerciseId): ExFamily[] => BY_EX.get(id) ?? [];
+
+/** Rodziny dla ćwiczenia dodanego później (katalog, `data/catalog/adopt.ts`); zwraca tylko nowe. */
+export function addExFamilies(id: ExerciseId): ExFamily[] {
+  if (BY_EX.has(id)) return [];
+  const list = EX_KINDS.map((k) => family(id, k, Math.max(0, ALL.indexOf(id))));
+  EX_DEFS.push(...list);
+  BY_EX.set(id, list);
+  return list;
+}

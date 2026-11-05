@@ -10,6 +10,7 @@ import type {
   WatchData,
   Workout,
 } from '../../../src/types';
+import type { CatalogDef } from '../../../src/data/catalog/derive';
 import type { Scope } from './areas';
 
 /**
@@ -88,6 +89,8 @@ export interface SnapshotV1 {
     plans: PlanTemplate[];
     workouts: Workout[];
     snacks: Snack[];
+    /** Definicje ćwiczeń z katalogu dodanych do treningu — bez nich prowadzący widzi tylko `kat-…`. */
+    catalog?: Record<string, CatalogDef>;
   };
   movement?: {
     cardio: Cardio[];

@@ -3,11 +3,11 @@ import { EFFORT, ex, ladderFor } from '../data/exercises';
 import { EX_JOKES } from '../data/exjokes';
 import { levelHint, whyText } from '../engine/hints';
 import { P, plan, planLabel } from '../engine/plan';
-import { exercisePath } from '../routing';
 import { lastNote, sessionNote } from '../engine/notes';
 import { LastNote, NoteEditor } from './Notes';
 import { Chip, Segmented } from './ui';
 import { Timer } from './Timer';
+import { TechniqueButton } from './TechniqueButton';
 import type { AppState, EffortKey, ExerciseId, SetResult } from '../types';
 import { text } from '../i18n';
 
@@ -18,7 +18,6 @@ const T = text({
     secsShort: 's',
     repsShort: 'powt.',
     needOne: 'Wpisz wynik przynajmniej jednej serii.',
-    video: 'Zobacz technikę na wideo →',
     swappedFor: (name: string) => `Zamiennik za: ${name}.`,
     swapToday: 'Maszyna zajęta albo brak sprzętu? Zamień na dziś:',
     backTo: (name: string) => `Wróć do: ${name}`,
@@ -47,7 +46,6 @@ const T = text({
     secsShort: 's',
     repsShort: 'reps',
     needOne: 'Enter a result for at least one set.',
-    video: 'Watch the technique video →',
     swappedFor: (name: string) => `Swapped in for: ${name}.`,
     swapToday: 'Machine taken or no equipment? Swap for today:',
     backTo: (name: string) => `Back to: ${name}`,
@@ -154,9 +152,7 @@ export function ExerciseCard({ state, id, onSave, onClear, onSkip, onNote, onToa
           <LastNote note={lastNote(state.log, id)} />
           <p className="hint">{m.hint}</p>
           {EX_JOKES[id] && <p className="exjoke">{EX_JOKES[id]}</p>}
-          <a className="vidlink" href={exercisePath(id)}>
-            {T.video}
-          </a>
+          <TechniqueButton state={state} id={id} />
           {swaps && onSwap && swaps.options.length > 0 && !saved && (
             <div className="swaprow">
               <span>

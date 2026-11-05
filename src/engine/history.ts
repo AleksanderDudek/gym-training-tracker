@@ -1,4 +1,4 @@
-import { ex } from '../data/exercises';
+import { EX } from '../data/exercises';
 import { e1rmFromSession } from './math';
 import type { AppState, EffortKey, ExerciseId, LogEntry } from '../types';
 
@@ -151,7 +151,8 @@ export function trend(rows: ExerciseRow[], id: ExerciseId): Trend | null {
   return {
     dir: pct > 5 ? 'up' : pct < -5 ? 'down' : 'flat',
     pct: Math.round(pct),
-    metric: useE1rm ? 'e1rm' : ex(id).unit === 'secs' ? 'secs' : 'reps',
+    // `EX[id]?`: w Sztabie ćwiczenie z katalogu podopiecznego może nie być zarejestrowane.
+    metric: useE1rm ? 'e1rm' : EX[id]?.unit === 'secs' ? 'secs' : 'reps',
     from: Math.round(from),
     to: Math.round(to),
     span: cut,

@@ -1,6 +1,7 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { ALL, BUILTIN, EX, ex } from './data/exercises';
+import { pruneUnknownCatalog, registerCatalog, restoreCatalog, syncCatalog } from './data/catalog/adopt';
 import { acwr, daysSince, epley, round1, weeklyRate } from './engine/math';
 import { P, freshState } from './engine/plan';
 import { applyLayoff, applyResult } from './engine/progression';
@@ -773,7 +774,11 @@ export default function App() {
     booted.current = true;
     void (async () => {
       const saved = await store.get();
+      // Ćwiczenia z katalogu przed `freshState`: ich progresja ma powstać razem z resztą.
+      const catalog = restoreCatalog(saved?.catalog);
+      registerCatalog(catalog);
       const next = freshState();
+      if (catalog) next.catalog = catalog;
       if (saved) {
         ALL.forEach((id) => {
           const p = saved.prog?.[id];
@@ -792,6 +797,7 @@ export default function App() {
         next.events = saved.events ?? [];
         next.introSeen = saved.introSeen;
         restoreExtras(next, saved);
+        pruneUnknownCatalog(next);
         next.award = {
           banked: saved.award?.banked ?? 0,
           badges: migrateBadges(saved.award?.badges ?? {}),
@@ -843,6 +849,8 @@ export default function App() {
 
   /** Zatwierdza stan; obietnica mówi, czy trafił na dysk (prawie wszyscy jej nie potrzebują). */
   const commit = useCallback((next: AppState): Promise<boolean> => {
+    // Świeżo wybrane ćwiczenie z katalogu trafia do zapisu, gdy coś się do niego odwołuje.
+    syncCatalog(next);
     live.current = next;
     setState(next);
     return queueSave(next, setSaveBroken);
@@ -2000,7 +2008,10 @@ export default function App() {
       try {
         const parsed = JSON.parse(String(r.result)) as AppState;
         if (!parsed.prog || !parsed.cfg) throw new Error('format');
+        const catalog = restoreCatalog(parsed.catalog);
+        registerCatalog(catalog);
         const next = freshState();
+        if (catalog) next.catalog = catalog;
         ALL.forEach((id) => {
           const p = parsed.prog[id];
           if (p) Object.assign(next.prog[id]!, p);
@@ -2016,6 +2027,7 @@ export default function App() {
           badges: migrateBadges(parsed.award?.badges ?? {}),
         };
         restoreExtras(next, parsed);
+        pruneUnknownCatalog(next);
         // Kopia sprzed współpracy nie zna sekretu ID — ten z telefonu zostaje, inaczej trwające
         // współprace i nowe zaproszenia rozjechałyby się na dwa różne ID u tego samego prowadzącego.
         if (!next.cfg.linkSecret && state.cfg.linkSecret) next.cfg.linkSecret = state.cfg.linkSecret;

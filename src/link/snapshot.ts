@@ -52,6 +52,7 @@ export function buildSnapshot(state: AppState, scopes: readonly Scope[], extras:
       plans: state.plans ?? [],
       workouts: state.workouts,
       snacks: state.snacks.filter((x) => inIso(x.at, from)),
+      ...(state.catalog ? { catalog: state.catalog } : {}),
     };
   }
   if (has('movement')) {

@@ -21,6 +21,9 @@ describe('service worker navigations', () => {
     expect(denied(scope, '/gym-training-tracker/#/w-poblizu')).toBe(false);
     expect(denied(scope, '/gym-training-tracker/privacy.html')).toBe(true);
     expect(denied(scope, '/gym-training-tracker/privacy.html?x=1')).toBe(true);
+    expect(denied(scope, '/gym-training-tracker/o-aplikacji.html')).toBe(true);
+    expect(denied(scope, '/gym-training-tracker/licenses/MuscleMap.txt')).toBe(true);
+    expect(denied(scope, '/gym-training-tracker/licenses-and-more')).toBe(false);
     expect(denied(scope, '/gym-training-tracker/data/osm/v1/LICENSE.txt')).toBe(true);
     expect(denied(scope, '/gym-training-tracker/data/osm/v1/index.json')).toBe(true);
   });
