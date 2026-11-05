@@ -35,6 +35,9 @@ import { Segmented } from './ui';
 import { text } from '../i18n';
 import type { AppState, EffortKey, ExerciseId, ReadyKey, ReminderPrefs, SetResult, Workout } from '../types';
 
+/** Kod weryfikacji witryny w programie partnerskim Mitgo (Admitad). */
+const MITGO_CODE = '533f';
+
 const T = text({
   pl: {
     deload: 'Tydzień lżejszy',
@@ -181,6 +184,10 @@ const T = text({
     resetAll: 'Usuń wszystkie dane',
     local: 'Dane trzymane lokalnie. Aplikacja nie zastępuje fizjoterapeuty, dietetyka ani lekarza.',
     library: (n: number) => `Ćwiczeń w bibliotece: ${n}.`,
+    about: 'O aplikacji',
+    aboutText: 'GYM TRACKER — darmowy trening siłowy z automatyczną progresją, dziennikiem jedzenia i katalogiem ćwiczeń. Działa w przeglądarce, bez konta i bez reklam. Autor: Aleksander Dudek.',
+    aboutMore: 'Szczegóły, licencje i źródła →',
+    verify: (code: string) => `Kod weryfikacyjny Mitgo: ${code}`,
   },
   en: {
     deload: 'Lighter week',
@@ -319,6 +326,10 @@ const T = text({
     resetAll: 'Delete all data',
     local: 'Data is stored locally. The app doesn’t replace a physiotherapist, dietitian or doctor.',
     library: (n: number) => `Exercises in the library: ${n}.`,
+    about: 'About the app',
+    aboutText: 'GYM TRACKER — free strength training with automatic progression, a food diary and an exercise catalogue. Runs in the browser, no account, no ads. Made by Aleksander Dudek.',
+    aboutMore: 'Details, licences and sources →',
+    verify: (code: string) => `Mitgo verification code: ${code}`,
   },
 });
 
@@ -687,6 +698,17 @@ export function SettingsView({
       </div>
 
       <HealthCard />
+
+      {/* Kod z programu partnerskiego Mitgo: moderator szuka go w sekcji „O aplikacji”. Nie zmieniać
+          ani nie usuwać, dopóki weryfikacja się nie skończy (to samo w public/o-aplikacji.html). */}
+      <div className="grp" id="o-aplikacji">
+        <h2>{T.about}</h2>
+        <p>{T.aboutText}</p>
+        <p className="tight">{T.verify(MITGO_CODE)}</p>
+        <a className="vidlink" href="o-aplikacji.html" target="_blank" rel="noopener">
+          {T.aboutMore}
+        </a>
+      </div>
 
       <div className="grp">
         <h2>{T.reset}</h2>

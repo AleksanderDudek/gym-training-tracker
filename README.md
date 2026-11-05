@@ -2959,6 +2959,11 @@ Bez nich karty przypomnień nie ma, a aplikacja działa jak dotąd.
 
 Aplikacja stoi na GitHub Pages: <https://aleksanderdudek.github.io/gym-training-tracker/>
 
+**O aplikacji** — strona `public/o-aplikacji.html` (adres `…/gym-training-tracker/o-aplikacji.html`)
+i karta „O aplikacji” na dole Ustawień. Stoi tam kod weryfikacyjny programu partnerskiego Mitgo
+(`533f`, stała `MITGO_CODE` w `src/components/views.tsx`); nie zmieniać ani nie usuwać go, dopóki
+Mitgo nie potwierdzi witryny.
+
 Wdrożenie prowadzi `.github/workflows/deploy.yml` — każdy push na `main` uruchamia
 `typecheck`, lint, testy i build, a dopiero potem publikuje `dist/`. Błąd typów, błąd lintu
 (ostrzeżenia nie) albo nieprzechodzący test zatrzymują wdrożenie.
