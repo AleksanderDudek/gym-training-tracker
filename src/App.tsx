@@ -2,6 +2,7 @@ import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } fro
 import type { ReactNode } from 'react';
 import { ALL, BUILTIN, EX, ex } from './data/exercises';
 import { pruneUnknownCatalog, registerCatalog, restoreCatalog, syncCatalog } from './data/catalog/adopt';
+import { daily as statsDaily, statsScreen, track } from './stats';
 import { acwr, daysSince, epley, round1, weeklyRate } from './engine/math';
 import { P, freshState } from './engine/plan';
 import { applyLayoff, applyResult } from './engine/progression';
@@ -733,6 +734,9 @@ function TimeSummary({ time }: { time: LogTime }) {
 export default function App() {
   const [state, setState] = useState<AppState | null>(null);
   const route = useRoute();
+  // Anonimowe statystyki (za zgodą, `src/stats.ts`): sam rodzaj ekranu, bez adresu i zapytania.
+  const screenName = statsScreen(route);
+  useEffect(() => track('screen', screenName), [screenName]);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const closeFeedback = useCallback(() => setFeedbackOpen(false), []);
   const [contactOpen, setContactOpen] = useState(false);
@@ -817,6 +821,7 @@ export default function App() {
       live.current = next;
       setState(next);
       if (fresh.length) void queueSave(next, setSaveBroken);
+      statsDaily(next);
     })();
   }, []);
 
@@ -1072,6 +1077,7 @@ export default function App() {
       ...(deload ? { deload: true } : {}),
     };
     commit(next);
+    track('workout_start', (state.cfg.view ?? 'guided') === 'guided' ? 'guided' : 'list');
     go('#/sesja', { top: true });
     window.scrollTo({ top: 0 });
   };
@@ -1581,6 +1587,7 @@ export default function App() {
     next.notice = null;
     const fresh = syncBadges(next, badgeCtx(next));
     commit(next);
+    track('workout_finish', (state.cfg.view ?? 'guided') === 'guided' ? 'guided' : 'list');
     window.scrollTo({ top: 0 });
 
     const m = metrics(next);

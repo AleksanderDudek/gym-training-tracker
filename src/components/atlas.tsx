@@ -6,6 +6,7 @@ import { EX_JOKES } from '../data/exjokes';
 import { AnimatedMannequin } from './Mannequin';
 import { EX_MUSCLES } from '../data/muscles';
 import { adopt, adoptedDef } from '../data/catalog/adopt';
+import { track } from '../stats';
 import { isCatalogId } from '../data/catalog/derive';
 import { CatalogBrowser, CatalogExercisePage, CatalogSource, CatalogSteps, stepsSrcOf, youtubeSearch } from './Catalog';
 import { ExerciseMuscles, sexOf } from './ExerciseMuscles';
@@ -285,7 +286,16 @@ export function ExercisePage({ state, id }: { state: AppState; id: ExerciseId })
       <CatalogExercisePage
         state={state}
         id={id}
-        add={(row) => <AddToWorkout state={state} id={id} prepare={() => adopt(row)} />}
+        add={(row) => (
+          <AddToWorkout
+            state={state}
+            id={id}
+            prepare={() => {
+              adopt(row);
+              track('catalog_add', 'page');
+            }}
+          />
+        )}
       />
     );
   }

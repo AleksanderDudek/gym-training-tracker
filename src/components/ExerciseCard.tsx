@@ -152,7 +152,7 @@ export function ExerciseCard({ state, id, onSave, onClear, onSkip, onNote, onToa
           <LastNote note={lastNote(state.log, id)} />
           <p className="hint">{m.hint}</p>
           {EX_JOKES[id] && <p className="exjoke">{EX_JOKES[id]}</p>}
-          <TechniqueButton state={state} id={id} />
+          <TechniqueButton state={state} id={id} where="list" />
           {swaps && onSwap && swaps.options.length > 0 && !saved && (
             <div className="swaprow">
               <span>

@@ -4,6 +4,7 @@ import { ANIM } from '../data/anim';
 import { ex } from '../data/exercises';
 import type { AppState, ExerciseId } from '../types';
 import { stepsSrcOf } from './Catalog';
+import { track } from '../stats';
 import { text } from '../i18n';
 
 const TechniqueSheet = lazy(() => import('./TechniqueSheet'));
@@ -59,7 +60,18 @@ export function TechniqueHost({ state, children }: { state: AppState; children: 
  * i podpisem, co jest w środku, a arkusz otwiera się nad treningiem — bez wychodzenia z serii.
  * `next` — wariant w przerwie, dla ćwiczenia, które zaraz się zacznie.
  */
-export function TechniqueButton({ state, id, next = false }: { state: AppState; id: ExerciseId; next?: boolean }) {
+export function TechniqueButton({
+  state,
+  id,
+  next = false,
+  where = next ? 'rest' : 'set',
+}: {
+  state: AppState;
+  id: ExerciseId;
+  next?: boolean;
+  /** Skąd otwarte — do anonimowych statystyk. */
+  where?: 'set' | 'rest' | 'list';
+}) {
   const host = useContext(HostContext);
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -72,6 +84,7 @@ export function TechniqueButton({ state, id, next = false }: { state: AppState; 
         aria-haspopup="dialog"
         aria-label={T.aria(name)}
         onClick={() => {
+          track('technique', where);
           if (host) return host(id);
           setMounted(true);
           setOpen(true);

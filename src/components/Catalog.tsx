@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { GEAR_LABEL, ex, groupLabel } from '../data/exercises';
 import { MUSCLES, MUSCLE_NAME } from '../data/muscles';
 import type { MuscleId } from '../data/muscles';
@@ -13,6 +13,7 @@ import { exercisePath, go } from '../routing';
 import type { AppState, ExerciseId, Gear } from '../types';
 import { ExerciseMuscles, sexOf } from './ExerciseMuscles';
 import { EmptyState } from './ui';
+import { track } from '../stats';
 import { LANG, pluralEn, text } from '../i18n';
 
 const T = text({
@@ -134,6 +135,7 @@ function Loading({ state, retry, text: label }: { state: 'loading' | 'error'; re
 /** Spis katalogu w atlasie: szukanie, sprzęt, partia mięśni i lista porcjami po 40. */
 export function CatalogBrowser() {
   const rows = useLoaded(loadCatalog);
+  useEffect(() => track('catalog_view', '-'), []);
   const [f, setF] = useState<Saved>(readSaved);
   const [shown, setShown] = useState(PAGE);
   const set = (patch: Partial<Saved>) => {

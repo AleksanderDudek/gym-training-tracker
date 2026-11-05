@@ -4,6 +4,7 @@ import { dueItems, isStale, localParts, pruneSent, sentKey } from './schedule';
 import type { ReminderItem } from './schedule';
 import type { FeedbackSummary, Store } from './store';
 import { fromB64u, pushRequest } from './webpush';
+import { lastDays, parseStats, statsPage, utcDay } from './stats';
 import type { Vapid } from './webpush';
 
 /**
@@ -15,6 +16,8 @@ import type { Vapid } from './webpush';
  * - `POST /feedback` — uwaga albo zgłoszenie błędu: e-mail, treść, zrzut ekranu i ślad wizyty;
  *   z ustawionym webhookiem idzie też na kanał autora na Discordzie.
  * - `GET /admin/feedback` — lista uwag dla autora, za hasłem (`ADMIN_TOKEN`).
+ * - `POST /stats` — anonimowe liczniki zdarzeń z zamkniętej listy (`stats.ts`), tylko za zgodą
+ *   użytkownika; `GET /admin/stats` — tabela dla autora, za tym samym hasłem.
  * - `POST /garmin/push` — zaszyfrowana paczka z zegarka Garmin (serwer nie ma klucza).
  * - `POST /garmin/pull`, `POST /garmin/forget` — odbiór paczki i odłączenie zegarka.
  * - `tick` — co kilka minut: wyślij to, czemu wybiła godzina.
@@ -156,6 +159,14 @@ export async function handle(
   if (!data) return reply(400, 'zły JSON');
 
   if (path === '/feedback') return feedback(req, data, env, store, now, reply, defer);
+
+  if (path === '/stats') {
+    const counts = parseStats(data);
+    if (!counts) return reply(400, 'zła paczka');
+    // Sam dzień z zegara serwera — paczka nie niesie czasu, a zapytanie nie zostawia śladu.
+    await store.addStats(utcDay(now), counts);
+    return reply(204);
+  }
 
   if (path.startsWith('/garmin/')) {
     const json = (status: number, d: unknown) => {
@@ -376,6 +387,16 @@ async function admin(req: Request, path: string, env: Env, store: Store): Promis
         'Content-Type': 'text/html; charset=utf-8',
         // Treść pisali obcy ludzie — strona nie wykona z niej ani linijki skryptu.
         'Content-Security-Policy': "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'",
+      },
+    });
+  }
+  if (path === '/admin/stats') {
+    const days = lastDays(Date.now(), 28);
+    return new Response(statsPage(await store.listStats(days[days.length - 1]!), days), {
+      headers: {
+        ...headers,
+        'Content-Type': 'text/html; charset=utf-8',
+        'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'",
       },
     });
   }

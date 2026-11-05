@@ -1,3 +1,4 @@
+import { StatsCard } from './Stats';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import {
@@ -698,6 +699,8 @@ export function SettingsView({
       </div>
 
       <HealthCard />
+
+      <StatsCard />
 
       {/* Kod z programu partnerskiego Mitgo: moderator szuka go w sekcji „O aplikacji”. Nie zmieniać
           ani nie usuwać, dopóki weryfikacja się nie skończy (to samo w public/o-aplikacji.html). */}

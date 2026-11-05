@@ -2955,6 +2955,24 @@ Wdrożenie serwera i dwie zmienne w GitHubie (`API_URL`, `VAPID_PUBLIC_KEY`): `s
 Ten sam serwer przyjmuje uwagi od użytkowników (o nich wyżej).
 Bez nich karty przypomnień nie ma, a aplikacja działa jak dotąd.
 
+## Anonimowe statystyki (za zgodą)
+
+Aplikacja może liczyć, których ekranów i funkcji się używa — **tylko po zgodzie** i bez wglądu
+w dane. Pytanie pada raz, na ekranie Dziś, po pierwszym zamkniętym treningu; w Ustawieniach jest
+karta „Anonimowe statystyki” z przełącznikiem i pełną listą tego, co wychodzi.
+
+- **Zamknięta lista zdarzeń** w `src/statsCatalog.ts` (ekrany, start i koniec treningu, „Jak to
+  zrobić?”, katalog, raz dziennie: aktywne urządzenie, język, funkcje w użyciu tak/nie, raz
+  w tygodniu: przedział dni z aplikacją). `track()` w `src/stats.ts` przyjmuje tylko pary z listy —
+  typ nie przepuści tekstu ani liczby z danych użytkownika; serwer sprawdza to samo.
+- **Bez identyfikatora i bez nagrań:** żadnego ID urządzenia, ciasteczek, adresu strony (tylko rodzaj
+  ekranu, `statsScreen`), treści ekranu ani stuknięć. Przedział „dni w tygodniu” liczy telefon.
+- **Serwer tylko sumuje:** licznik `(dzień, zdarzenie, wartość)` w D1, bez IP i bez pojedynczych
+  zdarzeń. Pulpit: `<API_URL>/admin/stats` za hasłem `ADMIN_TOKEN`.
+- Bez `VITE_API_URL` albo przy włączonym w przeglądarce Global Privacy Control — nic się nie wysyła
+  i pytania nie ma. Nowe zdarzenie wymaga wpisu w `statsCatalog.ts`, w `public/privacy.html`
+  i w opisie w `src/components/Stats.tsx`.
+
 ## Publikacja
 
 Aplikacja stoi na GitHub Pages: <https://aleksanderdudek.github.io/gym-training-tracker/>
