@@ -1590,6 +1590,13 @@
   .tech-part p{margin:0 0 6px;line-height:1.5;font-size:15px}
   .tech-full{margin:4px 0 0}
 
+  /* Anonimowe statystyki: pytanie na Dziś i karta w Ustawieniach */
+  .stats-ask{border-left:4px solid var(--c-blue)}
+  .stats-more{margin:8px 0;font-size:13.5px}
+  .stats-more summary{cursor:pointer;font-weight:600;color:var(--steel);min-height:44px;display:flex;align-items:center}
+  .stats-more ul{margin:4px 0 8px;padding-left:20px;line-height:1.45}
+  .stats-more li{margin:0 0 4px}
+
   /* Katalog ćwiczeń */
   .atlas-view{margin:10px 0 4px}
   .cat-search input{width:100%;padding:11px 10px;font:inherit;font-size:17px;border:1px solid var(--edge);border-radius:var(--r);background:var(--field);color:var(--ink)}

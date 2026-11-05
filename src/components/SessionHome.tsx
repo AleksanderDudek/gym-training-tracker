@@ -1,3 +1,4 @@
+import { StatsAsk } from './Stats';
 import { Component, lazy, Suspense, type ReactNode } from 'react';
 import { ex } from '../data/exercises';
 import { go } from '../routing';
@@ -173,6 +174,9 @@ export function SessionHome({
 
       {/* Nowe od prowadzącego (albo koniec współpracy z jego strony) — jedna linia, tylko gdy coś przyszło. */}
       <LinkNotice />
+
+      {/* Jednorazowe pytanie o anonimowe statystyki — po pierwszym treningu, za zgodą. */}
+      <StatsAsk state={state} />
 
       {today.kind === 'due' && w && (
         <div className="grp today">

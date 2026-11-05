@@ -4,6 +4,7 @@ import { EX, GEAR_LABEL, gearOf, groupLabel } from '../data/exercises';
 import { ALPHABETICAL, findExercises, splitHits } from '../engine/find';
 import type { Hit } from '../engine/find';
 import { adopt } from '../data/catalog/adopt';
+import { track } from '../stats';
 import { catalogId } from '../data/catalog/derive';
 import type { CatalogRow } from '../data/catalog/derive';
 import { loadCatalog } from '../data/catalog/load';
@@ -123,7 +124,10 @@ export function ExercisePicker({
 
   const choose = (id: ExerciseId, row: CatalogRow | null = null) => {
     // Ćwiczenie z katalogu wchodzi do silnika w chwili wyboru (`adopt`), zapis dopisze definicję.
-    if (row) adopt(row);
+    if (row) {
+      adopt(row);
+      track('catalog_add', 'picker');
+    }
     close();
     if (id !== value) onChange(id);
     // Nazwa zostaje zaznaczona, więc kolejna litera zaczyna nowe szukanie, zamiast doklejać

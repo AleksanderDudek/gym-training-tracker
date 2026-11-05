@@ -126,6 +126,28 @@ Wyłączenie: `npx wrangler secret delete DISCORD_WEBHOOK_URL` albo usunięcie w
 z solą — samego adresu baza nie zna), ukryte pole-pułapka na boty, treść do 4000 znaków,
 zrzut tylko jako obraz (JPEG, PNG, WebP) do ok. 1,5 MB, CORS tylko dla strony aplikacji.
 
+## Anonimowe statystyki
+
+`POST /stats` przyjmuje paczkę `{"e": [["zdarzenie", "wartość"], …]}` (do 60 par) i dolicza ją do
+licznika dnia w tabeli `stats` (`day`, `event`, `value`, `n`). Pary muszą pochodzić z zamkniętej listy
+`src/statsCatalog.ts` — ten sam plik czyta aplikacja i serwer; jedna para spoza listy odrzuca całą
+paczkę (400). Serwer nie zapisuje adresu IP, nagłówków ani czasu zdarzenia, więc zdarzeń nie da się
+połączyć w ścieżkę jednej osoby. Aplikacja wysyła tylko po zgodzie użytkownika (`src/stats.ts`),
+jako `text/plain` (bez zapytania wstępnego CORS, działa przez `sendBeacon`).
+
+Pulpit: **`GET /admin/stats`** — tabele ostatnich 28 dni za tym samym hasłem co lista uwag
+(`ADMIN_TOKEN`, login dowolny). Liczby 1–4 pokazuje jako „<5”.
+
+Na istniejącej bazie tabelę dokłada jedno polecenie (schemat jest idempotentny):
+
+```bash
+npx wrangler d1 execute gym-tracker-api --remote --file=schema.sql
+npx wrangler deploy
+```
+
+Ograniczenie: endpoint jest publiczny, więc ktoś mógłby dosypać fałszywych liczników (tylko z listy,
+do 60 na zapytanie). Limitu po adresie nie ma celowo — wymagałby przechowywania skrótu IP.
+
 ## Zegarek Garmin
 
 Aplikacja na zegarek (`garmin/`) co 30 minut odkłada na serwerze zaszyfrowany tydzień danych,

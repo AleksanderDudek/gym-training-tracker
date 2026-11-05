@@ -45,3 +45,13 @@ CREATE TABLE IF NOT EXISTS garmin (
 );
 CREATE INDEX IF NOT EXISTS garmin_ip ON garmin (ip_hash, created);
 CREATE INDEX IF NOT EXISTS garmin_updated ON garmin (updated);
+
+-- Anonimowe statystyki: same liczniki dnia (UTC) dla par „zdarzenie · wartość” z zamkniętej listy
+-- (src/statsCatalog.ts). Bez adresów, bez identyfikatorów, bez pojedynczych zdarzeń.
+CREATE TABLE IF NOT EXISTS stats (
+  day   TEXT NOT NULL,
+  event TEXT NOT NULL,
+  value TEXT NOT NULL,
+  n     INTEGER NOT NULL,
+  PRIMARY KEY (day, event, value)
+);

@@ -1,4 +1,5 @@
 import type { ReminderItem, SubRecord } from './schedule';
+import type { StatsCount } from './stats';
 
 /**
  * Gdzie leżą subskrypcje. Interfejs, a nie od razu D1, bo test i serwer lokalny trzymają je
@@ -59,6 +60,10 @@ export interface Store {
   recentBoxes(ipHash: string, since: number): Promise<number>;
   /** Kasuje skrzynki bez zapisu od `before` (ms); zwraca, ile ich było. */
   pruneBoxes(before: number): Promise<number>;
+  /** Dolicza liczniki dnia: klucz `zdarzenie\0wartość` → ile razy. */
+  addStats(day: string, counts: Map<string, number>): Promise<void>;
+  /** Liczniki od dnia `from` (włącznie). */
+  listStats(from: string): Promise<StatsCount[]>;
 }
 
 const summary = ({ screenshot, ipHash: _ip, ...f }: FeedbackRecord): FeedbackSummary => ({ ...f, hasShot: !!screenshot });
@@ -67,7 +72,16 @@ export function memoryStore(): Store {
   const m = new Map<string, SubRecord>();
   const fb: FeedbackRecord[] = [];
   const boxes = new Map<string, BoxRecord>();
+  const stats = new Map<string, number>();
   return {
+    addStats: async (day, counts) => {
+      for (const [k, n] of counts) stats.set(`${day}\u0000${k}`, (stats.get(`${day}\u0000${k}`) ?? 0) + n);
+    },
+    listStats: async (from) =>
+      [...stats].flatMap(([k, n]) => {
+        const [day, event, value] = k.split('\u0000') as [string, string, string];
+        return day >= from ? [{ day, event, value, n }] : [];
+      }),
     putBox: async (r) => {
       const old = boxes.get(r.box);
       boxes.set(r.box, old ? { ...old, blob: r.blob, updated: r.updated } : { ...r });
@@ -120,6 +134,8 @@ interface D1Statement {
 }
 export interface D1Database {
   prepare(sql: string): D1Statement;
+  /** Kilka zapytań w jednej podróży do bazy (i w jednej transakcji). */
+  batch?(statements: D1Statement[]): Promise<unknown>;
 }
 
 interface Row {
@@ -160,6 +176,26 @@ interface BoxRow {
 
 export function d1Store(db: D1Database): Store {
   return {
+    addStats: async (day, counts) => {
+      const stmts = [...counts].map(([k, n]) => {
+        const [event, value] = k.split('\u0000');
+        return db
+          .prepare(
+            `INSERT INTO stats (day, event, value, n) VALUES (?, ?, ?, ?)
+             ON CONFLICT(day, event, value) DO UPDATE SET n = n + excluded.n`,
+          )
+          .bind(day, event, value, n);
+      });
+      if (db.batch) await db.batch(stmts);
+      else for (const s of stmts) await s.run();
+    },
+    listStats: async (from) => {
+      const { results } = await db
+        .prepare('SELECT day, event, value, n FROM stats WHERE day >= ? ORDER BY day DESC')
+        .bind(from)
+        .all<StatsCount>();
+      return results;
+    },
     putBox: async (r) => {
       await db
         .prepare(
