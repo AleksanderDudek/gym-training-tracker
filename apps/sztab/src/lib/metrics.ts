@@ -8,6 +8,7 @@ import { freshState } from '@gt/engine/plan';
 import { addDays, dayKey } from '@gt/engine/schedule';
 import { snapshot as planSnapshot } from '@gt/engine/snapshot';
 import { EX } from '@gt/data/exercises';
+import { registerCatalog, restoreCatalog } from '@gt/data/catalog/adopt';
 import type { AppState, LogEntry } from '@gt/types';
 
 /**
@@ -19,6 +20,8 @@ import type { AppState, LogEntry } from '@gt/types';
 
 /** Stan aplikacji z paczki: to, czego nie udostępniono, zostaje puste. */
 export function stateOf(s: SnapshotV1): AppState {
+  // Ćwiczenia z katalogu podopiecznego: definicja przyszła w paczce, rejestr daje nazwy i jednostki.
+  registerCatalog(restoreCatalog(s.training?.catalog));
   const base = freshState();
   return {
     ...base,
