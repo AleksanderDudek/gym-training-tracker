@@ -2,6 +2,12 @@ import { useEffect, useId, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import { EX, GEAR_LABEL, gearOf, groupLabel } from '../data/exercises';
 import { ALPHABETICAL, findExercises, splitHits } from '../engine/find';
+import type { Hit } from '../engine/find';
+import { adopt } from '../data/catalog/adopt';
+import { catalogId } from '../data/catalog/derive';
+import type { CatalogRow } from '../data/catalog/derive';
+import { loadCatalog } from '../data/catalog/load';
+import { eqLabel, nameOf, searchCatalog } from '../data/catalog/search';
 import { plural } from '../engine/quips';
 import type { ExerciseId } from '../types';
 import { pluralEn, text } from '../i18n';
@@ -13,6 +19,8 @@ const T = text({
     chosen: ' · wybrane',
     none: (q: string) => `Nic nie pasuje do „${q}”. Spróbuj początku nazwy, np. „pomp” albo „przys”.`,
     count: (n: number) => `${n} ${plural(n, ['ćwiczenie', 'ćwiczenia', 'ćwiczeń'])}`,
+    catalog: 'Z katalogu (1300+) — po wybraniu dostaje progresję',
+    catalogTag: 'katalog',
   },
   en: {
     narrow: (current: string) => `${current} — type to narrow it down`,
@@ -20,6 +28,8 @@ const T = text({
     chosen: ' · selected',
     none: (q: string) => `Nothing matches “${q}”. Try the start of a name, e.g. “push” or “squ”.`,
     count: (n: number) => `${n} ${pluralEn(n, 'exercise', 'exercises')}`,
+    catalog: 'From the catalogue (1,300+) — gets progression once picked',
+    catalogTag: 'catalogue',
   },
 });
 
@@ -35,6 +45,13 @@ const T = text({
  * trzyma się wzorca combobox z wytycznych WAI-ARIA: strzałki chodzą po liście, Enter wybiera,
  * Escape zamyka i przywraca poprzedni wybór, a czytnik ekranu słyszy, ile jest wyników.
  */
+interface Option {
+  id: ExerciseId;
+  hits: Hit[];
+  /** Wiersz katalogu — tylko dla pozycji z katalogu. */
+  row: CatalogRow | null;
+}
+
 export function ExercisePicker({
   value,
   onChange,
@@ -57,7 +74,29 @@ export function ExercisePicker({
   const [active, setActive] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const found = open ? findExercises(query) : [];
+  // Katalog dociąga się przy pierwszym otwarciu listy; do tego czasu podpowiada sama biblioteka.
+  const [catalog, setCatalog] = useState<CatalogRow[] | null>(null);
+  useEffect(() => {
+    if (!open || catalog) return;
+    let live = true;
+    loadCatalog().then(
+      (rows) => live && setCatalog(rows),
+      () => undefined,
+    );
+    return () => {
+      live = false;
+    };
+  }, [open, catalog]);
+  const lib = open ? findExercises(query) : [];
+  // Katalog dopiero od dwóch liter: pusta lista to biblioteka alfabetycznie, a 1300 pozycji
+  // pod nią tylko by ją zasłoniło.
+  const cat: Option[] =
+    open && catalog && query.trim().length >= 2
+      ? searchCatalog(catalog, { query, muscle: null, gear: null })
+          .slice(0, 40)
+          .map((c) => ({ id: catalogId(c.row.i), hits: c.hits, row: c.row }))
+      : [];
+  const found: Option[] = [...lib.map((f) => ({ ...f, row: null })), ...cat];
   const current = value ? (EX[value]?.name ?? '') : '';
   const activeId = found[active]?.id;
 
@@ -80,7 +119,9 @@ export function ExercisePicker({
     setQuery('');
   };
 
-  const choose = (id: ExerciseId) => {
+  const choose = (id: ExerciseId, row: CatalogRow | null = null) => {
+    // Ćwiczenie z katalogu wchodzi do silnika w chwili wyboru (`adopt`), zapis dopisze definicję.
+    if (row) adopt(row);
     close();
     if (id !== value) onChange(id);
     // Nazwa zostaje zaznaczona, więc kolejna litera zaczyna nowe szukanie, zamiast doklejać
@@ -100,7 +141,8 @@ export function ExercisePicker({
     }
     if (e.key === 'Enter' && open) {
       e.preventDefault();
-      if (activeId) choose(activeId);
+      const opt = found[active];
+      if (opt) choose(opt.id, opt.row);
       return;
     }
     if (e.key === 'Escape' && open) {
@@ -160,8 +202,14 @@ export function ExercisePicker({
         <ul className="picker-list" id={listId} role="listbox" aria-label={label}>
           {found.length ? (
             found.map((f, i) => {
-              const name = EX[f.id]!.name;
-              return (
+              const name = f.row ? nameOf(f.row) : EX[f.id]!.name;
+              const first = f.row && i === lib.length;
+              return [
+                first ? (
+                  <li key="cat-head" role="presentation" className="picker-head">
+                    {T.catalog}
+                  </li>
+                ) : null,
                 <li
                   key={f.id}
                   id={optId(f.id)}
@@ -171,7 +219,7 @@ export function ExercisePicker({
                   // Wciśnięcie nie może zabrać pola fokusu — blur zamknąłby listę przed kliknięciem.
                   onMouseDown={(e) => e.preventDefault()}
                   onMouseMove={() => i !== active && setActive(i)}
-                  onClick={() => choose(f.id)}
+                  onClick={() => choose(f.id, f.row)}
                 >
                   <span className="picker-name">
                     {splitHits(name, f.hits).map((p, k) =>
@@ -180,10 +228,10 @@ export function ExercisePicker({
                     {f.id === value && <span className="picker-now">{T.chosen}</span>}
                   </span>
                   <span className="picker-sub">
-                    {groupLabel(EX[f.id]!.group)} · {GEAR_LABEL[gearOf(f.id)]}
+                    {f.row ? `${eqLabel(f.row)} · ${T.catalogTag}` : `${groupLabel(EX[f.id]!.group)} · ${GEAR_LABEL[gearOf(f.id)]}`}
                   </span>
-                </li>
-              );
+                </li>,
+              ];
             })
           ) : (
             <li className="picker-empty" role="option" aria-selected={false} aria-disabled="true">

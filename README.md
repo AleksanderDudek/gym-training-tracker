@@ -3,6 +3,7 @@
 Aplikacja do prowadzenia treningu siłowego z automatyczną progresją. Wybierasz trening, wpisujesz
 wyniki, a silnik sam decyduje, kiedy podnieść powtórzenia i kiedy wejść na cięższe obciążenie.
 Atlas obejmuje 114 ćwiczeń: kettlebell, sztanga, hantle, maszyny i kalistenika — 30 z nich zrobisz bez żadnego sprzętu.
+Do tego katalog 1324 ćwiczeń z krokami po polsku i mapą pracujących mięśni — każde da się dodać do treningu.
 Trening idzie część po części z zegarem w pasku, a zakładka Jedzenie dokłada dziennik jedzenia
 z dietą, która nagina się do tego, co naprawdę zjedzone, białkowe przepisy i gotowce bez naczyń,
 własne zestawy, prawie 40 tysięcy produktów sprzedawanych w Polsce (także w dziesięciu sklepach
@@ -2179,6 +2180,41 @@ czasu stoi tam sama miniatura z `loading="lazy"` — obrazek z CDN, bez skryptó
 ciasteczek, dociągany dopiero wtedy, gdy zbliży się do ekranu. Adres `youtube-nocookie.com`
 odkłada śledzenie do momentu odtworzenia, a zwykły link do YouTube pod spodem działa nawet
 wtedy, gdy autor skasuje film.
+
+## Katalog 1300+ ćwiczeń, mapa mięśni i „Jak to zrobić?”
+
+Atlas (`#/cwiczenia`) ma przełącznik **Biblioteka · 114 / Katalog · 1300+**. Katalog to 1324
+ćwiczenia ze zbioru [hasaneyldrm/exercises-dataset](https://github.com/hasaneyldrm/exercises-dataset)
+(tekst ExerciseDB v1, **licencja MIT**, `public/licenses/exercises-dataset.txt`): nazwa, sprzęt,
+mięśnie i instrukcja krok po kroku po polsku i po angielsku. Polskie nazwy to nasze tłumaczenie
+(`scripts/catalog/names-pl.json`). Szukanie działa bez ogonków i po nazwie w obu językach,
+z filtrem sprzętu i partii mięśni. Ćwiczenia, które są w bibliotece (wyciskanie na ławce, martwy
+ciąg…), katalog odsyła tam — mapa bliźniaków w `src/data/catalog/twins.ts`.
+
+- **Dane:** `npm run catalog:build` czyta przypiętą wersję zbioru (commit i SHA-256 w
+  `scripts/catalog/build.ts`) i zapisuje `src/data/catalog/index.json` oraz `steps.{pl,en}.json`.
+  W aplikacji to osobne kawałki ładowane dopiero przy otwarciu katalogu (31 kB + 92 kB gzip).
+- **Do treningu:** ćwiczenie z katalogu wybrane w kreatorze, w przekąskach albo „Dodaj do
+  treningu” na jego stronie dostaje id `kat-<id>` i staje się zwykłym ćwiczeniem silnika
+  (progresja, faza próbna, mięśnie tygodnia). Definicja zapisuje się w `state.catalog`
+  i jedzie z kopią zapasową (`src/data/catalog/adopt.ts`). Tryb i cele z reguł
+  w `derive.ts`: sprzęt z ciężarem 3 × 8–12, masa ciała 3 × 6–15, rozciąganie i deski w sekundach.
+- **Animacji „jak w innych aplikacjach” nie ma celowo.** Te animacje z podświetlonymi mięśniami
+  to komercyjna biblioteka Gym visual — licencja openGym i zbioru MIT ich nie obejmuje.
+
+**Pracujące mięśnie** stoją na każdej stronie ćwiczenia pod torem ruchu (goryl), nad filmami:
+sylwetka przód i tył z główną partią w kolorze (pulsuje, chyba że system prosi o mniej ruchu)
+i pomocniczymi jaśniej, a pod nią lista nazw. Kontury pochodzą z
+[MuscleMap](https://github.com/melihcolpan/MuscleMap) (Melih Colpan, **MIT**,
+`public/licenses/MuscleMap.txt`), generowane przez `npm run catalog:bodymap`; sylwetka idzie za
+postacią z ustawień (Gustaw / Gosia). To te same 16 partii co „Mięśnie w tym tygodniu”.
+
+**„Jak to zrobić?” w treningu prowadzonym** to wyraźny przycisk pod nazwą ćwiczenia (zamiast
+szarego „Technika” na dole karty). Otwiera arkusz nad treningiem: goryl w ruchu, na co uważać,
+kroki z katalogu i mapa mięśni, z odnośnikiem do pełnej strony z filmami. W przerwie przed nowym
+ćwiczeniem ten sam przycisk pokazuje technikę następnego ruchu; w widoku listy stoi w karcie.
+
+Porównanie z openGym i źródła: `docs/research/opengym-vs-gym-tracker.md`.
 
 ## Plan, który się zmienia — i podpowiada, co dorzucić
 

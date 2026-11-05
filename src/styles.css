@@ -1545,6 +1545,64 @@
   .mw-key svg{flex:none}
   .grp p.mw-note{margin:8px 0 0;font-size:12.5px}
 
+  /* Mapa mięśni ćwiczenia (kontury MuscleMap, MIT): główne w kolorze, pomocnicze jaśniej. */
+  .bm-figs{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:340px;margin:6px auto 4px}
+  .bm-figs.bm-compact{max-width:240px;gap:8px}
+  .bm-wait{min-height:220px;place-items:center;font-size:12.5px;color:var(--ink-soft)}
+  .bm-compact.bm-wait{min-height:160px}
+  .bm-fig{margin:0;min-width:0}
+  .bm-fig svg{display:block;width:100%;height:auto}
+  .bm-fig figcaption{text-align:center;font-size:12.5px;color:var(--ink-soft);margin-top:2px}
+  .bm-part{stroke:var(--surface);stroke-width:2;stroke-linejoin:round}
+  .bm-skin{fill:var(--surface-2);stroke:var(--edge);stroke-width:1.5}
+  .bm-off{fill:var(--line)}
+  .bm-p{fill:var(--c-orange)}
+  .bm-s{fill:var(--c-orange);fill-opacity:.4}
+  @media (prefers-reduced-motion:no-preference){
+    .bm-fig .bm-p{animation:bm-pulse 1.8s ease-in-out infinite}
+  }
+  @keyframes bm-pulse{0%,100%{fill-opacity:1}50%{fill-opacity:.62}}
+  .bm-list{margin:8px 0 0;display:grid;gap:6px;font-size:13.5px}
+  .bm-list div{margin:0}
+  .bm-list dt{font-weight:600;display:flex;align-items:center;gap:6px}
+  .bm-list dd{margin:2px 0 0 18px;color:var(--ink)}
+  .bm-sub{font-weight:400;color:var(--ink-soft)}
+  .bm-dot{display:inline-block;width:12px;height:12px;border-radius:50%;flex:none}
+  .bm-dot.bm-p{background:var(--c-orange)}
+  .bm-dot.bm-s{background:var(--c-orange);opacity:.4}
+
+  /* „Jak to zrobić?” w treningu: wyraźny przycisk z ikoną i podpisem zamiast szarego „Technika”. */
+  .tech-btn{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;margin:10px 0 12px;
+    padding:10px 12px;border:2px solid var(--c-orange);border-radius:10px;background:var(--c-orange-bg);
+    color:var(--c-orange-ink);font:inherit;text-align:left;cursor:pointer}
+  .tech-btn:active{transform:translateY(1px)}
+  .tech-btn:focus-visible{outline:3px solid var(--c-orange-ink);outline-offset:2px}
+  .tech-btn svg{flex:none}
+  .tech-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+  .tech-txt b{font-size:16px;line-height:1.25;color:var(--ink)}
+  .tech-txt small{font-size:12.5px;line-height:1.35;color:var(--ink-soft)}
+  .tech-go{flex:none;font-size:26px;line-height:1;color:var(--c-orange-ink)}
+  .tech-btn.tech-next{min-height:48px;border-width:1.5px;margin:12px 0 0}
+  .tech-btn.tech-next b{font-size:14.5px;font-weight:600}
+  .tech-move{display:flex;justify-content:center;margin:-4px 0 6px}
+  .tech-part{margin:0 0 16px}
+  .tech-part h3{margin:0 0 6px;font-family:var(--display);font-weight:600;font-size:17px}
+  .tech-part p{margin:0 0 6px;line-height:1.5;font-size:15px}
+  .tech-full{margin:4px 0 0}
+
+  /* Katalog ćwiczeń */
+  .atlas-view{margin:10px 0 4px}
+  .cat-search input{width:100%;padding:11px 10px;font:inherit;font-size:17px;border:1px solid var(--edge);border-radius:var(--r);background:var(--field);color:var(--ink)}
+  .cat-muscle{margin-top:8px}
+  .cat-steps{margin:0 0 8px;padding-left:22px;line-height:1.5}
+  .cat-steps li{margin:0 0 6px;padding-left:2px}
+  .cat-twin{border-left:4px solid var(--c-blue)}
+  .cat-more summary{cursor:pointer;font-weight:600;color:var(--steel);min-height:44px;display:flex;align-items:center}
+  .cat-more .cat-steps{margin-top:6px}
+  .cat-source{margin-top:6px}
+  .picker-head{padding:8px 12px 4px;font-size:12px;font-weight:600;letter-spacing:.02em;color:var(--ink-soft);
+    border-top:1px solid var(--line);background:var(--surface-2);list-style:none}
+
   /* ---------------- Kalendarz ---------------- */
 
   /* Miesiąc: siedem kolumn od poniedziałku. Komórka ma 44 px wysokości — cel dotykowy — a przy 320 px ok. 40 px szerokości. */

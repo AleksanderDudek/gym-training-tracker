@@ -1,3 +1,4 @@
+import type { CatalogDef } from './data/catalog/derive';
 /** Sposób, w jaki ćwiczenie się progresuje. */
 export type Mode =
   | 'grind' // rosną powtórzenia, potem ciężar
@@ -662,6 +663,11 @@ export interface AppState {
   supportSnooze?: string;
   /** Dzień, w którym schowano pasek „dodaj do ekranu początkowego” (iPhone w Safari) — na stałe. */
   installHidden?: string;
+  /**
+   * Ćwiczenia z katalogu dodane do treningu (`kat-0025` → definicja). Definicja jedzie z kopią
+   * zapasową, więc trening odtwarza się bez katalogu w pamięci. Brak — żadnego jeszcze nie dodano.
+   */
+  catalog?: Record<ExerciseId, CatalogDef>;
 }
 
 /** Przypomnienia: rano w dni treningu z planu, wieczorem o krokach i ruchu z dnia. */

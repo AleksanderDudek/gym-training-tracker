@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { EFFORT, READY, ex, ladderFor } from '../data/exercises';
-import { EX_JOKES } from '../data/exjokes';
 import { blocksOf } from '../engine/blocks';
 import type { Block } from '../engine/blocks';
 import { waitingPart, waitingSince } from '../engine/clock';
@@ -12,12 +11,12 @@ import { lastNote, sessionNote } from '../engine/notes';
 import type { Step } from '../engine/steps';
 import type { RestPlan } from '../engine/rests';
 import { keepAwake, signalOnce, unlockSound } from '../coach';
-import { exercisePath } from '../routing';
 import { PartStrip, secsSince, useSecondTick } from './SessionClock';
 import { PrepContent } from './Structure';
 import { LastNote, NoteEditor } from './Notes';
 import { Segmented } from './ui';
 import { Timer, formatClock } from './Timer';
+import { TechniqueButton } from './TechniqueButton';
 import type { AppState, EffortKey, ExerciseId, ReadyKey, Session, SetResult, Workout } from '../types';
 import { pluralEn, text } from '../i18n';
 
@@ -69,8 +68,6 @@ const T = text({
     repsLabel: 'powtórzenia',
     weight: 'ciężar',
     done: 'Zrobione',
-    technique: 'Technika',
-    seeTechnique: 'Zobacz technikę →',
     skipEx: 'Pomiń to ćwiczenie dziś',
     skipPart: 'Pomiń tę część dziś',
     restLeft: (clock: string) => `Do końca przerwy ${clock}`,
@@ -142,8 +139,6 @@ const T = text({
     repsLabel: 'reps',
     weight: 'weight',
     done: 'Done',
-    technique: 'Technique',
-    seeTechnique: 'See technique →',
     skipEx: 'Skip this exercise today',
     skipPart: 'Skip this part today',
     restLeft: (clock: string) => `Rest left: ${clock}`,
@@ -488,6 +483,8 @@ function SetPanel({
       </div>
       <h2 className="guide-name">{m.name}</h2>
       <p className="guide-target">{targetText(state, step)}</p>
+      {/* Technika tuż pod nazwą: tu się patrzy przed serią, a nie pod „Zrobione” na dole karty. */}
+      <TechniqueButton state={state} id={step.ex} />
       {/* Przycięta do dwóch linijek: długa notatka nie może zepchnąć „Zrobione” poza ekran. */}
       <LastNote note={lastNote(state.log, step.ex)} clamp />
 
@@ -535,14 +532,6 @@ function SetPanel({
       {/* Ołówek pod „Zrobione”, nigdy nad nim: notatka to dodatek, seria jest najważniejsza. */}
       <NoteEditor value={sessionNote(state.session, step.ex)} name={m.name} onSave={onNote} />
 
-      <details className="why">
-        <summary>{T.technique}</summary>
-        <p className="hint">{m.hint}</p>
-        {EX_JOKES[step.ex] && <p className="exjoke">{EX_JOKES[step.ex]}</p>}
-        <a className="vidlink" href={exercisePath(step.ex)}>
-          {T.seeTechnique}
-        </a>
-      </details>
       <button className="btn ghost sm" onClick={onSkip}>
         {T.skipEx}
       </button>
@@ -590,6 +579,8 @@ function RestPanel({
       )}
       {/* Przed pierwszą serią ćwiczenia, w trakcie przerwy — wtedy ustawia się siodełko. */}
       {next && next.set === 1 && <LastNote note={lastNote(state.log, next.ex)} />}
+      {/* Przerwa przed nowym ćwiczeniem to najlepszy moment, żeby zerknąć, jak się je robi. */}
+      {next && next.set === 1 && <TechniqueButton state={state} id={next.ex} next />}
     </div>
   );
 }

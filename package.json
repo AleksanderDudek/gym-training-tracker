@@ -35,7 +35,9 @@
     "demo:seed": "TZ=Europe/Warsaw vitest run --config scripts/demo-videos/seed/vitest.config.ts",
     "demo:videos": "tsx scripts/demo-videos/record.ts",
     "sztab": "npm run dev -w @gymtracker/sztab",
-    "test:sztab": "npm test -w @gymtracker/sztab"
+    "test:sztab": "npm test -w @gymtracker/sztab",
+    "catalog:build": "tsx scripts/catalog/build.ts",
+    "catalog:bodymap": "tsx scripts/catalog/bodymap.ts"
   },
   "dependencies": {
     "@fontsource/ibm-plex-sans": "^5.3.0",

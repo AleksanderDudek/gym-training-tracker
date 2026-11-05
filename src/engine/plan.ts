@@ -92,8 +92,11 @@ export function freshState(): AppState {
 
 export const P = (state: AppState, id: ExerciseId): Progress => {
   const p = state.prog[id];
-  if (!p) throw new Error(`Brak stanu progresji dla: ${id}`);
-  return p;
+  if (p) return p;
+  // Ćwiczenie z katalogu wybrane przed chwilą (`data/catalog/adopt.ts`) ma już definicję, ale
+  // jeszcze nie stan: dostaje świeży, zapisany w tym samym obiekcie, żeby zmiany na nim nie ginęły.
+  if (Object.hasOwn(EX, id)) return (state.prog[id] = freshProgress(id));
+  throw new Error(`Brak stanu progresji dla: ${id}`);
 };
 
 /**
