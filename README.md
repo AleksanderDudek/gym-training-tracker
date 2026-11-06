@@ -2979,7 +2979,7 @@ Aplikacja stoi na GitHub Pages: <https://aleksanderdudek.github.io/gym-training-
 
 **O aplikacji** — strona `public/o-aplikacji.html` (adres `…/gym-training-tracker/o-aplikacji.html`)
 i karta „O aplikacji” na dole Ustawień. Stoi tam kod weryfikacyjny programu partnerskiego Mitgo
-(`533f`, stała `MITGO_CODE` w `src/components/views.tsx`); nie zmieniać ani nie usuwać go, dopóki
+(`bcbc`, stała `MITGO_CODE` w `src/components/views.tsx`); nie zmieniać ani nie usuwać go, dopóki
 Mitgo nie potwierdzi witryny.
 
 Wdrożenie prowadzi `.github/workflows/deploy.yml` — każdy push na `main` uruchamia

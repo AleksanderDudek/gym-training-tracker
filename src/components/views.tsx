@@ -37,7 +37,7 @@ import { text } from '../i18n';
 import type { AppState, EffortKey, ExerciseId, ReadyKey, ReminderPrefs, SetResult, Workout } from '../types';
 
 /** Kod weryfikacji witryny w programie partnerskim Mitgo (Admitad). */
-const MITGO_CODE = '533f';
+const MITGO_CODE = 'bcbc';
 
 const T = text({
   pl: {
