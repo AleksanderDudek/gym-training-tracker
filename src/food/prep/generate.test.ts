@@ -320,10 +320,10 @@ describe('the same plan, another plan, one recipe swapped', () => {
   });
 
   test('nothing left to swap to: the plan stays, with a reason', () => {
-    const p = plan({}, 'keto');
+    const p = plan({ exclude: ['meat', 'fish'] }, 'keto');
     const out = p.choices.lunchBox![0]!;
     const result = swapRecipe(p, 'lunchBox', out, { index, dict: PREP_DICT }, '2026-10-20');
-    // Keto has one box dish that fits fully: nothing else may take its place.
+    // Keto without meat or fish has one box dish that fits fully: nothing else may take its place.
     expect(result).toEqual({ ok: false, missing: [], message: noSwapMessage(p, 'lunchBox') });
     expect(noSwapMessage(p, 'lunchBox')).toMatch(/^Nie ma innego przepisu na obiad w tym koszyku\. Więcej da inny sklep, sklep internetowy/);
     expect(swapChoices(p, 'lunchBox', out, { index, dict: PREP_DICT }, '2026-10-20')).toEqual([]);

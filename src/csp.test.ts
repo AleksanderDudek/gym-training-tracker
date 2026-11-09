@@ -43,6 +43,9 @@ const NAVIGATION = new Set([
   'pl.wikibooks.org',
   'en.wikibooks.org',
   'creativecommons.org',
+  // Przepisy dietetyków: strona, na której motywach powstał przepis.
+  'dietetykchmielarz.pl',
+  'dietetykpowszechny.pl',
   // Jedzenie: źródła danych w stopce i strona produktu w Open Food Facts. Nie `world.`: z niego
   // skaner kodów pobiera produkty, więc musi stać w `connect-src`.
   'pl.openfoodfacts.org',

@@ -195,6 +195,19 @@ describe('Przepisy', () => {
     expect(within(cardFor('Chili z indyka')).queryByText(/Na motywach/)).not.toBeInTheDocument();
   });
 
+  test('przepis dietetyka podaje stronę, na której motywach powstał — bez licencji', async () => {
+    render(<RecipesPage />);
+    await pageReady();
+    const card = cardFor('Szakszuka – jajka w pomidorach');
+    expect(within(card).getByText(/ze strony dietetykpowszechny\.pl/)).toBeInTheDocument();
+    const source = within(card).getByRole('link', { name: /„Szakszuka fit”/ });
+    expect(source).toHaveAttribute('href', 'https://dietetykpowszechny.pl/przepis/szakszuka-czyli-jajka-w-pomidorach/');
+    expect(source).toHaveAttribute('target', '_blank');
+    expect(source).toHaveAttribute('rel', 'noopener noreferrer');
+    expect(within(card).queryByRole('link', { name: /CC BY-SA/ })).not.toBeInTheDocument();
+    expect(within(card).queryByText(/Wikibooks/)).not.toBeInTheDocument();
+  });
+
   test('najpierw szybkie, dalej według czasu', async () => {
     render(<RecipesPage />);
     const list = await screen.findByRole('region', { name: 'Przepisy białkowe' });

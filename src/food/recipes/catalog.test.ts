@@ -39,7 +39,7 @@ describe('catalog', () => {
   );
 
   test('a classic links the Wikibooks cookbook page it was reworked from, over https', () => {
-    const classics = RECIPES.filter((r) => r.inspiredBy);
+    const classics = RECIPES.filter((r) => r.inspiredBy && !r.inspiredBy.site);
     expect(classics.length).toBeGreaterThanOrEqual(16);
     for (const { id, inspiredBy } of classics) {
       expect(inspiredBy!.title.trim(), id).not.toBe('');
@@ -50,6 +50,26 @@ describe('catalog', () => {
       // A title from the English cookbook is marked as English.
       expect(inspiredBy!.lang ?? 'pl', id).toBe(url.hostname.split('.')[0]);
     }
+  });
+
+  test("a dietitian's recipe links its page on that dietitian's site, over https, named by the domain", () => {
+    const fromDietitians = RECIPES.filter((r) => r.inspiredBy?.site);
+    expect(fromDietitians.length).toBeGreaterThanOrEqual(38);
+    const sites = new Set<string>();
+    for (const { id, inspiredBy } of fromDietitians) {
+      const url = new URL(inspiredBy!.url);
+      expect(url.protocol, id).toBe('https:');
+      expect(['dietetykchmielarz.pl', 'dietetykpowszechny.pl'], id).toContain(url.hostname);
+      // The card names the site by the domain the link leads to.
+      expect(inspiredBy!.site, id).toBe(url.hostname);
+      expect(url.pathname, id).toMatch(/^\/(przepisy|przepis)\/[a-z0-9-]+\/$/);
+      expect(inspiredBy!.title.trim(), id).not.toBe('');
+      expect(inspiredBy!.lang, id).toBeUndefined();
+      sites.add(url.hostname);
+    }
+    expect(sites.size).toBe(2);
+    // One dish, one card: the same page is never the source of two recipes.
+    expect(new Set(fromDietitians.map((r) => r.inspiredBy!.url)).size).toBe(fromDietitians.length);
   });
 
   test('a recipe that is not a gotowiec still meets THE RULE, a gotowiec the protein floor', () => {
@@ -321,6 +341,43 @@ describe('ingredient matchers', () => {
     expect(INGREDIENTS.chickenFillet.match).toBeUndefined();
     expect(INGREDIENTS.leanBeef.match).toBeUndefined();
     expect(INGREDIENTS.turkeyFillet.match).toBeUndefined();
+  });
+
+  test('light mozzarella: the light ball in; a full-fat ball, sticks and pesto out', () => {
+    const light = { kcal: 165, protein: 19, carbs: 2, fat: 9 };
+    expect(matches('mozzarellaLight', 'Mozzarella light', light)).toBe(true);
+    expect(matches('mozzarellaLight', 'Mini Mozzarella light', { kcal: 165, protein: 20.5, carbs: 1.5, fat: 8.5 })).toBe(
+      true,
+    );
+    expect(matches('mozzarellaLight', 'Mozzarella', { kcal: 250, protein: 18, carbs: 1, fat: 19 })).toBe(false);
+    expect(matches('mozzarellaLight', 'Paluszki mozzarella w panierce', light)).toBe(false);
+    expect(matches('mozzarellaLight', 'Pesto z mozzarellą', light)).toBe(false);
+  });
+
+  test('wholemeal tortilla: a wholemeal wheat wrap in; a plain, keto or protein one out', () => {
+    const wrap = { kcal: 300, protein: 9.4, carbs: 48, fat: 6.3 };
+    expect(matches('wholemealTortilla', 'TORTILLA placki pszenne pełnoziarniste', wrap)).toBe(true);
+    expect(matches('wholemealTortilla', 'Tortilla Wraps with whole wheat', wrap)).toBe(true);
+    expect(matches('wholemealTortilla', 'Tortilla pszenna', wrap)).toBe(false);
+    expect(matches('wholemealTortilla', 'Tortilla keto pełnoziarnista', wrap)).toBe(false);
+  });
+
+  test('corn flakes: plain flakes in; honey, chocolate and frosted flakes out', () => {
+    const flakes = { kcal: 380, protein: 7.4, carbs: 83, fat: 1.2, sugars: 7 };
+    expect(matches('cornFlakes', 'Płatki kukurydziane', flakes)).toBe(true);
+    expect(matches('cornFlakes', 'Corn Flakes', flakes)).toBe(true);
+    expect(matches('cornFlakes', 'Płatki kukurydziane z miodem', flakes)).toBe(false);
+    expect(matches('cornFlakes', 'Corn flakes choco', flakes)).toBe(false);
+    expect(matches('cornFlakes', 'Frosted Corn Flakes', { ...flakes, sugars: 35 })).toBe(false);
+  });
+
+  test('feta: the cheese in; a spread, pesto and a lunch box out', () => {
+    const feta = { kcal: 276, protein: 16.5, carbs: 0.7, fat: 23 };
+    expect(matches('feta', 'Ser feta', feta)).toBe(true);
+    expect(matches('feta', 'Ser solankowy kanapkowo-sałatkowy', { kcal: 227, protein: 13, carbs: 2, fat: 18 })).toBe(true);
+    expect(matches('feta', 'Spicy Feta Spread', feta)).toBe(false);
+    expect(matches('feta', 'Pesto Spinat & Feta', feta)).toBe(false);
+    expect(matches('feta', 'Lunch box: kasza bulgur, słonecznik, ser solankowy', feta)).toBe(false);
   });
 
   test('herring: plain or matjas fillets in; herring in oil or cream, a salad and smoked herring out', () => {

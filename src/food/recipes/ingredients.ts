@@ -829,6 +829,100 @@ const DEFINITIONS = {
     // Pure gelatine; a "fix" with sugar is a dessert mix.
     match: (p) => /\bzelatyn\w*/.test(nameOf(p)) && !/\bfix\b/.test(nameOf(p)) && within(p, { protein: [75, 95] }),
   },
+  // Dietitians' recipes (2026-11-09). Every one is a staple: few shops are in the data for
+  // light mozzarella, wholemeal tortillas or feta, while every supermarket sells them, so a
+  // `store` role would tie these recipes to the two or three shops that happen to be known.
+  mozzarellaLight: {
+    id: 'mozzarellaLight',
+    label: say('Mozzarella light', 'Light mozzarella'),
+    role: 'staple',
+    typical: { kcal: 165, protein: 19.5, carbs: 1.5, fat: 9 },
+    // Light by its numbers, so a full-fat ball named "light" by a typo stays out; sticks,
+    // pizza blends and pesto with mozzarella in the name are not the cheese.
+    match: (p) =>
+      /\bmozzarell\w*/.test(nameOf(p)) &&
+      !/\b(paluszk\w*|sticks?|pesto|sos\w*|pizz\w*|salatk\w*|panier\w*)\b/.test(nameOf(p)) &&
+      within(p, { protein: [17, 25], fat: [5, 11], carbs: [0, 3], kcal: [130, 200] }),
+  },
+  wholemealTortilla: {
+    id: 'wholemealTortilla',
+    label: say('Tortilla pełnoziarnista', 'Wholemeal tortilla'),
+    role: 'staple',
+    typical: { kcal: 295, protein: 9.3, carbs: 47, fat: 6.2 },
+    // A wheat wrap with whole grain; keto and protein tortillas are their own ingredient.
+    match: (p) =>
+      /\b(tortill\w*|wrap\w*)\b/.test(nameOf(p)) &&
+      /\b(pelnoziarn\w*|razow\w*|whole ?(wheat|grain|meal))\b/.test(nameOf(p)) &&
+      !/\b(keto|protein\w*|bialkow\w*|low ?carb)\b/.test(nameOf(p)) &&
+      within(p, { carbs: [38, 60], protein: [7, 14], fat: [2, 11] }),
+  },
+  cornFlakes: {
+    id: 'cornFlakes',
+    label: say('Płatki kukurydziane (bez cukru)', 'Corn flakes (unsweetened)'),
+    role: 'staple',
+    typical: { kcal: 380, protein: 7.5, carbs: 83, fat: 1.2 },
+    // A coating for chicken and fish: plain flakes, not frosted, honey or chocolate ones.
+    match: (p) =>
+      /\b(platki kukurydzian\w*|corn ?flakes|cornflakes)\b/.test(nameOf(p)) &&
+      !/\b(miod\w*|honey|czekolad\w*|choco\w*|lukrowan\w*|frosted|cukr\w*|owoc\w*)\b/.test(nameOf(p)) &&
+      within(p, { carbs: [75, 90], protein: [5, 10], fat: [0, 3], sugars: [0, 9] }),
+  },
+  feta: {
+    id: 'feta',
+    label: say('Ser feta', 'Feta cheese'),
+    role: 'staple',
+    typical: { kcal: 272, protein: 16.5, carbs: 0.7, fat: 22.5 },
+    // The cheese itself: spreads, pesto and salads with feta in the name stay out. "Sałatkowy"
+    // (a cheese for salads) is the cheese; "sałatka" (a salad) is not.
+    match: (p) =>
+      /\b(feta|solankow\w*)\b/.test(nameOf(p)) &&
+      !/\b(pesto|pasta|spread|salatk[aie]|lunch|sos\w*|krem\w*|dip)\b/.test(nameOf(p)) &&
+      within(p, { protein: [12, 22], fat: [12, 30], carbs: [0, 4] }),
+  },
+  // Raw produce, offal and dry goods with no matcher, like the other vegetables: in the data
+  // they cannot be told apart from salads, ready meals and blends.
+  cauliflower: {
+    id: 'cauliflower',
+    label: say('Kalafior (świeży lub mrożony)', 'Cauliflower (fresh or frozen)'),
+    role: 'staple',
+    typical: { kcal: 25, protein: 1.9, carbs: 3, fat: 0.3 },
+  },
+  brusselsSprouts: {
+    id: 'brusselsSprouts',
+    label: say('Brukselka (świeża lub mrożona)', 'Brussels sprouts (fresh or frozen)'),
+    role: 'staple',
+    typical: { kcal: 43, protein: 3.4, carbs: 5.4, fat: 0.3 },
+  },
+  sweetPotato: {
+    id: 'sweetPotato',
+    label: say('Bataty', 'Sweet potatoes'),
+    role: 'staple',
+    typical: { kcal: 86, protein: 1.6, carbs: 20, fat: 0.1 },
+  },
+  asparagus: {
+    id: 'asparagus',
+    label: say('Szparagi zielone', 'Green asparagus'),
+    role: 'staple',
+    typical: { kcal: 20, protein: 2.2, carbs: 2, fat: 0.1 },
+  },
+  wholemealPasta: {
+    id: 'wholemealPasta',
+    label: say('Makaron pełnoziarnisty (suchy)', 'Wholemeal pasta (dry)'),
+    role: 'staple',
+    typical: { kcal: 350, protein: 13, carbs: 65, fat: 2.5 },
+  },
+  chickenLiver: {
+    id: 'chickenLiver',
+    label: say('Wątróbka drobiowa', 'Chicken livers'),
+    role: 'staple',
+    typical: { kcal: 119, protein: 16.9, carbs: 0.7, fat: 4.8 },
+  },
+  coconut: {
+    id: 'coconut',
+    label: say('Wiórki kokosowe', 'Desiccated coconut'),
+    role: 'pantry',
+    typical: { kcal: 660, protein: 6.9, carbs: 6.4, fat: 64.5 },
+  },
 } satisfies Record<string, IngredientDef>;
 
 /** An ingredient a recipe can name: a typo in the catalog is a type error, not a crash. */
