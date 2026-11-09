@@ -45,6 +45,11 @@ const T = text({
         Na motywach przepisu {recipe} z Książki kucharskiej w Wikibooks (licencja {license}).
       </>
     ),
+    siteSource: (recipe: ReactNode, site: string): ReactNode => (
+      <>
+        Na motywach przepisu {recipe} ze strony {site}.
+      </>
+    ),
     licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/deed.pl',
   },
   en: {
@@ -76,6 +81,11 @@ const T = text({
         Based on the recipe {recipe} from the Polish Wikibooks cookbook (licence: {license}).
       </>
     ),
+    siteSource: (recipe: ReactNode, site: string): ReactNode => (
+      <>
+        Based on the recipe {recipe} on {site}.
+      </>
+    ),
     licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/deed.en',
   },
 });
@@ -105,6 +115,33 @@ const MAX_BASKET_CHIPS = 8;
 
 /** Licencja Książki kucharskiej w Wikibooks, z której pochodzą pomysły klasyków. */
 const CC_BY_SA = T.licenseUrl;
+
+/**
+ * Skąd przepis: strona w Wikibooks z jej licencją albo strona dietetyka nazwana domeną. Strony
+ * dietetyków nie są na wolnej licencji — z nich jest tylko pomysł na danie, więc i licencji nie ma.
+ */
+function RecipeSource({ source }: { source: NonNullable<Recipe['inspiredBy']> }) {
+  const page = (
+    <a href={source.url} target="_blank" rel="noopener noreferrer">
+      {T.quoteOpen}
+      <span lang={source.lang}>{source.title}</span>
+      {T.quoteClose}
+      <span className="sr-only">{COMMON.newTab}</span>
+    </a>
+  );
+  return (
+    <p className="fd-rec-source">
+      {source.site
+        ? T.siteSource(page, source.site)
+        : T.source(
+            page,
+            <a href={CC_BY_SA} target="_blank" rel="noopener noreferrer">
+              CC BY-SA 4.0<span className="sr-only">{COMMON.newTab}</span>
+            </a>,
+          )}
+    </p>
+  );
+}
 
 /** Sklep internetowy jako odnośnik do sklepu, z dopiskiem — kolor nie mówi tego sam. */
 export function OnlineShopLink({ id, dict }: { id: string; dict: Dictionaries }) {
@@ -246,21 +283,7 @@ export function RecipeCard({
           </ol>
         </details>
 
-        {recipe.inspiredBy && (
-          <p className="fd-rec-source">
-            {T.source(
-              <a href={recipe.inspiredBy.url} target="_blank" rel="noopener noreferrer">
-                {T.quoteOpen}
-                <span lang={recipe.inspiredBy.lang}>{recipe.inspiredBy.title}</span>
-                {T.quoteClose}
-                <span className="sr-only">{COMMON.newTab}</span>
-              </a>,
-              <a href={CC_BY_SA} target="_blank" rel="noopener noreferrer">
-                CC BY-SA 4.0<span className="sr-only">{COMMON.newTab}</span>
-              </a>,
-            )}
-          </p>
-        )}
+        {recipe.inspiredBy && <RecipeSource source={recipe.inspiredBy} />}
       </article>
 
       <SwapSheet

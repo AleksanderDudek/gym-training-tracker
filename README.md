@@ -1328,6 +1328,24 @@ internetowym (mieszanka na białkowe naleśniki z Myproteina). Nowe składniki: 
 kapusta kiszona, biała i pekińska, ogórki kiszone, marchew, ziemniaki, awokado, mąka pszenna,
 filety śledziowe i żelatyna.
 
+**Przepisy na motywach stron dietetyków.** Trzydzieści osiem przepisów na motywach dwóch polskich
+stron z przepisami: dietetykchmielarz.pl i dietetykpowszechny.pl. Wybrane zostały tylko te dania,
+które według liczb samych stron mają więcej białka niż węglowodanów i więcej białka niż tłuszczu:
+pulpety z indyka i serka wiejskiego, pizze na spodzie z twarogu, kalafiora i skyru, stripsy
+w płatkach kukurydzianych, pasztet drobiowy z wątróbką, szakszuka, kotleciki z łososia, sernik na
+zimno z kokosem, lody z serka wiejskiego i inne. Ze stron pochodzi danie i jego pomysł. Ilości są
+dopasowane do składników aplikacji i do zasady liczonej na typowych wartościach, a zamiany (skyr
+zamiast jogurtu, serka śmietankowego i majonezu; słodzik zamiast miodu i cukru; chudy twaróg) i cały
+tekst są własne. Te strony nie są na wolnej licencji, więc z ich tekstu nie ma nic. Karta kończy
+się zdaniem „Na motywach przepisu „…” ze strony dietetykchmielarz.pl” z odnośnikiem, bez licencji
+(`inspiredBy.site`). Pominięte zostały dania, które dublują przepisy aplikacji (ryba po grecku,
+drugie stripsy, drugie pulpeciki), i te zbudowane na niszowych produktach (ciasteczka lotus, pasta
+pistacjowa, ciasto francuskie, papier ryżowy). Nowe składniki to mozzarella light, tortilla
+pełnoziarnista, płatki kukurydziane i feta. Wszystkie są podstawowe, z dopasowaniem: każdy
+supermarket je sprzedaje, a w danych są tylko w kilku sklepach. Do tego kalafior, brukselka,
+bataty, szparagi, makaron pełnoziarnisty i wątróbka drobiowa (podstawowe, bez dopasowania) oraz
+wiórki kokosowe (w domu). Wszystkie 38 przepisów kupisz w jednym sklepie stacjonarnym.
+
 **W pobliżu → Zjedz teraz** (`#/w-poblizu`, domyślny widok): odpowiedź na pytanie „jestem w obcym
 mieście i głodny — gdzie i co zjeść w okolicy, zgodnie z dzisiejszym celem?”. Nad mapą: ile kcal
 i białka ma mieć ten posiłek (z tego, co zostało z celu dnia — ten sam rachunek co „Co teraz?”:

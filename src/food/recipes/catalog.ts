@@ -5,6 +5,7 @@
 
 import { say } from '../../i18n';
 import type { IngredientId } from './ingredients';
+import { DIETITIAN_RECIPES } from './dietitians';
 import { isProteinForward, type Macros } from './macros';
 
 export type RecipeKind = 'gotowiec' | 'shake' | 'miska' | 'slone' | 'obiad' | 'mix';
@@ -35,10 +36,12 @@ export interface Recipe {
   /** How many people it feeds; 1 when absent. Home cooking is often for two or for the week. */
   servings?: number;
   /**
-   * The open cookbook page a classic was reworked from (title and https address); the card links it.
-   * `lang` marks a title that is not Polish, so a screen reader reads it in its own language.
+   * The page a recipe was reworked from (title and https address); the card links it. Without
+   * `site` it is the open Wikibooks cookbook, and the card names its licence; with `site` it is a
+   * dietitian's page, named by its domain. `lang` marks a title that is not Polish, so a screen
+   * reader reads it in its own language.
    */
-  inspiredBy?: { title: string; url: string; lang?: string };
+  inspiredBy?: { title: string; url: string; lang?: string; site?: string };
 }
 
 export function servingsOf(recipe: Recipe): number {
@@ -2331,4 +2334,5 @@ export const RECIPES: Recipe[] = [
   },
   ...FROM_ONLINE_SHOPS,
   ...CLASSICS,
+  ...DIETITIAN_RECIPES,
 ];

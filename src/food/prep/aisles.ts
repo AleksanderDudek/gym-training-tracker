@@ -93,6 +93,17 @@ export const AISLE: Record<IngredientId, Aisle> = {
   herring: 'mieso',
   nuts: 'suche',
   gelatin: 'suche',
+  mozzarellaLight: 'nabial',
+  wholemealTortilla: 'pieczywo',
+  cornFlakes: 'suche',
+  feta: 'nabial',
+  cauliflower: 'warzywa',
+  brusselsSprouts: 'warzywa',
+  sweetPotato: 'warzywa',
+  asparagus: 'warzywa',
+  wholemealPasta: 'suche',
+  chickenLiver: 'mieso',
+  coconut: 'suche',
 };
 
 /** One walk through a shop: produce at the door, bread, the chillers, the freezers, the shelves. */

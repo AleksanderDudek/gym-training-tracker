@@ -86,7 +86,7 @@ describe('recipes in English', () => {
     expect(polishTexts.map((t) => t.where)).toEqual(englishTexts.map((t) => t.where));
     const same = new Set(englishTexts.filter((t, i) => t.text === polishTexts[i]!.text).map((t) => t.text));
     // The same in both languages: a weight, and words English took from elsewhere.
-    expect([...same].sort()).toEqual(['200 g', '300 g', '600 g', 'Blender', 'Shake', 'Shaker']);
+    expect([...same].sort()).toEqual(['200 g', '250 g', '300 g', '350 g', '600 g', 'Blender', 'Shake', 'Shaker']);
   });
 
   test('the words change, the recipes do not: ids, grams, packs, servings, sources and steps stay', async () => {
