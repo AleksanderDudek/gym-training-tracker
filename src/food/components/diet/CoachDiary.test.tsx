@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { CoachMeals } from '../../../components/CoachMeals';
@@ -81,6 +81,17 @@ describe('pasek jadłospisu', () => {
     expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({ name: 'Owsianka z jagodami', kcal: 450, protein: 20, carbs: 60, fat: 12 }));
     await waitFor(() => expect(linkState().ticks[meals.id]?.[TODAY]).toEqual([0, 1]));
     expect(within(strip).getByRole('checkbox', { name: /Owsianka z jagodami/ })).toHaveFocus();
+  });
+
+  test('dwa szybkie stuknięcia, zanim wczyta się synchronizacja: oba odhaczenia zostają', async () => {
+    const meals = assignment(MEALS);
+    seedLink({ connections: [connection()], assignments: [meals] });
+    render(<CoachMeals entries={[]} showKcal />);
+    // Oba w tym samym renderze — lista liczona w chwili stuknięcia zgubiłaby pierwsze.
+    fireEvent.click(screen.getByRole('checkbox', { name: /Owsianka z jagodami/ }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /Kurczak z ryżem/ }));
+    await waitFor(() => expect(linkState().ticks[meals.id]?.[TODAY]).toEqual([0, 1]));
+    expect(screen.getByText('Ola Nowak · Dzień 1 · zjedzone 2 z 3')).toBeInTheDocument();
   });
 
   test('bez liczenia kalorii — bez liczb przy posiłkach', () => {

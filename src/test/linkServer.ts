@@ -1,4 +1,4 @@
-import { AAD, fingerprint, generateIdentity, linkKey, openJson, sealJson, sha256Hex } from '@gymtracker/link';
+import { AAD, fingerprint, generateIdentity, linkKey, openJson, parseNotifySeal, sealJson, sha256Hex } from '@gymtracker/link';
 import type { Area, AssignmentV1, Identity, MessageV1, PublicJwk, Scope } from '@gymtracker/link';
 
 /**
@@ -25,6 +25,7 @@ export interface FakeConnection {
   messages: { id: string; author: 'coach' | 'client'; ciphertext: string; createdAt: string; readAt: string | null }[];
   photos: Map<string, string>;
   bookings: { id: string; slotId: string; cancelledAt: string | null; cancelledBy: 'client' | 'coach' | null }[];
+  /** Token powiadomień zapieczętowany przez telefon (`AAD.notify`) — otwiera go `readNotify` kluczem prowadzącego. */
   notifyToken?: string | null;
 }
 
@@ -231,7 +232,8 @@ export async function fakeSztab(opts: { coachName?: string; profession?: string 
         const c = await byToken(a.p_connection, a.p_token);
         if (!c) return fail('bad_token');
         if (c.status !== 'active') return fail('ended');
-        if (a.p_notify !== null && !/^[A-Za-z0-9_-]{43}$/.test(String(a.p_notify))) return fail('bad_notify');
+        // Jak kolumna w bazie: tylko szyfrogram `v1.…`, najwyżej 1000 znaków — jawny token odpada.
+        if (a.p_notify !== null && (typeof a.p_notify !== 'string' || !a.p_notify.startsWith('v1.') || a.p_notify.length > 1000)) return fail('bad_notify');
         c.notifyToken = a.p_notify === null ? null : String(a.p_notify);
         return ok(undefined);
       }
@@ -369,6 +371,13 @@ export async function fakeSztab(opts: { coachName?: string; profession?: string 
       if (!m) return null;
       const key = await linkKey(coach.privateKey, c.clientKey, c.inviteId);
       return openJson(key, AAD.message(c.id, id, m.author), m.ciphertext);
+    },
+    /** Token powiadomień otwarty kluczem prowadzącego, jak w Sztabie; `null` — nie ma go albo się nie otwiera. */
+    async readNotify(connectionId: string): Promise<string | null> {
+      const c = connections.get(connectionId)!;
+      if (!c.notifyToken) return null;
+      const key = await linkKey(coach.privateKey, c.clientKey, c.inviteId);
+      return parseNotifySeal(await openJson(key, AAD.notify(c.id), c.notifyToken));
     },
     /** Prowadzący oznacza wiadomości telefonu jako przeczytane. */
     readByCoach(connectionId: string) {

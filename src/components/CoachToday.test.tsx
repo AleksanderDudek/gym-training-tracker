@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { addDays, localDay } from '@gymtracker/link/coaching';
@@ -173,6 +173,17 @@ describe('karta „Od prowadzącego”', () => {
     await user.click(screen.getByRole('checkbox', { name: 'Kreatyna 5 g' }));
     await waitFor(() => expect(linkState().ticks[habits.id]?.[localDay()]).toEqual([0, 1]));
     expect(screen.getByText(/wszystko zrobione \(2\)/)).toBeInTheDocument();
+  });
+
+  it('dwa szybkie stuknięcia, zanim wczyta się synchronizacja: oba odhaczenia zostają', async () => {
+    const habits = assignment(HABITS);
+    seedLink({ connections: [connection()], assignments: [habits] });
+    render(<CoachToday state={freshState()} />);
+    // Oba w tym samym renderze — lista liczona w chwili stuknięcia zgubiłaby pierwsze.
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Kreatyna 5 g' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Woda 2 l' }));
+    await waitFor(() => expect(linkState().ticks[habits.id]?.[localDay()]).toEqual([0, 1]));
+    expect(await screen.findByText(/wszystko zrobione \(2\)/)).toBeInTheDocument();
   });
 
   it('koniec współpracy ze strony prowadzącego zostaje jedną linią', () => {

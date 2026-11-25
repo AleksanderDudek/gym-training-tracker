@@ -2,7 +2,7 @@
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { newIdSecret } from '@gymtracker/link';
+import { newIdSecret, notifyRef } from '@gymtracker/link';
 import { freshState } from '../../engine/plan';
 import { acceptInvite } from '../../link/accept';
 import { enableCoachPush } from '../../link/notify';
@@ -98,7 +98,7 @@ describe('zaproszenie', () => {
     const [c] = activeConnections(linkState());
     const token = c!.notify!.token;
     expect(worker.last('/link/register')).toMatchObject({ token, lang: 'pl' });
-    expect(server.connections.get(c!.id)!.notifyToken).toBe(token);
+    expect(await server.readNotify(c!.id)).toBe(token);
   });
 
   it('odznaczone: bez pytania o zgodę i bez rejestracji', async () => {
@@ -155,7 +155,7 @@ describe('strona współpracy', () => {
     expect(device.requestPermission).toHaveBeenCalledTimes(1);
     expect(within(box).getByRole('status')).toHaveTextContent(/^Włączone/);
     const token = connectionOf(linkState(), c.id)!.notify!.token;
-    expect(server.connections.get(c.id)!.notifyToken).toBe(token);
+    expect(await server.readNotify(c.id)).toBe(token);
 
     await user.click(within(box).getByRole('button', { name: 'Wyłącz powiadomienia' }));
     await waitFor(() => expect(props.onToast).toHaveBeenCalledWith('Powiadomienia od prowadzącego wyłączone.'));
@@ -219,12 +219,13 @@ describe('wizyty', () => {
     await user.click(within(free).getByRole('button', { name: 'Tak, rezerwuję' }));
     await waitFor(() => expect(worker.last('/link/notify')).toBeDefined());
     const booking = server.connections.get(c.id)!.bookings[0]!.id;
-    expect(worker.last('/link/notify')).toEqual({ token, kind: 'visit-soon', at: Date.parse(slot.startsAt) - 2 * HOUR, ref: booking });
+    const ref = await notifyRef(token, booking);
+    expect(worker.last('/link/notify')).toEqual({ token, kind: 'visit-soon', at: Date.parse(slot.startsAt) - 2 * HOUR, ref });
 
     const yours = section('Twoje wizyty');
     await user.click(await within(yours).findByRole('button', { name: 'Odwołaj' }));
     await user.click(within(within(yours).getByRole('group', { name: 'Odwołać tę wizytę?' })).getByRole('button', { name: 'Tak, odwołaj' }));
-    await waitFor(() => expect(worker.last('/link/cancel')).toEqual({ token, ref: booking }));
+    await waitFor(() => expect(worker.last('/link/cancel')).toEqual({ token, ref }));
   });
 
   it('bez włączonych powiadomień rezerwacja nie planuje niczego', async () => {

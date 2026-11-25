@@ -2,7 +2,9 @@ import { useEffect, useId, useRef, useState } from 'react';
 import type { HabitsBody } from '@gymtracker/link';
 import { localDay } from '@gymtracker/link/coaching';
 import { linkConfigured } from '../link/config';
-import { newAssignments, ticksOn, unreadMessages, useLink } from '../link/store';
+import { laterIds, rememberLater } from '../link/notifyMemo';
+import { askCoachPermission } from '../link/permission';
+import { linkState, newAssignments, ticksOn, unreadMessages, useLink } from '../link/store';
 import type { LinkConnection, LinkState, StoredAssignment } from '../link/store';
 import { coachOf, formsDue, habitsToday, mealsToday } from '../link/today';
 import type { DayProgress } from '../link/today';
@@ -21,8 +23,9 @@ import './coach.css';
  * wizyta w ciągu doby, nowe zalecenia, plan czekający na start. Pod spodem koniec współpracy ze strony
  * prowadzącego i — gdy telefon może, a nie są włączone — jedna cicha linia o powiadomieniach.
  *
- * Główna paczka: czyta tylko zapis współprac (`store.ts`, `today.ts`, `visits.ts`). Odhaczenie
- * (`sync.ts`) i powiadomienia (`notify.ts`) wczytują się dopiero na żądanie.
+ * Główna paczka: czyta tylko zapis współprac (`store.ts`, `today.ts`, `visits.ts`) i pamięć powiadomień
+ * urządzenia (`notifyMemo.ts`). Odhaczenie (`sync.ts`) i powiadomienia (`notify.ts`) wczytują się dopiero
+ * na żądanie — poza pytaniem o zgodę (`permission.ts`), które musi paść jeszcze w stuknięciu.
  */
 
 const T = text({
@@ -30,6 +33,7 @@ const T = text({
     tag: 'Od prowadzącego',
     message: 'Nowa wiadomość',
     messages: (n: number) => `Nowe wiadomości: ${n}`,
+    quote: (t: string) => `„${t}”`,
     form: (title: string) => `Do wypełnienia dziś: ${title}`,
     intake: 'Prowadzący czeka na odpowiedzi, zanim zacznie.',
     habits: (done: number, due: number) => (done === due ? `wszystko zrobione (${due})` : `zrobione ${done} z ${due}`),
@@ -56,6 +60,7 @@ const T = text({
     tag: 'From your coach',
     message: 'New message',
     messages: (n: number) => `${n} new messages`,
+    quote: (t: string) => `“${t}”`,
     form: (title: string) => `To fill in today: ${title}`,
     intake: 'Your coach is waiting for your answers before starting.',
     habits: (done: number, due: number) => (done === due ? `all done (${due})` : `${done} of ${due} done`),
@@ -147,7 +152,7 @@ export function coachGroups(s: LinkState, opts: { day: string; now: number; plan
           kind: 'link',
           href: linkChatPath(c.id),
           text: unread.length === 1 ? T.message : T.messages(unread.length),
-          sub: `„${last.text.slice(0, PREVIEW_CHARS).replace(/\s+/g, ' ').trim()}”`,
+          sub: T.quote(last.text.slice(0, PREVIEW_CHARS).replace(/\s+/g, ' ').trim()),
         });
       }
       for (const f of forms.filter(mine)) {
@@ -182,26 +187,6 @@ export function coachGroups(s: LinkState, opts: { day: string; now: number; plan
 /* ── Powiadomienia: jedna cicha linia ─────────────────────────────────────────────── */
 
 type PushState = 'unconfigured' | 'unsupported' | 'ios-install' | 'denied' | 'off' | 'on';
-
-/** „Nie teraz” przy powiadomieniach — zapamiętane na tym telefonie, osobno dla każdej współpracy. */
-const LATER_KEY = 'gt-coach-push-later';
-
-function laterIds(): string[] {
-  try {
-    const v: unknown = JSON.parse(localStorage.getItem(LATER_KEY) ?? '[]');
-    return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [];
-  } catch {
-    return [];
-  }
-}
-
-function rememberLater(id: string): void {
-  try {
-    localStorage.setItem(LATER_KEY, JSON.stringify([...new Set([...laterIds(), id])]));
-  } catch {
-    // Bez pamięci strony linia wróci przy następnym otwarciu — nic gorszego.
-  }
-}
 
 /** Stan powiadomień dla współprac na karcie; do czasu odpowiedzi — nic (linia się nie pokazuje). */
 function usePushStates(ids: readonly string[]): [Record<string, PushState>, (id: string, v: PushState) => void] {
@@ -311,12 +296,14 @@ function CoachSection({
     head.current?.focus();
   });
 
-  const enable = async () => {
+  const enable = async (asked: Promise<NotificationPermission> | null) => {
     if (!state) return;
     setBusy(true);
     let next: PushState;
     try {
-      next = await (await import('../link/notify')).enableCoachPush(c.id, state);
+      const m = await import('../link/notify');
+      // Odmowa albo zamknięte pytanie — drugi raz, już bez gestu, się nie pyta.
+      next = asked && (await asked) !== 'granted' ? await m.coachPushState(c.id) : await m.enableCoachPush(c.id, state);
     } catch {
       next = 'off';
       setStatus(T.pushFailed);
@@ -357,7 +344,13 @@ function CoachSection({
       </ul>
       {push === 'off' && state ? (
         <p className="lk-coach-push">
-          <button type="button" className="lk-coach-act" disabled={busy} onClick={() => void enable()}>
+          <button
+            type="button"
+            className="lk-coach-act"
+            disabled={busy}
+            // Pytanie o zgodę wprost w stuknięciu, przed wczytaniem `notify.ts` — Safari po `await` gestu już nie uzna.
+            onClick={() => void enable(askCoachPermission())}
+          >
             {T.pushOn}
           </button>
           <button
@@ -401,16 +394,19 @@ function HabitsBlock({ p, day, getState }: { p: DayProgress<HabitsBody>; day: st
   const ticked = new Set(ticksOn(s, p.x.id, day));
   const done = p.due.filter((i) => ticked.has(i)).length;
   const toggle = (i: number) => {
-    const next = new Set(ticked);
-    if (next.has(i)) next.delete(i);
-    else next.add(i);
-    const list = p.due.filter((x) => next.has(x));
-    const x = p.x;
-    // Jak na stronie nawyków: pierwsze odhaczenie robi z listy „w trakcie”, także po „Nie tym razem”.
+    const { x, due } = p;
+    // Lista liczona dopiero po wczytaniu `sync.ts`, z zapisu w tej chwili — nie z chwili renderu: dwa szybkie
+    // stuknięcia przed wczytaniem inaczej zgubiłyby pierwsze.
     void import('../link/sync')
       .then((m) => {
-        m.setDayTicks(x, day, list, getState);
-        if (x.status === 'new' || x.status === 'seen' || x.status === 'declined') void m.setAssignmentStatus(x.id, 'started');
+        const now = linkState();
+        const next = new Set(ticksOn(now, x.id, day));
+        if (next.has(i)) next.delete(i);
+        else next.add(i);
+        m.setDayTicks(x, day, due.filter((d) => next.has(d)), getState);
+        // Jak na stronie nawyków: pierwsze odhaczenie robi z listy „w trakcie”, także po „Nie tym razem”.
+        const st = now.assignments.find((a) => a.id === x.id)?.status ?? x.status;
+        if (st === 'new' || st === 'seen' || st === 'declined') void m.setAssignmentStatus(x.id, 'started');
       })
       .catch(() => undefined);
   };

@@ -15,6 +15,8 @@ import { acceptInvite } from '../link/accept';
 import { invitePreview } from '../link/rpc';
 import { clearLink } from '../link/store';
 import { forgetKeys, syncAll } from '../link/sync';
+import { connection, message, seedLink } from '../test/coachSeed';
+import { CoachToday } from './CoachToday';
 import LinkPages from './Link';
 import { LinkCard, LinkNotice } from './LinkEntry';
 
@@ -75,5 +77,12 @@ describe('working with a coach in English', () => {
     expect(screen.getByRole('heading', { name: 'Working with a coach' })).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(POLISH);
     card.unmount();
+  });
+
+  it('the “From your coach” card quotes a message with English quotation marks', () => {
+    seedLink({ connections: [connection()], messages: [message('See you on Monday')] });
+    render(<CoachToday state={freshState()} />);
+    expect(screen.getByText('“See you on Monday”')).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/[„”]See/);
   });
 });

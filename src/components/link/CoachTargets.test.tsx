@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AssignmentBody } from '@gymtracker/link';
 import { freshState } from '../../engine/plan';
 import { markDiet } from '../../food/dietFlag';
-import { clearAll, now, readProfile, saveProfile } from '../../food/diet/store';
+import { applyCoachTargets, clearAll, now, readProfile, saveProfile } from '../../food/diet/store';
 import { targetOn } from '../../food/diet/target';
 import { newProfile } from '../../food/diet/validate';
 import { clearLink, linkState } from '../../link/store';
@@ -75,6 +75,53 @@ describe('cele od prowadzącego', () => {
     expect(stored.targetWeightKg).toBe(72);
     expect(screen.getByText('Ustawione — cel 2200 kcal dziennie widać w dzienniku jedzenia.')).toHaveFocus();
     await waitFor(() => expect(linkState().assignments[0]!.status).toBe('started'));
+  });
+
+  it('w ciąży: cel kalorii poniżej utrzymania tylko do wiadomości, z powodem; nic do zapisania', async () => {
+    const today = now().date;
+    await saveProfile(newProfile({ sex: 'K', age: 30, heightCm: 168, startWeightKg: 80, targetWeightKg: 80, pregnancy: true, startDate: today }, today));
+    markDiet(true);
+    const user = userEvent.setup();
+    open({ ...TARGETS, kcal: 1500 });
+    await user.click(screen.getByRole('button', { name: 'Ustaw jako moje cele' }));
+    const panel = await screen.findByRole('group', { name: 'Ustaw jako moje cele' });
+    expect(within(panel).getByText('W profilu diety nic się nie zmieni — dlaczego, piszę niżej.')).toBeInTheDocument();
+    expect(
+      within(panel).getByText(/^Cel kalorii 1500 kcal — to mniej, niż potrzeba do utrzymania wagi \(u ciebie ok\. \d+ kcal\), a w ciąży i przy karmieniu piersią aplikacja nie ustawia deficytu/),
+    ).toBeInTheDocument();
+    // Waga docelowa: celu kalorii nie przyjęto, więc powodem jest cel profilu, a nie „taki cel kalorii”.
+    expect(within(panel).getByText(/^Waga docelowa 72 kg — twój cel w profilu diety to utrzymanie wagi/)).toBeInTheDocument();
+    expect(within(panel).queryByText(/przy takim celu kalorii/)).not.toBeInTheDocument();
+    expect(within(panel).queryByRole('button', { name: 'Tak, ustaw' })).not.toBeInTheDocument();
+    await user.click(within(panel).getByRole('button', { name: 'Zamknij' }));
+    expect(targetOn((await readProfile({ today, weighIns: [] }))!, today)).not.toBe(1500);
+  });
+
+  it('cel poniżej twardego minimum przy zaznaczonej zgodzie lekarza: bez odsyłania do pola, którego już nie ma po co zaznaczać', async () => {
+    const today = now().date;
+    await saveProfile(newProfile({ belowFloorOk: true, startDate: today }, today));
+    markDiet(true);
+    const user = userEvent.setup();
+    open({ ...TARGETS, kcal: 1200, weightGoal: null });
+    await user.click(screen.getByRole('button', { name: 'Ustaw jako moje cele' }));
+    const panel = await screen.findByRole('group', { name: 'Ustaw jako moje cele' });
+    expect(within(panel).getByText('Prowadzący proponuje 1200 kcal — aplikacja nie ustawia celu niższego niż 1500 kcal, więc ustawię 1500.')).toBeInTheDocument();
+    expect(within(panel).queryByText(/przemiana podstawowa|zaznaczając/)).not.toBeInTheDocument();
+  });
+
+  it('profil już ma najniższy cel: wyjaśnienie bez „ustawię”, nic do zapisania', async () => {
+    const today = now().date;
+    await saveProfile(newProfile({ belowFloorOk: true, startDate: today }, today));
+    // Te same cele przyjęte już raz (1500 i tempo, które z nich wynika) — drugie otwarcie niczego nie zmienia.
+    await applyCoachTargets({ kcal: 1200, weightGoal: null }, { today, weighIns: [{ day: today, kg: 80 }] });
+    markDiet(true);
+    const user = userEvent.setup();
+    open({ ...TARGETS, kcal: 1200, weightGoal: null });
+    await user.click(screen.getByRole('button', { name: 'Ustaw jako moje cele' }));
+    const panel = await screen.findByRole('group', { name: 'Ustaw jako moje cele' });
+    expect(within(panel).getByText('W profilu diety nic się nie zmieni — dlaczego, piszę niżej.')).toBeInTheDocument();
+    expect(within(panel).getByText('Prowadzący proponuje 1200 kcal — aplikacja nie ustawia celu niższego niż 1500 kcal, więc cel zostaje bez zmian.')).toBeInTheDocument();
+    expect(within(panel).queryByRole('button', { name: 'Tak, ustaw' })).not.toBeInTheDocument();
   });
 
   it('„Anuluj” niczego nie zapisuje i oddaje fokus przyciskowi', async () => {

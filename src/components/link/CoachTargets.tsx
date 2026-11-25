@@ -30,9 +30,13 @@ const T = text({
     loading: 'Sprawdzam twój profil diety…',
     changes: 'Co się zmieni w profilu diety',
     kcal: (from: number, to: number) => `Cel kalorii: ${num(from)} → ${num(to)} kcal dziennie, od dziś`,
-    kcalFloor: (asked: number, set: number) =>
-      `Prowadzący proponuje ${num(asked)} kcal, a to mniej niż twoja przemiana podstawowa — ustawię ${num(set)}. Niżej zejdziesz w profilu diety, zaznaczając, że cel jest uzgodniony z lekarzem albo dietetykiem.`,
-    kcalMax: (asked: number, set: number) => `Prowadzący proponuje ${num(asked)} kcal — aplikacja przyjmuje najwyżej ${num(set)}.`,
+    // `stays` — profil już ma ten cel, więc nic się nie zmienia (zdanie idzie do „Tylko do wiadomości”).
+    kcalFloor: (asked: number, set: number, stays: boolean) =>
+      `Prowadzący proponuje ${num(asked)} kcal, a to mniej niż twoja przemiana podstawowa — ${stays ? `zostaje ${num(set)}` : `ustawię ${num(set)}`}. Niżej zejdziesz w profilu diety, zaznaczając, że cel jest uzgodniony z lekarzem albo dietetykiem.`,
+    kcalMin: (asked: number, set: number, stays: boolean) =>
+      `Prowadzący proponuje ${num(asked)} kcal — aplikacja nie ustawia celu niższego niż ${num(set)} kcal, ${stays ? 'więc cel zostaje bez zmian' : `więc ustawię ${num(set)}`}.`,
+    kcalMax: (asked: number, set: number, stays: boolean) =>
+      `Prowadzący proponuje ${num(asked)} kcal — aplikacja przyjmuje najwyżej ${num(set)}${stays ? ', a tyle już masz' : ''}.`,
     weight: (from: number, to: number) => `Waga docelowa: ${kg(from)} → ${kg(to)} kg`,
     pace: (from: number, to: number) => `Tempo: ${rate(-from)} → ${rate(-to)} kg na tydzień (wynika z celu kalorii)`,
     info: 'Tylko do wiadomości',
@@ -43,10 +47,17 @@ const T = text({
     rateKcal: (r: number) => `Tempo: ${rate(r)} kg na tydzień — aplikacja wylicza tempo z celu kalorii.`,
     rateProfile: (r: number) => `Tempo: ${rate(r)} kg na tydzień — ustawisz je w profilu diety.`,
     kcalMinor: (n: number) => `Cel kalorii ${num(n)} kcal — poniżej 18 lat aplikacja nie zmienia celu kalorii. Porozmawiaj o nim z prowadzącym.`,
+    kcalPregnancy: (n: number, keep: number) =>
+      `Cel kalorii ${num(n)} kcal — to mniej, niż potrzeba do utrzymania wagi (u ciebie ok. ${num(keep)} kcal), a w ciąży i przy karmieniu piersią aplikacja nie ustawia deficytu. Cel kalorii zostaje bez zmian — ile jeść, ustal z lekarzem albo położną i z prowadzącym.`,
+    kcalBmi: (n: number, keep: number) =>
+      `Cel kalorii ${num(n)} kcal — to mniej, niż potrzeba do utrzymania wagi (u ciebie ok. ${num(keep)} kcal), a przy BMI poniżej 18,5 aplikacja nie ustawia deficytu. Cel kalorii zostaje bez zmian. Porozmawiaj o nim z prowadzącym.`,
     weightMin: (w: number) => `Waga docelowa ${kg(w)} kg — poniżej zdrowej wagi dla twojego wzrostu, więc jej nie ustawiam.`,
     weightSide: (w: number) => `Waga docelowa ${kg(w)} kg — nie pasuje do kierunku celu (chudnięcie albo przybieranie). Ustawisz ją w profilu diety.`,
     weightKeep: (w: number) => `Waga docelowa ${kg(w)} kg — przy takim celu kalorii waga się utrzymuje, więc waga docelowa zostaje bez zmian. Ustawisz ją w profilu diety.`,
+    weightKeepGoal: (w: number) =>
+      `Waga docelowa ${kg(w)} kg — twój cel w profilu diety to utrzymanie wagi, więc waga docelowa zostaje bez zmian. Cel zmienisz w profilu diety.`,
     nothing: 'Twój profil diety już ma te cele — nic do zmiany.',
+    nothingKept: 'W profilu diety nic się nie zmieni — dlaczego, piszę niżej.',
     confirm: 'Tak, ustaw',
     cancel: 'Anuluj',
     close: 'Zamknij',
@@ -64,9 +75,12 @@ const T = text({
     loading: 'Checking your diet profile…',
     changes: 'What changes in your diet profile',
     kcal: (from: number, to: number) => `Calorie target: ${num(from)} → ${num(to)} kcal a day, from today`,
-    kcalFloor: (asked: number, set: number) =>
-      `Your coach suggests ${num(asked)} kcal, which is below your basal metabolic rate — I’ll set ${num(set)}. You can go lower in the diet profile by ticking that the target is agreed with a doctor or dietitian.`,
-    kcalMax: (asked: number, set: number) => `Your coach suggests ${num(asked)} kcal — the app takes at most ${num(set)}.`,
+    kcalFloor: (asked: number, set: number, stays: boolean) =>
+      `Your coach suggests ${num(asked)} kcal, which is below your basal metabolic rate — ${stays ? `${num(set)} stays` : `I’ll set ${num(set)}`}. You can go lower in the diet profile by ticking that the target is agreed with a doctor or dietitian.`,
+    kcalMin: (asked: number, set: number, stays: boolean) =>
+      `Your coach suggests ${num(asked)} kcal — the app doesn’t set a target below ${num(set)} kcal, ${stays ? 'so your target stays as it is' : `so I’ll set ${num(set)}`}.`,
+    kcalMax: (asked: number, set: number, stays: boolean) =>
+      `Your coach suggests ${num(asked)} kcal — the app takes at most ${num(set)}${stays ? ', which you already have' : ''}.`,
     weight: (from: number, to: number) => `Goal weight: ${kg(from)} → ${kg(to)} kg`,
     pace: (from: number, to: number) => `Pace: ${rate(-from)} → ${rate(-to)} kg a week (follows from the calorie target)`,
     info: 'For your information',
@@ -77,10 +91,17 @@ const T = text({
     rateKcal: (r: number) => `Pace: ${rate(r)} kg a week — the app works the pace out from the calorie target.`,
     rateProfile: (r: number) => `Pace: ${rate(r)} kg a week — you can set it in the diet profile.`,
     kcalMinor: (n: number) => `Calorie target ${num(n)} kcal — under 18 the app does not change the calorie target. Talk it over with your coach.`,
+    kcalPregnancy: (n: number, keep: number) =>
+      `Calorie target ${num(n)} kcal — that’s less than you need to keep your weight (about ${num(keep)} kcal for you), and during pregnancy and breastfeeding the app doesn’t set a deficit. Your calorie target stays as it is — agree how much to eat with your doctor or midwife and your coach.`,
+    kcalBmi: (n: number, keep: number) =>
+      `Calorie target ${num(n)} kcal — that’s less than you need to keep your weight (about ${num(keep)} kcal for you), and with a BMI under 18.5 the app doesn’t set a deficit. Your calorie target stays as it is. Talk it over with your coach.`,
     weightMin: (w: number) => `Goal weight ${kg(w)} kg — below a healthy weight for your height, so I won’t set it.`,
     weightSide: (w: number) => `Goal weight ${kg(w)} kg — it doesn’t match the direction of your goal (losing or gaining). You can set it in the diet profile.`,
     weightKeep: (w: number) => `Goal weight ${kg(w)} kg — this calorie target keeps your weight steady, so the goal weight stays as it is. You can set it in the diet profile.`,
+    weightKeepGoal: (w: number) =>
+      `Goal weight ${kg(w)} kg — your diet profile’s goal is keeping your weight, so the goal weight stays as it is. You can change the goal in the diet profile.`,
     nothing: 'Your diet profile already has these targets — nothing to change.',
+    nothingKept: 'Nothing changes in your diet profile — the reasons are below.',
     confirm: 'Yes, set them',
     cancel: 'Cancel',
     close: 'Close',
@@ -104,13 +125,29 @@ type Phase =
   | { kind: 'done'; edit: CoachEdit }
   | { kind: 'error' };
 
+/** Prowadzący proponował kalorie, a ten cel ustawił kierunek (chudnięcie, utrzymanie, przybieranie). */
+const kcalUsed = (b: TargetsBody, edit: CoachEdit): boolean => b.kcal !== null && !edit.kept.kcal;
+
+/** Cel kalorii podniesiony albo obcięty — zdanie dla `changeLines` albo, gdy cel i tak się nie zmienia, dla `infoLines`. */
+function adjustedLine(b: TargetsBody, edit: CoachEdit, set: number, stays: boolean): string | null {
+  if (b.kcal === null) return null;
+  const asked = Math.round(b.kcal);
+  const line = edit.kcalAdjusted === 'floor' ? T.kcalFloor : edit.kcalAdjusted === 'min' ? T.kcalMin : edit.kcalAdjusted === 'max' ? T.kcalMax : null;
+  return line ? line(asked, set, stays) : null;
+}
+
 /** Co z celów zostaje tylko do wiadomości — z liczbą białka aplikacji po zmianie, gdy już ją znamy. */
 function infoLines(b: TargetsBody, edit: CoachEdit | null): string[] {
+  const kcal = b.kcal !== null ? Math.round(b.kcal) : null;
   return [
-    edit?.kept.kcal === 'minor' && b.kcal !== null ? T.kcalMinor(Math.round(b.kcal)) : null,
+    edit?.kept.kcal === 'minor' && kcal !== null ? T.kcalMinor(kcal) : null,
+    edit?.kept.kcal === 'pregnancy' && kcal !== null ? T.kcalPregnancy(kcal, edit.maintenance) : null,
+    edit?.kept.kcal === 'bmi' && kcal !== null ? T.kcalBmi(kcal, edit.maintenance) : null,
+    // Cel podniesiony do minimum, które profil już ma — zmiany nie ma, ale wyjaśnienie się należy.
+    edit && !edit.kcal ? adjustedLine(b, edit, edit.next.dailyKcal, true) : null,
     edit?.kept.weight === 'min' && b.weightGoal !== null ? T.weightMin(b.weightGoal) : null,
     edit?.kept.weight === 'side' && b.weightGoal !== null ? T.weightSide(b.weightGoal) : null,
-    edit?.kept.weight === 'keep' && b.weightGoal !== null ? T.weightKeep(b.weightGoal) : null,
+    edit?.kept.weight === 'keep' && b.weightGoal !== null ? (kcalUsed(b, edit) ? T.weightKeep(b.weightGoal) : T.weightKeepGoal(b.weightGoal)) : null,
     b.protein !== null ? T.protein(Math.round(b.protein), edit ? edit.protein : null) : null,
     b.steps !== null ? T.steps(Math.round(b.steps)) : null,
     b.workoutsPerWeek !== null ? T.perWeek(Math.round(b.workoutsPerWeek)) : null,
@@ -121,8 +158,7 @@ function infoLines(b: TargetsBody, edit: CoachEdit | null): string[] {
 function changeLines(b: TargetsBody, edit: CoachEdit): string[] {
   return [
     edit.kcal ? T.kcal(edit.kcal.from, edit.kcal.to) : null,
-    edit.kcalAdjusted === 'floor' && b.kcal !== null && edit.kcal ? T.kcalFloor(Math.round(b.kcal), edit.kcal.to) : null,
-    edit.kcalAdjusted === 'max' && b.kcal !== null && edit.kcal ? T.kcalMax(Math.round(b.kcal), edit.kcal.to) : null,
+    edit.kcal ? adjustedLine(b, edit, edit.kcal.to, false) : null,
     edit.weight ? T.weight(edit.weight.from, edit.weight.to) : null,
     edit.pace ? T.pace(edit.pace.from, edit.pace.to) : null,
   ].filter((x): x is string => !!x);
@@ -263,7 +299,7 @@ export function CoachTargets({
             </>
           ) : (
             <p className="tight" ref={panel} tabIndex={-1}>
-              {T.nothing}
+              {edit.kept.kcal || edit.kept.weight || edit.kcalAdjusted ? T.nothingKept : T.nothing}
             </p>
           )}
           {info.length ? (

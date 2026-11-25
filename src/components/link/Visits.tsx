@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { agoText } from '../../deviceStatus';
 import { LOCALE, text } from '../../i18n';
-import { cancelVisitReminder, scheduleVisitReminder } from '../../link/notify';
+import { cancelVisitReminder, dropGoneVisitReminders, scheduleVisitReminder } from '../../link/notify';
 import { clientBook, clientCancelBooking, clientSlots, isRpcError } from '../../link/rpc';
 import type { Booking, Slot } from '../../link/rpc';
 import { connectionOf, linkState, subscribeLink, updateLink, useLink } from '../../link/store';
@@ -175,10 +175,13 @@ export function VisitsPage({ id, onToast }: { id: string; onToast: (m: string) =
     if (!conn?.token || conn.status !== 'active') return;
     try {
       const r = await clientSlots(conn.id, conn.token);
+      const before = connectionOf(linkState(), conn.id)?.visits?.bookings ?? [];
       updateLink((x) => {
         const mine = x.connections.find((y) => y.id === conn.id);
         if (mine) mine.visits = { at: Date.now(), bookings: r.bookings };
       });
+      // Wizyta odwołana przez prowadzącego od ostatniego razu — bez przypomnienia (w tle).
+      void dropGoneVisitReminders(conn.id, before, r.bookings);
       if (alive.current) setNet({ kind: 'ok', slots: r.slots });
     } catch (e) {
       // Token nie przeszedł: może prowadzący zakończył współpracę — `pullOne` to sprawdzi i zapisze.
