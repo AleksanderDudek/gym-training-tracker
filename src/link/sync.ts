@@ -15,7 +15,7 @@ import {
   isRpcError,
 } from './rpc';
 import { linkConfigured } from './config';
-import { keepCoachPush } from './notify';
+import { dropGoneVisitReminders, flushCoachPush, keepCoachPush } from './notify';
 import { syncPhotos } from './photos';
 import { buildSnapshot, coachingFor, readExtras, sealSnapshot } from './snapshot';
 import { activeConnections, connectionOf, linkState, updateLink } from './store';
@@ -359,31 +359,11 @@ export function syncAll(getState: () => AppState | null, opts: { force?: boolean
   if (running) return running.then(() => syncAll(getState, opts));
   running = (async () => {
     try {
-      const pendingOnes = linkState().connections.filter((c) => c.pending && c.token);
-      for (const c of pendingOnes) if ((await applyPending(c)) === 'offline') return;
-      for (const c0 of activeConnections(linkState())) {
-        const pulled = await pullOne(c0, opts.now);
-        if (pulled === 'offline') return;
-        if (pulled === 'ended') continue;
-        const c = connectionOf(linkState(), c0.id);
-        const state = getState();
-        if (c && state) {
-          const pushed = await pushOne(c, state, opts);
-          if (pushed === 'offline') return;
-        }
-        const fresh = connectionOf(linkState(), c0.id);
-        if (fresh?.status === 'active') {
-          if ((await pullMessages(fresh)) === 'offline') return;
-          if ((await refreshVisits(fresh, opts.now)) === 'offline') return;
-          if (fresh.scopes.includes('photos') && (await syncPhotos(fresh)) === 'offline') return;
-        }
-      }
-      const live = new Set(activeConnections(linkState()).map((x) => x.id));
-      for (const a of linkState().assignments.filter((x) => x.status !== x.sent && x.status !== 'new' && live.has(x.connectionId))) {
-        if (!(await sendReceipt(a))) break;
-      }
-      await flushOutbox();
-      // Powiadomienia: odświeżenie rejestracji trwających, sprzątanie po zakończonych.
+      await syncSztab(getState, opts);
+      // Powiadomienia (serwer aplikacji): zaległe wyrejestrowania i odwołania zawsze — także bez żadnej
+      // współpracy z powiadomieniami (po „Usuń wszystkie dane”) i gdy Sztab nie odpowiadał; potem odświeżenie
+      // rejestracji trwających i sprzątanie po zakończonych.
+      if ((await flushCoachPush()) === 'offline') return;
       for (const c of linkState().connections.filter((x) => x.notify)) {
         if ((await keepCoachPush(c)) === 'offline') break;
       }
@@ -392,6 +372,34 @@ export function syncAll(getState: () => AppState | null, opts: { force?: boolean
     }
   })();
   return running;
+}
+
+/** Część synchronizacji ze Sztabem; bez sieci kończy wcześniej. */
+async function syncSztab(getState: () => AppState | null, opts: { force?: boolean; now?: number }): Promise<void> {
+  const pendingOnes = linkState().connections.filter((c) => c.pending && c.token);
+  for (const c of pendingOnes) if ((await applyPending(c)) === 'offline') return;
+  for (const c0 of activeConnections(linkState())) {
+    const pulled = await pullOne(c0, opts.now);
+    if (pulled === 'offline') return;
+    if (pulled === 'ended') continue;
+    const c = connectionOf(linkState(), c0.id);
+    const state = getState();
+    if (c && state) {
+      const pushed = await pushOne(c, state, opts);
+      if (pushed === 'offline') return;
+    }
+    const fresh = connectionOf(linkState(), c0.id);
+    if (fresh?.status === 'active') {
+      if ((await pullMessages(fresh)) === 'offline') return;
+      if ((await refreshVisits(fresh, opts.now)) === 'offline') return;
+      if (fresh.scopes.includes('photos') && (await syncPhotos(fresh)) === 'offline') return;
+    }
+  }
+  const live = new Set(activeConnections(linkState()).map((x) => x.id));
+  for (const a of linkState().assignments.filter((x) => x.status !== x.sent && x.status !== 'new' && live.has(x.connectionId))) {
+    if (!(await sendReceipt(a))) break;
+  }
+  await flushOutbox();
 }
 
 /** Na potrzeby testów: zapomina policzone klucze. */
@@ -678,18 +686,30 @@ export function setDayTicks(
 export const VISITS_STALE_MS = 3 * 3_600_000;
 
 /**
- * Zapamiętane rezerwacje odświeżane w tle — tylko gdy podopieczny kiedyś otworzył wizyty (jest
- * zapis) i ten zapis ma ponad 3 godziny. Bez tego uwaga na ekranie Dziś znałaby tylko stan z chwili
- * ostatniego wejścia na stronę wizyt (a prowadzący mógł w międzyczasie odwołać termin).
+ * To samo przy włączonych powiadomieniach: po „Prowadzący zapisał cię na wizytę” albo „odwołał” aplikacja
+ * otwarta z powiadomienia ma pokazać to, o czym mówiło — jedno zapytanie na kilka minut nic nie kosztuje.
+ */
+export const VISITS_STALE_PUSH_MS = 10 * 60_000;
+
+/**
+ * Zapamiętane rezerwacje odświeżane w tle — gdy podopieczny kiedyś otworzył wizyty (jest zapis) albo
+ * ma włączone powiadomienia (prowadzący może go zapisać sam), a zapis jest starszy niż 3 godziny
+ * (z powiadomieniami — 10 minut). Bez tego uwaga na ekranie Dziś znałaby tylko stan z chwili ostatniego
+ * wejścia na stronę wizyt (a prowadzący mógł w międzyczasie odwołać termin). Wizyta odwołana przez
+ * prowadzącego albo zniknięta traci też przypomnienie na serwerze aplikacji.
  */
 async function refreshVisits(c: LinkConnection, now: number = Date.now()): Promise<'ok' | 'offline' | 'ended'> {
-  if (!c.token || !c.visits || now - c.visits.at < VISITS_STALE_MS) return 'ok';
+  const push = !!c.notify;
+  if (!c.token || (!c.visits && !push)) return 'ok';
+  if (c.visits && now - c.visits.at < (push ? VISITS_STALE_PUSH_MS : VISITS_STALE_MS)) return 'ok';
   try {
     const r = await clientSlots(c.id, c.token);
+    const before = connectionOf(linkState(), c.id)?.visits?.bookings ?? [];
     updateLink((s) => {
       const x = s.connections.find((y) => y.id === c.id);
       if (x) x.visits = { at: now, bookings: r.bookings };
     });
+    await dropGoneVisitReminders(c.id, before, r.bookings, now);
     return 'ok';
   } catch (e) {
     if (isRpcError(e, 'ended') || isRpcError(e, 'bad_token')) return (await checkEnded(c)) ? 'ended' : 'offline';

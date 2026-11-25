@@ -315,6 +315,21 @@ export async function enablePush(state: AppState): Promise<PushState> {
   return currentPushState();
 }
 
+/**
+ * „Usuń wszystkie dane”: subskrypcja założona tylko dla prowadzących (przypomnienia wyłączone), której żadna
+ * współpraca już nie trzyma, znika z serwera i z przeglądarki — jak przy wyłączeniu przypomnień. Włączone
+ * przypomnienia zostają, jak dotąd.
+ */
+export async function dropCoachSubscription(): Promise<void> {
+  if (!remindersOff() || coachPushOn()) return;
+  try {
+    await disablePush();
+  } catch {
+    /* Bez service workera — nie ma czego wypisywać. */
+  }
+  setRemindersOff(false);
+}
+
 export async function disablePush(): Promise<PushState> {
   let kept = false;
   try {

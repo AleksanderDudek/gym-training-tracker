@@ -15,7 +15,7 @@
 .lk-coach-sub{font-size:13px;color:var(--ink-soft);line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .lk-coach-habits{padding:8px 0 4px}
 .grp p.lk-coach-line{margin:0 0 2px;font-size:14.5px;color:var(--ink)}
-.lk-coach-line a{color:var(--steel);font-weight:600;text-underline-offset:2px;display:inline-block;min-height:32px;line-height:32px}
+.lk-coach-line a{color:var(--steel);font-weight:600;text-underline-offset:2px;display:inline-flex;align-items:center;min-height:44px}
 .lk-coach-count{color:var(--ink-soft);font-size:13px}
 .lk-coach-ticks{list-style:none;margin:0;padding:0}
 .lk-coach-tick{display:flex;align-items:center;gap:12px;min-height:44px;padding:2px 0;cursor:pointer;-webkit-tap-highlight-color:transparent}

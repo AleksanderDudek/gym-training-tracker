@@ -1,17 +1,20 @@
 // @vitest-environment jsdom
-import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { newIdSecret } from '@gymtracker/link';
+import { afterEach, beforeAll, beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest';
+import { newIdSecret, notifyRef } from '@gymtracker/link';
+import type { NotifyKind } from '../../apps/sztab/src/lib/notify';
 import { handle } from '../../server/api/api';
 import type { Env, Send } from '../../server/api/api';
-import { linkTick } from '../../server/api/link';
+import { KINDS, linkTick } from '../../server/api/link';
+import type { Kind } from '../../server/api/link';
 import { memoryStore } from '../../server/api/store';
 import type { Store } from '../../server/api/store';
 import { b64u } from '../../server/api/webpush';
 import { freshState } from '../engine/plan';
 import { fakeSztab } from '../test/linkServer';
+import type { FakeSztab } from '../test/linkServer';
 import { fakeDevice, forgetDevice } from '../test/pushDevice';
 import { acceptInvite } from './accept';
-import { enableCoachPush, scheduleVisitReminder } from './notify';
+import { cancelVisitReminder, disableCoachPush, enableCoachPush, scheduleVisitReminder } from './notify';
 import { invitePreview } from './rpc';
 import { clearLink, connectionOf, linkState } from './store';
 import { forgetKeys } from './sync';
@@ -21,6 +24,9 @@ import { forgetKeys } from './sync';
  * się w PRAWDZIWYM `handle` serwera aplikacji (pamięć zamiast D1), Sztab (`apps/sztab/src/lib/notify.ts`)
  * woła tę samą trasę swoim kształtem zapytania, a cron serwera wysyła zaplanowane. Rozjazd kształtu
  * (np. `at` jako tekst zamiast liczby) wychodzi tu, a nie dopiero na telefonie.
+ *
+ * Token idzie do Sztabu zapieczętowany kluczem współpracy; „przeglądarka prowadzącego” otwiera go tu kluczem
+ * prowadzącego (`readNotify` w Sztabie z pamięci) i dopiero wtedy woła serwer aplikacji.
  */
 
 vi.hoisted(() => {
@@ -35,6 +41,7 @@ const HOUR = 3_600_000;
 let env: Env;
 let store: Store;
 let pushes: Request[];
+let sztab: FakeSztab;
 const send: Send = async (r) => {
   pushes.push(r);
   return new Response(null, { status: 201 });
@@ -59,7 +66,7 @@ beforeEach(async () => {
   store = memoryStore();
   vi.stubEnv('VITE_SZTAB_URL', 'http://127.0.0.1:54321');
   vi.stubEnv('VITE_SZTAB_ANON_KEY', 'anon-key');
-  const sztab = await fakeSztab();
+  sztab = await fakeSztab();
   // Klucze „przeglądarki” telefonu — prawdziwe, bo serwer sprawdza ich długość i szyfruje nimi powiadomienie.
   const ua = (await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveBits'])) as CryptoKeyPair;
   const p256dh = b64u(new Uint8Array(await crypto.subtle.exportKey('raw', ua.publicKey)));
@@ -87,7 +94,8 @@ describe('powiadomienia: telefon ↔ serwer aplikacji ↔ Sztab', () => {
   it('telefon się rejestruje, Sztab powiadamia od razu i na później, telefon planuje przypomnienie o wizycie', async () => {
     const c = linkState().connections[0]!;
     expect(await enableCoachPush(c.id, state)).toBe('on');
-    const token = connectionOf(linkState(), c.id)!.notify!.token;
+    const token = (await sztab.readNotify(c.id))!;
+    expect(token).toBe(connectionOf(linkState(), c.id)!.notify!.token);
 
     const { notifyClient } = await import('../../apps/sztab/src/lib/notify');
     await notifyClient({ notifyToken: token }, 'message');
@@ -102,5 +110,52 @@ describe('powiadomienia: telefon ↔ serwer aplikacji ↔ Sztab', () => {
     // Cron serwera za 3,5 h: zaplanowane zalecenie wychodzi; przypomnienie o wizycie (2 h przed, czyli za 3 h) też.
     await linkTick(store, env, new Date(Date.now() + 3.5 * HOUR), send);
     expect(pushes).toHaveLength(3);
+  });
+
+  it('odwołanie: telefon odwołuje swoje przypomnienie o wizycie, a Sztab to samo — tym samym numerem', async () => {
+    const c = linkState().connections[0]!;
+    await enableCoachPush(c.id, state);
+    const token = (await sztab.readNotify(c.id))!;
+    const startsAt = new Date(Date.now() + 5 * HOUR).toISOString();
+    const [mine, theirs] = [crypto.randomUUID(), crypto.randomUUID()];
+    expect(await scheduleVisitReminder(c.id, { id: mine, startsAt })).toBe(true);
+    expect(await scheduleVisitReminder(c.id, { id: theirs, startsAt })).toBe(true);
+    const queued = async () => (await store.dueNotifies(Date.now() + 10 * HOUR, 100)).map((q) => q.ref);
+    expect(await queued()).toEqual([await notifyRef(token, mine), await notifyRef(token, theirs)]);
+
+    expect(await cancelVisitReminder(c.id, mine)).toBe(true);
+    // Sztab odwołuje wizytę po swojej stronie: liczy numer z tokenu i numeru rezerwacji tak samo jak telefon.
+    const { cancelNotify } = await import('../../apps/sztab/src/lib/notify');
+    await cancelNotify({ notifyToken: token }, await notifyRef(token, theirs));
+    expect(await queued()).toEqual([]);
+    await linkTick(store, env, new Date(Date.now() + 3.5 * HOUR), send);
+    expect(pushes).toHaveLength(0);
+  });
+
+  it('wyłączenie: serwer aplikacji zapomina token — Sztab, który go jeszcze ma, nic nie wyśle', async () => {
+    const c = linkState().connections[0]!;
+    await enableCoachPush(c.id, state);
+    const token = (await sztab.readNotify(c.id))!;
+    expect(await scheduleVisitReminder(c.id, { id: crypto.randomUUID(), startsAt: new Date(Date.now() + 5 * HOUR).toISOString() })).toBe(true);
+    expect(await disableCoachPush(c.id)).toBe('off');
+    expect(await sztab.readNotify(c.id)).toBeNull();
+    const { notifyClient } = await import('../../apps/sztab/src/lib/notify');
+    await notifyClient({ notifyToken: token }, 'message');
+    await linkTick(store, env, new Date(Date.now() + 3.5 * HOUR), send);
+    expect(pushes).toHaveLength(0);
+    expect(await store.dueNotifies(Date.now() + 10 * HOUR, 100)).toEqual([]);
+  });
+
+  it('rodzaje zdarzeń: Sztab i telefon używają listy serwera aplikacji', async () => {
+    expectTypeOf<NotifyKind>().toEqualTypeOf<Kind>();
+    // Telefon wysyła sam tylko przypomnienie o wizycie.
+    expect(KINDS).toContain('visit-soon');
+    const c = linkState().connections[0]!;
+    await enableCoachPush(c.id, state);
+    const token = (await sztab.readNotify(c.id))!;
+    // Sztab przepuszcza każdy rodzaj serwera (jego własna lista niczego nie gubi) — każdy dochodzi jako powiadomienie.
+    const { notifyClient } = await import('../../apps/sztab/src/lib/notify');
+    for (const kind of KINDS) await notifyClient({ notifyToken: token }, kind);
+    await vi.waitFor(() => expect(pushes).toHaveLength(KINDS.length));
   });
 });

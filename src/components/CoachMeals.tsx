@@ -2,7 +2,7 @@ import { Component, useEffect, useId, useRef, useState, type ReactNode } from 'r
 import type { MealsBody, PlannedMeal } from '@gymtracker/link';
 import { localDay } from '@gymtracker/link/coaching';
 import { linkConfigured } from '../link/config';
-import { connectionOf, ticksOn, useLink } from '../link/store';
+import { connectionOf, linkState, ticksOn, useLink } from '../link/store';
 import { mealsToday } from '../link/today';
 import type { DayProgress } from '../link/today';
 import { linkAssignmentPath } from '../routing';
@@ -84,23 +84,30 @@ function MealsStrip({ p, entries, showKcal, onAdd }: CoachMealsProps & { p: DayP
     refocus.current = null;
   });
 
-  const setTicks = (next: Set<number>) => {
-    const list = p.due.filter((i) => next.has(i));
-    const x = p.x;
+  /**
+   * Zmiana odhaczeń posiłku `i`: `null` — na odwrót, `true` — odhaczony. Liczona dopiero po wczytaniu
+   * `sync.ts`, z zapisu w tej chwili — nie z chwili renderu: dwa szybkie stuknięcia przed wczytaniem
+   * inaczej zgubiłyby pierwsze.
+   */
+  const setTick = (i: number, on: boolean | null) => {
+    const { x, due } = p;
     void import('../link/sync')
       .then((m) => {
+        const now = linkState();
+        const next = new Set(ticksOn(now, x.id, day));
+        const want = on ?? !next.has(i);
+        // Posiłek dodany do dziennika, a już odhaczony — nie ma czego wysyłać.
+        if (want === next.has(i)) return;
+        if (want) next.add(i);
+        else next.delete(i);
         // Stanu treningów dziennik nie ma — paczka pójdzie przy najbliższej synchronizacji aplikacji.
-        m.setDayTicks(x, day, list, () => null);
-        if (x.status === 'new' || x.status === 'seen' || x.status === 'declined') void m.setAssignmentStatus(x.id, 'started');
+        m.setDayTicks(x, day, due.filter((d) => next.has(d)), () => null);
+        const st = now.assignments.find((a) => a.id === x.id)?.status ?? x.status;
+        if (st === 'new' || st === 'seen' || st === 'declined') void m.setAssignmentStatus(x.id, 'started');
       })
       .catch(() => undefined);
   };
-  const toggle = (i: number) => {
-    const next = new Set(ticked);
-    if (next.has(i)) next.delete(i);
-    else next.add(i);
-    setTicks(next);
-  };
+  const toggle = (i: number) => setTick(i, null);
   const add = async (i: number, meal: PlannedMeal & { kcal: number }) => {
     if (!onAdd) return;
     setBusy(i);
@@ -108,7 +115,7 @@ function MealsStrip({ p, entries, showKcal, onAdd }: CoachMealsProps & { p: DayP
     try {
       await onAdd(meal);
       refocus.current = i;
-      if (!ticked.has(i)) setTicks(new Set([...ticked, i]));
+      setTick(i, true);
     } catch {
       setStatus(T.failed);
     }

@@ -9,7 +9,7 @@ import { acceptInvite, areaChecks, keyMatches } from '../link/accept';
 import type { AcceptFailure } from '../link/accept';
 import { importPlan, importWorkout } from '../link/assign';
 import { linkConfigured, sztabAppUrl } from '../link/config';
-import { askCoachPermission } from '../link/notify';
+import { askCoachPermission } from '../link/permission';
 import { invitePreview, isRpcError } from '../link/rpc';
 import { activeConnections, connectionOf, linkState, subscribeLink, unreadMessages, updateLink, useLink, visibleAssignments } from '../link/store';
 import type { LinkConnection, StoredAssignment } from '../link/store';

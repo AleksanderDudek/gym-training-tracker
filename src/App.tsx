@@ -136,6 +136,7 @@ import { restoreNotes, setLogNotes, setSessionNote } from './engine/notes';
 import { LOCALE, pluralEn, text } from './i18n';
 import { linkConfigured } from './link/config';
 import { activeConnections, clearLink, hasLinkWork, linkState, validLinkSecret } from './link/store';
+import { hasNotifyChores } from './link/notifyMemo';
 import { TOP_COLORS, setThemeColor, useTheme } from './theme';
 
 /**
@@ -995,7 +996,8 @@ export default function App() {
     const grew = lastLog.current !== null && logCount > lastLog.current;
     lastLog.current = logCount;
     const run = (force: boolean) => {
-      if (!hasLinkWork()) return;
+      // Bez współprac też, gdy czeka wyrejestrowanie powiadomień, które nie doszło (np. po „Usuń wszystkie dane” bez sieci).
+      if (!hasLinkWork() && !hasNotifyChores()) return;
       void import('./link/sync').then((m) => m.syncAll(() => live.current, { force })).catch(() => undefined);
     };
     const t = window.setTimeout(() => run(grew), grew ? 500 : 2500);
@@ -2078,6 +2080,10 @@ export default function App() {
     if (phone) await forgetPhone();
     // Model zegarka wybrany w sprawdzaniu — też dane tej osoby, choć nie trafia do kopii.
     forgetWatchModel();
+    // Powiadomienia od prowadzących, póki współprace pamiętają swoje tokeny: serwer aplikacji je zapomina (bez
+    // sieci — przy następnej synchronizacji; ta pamięć przeżywa reset), a subskrypcja trzymana tylko dla nich
+    // znika. Sztab kasuje swój token sam przy końcu współpracy.
+    if (linkConfigured() || pushConfigured()) await import('./link/notify').then((m) => m.forgetCoachPush()).catch(() => undefined);
     // Współprace: najpierw koniec na serwerze (prowadzący traci dane od razu), potem klucze i zalecenia tutaj.
     if (coaches)
       await import('./link/sync')

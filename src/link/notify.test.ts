@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { newIdSecret } from '@gymtracker/link';
+import { AAD, linkKey, newIdSecret, notifyRef, openJson, parseNotifySeal } from '@gymtracker/link';
 import type { Area } from '@gymtracker/link';
 import { freshState } from '../engine/plan';
 import { currentPushState, disablePush, enablePush, syncReminders } from '../push';
+import { hasNotifyChores, LATER_KEY, NOTIFY_MEMO_KEY, rememberLater } from './notifyMemo';
 import { fakeSztab } from '../test/linkServer';
 import type { FakeSztab } from '../test/linkServer';
 import { fakeDevice, fakeWorker, forgetDevice } from '../test/pushDevice';
@@ -16,11 +17,12 @@ import {
   coachPushState,
   disableCoachPush,
   enableCoachPush,
+  forgetCoachPush,
   keepCoachPush,
   scheduleVisitReminder,
 } from './notify';
 import { invitePreview } from './rpc';
-import { clearLink, connectionOf, linkState } from './store';
+import { clearLink, connectionOf, linkState, updateLink } from './store';
 import type { LinkConnection } from './store';
 import { forgetKeys, syncAll } from './sync';
 
@@ -104,9 +106,34 @@ describe('włączanie i wyłączanie', () => {
       tz: expect.any(String),
       lang: 'pl',
     });
-    expect(server.connections.get(c.id)!.notifyToken).toBe(n.token);
+    // Sztab dostaje token zapieczętowany kluczem współpracy: w bazie szyfrogram, otwiera go tylko prowadzący.
+    const sealed = server.connections.get(c.id)!.notifyToken!;
+    expect(sealed).toMatch(/^v1\./);
+    expect(sealed).not.toContain(n.token);
+    expect(await server.readNotify(c.id)).toBe(n.token);
     expect(await coachPushState(c.id)).toBe('on');
     expect(await coachPushState()).toBe('on');
+  });
+
+  it('pieczęć związana ze współpracą: pod numerem innej współpracy się nie otwiera', async () => {
+    const c = await connect();
+    await enableCoachPush(c.id, state);
+    const fc = server.connections.get(c.id)!;
+    const key = await linkKey(server.coach.privateKey, fc.clientKey, fc.inviteId);
+    expect(parseNotifySeal(await openJson(key, AAD.notify(c.id), fc.notifyToken!))).toBe(notifyOf(c.id)!.token);
+    expect(await openJson(key, AAD.notify(crypto.randomUUID()), fc.notifyToken!)).toBeNull();
+  });
+
+  it('dwa włączenia naraz (przyjęcie zaproszenia i stuknięcie na ekranie Dziś): jeden token, jedno pytanie o zgodę', async () => {
+    const c = await connect();
+    const [x, y] = await Promise.all([enableCoachPush(c.id, state), enableCoachPush(c.id, state)]);
+    expect([x, y]).toEqual(['on', 'on']);
+    expect(device.requestPermission).toHaveBeenCalledTimes(1);
+    expect(count('/link/register')).toBe(1);
+    expect(await server.readNotify(c.id)).toBe(notifyOf(c.id)!.token);
+    // Po zakończeniu pierwszego następne włączenie znów działa (odświeża ten sam token).
+    expect(await enableCoachPush(c.id, state)).toBe('on');
+    expect(worker.last('/link/register')!.token).toBe(notifyOf(c.id)!.token);
   });
 
   it('każda współpraca ma własny token', async () => {
@@ -114,8 +141,8 @@ describe('włączanie i wyłączanie', () => {
     expect(await enableCoachPush(a.id, state)).toBe('on');
     expect(await enableCoachPush(b.id, state)).toBe('on');
     expect(notifyOf(a.id)!.token).not.toBe(notifyOf(b.id)!.token);
-    expect(server.connections.get(a.id)!.notifyToken).toBe(notifyOf(a.id)!.token);
-    expect(other.connections.get(b.id)!.notifyToken).toBe(notifyOf(b.id)!.token);
+    expect(await server.readNotify(a.id)).toBe(notifyOf(a.id)!.token);
+    expect(await other.readNotify(b.id)).toBe(notifyOf(b.id)!.token);
     // Jedna subskrypcja urządzenia dla obu.
     expect(device.subscribe).toHaveBeenCalledTimes(1);
   });
@@ -148,7 +175,7 @@ describe('włączanie i wyłączanie', () => {
     expect(server.connections.get(c.id)!.notifyToken).toBeUndefined();
     server.setOffline(false);
     expect(await keepCoachPush(connectionOf(linkState(), c.id)!)).toBe('ok');
-    expect(server.connections.get(c.id)!.notifyToken).toBe(n.token);
+    expect(await server.readNotify(c.id)).toBe(n.token);
     expect(notifyOf(c.id)!.sztab).toBe(true);
     // Rejestracja świeża i ta sama subskrypcja — drugi raz nie idzie.
     expect(count('/link/register')).toBe(1);
@@ -319,6 +346,55 @@ describe('synchronizacja', () => {
     expect(server.connections.get(c.id)!.notifyToken).toBeUndefined();
   });
 
+  it('jedyny prowadzący, wyłączone bez serwera aplikacji: wyrejestrowanie idzie przy następnej synchronizacji', async () => {
+    const c = await connect();
+    await enableCoachPush(c.id, state);
+    const token = notifyOf(c.id)!.token;
+    worker.setOffline(true);
+    expect(await disableCoachPush(c.id)).toBe('off');
+    expect(server.connections.get(c.id)!.notifyToken).toBeNull();
+    expect(hasNotifyChores()).toBe(true);
+    worker.setOffline(false);
+    worker.clear();
+    // Żadna współpraca nie ma już powiadomień — a mimo to synchronizacja sprząta.
+    await syncAll(() => state);
+    expect(worker.calls.filter((x) => x.path.startsWith('/link/'))).toEqual([{ path: '/link/unregister', body: { token } }]);
+    expect(hasNotifyChores()).toBe(false);
+    worker.clear();
+    await syncAll(() => state);
+    expect(worker.paths().filter((x) => x.startsWith('/link/'))).toEqual([]);
+  });
+
+  it('wyłączone bez Sztabu: serwer aplikacji zapomina od razu, a Sztab dostaje skasowanie przy synchronizacji', async () => {
+    const c = await connect();
+    await enableCoachPush(c.id, state);
+    const token = notifyOf(c.id)!.token;
+    server.setOffline(true);
+    expect(await disableCoachPush(c.id)).toBe('off');
+    expect(worker.last('/link/unregister')).toEqual({ token });
+    expect(notifyOf(c.id)).toBeUndefined();
+    // Sztab dalej trzyma token — prowadzący widziałby „powiadomienia włączone”.
+    expect(await server.readNotify(c.id)).toBe(token);
+    expect(hasNotifyChores()).toBe(true);
+    server.setOffline(false);
+    await syncAll(() => state);
+    expect(server.connections.get(c.id)!.notifyToken).toBeNull();
+    expect(hasNotifyChores()).toBe(false);
+  });
+
+  it('wyłączone bez Sztabu i włączone znów przed synchronizacją: Sztab zostaje z nowym tokenem', async () => {
+    const c = await connect();
+    await enableCoachPush(c.id, state);
+    server.setOffline(true);
+    await disableCoachPush(c.id);
+    server.setOffline(false);
+    expect(await enableCoachPush(c.id, state)).toBe('on');
+    const token = notifyOf(c.id)!.token;
+    expect(hasNotifyChores()).toBe(false);
+    await syncAll(() => state);
+    expect(await server.readNotify(c.id)).toBe(token);
+  });
+
   it('wyłączone, gdy serwer aplikacji nie odpowiadał: wyrejestrowanie idzie przy następnej synchronizacji', async () => {
     const [a, b] = await twoCoaches();
     await enableCoachPush(a.id, state);
@@ -342,9 +418,12 @@ describe('przypomnienie o wizycie', () => {
     const now = Date.now();
     const startsAt = new Date(now + 26 * HOUR).toISOString();
     expect(await scheduleVisitReminder(c.id, { id: 'booking-1', startsAt }, now)).toBe(true);
-    expect(worker.last('/link/notify')).toEqual({ token, kind: 'visit-soon', at: Date.parse(startsAt) - VISIT_SOON_MS, ref: 'booking-1' });
+    // Numer zaplanowanego to HMAC(token, numer rezerwacji) — serwer aplikacji numerów z bazy Sztabu nie dostaje.
+    const ref = await notifyRef(token, 'booking-1');
+    expect(ref).toMatch(/^[0-9a-f]{32}$/);
+    expect(worker.last('/link/notify')).toEqual({ token, kind: 'visit-soon', at: Date.parse(startsAt) - VISIT_SOON_MS, ref });
     expect(await cancelVisitReminder(c.id, 'booking-1')).toBe(true);
-    expect(worker.last('/link/cancel')).toEqual({ token, ref: 'booking-1' });
+    expect(worker.last('/link/cancel')).toEqual({ token, ref });
   });
 
   it('wizyta za mniej niż 2 godziny albo powiadomienia wyłączone — nic', async () => {
@@ -369,7 +448,8 @@ describe('przypomnienie o wizycie', () => {
       s.connections.find((x) => x.id === c.id)!.visits = { at: Date.now(), bookings: r.bookings };
     });
     await enableCoachPush(c.id, state);
-    expect(worker.last('/link/notify')).toMatchObject({ kind: 'visit-soon', ref: booking, at: Date.parse(slot.startsAt) - VISIT_SOON_MS });
+    const token = notifyOf(c.id)!.token;
+    expect(worker.last('/link/notify')).toMatchObject({ kind: 'visit-soon', ref: await notifyRef(token, booking), at: Date.parse(slot.startsAt) - VISIT_SOON_MS });
   });
 
   it('odwołanie bez sieci czeka i idzie przy następnej synchronizacji', async () => {
@@ -381,6 +461,127 @@ describe('przypomnienie o wizycie', () => {
     worker.setOffline(false);
     worker.clear();
     await keepCoachPush(connectionOf(linkState(), c.id)!);
-    expect(worker.calls).toEqual([{ path: '/link/cancel', body: { token, ref: 'b-9' } }]);
+    expect(worker.calls).toEqual([{ path: '/link/cancel', body: { token, ref: await notifyRef(token, 'b-9') } }]);
+  });
+});
+
+describe('„Usuń wszystkie dane”', () => {
+  it('serwer aplikacji zapomina tokeny; subskrypcja tylko dla prowadzących znika; pamięć i „Nie teraz” też', async () => {
+    const [a, b] = await twoCoaches();
+    await enableCoachPush(a.id, state);
+    await enableCoachPush(b.id, state);
+    const tokens = [notifyOf(a.id)!.token, notifyOf(b.id)!.token];
+    rememberLater(a.id);
+    worker.clear();
+    await forgetCoachPush();
+    clearLink();
+    expect(worker.calls.filter((x) => x.path === '/link/unregister').map((x) => x.body.token)).toEqual(tokens);
+    // Przypomnienia były wyłączone: subskrypcję trzymali tylko prowadzący.
+    expect(count('/unsubscribe')).toBe(1);
+    expect(device.subscription).toBeNull();
+    expect(localStorage.getItem(NOTIFY_MEMO_KEY)).toBeNull();
+    expect(localStorage.getItem(LATER_KEY)).toBeNull();
+    expect(await currentPushState()).toBe('off');
+  });
+
+  it('przypomnienia włączone: subskrypcja zostaje, idą tylko wyrejestrowania tokenów', async () => {
+    const c = await connect();
+    await enablePush(state);
+    await enableCoachPush(c.id, state);
+    const sub = device.subscription;
+    worker.clear();
+    await forgetCoachPush();
+    clearLink();
+    expect(worker.paths()).toEqual(['/link/unregister']);
+    expect(device.subscription).toBe(sub);
+    expect(await currentPushState()).toBe('on');
+  });
+
+  it('bez sieci: wyrejestrowanie przeżywa reset i idzie przy następnej synchronizacji', async () => {
+    const c = await connect();
+    await enableCoachPush(c.id, state);
+    const token = notifyOf(c.id)!.token;
+    worker.setOffline(true);
+    await forgetCoachPush();
+    clearLink();
+    expect(linkState().connections).toEqual([]);
+    expect(hasNotifyChores()).toBe(true);
+    worker.setOffline(false);
+    worker.clear();
+    await syncAll(() => state);
+    expect(worker.calls).toEqual([{ path: '/link/unregister', body: { token } }]);
+    expect(hasNotifyChores()).toBe(false);
+  });
+});
+
+describe('wizyty w synchronizacji', () => {
+  const MIN = 60_000;
+
+  async function booked() {
+    const c = await connect();
+    await enableCoachPush(c.id, state);
+    const slot = server.slot();
+    const { clientBook } = await import('./rpc');
+    const booking = await clientBook(c.id, c.token!, slot.id);
+    expect(await scheduleVisitReminder(c.id, { id: booking, startsAt: slot.startsAt })).toBe(true);
+    return { c, booking, token: notifyOf(c.id)!.token };
+  }
+
+  it('przy włączonych powiadomieniach wizyty pobierane bez wejścia na stronę wizyt, a potem co 10 minut', async () => {
+    const { c, booking } = await booked();
+    expect(connectionOf(linkState(), c.id)!.visits).toBeUndefined();
+    await syncAll(() => state);
+    const v = connectionOf(linkState(), c.id)!.visits!;
+    expect(v.bookings.map((b) => b.id)).toEqual([booking]);
+    const slots = () => server.names().filter((n) => n === 'client_slots').length;
+    const before = slots();
+    await syncAll(() => state, { now: v.at + 5 * MIN });
+    expect(slots()).toBe(before);
+    await syncAll(() => state, { now: v.at + 11 * MIN });
+    expect(slots()).toBe(before + 1);
+  });
+
+  it('bez powiadomień i bez zapisu wizyt — nie pyta', async () => {
+    const c = await connect();
+    await syncAll(() => state);
+    expect(server.names()).not.toContain('client_slots');
+    expect(connectionOf(linkState(), c.id)!.visits).toBeUndefined();
+  });
+
+  it('wizyta odwołana przez prowadzącego albo zniknięta: przypomnienie odwołane', async () => {
+    const { c, booking, token } = await booked();
+    await syncAll(() => state);
+    const at = connectionOf(linkState(), c.id)!.visits!.at;
+    const b = server.connections.get(c.id)!.bookings.find((x) => x.id === booking)!;
+    b.cancelledAt = new Date().toISOString();
+    b.cancelledBy = 'coach';
+    worker.clear();
+    await syncAll(() => state, { now: at + 11 * MIN });
+    expect(worker.calls.filter((x) => x.path === '/link/cancel')).toEqual([{ path: '/link/cancel', body: { token, ref: await notifyRef(token, booking) } }]);
+
+    // Druga rezerwacja znika z odpowiedzi (prowadzący usunął termin).
+    const slot = server.slot({ startsAt: new Date(Date.now() + 30 * HOUR).toISOString(), endsAt: new Date(Date.now() + 31 * HOUR).toISOString() });
+    const { clientBook } = await import('./rpc');
+    const second = await clientBook(c.id, c.token!, slot.id);
+    updateLink((s) => {
+      s.connections.find((x) => x.id === c.id)!.visits!.at = 0;
+    });
+    await syncAll(() => state, { now: Date.now() });
+    server.connections.get(c.id)!.bookings = server.connections.get(c.id)!.bookings.filter((x) => x.id !== second);
+    worker.clear();
+    await syncAll(() => state, { now: Date.now() + 11 * MIN });
+    expect(worker.calls.filter((x) => x.path === '/link/cancel')).toEqual([{ path: '/link/cancel', body: { token, ref: await notifyRef(token, second) } }]);
+  });
+
+  it('wizyta odwołana na telefonie: odświeżenie nie odwołuje drugi raz', async () => {
+    const { c, booking } = await booked();
+    await syncAll(() => state);
+    const at = connectionOf(linkState(), c.id)!.visits!.at;
+    const { clientCancelBooking } = await import('./rpc');
+    await clientCancelBooking(c.id, c.token!, booking);
+    await cancelVisitReminder(c.id, booking);
+    worker.clear();
+    await syncAll(() => state, { now: at + 11 * MIN });
+    expect(worker.paths()).not.toContain('/link/cancel');
   });
 });

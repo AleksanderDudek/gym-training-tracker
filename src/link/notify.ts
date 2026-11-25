@@ -1,24 +1,32 @@
-import { newToken } from '@gymtracker/link';
+import { AAD, newToken, notifyRef, sealJson } from '@gymtracker/link';
+import type { NotifySealV1 } from '@gymtracker/link';
 import { API_URL } from '../api';
 import { LANG } from '../i18n';
-import { deviceSubscription, deviceTimeZone, hasPush, isIos, isStandalone, pushConfigured, pushEnv, pushStateOf, subscriptionEpoch } from '../push';
+import { deviceSubscription, deviceTimeZone, dropCoachSubscription, hasPush, pushConfigured, pushEnv, pushStateOf, subscriptionEpoch } from '../push';
 import type { AppState } from '../types';
 import { linkConfigured } from './config';
+import { LATER_KEY, changeNotifyMemo, notifyMemo } from './notifyMemo';
+import { askCoachPermission } from './permission';
 import { clientSetNotify, isRpcError } from './rpc';
 import type { Booking } from './rpc';
 import { activeConnections, connectionOf, linkState, updateLink } from './store';
 import type { LinkConnection } from './store';
+import { keyFor } from './sync';
 
 /**
  * Powiadomienia push od prowadzącego (spec 2026-11-25 „powiadomienia”).
  *
  * Jedna subskrypcja push urządzenia (ten sam klucz VAPID co przypomnienia, `src/push.ts`) — na serwerze
  * aplikacji GYM TRACKERa. Dla każdej trwającej współpracy telefon losuje token powiadomień, rejestruje go
- * tam (`POST /link/register` z subskrypcją, strefą i językiem) i podaje Sztabowi (`clientSetNotify`).
- * Sztab woła potem serwer tym tokenem i rodzajem zdarzenia; treści serwer nie zna.
+ * tam (`POST /link/register` z subskrypcją, strefą i językiem) i podaje Sztabowi (`clientSetNotify`) —
+ * zapieczętowany kluczem współpracy (`AAD.notify`), więc baza Sztabu go nie zna, zna go tylko przeglądarka
+ * prowadzącego. Sztab woła potem serwer tym tokenem i rodzajem zdarzenia; treści serwer nie zna.
+ * Zaplanowane (przypomnienie o wizycie) mają numer `notifyRef(token, numer rezerwacji)` — serwer nie
+ * dostaje numerów z bazy Sztabu, a telefon i Sztab liczą ten sam i mogą odwołać to samo.
  *
- * Żadna funkcja nie rzuca — powiadomienia to dodatek. Moduł ciągnie za sobą `rpc.ts` (rozmowa ze Sztabem),
- * więc z głównej paczki (ekran Dziś) najlepiej wczytywać go leniwie, `import('../link/notify')`.
+ * Żadna funkcja nie rzuca — powiadomienia to dodatek. Moduł ciągnie za sobą `rpc.ts` (rozmowa ze Sztabem)
+ * i klucze współpracy, więc z głównej paczki (ekran Dziś) wczytuje się go leniwie, `import('../link/notify')`;
+ * pytanie o zgodę (`permission.ts`) i pamięć urządzenia (`notifyMemo.ts`) leżą osobno.
  */
 
 export type CoachPushState = 'unconfigured' | 'unsupported' | 'ios-install' | 'denied' | 'off' | 'on';
@@ -30,51 +38,6 @@ export const REGISTER_EVERY_MS = 5 * 86_400_000;
 export const VISIT_SOON_MS = 2 * 3_600_000;
 
 const configured = (): boolean => pushConfigured() && linkConfigured();
-
-/* ── Pamięć urządzenia ─────────────────────────────────────────────────────────────── */
-
-/**
- * Co wie tylko to urządzenie (poza zapisem współprac, bo dotyczy subskrypcji, nie współpracy):
- * - `ep` — subskrypcja, z którą token ostatnio się zarejestrował: numer kolejnej subskrypcji urządzenia
- *   (`subscriptionEpoch`) i jej adres. Inna — rejestracja od nowa, bo serwer mógł ją skasować razem z tokenami
- *   (wypisanie, 404/410 z usługi powiadomień), a nowa subskrypcja tokenów jeszcze nie zna;
- * - `drop` — tokeny wyłączone bez sieci, których serwer aplikacji jeszcze nie zapomniał;
- * - `cancel` — odwołane wizyty, których przypomnienie wciąż czeka w kolejce serwera.
- */
-interface Memo {
-  ep: Record<string, string>;
-  drop: string[];
-  cancel: { token: string; ref: string }[];
-}
-
-const MEMO_KEY = 'gt-coach-push';
-
-function memo(): Memo {
-  try {
-    const raw = JSON.parse(localStorage.getItem(MEMO_KEY) ?? 'null') as Partial<Memo> | null;
-    const ep: Record<string, string> = {};
-    if (raw?.ep && typeof raw.ep === 'object') for (const [k, v] of Object.entries(raw.ep)) if (typeof v === 'string') ep[k] = v;
-    return {
-      ep,
-      drop: Array.isArray(raw?.drop) ? raw.drop.filter((t): t is string => typeof t === 'string') : [],
-      cancel: Array.isArray(raw?.cancel)
-        ? raw.cancel.filter((x): x is Memo['cancel'][number] => !!x && typeof x.token === 'string' && typeof x.ref === 'string')
-        : [],
-    };
-  } catch {
-    return { ep: {}, drop: [], cancel: [] };
-  }
-}
-
-function changeMemo(f: (m: Memo) => void): void {
-  const m = memo();
-  f(m);
-  try {
-    localStorage.setItem(MEMO_KEY, JSON.stringify(m));
-  } catch {
-    /* Bez pamięci strony: rejestracja pójdzie przy następnej synchronizacji jeszcze raz. */
-  }
-}
 
 /* ── Serwer aplikacji ──────────────────────────────────────────────────────────────── */
 
@@ -102,7 +65,7 @@ async function register(token: string, sub: PushSubscription): Promise<Reply> {
   const mark = subMark(sub);
   const r = await worker('/link/register', { token, subscription: sub.toJSON(), tz: deviceTimeZone(), lang: LANG });
   if (r === 'ok')
-    changeMemo((m) => {
+    changeNotifyMemo((m) => {
       m.ep[token] = mark;
     });
   return r;
@@ -110,7 +73,7 @@ async function register(token: string, sub: PushSubscription): Promise<Reply> {
 
 /** Token wyłączony: urządzenie go zapomina, a gdy serwer nie odpowiedział (`offline`), czeka w `drop`. */
 const forget = (token: string, r: Reply): void =>
-  changeMemo((m) => {
+  changeNotifyMemo((m) => {
     delete m.ep[token];
     m.drop = m.drop.filter((t) => t !== token);
     if (r === 'offline') m.drop.push(token);
@@ -123,27 +86,18 @@ async function unregister(token: string): Promise<Reply> {
   return r;
 }
 
-/** Zaległe wyrejestrowania i odwołania. */
-async function flush(): Promise<'ok' | 'offline'> {
-  const { drop, cancel } = memo();
-  for (const token of drop) if ((await unregister(token)) === 'offline') return 'offline';
-  for (const x of cancel) {
-    const r = await worker('/link/cancel', { token: x.token, ref: x.ref });
-    if (r === 'offline') return 'offline';
-    changeMemo((m) => {
-      m.cancel = m.cancel.filter((y) => !(y.token === x.token && y.ref === x.ref));
-    });
-  }
-  return 'ok';
-}
-
 /* ── Sztab ─────────────────────────────────────────────────────────────────────────── */
 
-/** Token powiadomień (albo `null`) do Sztabu. `ended` — współpracy już nie ma; synchronizacja to zapisze. */
+/**
+ * Token powiadomień (albo `null`) do Sztabu — zapieczętowany kluczem współpracy (`AAD.notify`), bo kolumna
+ * w bazie przyjmuje tylko szyfrogram. `ended` — współpracy już nie ma; synchronizacja to zapisze.
+ */
 async function tellSztab(c: LinkConnection, notify: string | null): Promise<'ok' | 'offline' | 'ended'> {
   if (c.status !== 'active' || !c.token) return 'ended';
   try {
-    await clientSetNotify(c.id, c.token, notify);
+    const seal: NotifySealV1 | null = notify === null ? null : { v: 1, token: notify };
+    const sealed = seal === null ? null : await sealJson(await keyFor(c), AAD.notify(c.id), seal);
+    await clientSetNotify(c.id, c.token, sealed);
     return 'ok';
   } catch (e) {
     return isRpcError(e, 'ended') || isRpcError(e, 'bad_token') ? 'ended' : 'offline';
@@ -158,6 +112,54 @@ const setNotify = (id: string, notify: LinkConnection['notify'] | undefined): vo
     else delete x.notify;
   });
 };
+
+/* ── Zaległe ───────────────────────────────────────────────────────────────────────── */
+
+/**
+ * Zaległe wyrejestrowania i odwołania na serwerze aplikacji oraz tokeny, które Sztab wciąż trzyma po
+ * wyłączeniu. Synchronizacja woła to zawsze (`syncAll`) — także bez żadnej współpracy z powiadomieniami,
+ * bo po „Usuń wszystkie dane” zostaje tylko ta pamięć. Pusta pamięć — bez zapytań. `offline` — któryś
+ * serwer nie odpowiedział; reszta czeka na następny raz.
+ */
+export async function flushCoachPush(): Promise<'ok' | 'offline'> {
+  try {
+    const { drop, cancel, unset } = notifyMemo();
+    let offline = false;
+    if (pushConfigured()) {
+      for (const token of drop) {
+        if ((await unregister(token)) !== 'offline') continue;
+        offline = true;
+        break;
+      }
+      for (const x of offline ? [] : cancel) {
+        if ((await worker('/link/cancel', { token: x.token, ref: x.ref })) === 'offline') {
+          offline = true;
+          break;
+        }
+        changeNotifyMemo((m) => {
+          m.cancel = m.cancel.filter((y) => !(y.token === x.token && y.ref === x.ref));
+        });
+      }
+    }
+    if (linkConfigured())
+      for (const id of unset) {
+        const c = connectionOf(linkState(), id);
+        // Włączone znów (nowy token pójdzie przy synchronizacji) albo koniec współpracy (Sztab skasował token
+        // sam) — nie ma czego kasować.
+        const told = !c || c.notify || c.status !== 'active' || !c.token ? 'ended' : await tellSztab(c, null);
+        if (told === 'offline') {
+          offline = true;
+          break;
+        }
+        changeNotifyMemo((m) => {
+          m.unset = m.unset.filter((x) => x !== id);
+        });
+      }
+    return offline ? 'offline' : 'ok';
+  } catch {
+    return 'offline';
+  }
+}
 
 /* ── Stan ──────────────────────────────────────────────────────────────────────────── */
 
@@ -185,34 +187,32 @@ export async function coachPushState(connectionId?: string): Promise<CoachPushSt
   }
 }
 
-/**
- * Pytanie o zgodę przeglądarki — wołane wprost w stuknięciu, zanim cokolwiek na coś poczeka: przeglądarki
- * (Safari najostrzej) pytają tylko w geście użytkownika. `null` — nie ma o co pytać (odpowiedź już jest
- * albo powiadomień tu nie będzie).
- */
-export function askCoachPermission(): Promise<NotificationPermission> | null {
-  try {
-    if (!configured() || !hasPush() || (isIos() && !isStandalone()) || Notification.permission !== 'default') return null;
-    return Promise.resolve(Notification.requestPermission()).then(
-      () => Notification.permission,
-      () => Notification.permission,
-    );
-  } catch {
-    return null;
-  }
-}
-
 /* ── Włączanie i wyłączanie ────────────────────────────────────────────────────────── */
+
+/** Włączanie w toku, po współpracy — jedno naraz. */
+const enabling = new Map<string, Promise<CoachPushState>>();
 
 /**
  * Włącza powiadomienia od prowadzącego tej współpracy (pyta o zgodę przeglądarki, gdy trzeba): subskrypcja
  * urządzenia, rejestracja tokenu na serwerze aplikacji, token do Sztabu. Sztab bez sieci — zapisane
  * z `sztab: false`, synchronizacja dośle. `state` — jak w przypomnieniach (`enablePush`); niepotrzebny.
+ *
+ * Drugie wywołanie dla tej samej współpracy w trakcie pierwszego (przyjęcie zaproszenia i stuknięcie
+ * w karcie na ekranie Dziś) dostaje wynik pierwszego — inaczej powstałyby dwa tokeny, a Sztab i telefon
+ * mogłyby zapamiętać różne.
  */
-export async function enableCoachPush(connectionId: string, state: AppState): Promise<CoachPushState> {
+export function enableCoachPush(connectionId: string, state: AppState): Promise<CoachPushState> {
   void state;
+  const running = enabling.get(connectionId);
+  if (running) return running;
   // Pierwsze, przed jakimkolwiek `await` — inaczej stuknięcie przestaje się liczyć jako gest.
   const asking = askCoachPermission();
+  const p = enableNow(connectionId, asking).finally(() => enabling.delete(connectionId));
+  enabling.set(connectionId, p);
+  return p;
+}
+
+async function enableNow(connectionId: string, asking: Promise<NotificationPermission> | null): Promise<CoachPushState> {
   try {
     if (asking) await asking;
     const gate = await blocked();
@@ -230,6 +230,10 @@ export async function enableCoachPush(connectionId: string, state: AppState): Pr
       return 'off';
     }
     setNotify(connectionId, { token, registeredAt: Date.now(), sztab: told === 'ok' });
+    // Wyłączenie, którego Sztab jeszcze nie dostał, jest już nieaktualne — dostanie nowy token.
+    changeNotifyMemo((m) => {
+      m.unset = m.unset.filter((x) => x !== connectionId);
+    });
     // Nowy token: wizyty zarezerwowane wcześniej dostają przypomnienie teraz (prowadzący tego tokenu nie znał).
     if (fresh) for (const b of c.visits?.bookings ?? []) if (!b.cancelledAt) await scheduleVisitReminder(connectionId, b);
     return coachPushState(connectionId);
@@ -241,7 +245,8 @@ export async function enableCoachPush(connectionId: string, state: AppState): Pr
 /**
  * Wyłącza je: kasuje token na serwerze aplikacji i w Sztabie. Wystarczy jedno z dwóch — serwer bez tokenu
  * nic nie wyśle, a Sztab bez tokenu nie ma czym wołać. Bez sieci do obu nic się nie zmienia (wynik jak
- * przed wyłączeniem); bez serwera aplikacji wyrejestrowanie czeka na następną synchronizację.
+ * przed wyłączeniem); bez jednego z nich jego część czeka w pamięci urządzenia na następną synchronizację —
+ * także Sztab, który inaczej dalej mówiłby prowadzącemu „powiadomienia włączone”.
  */
 export async function disableCoachPush(connectionId: string): Promise<CoachPushState> {
   try {
@@ -252,6 +257,10 @@ export async function disableCoachPush(connectionId: string): Promise<CoachPushS
     const told = linkConfigured() ? await tellSztab(c, null) : 'ended';
     if (r === 'offline' && told === 'offline') return coachPushState(connectionId);
     forget(n.token, r);
+    if (told === 'offline')
+      changeNotifyMemo((m) => {
+        if (!m.unset.includes(connectionId)) m.unset.push(connectionId);
+      });
     setNotify(connectionId, undefined);
     return coachPushState(connectionId);
   } catch {
@@ -267,7 +276,7 @@ export async function disableCoachPush(connectionId: string): Promise<CoachPushS
 export async function keepCoachPush(c: LinkConnection, now: number = Date.now()): Promise<'ok' | 'offline'> {
   try {
     if (!pushConfigured()) return 'ok';
-    if ((await flush()) === 'offline') return 'offline';
+    if ((await flushCoachPush()) === 'offline') return 'offline';
     const x = connectionOf(linkState(), c.id) ?? c;
     const n = x.notify;
     if (!n) return 'ok';
@@ -289,7 +298,7 @@ export async function keepCoachPush(c: LinkConnection, now: number = Date.now())
     if (!hasPush() || Notification.permission !== 'granted') return 'ok';
     const sub = await deviceSubscription(true);
     if (!sub) return 'ok';
-    if (now - n.registeredAt < REGISTER_EVERY_MS && memo().ep[n.token] === subMark(sub)) return 'ok';
+    if (now - n.registeredAt < REGISTER_EVERY_MS && notifyMemo().ep[n.token] === subMark(sub)) return 'ok';
     const r = await register(n.token, sub);
     if (r === 'offline') return 'offline';
     if (r === 'ok') {
@@ -302,12 +311,51 @@ export async function keepCoachPush(c: LinkConnection, now: number = Date.now())
   }
 }
 
+/**
+ * „Usuń wszystkie dane”, przed zakończeniem współprac (koniec kasuje token w Sztabie) i `clearLink`: serwer
+ * aplikacji zapomina tokeny wszystkich współprac. Bez sieci wyrejestrowania czekają w pamięci urządzenia
+ * (`drop`), którą reset zostawia, i idą przy następnej synchronizacji. Reszta (subskrypcje tokenów, odwołania
+ * wizyt, wyłączenia dla Sztabu, „Nie teraz”) znika. Subskrypcja trzymana tylko dla prowadzących (przypomnienia
+ * wyłączone) — wypisana z serwera i z przeglądarki.
+ */
+export async function forgetCoachPush(): Promise<void> {
+  let left: string[] = [];
+  try {
+    if (pushConfigured()) {
+      const tokens = new Set([...notifyMemo().drop, ...linkState().connections.flatMap((c) => (c.notify ? [c.notify.token] : []))]);
+      let offline = false;
+      for (const token of tokens) {
+        // Bez sieci reszta nawet nie próbuje — poczeka razem.
+        if (!offline && (await worker('/link/unregister', { token })) === 'offline') offline = true;
+        if (offline) left.push(token);
+      }
+    }
+  } catch {
+    left = notifyMemo().drop;
+  }
+  changeNotifyMemo((m) => {
+    m.ep = {};
+    m.cancel = [];
+    m.unset = [];
+    m.drop = left;
+  });
+  try {
+    localStorage.removeItem(LATER_KEY);
+  } catch {
+    /* nic do skasowania */
+  }
+  updateLink((s) => {
+    for (const c of s.connections) delete c.notify;
+  });
+  if (pushConfigured()) await dropCoachSubscription();
+}
+
 /* ── Przypomnienia o wizytach ──────────────────────────────────────────────────────── */
 
 /**
  * Wizyta zarezerwowana na telefonie: powiadomienie 2 godziny przed nią, z kolejki serwera aplikacji
- * (`ref` — numer rezerwacji, po nim odwołanie). Tylko przy włączonych powiadomieniach i gdy ta chwila
- * jeszcze nie minęła. `true` — serwer przyjął.
+ * (`ref` — `notifyRef(token, numer rezerwacji)`, po nim odwołanie). Tylko przy włączonych powiadomieniach
+ * i gdy ta chwila jeszcze nie minęła. `true` — serwer przyjął.
  */
 export async function scheduleVisitReminder(
   connectionId: string,
@@ -319,8 +367,9 @@ export async function scheduleVisitReminder(
     if (!configured() || c?.status !== 'active' || !c.notify) return false;
     const at = Date.parse(booking.startsAt) - VISIT_SOON_MS;
     if (!Number.isFinite(at) || at <= now) return false;
+    const token = c.notify.token;
     // `at` w milisekundach, jak w Sztabie — serwer aplikacji przyjmuje tylko liczbę.
-    return (await worker('/link/notify', { token: c.notify.token, kind: 'visit-soon', at: Math.round(at), ref: booking.id })) === 'ok';
+    return (await worker('/link/notify', { token, kind: 'visit-soon', at: Math.round(at), ref: await notifyRef(token, booking.id) })) === 'ok';
   } catch {
     return false;
   }
@@ -331,13 +380,40 @@ export async function cancelVisitReminder(connectionId: string, bookingId: strin
   try {
     const n = connectionOf(linkState(), connectionId)?.notify;
     if (!pushConfigured() || !n) return false;
-    const r = await worker('/link/cancel', { token: n.token, ref: bookingId });
+    const ref = await notifyRef(n.token, bookingId);
+    const r = await worker('/link/cancel', { token: n.token, ref });
     if (r === 'offline')
-      changeMemo((m) => {
-        m.cancel.push({ token: n.token, ref: bookingId });
+      changeNotifyMemo((m) => {
+        m.cancel.push({ token: n.token, ref });
       });
     return r === 'ok';
   } catch {
     return false;
+  }
+}
+
+/**
+ * Wizyty świeżo ze Sztabu (`refreshVisits` w synchronizacji, strona wizyt): rezerwacja, która była, a teraz
+ * jest odwołana przez prowadzącego albo zniknęła, nie dostaje już przypomnienia. Sztab przy odwołaniu kasuje
+ * je sam (ten sam `ref`), ale wysyła i zapomina — to druga linia. Odwołanej na telefonie
+ * (`cancelledBy: 'client'`) przypomnienie odwołało już `cancelVisitReminder`. Tylko te, które jeszcze czekają.
+ */
+export async function dropGoneVisitReminders(
+  connectionId: string,
+  before: readonly Booking[],
+  after: readonly Booking[],
+  now: number = Date.now(),
+): Promise<void> {
+  try {
+    if (!pushConfigured() || !connectionOf(linkState(), connectionId)?.notify) return;
+    const fresh = new Map(after.map((b) => [b.id, b]));
+    for (const b of before) {
+      if (b.cancelledAt || !(Date.parse(b.startsAt) - VISIT_SOON_MS > now)) continue;
+      const a = fresh.get(b.id);
+      if (a && (!a.cancelledAt || a.cancelledBy === 'client')) continue;
+      await cancelVisitReminder(connectionId, b.id);
+    }
+  } catch {
+    /* Po cichu — Sztab odwołał swoje, a przypomnienie o odwołanej wizycie to najwyżej zbędne powiadomienie. */
   }
 }
