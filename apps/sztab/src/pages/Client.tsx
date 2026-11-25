@@ -4,6 +4,7 @@ import type { AssignmentKind, Scope, SnapshotV1 } from '@gymtracker/link';
 import { MARKERS } from '@gt/food/labs/markers';
 import { MEASURES, measureName } from '@gt/engine/measures';
 import { LOCALE, num, text } from '@gt/i18n';
+import { DemoActions } from '../components/Demo';
 import { AreaChips, Dialog, Failure, Link, Loading, ago, fmtDate, toast, useLoad } from '../components/ui';
 import { loadAliases, markSeen, saveAlias } from '../lib/aliases';
 import { endConnection, getConnection, listAssignments, readSnapshot, withdrawAssignment } from '../lib/data';
@@ -281,6 +282,7 @@ export function ClientPage({ id }: { id: string }) {
           </div>
           {c.status === 'active' ? (
             <div className="row">
+              <DemoActions c={c} onChanged={conn.reload} />
               <button type="button" className="btn blue" onClick={() => setSending('note')}>
                 {T.send}
               </button>

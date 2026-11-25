@@ -2,6 +2,7 @@ import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } fro
 import type { ReactNode } from 'react';
 import { MESSAGE_MAX, formatPseudonym, parsePseudonym, shortPseudonym } from '@gymtracker/link';
 import { LOCALE, text } from '@gt/i18n';
+import { AddDemoClient, DemoChip } from '../components/Demo';
 import { AreaChips, Dialog, Failure, Link, Loading, ago, fmtDate, toast, useLoad } from '../components/ui';
 import {
   addGroup,
@@ -321,9 +322,12 @@ export function Clients() {
           <h1>{T.title}</h1>
           <p className="lead">{T.lead}</p>
         </div>
-        <Link to="/zaproszenia?nowe=1" className="btn blue">
-          {T.invite}
-        </Link>
+        <div className="row">
+          {data?.length ? <AddDemoClient connections={data} /> : null}
+          <Link to="/zaproszenia?nowe=1" className="btn blue">
+            {T.invite}
+          </Link>
+        </div>
       </div>
       {error ? <Failure error={error} retry={reload} /> : null}
       {!data && !error ? <Loading /> : null}
@@ -334,6 +338,7 @@ export function Clients() {
           <Link to="/zaproszenia?nowe=1" className="btn blue">
             {T.invite}
           </Link>
+          <AddDemoClient connections={data} explain />
         </section>
       ) : null}
       {data && data.length > 0 ? (
@@ -459,7 +464,8 @@ export function Clients() {
                             }}
                           >
                             {shortPseudonym(c.pseudonym)}
-                          </a>
+                          </a>{' '}
+                          <DemoChip connectionId={c.id} />
                           <div className="sz-clients-areas" title={`${T.sees}: ${sees(c)}`}>
                             <AreaChips areas={c.areas} />
                             <span className="sr">{`${T.sees}: ${sees(c)}`}</span>
