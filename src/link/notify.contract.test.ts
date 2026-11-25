@@ -120,7 +120,8 @@ describe('powiadomienia: telefon ↔ serwer aplikacji ↔ Sztab', () => {
     const [mine, theirs] = [crypto.randomUUID(), crypto.randomUUID()];
     expect(await scheduleVisitReminder(c.id, { id: mine, startsAt })).toBe(true);
     expect(await scheduleVisitReminder(c.id, { id: theirs, startsAt })).toBe(true);
-    const queued = async () => (await store.dueNotifies(Date.now() + 10 * HOUR, 100)).map((q) => q.ref);
+    // W oknie ważności przypomnienia (2 h przed wizytą, ważne godzinę) — po nim serwer je przeterminowuje.
+    const queued = async () => (await store.dueNotifies(Date.now() + 3.5 * HOUR, { perToken: 100, perEndpoint: 100, limit: 100 })).map((q) => q.ref);
     expect(await queued()).toEqual([await notifyRef(token, mine), await notifyRef(token, theirs)]);
 
     expect(await cancelVisitReminder(c.id, mine)).toBe(true);
@@ -143,7 +144,8 @@ describe('powiadomienia: telefon ↔ serwer aplikacji ↔ Sztab', () => {
     await tokenNotifier(token)!.notify('message');
     await linkTick(store, env, new Date(Date.now() + 3.5 * HOUR), send);
     expect(pushes).toHaveLength(0);
-    expect(await store.dueNotifies(Date.now() + 10 * HOUR, 100)).toEqual([]);
+    // W oknie ważności — pusta kolejka znaczy „skasowane”, a nie „przeterminowane”.
+    expect(await store.dueNotifies(Date.now() + 3.5 * HOUR, { perToken: 100, perEndpoint: 100, limit: 100 })).toEqual([]);
   });
 
   it('rodzaje zdarzeń: Sztab i telefon używają listy serwera aplikacji', async () => {
