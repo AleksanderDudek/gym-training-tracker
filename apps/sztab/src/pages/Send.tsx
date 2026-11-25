@@ -72,7 +72,24 @@ export function toAssignment(body: SendableBody, library: LibraryItem[], note: s
   }
 }
 
-export function SendDialog({ connection, onClose, onSent, initialKind }: { connection: Connection; onClose: () => void; onSent: () => void; initialKind?: AssignmentKind }) {
+export function SendDialog({
+  connection,
+  recipients,
+  onClose,
+  onSent,
+  initialKind,
+}: {
+  connection: Connection;
+  /**
+   * Kontrakt rdzenia (spec 2026-11-25): wysyłka do wielu — wszyscy zaznaczeni, `connection` pierwszy.
+   * Każdy dostaje własny szyfrogram swoim kluczem współpracy. Bez listy — tylko `connection`.
+   */
+  recipients?: Connection[];
+  onClose: () => void;
+  onSent: () => void;
+  initialKind?: AssignmentKind;
+}) {
+  void recipients;
   const { coach, key } = useReady();
   const lib = useLoad(listLibrary, []);
   const kinds = useMemo(() => [...new Set(connection.areas.flatMap((a) => KINDS_BY_AREA[a]))], [connection.areas]);

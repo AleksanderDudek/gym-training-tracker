@@ -44,7 +44,7 @@ const rand = (seed: number) => {
   return x - Math.floor(x);
 };
 
-function demoSnapshot(scopes: SnapshotV1['scopes']): SnapshotV1 {
+export function demoSnapshot(scopes: SnapshotV1['scopes']): SnapshotV1 {
   const start = day(49);
   const plan = { templateId: 'cel-gora-dol-kb-60', start, ticked: {}, weekdays: [1, 3, 5] };
   const log: NonNullable<SnapshotV1['training']>['log'] = [];
@@ -154,7 +154,10 @@ async function main() {
   console.log(`Przyjęte u ${preview.coachName}. Współpraca ${id}, paczka ${Math.round(sealed.length / 1024)} kB.`);
 }
 
-void main().catch((e: unknown) => {
-  console.error(e instanceof Error ? e.message : e);
-  process.exit(1);
-});
+// Uruchomiony wprost (a nie zaimportowany przez `seed.ts`).
+if (process.argv[1] && import.meta.url.endsWith(process.argv[1].split('/').pop()!)) {
+  void main().catch((e: unknown) => {
+    console.error(e instanceof Error ? e.message : e);
+    process.exit(1);
+  });
+}
