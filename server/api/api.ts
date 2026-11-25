@@ -3,16 +3,21 @@ import { garmin } from './garmin';
 import { dueItems, isStale, localParts, pruneSent, sentKey } from './schedule';
 import type { ReminderItem } from './schedule';
 import type { FeedbackSummary, Store } from './store';
-import { fromB64u, pushRequest } from './webpush';
+import { link } from './link';
+import { pushRequest } from './webpush';
+import { subscriptionOf, validEndpoint, validTz } from './subscription';
 import { lastDays, parseStats, statsPage, utcDay } from './stats';
 import type { Vapid } from './webpush';
+
+export { validEndpoint };
 
 /**
  * Serwer aplikacji: przypomnienia, uwagi od użytkowników, skrzynki zegarka i jeden przebieg crona.
  *
  * - `POST /subscribe` — subskrypcja telefonu, jego strefa czasowa i lista gotowych
  *   przypomnień na najbliższe dni. Każde otwarcie aplikacji przysyła listę od nowa.
- * - `POST /unsubscribe` — wyłączenie przypomnień.
+ * - `POST /unsubscribe` — wyłączenie przypomnień: subskrypcja znika (telefon i tak ją zaraz
+ *   zamyka) razem z tokenami współpracy przy niej.
  * - `POST /feedback` — uwaga albo zgłoszenie błędu: e-mail, treść, zrzut ekranu i ślad wizyty;
  *   z ustawionym webhookiem idzie też na kanał autora na Discordzie.
  * - `GET /admin/feedback` — lista uwag dla autora, za hasłem (`ADMIN_TOKEN`).
@@ -20,7 +25,8 @@ import type { Vapid } from './webpush';
  *   użytkownika; `GET /admin/stats` — tabela dla autora, za tym samym hasłem.
  * - `POST /garmin/push` — zaszyfrowana paczka z zegarka Garmin (serwer nie ma klucza).
  * - `POST /garmin/pull`, `POST /garmin/forget` — odbiór paczki i odłączenie zegarka.
- * - `tick` — co kilka minut: wyślij to, czemu wybiła godzina.
+ * - `POST /link/…` — powiadomienia od prowadzącego (GYM TRACKER Sztab) tokenem współpracy (`link.ts`).
+ * - `tick` — co kilka minut: wyślij to, czemu wybiła godzina (zaplanowane od prowadzącego: `linkTick`).
  *
  * Konta nie ma. Subskrypcję identyfikuje jej własny adres w usłudze powiadomień — losowy,
  * długi i znany tylko temu telefonowi, więc wypisać może ją tylko on.
@@ -43,47 +49,8 @@ export interface Env {
 /** Praca po odpowiedzi (`ctx.waitUntil` Workera): użytkownik nie czeka na Discorda. */
 export type Defer = (p: Promise<unknown>) => void;
 
-/**
- * Usługi powiadomień przeglądarek: Chrome i Edge na Androidzie (FCM), Safari na iOS
- * i macOS, Firefox, Windows. Serwer wysyła zapytania tylko tam — bez tej listy każdy mógłby
- * zapisać „subskrypcję” z adresem wewnętrznym i kazać serwerowi pod niego stukać.
- */
-const PUSH_HOSTS = [
-  /^fcm\.googleapis\.com$/,
-  /^android\.googleapis\.com$/,
-  /^(web\.push|[a-z0-9-]+\.push)\.apple\.com$/,
-  /^updates\.push\.services\.mozilla\.com$/,
-  /^[a-z0-9-]+\.notify\.windows\.com$/,
-];
-
-export function validEndpoint(endpoint: unknown): endpoint is string {
-  if (typeof endpoint !== 'string' || endpoint.length > 1024) return false;
-  try {
-    const u = new URL(endpoint);
-    return u.protocol === 'https:' && !u.port && PUSH_HOSTS.some((h) => h.test(u.hostname));
-  } catch {
-    return false;
-  }
-}
-
-const byteLength = (s: unknown, n: number): boolean => {
-  if (typeof s !== 'string' || !/^[A-Za-z0-9_-]+$/.test(s)) return false;
-  try {
-    return fromB64u(s).length === n;
-  } catch {
-    return false;
-  }
-};
-
-const validTz = (tz: unknown): tz is string => {
-  if (typeof tz !== 'string' || tz.length > 64) return false;
-  try {
-    new Intl.DateTimeFormat('en', { timeZone: tz });
-    return true;
-  } catch {
-    return false;
-  }
-};
+/** Wysyłka gotowego zapytania do usługi powiadomień — `fetch`, w teście podglądana. */
+export type Send = (r: Request) => Promise<Response>;
 
 /** Najwięcej przypomnień na listę: dwa dziennie przez trzy tygodnie z zapasem. */
 export const MAX_ITEMS = 100;
@@ -127,6 +94,10 @@ const MAX_BODY = 64 * 1024;
 /** Uwaga ze zrzutem ekranu: JPEG telefonu to zwykle 50–200 kB, w base64 o trzecią część więcej. */
 const MAX_FEEDBACK_BODY = 3 * 1024 * 1024;
 
+/**
+ * Treść jako JSON bez względu na `Content-Type`: statystyki (`sendBeacon`) i Sztab (`/link/notify`
+ * z `keepalive`) wysyłają `text/plain` — proste zapytanie CORS, bez preflightu.
+ */
 async function readJson(req: Request, max = MAX_BODY): Promise<Record<string, unknown> | null> {
   if (Number(req.headers.get('Content-Length') ?? 0) > max) return null;
   const raw = await req.text();
@@ -145,6 +116,7 @@ export async function handle(
   store: Store,
   now = Date.now(),
   defer: Defer = (p) => void p,
+  send: Send = (r) => fetch(r),
 ): Promise<Response> {
   const headers = cors(req, env);
   const reply = (status: number, msg?: string) => new Response(msg ?? null, { status, headers });
@@ -178,28 +150,14 @@ export async function handle(
     return garmin(path, data, () => ipHashOf(req, env), store, now, { reply, json });
   }
 
+  if (path.startsWith('/link/')) return link(path, data, env, store, now, reply, defer, send);
+
   if (path === '/subscribe') {
-    const sub = data.subscription as { endpoint?: unknown; keys?: { p256dh?: unknown; auth?: unknown } } | undefined;
+    const sub = subscriptionOf(data.subscription);
     const items = data.items;
-    if (
-      !sub ||
-      !validEndpoint(sub.endpoint) ||
-      !byteLength(sub.keys?.p256dh, 65) ||
-      !byteLength(sub.keys?.auth, 16) ||
-      !validTz(data.tz) ||
-      !Array.isArray(items) ||
-      items.length > MAX_ITEMS ||
-      !items.every(validItem)
-    )
+    if (!sub || !validTz(data.tz) || !Array.isArray(items) || items.length > MAX_ITEMS || !items.every(validItem))
       return reply(400, 'zła subskrypcja albo lista');
-    await store.upsert({
-      endpoint: sub.endpoint,
-      p256dh: sub.keys!.p256dh as string,
-      auth: sub.keys!.auth as string,
-      tz: data.tz,
-      items,
-      updated: now,
-    });
+    await store.upsert({ ...sub, tz: data.tz, items, updated: now });
     return reply(204);
   }
 
@@ -220,7 +178,7 @@ export async function tick(
   store: Store,
   env: Env,
   now: Date,
-  send: (r: Request) => Promise<Response> = (r) => fetch(r),
+  send: Send = (r) => fetch(r),
 ): Promise<{ sent: number; removed: number; failed: number }> {
   const vapid: Vapid = { publicKey: env.VAPID_PUBLIC_KEY, privateJwk: env.VAPID_PRIVATE_JWK, subject: env.VAPID_SUBJECT };
   const out = { sent: 0, removed: 0, failed: 0 };
