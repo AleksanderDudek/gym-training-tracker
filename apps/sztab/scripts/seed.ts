@@ -193,7 +193,8 @@ async function phone(file: string) {
             b.kind === 'habits'
               ? habitsFor(b, day)
               : (() => {
-                  const i = mealDayIndex(b, localDay(a.sentAt - 27 * 86_400_000), day);
+                  // Jak telefon (`src/link/today.ts`): cykl od `start` albo od dnia wysłania.
+                  const i = mealDayIndex(b, localDay(a.sentAt), day);
                   return i === null ? [] : b.days[i]!.meals.map((_, j) => j);
                 })();
           const done = due.filter((j) => Math.sin(d * 13 + j * 5 + pi) > -0.5);

@@ -193,3 +193,24 @@ describe('odpowiedzi i odhaczenia w paczce', () => {
     await vi.waitFor(() => expect(server.names().filter((n) => n === 'client_push').length).toBe(before + 1));
   });
 });
+
+describe('wizyty w tle', () => {
+  it('zapamiętane rezerwacje odświeżają się przy synchronizacji, gdy mają ponad 3 h — świeże nie', async () => {
+    const slot = server.slot();
+    updateLink((s) => {
+      s.connections[0]!.visits = { at: Date.now() - 4 * 3_600_000, bookings: [] };
+    });
+    // Rezerwacja „z innego urządzenia” — telefon dowie się o niej z odświeżenia.
+    server.connections.get(conn.id)!.bookings.push({ id: crypto.randomUUID(), slotId: slot.id, cancelledAt: null, cancelledBy: null });
+    await syncAll(() => state);
+    expect(linkState().connections[0]!.visits?.bookings.map((b) => b.slotId)).toEqual([slot.id]);
+    const calls = server.names().filter((n) => n === 'client_slots').length;
+    await syncAll(() => state);
+    expect(server.names().filter((n) => n === 'client_slots').length).toBe(calls);
+  });
+
+  it('bez zapisu (nigdy nie otwierał wizyt) nie pyta o terminy', async () => {
+    await syncAll(() => state);
+    expect(server.names()).not.toContain('client_slots');
+  });
+});

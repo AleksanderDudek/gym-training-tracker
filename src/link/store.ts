@@ -57,7 +57,10 @@ export interface LinkConnection {
   messagesSince?: string | null;
   /** Do kiedy (czas serwera) prowadzący przeczytał wiadomości od nas. */
   readUpTo?: string | null;
-  /** Wysłane zdjęcia sylwetki: numer zdjęcia na telefonie → numer na serwerze. */
+  /**
+   * Wysłane zdjęcia sylwetki: `<numer zdjęcia na telefonie>|<dzień>` → numer na serwerze. Dzień jest
+   * w kluczu, bo „Sylwetka” pozwala go poprawić — poprawione zdjęcie idzie jako nowa kopia, a stara znika.
+   */
   photos?: Record<string, string>;
   /** Wizyty z ostatniego pobrania (`client_slots`): do pokazania bez sieci i do uwagi na ekranie Dziś. */
   visits?: { at: number; bookings: Booking[] };

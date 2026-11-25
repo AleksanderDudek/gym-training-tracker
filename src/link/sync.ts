@@ -9,6 +9,7 @@ import {
   clientPush,
   clientRead,
   clientReceipt,
+  clientSlots,
   clientStatus,
   clientUpdate,
   isRpcError,
@@ -352,6 +353,7 @@ export function syncAll(getState: () => AppState | null, opts: { force?: boolean
         const fresh = connectionOf(linkState(), c0.id);
         if (fresh?.status === 'active') {
           if ((await pullMessages(fresh)) === 'offline') return;
+          if ((await refreshVisits(fresh, opts.now)) === 'offline') return;
           if (fresh.scopes.includes('photos') && (await syncPhotos(fresh)) === 'offline') return;
         }
       }
@@ -578,4 +580,29 @@ export function setDayTicks(
     s.ticks[a.id] = days;
   });
   pushSoon(a.connectionId, getState);
+}
+
+/* ── Wizyty ────────────────────────────────────────────────────────────────────────── */
+
+/** Jak długo zapamiętane rezerwacje wystarczą linii „Wizyta jutro…” na ekranie Dziś. */
+export const VISITS_STALE_MS = 3 * 3_600_000;
+
+/**
+ * Zapamiętane rezerwacje odświeżane w tle — tylko gdy podopieczny kiedyś otworzył wizyty (jest
+ * zapis) i ten zapis ma ponad 3 godziny. Bez tego uwaga na ekranie Dziś znałaby tylko stan z chwili
+ * ostatniego wejścia na stronę wizyt (a prowadzący mógł w międzyczasie odwołać termin).
+ */
+async function refreshVisits(c: LinkConnection, now: number = Date.now()): Promise<'ok' | 'offline' | 'ended'> {
+  if (!c.token || !c.visits || now - c.visits.at < VISITS_STALE_MS) return 'ok';
+  try {
+    const r = await clientSlots(c.id, c.token);
+    updateLink((s) => {
+      const x = s.connections.find((y) => y.id === c.id);
+      if (x) x.visits = { at: now, bookings: r.bookings };
+    });
+    return 'ok';
+  } catch (e) {
+    if (isRpcError(e, 'ended') || isRpcError(e, 'bad_token')) return (await checkEnded(c)) ? 'ended' : 'offline';
+    return 'offline';
+  }
 }

@@ -1,11 +1,11 @@
-import { Fragment, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { formatPseudonym, shortPseudonym } from '@gymtracker/link';
 import type { AssignmentKind, Scope, SnapshotV1 } from '@gymtracker/link';
 import { MARKERS } from '@gt/food/labs/markers';
 import { MEASURES, measureName } from '@gt/engine/measures';
 import { LOCALE, num, text } from '@gt/i18n';
 import { AreaChips, Dialog, Failure, Link, Loading, ago, fmtDate, toast, useLoad } from '../components/ui';
-import { loadAliases, saveAlias } from '../lib/aliases';
+import { loadAliases, markSeen, saveAlias } from '../lib/aliases';
 import { endConnection, getConnection, listAssignments, readSnapshot, withdrawAssignment } from '../lib/data';
 import type { Connection, SentAssignment } from '../lib/data';
 import { L } from '../lib/labels';
@@ -226,6 +226,10 @@ export function ClientPage({ id }: { id: string }) {
   const snap = useLoad(async () => (c && c.status === 'active' ? readSnapshot(key, c) : null), [c]);
   const sent = useLoad(async () => (c ? listAssignments(key, c) : []), [c]);
   const [alias, setAlias] = useState<string | null>(null);
+  // „Nowe odpowiedzi” na liście liczą się od ostatniego otwarcia — także wejścia z adresu, nie tylko z listy.
+  useEffect(() => {
+    markSeen(user.id, id);
+  }, [user.id, id]);
   const [sending, setSending] = useState<AssignmentKind | null>(null);
   const [ending, setEnding] = useState(false);
 
