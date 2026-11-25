@@ -6,7 +6,7 @@ import type { AssignmentV1, CoachingV1, HabitsBody, PublicJwk, SnapshotV1 } from
  * Podopieczny demonstracyjny na udawanym serwerze: te same funkcje bazy co telefon (`invite_accept`,
  * `client_pull`, `client_push` z limitem 30 s, `client_receipt`, wiadomości, zdjęcia, terminy), prawdziwe
  * szyfrowanie. Sprawdza, że telefon demo odpowiada tylko od dnia wysłania, nigdy z przyszłości, z realizacją
- * 70–90 %, i że „Usuń demo” kończy współpracę i czyści przeglądarkę.
+ * 70–90 %, nie rezerwuje prawdziwych terminów i że „Usuń demo” kończy współpracę i czyści przeglądarkę.
  */
 
 vi.hoisted(() => {
@@ -145,7 +145,7 @@ vi.mock('../src/lib/data', async (orig) => ({
     return { id, ...input };
   }),
   getConnection: vi.fn(async (id: string) => ({ id, status: db.conns.get(id)?.status ?? 'ended' })),
-  endConnection: vi.fn(async (id: string) => {
+  endConnection: vi.fn(async (_key: CryptoKey, id: string) => {
     const c = db.conns.get(id);
     if (c) c.status = 'ended';
   }),
@@ -290,7 +290,7 @@ describe('Podopieczny demonstracyjny', () => {
     expect(opened.map((p) => p!.day)).toEqual(photoDays(now));
   });
 
-  it('„Symuluj telefon”: odpowiada na to, co wysłano dziś, tylko od dnia wysłania; czeka swoją kolej na paczkę; odpisuje na ostatnią wiadomość i rezerwuje termin', async () => {
+  it('„Symuluj telefon”: odpowiada na to, co wysłano dziś, tylko od dnia wysłania; czeka swoją kolej na paczkę; odpisuje na ostatnią wiadomość; nie rezerwuje prawdziwych terminów', async () => {
     const s = await createDemoClient(ctx, { now: Date.now(), photos, wait });
     const c = { id: s.connectionId, clientKey: db.conns.get(s.connectionId)!.publicKey, inviteId: s.inviteId } as Parameters<typeof data.sendAssignment>[2];
     const habits: HabitsBody = { kind: 'habits', title: 'Nowe', note: '', until: null, items: [{ label: 'Woda', dose: '', when: 'any', days: [1, 2, 3, 4, 5, 6, 7] }] };
@@ -318,21 +318,25 @@ describe('Podopieczny demonstracyjny', () => {
     const key = await coachKey(s.connectionId);
     expect(REPLIES.pl).toContain(parseMessage(await openJson(key, AAD.message(s.connectionId, reply.id as string, 'client'), reply.ciphertext as string))!.text);
     expect(db.reads).toContain(coachMsg.createdAt);
-    expect(r.booked).toBe(true);
-    expect(db.bookings).toHaveLength(1);
+    // Wolny termin prowadzącego jest prawdziwy — zmyślony podopieczny nie zajmie miejsca prawdziwym.
+    expect(r.booked).toBe(false);
+    expect(db.bookings).toHaveLength(0);
+    expect(db.slots[0]!.taken).toBe(0);
+    expect(db.calls).not.toContain('client_book');
 
-    // Drugi raz: ostatnie słowo ma już podopieczny, termin zarezerwowany — bez powtórek.
+    // Drugi raz: ostatnie słowo ma już podopieczny — bez powtórek; dalej bez rezerwacji.
     db.now += 60_000;
     const again = await simulateDemo(ctx, { wait });
     expect(again.replied).toBe(false);
     expect(again.booked).toBe(false);
-    expect(db.bookings).toHaveLength(1);
+    expect(db.bookings).toHaveLength(0);
+    expect(db.calls).not.toContain('client_book');
   });
 
   it('„Usuń demo” kończy współpracę i czyści stan w przeglądarce; symulacja zakończonej — też czyści', async () => {
     const s = await createDemoClient(ctx, { now: Date.now(), photos, wait });
-    await removeDemo('u1');
-    expect(vi.mocked(data.endConnection)).toHaveBeenCalledWith(s.connectionId);
+    await removeDemo({ userId: 'u1', key: ctx.key });
+    expect(vi.mocked(data.endConnection)).toHaveBeenCalledWith(ctx.key, s.connectionId);
     expect(db.conns.get(s.connectionId)!.status).toBe('ended');
     expect(loadDemo('u1')).toBeNull();
 

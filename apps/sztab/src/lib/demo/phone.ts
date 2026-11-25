@@ -423,7 +423,10 @@ export interface SimOptions {
   maxDays?: number;
   /** Odpowiedzieć na ostatnią wiadomość prowadzącego (i oznaczyć jego wiadomości jako przeczytane). */
   reply?: boolean;
-  /** Zarezerwować pierwszy wolny termin, jeśli telefon nie ma jeszcze rezerwacji. */
+  /**
+   * Zarezerwować pierwszy wolny termin, jeśli telefon nie ma jeszcze rezerwacji. Tylko dane lokalnej bazy
+   * (`scripts/seed.ts`); podopieczny demo w przeglądarce prowadzącego nie rezerwuje — zająłby prawdziwe miejsce.
+   */
   book?: boolean;
   /** Czekanie na kolejkę paczek (w testach — od razu). */
   wait?: (ms: number) => Promise<void>;

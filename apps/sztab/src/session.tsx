@@ -4,6 +4,7 @@ import type { User } from '@supabase/supabase-js';
 import { getCoach } from './lib/data';
 import type { Coach } from './lib/data';
 import { needsCode } from './lib/mfa';
+import { forgetNotify } from './lib/notify';
 import { navigate } from './lib/router';
 import { sb } from './lib/sb';
 import { loadDeviceKey } from './lib/vault';
@@ -32,7 +33,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session>({ kind: 'loading' });
 
   const resolve = useCallback(async (user: User | null) => {
-    if (!user) return setSession({ kind: 'out' });
+    if (!user) {
+      // Pieczęcie tokenów powiadomień z pamięci (`lib/notify.ts`) — nie przechodzą na następne konto.
+      forgetNotify();
+      return setSession({ kind: 'out' });
+    }
     try {
       // Sesja po haśle, a konto ma włączone logowanie dwuetapowe: dalej dopiero po kodzie (też po odświeżeniu strony).
       const aal = await sb.auth.mfa.getAuthenticatorAssuranceLevel();

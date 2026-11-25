@@ -369,7 +369,7 @@ export function ClientPage({ id }: { id: string }) {
               type="button"
               className="btn danger"
               onClick={() =>
-                void endConnection(c.id).then(() => {
+                void endConnection(key, c.id).then(() => {
                   toast(T.ended);
                   navigate('/podopieczni');
                 })
@@ -757,6 +757,8 @@ function SentTab({
 }) {
   // Harmonogram i druk (spec 2026-11-25). Teksty, numer podopiecznego i wydruk (ładowany dopiero na
   // „Drukuj”) mieszkają tu, w środku zakładki — reszta pliku należy do innych części.
+  // Klucz z sejfu otwiera pieczęć tokenu powiadomień przy wycofaniu (`withdrawAssignment`).
+  const { key } = useReady();
   const S = useMemo(
     () =>
       text({
@@ -811,7 +813,7 @@ function SentTab({
   };
 
   const cancel = (a: SentAssignment) =>
-    void withdrawAssignment(c, a).then(
+    void withdrawAssignment(key, c, a).then(
       () => {
         setAsking(null);
         toast(S.done);
@@ -895,7 +897,7 @@ function SentTab({
                   {S.cancel}
                 </button>
               ) : !a.withdrawnAt ? (
-                <button type="button" className="btn ghost small" onClick={() => void withdrawAssignment(c, a).then(changed, () => toast(S.failed))}>
+                <button type="button" className="btn ghost small" onClick={() => void withdrawAssignment(key, c, a).then(changed, () => toast(S.failed))}>
                   {T.withdraw}
                 </button>
               ) : null}

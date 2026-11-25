@@ -133,7 +133,13 @@ async function sendHistory(ctx: DemoContext, connectionId: string, inviteId: str
   if (error) throw new Error(errorCode(error));
 }
 
-/** „Symuluj telefon”: odbiór, potwierdzenia, odpowiedzi, odhaczenia, paczka, odpowiedź na wiadomość, rezerwacja. */
+/**
+ * „Symuluj telefon”: odbiór, potwierdzenia, odpowiedzi, odhaczenia, paczka, odpowiedź na wiadomość.
+ *
+ * Bez rezerwacji: wolne terminy w kalendarzu są prawdziwe — telefon zmyślonego podopiecznego zająłby miejsce
+ * prawdziwym (podgląd wolnych terminów i limit miejsc). Wizytę demo prowadzący zapisuje sam w Kalendarzu,
+ * jeśli chce ją zobaczyć.
+ */
 export async function simulateDemo(
   ctx: Pick<DemoContext, 'coach' | 'userId'>,
   opts: { now?: number; onStep?: (s: SimStep, detail?: number) => void; wait?: SimOptions['wait']; rpc?: Rpc } = {},
@@ -142,7 +148,7 @@ export async function simulateDemo(
   const coachKey = cleanPublicJwk(ctx.coach.public_key);
   if (!state || !coachKey) throw new Error('no_demo');
   try {
-    return await simulatePhone(opts.rpc ?? rpc, state, coachKey, { now: opts.now, lang: LANG, reply: true, book: true, onStep: opts.onStep, wait: opts.wait });
+    return await simulatePhone(opts.rpc ?? rpc, state, coachKey, { now: opts.now, lang: LANG, reply: true, onStep: opts.onStep, wait: opts.wait });
   } catch (e) {
     // Współpraca zakończona gdzie indziej (token skasowany) — telefon demo nie ma już czego symulować.
     if (e instanceof Error && e.message === 'bad_token') clearDemo(ctx.userId);
@@ -150,13 +156,19 @@ export async function simulateDemo(
   }
 }
 
-/** „Usuń demo”: koniec współpracy jak każdej innej i zapomniany telefon. Skrót „Demo” zostaje przy zakończonej. */
-export async function removeDemo(userId: string, end: (id: string) => Promise<void> = endConnection): Promise<void> {
-  const state = loadDemo(userId);
+/**
+ * „Usuń demo”: koniec współpracy jak każdej innej (z kluczem z sejfu, jak prawdziwej) i zapomniany telefon.
+ * Skrót „Demo” zostaje przy zakończonej.
+ */
+export async function removeDemo(
+  ctx: Pick<DemoContext, 'userId' | 'key'>,
+  end: (key: CryptoKey, id: string) => Promise<void> = endConnection,
+): Promise<void> {
+  const state = loadDemo(ctx.userId);
   if (!state) return;
   const c = await getConnection(state.connectionId).catch(() => null);
-  if (c && c.status === 'active') await end(state.connectionId);
-  clearDemo(userId);
+  if (c && c.status === 'active') await end(ctx.key, state.connectionId);
+  clearDemo(ctx.userId);
 }
 
 /* ── Zdjęcia sylwetki ─────────────────────────────────────────────────────────────── */

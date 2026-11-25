@@ -18,7 +18,7 @@ const T = text({
       'Ty — administrator danych podopiecznego: wiesz, kim jest, ustalasz cel i zakres prowadzenia.',
       'Sztab — przechowuje zaszyfrowane paczki i zalecenia, których nie umie odczytać, oraz numery podopiecznych bez danych osobowych. Umowa powierzenia (DPA) jest częścią regulaminu.',
       'Podopieczny — decyduje w GYM TRACKERze, co ci pokazuje, i może w każdej chwili zakończyć współpracę. Wtedy dane znikają z serwera od razu.',
-      'Serwer aplikacji GYM TRACKERa — tylko gdy podopieczny włączy powiadomienia: po twojej wiadomości, zaleceniu czy zmianie wizyty ta przeglądarka podaje mu losowy token i sam rodzaj zdarzenia („nowa wiadomość”), a przy zaplanowanym — porę wysyłki. Bez treści, bez nazwiska, bez numeru podopiecznego; powiadomienie na telefonie też jest ogólne.',
+      'Serwer aplikacji GYM TRACKERa — tylko gdy podopieczny włączy powiadomienia: po twojej wiadomości, zaleceniu czy zmianie wizyty ta przeglądarka podaje mu losowy token (w bazie Sztabu leży zapieczętowany kluczem waszej współpracy — serwer Sztabu go nie odczyta) i sam rodzaj zdarzenia („nowa wiadomość”), a przy zaplanowanym — porę wysyłki i nieczytelny numer do jego odwołania, nie numer zalecenia ani wizyty. Bez treści, bez nazwiska, bez numeru podopiecznego; powiadomienie na telefonie też jest ogólne.',
     ],
     whereT: 'Gdzie trzymać rejestr podopiecznych',
     where: [
@@ -59,7 +59,7 @@ const T = text({
       'You — the controller of your client’s data: you know who they are and set the purpose and scope.',
       'Sztab — stores encrypted packages and advice it cannot read, plus client numbers with no personal data. The data processing agreement (DPA) is part of the terms.',
       'The client — decides in GYM TRACKER what you see and can end the collaboration at any time. The data then leaves the server at once.',
-      'GYM TRACKER’s app server — only if the client turns notifications on: after your message, advice or appointment change, this browser sends it a random token and just the kind of event (“new message”), plus the time for a scheduled one. No content, no name, no client number; the notification on the phone is generic too.',
+      'GYM TRACKER’s app server — only if the client turns notifications on: after your message, advice or appointment change, this browser sends it a random token (Sztab’s database keeps it sealed with your collaboration key — Sztab’s server cannot read it) and just the kind of event (“new message”); a scheduled one also carries its time and an opaque number for cancelling it, not the advice or appointment number. No content, no name, no client number; the notification on the phone is generic too.',
     ],
     whereT: 'Where to keep your client records',
     where: [

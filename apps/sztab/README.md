@@ -33,7 +33,9 @@ program odsyłający do tej samej partii), a **„Dodaj podopiecznego demo”** 
 współpracę z telefonem symulowanym w tej przeglądarce (`src/lib/demo/client.ts`): zaproszenie „DEMO”
 przyjęte przez `invite_accept`, siedem tygodni danych, zalecenia sprzed czterech tygodni z odpowiedziami,
 wiadomości i zdjęcia. „Symuluj telefon” na jego karcie odpowiada na to, co wysłano (ta sama symulacja co
-`seed.ts phone`: `src/lib/demo/phone.ts`), „Usuń demo” kończy współpracę i zapomina telefon.
+`seed.ts phone`: `src/lib/demo/phone.ts`), ale nie rezerwuje terminów — wolne miejsca w kalendarzu są
+prawdziwe. „Zaznacz wszystkich” w akcjach grupowych (wysyłka, program, wiadomość) pomija demo; zaznaczone
+ręcznie idzie z etykietą „DEMO” na liście odbiorców. „Usuń demo” kończy współpracę i zapomina telefon.
 
 Bez rejestracji, do sprawdzania ekranów (Playwright): `npx tsx apps/sztab/scripts/seed.ts coach <stan.json>`
 zakłada prowadzącego z sejfem i dwóch podopiecznych z danymi (wypisuje mail, hasło i kod sejfu) i wysyła
@@ -88,16 +90,21 @@ GYM TRACKER (telefon, bez konta)  ──szyfrogram──▶  Supabase (UE)  ─�
 - **Grupy i skróty** zostają w przeglądarce prowadzącego, nigdy na serwerze.
 - **Powiadomienia push do podopiecznego** (spec `docs/superpowers/specs/2026-11-25-sztab-powiadomienia-design.md`,
   `src/lib/notify.ts`): gdy podopieczny je włączy, telefon podaje Sztabowi losowy token współpracy
-  (`connections.notify_token`). Po akcji prowadzącego przeglądarka woła serwer aplikacji GYM TRACKERa
+  **zapieczętowany kluczem współpracy** (`connections.notify_token` = `sealJson(klucz, AAD.notify(id),
+  { v: 1, token })`) — przejęta baza nim nie wyśle. Po akcji prowadzącego przeglądarka czyta pieczęć
+  **świeżo z bazy** (telefon mógł włączyć powiadomienia, gdy strona była otwarta; wysyłki z pamięcią 30 s
+  na partię, odwołania i koniec współpracy zawsze od nowa), otwiera ją kluczem z sejfu (podawanym każdej
+  funkcji jak w `sendAssignment` — bez stanu modułu) i woła serwer aplikacji GYM TRACKERa
   (`VITE_TRACKER_API_URL`) tym tokenem i samym rodzajem zdarzenia — bez treści, nazwisk i numerów:
-  wiadomość (`message`), zalecenie (`assignment`; zaplanowane — o „pokaż od”, z numerem zalecenia, żeby
-  dało się je odwołać), wycofanie (`withdrawn`; zaplanowane i jeszcze niewidoczne — tylko odwołanie z
-  kolejki), zapis na wizytę (`visit` + `visit-soon` 2 h przed, z numerem rezerwacji), odwołanie wizyty
-  albo terminu (`visit-cancel` + odwołanie przypomnienia), koniec współpracy (`ended` + odwołanie
-  wszystkiego, co czeka w kolejce). Wołają je funkcje `lib/data.ts`, więc każda ścieżka w interfejsie
-  (pojedynczo, do grupy, „Uruchom program”) powiadamia tak samo. Wysłane i zapomniane: 5 s limitu,
-  `keepalive`, bez ponawiania, błąd nigdy nie psuje samej wysyłki; treść JSON jako `text/plain` (bez
-  preflightu CORS).
+  wiadomość (`message`), zalecenie (`assignment`; zaplanowane — o „pokaż od”, z numerem do odwołania),
+  wycofanie (`withdrawn`; zaplanowane i jeszcze niewidoczne — tylko odwołanie z kolejki), zapis na wizytę
+  (`visit` + `visit-soon` 2 h przed), odwołanie wizyty albo terminu (`visit-cancel` + odwołanie
+  przypomnienia), koniec współpracy (`ended` + odwołanie wszystkiego, co czeka w kolejce). Numer
+  zaplanowanego to `notifyRef(token, numer zalecenia albo rezerwacji)` — HMAC, nie numer z bazy; telefon
+  liczy ten sam dla swoich przypomnień, więc Sztab odwołuje i je. Wołają je funkcje `lib/data.ts`, więc
+  każda ścieżka w interfejsie (pojedynczo, do grupy, „Uruchom program”) powiadamia tak samo. Wysłane
+  i zapomniane: 5 s limitu, `keepalive`, bez ponawiania, błąd nigdy nie psuje samej wysyłki; treść JSON
+  jako `text/plain` (bez preflightu CORS).
 
 Pełny opis decyzji: `docs/superpowers/specs/2026-11-03-sztab-design.md`.
 
@@ -110,6 +117,8 @@ src/
   lib/
     env.ts             konfiguracja z buildu (domyślnie lokalny Supabase)
     notify.ts          powiadomienia push do podopiecznego przez serwer aplikacji GYM TRACKERa
+                       (pieczęć tokenu świeżo z bazy, otwierana kluczem z sejfu; numery zaplanowanych — HMAC)
+    connectionKey.ts   klucz współpracy (ECDH → HKDF), raz na współpracę — wspólny dla data.ts i notify.ts
     sb.ts              klient Supabase (PKCE)
     router.ts          trasy w ścieżce adresu (History API)
     vault.ts           sejf: klucz w IndexedDB, kod odzyskiwania, zmiana kodu
