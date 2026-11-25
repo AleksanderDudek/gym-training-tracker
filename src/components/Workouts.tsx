@@ -22,6 +22,9 @@ import { EmptyState, Segmented } from './ui';
 import { SupportLine } from './Support';
 import type { AppState, ExerciseId, Workout, WorkoutGear, WorkoutKind } from '../types';
 import { pluralEn, text } from '../i18n';
+import { useLink } from '../link/store';
+import { byCoach } from '../link/today';
+import './coach.css';
 
 const T = text({
   pl: {
@@ -37,6 +40,7 @@ const T = text({
     part: 'Partie',
     profile: 'Z profilem',
     own: 'Twoje',
+    fromCoach: (name: string) => `Od prowadzącego — ${name}`,
     ownKind: 'własny',
     exercises: (n: number) => `${n} ${plural(n, ['ćwiczenie', 'ćwiczenia', 'ćwiczeń'])}`,
     about: (min: number) => `ok. ${min} min`,
@@ -133,6 +137,7 @@ const T = text({
     part: 'Body parts',
     profile: 'With a focus',
     own: 'Yours',
+    fromCoach: (name: string) => `From your coach — ${name}`,
     ownKind: 'your own',
     exercises: (n: number) => `${n} ${pluralEn(n, 'exercise', 'exercises')}`,
     about: (min: number) => `about ${min} min`,
@@ -352,7 +357,11 @@ export function WorkoutLibrary({
     // Własne treningi nie mają przypisanego sprzętu — widać je przy każdym filtrze sprzętu.
     return gear === 'all' || own || w.gear === gear;
   });
-  const sorted = [...shown].sort((a, b) => Number(b.id === plannedId) - Number(a.id === plannedId));
+  // Treningi od prowadzącego (trwająca współpraca) na samej górze, po prowadzących; reszta jak dotąd.
+  const link = useLink();
+  const coached = byCoach(link, shown, plannedId);
+  const rest = shown.filter((w) => !coached.some((g) => g.items.includes(w)));
+  const sorted = [...rest].sort((a, b) => Number(b.id === plannedId) - Number(a.id === plannedId));
 
   return (
     <>
@@ -371,7 +380,18 @@ export function WorkoutLibrary({
         <Chips label={T.kind} value={group} onChange={setGroup} options={GROUPS} />
       </div>
 
-      {sorted.length ? (
+      {coached.map((g) => (
+        <section key={g.key} aria-labelledby={`coach-w-${g.key}`}>
+          <h2 className="sect-label lk-coach-sect" id={`coach-w-${g.key}`}>
+            {T.fromCoach(g.name)}
+          </h2>
+          {g.items.map((w) => (
+            <WorkoutCard key={w.id} state={state} w={w} planned={w.id === plannedId} onStart={onStart} />
+          ))}
+        </section>
+      ))}
+
+      {sorted.length || coached.length ? (
         sorted.map((w) => (
           <WorkoutCard key={w.id} state={state} w={w} planned={w.id === plannedId} onStart={onStart} />
         ))

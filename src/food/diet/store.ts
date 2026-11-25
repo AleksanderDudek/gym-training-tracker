@@ -2,6 +2,7 @@ import { say } from '../../i18n';
 import { cleanLabPrefs, cleanLabReport } from '../labs/validate';
 import { cleanPrepPlan } from '../prep/validate';
 import { applyAnswer, CHECK, checkDue, weeklyCheck } from './calibrate';
+import { coachEdit, kgNowOf, type CoachAsk, type CoachEdit } from './coach';
 import { db, type DayRow, type DietDb, type Entry, type PlannedCheat } from './db';
 import { DRINKS_KEPT, DRINKS_MAX_ML, drinksOf, sweetValues, type Drink, type DrinkKind } from './drinks';
 import { bumpFavorite } from './favorites';
@@ -94,6 +95,31 @@ async function changeProfile(
     if (next) await database.profile.put({ ...row, ...next, id: 'me' });
     return next;
   });
+}
+
+/** The stored profile through the normaliser, for a screen outside the diet pages (a preview); null without one. */
+export async function readProfile(ctx: { today: string; weighIns: readonly WeighIn[] }, database: DietDb = db): Promise<Profile | null> {
+  const row = await database.profile.get('me');
+  return row ? cleanProfile(row, { today: ctx.today, weightKg: latestKg(ctx.weighIns) }) : null;
+}
+
+/**
+ * Targets from a coach („Ustaw jako moje cele”, `coach.ts`): worked out again on the stored row in one
+ * transaction — a profile changed in another tab since the preview is the one edited — and written
+ * only when something changes. Null without a profile.
+ */
+export async function applyCoachTargets(
+  ask: CoachAsk,
+  ctx: { today: string; weighIns: readonly WeighIn[] },
+  database: DietDb = db,
+): Promise<CoachEdit | null> {
+  let out: CoachEdit | null = null;
+  await changeProfile(database, { today: ctx.today, weightKg: latestKg(ctx.weighIns) }, (p) => {
+    const edit = coachEdit(p, ask, { today: ctx.today, kgNow: kgNowOf(p, ctx.weighIns, ctx.today) });
+    out = edit;
+    return edit.changed ? edit.next : null;
+  });
+  return out;
 }
 
 /** The latest weigh-in's weight (the newest day), or none. */

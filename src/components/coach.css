@@ -1,0 +1,61 @@
+/* Prowadzący na pierwszym planie: karta „Od prowadzącego” na ekranie Dziś, jadłospis w dzienniku,
+   cele do przyjęcia na stronie zalecenia. Prefiks lk-coach-, same tokeny kolorów (ciemny wygląd). */
+.lk-coach{border-left:3px solid var(--c-blue-ink)}
+.lk-coach-wrap{margin-bottom:12px}
+.lk-coach-tag.today-tag{color:var(--c-blue-ink)}
+.grp h2.lk-coach-who{margin:0;font-family:var(--display);font-size:20px;font-weight:500;line-height:1.15}
+.lk-coach-who a{display:inline-flex;align-items:baseline;flex-wrap:wrap;gap:0 4px;min-height:44px;padding:6px 0;color:var(--ink);text-decoration:none;-webkit-tap-highlight-color:transparent}
+.lk-coach-who a::after{content:"›";color:var(--ink-soft);font-family:var(--body);font-size:20px;line-height:1;margin-left:2px}
+.lk-coach-prof{font-family:var(--body);font-size:13px;font-weight:400;color:var(--ink-soft)}
+.lk-coach-list{list-style:none;margin:0;padding:0}
+.lk-coach-list>li{border-top:1px solid var(--line)}
+.lk-coach-row{display:flex;flex-direction:column;justify-content:center;min-height:48px;padding:6px 22px 6px 0;position:relative;color:var(--steel);text-decoration:none;-webkit-tap-highlight-color:transparent}
+.lk-coach-row::after{content:"›";position:absolute;right:2px;top:50%;transform:translateY(-50%);color:var(--ink-soft);font-size:20px;line-height:1}
+.lk-coach-text{font-size:14.5px;font-weight:600;line-height:1.3;text-decoration:underline;text-underline-offset:2px}
+.lk-coach-sub{font-size:13px;color:var(--ink-soft);line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.lk-coach-habits{padding:8px 0 4px}
+.grp p.lk-coach-line{margin:0 0 2px;font-size:14.5px;color:var(--ink)}
+.lk-coach-line a{color:var(--steel);font-weight:600;text-underline-offset:2px;display:inline-block;min-height:32px;line-height:32px}
+.lk-coach-count{color:var(--ink-soft);font-size:13px}
+.lk-coach-ticks{list-style:none;margin:0;padding:0}
+.lk-coach-tick{display:flex;align-items:center;gap:12px;min-height:44px;padding:2px 0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.lk-coach-tick input{width:24px;height:24px;margin:0;flex:none;accent-color:var(--ok);cursor:pointer}
+.lk-coach-label{font-size:15px;font-weight:600;color:var(--ink);min-width:0}
+.lk-coach-dose{font-size:13px;color:var(--ink-soft);white-space:nowrap}
+.lk-coach-done .lk-coach-label{color:var(--ink-soft);font-weight:500}
+.lk-coach-more{display:inline-flex;align-items:center;min-height:44px;font-size:13px;color:var(--steel);font-weight:600}
+.grp p.lk-coach-push{display:flex;align-items:center;flex-wrap:wrap;gap:0 12px;margin:0;padding-top:2px;border-top:1px solid var(--line);font-size:13px;color:var(--ink-soft);max-width:none}
+.lk-coach-act,.lk-coach-later{font:inherit;background:none;border:0;padding:0;min-height:44px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.lk-coach-act{color:var(--steel);font-weight:600;font-size:13.5px;text-decoration:underline;text-underline-offset:2px}
+.lk-coach-act:disabled{opacity:.6;cursor:default}
+.lk-coach-later{color:var(--ink-soft);font-size:13px}
+.grp p.lk-coach-hint{display:block;padding:8px 0 0}
+.grp p.lk-coach-status{margin:0;font-size:13px;color:var(--ink)}
+.grp p.lk-coach-status:empty{display:none}
+.lk-coach-ended{margin:0;padding:0 14px;background:var(--surface);border-bottom:1px solid var(--line)}
+.lk-coach-ended a{display:inline-flex;align-items:center;min-height:44px;font-size:13px;font-weight:600;color:var(--warn)}
+.grp p.lk-coach-from{margin:6px 0 0}
+.lk-coach-from a{color:var(--c-blue-ink);font-size:13px;font-weight:600;display:inline-flex;align-items:center;min-height:44px}
+
+/* Plany i treningi od prowadzącego na górze list */
+h2.lk-coach-sect{margin:0;font-weight:400;line-height:1.5;color:var(--c-blue-ink)}
+
+/* Jadłospis od prowadzącego w dzienniku (dziś) */
+.grp.lk-coach-strip h2.lk-coach-who{font-size:18px}
+.lk-coach-meal{display:flex;align-items:center;gap:10px}
+.lk-coach-meal+.lk-coach-meal{border-top:1px solid var(--line)}
+.lk-coach-meal .lk-coach-tick{flex:1;min-width:0;padding:4px 0}
+.lk-coach-meal .lk-coach-label{display:flex;flex-direction:column;font-weight:500;line-height:1.3}
+.lk-coach-slot{order:-1;font-size:12.5px;color:var(--ink-soft);font-weight:600}
+.lk-coach-add{flex:none;font:inherit;font-size:13px;font-weight:600;background:none;border:1px solid var(--edge);border-radius:var(--r);color:var(--steel);padding:6px 12px;min-height:44px;cursor:pointer}
+.lk-coach-add:disabled{opacity:.6;cursor:default}
+.lk-coach-in{flex:none;font-size:13px;color:var(--ok);font-weight:600;white-space:nowrap}
+
+/* Cele od prowadzącego do przyjęcia (strona zalecenia) */
+.grp .lk-coach-confirm h3{margin:0 0 6px}
+.lk-coach-confirm h3:focus{outline:none}
+.lk-coach-changes{margin:0 0 8px;padding-left:18px;font-size:14px;color:var(--ink)}
+.lk-coach-changes li{margin:4px 0}
+.lk-coach-info{margin:0 0 8px;padding-left:18px;font-size:13px;color:var(--ink-soft)}
+.lk-coach-info li{margin:4px 0}
+.lk-coach-note{font-size:13px;color:var(--ink-soft)}

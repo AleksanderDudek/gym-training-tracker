@@ -1,7 +1,7 @@
 import { formDue, formPeriod, habitsFor, localDay, mealDayIndex } from '@gymtracker/link/coaching';
 import type { FormBody, HabitsBody, MealsBody } from '@gymtracker/link';
 import { answersOf, ticksOn, unreadMessages, visibleAssignments } from './store';
-import type { LinkState, StoredAssignment } from './store';
+import type { LinkConnection, LinkState, StoredAssignment } from './store';
 
 /**
  * Co od prowadzących czeka dziś — dla uwagi na ekranie Dziś i dla stron współpracy. Czyste funkcje
@@ -74,4 +74,60 @@ export function unreadByConnection(s: LinkState): { connectionId: string; count:
   const by = new Map<string, number>();
   for (const m of unreadMessages(s)) by.set(m.connectionId, (by.get(m.connectionId) ?? 0) + 1);
   return [...by].map(([connectionId, count]) => ({ connectionId, count }));
+}
+
+/**
+ * Numer planu albo treningu od prowadzącego: `coach-<8 znaków numeru zalecenia>-<numer>` — ta sama
+ * reguła co `coachPrefix` w `assign.ts` (tamten moduł ciągnie atlas ćwiczeń, ten stoi w głównej paczce).
+ */
+const COACH_ID = /^coach-([0-9a-f]{8})-/;
+
+const shortId = (assignmentId: string): string => assignmentId.replace(/-/g, '').slice(0, 8).toLowerCase();
+
+export interface CoachOf {
+  /** Współpraca, z której przyszedł; `null`, gdy zapis współprac już jej nie zna. */
+  connection: LinkConnection | null;
+  assignment: StoredAssignment;
+  name: string;
+  profession: LinkConnection['coach']['profession'];
+  /** Współpraca trwa — tylko wtedy plan stoi „od prowadzącego” na pierwszym planie. */
+  active: boolean;
+}
+
+/**
+ * Kto przysłał plan albo trening o tym numerze: najpierw zalecenie, z którego powstał (`made`), potem
+ * zalecenie o tym samym początku numeru (treningi z rotacji planu). `null` — numer nie jest od
+ * prowadzącego albo zapis współprac nic o nim nie wie (np. dane przeniesione kopią na inny telefon).
+ */
+export function coachOf(s: LinkState, id: string | null | undefined): CoachOf | null {
+  const short = id?.match(COACH_ID)?.[1];
+  if (!short) return null;
+  const assignment = s.assignments.find((a) => a.made?.plan === id || a.made?.workout === id) ?? s.assignments.find((a) => shortId(a.id) === short);
+  if (!assignment) return null;
+  const connection = s.connections.find((c) => c.id === assignment.connectionId) ?? null;
+  return {
+    connection,
+    assignment,
+    name: connection?.coach.name ?? assignment.a.from.name,
+    profession: connection?.coach.profession ?? assignment.a.from.profession,
+    active: connection?.status === 'active',
+  };
+}
+
+/**
+ * Plany albo treningi od prowadzącego z trwającej współpracy, po prowadzących — `first` (plan, który
+ * biegnie, albo dzisiejszy trening) na początku swojej grupy. Reszta listy tu nie wchodzi.
+ */
+export function byCoach<X extends { id: string }>(s: LinkState, list: readonly X[], first?: string): { key: string; name: string; items: X[] }[] {
+  const groups: { key: string; name: string; items: X[] }[] = [];
+  for (const x of list) {
+    const who = coachOf(s, x.id);
+    if (!who?.active || !who.connection) continue;
+    const key = who.connection.id;
+    const g = groups.find((y) => y.key === key);
+    if (g) g.items.push(x);
+    else groups.push({ key, name: who.name, items: [x] });
+  }
+  for (const g of groups) g.items.sort((a, b) => Number(b.id === first) - Number(a.id === first));
+  return groups;
 }
