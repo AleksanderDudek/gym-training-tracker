@@ -5,11 +5,12 @@
 -- po wysłaniu wiadomości, zalecenia albo zmianie wizyty woła Workera z tym tokenem i samym rodzajem
 -- zdarzenia. Treści serwer push nie zna; Supabase nie zna subskrypcji ani urządzenia.
 --
--- Token widzi tylko prowadzący tej współpracy (RLS na `connections`); ustawia i kasuje go tylko telefon.
--- Koniec współpracy go kasuje — prowadzący nie powiadomi nikogo po rozstaniu.
+-- Token leży tu ZAPIECZĘTOWANY kluczem współpracy (AAD `notify|<współpraca>`, jak paczka): otwiera go tylko
+-- przeglądarka prowadzącego. Przejęta baza nie wyśle nim powiadomień ani nie połączy go z subskrypcją na
+-- serwerze aplikacji. Ustawia i kasuje go tylko telefon; koniec współpracy go kasuje.
 
 alter table public.connections add column notify_token text
-  check (notify_token is null or notify_token ~ '^[A-Za-z0-9_-]{43}$');
+  check (notify_token is null or (notify_token like 'v1.%' and char_length(notify_token) <= 1000));
 
 -- Telefon ustawia (albo kasuje, `null`) token powiadomień swojej współpracy.
 create function public.client_set_notify(p_connection uuid, p_token text, p_notify text) returns void
@@ -19,7 +20,7 @@ declare
 begin
   c := private.connection_for(p_connection, p_token);
   if c.status <> 'active' then raise exception 'ended' using errcode = 'P0001'; end if;
-  if p_notify is not null and p_notify !~ '^[A-Za-z0-9_-]{43}$' then
+  if p_notify is not null and (p_notify not like 'v1.%' or char_length(p_notify) > 1000) then
     raise exception 'bad_notify' using errcode = 'P0001';
   end if;
   update public.connections set notify_token = p_notify where id = c.id;

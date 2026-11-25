@@ -121,6 +121,11 @@ export const AAD = {
    */
   message: (connectionId: string, messageId: string, author: 'coach' | 'client') => `message|${connectionId}|${messageId}|${author}`,
   photo: (connectionId: string, photoId: string) => `photo|${connectionId}|${photoId}`,
+  /**
+   * Token powiadomień zapieczętowany kluczem współpracy, zanim trafi do Sztabu (`connections.notify_token`):
+   * przejęta baza nie wyśle nim powiadomień ani nie połączy go z subskrypcją na serwerze aplikacji.
+   */
+  notify: (connectionId: string) => `notify|${connectionId}`,
   vault: (userId: string) => `vault|${userId}`,
 };
 
@@ -194,4 +199,32 @@ export const newToken = (): string => toBase64Url(randomBytes(32));
 export async function sha256Hex(text: string): Promise<string> {
   const d = new Uint8Array(await crypto.subtle.digest('SHA-256', buf(utf8(text))));
   return [...d].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+/* ── Powiadomienia od prowadzącego ─────────────────────────────────────────────────── */
+
+/** Zawartość zapieczętowanego tokenu powiadomień (`AAD.notify`). */
+export interface NotifySealV1 {
+  v: 1;
+  token: string;
+}
+
+export const NOTIFY_TOKEN = /^[A-Za-z0-9_-]{43}$/;
+
+/** Token z odszyfrowanej pieczęci albo `null`. */
+export function parseNotifySeal(v: unknown): string | null {
+  if (!v || typeof v !== 'object') return null;
+  const s = v as Partial<NotifySealV1>;
+  return s.v === 1 && typeof s.token === 'string' && NOTIFY_TOKEN.test(s.token) ? s.token : null;
+}
+
+/**
+ * Numer zaplanowanego powiadomienia na serwerze aplikacji: HMAC-SHA256(token, numer zalecenia albo
+ * rezerwacji), 32 znaki hex. Serwer nie dostaje numerów z bazy Sztabu (nie połączy kolejki z bazą),
+ * a telefon i Sztab — oba znają token — liczą ten sam numer i mogą odwołać to samo.
+ */
+export async function notifyRef(token: string, id: string): Promise<string> {
+  const key = await crypto.subtle.importKey('raw', utf8(token) as BufferSource, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const mac = new Uint8Array(await crypto.subtle.sign('HMAC', key, utf8(id.toLowerCase()) as BufferSource));
+  return [...mac.slice(0, 16)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
