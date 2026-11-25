@@ -27,6 +27,15 @@ Maile (potwierdzenie konta, reset hasła, link logowania) trafiają do skrzynki 
 Bez telefonu: `npx tsx apps/sztab/scripts/demo-client.ts '<link zaproszenia>'` przyjmuje
 zaproszenie jak GYM TRACKER i wysyła siedem tygodni przykładowych danych.
 
+Bez rejestracji, do sprawdzania ekranów (Playwright): `npx tsx apps/sztab/scripts/seed.ts coach <stan.json>`
+zakłada prowadzącego z sejfem i dwóch podopiecznych z danymi (wypisuje mail, hasło i kod sejfu) i wysyła
+każdemu zalecenia z datą sprzed 4 tygodni — cotygodniowy check-in, nawyki, jadłospis na 7 dni (szyfrowane
+kluczem prowadzącego jak w przeglądarce; `--bez-historii` — bez nich). Potem `… seed.ts phone <stan.json>`
+każe telefonom odpowiedzieć tak, jak zrobiłby to telefon: formularze, nawyki i jadłospis najwyżej 4 tygodnie
+wstecz, nigdy sprzed wysłania zalecenia, dni w strefie paczki (`Europe/Warsaw`); do tego wiadomość, zdjęcia
+i rezerwacja pierwszego wolnego terminu. Zalecenia wysłane z przeglądarki przed `phone` też dostaną
+odpowiedzi — od dnia wysłania.
+
 ```bash
 npm run typecheck -w @gymtracker/sztab
 npm test -w @gymtracker/sztab               # logika: pulpit, sejf, wysyłka, skróty
@@ -56,6 +65,19 @@ GYM TRACKER (telefon, bez konta)  ──szyfrogram──▶  Supabase (UE)  ─�
   15 minut. Pulpit mówi, z kiedy są.
 - **Pulpit liczy silnikiem GYM TRACKERa** (`src/lib/metrics.ts`): realizacja planu, tonaż,
   kierunek zmiany ćwiczeń, średnia waga — te same liczby, które widzi podopieczny.
+- **Prowadzenie dzień po dniu** (spec `docs/superpowers/specs/2026-11-25-sztab-funkcje-konkurencji-design.md`):
+  formularze (wywiad, cotygodniowy check-in, skala bólu), nawyki i jadłospis to zalecenia jak reszta;
+  odpowiedzi i odhaczenia przychodzą w paczce (część `coaching`), a Sztab liczy z nich realizację
+  w strefie czasowej telefonu (`snapshot.tz`), tak jak liczy telefon.
+- **Wiadomości i zdjęcia** idą jak paczka — szyfrogram z AAD związanym z wierszem. Zdjęcia tylko za
+  osobną zgodą (`photos`), najwyżej 60, zmniejszone na telefonie.
+- **Harmonogram**: zalecenie z „pokaż od” (`assignments.visible_from`) — funkcja odbioru telefonu
+  nie oddaje go wcześniej. Program w bibliotece to oś dni z elementów biblioteki; „Uruchom program”
+  rozpisuje go na zaplanowane zalecenia.
+- **Wizyty** to jedyne jawne dane współpracy: godziny, tytuł, miejsce (bez danych o zdrowiu — formularz
+  o tym przypomina). Rezerwację z telefonu pilnuje baza: limit miejsc z blokadą wiersza, 10 przyszłych
+  wizyt na podopiecznego.
+- **Grupy i skróty** zostają w przeglądarce prowadzącego, nigdy na serwerze.
 
 Pełny opis decyzji: `docs/superpowers/specs/2026-11-03-sztab-design.md`.
 
@@ -70,20 +92,38 @@ src/
     sb.ts              klient Supabase (PKCE)
     router.ts          trasy w ścieżce adresu (History API)
     vault.ts           sejf: klucz w IndexedDB, kod odzyskiwania, zmiana kodu
-    data.ts            zapytania: prowadzący, zaproszenia, współprace, paczki, zalecenia, biblioteka
+    data.ts            zapytania: prowadzący, zaproszenia, współprace, paczki, zalecenia, biblioteka,
+                       wiadomości, zdjęcia, terminy i rezerwacje
     metrics.ts         pulpit z paczki silnikiem GYM TRACKERa
-    aliases.ts         prywatne skróty (tylko w przeglądarce) i lista do CRM
+    coached.ts         wspólne dla listy i karty: które zalecenia obowiązują (jak na telefonie), dzień w strefie
+                       telefonu, 7 pełnych dni przed min(dziś, dzień paczki)
+    review.ts          „Do przejrzenia”: powody i kolejność na liście podopiecznych (reviewLoad.ts — wczytywanie po 4)
+    adherence.ts       realizacja nawyków i jadłospisu dzień po dniu, w strefie telefonu
+    forms.ts           gotowe formularze, okresy, stan check-inu, serie do wykresów
+    program.ts         daty harmonogramu i programu (zmiana czasu), wybór obszaru przy wysyłce do wielu
+    assign.ts          treść z biblioteki jako zalecenie i to samo sprawdzenie, które robi telefon
+    calendar.ts        tydzień, powtarzane terminy, plik .ics
+    mfa.ts, mfaApi.ts  logowanie dwuetapowe (TOTP)
+    aliases.ts         prywatne skróty i grupy (tylko w przeglądarce), CSV do CRM
     labels.ts          nazwy obszarów, zakresów, zawodów, rodzajów zaleceń
-  pages/               logowanie i rejestracja, pierwsze kroki i sejf, podopieczni, pulpit,
-                       zaproszenia (link i QR), biblioteka i kreatory, wysyłka, ustawienia, RODO
-  components/          wspólne elementy, kreatory (trening, plan, cele, badania, zalecenie), QR
+  pages/               logowanie i rejestracja (z kodem TOTP), pierwsze kroki i sejf, podopieczni („Do
+                       przejrzenia”, grupy, akcje grupowe), pulpit z zakładkami (wiadomości, odpowiedzi,
+                       realizacja, zdjęcia, zalecenia z harmonogramem), zaproszenia (link i QR),
+                       biblioteka i kreatory, wysyłka (zaplanowana, do wielu), kalendarz wizyt,
+                       ustawienia (MFA), RODO
+  components/          wspólne elementy, kreatory (trening, plan, cele, badania, zalecenie, formularz,
+                       nawyki, jadłospis, program), uruchomienie programu, widok do druku, QR
 supabase/
   config.toml          lokalny Supabase: potwierdzenie maila, hasło od 10 znaków, MFA TOTP
   migrations/          schemat, RLS i funkcje RPC dla telefonu
 test/
   logic.test.ts        pulpit, sejf, wysyłka, skróty (jsdom, IndexedDB w pamięci)
   db/rpc.test.ts       baza na żywo: zaproszenia, paczki, zalecenia, zgoda, zakończenie, usunięcie konta
+  db/features.test.ts  baza na żywo: harmonogram, wiadomości, zdjęcia, wizyty, uprawnienia nowych tabel
+  *.test.ts(x)         formularze, nawyki i jadłospis, realizacja, „Do przejrzenia”, harmonogram, druk,
+                       wiadomości, zdjęcia, kalendarz, MFA
 scripts/demo-client.ts telefon demo do sprawdzania pulpitu
+scripts/seed.ts        prowadzący z sejfem i dwa telefony z danymi — do sprawdzania ekranów
 public/_headers        CSP i nagłówki bezpieczeństwa (Cloudflare Workers, pliki statyczne)
 wrangler.jsonc         Worker z plikami statycznymi: dist/, każda nieznana ścieżka → index.html (SPA)
 ```
@@ -109,7 +149,11 @@ wrangler.jsonc         Worker z plikami statycznymi: dist/, każda nieznana ści
 
 ## Czego tu jeszcze nie ma
 
-Etap 2: plany żywieniowe i przepisy, program rehabilitacyjny ze skalą bólu, cotygodniowy check-in,
-wideo w Storage zamiast adresów, komentarze do sesji, MFA w interfejsie (Supabase ma je włączone).
-Etap 3: analiza AI płatna za analizę (własny klucz z przeglądarki prosto do dostawcy albo serwer
-MCP na komputerze prowadzącego), widok drużyny, płatności.
+Etap 2 jest zrobiony (formularze ze skalą bólu i check-inem, jadłospis z przepisami, komentarze do
+treningów w rozmowie, MFA) razem z funkcjami z przeglądu FitFive i Trainero — decyzje i to, czego
+świadomie nie ma, w `docs/superpowers/specs/2026-11-25-sztab-funkcje-konkurencji-design.md`.
+
+Dalej: pliki i wideo w szyfrowanym Storage (zamiast adresów), powiadomienia push o wiadomościach,
+synchronizacja z Google Calendar. Etap 3: analiza AI płatna za analizę (własny klucz z przeglądarki
+prosto do dostawcy albo serwer MCP na komputerze prowadzącego), widok drużyny (dzielenie kluczy
+współpracy), płatności.

@@ -20,6 +20,13 @@ export const T = text({
     details: 'Szczegóły',
     assignments: 'Od prowadzących',
     noAssignments: 'Jeszcze nic nie przyszło.',
+    unsupported: (n: number) =>
+      n === 1
+        ? 'Jedno zalecenie jest nowszego rodzaju, niż zna ta wersja aplikacji. Zaktualizuj GYM TRACKERa (zamknij i otwórz go ponownie), żeby je zobaczyć.'
+        : `Zalecenia nowszego rodzaju, niż zna ta wersja aplikacji: ${n}. Zaktualizuj GYM TRACKERa (zamknij i otwórz go ponownie), żeby je zobaczyć.`,
+    chatOpen: (n: number) => (n ? `Wiadomości (${n} ${plural(n, ['nowa', 'nowe', 'nowych'])})` : 'Wiadomości'),
+    endedReadOnly: 'Współpraca zakończona — to zostaje do wglądu, ale odpowiedzi i odhaczenia nie trafią już do prowadzącego.',
+    visitsOpen: 'Wizyty',
     broken: (n: number) =>
       `${n === 1 ? 'Jednego zalecenia' : `${n} ${plural(n, ['zalecenia', 'zaleceń', 'zaleceń'])}`} nie dało się otworzyć — klucz się nie zgadza. Poproś prowadzącego, żeby wysłał je jeszcze raz.`,
     ended: (n: number) => `Zakończone (${n})`,
@@ -135,6 +142,13 @@ export const T = text({
     details: 'Details',
     assignments: 'From your coaches',
     noAssignments: 'Nothing has arrived yet.',
+    unsupported: (n: number) =>
+      n === 1
+        ? 'One item is of a newer kind than this version of the app knows. Update GYM TRACKER (close and reopen it) to see it.'
+        : `${n} items are of a newer kind than this version of the app knows. Update GYM TRACKER (close and reopen it) to see them.`,
+    chatOpen: (n: number) => (n ? `Messages (${n} new)` : 'Messages'),
+    endedReadOnly: 'This collaboration has ended — you can still look, but answers and ticks no longer reach your coach.',
+    visitsOpen: 'Appointments',
     broken: (n: number) =>
       `${n} ${pluralEn(n, 'item', 'items')} couldn’t be opened — the key doesn’t match. Ask your coach to send ${n === 1 ? 'it' : 'them'} again.`,
     ended: (n: number) => `Ended (${n})`,

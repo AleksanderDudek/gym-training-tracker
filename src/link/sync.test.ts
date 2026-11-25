@@ -5,7 +5,7 @@ import { fakeSztab } from '../test/linkServer';
 import type { FakeSztab } from '../test/linkServer';
 import { acceptInvite } from './accept';
 import { invitePreview } from './rpc';
-import { activeConnections, clearLink, connectionOf, hasLinkWork, linkState, newAssignments, updateLink, visibleAssignments } from './store';
+import { activeConnections, clearLink, connectionOf, hasLinkWork, linkState, newAssignments, visibleAssignments } from './store';
 import type { LinkConnection } from './store';
 import { changeScopes, endConnection, forgetKeys, pushOne, setAssignmentStatus, syncAll } from './sync';
 
@@ -174,11 +174,12 @@ describe('synchronizacja', () => {
     expect(c.endNotice).toBeUndefined();
   });
 
-  it('obszary i zakres przychodzą z serwera', async () => {
-    updateLink((s) => {
-      s.connections[0]!.scopes = ['labs'];
-    });
+  it('zakres serwer może zwęzić, ale nie poszerzyć (zgodę daje telefon)', async () => {
+    server.connections.get(conn.id)!.scopes = ['training'];
     await syncAll(() => state);
-    expect(connectionOf(linkState(), conn.id)!.scopes).toEqual(['training', 'body']);
+    expect(connectionOf(linkState(), conn.id)!.scopes).toEqual(['training']);
+    server.connections.get(conn.id)!.scopes = ['training', 'body', 'labs'];
+    await syncAll(() => state);
+    expect(connectionOf(linkState(), conn.id)!.scopes).toEqual(['training']);
   });
 });

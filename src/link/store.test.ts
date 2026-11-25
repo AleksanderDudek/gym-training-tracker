@@ -57,7 +57,7 @@ describe('zapis współprac', () => {
     expect(s.assignments.map((a) => a.id)).toEqual(['a1']);
     expect(s.assignments[0]!.ticked).toEqual([]);
     expect(s.broken).toHaveLength(1);
-    expect(cleanLinkState('śmieci')).toEqual({ connections: [], assignments: [], broken: [] });
+    expect(cleanLinkState('śmieci')).toEqual({ connections: [], assignments: [], broken: [], unsupported: [], messages: [], answers: [], ticks: {} });
   });
 
   it('„Usuń wszystkie dane” zapomina współprace', () => {

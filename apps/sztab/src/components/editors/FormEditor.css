@@ -1,0 +1,76 @@
+/*
+ * Kreator formularza (FormEditor.tsx). Klocki Sztabu (`.field`, `.chip`, `.check`, `.note`, `.btn`)
+ * z `styles.css`, tu tylko układ: wzory, karty pytań i podgląd telefonu. Przedrostek `sz-form-`,
+ * kolory wyłącznie z tokenów, więc ciemny wygląd przychodzi sam.
+ */
+
+.sz-form { container-type: inline-size; display: grid; gap: 16px; min-width: 0; }
+
+/* Wzory */
+.sz-form-templates { border: 1px solid var(--line); border-radius: var(--r); background: var(--surface-2); padding: 0 14px; }
+.sz-form-templates[open] { padding-bottom: 14px; display: grid; gap: 10px; }
+.sz-form-templates summary { min-height: 44px; display: flex; align-items: center; gap: 6px; cursor: pointer; font-weight: 600; }
+.sz-form-tpls { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+.sz-form-tpl { display: grid; gap: 4px; align-content: start; text-align: left; min-height: 44px; padding: 10px 12px; border: 1.5px solid var(--edge); border-radius: var(--r); background: var(--surface); color: var(--ink); cursor: pointer; font-size: 13.5px; line-height: 1.4; }
+.sz-form-tpl strong { font-size: 15px; }
+.sz-form-tpl:hover { border-color: var(--blue-ink); background: var(--blue-bg); }
+
+/* Układ: kreator i podgląd obok siebie, gdy jest miejsce (biblioteka); jeden pod drugim w oknie wysyłki */
+.sz-form-layout { display: grid; gap: 20px; grid-template-columns: minmax(0, 1fr); align-items: start; }
+@container (min-width: 760px) {
+  .sz-form-layout { grid-template-columns: minmax(0, 1fr) 300px; }
+  .sz-form-preview { position: sticky; top: 16px; }
+}
+.sz-form-edit { gap: 14px; }
+.sz-form-flabel { font-weight: 600; font-size: 14px; }
+.sz-form-set { border: 0; padding: 0; margin: 0; display: grid; gap: 8px; min-width: 0; }
+.sz-form-set legend { font-weight: 600; font-size: 14px; margin-bottom: 6px; padding: 0; }
+.sz-form-pick { min-height: 44px; cursor: pointer; font-size: 14px; padding: 6px 12px; }
+.sz-form-pick input { accent-color: var(--steel); margin: 0; }
+.sz-form-narrow { max-width: 240px; }
+.sz-form-narrow2 { max-width: 320px; }
+
+/* Pytania */
+.sz-form-qs { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.sz-form-q { display: grid; gap: 10px; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r); padding: 10px 12px 4px; }
+.sz-form-qhead { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.sz-form-idx { font: 600 16px var(--display); color: var(--ink-soft); min-width: 22px; }
+.sz-form-type { flex: 1 1 160px; max-width: 220px; }
+.sz-form-tools { display: flex; flex-wrap: wrap; gap: 4px; margin-left: auto; }
+.sz-form-tools button { min-width: 40px; min-height: 40px; padding: 0 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: var(--r); cursor: pointer; font-size: 13.5px; }
+.sz-form-tools button:hover:not(:disabled) { border-color: var(--edge); }
+.sz-form-tools button:disabled { opacity: 0.45; cursor: not-allowed; }
+.sz-form-q input[aria-invalid='true'] { border-color: var(--warn); }
+.sz-form-options { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.sz-form-options li { display: flex; gap: 6px; align-items: center; }
+.sz-form-options .btn { min-width: 44px; padding: 0; }
+.sz-form-req { min-height: 40px; padding: 6px 0; }
+.sz-form-add { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.sz-form-add > span { font-weight: 600; margin-right: 4px; }
+.sz-form-check ul { margin: 6px 0 0; padding-left: 18px; }
+.sz-form-check li { margin: 2px 0; }
+
+/* Podgląd telefonu */
+.sz-form-preview { display: grid; gap: 6px; min-width: 0; }
+.sz-form-ptag { font: 500 11px var(--mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); }
+.sz-form-phone { border: 1.5px solid var(--edge); border-radius: 18px; padding: 16px 14px 18px; background: var(--bg); display: grid; gap: 10px; max-height: 640px; overflow: auto; font-size: 13.5px; }
+.sz-form-pbadge { justify-self: start; font: 600 11px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--gold-ink); background: var(--gold-bg); padding: 3px 8px; border-radius: 999px; }
+.sz-form-ptitle { font: 600 18px/1.15 var(--display); }
+.sz-form-pmeta { color: var(--ink-soft); font-size: 12.5px; }
+.sz-form-pintro { white-space: pre-wrap; }
+.sz-form-pq { background: var(--surface); border-radius: var(--r); padding: 10px; display: grid; gap: 6px; }
+.sz-form-plabel { font-weight: 600; overflow-wrap: anywhere; }
+.sz-form-preq { color: var(--warn); }
+.sz-form-phelp { color: var(--ink-soft); font-size: 12.5px; }
+.sz-form-pbox { display: block; height: 32px; border: 1px solid var(--edge); border-radius: var(--r); background: var(--field); flex: 1; }
+.sz-form-pbox.tall { height: 52px; }
+.sz-form-prow { display: flex; gap: 6px; align-items: center; }
+.sz-form-pscale { display: grid; grid-template-columns: repeat(auto-fill, minmax(26px, 1fr)); gap: 4px; }
+.sz-form-pscale.two { grid-template-columns: 1fr 1fr; }
+.sz-form-pscale > span { display: grid; place-items: center; min-height: 28px; border: 1px solid var(--edge); border-radius: var(--r); background: var(--surface-2); font-size: 12px; font-variant-numeric: tabular-nums; }
+.sz-form-popts { display: grid; gap: 4px; }
+.sz-form-popts > span { display: flex; gap: 8px; align-items: center; }
+.sz-form-pradio, .sz-form-pcheck { width: 14px; height: 14px; border: 1.5px solid var(--edge); background: var(--field); flex: none; }
+.sz-form-pradio { border-radius: 50%; }
+.sz-form-pcheck { border-radius: 2px; }
+.sz-form-pbtn { display: grid; place-items: center; min-height: 36px; border-radius: var(--r); background: var(--steel); color: var(--on-strong); font-weight: 600; }

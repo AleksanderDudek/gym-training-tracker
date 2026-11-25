@@ -3,17 +3,19 @@ import type { ReactNode } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { getCoach } from './lib/data';
 import type { Coach } from './lib/data';
+import { needsCode } from './lib/mfa';
 import { navigate } from './lib/router';
 import { sb } from './lib/sb';
 import { loadDeviceKey } from './lib/vault';
 
 /**
- * Stan logowania, w czterech krokach: brak sesji → konto bez profilu (pierwsze kroki i sejf) →
+ * Stan logowania: brak sesji → kod z aplikacji (logowanie dwuetapowe, jeśli włączone) → konto bez profilu (pierwsze kroki i sejf) →
  * profil bez klucza na tym komputerze (otwarcie sejfu kodem) → gotowe.
  */
 export type Session =
   | { kind: 'loading' }
   | { kind: 'out' }
+  | { kind: 'mfa'; user: User }
   | { kind: 'new'; user: User }
   | { kind: 'locked'; user: User; coach: Coach }
   | { kind: 'ready'; user: User; coach: Coach; key: CryptoKey };
@@ -32,6 +34,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const resolve = useCallback(async (user: User | null) => {
     if (!user) return setSession({ kind: 'out' });
     try {
+      // Sesja po haśle, a konto ma włączone logowanie dwuetapowe: dalej dopiero po kodzie (też po odświeżeniu strony).
+      const aal = await sb.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (needsCode(aal.data)) return setSession({ kind: 'mfa', user });
       const coach = await getCoach(user.id);
       if (!coach) return setSession({ kind: 'new', user });
       const device = await loadDeviceKey(user.id);

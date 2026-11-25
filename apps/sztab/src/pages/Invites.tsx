@@ -19,6 +19,7 @@ const T = text({
     areas: 'Co prowadzisz',
     scopes: 'O jakie dane prosisz',
     scopesHint: 'Podopieczny zobaczy tę listę i odhaczy po swojemu. Może zmienić zdanie w każdej chwili.',
+    photosHint: 'Osobna zgoda na najwrażliwsze dane — poproś tylko, gdy ich potrzebujesz. Zabrana zgoda kasuje zdjęcia u ciebie od razu.',
     message: 'Wiadomość do podopiecznego (opcjonalnie)',
     messagePh: 'Cześć! Tak jak rozmawialiśmy — zaczynamy od poniedziałku.',
     label: 'Notatka dla ciebie (opcjonalnie)',
@@ -54,6 +55,7 @@ const T = text({
     areas: 'What you coach',
     scopes: 'What data you ask for',
     scopesHint: 'The client sees this list and ticks it their way. They can change their mind at any time.',
+    photosHint: 'A separate consent for the most sensitive data — ask only if you need it. Withdrawn consent deletes the photos on your side at once.',
     message: 'Message to the client (optional)',
     messagePh: 'Hi! As we discussed — we start on Monday.',
     label: 'A note for you (optional)',
@@ -282,7 +284,10 @@ function NewInvite({ onClose, linkOf }: { onClose: () => void; linkOf: (i: Invit
                   checked={scopes.includes(s)}
                   onChange={() => setScopes(scopes.includes(s) ? scopes.filter((x) => x !== s) : SCOPES.filter((x) => x === s || scopes.includes(x)))}
                 />
-                <span>{L.scope[s]}</span>
+                <span>
+                  {L.scope[s]}
+                  {s === 'photos' ? <span className="hint">{T.photosHint}</span> : null}
+                </span>
               </label>
             ))}
           </div>

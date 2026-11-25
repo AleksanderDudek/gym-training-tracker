@@ -1,0 +1,36 @@
+/* Harmonogram: „Kiedy” w oknie wysyłki, wysyłka do wielu, uruchomienie programu. */
+
+.sz-sched-when { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
+.sz-sched-when .field { flex: 0 1 240px; }
+.sz-sched-when input[type='time'] {
+  width: 100%; min-height: 44px; padding: 9px 12px; border: 1.5px solid var(--edge); border-radius: var(--r); background: var(--field); font-size: 16px;
+}
+
+.sz-sched-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; max-height: 260px; overflow: auto; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface-2); }
+.sz-sched-list li { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; justify-content: space-between; padding: 6px 10px; font-size: 14px; }
+.sz-sched-list li + li { border-top: 1px solid var(--line); }
+.sz-sched-who { display: flex; gap: 8px; align-items: baseline; min-width: 0; }
+.sz-sched-who .alias { color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 24ch; }
+.sz-sched-skip { color: var(--warn); font-size: 13px; }
+
+.sz-sched-progress { display: grid; gap: 6px; }
+.sz-sched-progress progress { width: 100%; height: 10px; accent-color: var(--blue-ink); }
+
+.sz-sched-summary { display: grid; gap: 8px; }
+.sz-sched-summary ul { margin: 0; padding-left: 18px; display: grid; gap: 2px; font-size: 14px; }
+
+/* Uruchomienie programu */
+.sz-sched-pick { display: grid; gap: 2px; max-height: 240px; overflow: auto; border: 1px solid var(--line); border-radius: var(--r); padding: 4px 10px; }
+.sz-sched-pick .check { min-height: 40px; padding: 8px 0; align-items: center; }
+.sz-sched-preview { list-style: none; margin: 0; padding: 0; display: grid; max-height: 300px; overflow: auto; border: 1px solid var(--line); border-radius: var(--r); }
+.sz-sched-preview li { display: grid; grid-template-columns: minmax(130px, auto) 56px minmax(0, 1fr); gap: 10px; padding: 7px 10px; font-size: 14px; align-items: baseline; }
+.sz-sched-preview li + li { border-top: 1px solid var(--line); }
+.sz-sched-preview .when { font-variant-numeric: tabular-nums; }
+.sz-sched-preview .time { font-family: var(--mono); font-size: 13px; color: var(--ink-soft); }
+.sz-sched-preview .missing { color: var(--warn); }
+.sz-sched-report { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.sz-sched-report li { display: grid; gap: 2px; padding: 8px 10px; border-radius: var(--r); background: var(--surface-2); font-size: 14px; }
+@media (max-width: 560px) {
+  .sz-sched-preview li { grid-template-columns: minmax(0, 1fr) auto; }
+  .sz-sched-preview li .what { grid-column: 1 / -1; }
+}

@@ -115,6 +115,12 @@ export const AAD = {
   snapshot: (connectionId: string) => `snapshot|${connectionId}`,
   assignment: (connectionId: string, assignmentId: string) => `assignment|${connectionId}|${assignmentId}`,
   receipt: (connectionId: string, assignmentId: string) => `receipt|${connectionId}|${assignmentId}`,
+  /**
+   * Autor w danych dodatkowych: jawna kolumna `author` w bazie nie może przestawić, kto napisał —
+   * podmieniony autor (zalecenie prowadzącego jako słowa podopiecznego) nie otworzy się po żadnej stronie.
+   */
+  message: (connectionId: string, messageId: string, author: 'coach' | 'client') => `message|${connectionId}|${messageId}|${author}`,
+  photo: (connectionId: string, photoId: string) => `photo|${connectionId}|${photoId}`,
   vault: (userId: string) => `vault|${userId}`,
 };
 

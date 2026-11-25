@@ -1,5 +1,5 @@
 import { AAD, fingerprint, generateIdentity, linkKey, openJson, sealJson, sha256Hex } from '@gymtracker/link';
-import type { Area, AssignmentV1, Identity, PublicJwk, Scope } from '@gymtracker/link';
+import type { Area, AssignmentV1, Identity, MessageV1, PublicJwk, Scope } from '@gymtracker/link';
 
 /**
  * Sztab w pamięci dla testów współpracy: te same funkcje RPC co w migracji
@@ -22,6 +22,20 @@ export interface FakeConnection {
   bytes: number | null;
   assignments: { id: string; kind: string; area: string; ciphertext: string; createdAt: string; withdrawnAt: string | null }[];
   receipts: Record<string, string>;
+  messages: { id: string; author: 'coach' | 'client'; ciphertext: string; createdAt: string; readAt: string | null }[];
+  photos: Map<string, string>;
+  bookings: { id: string; slotId: string; cancelledAt: string | null; cancelledBy: 'client' | 'coach' | null }[];
+}
+
+export interface FakeSlot {
+  id: string;
+  startsAt: string;
+  endsAt: string;
+  title: string;
+  place: string | null;
+  note: string | null;
+  capacity: number;
+  cancelledAt: string | null;
 }
 
 export interface FakeInvite {
@@ -54,6 +68,13 @@ export async function fakeSztab(opts: { coachName?: string; profession?: string 
   let offline = false;
   /** Ile kolejnych paczek dostanie „za wcześnie, spróbuj za 30 s” (limit z `client_push`). */
   let throttled = 0;
+  const slots = new Map<string, FakeSlot>();
+  /** Zegar serwera: każda wiadomość dostaje późniejszy czas niż poprzednia (jak `now()` w bazie). */
+  let clock = Date.now();
+  const serverNow = () => {
+    clock = Math.max(clock + 1, Date.now());
+    return new Date(clock).toISOString();
+  };
 
   const fail = (message: string) =>
     new Response(JSON.stringify({ code: 'P0001', message, details: null, hint: null }), { status: 400 });
@@ -73,6 +94,9 @@ export async function fakeSztab(opts: { coachName?: string; profession?: string 
     c.bytes = null;
     c.assignments = [];
     c.scopes = [];
+    c.messages = [];
+    c.photos.clear();
+    c.bookings = c.bookings.filter((b) => Date.parse(slots.get(b.slotId)?.startsAt ?? '') <= Date.now());
   }
 
   async function handle(name: string, a: Record<string, unknown>): Promise<Response> {
@@ -123,6 +147,9 @@ export async function fakeSztab(opts: { coachName?: string; profession?: string 
           bytes: null,
           assignments: [],
           receipts: {},
+          messages: [],
+          photos: new Map(),
+          bookings: [],
         });
         i.status = 'accepted';
         return ok(id);
@@ -164,6 +191,7 @@ export async function fakeSztab(opts: { coachName?: string; profession?: string 
           c.snapshot = null;
           c.bytes = null;
         }
+        if (!scopes.includes('photos')) c.photos.clear();
         c.areas = [...areas];
         c.scopes = [...scopes];
         return ok(undefined);
@@ -172,6 +200,88 @@ export async function fakeSztab(opts: { coachName?: string; profession?: string 
         const c = await byToken(a.p_connection, a.p_token);
         if (!c) return fail('bad_token');
         end(c, 'client');
+        return ok(undefined);
+      }
+      case 'client_messages': {
+        const c = await byToken(a.p_connection, a.p_token);
+        if (!c) return fail('bad_token');
+        const since = typeof a.p_since === 'string' ? a.p_since : null;
+        const read = c.messages.filter((m) => m.author === 'client' && m.readAt).map((m) => m.createdAt).sort();
+        return ok({ messages: c.messages.filter((m) => !since || m.createdAt > since), readUpTo: read.at(-1) ?? null });
+      }
+      case 'client_message': {
+        const c = await byToken(a.p_connection, a.p_token);
+        if (!c) return fail('bad_token');
+        if (c.status !== 'active') return fail('ended');
+        const was = c.messages.find((m) => m.id === a.p_id);
+        if (was) return ok({ createdAt: was.createdAt });
+        const createdAt = serverNow();
+        c.messages.push({ id: String(a.p_id), author: 'client', ciphertext: String(a.p_ciphertext), createdAt, readAt: null });
+        return ok({ createdAt });
+      }
+      case 'client_read': {
+        const c = await byToken(a.p_connection, a.p_token);
+        if (!c) return fail('bad_token');
+        for (const m of c.messages) if (m.author === 'coach' && !m.readAt && m.createdAt <= String(a.p_upto)) m.readAt = serverNow();
+        return ok(undefined);
+      }
+      case 'client_photo_ids': {
+        const c = await byToken(a.p_connection, a.p_token);
+        if (!c) return fail('bad_token');
+        return ok([...c.photos.keys()]);
+      }
+      case 'client_photo_put': {
+        const c = await byToken(a.p_connection, a.p_token);
+        if (!c) return fail('bad_token');
+        if (c.status !== 'active') return fail('ended');
+        if (!c.scopes.includes('photos')) return fail('no_scope');
+        if (!c.photos.has(String(a.p_id)) && c.photos.size >= 60) return fail('photo_limit');
+        c.photos.set(String(a.p_id), String(a.p_ciphertext));
+        return ok(undefined);
+      }
+      case 'client_photo_delete': {
+        const c = await byToken(a.p_connection, a.p_token);
+        if (!c) return fail('bad_token');
+        c.photos.delete(String(a.p_id));
+        return ok(undefined);
+      }
+      case 'client_slots': {
+        const c = await byToken(a.p_connection, a.p_token);
+        if (!c) return fail('bad_token');
+        const now = Date.now();
+        const taken = (id: string) => [...connections.values()].flatMap((x) => x.bookings).filter((b) => b.slotId === id && !b.cancelledAt).length;
+        return ok({
+          slots: [...slots.values()]
+            .filter((s) => !s.cancelledAt && Date.parse(s.startsAt) > now)
+            .sort((x, y) => x.startsAt.localeCompare(y.startsAt))
+            .map((s) => ({ ...s, taken: taken(s.id) })),
+          bookings: c.bookings.flatMap((b) => {
+            const s = slots.get(b.slotId);
+            if (!s) return [];
+            return [{ id: b.id, slotId: s.id, startsAt: s.startsAt, endsAt: s.endsAt, title: s.title, place: s.place, note: s.note, cancelledAt: b.cancelledAt ?? s.cancelledAt, cancelledBy: b.cancelledBy ?? (s.cancelledAt ? 'coach' : null) }];
+          }),
+        });
+      }
+      case 'client_book': {
+        const c = await byToken(a.p_connection, a.p_token);
+        if (!c) return fail('bad_token');
+        const s = slots.get(String(a.p_slot));
+        if (!s || s.cancelledAt) return fail('slot_missing');
+        if (Date.parse(s.startsAt) <= Date.now()) return fail('slot_past');
+        if (c.bookings.some((b) => b.slotId === s.id && !b.cancelledAt)) return fail('already_booked');
+        const used = [...connections.values()].flatMap((x) => x.bookings).filter((b) => b.slotId === s.id && !b.cancelledAt).length;
+        if (used >= s.capacity) return fail('slot_full');
+        const id = uuid();
+        c.bookings.push({ id, slotId: s.id, cancelledAt: null, cancelledBy: null });
+        return ok(id);
+      }
+      case 'client_cancel_booking': {
+        const c = await byToken(a.p_connection, a.p_token);
+        if (!c) return fail('bad_token');
+        const b = c.bookings.find((x) => x.id === a.p_booking && !x.cancelledAt);
+        if (!b || Date.parse(slots.get(b.slotId)?.startsAt ?? '') <= Date.now()) return fail('booking_missing');
+        b.cancelledAt = new Date().toISOString();
+        b.cancelledBy = 'client';
         return ok(undefined);
       }
       default:
@@ -234,6 +344,51 @@ export async function fakeSztab(opts: { coachName?: string; profession?: string 
       const key = await linkKey(coach.privateKey, c.clientKey, c.inviteId);
       return openJson(key, AAD.snapshot(c.id), c.snapshot);
     },
+    /** Prowadzący pisze wiadomość (szyfrogram kluczem współpracy, jak w Sztabie). */
+    async message(connectionId: string, text: string, id: string = uuid()) {
+      const c = connections.get(connectionId)!;
+      const key = await linkKey(coach.privateKey, c.clientKey, c.inviteId);
+      const env: MessageV1 = { v: 1, id, at: Date.now(), text, ref: null };
+      c.messages.push({ id, author: 'coach', ciphertext: await sealJson(key, AAD.message(c.id, id, 'coach'), env), createdAt: serverNow(), readAt: null });
+      return id;
+    },
+    /** Wiadomość od telefonu odczytana kluczem prowadzącego. */
+    async readMessage(connectionId: string, id: string): Promise<unknown> {
+      const c = connections.get(connectionId)!;
+      const m = c.messages.find((x) => x.id === id);
+      if (!m) return null;
+      const key = await linkKey(coach.privateKey, c.clientKey, c.inviteId);
+      return openJson(key, AAD.message(c.id, id, m.author), m.ciphertext);
+    },
+    /** Prowadzący oznacza wiadomości telefonu jako przeczytane. */
+    readByCoach(connectionId: string) {
+      for (const m of connections.get(connectionId)!.messages) if (m.author === 'client' && !m.readAt) m.readAt = serverNow();
+    },
+    async readPhoto(connectionId: string, id: string): Promise<unknown> {
+      const c = connections.get(connectionId)!;
+      const ct = c.photos.get(id);
+      if (!ct) return null;
+      const key = await linkKey(coach.privateKey, c.clientKey, c.inviteId);
+      return openJson(key, AAD.photo(c.id, id), ct);
+    },
+    /** Termin prowadzącego (domyślnie jutro o tej porze, godzina, jedno miejsce). */
+    slot(over: Partial<FakeSlot> = {}): FakeSlot {
+      const start = Date.now() + 86_400_000;
+      const s: FakeSlot = {
+        id: uuid(),
+        startsAt: new Date(start).toISOString(),
+        endsAt: new Date(start + 3_600_000).toISOString(),
+        title: 'Trening personalny',
+        place: null,
+        note: null,
+        capacity: 1,
+        cancelledAt: null,
+        ...over,
+      };
+      slots.set(s.id, s);
+      return s;
+    },
+    slots,
     async readReceipt(connectionId: string, assignmentId: string): Promise<unknown> {
       const c = connections.get(connectionId)!;
       const key = await linkKey(coach.privateKey, c.clientKey, c.inviteId);

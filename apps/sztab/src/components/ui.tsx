@@ -32,16 +32,23 @@ export function AreaChips({ areas }: { areas: readonly Area[] }) {
 
 export function Dialog({ title, onClose, children, wide }: { title: string; onClose: () => void; children: ReactNode; wide?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
+  // `onClose` bywa funkcją pisaną w miejscu (nowa przy każdym renderze rodzica). Efekt zależny od niej
+  // przenosiłby fokus na pierwsze pole przy każdym odświeżeniu rodzica (np. co 20 s w rozmowie) —
+  // więc fokus i klawisz Escape ustawiamy raz, przy otwarciu, a zamknięcie czytamy z ref.
+  const close = useRef(onClose);
+  useEffect(() => {
+    close.current = onClose;
+  });
   useEffect(() => {
     const prev = document.activeElement as HTMLElement | null;
     ref.current?.querySelector<HTMLElement>('input, select, textarea, button:not(.x)')?.focus();
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && close.current();
     window.addEventListener('keydown', onKey);
     return () => {
       window.removeEventListener('keydown', onKey);
       prev?.focus?.();
     };
-  }, [onClose]);
+  }, []);
   return (
     <div className="overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div ref={ref} className={`dialog${wide ? ' wide' : ''}`} role="dialog" aria-modal="true" aria-label={title}>

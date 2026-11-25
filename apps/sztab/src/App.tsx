@@ -2,12 +2,13 @@ import { Suspense, lazy } from 'react';
 import type { ReactNode } from 'react';
 import { text } from '@gt/i18n';
 import { Link, Loading, Toaster, useLoad } from './components/ui';
-import { inviteState, listConnections, listInvites } from './lib/data';
+import { inviteState, listConnections, listInvites, unreadCounts } from './lib/data';
 import { L } from './lib/labels';
 import { match, useLocation, useRedirect } from './lib/router';
 import { SessionProvider, useReady, useSession } from './session';
-import { NewPassword, ResetRequest, SignIn, SignUp } from './pages/Auth';
+import { MfaChallenge, NewPassword, ResetRequest, SignIn, SignUp } from './pages/Auth';
 import { Onboarding, Unlock } from './pages/Vault';
+import './pages/clients.css';
 
 // Strony za logowaniem w osobnych paczkach: logowanie nie ciągnie atlasu, planów ani silnika.
 const Clients = lazy(() => import('./pages/Clients').then((m) => ({ default: m.Clients })));
@@ -15,12 +16,19 @@ const ClientPage = lazy(() => import('./pages/Client').then((m) => ({ default: m
 const Invites = lazy(() => import('./pages/Invites').then((m) => ({ default: m.Invites })));
 const Library = lazy(() => import('./pages/Library').then((m) => ({ default: m.Library })));
 const LibraryEditor = lazy(() => import('./pages/Library').then((m) => ({ default: m.LibraryEditor })));
+const Calendar = lazy(() => import('./pages/Calendar').then((m) => ({ default: m.Calendar })));
 const Settings = lazy(() => import('./pages/Settings').then((m) => ({ default: m.Settings })));
 const Privacy = lazy(() => import('./pages/Privacy').then((m) => ({ default: m.Privacy })));
 
 const T = text({
-  pl: { clients: 'Podopieczni', invites: 'Zaproszenia', library: 'Biblioteka', settings: 'Ustawienia', privacy: 'RODO i rejestr', signOut: 'Wyloguj', notFound: 'Nie ma takiej strony.' },
-  en: { clients: 'Clients', invites: 'Invites', library: 'Library', settings: 'Settings', privacy: 'GDPR and records', signOut: 'Sign out', notFound: 'No such page.' },
+  pl: { clients: 'Podopieczni', invites: 'Zaproszenia', library: 'Biblioteka', calendar: 'Kalendarz', settings: 'Ustawienia', privacy: 'RODO i rejestr', signOut: 'Wyloguj', notFound: 'Nie ma takiej strony.' },
+  en: { clients: 'Clients', invites: 'Invites', library: 'Library', calendar: 'Calendar', settings: 'Settings', privacy: 'GDPR and records', signOut: 'Sign out', notFound: 'No such page.' },
+});
+
+// Licznik nieprzeczytanych przy „Podopieczni” (lista podopiecznych, spec 2026-11-25).
+const U = text({
+  pl: { unread: (n: number) => `nieprzeczytane wiadomości: ${n}` },
+  en: { unread: (n: number) => `unread messages: ${n}` },
 });
 
 const PUBLIC = ['/logowanie', '/rejestracja', '/haslo'];
@@ -40,7 +48,7 @@ function Gate() {
 
   const isPublic = PUBLIC.includes(path);
   const redirect =
-    session.kind === 'loading'
+    session.kind === 'loading' || session.kind === 'mfa'
       ? null
       : session.kind === 'out'
         ? isPublic
@@ -67,6 +75,7 @@ function Gate() {
     if (path === '/haslo') return <ResetRequest />;
     return <SignIn />;
   }
+  if (session.kind === 'mfa') return <MfaChallenge />;
   if (session.kind === 'new') return <Onboarding />;
   if (session.kind === 'locked') return <Unlock />;
   return <Shell path={path} />;
@@ -75,8 +84,13 @@ function Gate() {
 function Shell({ path }: { path: string }) {
   const { coach, signOut } = useReady();
   const counts = useLoad(async () => {
-    const [c, i] = await Promise.all([listConnections(), listInvites()]);
-    return { clients: c.filter((x) => x.status === 'active').length, invites: i.filter((x) => inviteState(x) === 'open').length };
+    // Licznik wiadomości to dodatek: gdy zawiedzie, reszta paska działa.
+    const [c, i, u] = await Promise.all([listConnections(), listInvites(), unreadCounts().catch((): Record<string, number> => ({}))]);
+    return {
+      clients: c.filter((x) => x.status === 'active').length,
+      invites: i.filter((x) => inviteState(x) === 'open').length,
+      unread: Object.values(u).reduce((a, n) => a + n, 0),
+    };
   }, [path]);
 
   let page: ReactNode;
@@ -87,14 +101,17 @@ function Shell({ path }: { path: string }) {
   else if (path === '/biblioteka') page = <Library />;
   else if ((m = match('/biblioteka/nowy/:kind', path))) page = <LibraryEditor kind={m.kind!} />;
   else if ((m = match('/biblioteka/:id', path))) page = <LibraryEditor id={m.id!} />;
+  else if (path === '/kalendarz') page = <Calendar />;
   else if (path === '/ustawienia') page = <Settings />;
   else if (path === '/rodo') page = <Privacy />;
   else page = <p>{T.notFound}</p>;
 
+  const unread = counts.data?.unread ?? 0;
   const nav: [string, string, number | undefined][] = [
     ['/podopieczni', T.clients, counts.data?.clients],
     ['/zaproszenia', T.invites, counts.data?.invites],
     ['/biblioteka', T.library, undefined],
+    ['/kalendarz', T.calendar, undefined],
     ['/ustawienia', T.settings, undefined],
     ['/rodo', T.privacy, undefined],
   ];
@@ -113,7 +130,15 @@ function Shell({ path }: { path: string }) {
         <nav className="nav" aria-label="Sztab">
           {nav.map(([to, label, count]) => (
             <Link key={to} to={to} current={path === to || path.startsWith(`${to}/`)}>
-              <span>{label}</span>
+              <span>
+                {label}
+                {to === '/podopieczni' && unread ? (
+                  <span className="sz-clients-unread" title={U.unread(unread)}>
+                    <span aria-hidden="true">{unread}</span>
+                    <span className="sr">{U.unread(unread)}</span>
+                  </span>
+                ) : null}
+              </span>
               {count ? <span className="count">{count}</span> : null}
             </Link>
           ))}

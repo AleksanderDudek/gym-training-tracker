@@ -5,3 +5,4 @@ export * from './crypto';
 export * from './invite';
 export * from './snapshot';
 export * from './assignment';
+export * from './coaching';

@@ -1,19 +1,24 @@
-import { Fragment, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { formatPseudonym, shortPseudonym } from '@gymtracker/link';
 import type { AssignmentKind, Scope, SnapshotV1 } from '@gymtracker/link';
 import { MARKERS } from '@gt/food/labs/markers';
 import { MEASURES, measureName } from '@gt/engine/measures';
 import { LOCALE, num, text } from '@gt/i18n';
 import { AreaChips, Dialog, Failure, Link, Loading, ago, fmtDate, toast, useLoad } from '../components/ui';
-import { loadAliases, saveAlias } from '../lib/aliases';
+import { loadAliases, markSeen, saveAlias } from '../lib/aliases';
 import { endConnection, getConnection, listAssignments, readSnapshot, withdrawAssignment } from '../lib/data';
 import type { Connection, SentAssignment } from '../lib/data';
 import { L } from '../lib/labels';
 import { foodDays, overview } from '../lib/metrics';
 import type { Overview } from '../lib/metrics';
 import { navigate, useLocation } from '../lib/router';
+import { forgetReview } from '../lib/reviewLoad';
 import { useReady } from '../session';
 import { SendDialog } from './Send';
+import { AdherenceTab } from './client/AdherenceTab';
+import { AnswersTab } from './client/AnswersTab';
+import { CommentSessionLink, MessagesTab, UnreadBadge } from './client/MessagesTab';
+import { PhotosTab } from './client/PhotosTab';
 
 const T = text({
   pl: {
@@ -27,7 +32,18 @@ const T = text({
     data: (s: string) => `dane z: ${s}`,
     noData: 'Podopieczny jeszcze nic nie wysłał. Dane przyjdą, gdy otworzy GYM TRACKERa.',
     unreadable: 'Paczka jest, ale nie otwiera się kluczem z tego sejfu. Jeśli zakładałeś konto od nowa, poproś o nowe zaproszenie.',
-    tabs: { overview: 'Przegląd', training: 'Trening', food: 'Jedzenie', body: 'Ciało', labs: 'Badania', sent: 'Zalecenia' },
+    tabs: {
+      overview: 'Przegląd',
+      messages: 'Wiadomości',
+      training: 'Trening',
+      food: 'Jedzenie',
+      body: 'Ciało',
+      labs: 'Badania',
+      answers: 'Odpowiedzi',
+      adherence: 'Realizacja',
+      photos: 'Zdjęcia',
+      sent: 'Zalecenia',
+    },
     notShared: (what: string) => `Podopieczny nie udostępnia: ${what}. Zakres zmienia on sam, w GYM TRACKERze.`,
     send: 'Wyślij',
     quick: { plan: 'Wyślij plan', targets: 'Ustaw cele', labs: 'Zleć badania', note: 'Zalecenie', workout: 'Wyślij trening' } as Record<AssignmentKind, string>,
@@ -111,7 +127,18 @@ const T = text({
     data: (s: string) => `data from: ${s}`,
     noData: 'The client has not sent anything yet. Data arrives when they open GYM TRACKER.',
     unreadable: 'There is a data package, but this vault’s key does not open it. If you recreated your account, ask for a new invite.',
-    tabs: { overview: 'Overview', training: 'Training', food: 'Food', body: 'Body', labs: 'Labs', sent: 'Advice' },
+    tabs: {
+      overview: 'Overview',
+      messages: 'Messages',
+      training: 'Training',
+      food: 'Food',
+      body: 'Body',
+      labs: 'Labs',
+      answers: 'Answers',
+      adherence: 'Adherence',
+      photos: 'Photos',
+      sent: 'Advice',
+    },
     notShared: (what: string) => `The client does not share: ${what}. Only they can change it, in GYM TRACKER.`,
     send: 'Send',
     quick: { plan: 'Send plan', targets: 'Set targets', labs: 'Order lab tests', note: 'Advice', workout: 'Send workout' } as Record<AssignmentKind, string>,
@@ -187,7 +214,9 @@ const T = text({
 });
 
 type Tab = keyof typeof T.tabs;
-const TAB_SCOPE: Partial<Record<Tab, Scope>> = { training: 'training', food: 'food', body: 'body', labs: 'labs' };
+const TAB_SCOPE: Partial<Record<Tab, Scope>> = { training: 'training', food: 'food', body: 'body', labs: 'labs', photos: 'photos' };
+/** Zakładki, które nie czytają paczki danych — nie czekają na nią i nie mówią „brak danych”. */
+const NO_SNAPSHOT: readonly Tab[] = ['sent', 'messages', 'photos'];
 
 export function ClientPage({ id }: { id: string }) {
   const { key, user } = useReady();
@@ -198,6 +227,10 @@ export function ClientPage({ id }: { id: string }) {
   const snap = useLoad(async () => (c && c.status === 'active' ? readSnapshot(key, c) : null), [c]);
   const sent = useLoad(async () => (c ? listAssignments(key, c) : []), [c]);
   const [alias, setAlias] = useState<string | null>(null);
+  // „Nowe odpowiedzi” na liście liczą się od ostatniego otwarcia — także wejścia z adresu, nie tylko z listy.
+  useEffect(() => {
+    markSeen(user.id, id);
+  }, [user.id, id]);
   const [sending, setSending] = useState<AssignmentKind | null>(null);
   const [ending, setEnding] = useState(false);
 
@@ -275,23 +308,40 @@ export function ClientPage({ id }: { id: string }) {
               <Link key={t} to={`/podopieczni/${c.id}${t === 'overview' ? '' : `?t=${t}`}`} current={tab === t}>
                 {T.tabs[t]}
                 {t === 'sent' && sentCount ? <span className="count">{sentCount}</span> : null}
+                {t === 'messages' ? <UnreadBadge connectionId={c.id} /> : null}
               </Link>
             ))}
           </nav>
           {snap.error ? <Failure error={snap.error} retry={snap.reload} /> : null}
-          {tab !== 'sent' && !snap.data && !snap.error ? <Loading /> : null}
-          {tab !== 'sent' && snap.data && !snap.data.snapshot ? (
+          {!NO_SNAPSHOT.includes(tab) && !snap.data && !snap.error ? <Loading /> : null}
+          {!NO_SNAPSHOT.includes(tab) && snap.data && !snap.data.snapshot ? (
             <div className="note gold">{snap.data.unreadable ? T.unreadable : T.noData}</div>
           ) : null}
-          {tab !== 'sent' && TAB_SCOPE[tab] && !c.scopes.includes(TAB_SCOPE[tab]) ? (
+          {tab !== 'sent' && TAB_SCOPE[tab] && !c.scopes.includes(TAB_SCOPE[tab]!) ? (
             <div className="note">{T.notShared(L.scope[TAB_SCOPE[tab]!].toLowerCase())}</div>
           ) : null}
           {s && ov && tab === 'overview' ? <OverviewTab s={s} ov={ov} c={c} onSend={setSending} /> : null}
-          {s && ov && tab === 'training' && s.training ? <TrainingTab ov={ov} /> : null}
+          {s && ov && tab === 'training' && s.training ? <TrainingTab ov={ov} cid={c.id} /> : null}
           {s && tab === 'food' && s.food ? <FoodTab s={s} /> : null}
           {s && ov && tab === 'body' && s.body ? <BodyTab s={s} ov={ov} /> : null}
           {s && tab === 'labs' && s.labs ? <LabsTab s={s} /> : null}
-          {tab === 'sent' ? <SentTab list={sent.data} error={sent.error} reload={sent.reload} /> : null}
+          {tab === 'sent' ? (
+            <SentTab
+              c={c}
+              list={sent.data}
+              error={sent.error}
+              reload={sent.reload}
+              changed={() => {
+                // Wycofane albo anulowane — lista „Do przejrzenia” policzy podopiecznego od nowa.
+                forgetReview(key, c.id);
+                sent.reload();
+              }}
+            />
+          ) : null}
+          {tab === 'messages' ? <MessagesTab c={c} /> : null}
+          {s && tab === 'answers' ? <AnswersTab c={c} s={s} sent={sent.data} /> : null}
+          {s && tab === 'adherence' ? <AdherenceTab c={c} s={s} sent={sent.data} /> : null}
+          {tab === 'photos' && c.scopes.includes('photos') ? <PhotosTab c={c} /> : null}
           <section className="row" style={{ marginTop: 12 }}>
             <button type="button" className="btn danger" onClick={() => setEnding(true)}>
               {T.end}
@@ -471,7 +521,7 @@ export function WeightChart({ series }: { series: { day: string; kg: number }[] 
   );
 }
 
-function TrainingTab({ ov }: { ov: Overview }) {
+function TrainingTab({ ov, cid }: { ov: Overview; cid: string }) {
   return (
     <div className="stack" style={{ gap: 14 }}>
       <section className="card flat scroll-x">
@@ -483,6 +533,7 @@ function TrainingTab({ ov }: { ov: Overview }) {
               <th className="n">{T.minutes}</th>
               <th className="n">{T.sets}</th>
               <th className="n">{T.tonnage}</th>
+              <th />
             </tr>
           </thead>
           <tbody>
@@ -496,6 +547,9 @@ function TrainingTab({ ov }: { ov: Overview }) {
                 <td className="n">{r.minutes ? T.min(r.minutes) : '—'}</td>
                 <td className="n">{r.sets}</td>
                 <td className="n">{r.tonnage ? T.t(r.tonnage) : '—'}</td>
+                <td className="n">
+                  <CommentSessionLink connectionId={cid} at={r.date} name={r.name} />
+                </td>
               </tr>
             ))}
           </tbody>
@@ -679,53 +733,191 @@ function LabsTab({ s }: { s: SnapshotV1 }) {
   );
 }
 
-function SentTab({ list, error, reload }: { list: SentAssignment[] | undefined; error: string | null; reload: () => void }) {
+function SentTab({
+  c,
+  list,
+  error,
+  reload,
+  changed,
+}: {
+  c: Connection;
+  list: SentAssignment[] | undefined;
+  error: string | null;
+  reload: () => void;
+  /** Po wycofaniu albo anulowaniu: lista od nowa (i przegląd na liście podopiecznych). */
+  changed: () => void;
+}) {
+  // Harmonogram i druk (spec 2026-11-25). Teksty, numer podopiecznego i wydruk (ładowany dopiero na
+  // „Drukuj”) mieszkają tu, w środku zakładki — reszta pliku należy do innych części.
+  const S = useMemo(
+    () =>
+      text({
+        pl: {
+          scheduled: (w: string) => `Zaplanowane: ${w}`,
+          cancel: 'Anuluj',
+          sure: 'Anulować? Podopieczny tego nie zobaczy.',
+          yes: 'Tak, anuluj',
+          no: 'Nie',
+          cancelled: 'anulowane',
+          done: 'Anulowano',
+          print: 'Drukuj',
+          failed: 'Nie udało się. Spróbuj ponownie.',
+          upcoming: (n: number) => `Zaplanowane (${n})`,
+        },
+        en: {
+          scheduled: (w: string) => `Scheduled: ${w}`,
+          cancel: 'Cancel',
+          sure: 'Cancel it? The client will not see it.',
+          yes: 'Yes, cancel',
+          no: 'No',
+          cancelled: 'cancelled',
+          done: 'Cancelled',
+          print: 'Print',
+          failed: 'That did not work. Try again.',
+          upcoming: (n: number) => `Scheduled (${n})`,
+        },
+      }),
+    [],
+  );
+  const [asking, setAsking] = useState<string | null>(null);
+  const [printing, setPrinting] = useState<{ mod: typeof import('../components/Print'); a: SentAssignment; client: string | null } | null>(null);
+  const now = Date.now();
+  const at = (iso: string | null) => (iso ? Date.parse(iso) : NaN);
+  const isLater = (a: SentAssignment) => !a.withdrawnAt && at(a.visibleFrom) > now;
+  /** Kiedy podopieczny to dostał: „pokaż od”, chyba że anulowane wcześniej — wtedy dzień wysłania. */
+  const shownAt = (a: SentAssignment) => (a.visibleFrom && !(a.withdrawnAt && at(a.withdrawnAt) < at(a.visibleFrom)) ? a.visibleFrom : a.createdAt);
+  const rows = useMemo(() => {
+    const all = list ?? [];
+    const later = all.filter(isLater).sort((x, y) => at(x.visibleFrom) - at(y.visibleFrom));
+    const rest = all.filter((a) => !isLater(a)).sort((x, y) => at(shownAt(y)) - at(shownAt(x)));
+    return { later, rest };
+    // `now` zmienia się co render — lista liczy się od nowa razem z danymi.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [list]);
+
+  const when = (iso: string) => {
+    const d = new Date(iso);
+    const year = d.getFullYear() !== new Date().getFullYear();
+    const day = new Intl.DateTimeFormat(LOCALE, { day: 'numeric', month: 'long', ...(year ? { year: 'numeric' } : {}) }).format(d);
+    return `${day}, ${new Intl.DateTimeFormat(LOCALE, { hour: 'numeric', minute: '2-digit' }).format(d)}`;
+  };
+
+  const cancel = (a: SentAssignment) =>
+    void withdrawAssignment(a.id).then(
+      () => {
+        setAsking(null);
+        toast(S.done);
+        changed();
+      },
+      () => toast(S.failed),
+    );
+
+  const print = (a: SentAssignment) => {
+    void import('../components/Print').then(
+      (mod) => setPrinting({ mod, a, client: shortPseudonym(c.pseudonym) }),
+      () => toast(S.failed),
+    );
+  };
+
   if (error) return <Failure error={error} retry={reload} />;
   if (!list) return <Loading />;
   if (!list.length) return <p className="soft">{T.sentEmpty}</p>;
+
+  const row = (a: SentAssignment) => {
+    const b = a.envelope?.body;
+    const title = !b
+      ? T.unreadableAssignment
+      : b.kind === 'plan'
+        ? b.plan.name
+        : b.kind === 'workout'
+          ? b.workout.name
+          : b.kind === 'note' || b.kind === 'form' || b.kind === 'habits' || b.kind === 'meals'
+            ? b.title
+            : L.kind[b.kind];
+    const later = isLater(a);
+    const cancelledEarly = !!a.withdrawnAt && !!a.visibleFrom && at(a.withdrawnAt) < at(a.visibleFrom);
+    return (
+      <tr key={a.id}>
+        <td>
+          <strong>{title}</strong>
+          <div className="small soft">
+            {L.kind[a.kind] === L.area[a.area] ? L.kind[a.kind] : `${L.kind[a.kind]} · ${L.area[a.area]}`} · {fmtDate(shownAt(a), LOCALE)}
+          </div>
+          {a.receipt?.comment ? (
+            <div className="small" style={{ marginTop: 4 }}>
+              {T.comment}: „{a.receipt.comment}”
+            </div>
+          ) : null}
+        </td>
+        <td className="small">
+          {later ? (
+            <span className="chip blue">{S.scheduled(when(a.visibleFrom!))}</span>
+          ) : a.withdrawnAt ? (
+            <span className="chip muted">{cancelledEarly ? S.cancelled : T.withdrawn}</span>
+          ) : a.receipt ? (
+            <span className={`chip ${a.receipt.status === 'declined' ? 'warn' : 'ok'}`}>
+              {T.receipt[a.receipt.status]} · {ago(a.receipt.updatedAt)}
+            </span>
+          ) : (
+            <span className="chip muted">{T.waiting}</span>
+          )}
+        </td>
+        <td className="n">
+          {asking === a.id ? (
+            <span className="stack" style={{ justifyItems: 'end', gap: 6 }} role="group" aria-label={S.sure}>
+              <span className="small">{S.sure}</span>
+              <span className="row" style={{ flexWrap: 'nowrap' }}>
+                <button type="button" className="btn danger small" onClick={() => cancel(a)}>
+                  {S.yes}
+                </button>
+                <button type="button" className="btn ghost small" onClick={() => setAsking(null)}>
+                  {S.no}
+                </button>
+              </span>
+            </span>
+          ) : (
+            <span className="row" style={{ justifyContent: 'flex-end', flexWrap: 'nowrap' }}>
+              {a.envelope ? (
+                <button type="button" className="btn ghost small" onClick={() => print(a)}>
+                  {S.print}
+                </button>
+              ) : null}
+              {later ? (
+                <button type="button" className="btn ghost small" onClick={() => setAsking(a.id)}>
+                  {S.cancel}
+                </button>
+              ) : !a.withdrawnAt ? (
+                <button type="button" className="btn ghost small" onClick={() => void withdrawAssignment(a.id).then(changed, () => toast(S.failed))}>
+                  {T.withdraw}
+                </button>
+              ) : null}
+            </span>
+          )}
+        </td>
+      </tr>
+    );
+  };
+
   return (
-    <section className="card flat scroll-x">
-      <table className="tbl">
-        <tbody>
-          {list.map((a) => {
-            const b = a.envelope?.body;
-            const title = !b ? T.unreadableAssignment : b.kind === 'plan' ? b.plan.name : b.kind === 'workout' ? b.workout.name : b.kind === 'note' ? b.title : L.kind[b.kind];
-            return (
-              <tr key={a.id}>
-                <td>
-                  <strong>{title}</strong>
-                  <div className="small soft">
-                    {L.kind[a.kind] === L.area[a.area] ? L.kind[a.kind] : `${L.kind[a.kind]} · ${L.area[a.area]}`} · {fmtDate(a.createdAt, LOCALE)}
-                  </div>
-                  {a.receipt?.comment ? (
-                    <div className="small" style={{ marginTop: 4 }}>
-                      {T.comment}: „{a.receipt.comment}”
-                    </div>
-                  ) : null}
-                </td>
-                <td className="small">
-                  {a.withdrawnAt ? (
-                    <span className="chip muted">{T.withdrawn}</span>
-                  ) : a.receipt ? (
-                    <span className={`chip ${a.receipt.status === 'declined' ? 'warn' : 'ok'}`}>
-                      {T.receipt[a.receipt.status]} · {ago(a.receipt.updatedAt)}
-                    </span>
-                  ) : (
-                    <span className="chip muted">{T.waiting}</span>
-                  )}
-                </td>
-                <td className="n">
-                  {!a.withdrawnAt ? (
-                    <button type="button" className="btn ghost small" onClick={() => void withdrawAssignment(a.id).then(reload)}>
-                      {T.withdraw}
-                    </button>
-                  ) : null}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </section>
+    <>
+      {rows.later.length ? (
+        <section className="card flat scroll-x" aria-label={S.upcoming(rows.later.length)}>
+          <h2 style={{ padding: '14px 16px 0' }}>{S.upcoming(rows.later.length)}</h2>
+          <table className="tbl">
+            <tbody>{rows.later.map(row)}</tbody>
+          </table>
+        </section>
+      ) : null}
+      {rows.rest.length ? (
+        <section className="card flat scroll-x">
+          <table className="tbl">
+            <tbody>{rows.rest.map(row)}</tbody>
+          </table>
+        </section>
+      ) : null}
+      {printing && printing.a.envelope ? (
+        <printing.mod.PrintLayer body={printing.a.envelope.body} clientId={printing.client} sentAt={printing.a.envelope.sentAt} onClose={() => setPrinting(null)} />
+      ) : null}
+    </>
   );
 }

@@ -1,0 +1,39 @@
+/* Kreator programu: oś tygodni z krokami i formularz kroku. */
+
+.sz-prog { display: grid; gap: 16px; }
+.sz-prog-sum { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; }
+.sz-prog-sum strong { font: 600 18px var(--display); letter-spacing: 0.02em; }
+
+.sz-prog-weeks { display: grid; gap: 12px; }
+.sz-prog-week { border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+.sz-prog-week > header { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; justify-content: space-between; padding: 6px 6px 6px 12px; background: var(--surface-2); border-bottom: 1px solid var(--line); }
+.sz-prog-week > header h3 { font-size: 15px; text-transform: uppercase; letter-spacing: 0.04em; }
+.sz-prog-week ol { list-style: none; margin: 0; padding: 0; }
+
+.sz-prog-step { display: grid; grid-template-columns: 84px 52px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 6px 6px 6px 12px; }
+.sz-prog-step + .sz-prog-step { border-top: 1px solid var(--line); }
+.sz-prog-step.editing { background: var(--blue-bg); }
+.sz-prog-step .day { font-size: 14px; white-space: nowrap; }
+.sz-prog-step .time { font: 500 14px var(--mono); color: var(--ink-soft); }
+.sz-prog-step .what { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; min-width: 0; }
+.sz-prog-step .what strong { overflow-wrap: anywhere; }
+.sz-prog-step .missing { color: var(--warn); font-weight: 600; }
+.sz-prog-step .tools { display: flex; gap: 2px; }
+.sz-prog-step .tools button { min-width: 40px; min-height: 40px; border: 1px solid var(--line); background: var(--surface); border-radius: var(--r); cursor: pointer; color: var(--ink); }
+.sz-prog-step .tools button:hover { background: var(--surface-2); }
+
+.sz-prog-form { border: 1.5px dashed var(--edge); border-radius: var(--r); padding: 12px 14px 14px; margin: 0; display: grid; gap: 12px; }
+.sz-prog-form legend { font-weight: 600; padding: 0 6px; }
+.sz-prog-when { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; align-items: end; }
+.sz-prog-when input[type='time'] {
+  width: 100%; min-height: 44px; padding: 9px 12px; border: 1.5px solid var(--edge); border-radius: var(--r); background: var(--field); font-size: 16px;
+}
+.sz-prog-eq { font-size: 13px; color: var(--ink-soft); }
+
+@media (max-width: 720px) {
+  .sz-prog-when { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sz-prog-step { grid-template-columns: 84px minmax(0, 1fr) auto; }
+  .sz-prog-step .time { grid-column: 1; grid-row: 2; }
+  .sz-prog-step .what { grid-column: 2; grid-row: 1 / span 2; }
+  .sz-prog-step .tools { grid-column: 3; grid-row: 1 / span 2; }
+}

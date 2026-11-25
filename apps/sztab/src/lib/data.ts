@@ -6,6 +6,8 @@ import {
   isSnapshot,
   linkKey,
   openJson,
+  parseMessage,
+  parsePhoto,
   parseReceipt,
   sealJson,
 } from '@gymtracker/link';
@@ -14,6 +16,12 @@ import type {
   AssignmentBody,
   AssignmentKind,
   AssignmentV1,
+  FormBody,
+  HabitsBody,
+  MealsBody,
+  MessageRef,
+  MessageV1,
+  PhotoV1,
   Profession,
   PublicJwk,
   ReceiptV1,
@@ -71,6 +79,8 @@ export interface SentAssignment {
   area: Area;
   createdAt: string;
   withdrawnAt: string | null;
+  /** Zaplanowane: telefon dostaje je dopiero od tej chwili; `null` — od razu. */
+  visibleFrom: string | null;
   /** Odszyfrowana treść; `null`, gdy szyfrogram się nie otworzył. */
   envelope: AssignmentV1 | null;
   receipt: (ReceiptV1 & { updatedAt: string }) | null;
@@ -78,14 +88,43 @@ export interface SentAssignment {
 
 /* ── Biblioteka ───────────────────────────────────────────────────────────────────── */
 
+/**
+ * Program — tylko w bibliotece, nigdy nie jedzie do telefonu jako całość: „Uruchom program” rozpisuje
+ * go na zalecenia z datą „pokaż od” (dzień startu + `day`, o godzinie `time`), każde z elementu
+ * biblioteki `itemId`. Oś czasu kursu jak w dużych platformach, bez nowego rodzaju po stronie telefonu.
+ */
+export interface ProgramStep {
+  /** Dzień od startu (0 = dzień startu). */
+  day: number;
+  /** Godzina wypuszczenia, `HH:MM`, czas przeglądarki prowadzącego. */
+  time: string;
+  itemId: string;
+}
+
+export interface ProgramBody {
+  kind: 'program';
+  steps: ProgramStep[];
+  note: string;
+}
+
+export type LibraryKind = AssignmentKind | 'program';
+export const LIBRARY_KINDS: readonly LibraryKind[] = ['workout', 'plan', 'targets', 'labs', 'note', 'form', 'habits', 'meals', 'program'];
+
 export type LibraryBody =
   | { kind: 'workout'; workout: Workout; videos: Record<string, string> }
   | { kind: 'plan'; plan: PlanTemplate }
-  | Extract<AssignmentBody, { kind: 'targets' | 'labs' | 'note' }>;
+  | Extract<AssignmentBody, { kind: 'targets' | 'labs' | 'note' }>
+  | FormBody
+  | HabitsBody
+  | MealsBody
+  | ProgramBody;
+
+/** Treść, którą da się wysłać jako zalecenie (wszystko poza programem). */
+export type SendableBody = Exclude<LibraryBody, ProgramBody>;
 
 export interface LibraryItem {
   id: string;
-  kind: AssignmentKind;
+  kind: LibraryKind;
   title: string;
   body: LibraryBody;
   createdAt: string;
@@ -267,7 +306,11 @@ export const inviteState = (i: Invite, now = Date.now()): InviteState =>
 
 export async function listAssignments(privateKey: CryptoKey, c: Connection): Promise<SentAssignment[]> {
   const [a, r] = await Promise.all([
-    sb.from('assignments').select('id, kind, area, ciphertext, created_at, withdrawn_at').eq('connection_id', c.id).order('created_at', { ascending: false }),
+    sb
+      .from('assignments')
+      .select('id, kind, area, ciphertext, created_at, withdrawn_at, visible_from')
+      .eq('connection_id', c.id)
+      .order('created_at', { ascending: false }),
     sb.from('receipts').select('assignment_id, ciphertext, updated_at').eq('connection_id', c.id),
   ]);
   if (a.error) fail(a.error);
@@ -287,6 +330,7 @@ export async function listAssignments(privateKey: CryptoKey, c: Connection): Pro
         area: row.area as Area,
         createdAt: row.created_at as string,
         withdrawnAt: row.withdrawn_at as string | null,
+        visibleFrom: (row.visible_from as string | null) ?? null,
         envelope: env && env.v === 1 ? env : null,
         receipt: receipts.get(row.id as string) ?? null,
       };
@@ -300,18 +344,23 @@ export async function sendAssignment(
   c: Connection,
   area: Area,
   body: AssignmentBody,
+  opts: { visibleFrom?: Date | null } = {},
 ): Promise<string> {
   const id = crypto.randomUUID();
+  const visible = opts.visibleFrom && opts.visibleFrom.getTime() > Date.now() ? opts.visibleFrom : null;
   const envelope: AssignmentV1 = {
     v: 1,
     id,
     area,
-    sentAt: Date.now(),
+    // Zaplanowane „przychodzi” do podopiecznego w chwili wypuszczenia — tak też je widzi.
+    sentAt: visible ? visible.getTime() : Date.now(),
     from: { name: coach.display_name, profession: coach.profession },
     body,
   };
   const ciphertext = await sealJson(await connectionKey(privateKey, c), AAD.assignment(c.id, id), envelope);
-  const { error } = await sb.from('assignments').insert({ id, connection_id: c.id, kind: body.kind, area, ciphertext });
+  const { error } = await sb
+    .from('assignments')
+    .insert({ id, connection_id: c.id, kind: body.kind, area, ciphertext, visible_from: visible ? visible.toISOString() : null });
   if (error) fail(error);
   return id;
 }
@@ -347,5 +396,188 @@ export async function deleteLibraryItem(id: string): Promise<void> {
 
 export async function deleteAccount(): Promise<void> {
   const { error } = await sb.rpc('coach_delete_account');
+  if (error) fail(error);
+}
+
+/* ── Wiadomości ───────────────────────────────────────────────────────────────────── */
+
+export interface Message {
+  id: string;
+  author: 'coach' | 'client';
+  text: string;
+  ref: MessageRef | null;
+  /** Czas serwera. */
+  createdAt: string;
+  readAt: string | null;
+}
+
+/** Rozmowa z jednym podopiecznym, od najstarszej (najwyżej 500 ostatnich). Nieotwierające się — pomijane. */
+export async function listMessages(privateKey: CryptoKey, c: Connection): Promise<Message[]> {
+  const { data, error } = await sb
+    .from('messages')
+    .select('id, author, ciphertext, created_at, read_at')
+    .eq('connection_id', c.id)
+    .order('created_at', { ascending: false })
+    .limit(500);
+  if (error) fail(error);
+  const key = await connectionKey(privateKey, c);
+  const out: Message[] = [];
+  for (const row of (data ?? []).reverse()) {
+    const m = parseMessage(await openJson(key, AAD.message(c.id, row.id as string, row.author as 'coach' | 'client'), row.ciphertext as string));
+    if (!m || m.id.toLowerCase() !== row.id) continue;
+    out.push({ id: row.id as string, author: row.author as 'coach' | 'client', text: m.text, ref: m.ref, createdAt: row.created_at as string, readAt: row.read_at as string | null });
+  }
+  return out;
+}
+
+export async function sendMessage(privateKey: CryptoKey, c: Connection, text: string, ref: MessageRef | null = null): Promise<string> {
+  const id = crypto.randomUUID();
+  const env: MessageV1 = { v: 1, id, at: Date.now(), text: text.trim().slice(0, 4000), ref };
+  const ciphertext = await sealJson(await connectionKey(privateKey, c), AAD.message(c.id, id, 'coach'), env);
+  const { error } = await sb.from('messages').insert({ id, connection_id: c.id, author: 'coach', ciphertext });
+  if (error) fail(error);
+  return id;
+}
+
+/** Wiadomości od podopiecznego oznaczone jako przeczytane (telefon widzi „przeczytane”). */
+export async function markRead(c: Pick<Connection, 'id'>): Promise<void> {
+  const { error } = await sb
+    .from('messages')
+    .update({ read_at: new Date().toISOString() })
+    .eq('connection_id', c.id)
+    .eq('author', 'client')
+    .is('read_at', null);
+  if (error) fail(error);
+}
+
+/** Nieprzeczytane wiadomości od podopiecznych: numer współpracy → ile. */
+export async function unreadCounts(): Promise<Record<string, number>> {
+  const { data, error } = await sb.from('messages').select('connection_id').eq('author', 'client').is('read_at', null).limit(1000);
+  if (error) fail(error);
+  const out: Record<string, number> = {};
+  for (const r of data ?? []) out[r.connection_id as string] = (out[r.connection_id as string] ?? 0) + 1;
+  return out;
+}
+
+/* ── Zdjęcia sylwetki ─────────────────────────────────────────────────────────────── */
+
+export interface Photo extends PhotoV1 {
+  createdAt: string;
+}
+
+/** Zdjęcia od podopiecznego, od najnowszego dnia. Nieotwierające się — pomijane. */
+export async function listPhotos(privateKey: CryptoKey, c: Connection): Promise<Photo[]> {
+  const { data, error } = await sb.from('photos').select('id, ciphertext, created_at').eq('connection_id', c.id).limit(60);
+  if (error) fail(error);
+  const key = await connectionKey(privateKey, c);
+  const out: Photo[] = [];
+  for (const row of data ?? []) {
+    const p = parsePhoto(await openJson(key, AAD.photo(c.id, row.id as string), row.ciphertext as string));
+    // Numer w środku musi być numerem wiersza — jak przy zaleceniach i wiadomościach.
+    if (p && p.id.toLowerCase() === row.id) out.push({ ...p, createdAt: row.created_at as string });
+  }
+  return out.sort((a, b) => b.day.localeCompare(a.day) || b.createdAt.localeCompare(a.createdAt));
+}
+
+/* ── Kalendarz wizyt ──────────────────────────────────────────────────────────────── */
+
+export interface SlotRow {
+  id: string;
+  startsAt: string;
+  endsAt: string;
+  capacity: number;
+  title: string;
+  place: string | null;
+  note: string | null;
+  cancelledAt: string | null;
+}
+
+export interface BookingRow {
+  id: string;
+  slotId: string;
+  connectionId: string;
+  createdAt: string;
+  cancelledAt: string | null;
+  cancelledBy: 'client' | 'coach' | null;
+}
+
+type SlotDb = { id: string; starts_at: string; ends_at: string; capacity: number; title: string; place: string | null; note: string | null; cancelled_at: string | null };
+const toSlot = (r: SlotDb): SlotRow => ({
+  id: r.id,
+  startsAt: r.starts_at,
+  endsAt: r.ends_at,
+  capacity: r.capacity,
+  title: r.title,
+  place: r.place,
+  note: r.note,
+  cancelledAt: r.cancelled_at,
+});
+
+/** Terminy prowadzącego, które zaczynają się w [od, do). */
+export async function listSlots(from: Date, to: Date): Promise<SlotRow[]> {
+  const { data, error } = await sb
+    .from('slots')
+    .select('id, starts_at, ends_at, capacity, title, place, note, cancelled_at')
+    .gte('starts_at', from.toISOString())
+    .lt('starts_at', to.toISOString())
+    .order('starts_at');
+  if (error) fail(error);
+  return ((data ?? []) as SlotDb[]).map(toSlot);
+}
+
+export async function createSlots(
+  coachId: string,
+  rows: { startsAt: Date; endsAt: Date; capacity: number; title: string; place: string; note: string }[],
+): Promise<SlotRow[]> {
+  if (!rows.length) return [];
+  const { data, error } = await sb
+    .from('slots')
+    .insert(
+      rows.map((r) => ({
+        coach_id: coachId,
+        starts_at: r.startsAt.toISOString(),
+        ends_at: r.endsAt.toISOString(),
+        capacity: r.capacity,
+        title: r.title.trim(),
+        place: r.place.trim() || null,
+        note: r.note.trim() || null,
+      })),
+    )
+    .select('id, starts_at, ends_at, capacity, title, place, note, cancelled_at');
+  if (error) fail(error);
+  return ((data ?? []) as SlotDb[]).map(toSlot);
+}
+
+/** Odwołanie terminu: zostaje jako ślad, telefon widzi rezerwację „odwołaną przez prowadzącego”. */
+export async function cancelSlot(id: string): Promise<void> {
+  const { error } = await sb.from('slots').update({ cancelled_at: new Date().toISOString() }).eq('id', id);
+  if (error) fail(error);
+}
+
+export async function listBookings(slotIds: string[]): Promise<BookingRow[]> {
+  if (!slotIds.length) return [];
+  const { data, error } = await sb
+    .from('bookings')
+    .select('id, slot_id, connection_id, created_at, cancelled_at, cancelled_by')
+    .in('slot_id', slotIds);
+  if (error) fail(error);
+  return (data ?? []).map((r) => ({
+    id: r.id as string,
+    slotId: r.slot_id as string,
+    connectionId: r.connection_id as string,
+    createdAt: r.created_at as string,
+    cancelledAt: r.cancelled_at as string | null,
+    cancelledBy: r.cancelled_by as 'client' | 'coach' | null,
+  }));
+}
+
+/** Prowadzący zapisuje podopiecznego na swój termin (może ponad limit — to jego decyzja). */
+export async function bookClient(slotId: string, connectionId: string): Promise<void> {
+  const { error } = await sb.from('bookings').insert({ slot_id: slotId, connection_id: connectionId });
+  if (error) fail(error);
+}
+
+export async function cancelBooking(id: string): Promise<void> {
+  const { error } = await sb.from('bookings').update({ cancelled_at: new Date().toISOString(), cancelled_by: 'coach' }).eq('id', id);
   if (error) fail(error);
 }

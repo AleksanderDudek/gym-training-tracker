@@ -201,3 +201,149 @@ export async function clientUpdate(connection: string, token: string, areas: rea
 export async function clientEnd(connection: string, token: string): Promise<void> {
   await rpc('client_end', { p_connection: connection, p_token: token });
 }
+
+/* ── Wiadomości ────────────────────────────────────────────────────────────────────── */
+
+export interface PulledMessage {
+  id: string;
+  author: 'coach' | 'client';
+  ciphertext: string;
+  createdAt: string;
+  readAt: string | null;
+}
+
+export interface MessagesReply {
+  messages: PulledMessage[];
+  /** Do której chwili (czas serwera) prowadzący przeczytał wiadomości od podopiecznego. */
+  readUpTo: string | null;
+}
+
+const isoOrNull = (v: unknown): string | null => (typeof v === 'string' && !Number.isNaN(Date.parse(v)) ? v : null);
+
+export async function clientMessages(connection: string, token: string, since: string | null): Promise<MessagesReply> {
+  const r = await rpc('client_messages', { p_connection: connection, p_token: token, p_since: since });
+  if (!r || typeof r !== 'object') throw new RpcError('bad_reply', 200);
+  const o = r as Record<string, unknown>;
+  return {
+    messages: (Array.isArray(o.messages) ? o.messages : []).flatMap((m): PulledMessage[] => {
+      if (!m || typeof m !== 'object') return [];
+      const x = m as Record<string, unknown>;
+      const createdAt = isoOrNull(x.createdAt);
+      if (!isUuid(x.id) || typeof x.ciphertext !== 'string' || !createdAt || (x.author !== 'coach' && x.author !== 'client')) return [];
+      return [{ id: String(x.id).toLowerCase(), author: x.author, ciphertext: x.ciphertext, createdAt, readAt: isoOrNull(x.readAt) }];
+    }),
+    readUpTo: isoOrNull(o.readUpTo),
+  };
+}
+
+/** Wysyła wiadomość; zwraca czas serwera. Ponowienie z tym samym numerem nie dubluje. */
+export async function clientMessage(connection: string, token: string, id: string, ciphertext: string): Promise<string> {
+  const r = await rpc('client_message', { p_connection: connection, p_token: token, p_id: id, p_ciphertext: ciphertext });
+  const at = isoOrNull(r && typeof r === 'object' ? (r as Record<string, unknown>).createdAt : null);
+  if (!at) throw new RpcError('bad_reply', 200);
+  return at;
+}
+
+export async function clientRead(connection: string, token: string, upTo: string): Promise<void> {
+  await rpc('client_read', { p_connection: connection, p_token: token, p_upto: upTo });
+}
+
+/* ── Zdjęcia sylwetki ──────────────────────────────────────────────────────────────── */
+
+export async function clientPhotoIds(connection: string, token: string): Promise<string[]> {
+  const r = await rpc('client_photo_ids', { p_connection: connection, p_token: token });
+  return Array.isArray(r) ? r.filter(isUuid).map((x) => String(x).toLowerCase()) : [];
+}
+
+export async function clientPhotoPut(connection: string, token: string, id: string, ciphertext: string): Promise<void> {
+  await rpc('client_photo_put', { p_connection: connection, p_token: token, p_id: id, p_ciphertext: ciphertext });
+}
+
+export async function clientPhotoDelete(connection: string, token: string, id: string): Promise<void> {
+  await rpc('client_photo_delete', { p_connection: connection, p_token: token, p_id: id });
+}
+
+/* ── Kalendarz wizyt ───────────────────────────────────────────────────────────────── */
+
+export interface Slot {
+  id: string;
+  startsAt: string;
+  endsAt: string;
+  title: string;
+  place: string | null;
+  note: string | null;
+  capacity: number;
+  taken: number;
+}
+
+export interface Booking {
+  id: string;
+  slotId: string;
+  startsAt: string;
+  endsAt: string;
+  title: string;
+  place: string | null;
+  note: string | null;
+  cancelledAt: string | null;
+  cancelledBy: 'client' | 'coach' | null;
+}
+
+export interface SlotsReply {
+  slots: Slot[];
+  bookings: Booking[];
+}
+
+const optStr = (v: unknown, max: number): string | null => str(v, max);
+
+export async function clientSlots(connection: string, token: string): Promise<SlotsReply> {
+  const r = await rpc('client_slots', { p_connection: connection, p_token: token });
+  if (!r || typeof r !== 'object') throw new RpcError('bad_reply', 200);
+  const o = r as Record<string, unknown>;
+  const times = (x: Record<string, unknown>) => {
+    const startsAt = isoOrNull(x.startsAt);
+    const endsAt = isoOrNull(x.endsAt);
+    return startsAt && endsAt ? { startsAt, endsAt } : null;
+  };
+  return {
+    slots: (Array.isArray(o.slots) ? o.slots : []).flatMap((s): Slot[] => {
+      if (!s || typeof s !== 'object') return [];
+      const x = s as Record<string, unknown>;
+      const t = times(x);
+      const title = str(x.title, 80);
+      if (!isUuid(x.id) || !t || !title) return [];
+      const capacity = typeof x.capacity === 'number' && x.capacity >= 1 ? Math.round(x.capacity) : 1;
+      const taken = typeof x.taken === 'number' && x.taken >= 0 ? Math.round(x.taken) : 0;
+      return [{ id: String(x.id).toLowerCase(), ...t, title, place: optStr(x.place, 300), note: optStr(x.note, 500), capacity, taken }];
+    }),
+    bookings: (Array.isArray(o.bookings) ? o.bookings : []).flatMap((b): Booking[] => {
+      if (!b || typeof b !== 'object') return [];
+      const x = b as Record<string, unknown>;
+      const t = times(x);
+      const title = str(x.title, 80);
+      if (!isUuid(x.id) || !isUuid(x.slotId) || !t || !title) return [];
+      return [
+        {
+          id: String(x.id).toLowerCase(),
+          slotId: String(x.slotId).toLowerCase(),
+          ...t,
+          title,
+          place: optStr(x.place, 300),
+          note: optStr(x.note, 500),
+          cancelledAt: isoOrNull(x.cancelledAt),
+          cancelledBy: x.cancelledBy === 'client' || x.cancelledBy === 'coach' ? x.cancelledBy : null,
+        },
+      ];
+    }),
+  };
+}
+
+/** Rezerwuje termin; zwraca numer rezerwacji. Odmowy: `slot_missing`, `slot_past`, `slot_full`, `already_booked`, `too_many`. */
+export async function clientBook(connection: string, token: string, slot: string): Promise<string> {
+  const id = await rpc('client_book', { p_connection: connection, p_token: token, p_slot: slot });
+  if (!isUuid(id)) throw new RpcError('bad_reply', 200);
+  return String(id).toLowerCase();
+}
+
+export async function clientCancelBooking(connection: string, token: string, booking: string): Promise<void> {
+  await rpc('client_cancel_booking', { p_connection: connection, p_token: token, p_booking: booking });
+}

@@ -55,6 +55,8 @@ const T = text({
     menu: 'Menu',
     restaurants: 'Lokale',
     link: 'Współpraca',
+    chat: 'Wiadomości',
+    visits: 'Wizyty',
     invite: 'Zaproszenie',
     assignment: 'Zalecenie',
   },
@@ -101,6 +103,8 @@ const T = text({
     menu: 'Menu',
     restaurants: 'Restaurants',
     link: 'Working with a coach',
+    chat: 'Messages',
+    visits: 'Appointments',
     invite: 'Invitation',
     assignment: 'From your coach',
   },
@@ -211,13 +215,23 @@ export const LINK_PATH = '#/wspolpraca';
 export const LINK_INVITE_PATH = '#/wspolpraca/zaproszenie';
 export const linkConnectionPath = (id: string): string => `${LINK_PATH}/${encodeURIComponent(id)}`;
 export const linkAssignmentPath = (id: string): string => `${LINK_PATH}/zalecenie/${encodeURIComponent(id)}`;
+export const linkChatPath = (id: string): string => `${LINK_PATH}/${encodeURIComponent(id)}/wiadomosci`;
+export const linkVisitsPath = (id: string): string => `${LINK_PATH}/${encodeURIComponent(id)}/wizyty`;
 
 /** Czy adres to link zaproszenia — wprowadzenie dla nowych go wtedy nie zasłania. */
 export const isLinkInvite = (hash: string): boolean => hashPath(hash) === LINK_INVITE_PATH;
 
-export type LinkRoute = Extract<Route, { kind: 'link' } | { kind: 'linkInvite' } | { kind: 'linkConnection' } | { kind: 'linkAssignment' }>;
+export type LinkRoute = Extract<
+  Route,
+  { kind: 'link' } | { kind: 'linkInvite' } | { kind: 'linkConnection' } | { kind: 'linkAssignment' } | { kind: 'linkChat' } | { kind: 'linkVisits' }
+>;
 export const isLinkRoute = (route: Route): route is LinkRoute =>
-  route.kind === 'link' || route.kind === 'linkInvite' || route.kind === 'linkConnection' || route.kind === 'linkAssignment';
+  route.kind === 'link' ||
+  route.kind === 'linkInvite' ||
+  route.kind === 'linkConnection' ||
+  route.kind === 'linkAssignment' ||
+  route.kind === 'linkChat' ||
+  route.kind === 'linkVisits';
 
 /** Trasy zakładki Jedzenie: sekcje, podstrony dziennika i lokale. */
 export type FoodRoute = Extract<Route, { kind: 'food' } | { kind: 'diet' } | { kind: 'restaurants' }>;
@@ -423,6 +437,10 @@ export function screenOf(route: Route): Screen {
       return { title: T.link, parent: LINK_PATH };
     case 'linkAssignment':
       return { title: T.assignment, parent: LINK_PATH };
+    case 'linkChat':
+      return { title: T.chat, parent: linkConnectionPath(route.id) };
+    case 'linkVisits':
+      return { title: T.visits, parent: linkConnectionPath(route.id) };
   }
 }
 
@@ -596,6 +614,8 @@ export function parseHash(hash: string): Route {
     if (!second) return { kind: 'link' };
     if (second === 'zaproszenie') return { kind: 'linkInvite' };
     if (second === 'zalecenie') return parts[2] ? { kind: 'linkAssignment', id: parts[2] } : { kind: 'link' };
+    if (parts[2] === 'wiadomosci') return { kind: 'linkChat', id: second };
+    if (parts[2] === 'wizyty') return { kind: 'linkVisits', id: second };
     return { kind: 'linkConnection', id: second };
   }
   if (head === 'polec') return { kind: 'promo' };
@@ -692,6 +712,8 @@ export function activeTab(route: Route): TabKey {
     case 'linkInvite':
     case 'linkConnection':
     case 'linkAssignment':
+    case 'linkChat':
+    case 'linkVisits':
       return 'prog';
     case 'snacks':
     case 'snackAdd':

@@ -1,0 +1,40 @@
+/*
+ * Wizyty u prowadzącego (`Visits.tsx`). Klocki aplikacji (`.grp`, `.btn`, `.btnrow`, `.vidlink`,
+ * `.hint`, `.link-error`), a tu tylko lista wizyt i terminów. Przedrostek `lk-visit-`. Akapity
+ * w karcie mają wagę `.grp p`, stąd `.grp p.lk-visit-…`. Same tokeny — ciemny wygląd działa sam.
+ */
+
+.lk-visit-status{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:-6px 0 12px}
+.lk-visit-status .hint{margin:0}
+.lk-visit-status .btn{flex:none}
+
+.lk-visit-list{list-style:none;margin:6px 0 0;padding:0}
+.lk-visit-item{padding:10px 0;border-top:1px solid var(--line)}
+.lk-visit-list > .lk-visit-item:first-child{border-top:0;padding-top:4px}
+.lk-visit-item .btnrow{margin-top:8px}
+
+.grp p.lk-visit-when{margin:0;font-size:13px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.grp p.lk-visit-title{margin:0;font-size:15px;font-weight:600;color:var(--ink);overflow-wrap:anywhere}
+.grp p.lk-visit-place{margin:2px 0 0;font-size:13.5px;color:var(--ink);overflow-wrap:anywhere}
+.grp p.lk-visit-note{margin:2px 0 0;font-size:13px;color:var(--ink-soft);white-space:pre-line;overflow-wrap:anywhere}
+.grp p.lk-visit-flag{display:inline-block;margin:4px 0 0;font-size:12px;font-weight:600;letter-spacing:.02em;
+  color:var(--warn);border:1px solid currentColor;border-radius:var(--r);padding:1px 6px}
+.grp p.lk-visit-flag.is-now{color:var(--ok)}
+.lk-visit-item.is-cancelled p.lk-visit-title{text-decoration:line-through;color:var(--ink-soft)}
+.lk-visit-item .vidlink{margin-top:2px}
+
+.grp h3.lk-visit-sub{margin:16px 0 0;font-size:13px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.06em}
+/* Minione — wyszarzone, ale wciąż czytelne (kolor tuszu, nie przezroczystość). */
+.lk-visit-past .lk-visit-item p.lk-visit-title{color:var(--ink-soft);font-weight:500}
+
+.lk-visit-day{margin-top:14px}
+.lk-visit-day:first-of-type{margin-top:8px}
+.grp .lk-visit-day h3{margin:0;padding:6px 0 4px;font-size:14px;border-bottom:2px solid var(--surface-2)}
+.lk-visit-row{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:2px 10px}
+.lk-visit-time{font-family:var(--display);font-size:17px;letter-spacing:.02em;font-variant-numeric:tabular-nums}
+.lk-visit-seats{font-size:12.5px;font-weight:600;color:var(--ok)}
+.lk-visit-item.is-full .lk-visit-seats{color:var(--ink-soft);text-transform:uppercase;letter-spacing:.06em}
+.lk-visit-item.is-full p.lk-visit-title,.lk-visit-item.is-full .lk-visit-time{color:var(--ink-soft)}
+
+.lk-visit-ask{margin-top:8px;padding:10px 12px;background:var(--surface-2);border-left:3px solid var(--steel);border-radius:var(--r)}
+.grp .lk-visit-ask p{margin:0;font-size:13.5px;color:var(--ink)}

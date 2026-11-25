@@ -1,0 +1,39 @@
+/* Jadłospis od prowadzącego (strona zalecenia). Prefiks lk-meals-. */
+.lk-meals-head h2{font-family:var(--display);font-size:20px;line-height:1.15;font-weight:500;margin:0 0 4px}
+.lk-meals-soft{font-size:13px;color:var(--ink-soft)}
+.lk-meals-link{font:inherit;background:none;border:0;padding:0 2px;min-height:44px;color:var(--steel);text-decoration:underline;cursor:pointer}
+.lk-meals-preview{border-left:3px solid var(--c-gold);padding-left:10px}
+.lk-meals-dayname{font-family:var(--display);font-size:15px;letter-spacing:.06em;text-transform:uppercase;font-weight:500;margin:0 0 6px}
+.lk-meals-list{list-style:none;margin:0;padding:0}
+.lk-meals-meal{display:flex;flex-direction:column;gap:2px;padding:12px 0;border-top:1px solid var(--line)}
+.lk-meals-meal:first-child{border-top:0;padding-top:2px}
+.lk-meals-slot{font-family:var(--display);font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-soft)}
+.lk-meals-name{font-size:16px;font-weight:600;color:var(--ink)}
+.lk-meals-done .lk-meals-name{color:var(--ink-soft)}
+.lk-meals-macros{font-size:13.5px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.lk-meals-note{font-size:13.5px;color:var(--ink);font-style:italic}
+.lk-meals-eaten{align-self:flex-start;display:inline-flex;align-items:center;gap:10px;min-height:48px;margin-top:6px;padding:0 16px 0 12px;
+  border:1.5px solid var(--edge);border-radius:999px;background:var(--surface-2);font-weight:600;font-size:15px;cursor:pointer;
+  -webkit-tap-highlight-color:transparent}
+.lk-meals-eaten input{width:24px;height:24px;margin:0;accent-color:var(--ok);cursor:pointer}
+.lk-meals-eaten:has(input:checked){border-color:var(--ok);color:var(--ok)}
+.lk-meals-eaten:has(input:focus-visible){outline:2px solid var(--steel);outline-offset:2px}
+.lk-meals-recipe{margin-top:4px;font-size:14px}
+.lk-meals-recipe summary{cursor:pointer;color:var(--steel);font-weight:600;min-height:44px;display:flex;align-items:center}
+.lk-meals-recipe h4{margin:8px 0 2px;font-size:13px;font-weight:600}
+.lk-meals-recipe ul,.lk-meals-recipe ol{margin:2px 0 6px;padding-left:20px}
+.lk-meals-recipe li{margin:2px 0}
+.lk-meals-open{display:inline-flex;align-items:center;min-height:44px;color:var(--steel);text-decoration:underline;font-weight:600}
+.lk-meals-totals{margin:10px 0 0;padding:10px 0 0;border-top:1px solid var(--line);display:grid;gap:4px;font-size:14px}
+.lk-meals-totals div{display:flex;flex-wrap:wrap;gap:0 8px}
+.lk-meals-totals dt{font-weight:600;min-width:84px}
+.lk-meals-totals dd{margin:0;font-variant-numeric:tabular-nums;color:var(--ink-soft)}
+.lk-meals-chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 4px}
+.lk-meals-chip{font:inherit;font-size:14px;min-height:44px;padding:0 14px;background:var(--surface-2);border:1px solid var(--edge);
+  border-radius:var(--r);color:var(--ink);cursor:pointer}
+.lk-meals-chip[aria-pressed=true]{background:var(--steel);border-color:var(--steel);color:var(--on-strong);font-weight:600}
+.lk-meals-shop h3{font-size:14px;font-weight:600;margin:12px 0 4px}
+.lk-meals-shop ul{list-style:none;margin:0;padding:0}
+.lk-meals-shop li{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-top:1px solid var(--line);font-size:14.5px}
+.lk-meals-shop li:first-child{border-top:0}
+.lk-meals-amount{color:var(--ink-soft);white-space:nowrap;font-variant-numeric:tabular-nums}

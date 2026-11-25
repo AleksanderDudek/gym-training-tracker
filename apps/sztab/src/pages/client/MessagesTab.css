@@ -1,0 +1,75 @@
+/*
+ * Zakładka „Wiadomości” (MessagesTab.tsx). Rozmowa w karcie z własnym przewijaniem, pole pod nią.
+ * Prowadzący po prawej w błękicie Sztabu, podopieczny po lewej na tle wnętrza karty. Tylko tokeny.
+ */
+
+.sz-msg { gap: 14px; }
+
+.sz-msg-log {
+  display: grid; gap: 6px; align-content: start;
+  min-height: 160px; max-height: min(62vh, 640px); overflow-y: auto;
+  padding: 4px 6px 8px 2px; overscroll-behavior: contain;
+}
+.sz-msg-log:focus-visible { outline-offset: 0; }
+.sz-msg-day { display: grid; gap: 6px; }
+
+/* Nagłówek dnia: napis między dwiema kreskami. */
+.sz-msg-daytitle {
+  display: flex; align-items: center; gap: 12px; margin: 12px 0 2px;
+  font: 500 11px var(--mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft);
+}
+.sz-msg-day:first-child .sz-msg-daytitle { margin-top: 0; }
+.sz-msg-daytitle::before, .sz-msg-daytitle::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+
+/* Kreska „nowe” nad pierwszą nieprzeczytaną z chwili otwarcia. */
+.sz-msg-new {
+  display: flex; align-items: center; gap: 10px; margin: 4px 0;
+  font: 600 11px var(--mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--orange-ink);
+}
+.sz-msg-new::before, .sz-msg-new::after { content: ''; flex: 1; height: 1px; background: var(--orange-ink); opacity: 0.5; }
+
+.sz-msg-bubble {
+  position: relative; max-width: min(72%, 620px); padding: 8px 12px 6px; border-radius: 12px;
+  border: 1px solid transparent;
+}
+.sz-msg-bubble.theirs { justify-self: start; background: var(--surface-2); color: var(--ink); border-bottom-left-radius: 4px; }
+.sz-msg-bubble.mine { justify-self: end; background: var(--blue-bg); color: var(--ink); border-bottom-right-radius: 4px; }
+.sz-msg-bubble.sending { background: var(--surface); border: 1px dashed var(--edge); }
+.sz-msg-text { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.45; }
+.sz-msg-meta { margin-top: 2px; font-size: 12px; color: var(--ink-soft); text-align: right; font-variant-numeric: tabular-nums; }
+.sz-msg-bubble.theirs .sz-msg-meta { text-align: left; }
+.sz-msg-read { color: var(--blue-ink); font-weight: 500; }
+
+/* Odniesienie (trening, zalecenie) w dymku: prowadzi do zakładki, z której pochodzi. */
+.sz-msg-ref {
+  display: inline-flex; align-items: center; max-width: 100%; margin-bottom: 4px; padding: 2px 9px;
+  border: 1px solid var(--edge); border-radius: 999px; background: var(--surface);
+  font-size: 12.5px; font-weight: 500; color: var(--blue-ink); text-decoration: none;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.sz-msg-ref:hover { text-decoration: underline; }
+
+.sz-msg-empty { align-self: center; justify-self: center; max-width: 46ch; text-align: center; padding: 36px 12px; }
+
+/* Pole wiadomości */
+.sz-msg-compose { display: grid; gap: 8px; border-top: 1px solid var(--line); padding-top: 14px; }
+.sz-msg-compose textarea { min-height: 84px; max-height: 320px; line-height: 1.45; }
+.sz-msg-attached { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.sz-msg-attached .chip { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.sz-msg-x {
+  min-width: 36px; min-height: 36px; border: 0; border-radius: var(--r); background: none;
+  font-size: 20px; line-height: 1; color: var(--ink-soft); cursor: pointer;
+}
+.sz-msg-x:hover { background: var(--surface-2); color: var(--ink); }
+.sz-msg-full { color: var(--warn); font-weight: 600; }
+.sz-msg-e2e { margin-top: -4px; }
+
+/* Nieprzeczytane przy zakładce „Wiadomości”. */
+.tabs a .count.sz-msg-badge {
+  min-width: 20px; padding: 1px 6px; border-radius: 999px; background: var(--blue-ink); color: var(--on-strong);
+  font-weight: 600; text-align: center;
+}
+
+@media (max-width: 560px) {
+  .sz-msg-bubble { max-width: 88%; }
+}

@@ -9,6 +9,7 @@ import { L } from '../lib/labels';
 import { sb } from '../lib/sb';
 import { forgetDeviceKey, rekey } from '../lib/vault';
 import { useReady } from '../session';
+import { MfaSection } from './MfaSection';
 import { RecoveryCode } from './Vault';
 
 const T = text({
@@ -260,6 +261,8 @@ export function Settings() {
             </select>
           </label>
         </section>
+
+        <MfaSection />
 
         <section className="card">
           <h2>{T.aliases}</h2>
