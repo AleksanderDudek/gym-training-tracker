@@ -6,7 +6,7 @@ import { inviteState, listConnections, listInvites } from './lib/data';
 import { L } from './lib/labels';
 import { match, useLocation, useRedirect } from './lib/router';
 import { SessionProvider, useReady, useSession } from './session';
-import { NewPassword, ResetRequest, SignIn, SignUp } from './pages/Auth';
+import { MfaChallenge, NewPassword, ResetRequest, SignIn, SignUp } from './pages/Auth';
 import { Onboarding, Unlock } from './pages/Vault';
 
 // Strony za logowaniem w osobnych paczkach: logowanie nie ciągnie atlasu, planów ani silnika.
@@ -41,7 +41,7 @@ function Gate() {
 
   const isPublic = PUBLIC.includes(path);
   const redirect =
-    session.kind === 'loading'
+    session.kind === 'loading' || session.kind === 'mfa'
       ? null
       : session.kind === 'out'
         ? isPublic
@@ -68,6 +68,7 @@ function Gate() {
     if (path === '/haslo') return <ResetRequest />;
     return <SignIn />;
   }
+  if (session.kind === 'mfa') return <MfaChallenge />;
   if (session.kind === 'new') return <Onboarding />;
   if (session.kind === 'locked') return <Unlock />;
   return <Shell path={path} />;
