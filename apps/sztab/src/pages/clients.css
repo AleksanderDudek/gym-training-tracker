@@ -1,0 +1,94 @@
+/*
+ * Lista podopiecznych: „Do przejrzenia”, grupy i akcje na zaznaczonych. Tylko tokeny z styles.css —
+ * oba wyglądy (jasny i ciemny) wychodzą same.
+ */
+
+/* Licznik nieprzeczytanych przy „Podopieczni” w bocznym pasku (widoczny także na wąskim ekranie). */
+.sz-clients-unread {
+  display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 6px; margin-left: 8px;
+  border-radius: 999px; background: var(--blue-ink); color: var(--on-strong); font: 600 12px/1 var(--mono);
+  vertical-align: 1px;
+}
+
+/* Filtry */
+.sz-clients-filters { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 16px 0; }
+.sz-clients-chip {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px; border-radius: 999px;
+  border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); font-size: 14px; font-weight: 500; cursor: pointer;
+}
+.sz-clients-chip:hover { border-color: var(--edge); }
+.sz-clients-chip[aria-pressed='true'] { background: var(--blue-bg); color: var(--blue-ink); border-color: var(--blue-ink); font-weight: 600; }
+.sz-clients-chip .sz-clients-n { font: 500 12px var(--mono); color: var(--ink-soft); }
+.sz-clients-chip[aria-pressed='true'] .sz-clients-n { color: var(--blue-ink); }
+.sz-clients-chip.sz-clients-attn .sz-clients-n { color: var(--orange-ink); font-weight: 600; }
+
+.sz-clients-status { padding: 8px 16px 0; font-size: 13px; color: var(--ink-soft); }
+
+/* Pasek akcji na zaznaczonych */
+.sz-clients-bulk {
+  display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 16px 0; padding: 8px 10px 8px 14px;
+  border-radius: var(--r); background: var(--blue-bg); color: var(--blue-ink);
+}
+.sz-clients-bulk strong { margin-right: auto; font-weight: 600; }
+.sz-clients-bulk .btn.ghost { color: var(--blue-ink); border-color: var(--blue-ink); background: var(--surface); }
+
+/* Tabela */
+.sz-clients-tbl { font-size: 13.5px; }
+.sz-clients-tbl th, .sz-clients-tbl td { padding: 8px 10px; }
+.sz-clients-tbl th { white-space: nowrap; }
+.sz-clients-tbl th abbr { text-decoration: none; cursor: help; }
+.sz-clients-tbl td.n { white-space: nowrap; }
+.sz-clients-tbl tr.sz-clients-picked td { background: var(--blue-bg); }
+.sz-clients-tbl tr.sz-clients-picked:hover td { background: var(--blue-bg); }
+.sz-clients-check { width: 44px; padding: 0 !important; }
+.sz-clients-check label { display: grid; place-items: center; min-width: 44px; min-height: 44px; cursor: pointer; }
+.sz-clients-check input { width: 18px; height: 18px; margin: 0; accent-color: var(--blue-ink); cursor: pointer; }
+.sz-clients-tbl .pid { white-space: nowrap; font-size: 14px; }
+.sz-clients-areas { margin-top: 6px; }
+.sz-clients-areas .row { flex-wrap: nowrap; gap: 4px !important; }
+.sz-clients-areas .chip { padding: 1px 7px; font-size: 11.5px; }
+.sz-clients-labels { min-width: 140px; max-width: 200px; }
+.sz-clients-labels .sz-clients-alias { margin-bottom: 6px; }
+.sz-clients-age { white-space: nowrap; }
+.sz-clients-alias { overflow-wrap: anywhere; }
+
+.sz-clients-warn { color: var(--warn); font-weight: 600; }
+.sz-clients-good { color: var(--ok); }
+.sz-clients-hot { display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px; background: var(--blue-ink); color: var(--on-strong); font: 600 12px/1 var(--mono); }
+.sz-clients-wait {
+  display: inline-block; width: 28px; height: 10px; border-radius: 5px; background: var(--surface-2);
+  border: 1px solid var(--line); vertical-align: middle; animation: sz-clients-pulse 1.4s ease-in-out infinite;
+}
+@keyframes sz-clients-pulse { 50% { opacity: 0.45; } }
+
+/* Powody */
+.sz-clients-reasons { display: flex; flex-wrap: wrap; gap: 4px; margin: 0; padding: 0; list-style: none; min-width: 170px; max-width: 290px; }
+.sz-clients-reason { padding: 2px 8px; border-radius: 999px; background: var(--orange-bg); color: var(--orange-ink); font-size: 12.5px; font-weight: 500; white-space: nowrap; }
+.sz-clients-reason.sz-clients-soft { background: var(--surface-2); color: var(--ink-soft); }
+
+/* Grupy w wierszu */
+.sz-clients-groups { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.sz-clients-group {
+  display: inline-flex; align-items: center; gap: 2px; padding: 0 2px 0 9px; min-height: 26px; border-radius: 999px;
+  background: var(--green-bg); color: var(--green-ink); font-size: 12.5px; font-weight: 500; white-space: nowrap;
+}
+.sz-clients-group button {
+  display: grid; place-items: center; width: 24px; height: 24px; border: 0; border-radius: 999px; background: none;
+  color: inherit; font-size: 15px; line-height: 1; cursor: pointer;
+}
+.sz-clients-group button:hover { background: rgba(var(--shade), 0.12); }
+.sz-clients-addgroup {
+  min-height: 28px; padding: 0 9px; border-radius: 999px; border: 1px dashed var(--edge); background: none;
+  color: var(--ink-soft); font-size: 12.5px; cursor: pointer; white-space: nowrap;
+}
+.sz-clients-addgroup:hover { color: var(--ink); border-color: var(--ink-soft); }
+.sz-clients-groups input.sz-clients-groupin { width: 130px; min-height: 30px; padding: 3px 8px; font-size: 14px; }
+
+/* Stopka: plik CSV i nota o prywatności */
+.sz-clients-foot { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; padding: 12px 16px; border-top: 1px solid var(--line); }
+.sz-clients-foot p { max-width: 62ch; font-size: 13px; color: var(--ink-soft); }
+
+/* Okno wiadomości do wielu */
+.sz-clients-to { display: flex; flex-wrap: wrap; gap: 4px; max-height: 96px; overflow: auto; }
+.sz-clients-progress { width: 100%; height: 8px; accent-color: var(--blue-ink); }
+.sz-clients-count { justify-self: end; font: 500 12px var(--mono); color: var(--ink-soft); }
