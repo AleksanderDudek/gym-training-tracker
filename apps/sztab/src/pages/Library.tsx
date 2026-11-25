@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { LOCALE, text } from '@gt/i18n';
+import { plural } from '@gt/food/lib/format';
+import { LOCALE, pluralEn, text } from '@gt/i18n';
 import type { Workout } from '@gt/types';
 import {
   LabsForm,
@@ -57,12 +58,12 @@ const T = text({
       plan: (w: number, d: number, c: number) => `${w} tyg. · ${d}× w tygodniu · ${c} tren.`,
       kcal: (n: number) => `${n} kcal`,
       protein: (n: number) => `${n} g białka`,
-      steps: (n: number) => `${n} kroków`,
-      questions: (n: number) => `${n} pytań`,
+      steps: (n: number) => `${n} ${plural(n, 'krok', 'kroki', 'kroków')}`,
+      questions: (n: number) => `${n} ${plural(n, 'pytanie', 'pytania', 'pytań')}`,
       repeat: { once: 'jednorazowo', daily: 'codziennie', weekly: 'co tydzień' } as Record<string, string>,
-      habits: (n: number) => `${n} nawyków`,
-      meals: (d: number, m: number) => `${d} dni · ${m} posiłków`,
-      program: (n: number, days: number) => `${n} elementów · ${days} dni`,
+      habits: (n: number) => `${n} ${plural(n, 'nawyk', 'nawyki', 'nawyków')}`,
+      meals: (d: number, m: number) => `${d} ${plural(d, 'dzień', 'dni', 'dni')} · ${m} ${plural(m, 'posiłek', 'posiłki', 'posiłków')}`,
+      program: (n: number, days: number) => `${n} ${plural(n, 'element', 'elementy', 'elementów')} · ${days} ${plural(days, 'dzień', 'dni', 'dni')}`,
     },
   },
   en: {
@@ -87,17 +88,17 @@ const T = text({
     copyOf: (s: string) => `${s} (copy)`,
     duplicate: 'Duplicate',
     sum: {
-      ex: (n: number) => `${n} exercises`,
-      videos: (n: number) => `${n} videos`,
-      plan: (w: number, d: number, c: number) => `${w} wk · ${d}× a week · ${c} workouts`,
+      ex: (n: number) => `${n} ${pluralEn(n, 'exercise', 'exercises')}`,
+      videos: (n: number) => `${n} ${pluralEn(n, 'video', 'videos')}`,
+      plan: (w: number, d: number, c: number) => `${w} wk · ${d}× a week · ${c} ${pluralEn(c, 'workout', 'workouts')}`,
       kcal: (n: number) => `${n} kcal`,
       protein: (n: number) => `${n} g protein`,
-      steps: (n: number) => `${n} steps`,
-      questions: (n: number) => `${n} questions`,
+      steps: (n: number) => `${n} ${pluralEn(n, 'step', 'steps')}`,
+      questions: (n: number) => `${n} ${pluralEn(n, 'question', 'questions')}`,
       repeat: { once: 'once', daily: 'daily', weekly: 'weekly' } as Record<string, string>,
-      habits: (n: number) => `${n} habits`,
-      meals: (d: number, m: number) => `${d} days · ${m} meals`,
-      program: (n: number, days: number) => `${n} items · ${days} days`,
+      habits: (n: number) => `${n} ${pluralEn(n, 'habit', 'habits')}`,
+      meals: (d: number, m: number) => `${d} ${pluralEn(d, 'day', 'days')} · ${m} ${pluralEn(m, 'meal', 'meals')}`,
+      program: (n: number, days: number) => `${n} ${pluralEn(n, 'item', 'items')} · ${days} ${pluralEn(days, 'day', 'days')}`,
     },
   },
 });
@@ -266,9 +267,25 @@ export function BodyForm({
 }
 
 const TE = text({
-  pl: { launch: 'Uruchom program…', print: 'Drukuj' },
-  en: { launch: 'Launch program…', print: 'Print' },
+  pl: { launch: 'Uruchom program…', print: 'Drukuj', saveFirst: 'Zapisz zmiany, zanim uruchomisz program — uruchamia się wersja zapisana w bibliotece.' },
+  en: { launch: 'Launch program…', print: 'Print', saveFirst: 'Save your changes before launching — the program runs as saved in the library.' },
 });
+
+/** Kopia z kluczami po kolei i bez pól `undefined` — baza (jsonb) oddaje klucze w innej kolejności. */
+const canon = (v: unknown): unknown =>
+  Array.isArray(v)
+    ? v.map(canon)
+    : v && typeof v === 'object'
+      ? Object.fromEntries(
+          Object.entries(v)
+            .filter(([, x]) => x !== undefined)
+            .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+            .map(([k, x]) => [k, canon(x)]),
+        )
+      : v;
+
+/** Ta sama treść (bez względu na kolejność kluczy) — do „niezapisanych zmian”. */
+export const sameContent = (a: unknown, b: unknown): boolean => JSON.stringify(canon(a)) === JSON.stringify(canon(b));
 
 export function LibraryEditor({ id, kind }: { id?: string; kind?: string }) {
   const { coach } = useReady();
@@ -294,6 +311,8 @@ export function LibraryEditor({ id, kind }: { id?: string; kind?: string }) {
 
   const library = libraryWorkouts(lib.data ?? []).filter((w) => body.kind !== 'workout' || w.id !== body.workout.id);
   const named = body.kind !== 'targets' && body.kind !== 'labs' && body.kind !== 'program';
+  // „Uruchom program” wysyła wersję z biblioteki — przy niezapisanych zmianach poszłoby co innego, niż widać.
+  const unsaved = !!existing && !sameContent(body, existing.body);
 
   const save = async (asCopy = false) => {
     if (!bodyReady(body)) return setErr(T.notReady);
@@ -327,7 +346,14 @@ export function LibraryEditor({ id, kind }: { id?: string; kind?: string }) {
         </div>
         <div className="row">
           {existing && existing.kind === 'program' ? (
-            <button type="button" className="btn ghost" onClick={() => setLaunching(true)}>
+            <button
+              type="button"
+              className="btn ghost"
+              disabled={unsaved}
+              aria-describedby={unsaved ? 'lib-launch-hint' : undefined}
+              title={unsaved ? TE.saveFirst : undefined}
+              onClick={() => setLaunching(true)}
+            >
               {TE.launch}
             </button>
           ) : null}
@@ -346,6 +372,11 @@ export function LibraryEditor({ id, kind }: { id?: string; kind?: string }) {
           </button>
         </div>
       </div>
+      {unsaved && existing?.kind === 'program' ? (
+        <p id="lib-launch-hint" className="note small">
+          {TE.saveFirst}
+        </p>
+      ) : null}
       <section className="card">
         {!named ? (
           <label className="field">

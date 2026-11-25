@@ -128,3 +128,23 @@ dziś). Wszystko w leniwej paczce współpracy, jak dotąd.
 Migracja idzie na produkcję dopiero ręcznie (`npx supabase db push --remote`), potem build
 i `npx wrangler deploy` Sztabu oraz push GYM TRACKERa. Kolejność ma znaczenie: najpierw baza
 (nowe funkcje), potem obie aplikacje.
+
+## Poprawki po przeglądzie (decyzje samodzielne)
+
+- **Lista i karta liczą jednym kodem.** `apps/sztab/src/lib/coached.ts` wybiera obowiązujące zalecenia
+  tak jak ekran Dziś telefonu (otwarte, niewycofane, nieodrzucone, już widoczne, po `parseAssignment`,
+  numer w środku = numer wiersza) i trzyma je pod numerem wiersza małymi literami. „Do przejrzenia”
+  bierze procenty nawyków i jadłospisu z funkcji zakładki „Realizacja”, a stan formularzy z `formState`
+  zakładki „Odpowiedzi”. Okno to 7 pełnych dni przed `min(dziś, dzień paczki)` — także dla treningów
+  (dni silnika GYM TRACKERa): dni po paczce są nieznane, nie opuszczone.
+- **Zaległy formularz** — jedna reguła (`formStatus`): cotygodniowy po swoim dniu bez odpowiedzi
+  w tym tygodniu, codzienny bez wczorajszej odpowiedzi. Powód na liście: „zaległy formularz”.
+- **Zaplanowane i odrzucone** nie wiszą jako „czeka na odpowiedź” ani puste karty — tylko wzmianka
+  („zaplanowany na …”, „odrzucony przez podopiecznego”). Paczka bez części `coaching` (starszy telefon) —
+  „brak danych z tej wersji aplikacji” zamiast 0% i czerwonych świateł.
+- **Wysyłka do wielu i „Uruchom program”** nie dają się zamknąć w trakcie (Escape, tło, ×), raport
+  zostaje, „Ponów nieudane” wysyła tylko to, co nie poszło. Obszar dla podopiecznych z kilkoma pasującymi
+  obszarami wybiera się raz dla całej partii (domyślnie pierwszy). Stała data w treści (koniec nawyków,
+  start jadłospisu), która minie przed dniem wypuszczenia — ostrzeżenie, bez blokady.
+- **„Skomentuj”** niesie trening przez `sessionStorage` karty (czytane raz), nie przez adres — nazwa
+  treningu to odszyfrowana treść, a adres trafia do historii i logów serwera.

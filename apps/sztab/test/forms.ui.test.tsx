@@ -243,6 +243,29 @@ describe('Odpowiedzi', () => {
     expect(screen.getByRole('button', { name: 'Pokaż tylko ostatnie 14' })).toHaveAttribute('aria-expanded', 'true');
   });
 
+  it('telefon bez części „coaching”: „brak danych z tej wersji aplikacji” zamiast „zaległy”', () => {
+    const s = snapshot();
+    delete s.coaching;
+    render(<AnswersTab c={conn} s={s} sent={[sentRow('a1', checkin), sentRow('a3', pain)]} />);
+    expect(screen.getByText(/starszą wersję GYM TRACKERa.*brak danych z tej wersji aplikacji/)).toBeInTheDocument();
+    expect(screen.getAllByText('brak danych z tej wersji aplikacji')).toHaveLength(2);
+    expect(screen.queryByText(/Zaległy/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/odpowiedzi: \d+ z/)).not.toBeInTheDocument();
+  });
+
+  it('zaplanowany i odrzucony formularz: tylko wzmianka, nie karta „czeka na odpowiedź”; odpowiedzi pod numerem wiersza bez względu na wielkość liter', () => {
+    const inFiveDays = new Date(Date.now() + 5 * 86_400_000).toISOString();
+    const later = sentRow('a5', { ...pain, title: 'Skala od grudnia' }, { visibleFrom: inFiveDays });
+    const declined = sentRow('a6', { ...intake, title: 'Wywiad odrzucony' }, { receipt: { v: 1, assignmentId: 'a6', status: 'declined', at: 0, ticked: [], comment: '', updatedAt: '' } });
+    const upper = { ...sentRow('a2', intake), id: 'A2' };
+    render(<AnswersTab c={conn} s={snapshot()} sent={[later, declined, upper]} />);
+    expect(screen.getAllByRole('region').map((r) => within(r).getByRole('heading', { level: 2 }).textContent)).toEqual(['Wywiad']);
+    expect(screen.getByText('Jest odpowiedź')).toBeInTheDocument();
+    expect(screen.getByText(/„Skala od grudnia” — zaplanowany na /)).toBeInTheDocument();
+    expect(screen.getByText('„Wywiad odrzucony” — odrzucony przez podopiecznego')).toBeInTheDocument();
+    expect(screen.queryByText('Czeka na odpowiedź')).not.toBeInTheDocument();
+  });
+
   it('bez formularzy: podpowiedź, skąd go wysłać; bez listy zaleceń — wczytywanie', () => {
     const { unmount } = render(<AnswersTab c={conn} s={snapshot()} sent={[]} />);
     expect(screen.getByRole('heading', { name: 'Nie wysłano jeszcze żadnego formularza' })).toBeInTheDocument();

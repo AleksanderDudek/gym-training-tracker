@@ -7,11 +7,23 @@ vi.hoisted(() => {
 
 import { localDay } from '@gymtracker/link';
 import type { AssignmentBody, AssignmentV1, CoachingV1, FormBody, HabitsBody, MealsBody, SnapshotV1 } from '@gymtracker/link';
-import type { SentAssignment, SnapshotRead } from '../src/lib/data';
+import type { Connection, SentAssignment, SnapshotRead } from '../src/lib/data';
 import type { Overview } from '../src/lib/metrics';
+import { adherence, weekRates } from '../src/lib/adherence';
+import { sentForms, formState } from '../src/lib/forms';
 import { compareReviews, dayIn, prepare, reasonText, review } from '../src/lib/review';
 import type { ReviewData } from '../src/lib/review';
-import { pool } from '../src/lib/reviewLoad';
+import { forgetReview, loadReview, pool } from '../src/lib/reviewLoad';
+
+const store = vi.hoisted(() => ({ snapshot: null as unknown, sent: [] as unknown[], reads: 0 }));
+vi.mock('../src/lib/data', async (orig) => ({
+  ...(await orig<typeof import('../src/lib/data')>()),
+  readSnapshot: vi.fn(async () => {
+    store.reads++;
+    return { snapshot: store.snapshot, at: store.snapshot ? new Date().toISOString() : null, bytes: 100, unreadable: false };
+  }),
+  listAssignments: vi.fn(async () => store.sent),
+}));
 
 const DAY = 86_400_000;
 /** Środa 25.11.2026, 23:30 UTC — w Warszawie już czwartek 26.11, 00:30. */
@@ -72,8 +84,9 @@ const meals = (patch: Partial<MealsBody> = {}): MealsBody => ({
   ...patch,
 });
 
+/** Paczka sprzed 10 minut — w Warszawie już z czwartku 26.11, w UTC ze środy 25.11 (dzień paczki = dziś). */
 function snapshot(coaching: CoachingV1 | undefined, tz = 'Europe/Warsaw', extra: Partial<SnapshotV1> = {}): SnapshotV1 {
-  return { v: 1, at: NOW - 3600_000, tz, lang: 'pl', app: 'test', scopes: [], ...(coaching ? { coaching } : {}), ...extra };
+  return { v: 1, at: NOW - 600_000, tz, lang: 'pl', app: 'test', scopes: [], ...(coaching ? { coaching } : {}), ...extra };
 }
 
 const read = (s: SnapshotV1 | null, unreadable = false): SnapshotRead => ({ snapshot: s, at: s || unreadable ? ago(0.1) : null, bytes: 100, unreadable });
@@ -127,7 +140,7 @@ describe('Powody do przejrzenia', () => {
     const d = prepare(read(snapshot({ ...none, answers: [lastWeek] })), [f], null, NOW);
     const r = review(conn, d, ctx({ lastSeen: NOW - DAY }));
     expect(r.checkinsOverdue).toBe(1);
-    expect(r.reasons.map(reasonText)).toEqual(['zaległy check-in']);
+    expect(r.reasons.map(reasonText)).toEqual(['zaległy formularz']);
 
     // Odpowiedź z tego tygodnia (czwartek w Warszawie to tydzień 48) zamyka sprawę.
     const thisWeek = { assignmentId: f.id, period: '2026-W48', at: NOW - 2 * DAY, values: { q1: 8 } };
@@ -218,6 +231,67 @@ describe('Powody do przejrzenia', () => {
   });
 });
 
+describe('Lista i karta podopiecznego mówią to samo', () => {
+  it('stara paczka: dni po niej są nieznane, nie opuszczone — lista i „Realizacja” dają 100%, nikt nie trafia do przejrzenia', () => {
+    const h = sent(habits({ items: [{ label: 'Woda', dose: '2 l', when: 'any', days: [1, 2, 3, 4, 5, 6, 7] }] }));
+    // Paczka sprzed 4 dni (Warszawa: niedziela 22.11, 00:30); odhaczone każde 7 dni przed nią.
+    const at = Date.parse('2026-11-21T23:30:00Z');
+    const days: Record<string, number[]> = {};
+    for (let d = 15; d <= 21; d++) days[`2026-11-${d}`] = [0];
+    const s = { ...snapshot({ ...none, habits: [{ assignmentId: h.id, days }] }), at };
+    const r = review({ createdAt: ago(60), lastPushAt: new Date(at).toISOString() }, prepare({ ...read(s), at: new Date(at).toISOString() }, [h], null, NOW), ctx());
+    expect(r.habits).toBe(100);
+    expect(r.score).toBe(0);
+    expect(weekRates(adherence(s, [h], NOW)).habits.pct).toBe(100);
+  });
+
+  it('trening po starej paczce nie jest opuszczony: okno kończy się przed dniem paczki', () => {
+    const s = { ...snapshot(none, 'UTC', { training: { log: [], plan: { templateId: 'x', start: '2026-10-01', ticked: {} }, plans: [], workouts: [], snacks: [] } } as Partial<SnapshotV1>), at: Date.parse('2026-11-21T10:00:00Z') };
+    const o = { today: '2026-11-25', plan: { name: 'FBW', week: 3, weeks: 8, daysPerWeek: 3, adherence: 80, missed: 0, next: null }, sessions: ['2026-11-20', '2026-11-18', '2026-11-16'].map((day) => ({ day })) } as unknown as Overview;
+    const d = prepare(read(s), [], o, NOW);
+    expect(d.training).toEqual({ done: 3, expected: 3 });
+    expect(review(conn, d, ctx()).training).toBe(100);
+  });
+
+  it('codzienny formularz bez wczorajszej odpowiedzi: zaległy i na liście, i w zakładce „Odpowiedzi”', () => {
+    const f = sent(form({ title: 'Skala bólu', repeat: 'daily', weekday: null }));
+    // Warszawa: dziś 26.11; odpowiedź z 24.11, za 25.11 — brak.
+    const s = snapshot({ ...none, answers: [{ assignmentId: f.id, period: '2026-11-24', at: NOW - DAY, values: { q1: 3 } }] });
+    const r = review(conn, prepare(read(s), [f], null, NOW), ctx({ lastSeen: NOW }));
+    expect(r.checkinsOverdue).toBe(1);
+    expect(r.reasons.map(reasonText)).toEqual(['zaległy formularz']);
+    const [tab] = sentForms([f], NOW).map((x) => formState(x, s.coaching, s.tz, NOW));
+    expect(tab!.status.kind).toBe('overdue');
+  });
+
+  it('odpowiedzi i odhaczenia pod numerem wiersza małymi literami; numer w środku inny niż wiersz — zalecenie odpada jak w telefonie', () => {
+    const h = sent(habits({ items: [{ label: 'Woda', dose: '', when: 'any', days: [1, 2, 3, 4, 5, 6, 7] }] }));
+    const upper: SentAssignment = { ...h, id: 'AB12-CD', envelope: { ...h.envelope!, id: 'ab12-cd' } };
+    const days: Record<string, number[]> = {};
+    for (let d = 19; d <= 25; d++) days[`2026-11-${d}`] = [0];
+    const s = snapshot({ ...none, habits: [{ assignmentId: 'ab12-cd', days }] });
+    const d = prepare(read(s), [upper], null, NOW);
+    expect(d.items.map((x) => x.id)).toEqual(['ab12-cd']);
+    expect(review(conn, d, ctx()).habits).toBe(100);
+
+    const moved: SentAssignment = { ...h, id: 'other-row' };
+    expect(prepare(read(s), [moved], null, NOW).items).toEqual([]);
+    // Nawyki w obszarze „wgląd” nie przejdą sprawdzenia telefonu (tam tylko formularze).
+    const wrongArea: SentAssignment = { ...h, envelope: { ...h.envelope!, area: 'insight' } };
+    expect(prepare(read(s), [wrongArea], null, NOW).items).toEqual([]);
+  });
+
+  it('zaplanowane nie czeka na odpowiedź, ale przegląd liczy się od nowa w chwili „pokaż od”', () => {
+    const soon = new Date(NOW + 2 * 3600_000).toISOString();
+    const later = new Date(NOW + 5 * DAY).toISOString();
+    const d = prepare(read(snapshot(none)), [sent(form({ repeat: 'daily', weekday: null }), { visibleFrom: later }), sent(habits(), { visibleFrom: soon })], null, NOW);
+    expect(d.items).toEqual([]);
+    expect(d.refreshAt).toBe(Date.parse(soon));
+    expect(review(conn, d, ctx()).checkinsOverdue).toBe(0);
+    expect(prepare(read(snapshot(none)), [sent(habits())], null, NOW).refreshAt).toBeNull();
+  });
+});
+
 describe('Trening z 7 dni', () => {
   const ov = (sessions: string[], plan: Overview['plan']): Overview =>
     ({ today: '2026-11-25', perWeek: null, plan, weight: { avg: null, delta: null, series: [] }, food: null, steps: null, sessions: sessions.map((day) => ({ day })), exercises: [], flags: [] }) as unknown as Overview;
@@ -225,9 +299,10 @@ describe('Trening z 7 dni', () => {
   const training = (start: string, weekdays?: number[]) =>
     ({ training: { log: [], plan: { templateId: 'x', start, ticked: {}, ...(weekdays ? { weekdays } : {}) }, plans: [], workouts: [], snacks: [] } }) as Partial<SnapshotV1>;
 
-  it('treningi z ostatnich 7 dni wobec dni planu; poniżej 60% to powód', () => {
+  it('treningi z 7 pełnych dni wobec dni planu (dzisiejszy jeszcze się nie liczy); poniżej 60% to powód', () => {
     const s = snapshot(none, 'Europe/Warsaw', training('2026-10-01'));
-    const d = prepare(read(s), [], ov(['2026-11-24', '2026-11-21', '2026-11-18', '2026-11-10'], plan(4)), NOW);
+    // Okno 18–24.11: 24 i 21 się liczą; 25 (dziś) i 17 — poza oknem.
+    const d = prepare(read(s), [], ov(['2026-11-25', '2026-11-24', '2026-11-21', '2026-11-17', '2026-11-10'], plan(4)), NOW);
     expect(d.training).toEqual({ done: 2, expected: 4 });
     const r = review(conn, d, ctx());
     expect(r.training).toBe(50);
@@ -238,9 +313,10 @@ describe('Trening z 7 dni', () => {
     const custom = prepare(read(snapshot(none, 'UTC', training('2026-10-01', [1, 3, 5]))), [], ov(['2026-11-24', '2026-11-21', '2026-11-20'], plan(4)), NOW);
     expect(review(conn, custom, ctx()).training).toBe(100);
 
+    // Plan od 23.11: w oknie 18–24.11 obowiązuje dwa dni.
     const fresh = prepare(read(snapshot(none, 'UTC', training('2026-11-23'))), [], ov(['2026-11-24'], plan(4)), NOW);
-    expect(fresh.training!.expected).toBeCloseTo((4 * 3) / 7);
-    expect(review(conn, fresh, ctx()).training).toBe(58);
+    expect(fresh.training!.expected).toBeCloseTo((4 * 2) / 7);
+    expect(review(conn, fresh, ctx()).training).toBe(88);
 
     const today = prepare(read(snapshot(none, 'UTC', training('2026-11-25'))), [], ov([], plan(4)), NOW);
     expect(review(conn, today, ctx()).training).toBeNull();
@@ -280,7 +356,33 @@ describe('Kolejność „Do przejrzenia”', () => {
     expect(r.score).toBe(r.reasons.reduce((s, x) => s + x.weight, 0));
     expect(reasonText({ code: 'unread', n: 5 })).toBe('5 nowych wiadomości');
     expect(reasonText({ code: 'answers', n: 1 })).toBe('1 nowa odpowiedź');
-    expect(reasonText({ code: 'checkin', n: 2 })).toBe('2 zaległe check-iny');
+    expect(reasonText({ code: 'checkin', n: 2 })).toBe('2 zaległe formularze');
+    expect(reasonText({ code: 'checkin', n: 5 })).toBe('5 zaległych formularzy');
+  });
+});
+
+describe('Pamięć przeglądu', () => {
+  it('wpis trzyma się do nowej paczki, wysyłki albo chwili „pokaż od” zaplanowanego zalecenia', async () => {
+    const key = {} as CryptoKey;
+    const c = { id: 'conn-1', lastPushAt: '2026-11-25T10:00:00Z' } as Connection;
+    const soon = Date.now() + 3600_000;
+    store.snapshot = null;
+    store.sent = [sent(habits(), { visibleFrom: new Date(soon).toISOString() })];
+    store.reads = 0;
+    const first = await loadReview(key, c);
+    expect(first.refreshAt).toBe(soon);
+    await loadReview(key, c);
+    expect(store.reads).toBe(1);
+    // Zaplanowane zaczyna obowiązywać — wpis nieaktualny.
+    await loadReview(key, c, soon + 1);
+    expect(store.reads).toBe(2);
+    // Wysyłka albo wycofanie: `forgetReview`.
+    store.sent = [];
+    forgetReview(key, c.id);
+    expect((await loadReview(key, c)).refreshAt).toBeNull();
+    expect(store.reads).toBe(3);
+    await loadReview(key, c, Date.now() + 400 * DAY);
+    expect(store.reads).toBe(3);
   });
 });
 

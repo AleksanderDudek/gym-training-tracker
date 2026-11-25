@@ -12,6 +12,7 @@ import { L } from '../lib/labels';
 import { foodDays, overview } from '../lib/metrics';
 import type { Overview } from '../lib/metrics';
 import { navigate, useLocation } from '../lib/router';
+import { forgetReview } from '../lib/reviewLoad';
 import { useReady } from '../session';
 import { SendDialog } from './Send';
 import { AdherenceTab } from './client/AdherenceTab';
@@ -324,7 +325,19 @@ export function ClientPage({ id }: { id: string }) {
           {s && tab === 'food' && s.food ? <FoodTab s={s} /> : null}
           {s && ov && tab === 'body' && s.body ? <BodyTab s={s} ov={ov} /> : null}
           {s && tab === 'labs' && s.labs ? <LabsTab s={s} /> : null}
-          {tab === 'sent' ? <SentTab list={sent.data} error={sent.error} reload={sent.reload} /> : null}
+          {tab === 'sent' ? (
+            <SentTab
+              c={c}
+              list={sent.data}
+              error={sent.error}
+              reload={sent.reload}
+              changed={() => {
+                // Wycofane albo anulowane — lista „Do przejrzenia” policzy podopiecznego od nowa.
+                forgetReview(key, c.id);
+                sent.reload();
+              }}
+            />
+          ) : null}
           {tab === 'messages' ? <MessagesTab c={c} /> : null}
           {s && tab === 'answers' ? <AnswersTab c={c} s={s} sent={sent.data} /> : null}
           {s && tab === 'adherence' ? <AdherenceTab c={c} s={s} sent={sent.data} /> : null}
@@ -720,7 +733,20 @@ function LabsTab({ s }: { s: SnapshotV1 }) {
   );
 }
 
-function SentTab({ list, error, reload }: { list: SentAssignment[] | undefined; error: string | null; reload: () => void }) {
+function SentTab({
+  c,
+  list,
+  error,
+  reload,
+  changed,
+}: {
+  c: Connection;
+  list: SentAssignment[] | undefined;
+  error: string | null;
+  reload: () => void;
+  /** Po wycofaniu albo anulowaniu: lista od nowa (i przegląd na liście podopiecznych). */
+  changed: () => void;
+}) {
   // Harmonogram i druk (spec 2026-11-25). Teksty, numer podopiecznego i wydruk (ładowany dopiero na
   // „Drukuj”) mieszkają tu, w środku zakładki — reszta pliku należy do innych części.
   const S = useMemo(
@@ -753,7 +779,6 @@ function SentTab({ list, error, reload }: { list: SentAssignment[] | undefined; 
       }),
     [],
   );
-  const { path } = useLocation();
   const [asking, setAsking] = useState<string | null>(null);
   const [printing, setPrinting] = useState<{ mod: typeof import('../components/Print'); a: SentAssignment; client: string | null } | null>(null);
   const now = Date.now();
@@ -782,15 +807,14 @@ function SentTab({ list, error, reload }: { list: SentAssignment[] | undefined; 
       () => {
         setAsking(null);
         toast(S.done);
-        reload();
+        changed();
       },
       () => toast(S.failed),
     );
 
   const print = (a: SentAssignment) => {
-    const id = path.match(/^\/podopieczni\/([^/]+)$/)?.[1];
-    void Promise.all([import('../components/Print'), id ? getConnection(decodeURIComponent(id)).catch(() => null) : Promise.resolve(null)]).then(
-      ([mod, c]) => setPrinting({ mod, a, client: c ? shortPseudonym(c.pseudonym) : null }),
+    void import('../components/Print').then(
+      (mod) => setPrinting({ mod, a, client: shortPseudonym(c.pseudonym) }),
       () => toast(S.failed),
     );
   };
@@ -863,7 +887,7 @@ function SentTab({ list, error, reload }: { list: SentAssignment[] | undefined; 
                   {S.cancel}
                 </button>
               ) : !a.withdrawnAt ? (
-                <button type="button" className="btn ghost small" onClick={() => void withdrawAssignment(a.id).then(reload)}>
+                <button type="button" className="btn ghost small" onClick={() => void withdrawAssignment(a.id).then(changed, () => toast(S.failed))}>
                   {T.withdraw}
                 </button>
               ) : null}

@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { AREAS, shortPseudonym } from '@gymtracker/link';
-import type { Area } from '@gymtracker/link';
+import type { Area, AssignmentKind } from '@gymtracker/link';
 import { plural } from '@gt/food/lib/format';
 import { pluralEn, text } from '@gt/i18n';
 import { loadAliases } from '../lib/aliases';
@@ -8,8 +8,24 @@ import { passesCheck, toAssignment } from '../lib/assign';
 import { listConnections, listLibrary, sendAssignment } from '../lib/data';
 import type { Connection, LibraryItem, SendableBody } from '../lib/data';
 import { L } from '../lib/labels';
-import { MAX_AHEAD_DAYS, addLocalDays, datedSteps, fmtDay, fmtTime, nextMonday, planLaunch, startError, today, tomorrow } from '../lib/program';
-import type { LaunchTask, ScheduleError, StepSkip } from '../lib/program';
+import {
+  MAX_AHEAD_DAYS,
+  addLocalDays,
+  batchAreas,
+  dateIssue,
+  datedSteps,
+  dayKey,
+  fmtCalendarDay,
+  fmtDay,
+  fmtTime,
+  nextMonday,
+  planLaunch,
+  startError,
+  today,
+  tomorrow,
+} from '../lib/program';
+import type { DateIssue, LaunchTask, ScheduleError, StepSkip } from '../lib/program';
+import { forgetReview } from '../lib/reviewLoad';
 import { useReady } from '../session';
 import { AreaChips, Dialog, Failure, Loading, useLoad } from './ui';
 import './schedule.css';
@@ -55,8 +71,17 @@ const T = text({
       `${n} ${plural(n, 'zalecenie', 'zalecenia', 'zaleceń')}${now ? ` — ${now} od razu, reszta według harmonogramu` : ' według harmonogramu'}`,
     noneSent: 'nic nie poszło',
     skipped: (n: number) => `pominięto ${n}`,
-    failed: (n: number) => `nie udało się wysłać ${n} — uruchom program jeszcze raz tylko dla tego podopiecznego albo wyślij brakujące ręcznie`,
+    failed: (n: number) => `nie udało się wysłać ${n} ${plural(n, 'kroku', 'kroków', 'kroków')} — „Ponów nieudane” wyśle tylko te, bez dubli`,
+    retry: 'Ponów nieudane',
+    retrying: 'Ponawiam…',
     close: 'Gotowe',
+    wait: 'Okno zamknie się dopiero po wysyłce — przerwana zostawiłaby program bez części kroków.',
+    area: 'Obszar dla podopiecznych z kilkoma obszarami',
+    areaHint: 'Dotyczy kroków, które pasują do kilku obszarów podopiecznego (np. nawyki, formularz). Kto nie ma tego obszaru, dostaje je w swoim pierwszym pasującym.',
+    expired: (until: string) => `lista kończy się ${until} — tego dnia już nieaktualna`,
+    started: (n: number) => `stały start jadłospisu — zacznie od dnia ${n} cyklu`,
+    datesNote:
+      'Część kroków ma w bibliotece stałą datę, która w dniu wypuszczenia już minie (zaznaczone wyżej). Popraw datę w bibliotece albo zmień dzień startu, zanim uruchomisz.',
   },
   en: {
     title: 'Launch program',
@@ -97,8 +122,16 @@ const T = text({
     sent: (n: number, now: number) => `${n} ${pluralEn(n, 'item', 'items')}${now ? ` — ${now} right away, the rest on schedule` : ' on schedule'}`,
     noneSent: 'nothing went out',
     skipped: (n: number) => `skipped ${n}`,
-    failed: (n: number) => `${n} failed — launch again for this client only or send the missing ones by hand`,
+    failed: (n: number) => `${n} ${pluralEn(n, 'step', 'steps')} failed — “Retry failed” sends only those, without duplicates`,
+    retry: 'Retry failed',
+    retrying: 'Retrying…',
     close: 'Done',
+    wait: 'The window closes only after sending — stopping halfway would leave the program with missing steps.',
+    area: 'Area for clients with several areas',
+    areaHint: 'Applies to steps that fit several of a client’s areas (e.g. habits, a form). Clients without this area get them in their first matching one.',
+    expired: (until: string) => `the list ends on ${until} — already out of date that day`,
+    started: (n: number) => `fixed meal plan start — begins on cycle day ${n}`,
+    datesNote: 'Some steps have a fixed date in the library that will have passed by their release day (marked above). Fix the date in the library or change the start day before launching.',
   },
 });
 
@@ -107,7 +140,8 @@ interface Report {
   sent: number;
   now: number;
   skipped: string[];
-  failed: number;
+  /** Kroki, których nie udało się wysłać — „Ponów nieudane” wysyła tylko je. */
+  failed: LaunchTask[];
 }
 
 /**
@@ -130,6 +164,11 @@ export function LaunchProgramDialog({ program, connections, onClose }: { program
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [report, setReport] = useState<Report[] | null>(null);
+  const [prefer, setPrefer] = useState<Area | null>(null);
+  // W trakcie wysyłki okno się nie zamyka (Escape, tło, ×): pętla i raport zostają.
+  const close = useCallback(() => {
+    if (!busy) onClose();
+  }, [busy, onClose]);
 
   const items = useMemo(() => lib.data ?? [], [lib.data]);
   const programs = items.filter((i) => i.kind === 'program');
@@ -154,7 +193,10 @@ export function LaunchProgramDialog({ program, connections, onClose }: { program
   const check = useCallback((item: LibraryItem, area: Area) => validity.get(`${item.id}|${area}`) ?? false, [validity]);
   const picked = useMemo(() => people.filter((c) => c.status === 'active' && chosen.has(c.id)), [people, chosen]);
 
-  const plans = picked.map((c) => ({ c, tasks: planLaunch(c, dated, items, check) }));
+  const stepKinds = [...new Set(dated.flatMap((d) => items.find((i) => i.id === d.step.itemId && i.kind !== 'program')?.kind ?? []))] as AssignmentKind[];
+  const areaChoices = batchAreas(picked, stepKinds);
+  const area = prefer && areaChoices.includes(prefer) ? prefer : (areaChoices[0] ?? null);
+  const plans = picked.map((c) => ({ c, tasks: planLaunch(c, dated, items, check, area) }));
   const label = (c: Connection) => shortPseudonym(c.pseudonym);
   const why = (t: LaunchTask, c: Connection): string =>
     t.skip === 'kind' ? T.why.kind(L.kind[t.item!.kind], c.areas.map((a) => L.area[a]).join(', ')) : T.why[t.skip as Exclude<StepSkip, 'kind'>];
@@ -167,47 +209,58 @@ export function LaunchProgramDialog({ program, connections, onClose }: { program
       return n;
     });
 
+  /** Wysyła zadania po kolei i dopisuje wynik do raportu każdego podopiecznego. */
+  const sendAll = async (work: { r: Report; tasks: LaunchTask[] }[]) => {
+    const total = work.reduce((n, w) => n + w.tasks.length, 0);
+    setBusy(true);
+    setProgress({ done: 0, total });
+    let done = 0;
+    for (const { r, tasks } of work) {
+      for (const t of tasks) {
+        try {
+          await sendAssignment(key, coach, r.c, t.area!, toAssignment(t.item!.body as SendableBody, items, ''), { visibleFrom: t.at });
+          r.sent++;
+          if (t.now) r.now++;
+        } catch {
+          r.failed.push(t);
+        }
+        setProgress({ done: ++done, total });
+      }
+      // Lista „Do przejrzenia” policzy tego podopiecznego od nowa — ma nowe zalecenia.
+      forgetReview(key, r.c.id);
+    }
+    setBusy(false);
+    setProgress(null);
+  };
+
   const launch = async () => {
     if (!body) return setErr(T.pick);
     if (startErr) return setErr(T.startErr[startErr]);
     if (!picked.length) return setErr(T.pickClients);
     // Daty jeszcze raz — od otwarcia okna mogła minąć godzina któregoś kroku.
     const fresh = datedSteps(body.steps, start);
-    const work = picked.map((c) => ({ c, tasks: planLaunch(c, fresh, items, check) }));
-    const total = work.reduce((n, w) => n + w.tasks.filter((t) => !t.skip).length, 0);
-    if (!total) return setErr(T.nothing);
+    const work = picked.map((c) => ({ c, tasks: planLaunch(c, fresh, items, check, area) }));
+    if (!work.some((w) => w.tasks.some((t) => !t.skip))) return setErr(T.nothing);
     setErr(null);
-    setBusy(true);
-    setProgress({ done: 0, total });
-    const out: Report[] = [];
-    let done = 0;
-    for (const { c, tasks } of work) {
-      const r: Report = { c, sent: 0, now: 0, skipped: [], failed: 0 };
-      for (const t of tasks) {
-        if (t.skip) {
-          r.skipped.push(why(t, c));
-          continue;
-        }
-        try {
-          await sendAssignment(key, coach, c, t.area!, toAssignment(t.item!.body as SendableBody, items, ''), { visibleFrom: t.at });
-          r.sent++;
-          if (t.now) r.now++;
-        } catch {
-          r.failed++;
-        }
-        setProgress({ done: ++done, total });
-      }
-      out.push(r);
-    }
-    setBusy(false);
-    setProgress(null);
+    const out: Report[] = work.map(({ c, tasks }) => ({ c, sent: 0, now: 0, skipped: tasks.filter((t) => t.skip).map((t) => why(t, c)), failed: [] }));
+    await sendAll(out.map((r, i) => ({ r, tasks: work[i]!.tasks.filter((t) => !t.skip) })));
     setReport(out);
+  };
+
+  /** „Ponów nieudane”: tylko kroki, które nie poszły — reszta programu już jest u podopiecznych. */
+  const retry = async () => {
+    if (!report) return;
+    const again = report.map((r) => ({ r, tasks: r.failed.splice(0) })).filter((w) => w.tasks.length);
+    setReport([...report]);
+    await sendAll(again);
+    setReport([...report]);
   };
 
   if (report) {
     const ok = report.filter((r) => r.sent > 0).length;
+    const failed = report.some((r) => r.failed.length);
     return (
-      <Dialog title={T.title} onClose={onClose} wide>
+      <Dialog title={T.title} onClose={close} wide>
         <p role="status">
           <strong>{T.done(ok, report.length)}</strong>
         </p>
@@ -224,16 +277,33 @@ export function LaunchProgramDialog({ program, connections, onClose }: { program
                   {T.skipped(r.skipped.length)}: {[...new Set(r.skipped)].join('; ')}
                 </span>
               ) : null}
-              {r.failed ? <span className="err">{T.failed(r.failed)}</span> : null}
+              {r.failed.length ? <span className="err">{T.failed(r.failed.length)}</span> : null}
             </li>
           ))}
         </ul>
-        <button type="button" className="btn blue" onClick={onClose}>
-          {T.close}
-        </button>
+        {progress ? (
+          <div className="sz-sched-progress" role="status" aria-live="polite">
+            <span>{T.retrying}</span>
+            <progress max={progress.total} value={progress.done} />
+          </div>
+        ) : null}
+        <div className="row">
+          {failed ? (
+            <button type="button" className="btn blue" disabled={busy} onClick={() => void retry()}>
+              {T.retry}
+            </button>
+          ) : null}
+          <button type="button" className={`btn ${failed ? 'ghost' : 'blue'}`} disabled={busy} onClick={onClose}>
+            {T.close}
+          </button>
+        </div>
       </Dialog>
     );
   }
+
+  // Stała data w treści (koniec nawyków, start jadłospisu) przed dniem wypuszczenia kroku.
+  const issues = dated.map((d) => dateIssue(items.find((x) => x.id === d.step.itemId && x.kind !== 'program')?.body, dayKey(d.at)));
+  const issueText = (x: DateIssue) => (x.kind === 'expired' ? T.expired(fmtCalendarDay(x.until)) : T.started(x.dayIndex + 1));
 
   const skipNotes = plans.flatMap(({ c, tasks }) => {
     const skipped = tasks.filter((t) => t.skip && t.skip !== 'missing');
@@ -241,7 +311,7 @@ export function LaunchProgramDialog({ program, connections, onClose }: { program
   });
 
   return (
-    <Dialog title={prog ? `${T.title}: ${prog.title}` : T.title} onClose={onClose} wide>
+    <Dialog title={prog ? `${T.title}: ${prog.title}` : T.title} onClose={close} wide>
       {lib.error ? <Failure error={lib.error} retry={lib.reload} /> : null}
       {!program ? (
         !lib.data ? (
@@ -317,6 +387,20 @@ export function LaunchProgramDialog({ program, connections, onClose }: { program
         ) : null}
       </fieldset>
 
+      {areaChoices.length > 1 ? (
+        <label className="field">
+          <span>{T.area}</span>
+          <select id="launch-area" value={area ?? ''} onChange={(e) => setPrefer(e.target.value as Area)}>
+            {areaChoices.map((a) => (
+              <option key={a} value={a}>
+                {L.area[a]}
+              </option>
+            ))}
+          </select>
+          <span className="small soft">{T.areaHint}</span>
+        </label>
+      ) : null}
+
       {body ? (
         <div className="stack">
           <span style={{ fontWeight: 600 }} id="launch-schedule">
@@ -327,6 +411,7 @@ export function LaunchProgramDialog({ program, connections, onClose }: { program
             <ol className="sz-sched-preview" aria-labelledby="launch-schedule">
               {dated.map((d, i) => {
                 const item = items.find((x) => x.id === d.step.itemId && x.kind !== 'program');
+                const issue = issues[i];
                 return (
                   <li key={i}>
                     <span className="when">{fmtDay(d.at)}</span>
@@ -341,6 +426,7 @@ export function LaunchProgramDialog({ program, connections, onClose }: { program
                         <span className="missing">{T.notInLib}</span>
                       )}{' '}
                       {d.now ? <span className="chip blue">{T.nowChip}</span> : null}
+                      {issue ? <span className="sz-sched-skip"> {issueText(issue)}</span> : null}
                     </span>
                   </li>
                 );
@@ -348,6 +434,7 @@ export function LaunchProgramDialog({ program, connections, onClose }: { program
             </ol>
           ) : null}
           {dated.some((d) => d.now) ? <p className="small soft">{T.nowHint}</p> : null}
+          {issues.some(Boolean) ? <div className="note warn small">{T.datesNote}</div> : null}
           {skipNotes.map((s) => (
             <div key={s.c.id} className="note warn small">
               {s.text}
@@ -367,6 +454,7 @@ export function LaunchProgramDialog({ program, connections, onClose }: { program
         <div className="sz-sched-progress" role="status" aria-live="polite">
           <span>{T.progress(progress.done, progress.total)}</span>
           <progress max={progress.total} value={progress.done} />
+          <span className="small soft">{T.wait}</span>
         </div>
       ) : null}
       <button type="button" className="btn blue" disabled={busy || !body || !picked.length} onClick={() => void launch()}>

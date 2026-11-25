@@ -1,8 +1,12 @@
-import { addDays, cleanCoaching, daysBetween, formDue, habitsFor, localDay, mealDayIndex, parseAssignment, weekdayOf } from '@gymtracker/link';
-import type { CoachingV1, FormBody, HabitsBody, MealsBody, TickLog } from '@gymtracker/link';
+import { cleanCoaching } from '@gymtracker/link';
+import type { CoachingV1 } from '@gymtracker/link';
 import { plural } from '@gt/food/lib/format';
 import { pluralEn, text } from '@gt/i18n';
+import { adherenceOf, weekRates } from './adherence';
+import { fullDaysBefore, hasCoaching, isCoached, isKind, sortSent } from './coached';
+import type { CoachedBody, LiveItem } from './coached';
 import type { Connection, SentAssignment, SnapshotRead } from './data';
+import { formState, formsOf } from './forms';
 import type { Overview } from './metrics';
 
 /**
@@ -12,9 +16,12 @@ import type { Overview } from './metrics';
  * paczka i lista zaleceń (`prepare`), nieprzeczytane wiadomości i chwila ostatniego otwarcia
  * podopiecznego; wyjście — liczby do kolumn, powody krótkimi słowami i wynik do sortowania.
  *
- * **Dni nawyków, jadłospisu i check-inu liczy się w strefie telefonu** (`snapshot.tz`), bo tam
- * podopieczny odhacza dzień — prowadzący z innej strefy zobaczy ten sam podział na dni co telefon.
- * Treningi idą przez `overview()`, czyli silnikiem GYM TRACKERa (dni jak w historii aplikacji).
+ * **Bez drugiego rachunku.** Które zalecenia obowiązują i które dni się liczą — `coached.ts`;
+ * nawyki i jadłospis — funkcje zakładki „Realizacja” (`adherence.ts`); stan formularzy — ten sam
+ * `formState` co w zakładce „Odpowiedzi” (`forms.ts`). Lista i karta podopiecznego pokazują to samo.
+ * Dni nawyków, jadłospisu i formularzy liczą się w strefie telefonu (`snapshot.tz`); treningi idą
+ * przez `overview()`, czyli silnikiem GYM TRACKERa (dni jak w historii aplikacji) — w tym samym oknie
+ * siedmiu pełnych dni przed `min(dziś, dzień paczki)`.
  */
 
 const DAY_MS = 86_400_000;
@@ -27,73 +34,46 @@ export const NO_DATA_GRACE_DAYS = 3;
 /** Bez śladu otwarcia w tej przeglądarce „nowe odpowiedzi” to te z ostatnich 7 dni. */
 export const NEW_ANSWERS_FALLBACK_MS = 7 * DAY_MS;
 
-/* ── Dzień w strefie telefonu ──────────────────────────────────────────────────────── */
-
-const fmts = new Map<string, Intl.DateTimeFormat | null>();
-
-function formatter(tz: string): Intl.DateTimeFormat | null {
-  if (!fmts.has(tz)) {
-    let f: Intl.DateTimeFormat | null = null;
-    try {
-      f = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' });
-    } catch {
-      f = null;
-    }
-    fmts.set(tz, f);
-  }
-  return fmts.get(tz) ?? null;
-}
-
-/**
- * Dzień `YYYY-MM-DD` chwili `at` w strefie `tz` (z paczki — dane z zewnątrz: nieznana albo zepsuta
- * strefa daje dzień w strefie tej przeglądarki).
- */
-export function dayIn(tz: string | null, at: number): string {
-  const f = tz && tz.length <= 64 ? formatter(tz) : null;
-  if (!f) return localDay(at);
-  const parts = f.formatToParts(new Date(at));
-  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? '';
-  const day = `${get('year')}-${get('month')}-${get('day')}`;
-  return /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : localDay(at);
-}
+export { dayIn } from './coached';
 
 /* ── Wejście: paczka i zalecenia ───────────────────────────────────────────────────── */
 
-export type CoachedBody = FormBody | HabitsBody | MealsBody;
-
-export interface CoachedItem {
-  id: string;
-  body: CoachedBody;
-  /** Od kiedy podopieczny ma zalecenie (ms): wysłanie albo „pokaż od” zaplanowanego. */
-  sentAt: number;
-}
+export type CoachedItem = LiveItem<CoachedBody>;
 
 /** To, co z jednej współpracy potrzebne do przeglądu — bez reszty paczki (nie trzymamy jej w pamięci). */
 export interface ReviewData {
   /** Kiedy przyszła ostatnia paczka (ms); `null` — jeszcze żadna. */
   dataAt: number | null;
+  /** Chwila paczki z zegara telefonu (`snapshot.at`) — od niej dzień paczki; `null` — brak paczki. */
+  snapAt: number | null;
   /** Paczka jest, ale nie otwiera się kluczem z sejfu. */
   unreadable: boolean;
   /** Strefa telefonu z paczki. */
   tz: string | null;
   /** Odpowiedzi i odhaczenia; `null` — brak paczki albo telefon jeszcze bez tej części (starsza wersja). */
   coaching: CoachingV1 | null;
-  /** Treningi w ostatnich 7 dniach wobec planu; `null` — podopieczny nie udostępnia treningów. */
+  /** Treningi w 7 pełnych dniach wobec planu; `null` — podopieczny nie udostępnia treningów. */
   training: { done: number; expected: number | null } | null;
-  /** Wysłane formularze, nawyki i jadłospisy, które obowiązują: nie wycofane, nie odrzucone, już widoczne. */
+  /** Formularze, nawyki i jadłospisy, które obowiązują (`sortSent(...).live`). */
   items: CoachedItem[];
+  /**
+   * Najbliższa chwila „pokaż od” zaplanowanego zalecenia (ms): wtedy przegląd trzeba policzyć od nowa,
+   * bo zalecenie zacznie obowiązywać; `null` — nic nie czeka.
+   */
+  refreshAt: number | null;
 }
 
-const isCoached = (b: { kind: string }): b is CoachedBody => b.kind === 'form' || b.kind === 'habits' || b.kind === 'meals';
-
 /** Treningi w tygodniu wg planu: ostatnia zmiana dni, dni wybrane ręcznie, albo szablon. */
-function planDaysPerWeek(read: SnapshotRead, o: Overview): number | null {
+function planDaysPerWeek(read: SnapshotRead, o: Overview, day: string): number | null {
   if (!o.plan) return null;
   const p = read.snapshot?.training?.plan;
-  const change = p?.changes?.filter((c) => c.from <= o.today).at(-1)?.weekdays;
+  const change = p?.changes?.filter((c) => c.from <= day).at(-1)?.weekdays;
   const days = (change ?? p?.weekdays)?.length;
   return days || o.plan.daysPerWeek || null;
 }
+
+/** Dzień chwili tak, jak liczy go silnik GYM TRACKERa (`dayKey`: data UTC) — dni sesji w `overview()`. */
+const engineDay = (ms: number): string => new Date(ms).toISOString().slice(0, 10);
 
 /**
  * Składa `ReviewData` z odszyfrowanej paczki, wysłanych zaleceń i pulpitu (`overview()` z tej paczki;
@@ -101,42 +81,42 @@ function planDaysPerWeek(read: SnapshotRead, o: Overview): number | null {
  */
 export function prepare(read: SnapshotRead, sent: readonly SentAssignment[], o: Overview | null, now: number): ReviewData {
   const s = read.snapshot;
-  const items: CoachedItem[] = [];
+  const sorted = sortSent(sent, now);
   let workoutsTarget: { perWeek: number; at: number } | null = null;
-  for (const x of sent) {
-    if (x.withdrawnAt || x.receipt?.status === 'declined') continue;
-    if (x.visibleFrom && Date.parse(x.visibleFrom) > now) continue;
-    // Własne zalecenia prowadzącego, ale z bazy — ten sam filtr, przez który przechodzą w telefonie.
-    const a = x.envelope ? parseAssignment(x.envelope) : null;
-    if (!a) continue;
-    if (isCoached(a.body)) items.push({ id: a.id, body: a.body, sentAt: a.sentAt });
-    else if (a.body.kind === 'targets' && a.body.workoutsPerWeek && (!workoutsTarget || a.sentAt > workoutsTarget.at))
-      workoutsTarget = { perWeek: a.body.workoutsPerWeek, at: a.sentAt };
-  }
+  for (const x of sorted.live.filter(isKind('targets')))
+    if (x.body.workoutsPerWeek && (!workoutsTarget || x.sentAt > workoutsTarget.at)) workoutsTarget = { perWeek: x.body.workoutsPerWeek, at: x.sentAt };
 
   let training: ReviewData['training'] = null;
   if (s?.training && o) {
-    const since = addDays(o.today, -7);
-    const done = o.sessions.filter((x) => x.day > since && x.day <= o.today).length;
-    const planned = planDaysPerWeek(read, o);
+    // To samo okno co nawyki: 7 pełnych dni przed `min(dziś, dzień paczki)` — treningi po paczce
+    // są nieznane, nie opuszczone.
+    const window = fullDaysBefore(o.today, engineDay(s.at));
+    const inWindow = new Set(window);
+    const done = o.sessions.filter((x) => inWindow.has(x.day)).length;
+    const planned = planDaysPerWeek(read, o, window.at(-1)!);
     const perWeek = planned ?? workoutsTarget?.perWeek ?? null;
-    const start = planned !== null ? (s.training.plan?.start ?? null) : workoutsTarget ? new Date(workoutsTarget.at).toISOString().slice(0, 10) : null;
+    const start = planned !== null ? (s.training.plan?.start ?? null) : workoutsTarget ? engineDay(workoutsTarget.at) : null;
     let expected: number | null = null;
     if (perWeek) {
-      // Plan albo cel z tego tygodnia: oczekiwania proporcjonalnie do dni, które już minęły.
-      const window = start ? Math.min(7, daysBetween(start, o.today) + 1) : 7;
-      expected = window > 0 ? (perWeek * window) / 7 : null;
+      // Plan albo cel z tego tygodnia: oczekiwania proporcjonalnie do dni okna, w których już obowiązywał.
+      const days = start ? window.filter((d) => d >= start).length : window.length;
+      expected = days > 0 ? (perWeek * days) / 7 : null;
     }
     training = { done, expected };
   }
 
+  // Zaplanowane zacznie obowiązywać o swojej porze — wtedy przegląd liczy się od nowa (`reviewLoad`).
+  const next = sorted.scheduled[0]?.visibleAt ?? null;
+
   return {
     dataAt: read.at ? Date.parse(read.at) : null,
+    snapAt: s ? s.at : null,
     unreadable: read.unreadable,
     tz: s && typeof s.tz === 'string' ? s.tz : null,
-    coaching: s && s.coaching !== undefined ? cleanCoaching(s.coaching) : null,
+    coaching: hasCoaching(s) ? cleanCoaching(s!.coaching) : null,
     training,
-    items,
+    items: sorted.live.filter(isCoached),
+    refreshAt: next,
   };
 }
 
@@ -165,7 +145,7 @@ export interface Review {
   training: number | null;
   habits: number | null;
   meals: number | null;
-  /** Cotygodniowe formularze bez odpowiedzi po swoim dniu tygodnia. */
+  /** Formularze zaległe tak jak w zakładce „Odpowiedzi” (`formStatus`): cotygodniowy po swoim dniu, codzienny bez wczoraj. */
   checkinsOverdue: number;
   /** Najważniejszy pierwszy. */
   reasons: Reason[];
@@ -178,60 +158,6 @@ export interface ReviewContext {
   /** Kiedy prowadzący ostatnio otworzył tego podopiecznego z listy (ms); `null` — nigdy w tej przeglądarce. */
   lastSeen: number | null;
   now: number;
-}
-
-/** Siedem pełnych dni przed dzisiejszym (dziś jeszcze trwa — nie karzemy za wieczorne odhaczanie). */
-const lastWeek = (today: string): string[] => Array.from({ length: 7 }, (_, i) => addDays(today, -1 - i));
-
-function ticksOf(logs: readonly TickLog[], id: string): Record<string, Set<number>> {
-  const out: Record<string, Set<number>> = {};
-  for (const l of logs) {
-    if (l.assignmentId !== id) continue;
-    for (const [day, list] of Object.entries(l.days)) {
-      const set = (out[day] ??= new Set());
-      for (const i of list) set.add(i);
-    }
-  }
-  return out;
-}
-
-/** Odhaczone z należnych (%) w ostatnich 7 pełnych dniach, łącznie ze wszystkich zaleceń danego rodzaju. */
-function tickRate(d: ReviewData, coaching: CoachingV1, kind: 'habits' | 'meals', today: string): number | null {
-  let due = 0;
-  let done = 0;
-  for (const it of d.items) {
-    if (it.body.kind !== kind) continue;
-    const sentDay = dayIn(d.tz, it.sentAt);
-    const ticks = ticksOf(kind === 'habits' ? coaching.habits : coaching.meals, it.id);
-    for (const day of lastWeek(today)) {
-      if (day < sentDay) continue;
-      let list: number[];
-      if (it.body.kind === 'habits') list = habitsFor(it.body, day);
-      else {
-        const i = mealDayIndex(it.body, sentDay, day);
-        list = i === null ? [] : (it.body.days[i]?.meals.map((_, j) => j) ?? []);
-      }
-      due += list.length;
-      done += list.filter((i) => ticks[day]?.has(i)).length;
-    }
-  }
-  return due ? Math.round((done / due) * 100) : null;
-}
-
-/** Cotygodniowe formularze, których dzień w tym tygodniu minął bez odpowiedzi. */
-function overdueCheckins(d: ReviewData, coaching: CoachingV1, today: string): number {
-  const wd = weekdayOf(today);
-  let n = 0;
-  for (const it of d.items) {
-    if (it.body.kind !== 'form' || it.body.repeat !== 'weekly') continue;
-    const due = it.body.weekday ?? 1;
-    if (wd <= due) continue;
-    // Formularz wysłany już po swoim dniu w tym tygodniu jeszcze nie jest zaległy.
-    if (dayIn(d.tz, it.sentAt) > addDays(today, due - wd)) continue;
-    const answered = new Set(coaching.answers.filter((a) => a.assignmentId === it.id).map((a) => a.period));
-    if (formDue(it.body, answered, today)) n++;
-  }
-  return n;
 }
 
 const pctWeight = (pct: number, base: number, slope: number) => Math.round(base + (LOW_PCT - pct) / slope);
@@ -265,13 +191,16 @@ export function review(c: Pick<Connection, 'createdAt' | 'lastPushAt'>, data: Re
       training = Math.min(100, Math.round((t.done / t.expected) * 100));
       if (training < LOW_PCT) add('training', training, pctWeight(training, 10, 3));
     }
-    if (data.coaching && !data.unreadable) {
-      const today = dayIn(data.tz, now);
+    if (data.coaching && data.snapAt !== null && !data.unreadable) {
       const since = ctx.lastSeen ?? now - NEW_ANSWERS_FALLBACK_MS;
-      newAnswers = data.coaching.answers.filter((a) => a.at > since).length;
-      checkinsOverdue = overdueCheckins(data, data.coaching, today);
-      habits = tickRate(data, data.coaching, 'habits', today);
-      meals = tickRate(data, data.coaching, 'meals', today);
+      // Formularze: ten sam stan co w zakładce „Odpowiedzi” (jedna odpowiedź na okres, zaległy wg `formStatus`).
+      const forms = formsOf(data.items).map((f) => formState(f, data.coaching, data.tz, now));
+      newAnswers = forms.reduce((n, f) => n + f.rows.filter((r) => r.at > since).length, 0);
+      checkinsOverdue = forms.filter((f) => f.status.kind === 'overdue').length;
+      // Nawyki i jadłospis: te same rachunki co zakładka „Realizacja”, bez siatki dni.
+      const week = weekRates(adherenceOf({ tz: data.tz, at: data.snapAt, coaching: data.coaching }, data.items, now, 0));
+      habits = week.habits.pct;
+      meals = week.meals.pct;
       if (checkinsOverdue) add('checkin', checkinsOverdue, 30 * Math.min(checkinsOverdue, 2));
       if (newAnswers) add('answers', newAnswers, 15 + Math.min(newAnswers, 10));
       if (habits !== null && habits < LOW_PCT) add('habits', habits, pctWeight(habits, 8, 4));
@@ -305,7 +234,7 @@ export function compareReviews(a: Review, b: Review): number {
 const R = text({
   pl: {
     unread: (n: number) => `${n} ${plural(n, 'nowa wiadomość', 'nowe wiadomości', 'nowych wiadomości')}`,
-    checkin: (n: number) => (n === 1 ? 'zaległy check-in' : `${n} ${plural(n, 'zaległy check-in', 'zaległe check-iny', 'zaległych check-inów')}`),
+    checkin: (n: number) => (n === 1 ? 'zaległy formularz' : `${n} ${plural(n, 'zaległy formularz', 'zaległe formularze', 'zaległych formularzy')}`),
     unreadable: () => 'paczka się nie otwiera',
     stale: (n: number) => `dane sprzed ${n} dni`,
     nodata: () => 'jeszcze bez danych',
@@ -316,7 +245,7 @@ const R = text({
   } as Record<ReasonCode, (n: number) => string>,
   en: {
     unread: (n: number) => `${n} new ${pluralEn(n, 'message', 'messages')}`,
-    checkin: (n: number) => (n === 1 ? 'check-in overdue' : `${n} check-ins overdue`),
+    checkin: (n: number) => (n === 1 ? 'form overdue' : `${n} forms overdue`),
     unreadable: () => 'data package won’t open',
     stale: (n: number) => `data ${n} days old`,
     nodata: () => 'no data yet',

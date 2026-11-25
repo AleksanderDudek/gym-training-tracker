@@ -4,14 +4,19 @@ import userEvent from '@testing-library/user-event';
 import type { Connection, Message } from '../src/lib/data';
 import {
   POLL_MS,
+  REF_TTL_MS,
   byDay,
-  commentHref,
+  clearSessionRef,
+  clearUnread,
   firstUnread,
   hasUnread,
   lastReadOwn,
+  messagesHref,
   nearLimit,
-  refFromQuery,
+  peekSessionRef,
+  refreshUnread,
   sessionRef,
+  stashSessionRef,
   whenOf,
 } from '../src/pages/client/messages';
 
@@ -122,15 +127,23 @@ describe('wiadomości — czyste funkcje', () => {
     expect(hasUnread([m({ author: 'coach' })])).toBe(false);
   });
 
-  it('„Skomentuj”: adres niesie trening, a zakładka odczytuje z niego to samo odniesienie', () => {
-    const href = commentHref('c1', '2026-11-24T18:30:00.000Z', 'Góra A & B');
-    expect(href).toBe('/podopieczni/c1?t=messages&sesja=2026-11-24T18%3A30%3A00.000Z&nazwa=G%C3%B3ra%20A%20%26%20B');
-    const q = new URL(href, 'http://x').searchParams;
-    expect(q.get('t')).toBe('messages');
-    expect(refFromQuery(q)).toEqual({ kind: 'session', at: '2026-11-24T18:30:00.000Z', label: 'Góra A & B' });
+  it('„Skomentuj”: trening idzie przez pamięć karty, nie przez adres; przeterminowany i cudzy odpadają', () => {
+    sessionStorage.clear();
+    expect(messagesHref('c1')).toBe('/podopieczni/c1?t=messages');
+    const t = Date.parse('2026-11-25T10:00:00Z');
+    stashSessionRef('c1', '2026-11-24T18:30:00.000Z', 'Góra A & B', t);
+    expect(peekSessionRef('c1', t + 1000)).toEqual({ kind: 'session', at: '2026-11-24T18:30:00.000Z', label: 'Góra A & B' });
+    // Podejrzenie nie kasuje (tryb ścisły Reacta liczy stan dwa razy), kasuje dopiero `clearSessionRef`.
+    expect(peekSessionRef('c1', t + 2000)).not.toBeNull();
+    expect(peekSessionRef('c2', t + 1000)).toBeNull();
+    expect(peekSessionRef('c1', t + REF_TTL_MS + 1)).toBeNull();
+    clearSessionRef('c1');
+    expect(peekSessionRef('c1', t + 1000)).toBeNull();
+    sessionStorage.setItem('sztab.komentarz.c1', 'zepsute{');
+    expect(peekSessionRef('c1', t)).toBeNull();
   });
 
-  it('zepsute odniesienie z adresu odpada, nazwa przycięta', () => {
+  it('zepsute odniesienie odpada, nazwa przycięta', () => {
     expect(sessionRef(null, 'x')).toBeNull();
     expect(sessionRef('wczoraj', 'x')).toBeNull();
     expect(sessionRef('2026-11-24T18:30:00Z', null)).toEqual({ kind: 'session', at: '2026-11-24T18:30:00Z', label: '' });
@@ -149,6 +162,7 @@ describe('zakładka „Wiadomości”', () => {
     db.unread = {};
     db.sendFails = false;
     vi.clearAllMocks();
+    sessionStorage.clear();
     history.replaceState(null, '', '/podopieczni/c1?t=messages');
     setVisibility('visible');
   });
@@ -206,13 +220,16 @@ describe('zakładka „Wiadomości”', () => {
     expect(box).toHaveValue('Raz\ndwa');
   });
 
-  it('„Skomentuj”: trening z adresu jedzie jako odniesienie, a po wysłaniu znika z pola i z adresu', async () => {
-    history.replaceState(null, '', commentHref('c1', '2026-11-24T18:30:00.000Z', 'Góra A'));
+  it('„Skomentuj”: trening z pamięci karty jedzie jako odniesienie, w adresie go nie ma; po wysłaniu znika', async () => {
+    stashSessionRef('c1', '2026-11-24T18:30:00.000Z', 'Góra A');
     const user = userEvent.setup();
     render(<MessagesTab c={conn()} />);
     const box = await screen.findByRole('textbox', { name: 'Wiadomość' });
     expect(screen.getByText(/^Trening: Góra A · /)).toBeInTheDocument();
     expect(box).toHaveFocus();
+    // Przeczytane raz — z pamięci karty znika od razu.
+    expect(sessionStorage.length).toBe(0);
+    expect(location.search).toBe('?t=messages');
     await user.type(box, 'Świetne tempo w ostatniej serii.');
     await user.click(screen.getByRole('button', { name: 'Wyślij wiadomość' }));
     expect(data.sendMessage).toHaveBeenCalledWith(KEY, expect.anything(), 'Świetne tempo w ostatniej serii.', {
@@ -224,19 +241,23 @@ describe('zakładka „Wiadomości”', () => {
     expect(location.search).toBe('?t=messages');
   });
 
-  it('„Skomentuj” przy innym treningu (wstecz w przeglądarce) zmienia odniesienie przy otwartej rozmowie', async () => {
+  it('odniesienie nie wraca z historii ani po ponownym otwarciu rozmowy', async () => {
+    stashSessionRef('c1', '2026-11-20T17:00:00.000Z', 'Dół B');
+    const first = render(<MessagesTab c={conn()} />);
+    expect(await screen.findByRole('button', { name: /Usuń odniesienie: Trening: Dół B/ })).toBeInTheDocument();
+    first.unmount();
+    await act(async () => {
+      history.pushState(null, '', '/podopieczni/c1?t=training');
+      history.back();
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
     render(<MessagesTab c={conn()} />);
     await screen.findByRole('textbox', { name: 'Wiadomość' });
     expect(screen.queryByRole('button', { name: /Usuń odniesienie/ })).not.toBeInTheDocument();
-    await act(async () => {
-      history.pushState(null, '', commentHref('c1', '2026-11-20T17:00:00.000Z', 'Dół B'));
-      window.dispatchEvent(new PopStateEvent('popstate'));
-    });
-    expect(screen.getByRole('button', { name: /Usuń odniesienie: Trening: Dół B/ })).toBeInTheDocument();
   });
 
   it('odniesienie da się zdjąć przed wysłaniem', async () => {
-    history.replaceState(null, '', commentHref('c1', '2026-11-24T18:30:00.000Z', 'Góra A'));
+    stashSessionRef('c1', '2026-11-24T18:30:00.000Z', 'Góra A');
     const user = userEvent.setup();
     render(<MessagesTab c={conn()} />);
     await user.click(await screen.findByRole('button', { name: /Usuń odniesienie: Trening: Góra A/ }));
@@ -354,7 +375,8 @@ describe('przy zakładce i przy treningu', () => {
     await waitFor(() => expect(screen.getByTestId('badge')).toBeEmptyDOMElement());
   });
 
-  it('„Skomentuj” prowadzi do rozmowy z treningiem w adresie', async () => {
+  it('„Skomentuj” prowadzi do rozmowy; nazwa i data treningu nie trafiają do adresu', async () => {
+    sessionStorage.clear();
     history.replaceState(null, '', '/podopieczni/c1?t=training');
     // Przejście przewija stronę do góry — jsdom tego nie umie.
     vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined);
@@ -362,7 +384,31 @@ describe('przy zakładce i przy treningu', () => {
     render(<CommentSessionLink connectionId="c1" at="2026-11-24T18:30:00.000Z" name="Góra A" />);
     const link = screen.getByRole('link', { name: /^Skomentuj trening Góra A z / });
     expect(link).toHaveTextContent('Skomentuj');
+    expect(link).toHaveAttribute('href', '/podopieczni/c1?t=messages');
+    // Ctrl+klik (nowa karta) nie zostawia odniesienia w tej karcie.
+    await user.keyboard('{Control>}');
     await user.click(link);
-    expect(location.pathname + location.search).toBe(commentHref('c1', '2026-11-24T18:30:00.000Z', 'Góra A'));
+    await user.keyboard('{/Control}');
+    expect(peekSessionRef('c1')).toBeNull();
+    await user.click(link);
+    expect(location.pathname + location.search).toBe('/podopieczni/c1?t=messages');
+    expect(peekSessionRef('c1')).toEqual({ kind: 'session', at: '2026-11-24T18:30:00.000Z', label: 'Góra A' });
+    clearSessionRef('c1');
+  });
+
+  it('licznik: odpowiedź serwera sprzed oznaczenia jako przeczytane nie zapala znaczka z powrotem', async () => {
+    let answer: (v: Record<string, number>) => void = () => undefined;
+    vi.mocked(data.unreadCounts).mockImplementationOnce(() => new Promise((r) => (answer = r)));
+    db.unread = { c9: 0 };
+    const badge = render(<UnreadBadge connectionId="c9" />);
+    // Pierwsze pytanie (z zamontowania) jeszcze leci, gdy rozmowa oznacza wiadomości jako przeczytane.
+    await waitFor(() => expect(data.unreadCounts).toHaveBeenCalled());
+    act(() => clearUnread('c9'));
+    await act(async () => answer({ c9: 3 }));
+    expect(badge.container).toBeEmptyDOMElement();
+    // Następne pytanie już się liczy.
+    db.unread = { c9: 1 };
+    await act(() => refreshUnread());
+    expect(badge.container).toHaveTextContent('1');
   });
 });

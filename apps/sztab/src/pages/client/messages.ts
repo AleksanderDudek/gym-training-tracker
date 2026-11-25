@@ -5,7 +5,7 @@ import { unreadCounts } from '../../lib/data';
 import type { Message } from '../../lib/data';
 
 /**
- * Wiadomości w Sztabie — czyste funkcje zakładki (dni, „przeczytane”, odniesienie z adresu)
+ * Wiadomości w Sztabie — czyste funkcje zakładki (dni, „przeczytane”, odniesienie z „Skomentuj”)
  * i licznik nieprzeczytanych przy zakładce, wspólny dla nagłówka i otwartej rozmowy.
  */
 
@@ -53,19 +53,54 @@ export function firstUnread(list: readonly Message[]): string | null {
 
 export const hasUnread = (list: readonly Message[]): boolean => list.some((m) => m.author === 'client' && !m.readAt);
 
-/** Odniesienie z adresu („Skomentuj” przy treningu): `?sesja=<ISO>&nazwa=<nazwa>`. Zepsute — `null`. */
+/** Odniesienie do treningu („Skomentuj”) z zapisanej nazwy i chwili. Zepsute — `null`. */
 export function sessionRef(at: string | null, name: string | null): Extract<MessageRef, { kind: 'session' }> | null {
   if (!at || Number.isNaN(Date.parse(at))) return null;
   return { kind: 'session', at, label: (name ?? '').trim().slice(0, 120) };
 }
 
-export const refFromQuery = (q: URLSearchParams) => sessionRef(q.get('sesja'), q.get('nazwa'));
-
 export const messagesHref = (cid: string): string => `/podopieczni/${encodeURIComponent(cid)}?t=messages`;
 
-/** Rozmowa z podopiecznym z treningiem dołączonym jako odniesienie. */
-export const commentHref = (cid: string, at: string, label: string): string =>
-  `${messagesHref(cid)}&sesja=${encodeURIComponent(at)}&nazwa=${encodeURIComponent(label.slice(0, 120))}`;
+/*
+ * „Skomentuj” przy treningu niesie nazwę i datę treningu do rozmowy **poza adresem**: adres trafia
+ * do historii przeglądarki i do logów serwera, a nazwa treningu to odszyfrowana treść podopiecznego.
+ * Odniesienie leży w `sessionStorage` tej karty pod numerem współpracy; rozmowa czyta je raz i kasuje.
+ */
+
+const REF_KEY = (cid: string) => `sztab.komentarz.${cid}`;
+/** Odniesienie starsze niż tyle (np. kliknięte i porzucone) już nie wraca. */
+export const REF_TTL_MS = 10 * 60_000;
+
+/** Zapisz trening do skomentowania — tuż przed przejściem do rozmowy. */
+export function stashSessionRef(cid: string, at: string, label: string, now: number = Date.now()): void {
+  try {
+    sessionStorage.setItem(REF_KEY(cid), JSON.stringify({ at, label: label.slice(0, 120), t: now }));
+  } catch {
+    /* bez pamięci karty — rozmowa otworzy się bez odniesienia */
+  }
+}
+
+/** Trening do skomentowania, jeśli „Skomentuj” kliknięto przed chwilą w tej karcie (bez kasowania). */
+export function peekSessionRef(cid: string, now: number = Date.now()): Extract<MessageRef, { kind: 'session' }> | null {
+  try {
+    const raw = sessionStorage.getItem(REF_KEY(cid));
+    if (!raw) return null;
+    const v = JSON.parse(raw) as { at?: unknown; label?: unknown; t?: unknown };
+    if (typeof v.t !== 'number' || now - v.t > REF_TTL_MS || now < v.t - 60_000) return null;
+    return sessionRef(typeof v.at === 'string' ? v.at : null, typeof v.label === 'string' ? v.label : null);
+  } catch {
+    return null;
+  }
+}
+
+/** Odniesienie przeczytane (albo porzucone) — znika z pamięci karty. */
+export function clearSessionRef(cid: string): void {
+  try {
+    sessionStorage.removeItem(REF_KEY(cid));
+  } catch {
+    /* nic do sprzątania */
+  }
+}
 
 /** Licznik znaków pokazuje się dopiero blisko granicy. */
 export const COUNTER_FROM = MESSAGE_MAX - 500;
@@ -74,6 +109,8 @@ export const nearLimit = (text: string): boolean => text.length >= COUNTER_FROM;
 /* ── Nieprzeczytane przy zakładce ──────────────────────────────────────────────────── */
 
 let counts: Record<string, number> = {};
+/** Numer prośby o liczby: odpowiedź starsza niż ostatnie `clearUnread` albo nowsza prośba — odrzucona. */
+let seq = 0;
 const listeners = new Set<() => void>();
 const notify = () => listeners.forEach((l) => l());
 const subscribe = (l: () => void) => {
@@ -83,8 +120,12 @@ const subscribe = (l: () => void) => {
 
 /** Świeże liczby z serwera. Błąd — zostają poprzednie: to tylko znaczek przy zakładce. */
 export async function refreshUnread(): Promise<void> {
+  const mine = ++seq;
   try {
-    counts = await unreadCounts();
+    const fresh = await unreadCounts();
+    // W trakcie pytania rozmowa mogła przeczytać wiadomości (albo poszło nowsze pytanie) — ta odpowiedź jest nieaktualna.
+    if (mine !== seq) return;
+    counts = fresh;
     notify();
   } catch {
     /* następna próba za minutę */
@@ -93,6 +134,8 @@ export async function refreshUnread(): Promise<void> {
 
 /** Rozmowa otwarta i przeczytana — znaczek gaśnie od razu, bez czekania na serwer. */
 export function clearUnread(connectionId: string): void {
+  // Pytanie, które jeszcze leci, mogło wyjść przed oznaczeniem jako przeczytane — jego wynik przepada.
+  seq++;
   if (!counts[connectionId]) return;
   counts = { ...counts, [connectionId]: 0 };
   notify();

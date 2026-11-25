@@ -11,7 +11,8 @@ import './AdherenceTab.css';
 
 /**
  * Zakładka „Realizacja” podopiecznego: odhaczone nawyki i posiłki z części `coaching` paczki,
- * zestawione z wysłanymi (niewycofanymi) listami. Rachunki w `lib/adherence.ts` — w strefie telefonu.
+ * zestawione z obowiązującymi listami (ten sam wybór co lista „Do przejrzenia”: `lib/coached.ts`).
+ * Rachunki w `lib/adherence.ts` — w strefie telefonu. Zaplanowane i odrzucone — tylko wzmianka.
  * Stan nie zależy od samego koloru: każda kratka ma znak i słowo dla czytnika, światła — podpis.
  */
 
@@ -53,6 +54,13 @@ const T = text({
     beforeStart: (d: string) => `Jadłospis zaczyna się ${d}.`,
     mealsCaption: (title: string) => `${title}: ostatnie 14 dni, od najnowszego`,
     lightsHint: 'Światła dnia: od 80% zielone, od 50% żółte, niżej czerwone. Procenty liczą pełne dni przed ostatnią paczką.',
+    oldApp:
+      'Telefon podopiecznego ma starszą wersję GYM TRACKERa, która nie odsyła odhaczeń — brak danych z tej wersji aplikacji. Realizacja pojawi się po aktualizacji.',
+    oldAppShort: 'brak danych z tej wersji aplikacji',
+    scheduledHead: 'Zaplanowane (podopieczny jeszcze ich nie widzi):',
+    scheduled: (kind: string, title: string, when: string) => `${kind}: „${title}” — od ${when}`,
+    declinedHead: 'Nie liczą się:',
+    declined: (kind: string, title: string) => `${kind}: „${title}” — odrzucone przez podopiecznego`,
   },
   en: {
     emptyTitle: 'Nothing here yet',
@@ -91,6 +99,12 @@ const T = text({
     beforeStart: (d: string) => `The meal plan starts on ${d}.`,
     mealsCaption: (title: string) => `${title}: last 14 days, newest first`,
     lightsHint: 'Day lights: from 80% green, from 50% yellow, below that red. Percentages count full days before the latest data package.',
+    oldApp: 'The client’s phone runs an older GYM TRACKER version that does not send ticks back — no data from this app version. Adherence appears after the update.',
+    oldAppShort: 'no data from this app version',
+    scheduledHead: 'Scheduled (the client cannot see them yet):',
+    scheduled: (kind: string, title: string, when: string) => `${kind}: “${title}” — from ${when}`,
+    declinedHead: 'Not counted:',
+    declined: (kind: string, title: string) => `${kind}: “${title}” — declined by the client`,
   },
 });
 
@@ -106,29 +120,62 @@ export function AdherenceTab({ c, s, sent }: { c: Connection; s: SnapshotV1; sen
   void c;
   const a = useMemo(() => (sent ? adherence(s, sent) : null), [s, sent]);
   if (!a) return <Loading />;
+  const kind = (k: 'habits' | 'meals') => (k === 'habits' ? T.habits : T.meals);
+  const notCounted =
+    a.scheduled.length || a.declined.length ? (
+      <div className="stack small soft">
+        {a.scheduled.length ? (
+          <div>
+            <span>{T.scheduledHead}</span>
+            <ul>
+              {a.scheduled.map((x) => (
+                <li key={x.id}>{T.scheduled(kind(x.body.kind), x.body.title, fmtWhen(x.visibleAt))}</li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+        {a.declined.length ? (
+          <div>
+            <span>{T.declinedHead}</span>
+            <ul>
+              {a.declined.map((x) => (
+                <li key={x.id}>{T.declined(kind(x.body.kind), x.body.title)}</li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+      </div>
+    ) : null;
   if (!a.habits.length && !a.meals.length) {
     return (
-      <section className="card">
-        <div className="empty">
-          <h3>{T.emptyTitle}</h3>
-          <p>{T.emptyText}</p>
-        </div>
-      </section>
+      <div className="stack sz-adh" style={{ gap: 16 }}>
+        <section className="card">
+          <div className="empty">
+            <h3>{T.emptyTitle}</h3>
+            <p>{T.emptyText}</p>
+          </div>
+        </section>
+        {notCounted}
+      </div>
     );
   }
+  const silent = a.noCoaching;
   return (
     <div className="stack sz-adh" style={{ gap: 16 }}>
-      {a.snapDay < a.today ? <p className="note">{T.dataTo(fmtDay(a.snapDay, { day: 'numeric', month: 'long' }))}</p> : null}
+      {silent ? <p className="note">{T.oldApp}</p> : a.snapDay < a.today ? <p className="note">{T.dataTo(fmtDay(a.snapDay, { day: 'numeric', month: 'long' }))}</p> : null}
       {a.habits.map((h) => (
-        <HabitsCard key={h.id} h={h} days={a.days} />
+        <HabitsCard key={h.id} h={h} days={a.days} silent={silent} />
       ))}
       {a.meals.map((m) => (
-        <MealsCard key={m.id} m={m} />
+        <MealsCard key={m.id} m={m} silent={silent} />
       ))}
+      {notCounted}
       <p className="small soft">{T.lightsHint}</p>
     </div>
   );
 }
+
+const fmtWhen = (ms: number): string => new Intl.DateTimeFormat(LOCALE, { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }).format(new Date(ms));
 
 function StatusChip({ status }: { status: ReceiptStatus | null }) {
   if (!status) return <span className="chip muted">{T.waiting}</span>;
@@ -144,13 +191,13 @@ function LightBadge({ light }: { light: Light }) {
   );
 }
 
-function Kpi({ label, r }: { label: string; r: Rate }) {
+function Kpi({ label, r, silent = false }: { label: string; r: Rate; silent?: boolean }) {
   const light = lightOf(r.done, r.due);
   return (
     <div className="kpi sz-adh-kpi">
       <span className="label">{label}</span>
       <span className="value">{r.pct === null ? '—' : `${r.pct}%`}</span>
-      <span className="sub">{light ? <LightBadge light={light} /> : T.noData}</span>
+      <span className="sub">{light ? <LightBadge light={light} /> : silent ? T.oldAppShort : T.noData}</span>
       {r.due ? <span className="sub">{T.of(r.done, r.due)}</span> : null}
     </div>
   );
@@ -172,12 +219,12 @@ function Head({ kind, title, status, meta, children }: { kind: string; title: st
   );
 }
 
-function HabitsCard({ h, days }: { h: HabitsAdherence; days: readonly string[] }) {
+function HabitsCard({ h, days, silent }: { h: HabitsAdherence; days: readonly string[]; silent: boolean }) {
   return (
     <section className="card" aria-label={`${T.habits}: ${h.title}`}>
       <Head kind={T.habits} title={h.title} status={h.status} meta={[T.sent(fmtMs(h.sentAt)), h.body.until ? T.until(fmtDay(h.body.until)) : T.noEnd]}>
-        <Kpi label={T.week} r={h.week} />
-        <Kpi label={T.month} r={h.month} />
+        <Kpi label={T.week} r={h.week} silent={silent} />
+        <Kpi label={T.month} r={h.month} silent={silent} />
         {h.snapDay ? (
           <div className="kpi sz-adh-kpi">
             <span className="label">{T.snapDay}</span>
@@ -185,7 +232,7 @@ function HabitsCard({ h, days }: { h: HabitsAdherence; days: readonly string[] }
           </div>
         ) : null}
       </Head>
-      {!h.reported ? <p className="note small">{T.notReported}</p> : null}
+      {!h.reported && !silent ? <p className="note small">{T.notReported}</p> : null}
       <div className="scroll-x">
         <table className="tbl sz-adh-grid">
           <caption className="sr">{T.grid(h.title)}</caption>
@@ -245,7 +292,7 @@ function mealName(m: MealsAdherence, d: MealDayCell, i: number): string {
   return x.slot ? `${x.slot} (${x.name})` : x.name;
 }
 
-function MealsCard({ m }: { m: MealsAdherence }) {
+function MealsCard({ m, silent }: { m: MealsAdherence; silent: boolean }) {
   const rows = [...m.days].reverse().filter((d) => d.state !== 'before');
   return (
     <section className="card" aria-label={`${T.meals}: ${m.title}`}>
@@ -255,10 +302,10 @@ function MealsCard({ m }: { m: MealsAdherence }) {
         status={m.status}
         meta={[T.sent(fmtMs(m.sentAt)), T.cycle(m.body.days.length), T.start(fmtDay(m.startDay))]}
       >
-        <Kpi label={T.week} r={m.week} />
-        <Kpi label={T.month} r={m.month} />
+        <Kpi label={T.week} r={m.week} silent={silent} />
+        <Kpi label={T.month} r={m.month} silent={silent} />
       </Head>
-      {!m.reported && rows.length ? <p className="note small">{T.notReported}</p> : null}
+      {!m.reported && !silent && rows.length ? <p className="note small">{T.notReported}</p> : null}
       {!rows.length ? (
         <p className="note">{T.beforeStart(fmtDay(m.startDay, { day: 'numeric', month: 'long' }))}</p>
       ) : (

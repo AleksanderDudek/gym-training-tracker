@@ -11,14 +11,15 @@ import { useReady } from '../../session';
 import {
   POLL_MS,
   byDay,
+  clearSessionRef,
   clearUnread,
-  commentHref,
   firstUnread,
   hasUnread,
   lastReadOwn,
   messagesHref,
   nearLimit,
-  sessionRef,
+  peekSessionRef,
+  stashSessionRef,
   useUnreadCount,
   visible,
   whenOf,
@@ -118,11 +119,23 @@ export function UnreadBadge({ connectionId }: { connectionId: string }) {
   );
 }
 
-/** „Skomentuj” przy treningu: otwiera rozmowę z tym treningiem jako odniesieniem. */
+/**
+ * „Skomentuj” przy treningu: otwiera rozmowę z tym treningiem jako odniesieniem. Nazwa i data treningu
+ * idą przez pamięć karty (`stashSessionRef`), nie przez adres — adres zostaje w historii i w logach serwera.
+ */
 export function CommentSessionLink({ connectionId, at, name }: { connectionId: string; at: string; name: string }) {
-  const href = commentHref(connectionId, at, name);
+  const href = messagesHref(connectionId);
   return (
-    <a href={href} className="btn ghost small" aria-label={T.commentAria(name, fmtDate(at, LOCALE))} onClick={(e) => linkClick(e, href)}>
+    <a
+      href={href}
+      className="btn ghost small"
+      aria-label={T.commentAria(name, fmtDate(at, LOCALE))}
+      onClick={(e) => {
+        // Tylko zwykłe kliknięcie w tej karcie — nowa karta (Ctrl, środkowy przycisk) otwiera samą rozmowę.
+        if (!e.defaultPrevented && e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) stashSessionRef(connectionId, at, name);
+        linkClick(e, href);
+      }}
+    >
       {T.comment}
     </a>
   );
@@ -138,7 +151,6 @@ type Outgoing = Message & { sending: boolean };
  */
 export function MessagesTab({ c }: { c: Connection }) {
   const { key } = useReady();
-  const { query } = useLocation();
   const active = c.status === 'active';
   const [list, setList] = useState<Message[]>();
   const [error, setError] = useState<string | null>(null);
@@ -254,7 +266,6 @@ export function MessagesTab({ c }: { c: Connection }) {
       {active ? (
         <Composer
           c={c}
-          query={query}
           onSending={(m) => setOutgoing((o) => [...o, m])}
           onSent={(temp, id) => {
             setOutgoing((o) => o.map((x) => (x.id === temp ? { ...x, id, sending: false } : x)));
@@ -305,13 +316,11 @@ function RefChip({ r }: { r: MessageRef }) {
 
 function Composer({
   c,
-  query,
   onSending,
   onSent,
   onFailed,
 }: {
   c: Connection;
-  query: URLSearchParams;
   onSending: (m: Outgoing) => void;
   onSent: (temp: string, id: string) => void;
   onFailed: (temp: string) => void;
@@ -320,25 +329,19 @@ function Composer({
   const [draft, setDraft] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const sesja = query.get('sesja');
-  const nazwa = query.get('nazwa');
-  const [attached, setAttached] = useState<MessageRef | null>(() => sessionRef(sesja, nazwa));
-  // „Skomentuj” przy innym treningu (wstecz/naprzód w przeglądarce) — odniesienie idzie za adresem.
-  const fromUrl = `${sesja ?? ''}\n${nazwa ?? ''}`;
-  const [seenUrl, setSeenUrl] = useState(fromUrl);
-  if (seenUrl !== fromUrl) {
-    setSeenUrl(fromUrl);
-    setAttached(sessionRef(sesja, nazwa));
-  }
+  // Trening z „Skomentuj” — z pamięci karty, czytany raz: po otwarciu rozmowy znika stamtąd od razu.
+  const [attached, setAttached] = useState<MessageRef | null>(() => peekSessionRef(c.id));
   const area = useRef<HTMLTextAreaElement>(null);
+  const focusOnOpen = useRef(attached !== null);
   useEffect(() => {
-    if (sesja) area.current?.focus();
-  }, [sesja]);
+    clearSessionRef(c.id);
+    if (focusOnOpen.current) area.current?.focus();
+  }, [c.id]);
 
-  // Odniesienie zdjęte albo wysłane: znika też z adresu (bez przewijania strony i bez wpisu w historii).
+  // Odniesienie zdjęte albo wysłane.
   const dropRef = () => {
     setAttached(null);
-    if (sesja !== null) history.replaceState(null, '', messagesHref(c.id));
+    clearSessionRef(c.id);
   };
 
   const send = async () => {

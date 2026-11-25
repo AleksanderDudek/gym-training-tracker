@@ -1,10 +1,12 @@
 import { addDays, cleanCoaching, habitsFor, mealDayIndex } from '@gymtracker/link';
-import type { AssignmentBody, HabitItem, HabitsBody, MealsBody, ReceiptStatus, SnapshotV1 } from '@gymtracker/link';
+import type { CoachingV1, HabitItem, HabitsBody, MealsBody, ReceiptStatus, SnapshotV1 } from '@gymtracker/link';
+import { dayIn, fullDaysBefore, hasCoaching, isKind, sortSent } from './coached';
+import type { LiveItem, ScheduledItem } from './coached';
 import type { SentAssignment } from './data';
 
 /**
  * Realizacja nawyków i jadłospisu z części `coaching` paczki — czyste rachunki dla zakładki
- * „Realizacja” (i każdego, kto chce jednej liczby na liście podopiecznych).
+ * „Realizacja” i dla listy „Do przejrzenia” (`review.ts` liczy procenty tymi samymi funkcjami).
  *
  * **Dni liczone w strefie telefonu** (`s.tz`), nie przeglądarki prowadzącego: telefon odhacza pod
  * swoim dniem (`localDay`) i od swojego dnia wysłania (`sentDay = localDay(sentAt)`) liczy cykl
@@ -12,32 +14,12 @@ import type { SentAssignment } from './data';
  *
  * **Czego nie wiemy, nie jest „opuszczone”.** Dni po paczce — brak danych. Dzień paczki jest
  * w trakcie (o 10:00 wieczorny nawyk jeszcze czeka), więc procenty liczą się z pełnych dni przed
- * nim. Dni przed wysłaniem listy i dni, w które punkt nie obowiązuje — poza rachunkiem.
+ * `min(dziś, dzień paczki)` (`fullDaysBefore` z `coached.ts`). Dni przed wysłaniem listy i dni, w które
+ * punkt nie obowiązuje — poza rachunkiem. Paczka bez części `coaching` (starsza wersja aplikacji) —
+ * wszystkie dni bez danych i procentów brak, zamiast samych „opuszczonych”.
  */
 
-/** Dzień `YYYY-MM-DD` chwili `ms` w strefie `tz`. Strefa nieznana tej przeglądarce — strefa przeglądarki. */
-export function dayIn(tz: string | undefined, ms: number): string {
-  const parts = formatter(tz).formatToParts(new Date(ms));
-  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? '';
-  return `${get('year')}-${get('month')}-${get('day')}`;
-}
-
-const formatters = new Map<string, Intl.DateTimeFormat>();
-function formatter(tz: string | undefined): Intl.DateTimeFormat {
-  const k = tz ?? '';
-  let f = formatters.get(k);
-  if (!f) {
-    const opts: Intl.DateTimeFormatOptions = { year: 'numeric', month: '2-digit', day: '2-digit' };
-    try {
-      f = new Intl.DateTimeFormat('en-CA', { ...opts, timeZone: tz || undefined });
-    } catch {
-      // Strefa z zepsutej albo bardzo nowej paczki — lepiej dzień przeglądarki niż pusta zakładka.
-      f = new Intl.DateTimeFormat('en-CA', opts);
-    }
-    formatters.set(k, f);
-  }
-  return f;
-}
+export { dayIn } from './coached';
 
 /** Ile zrobione z tego, co obowiązywało; `pct` — `null`, gdy nic nie obowiązywało. */
 export interface Rate {
@@ -53,7 +35,7 @@ const sum = (rs: Rate[]): Rate => rate(rs.reduce((n, r) => n + r.done, 0), rs.re
  * - `done` — odhaczone;
  * - `missed` — obowiązywało, pełny dzień minął, nie odhaczone;
  * - `pending` — dzień paczki, jeszcze nie odhaczone (dzień trwał);
- * - `unknown` — po paczce, telefon jeszcze nic o tym dniu nie powiedział;
+ * - `unknown` — po paczce (albo telefon bez części `coaching`), telefon nic o tym dniu nie powiedział;
  * - `off` — nie obowiązywało (inny dzień tygodnia, przed wysłaniem, po dacie końca).
  */
 export type HabitCell = 'done' | 'missed' | 'pending' | 'unknown' | 'off';
@@ -126,29 +108,24 @@ export interface MealsAdherence {
 }
 
 export interface Adherence {
-  tz: string;
+  tz: string | null;
   /** Dzień paczki w strefie telefonu. */
   snapDay: string;
   /** Dziś w strefie telefonu. */
   today: string;
   /** Dni siatki, od najstarszego (ostatni — dziś). */
   days: string[];
+  /** Telefon nie wysyła części `coaching` (starsza wersja aplikacji) — o odhaczeniach nic nie wiadomo. */
+  noCoaching: boolean;
   habits: HabitsAdherence[];
   meals: MealsAdherence[];
+  /** Nawyki i jadłospisy zaplanowane na później — jeszcze nie obowiązują. */
+  scheduled: ScheduledItem<HabitsBody | MealsBody>[];
+  /** Odrzucone przez podopiecznego — telefon ich nie pokazuje, więc nie liczą się do realizacji. */
+  declined: LiveItem<HabitsBody | MealsBody>[];
 }
 
 const span = (end: string, n: number): string[] => Array.from({ length: n }, (_, i) => addDays(end, i - n + 1));
-
-type Live<B> = { a: SentAssignment; body: B };
-type BodyOf<K extends AssignmentBody['kind']> = Extract<AssignmentBody, { kind: K }>;
-
-/** Wysłane i niewycofane nawyki albo jadłospisy, które dało się otworzyć — od najnowszego. */
-function live<K extends 'habits' | 'meals'>(sent: readonly SentAssignment[], kind: K): Live<BodyOf<K>>[] {
-  return sent
-    .filter((a) => !a.withdrawnAt && a.envelope?.body.kind === kind)
-    .sort((x, y) => y.envelope!.sentAt - x.envelope!.sentAt)
-    .map((a) => ({ a, body: a.envelope!.body as BodyOf<K> }));
-}
 
 /** Odhaczenia jednego zalecenia, dzień → numery (kilka wpisów o tym samym numerze — suma). */
 function ticksBy(logs: { assignmentId: string; days: Record<string, number[]> }[]): Map<string, Map<string, Set<number>>> {
@@ -166,52 +143,57 @@ function ticksBy(logs: { assignmentId: string; days: Record<string, number[]> }[
   return out;
 }
 
+interface CellCtx {
+  sentDay: string;
+  /** Ostatni dzień, o którym telefon coś powiedział (dzień paczki). */
+  snapDay: string;
+  ticked: ReadonlySet<number> | undefined;
+  /** Telefon bez części `coaching` — każdy dzień, który obowiązywał, jest bez danych. */
+  silent?: boolean;
+}
+
 /** Stan punktu nawyków w jednym dniu. */
-export function habitCell(
-  h: Pick<HabitsBody, 'items' | 'until'>,
-  index: number,
-  day: string,
-  ctx: { sentDay: string; snapDay: string; ticked: ReadonlySet<number> | undefined },
-): HabitCell {
+export function habitCell(h: Pick<HabitsBody, 'items' | 'until'>, index: number, day: string, ctx: CellCtx): HabitCell {
   if (day < ctx.sentDay || !habitsFor(h, day).includes(index)) return 'off';
-  if (day > ctx.snapDay) return 'unknown';
+  if (ctx.silent || day > ctx.snapDay) return 'unknown';
   if (ctx.ticked?.has(index)) return 'done';
   return day === ctx.snapDay ? 'pending' : 'missed';
 }
 
-/** Pełne dni okna `n` dni przed dniem paczki (sam dzień paczki trwa — poza procentami). */
-const fullDays = (snapDay: string, n: number): string[] => span(addDays(snapDay, -1), n);
+interface Ctx {
+  tz: string | null;
+  snapDay: string;
+  /** Pełne dni do procentów: 7 i 30 przed `min(dziś, dzień paczki)`. */
+  week: readonly string[];
+  month: readonly string[];
+  /** Dni siatki. */
+  days: readonly string[];
+  silent: boolean;
+}
 
-export function habitsAdherence(
-  x: Live<HabitsBody>,
-  ticks: Map<string, Set<number>> | undefined,
-  ctx: { tz: string; snapDay: string; days: readonly string[] },
-): HabitsAdherence {
-  const sentAt = x.a.envelope!.sentAt;
-  const sentDay = dayIn(ctx.tz, sentAt);
-  const c = (i: number, day: string) => habitCell(x.body, i, day, { sentDay, snapDay: ctx.snapDay, ticked: ticks?.get(day) });
-  const over = (i: number, days: string[]): Rate => {
+export function habitsAdherence(x: LiveItem<HabitsBody>, ticks: Map<string, Set<number>> | undefined, ctx: Ctx): HabitsAdherence {
+  const sentDay = dayIn(ctx.tz, x.sentAt);
+  const c = (i: number, day: string) => habitCell(x.body, i, day, { sentDay, snapDay: ctx.snapDay, ticked: ticks?.get(day), silent: ctx.silent });
+  const over = (i: number, days: readonly string[]): Rate => {
     const cells = days.map((d) => c(i, d));
     return rate(cells.filter((s) => s === 'done').length, cells.filter((s) => s === 'done' || s === 'missed').length);
   };
-  const week = fullDays(ctx.snapDay, 7);
-  const month = fullDays(ctx.snapDay, 30);
   const rows = x.body.items.map((item, i) => ({
     index: i,
     item,
     cells: ctx.days.map((d) => c(i, d)),
-    week: over(i, week),
-    month: over(i, month),
+    week: over(i, ctx.week),
+    month: over(i, ctx.month),
   }));
-  const dueSnap = ctx.snapDay >= sentDay ? habitsFor(x.body, ctx.snapDay) : [];
+  const dueSnap = !ctx.silent && ctx.snapDay >= sentDay ? habitsFor(x.body, ctx.snapDay) : [];
   const doneSnap = dueSnap.filter((i) => ticks?.get(ctx.snapDay)?.has(i)).length;
   return {
-    id: x.a.id,
+    id: x.id,
     title: x.body.title,
     body: x.body,
-    sentAt,
+    sentAt: x.sentAt,
     sentDay,
-    status: x.a.receipt?.status ?? null,
+    status: x.status,
     rows,
     week: sum(rows.map((r) => r.week)),
     month: sum(rows.map((r) => r.month)),
@@ -221,75 +203,96 @@ export function habitsAdherence(
 }
 
 /** Dzień jadłospisu: który dzień cyklu, ile zjedzone i jakie światło. */
-export function mealDayCell(
-  m: Pick<MealsBody, 'days' | 'start'>,
-  day: string,
-  ctx: { sentDay: string; snapDay: string; ticked: ReadonlySet<number> | undefined },
-): MealDayCell {
+export function mealDayCell(m: Pick<MealsBody, 'days' | 'start'>, day: string, ctx: CellCtx): MealDayCell {
   const index = day < ctx.sentDay ? null : mealDayIndex(m, ctx.sentDay, day);
   if (index === null) return { day, state: 'before', index: null, done: 0, due: 0, missed: [], light: null };
   const due = m.days[index]!.meals.length;
   const all = Array.from({ length: due }, (_, i) => i);
   const done = all.filter((i) => ctx.ticked?.has(i));
   const missed = all.filter((i) => !ctx.ticked?.has(i));
-  if (day > ctx.snapDay) return { day, state: 'unknown', index, done: 0, due, missed: [], light: null };
+  if (ctx.silent || day > ctx.snapDay) return { day, state: 'unknown', index, done: 0, due, missed: [], light: null };
   const complete = day < ctx.snapDay || done.length === due;
   return { day, state: complete ? 'complete' : 'partial', index, done: done.length, due, missed: complete ? missed : [], light: complete ? lightOf(done.length, due) : null };
 }
 
-export function mealsAdherence(
-  x: Live<MealsBody>,
-  ticks: Map<string, Set<number>> | undefined,
-  ctx: { tz: string; snapDay: string; days: readonly string[] },
-): MealsAdherence {
-  const sentAt = x.a.envelope!.sentAt;
-  const sentDay = dayIn(ctx.tz, sentAt);
-  const cell = (day: string) => mealDayCell(x.body, day, { sentDay, snapDay: ctx.snapDay, ticked: ticks?.get(day) });
-  const over = (days: string[]): Rate => {
+export function mealsAdherence(x: LiveItem<MealsBody>, ticks: Map<string, Set<number>> | undefined, ctx: Ctx): MealsAdherence {
+  const sentDay = dayIn(ctx.tz, x.sentAt);
+  const cell = (day: string) => mealDayCell(x.body, day, { sentDay, snapDay: ctx.snapDay, ticked: ticks?.get(day), silent: ctx.silent });
+  const over = (days: readonly string[]): Rate => {
     const cells = days.map(cell).filter((d) => d.state === 'complete');
     return rate(cells.reduce((n, d) => n + d.done, 0), cells.reduce((n, d) => n + d.due, 0));
   };
   return {
-    id: x.a.id,
+    id: x.id,
     title: x.body.title,
     body: x.body,
-    sentAt,
+    sentAt: x.sentAt,
     sentDay,
     startDay: x.body.start ?? sentDay,
-    status: x.a.receipt?.status ?? null,
+    status: x.status,
     days: ctx.days.map(cell),
-    week: over(fullDays(ctx.snapDay, 7)),
-    month: over(fullDays(ctx.snapDay, 30)),
+    week: over(ctx.week),
+    month: over(ctx.month),
     reported: !!ticks && ticks.size > 0,
   };
 }
 
+/** Co z paczki potrzebne do realizacji: strefa, chwila paczki i jej część `coaching` (`null` — telefon jej nie wysyła). */
+export interface CoachingInput {
+  tz: string | null;
+  at: number;
+  coaching: CoachingV1 | null;
+}
+
 /**
- * Realizacja wszystkich wysłanych nawyków i jadłospisów (bez wycofanych). Siatka: `span` dni
- * kończących się dziś w strefie telefonu.
+ * Realizacja obowiązujących nawyków i jadłospisów (`sortSent(...).live`). Siatka: `days` dni
+ * kończących się dziś w strefie telefonu (0 — bez siatki, same procenty: tak liczy lista).
  */
-export function adherence(s: SnapshotV1, sent: readonly SentAssignment[], now: number = Date.now(), days = 14): Adherence {
-  const tz = s.tz;
-  const snapDay = dayIn(tz, s.at);
+export function adherenceOf(input: CoachingInput, live: readonly LiveItem[], now: number, days = 14): Pick<Adherence, 'tz' | 'snapDay' | 'today' | 'days' | 'noCoaching' | 'habits' | 'meals'> {
+  const { tz } = input;
+  const snapDay = dayIn(tz, input.at);
   const todayTz = dayIn(tz, now);
   // Zegar telefonu przed zegarem prowadzącego — siatka i tak sięga dnia paczki.
   const today = todayTz < snapDay ? snapDay : todayTz;
   const grid = span(today, days);
-  const c = cleanCoaching(s.coaching);
+  const c = input.coaching ?? cleanCoaching(null);
   const habitTicks = ticksBy(c.habits);
   const mealTicks = ticksBy(c.meals);
-  const ctx = { tz, snapDay, days: grid };
+  const silent = input.coaching === null;
+  const ctx: Ctx = { tz, snapDay, days: grid, week: fullDaysBefore(todayTz, snapDay, 7), month: fullDaysBefore(todayTz, snapDay, 30), silent };
   return {
     tz,
     snapDay,
     today,
     days: grid,
-    habits: live(sent, 'habits').map((x) => habitsAdherence(x, habitTicks.get(x.a.id.toLowerCase()), ctx)),
-    meals: live(sent, 'meals').map((x) => mealsAdherence(x, mealTicks.get(x.a.id.toLowerCase()), ctx)),
+    noCoaching: silent,
+    habits: live.filter(isKind('habits')).map((x) => habitsAdherence(x, habitTicks.get(x.id), ctx)),
+    meals: live.filter(isKind('meals')).map((x) => mealsAdherence(x, mealTicks.get(x.id), ctx)),
   };
 }
 
-/** Jedna liczba na podopiecznego: nawyki i jadłospis razem, 7 pełnych dni przed paczką. */
-export function weekSummary(a: Adherence): Rate {
+const habitsOrMeals = (x: LiveItem): x is LiveItem<HabitsBody | MealsBody> => x.body.kind === 'habits' || x.body.kind === 'meals';
+
+/**
+ * Realizacja wszystkich obowiązujących nawyków i jadłospisów (bez wycofanych, odrzuconych
+ * i zaplanowanych — te osobno). Siatka: `days` dni kończących się dziś w strefie telefonu.
+ */
+export function adherence(s: SnapshotV1, sent: readonly SentAssignment[], now: number = Date.now(), days = 14): Adherence {
+  const sorted = sortSent(sent, now);
+  const input: CoachingInput = { tz: typeof s.tz === 'string' ? s.tz : null, at: s.at, coaching: hasCoaching(s) ? cleanCoaching(s.coaching) : null };
+  return {
+    ...adherenceOf(input, sorted.live, now, days),
+    scheduled: sorted.scheduled.filter(habitsOrMeals) as ScheduledItem<HabitsBody | MealsBody>[],
+    declined: sorted.declined.filter(habitsOrMeals),
+  };
+}
+
+/** Nawyki razem i jadłospisy razem: 7 pełnych dni przed `min(dziś, dzień paczki)`. */
+export function weekRates(a: Pick<Adherence, 'habits' | 'meals'>): { habits: Rate; meals: Rate } {
+  return { habits: sum(a.habits.map((h) => h.week)), meals: sum(a.meals.map((m) => m.week)) };
+}
+
+/** Jedna liczba na podopiecznego: nawyki i jadłospis razem, 7 pełnych dni przed `min(dziś, dzień paczki)`. */
+export function weekSummary(a: Pick<Adherence, 'habits' | 'meals'>): Rate {
   return sum([...a.habits.map((h) => h.week), ...a.meals.map((m) => m.week)]);
 }
