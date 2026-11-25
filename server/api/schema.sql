@@ -55,3 +55,34 @@ CREATE TABLE IF NOT EXISTS stats (
   n     INTEGER NOT NULL,
   PRIMARY KEY (day, event, value)
 );
+
+-- Powiadomienia od prowadzącego (GYM TRACKER Sztab): token współpracy przypięty do subskrypcji telefonu
+-- (wiersz w `subs`). Sam token nie trafia do bazy — tylko jego skrót; treści, nazwisk i numerów
+-- współpracy serwer nie zna, a powiadomienie ma ogólny tekst.
+CREATE TABLE IF NOT EXISTS link_tokens (
+  -- SHA-256 tokenu, hex.
+  hash     TEXT PRIMARY KEY,
+  endpoint TEXT NOT NULL,
+  -- Język powiadomień: 'pl' albo 'en'.
+  lang     TEXT NOT NULL,
+  created  INTEGER NOT NULL,
+  -- Ostatnia rejestracja z telefonu, ms. Po 45 dniach ciszy token znika.
+  updated  INTEGER NOT NULL,
+  -- Natychmiastowe wysyłki z ostatniej godziny: [[ms, rodzaj], …] (JSON) — do limitu i sklejania powtórek.
+  recent   TEXT NOT NULL DEFAULT '[]'
+);
+CREATE INDEX IF NOT EXISTS link_tokens_endpoint ON link_tokens (endpoint, updated);
+CREATE INDEX IF NOT EXISTS link_tokens_updated ON link_tokens (updated);
+
+-- Zaplanowane powiadomienia od prowadzącego: rodzaj i czas wysyłki. Znikają po wysłaniu.
+CREATE TABLE IF NOT EXISTS link_queue (
+  id   INTEGER PRIMARY KEY,
+  hash TEXT NOT NULL,
+  kind TEXT NOT NULL,
+  -- Kiedy wysłać, ms.
+  at   INTEGER NOT NULL,
+  -- Numer od prowadzącego (zalecenie, rezerwacja) — do podmiany i odwołania.
+  ref  TEXT
+);
+CREATE INDEX IF NOT EXISTS link_queue_at ON link_queue (at);
+CREATE INDEX IF NOT EXISTS link_queue_hash ON link_queue (hash, ref);

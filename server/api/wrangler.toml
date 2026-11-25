@@ -1,4 +1,4 @@
-# Serwer aplikacji GYM TRACKER — przypomnienia push i uwagi od użytkowników.
+# Serwer aplikacji GYM TRACKER — przypomnienia push, powiadomienia od prowadzącego i uwagi od użytkowników.
 # Cloudflare Worker z cronem i bazą D1. Sekrety: VAPID_PRIVATE_JWK, ADMIN_TOKEN (hasło do listy uwag)
 # i opcjonalnie DISCORD_WEBHOOK_URL (kopia każdej uwagi na kanale autora).
 # Wdrożenie krok po kroku: README.md w tym katalogu.
@@ -14,7 +14,8 @@ crons = ["*/5 * * * *"]
 # Klucz publiczny VAPID — wpisuje go `node keys.mjs`. Prywatny idzie do sekretów, nie tutaj.
 VAPID_PUBLIC_KEY = "BLyuW4cE9mrvjqjWNHDXVWM8Fti5Pk6iYleqDxD1Sc-PCHUHu9P6NFqnyT2pI3cKOk6bJe10jo2GbqXmE3MIGQs"
 VAPID_SUBJECT = "https://aleksanderdudek.github.io/gym-training-tracker/"
-ALLOWED_ORIGINS = "https://aleksanderdudek.github.io,http://localhost:5173,http://localhost:4173"
+# Aplikacja (GitHub Pages, dev, preview) i GYM TRACKER Sztab (wdrożony, dev, preview) — Sztab woła `/link/notify`.
+ALLOWED_ORIGINS = "https://aleksanderdudek.github.io,http://localhost:5173,http://localhost:4173,https://gym-tracker-sztab.instrukcje-app.workers.dev,http://localhost:5190,http://localhost:5191"
 
 [[d1_databases]]
 binding = "DB"

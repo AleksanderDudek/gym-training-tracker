@@ -1,11 +1,13 @@
 # Serwer aplikacji
 
-Cloudflare Worker z trzema zadaniami:
+Cloudflare Worker z czterema zadaniami:
 
 - **przypomnienia** — o 7:30 o treningu z planu, o 19:30 o wpisaniu kroków i ruchu z dnia,
   na życzenie o 7:00 o ważeniu i wieczorem o jedzeniu z dziś (rodzaje `trening`, `ruch`, `waga`,
   `jedzenie`; serwer przyjmuje każdy rodzaj z małych liter i nic o nich nie wie), o czasie
   lokalnym telefonu, na Androidzie i iPhonie;
+- **powiadomienia od prowadzącego** — „Nowa wiadomość od prowadzącego” i podobne, gdy prowadzący
+  w GYM TRACKER Sztab coś wyśle (niżej, „Powiadomienia od prowadzącego”);
 - **uwagi od użytkowników** — wiadomość z formularza w aplikacji (e-mail, treść, zrzut ekranu,
   ślad wizyty) i lista dla autora za hasłem;
 - **skrzynki zegarka Garmin i telefonu** — zaszyfrowana paczka z zegarka albo z aplikacji GYM TRACKER
@@ -184,3 +186,67 @@ npx wrangler deploy
 **Koszt.** Zegarek zapisuje 48 razy na dobę. Darmowy plan D1 daje 100 tys. zapisów dziennie,
 czyli wystarcza na około 2 tys. aktywnych zegarków; dalej — plan płatny albo rzadsza wysyłka
 (`Sync.EVERY` w `garmin/source/Sync.mc`).
+
+## Powiadomienia od prowadzącego
+
+Prowadzący w GYM TRACKER Sztab wysyła wiadomość albo zalecenie, zapisuje na wizytę — a telefon
+podopiecznego dostaje powiadomienie. Idzie ono tym samym Web Pushem i tym samym kluczem VAPID co
+przypomnienia: przeglądarka ma jedną subskrypcję na klucz (spec
+`docs/superpowers/specs/2026-11-25-sztab-powiadomienia-design.md`, kod `link.ts`).
+
+- `POST /link/register {token, subscription, tz, lang}` — z aplikacji. Token losuje telefon (32 bajty
+  w base64url, osobny dla każdej współpracy) i ten sam podaje Sztabowi. Serwer zakłada subskrypcję albo
+  odświeża istniejącą (klucze, strefa, czas — lista przypomnień zostaje) i wiąże z nią token. Telefon
+  odświeża rejestrację co kilka dni. `lang`: `pl` albo `en`.
+- `POST /link/unregister {token}` — z aplikacji: token i jego kolejka znikają.
+- `POST /link/notify {token, kind, at?, ref?}` — ze Sztabu (i z aplikacji: przypomnienie o wizycie
+  zarezerwowanej na telefonie). `kind`: `message`, `assignment`, `withdrawn`, `visit`, `visit-cancel`,
+  `visit-soon`, `ended`. Bez `at`, z `at` w przeszłości albo najwyżej minutę naprzód — od razu; dalej
+  (do 400 dni; ms od 1970) — do kolejki, którą wysyła cron. `ref` (do 64 znaków `A-Z a-z 0-9 _ -`) to
+  numer zalecenia albo rezerwacji: nowe zaplanowane z tym samym numerem podmienia poprzednie, a
+  natychmiastowe tego samego rodzaju je zastępuje (innego rodzaju nie rusza — „zapisał cię” nie kasuje
+  „za dwie godziny”). `ended` czyści całą kolejkę tokenu.
+- `POST /link/cancel {token, ref}` — odwołuje zaplanowane z tym numerem.
+
+Każde dobrze zbudowane zapytanie dostaje 204 — także z tokenem, którego serwer nie zna, więc nie da się
+sprawdzić, które tokeny istnieją. Zły kształt — 400. Sztab wysyła JSON bez nagłówka `Content-Type`
+(przeglądarka daje `text/plain`: proste zapytanie CORS bez preflightu, działa z `keepalive`), telefon —
+z `application/json`; serwer czyta treść jako JSON bez względu na nagłówek.
+
+Treść: `{title: 'GYM TRACKER', body, url: '#/wspolpraca', tag: 'coach-<rodzaj>'}` — tekst ogólny
+w języku z rejestracji („Nowa wiadomość od prowadzącego”, „Prowadzący zapisał cię na wizytę”…), bez
+nazwiska, treści i numeru współpracy, więc i podgląd na zablokowanym ekranie niczego nie zdradza.
+
+**Co wie serwer.** Tabela `link_tokens`: SHA-256 tokenu (samego tokenu baza nie zna — jej wyciek nie
+pozwala wysyłać), adres subskrypcji, język, czas założenia i ostatniej rejestracji oraz rodzaje i czasy
+natychmiastowych wysyłek z ostatniej godziny (do limitów). Tabela `link_queue`: zaplanowane — skrót
+tokenu, rodzaj, czas, numer od prowadzącego; po wysłaniu znika. Bez adresów IP, nazwisk i treści:
+serwer wie tylko, że token dostał zdarzenie danego rodzaju.
+
+**Limity i sprzątanie.**
+
+- 20 natychmiastowych na token w ruchomej godzinie, ponad to — po cichu nic; ten sam rodzaj od tego
+  samego tokenu w ciągu minuty — jedno powiadomienie.
+- 200 zaplanowanych na token; 10 tokenów na subskrypcję (wypada najdawniej odświeżony, z kolejką).
+- Cron co 5 minut wysyła do 50 zaplanowanych i każde kasuje zaraz po wysłaniu, więc przerwany przebieg
+  niczego nie powtórzy; kilka tego samego rodzaju dla jednego tokenu to jedno powiadomienie. Gdy usługa
+  powiadomień nie przyjmie, następny przebieg próbuje znowu — przypomnienie o wizycie najwyżej godzinę
+  po czasie, reszta przez dobę.
+- Token bez rejestracji przez 45 dni znika. Martwa subskrypcja (404/410) i wypisanie z przypomnień
+  (`/unsubscribe` — telefon zaraz potem zamyka subskrypcję) zabierają też jej tokeny i kolejkę.
+
+**CORS.** Sztab (`https://gym-tracker-sztab.instrukcje-app.workers.dev`, lokalnie `http://localhost:5190`
+i podgląd `:5191`) stoi w `ALLOWED_ORIGINS` w `wrangler.toml`.
+
+**Wdrożenie przy istniejącym serwerze.** Tabele `link_tokens` i `link_queue` dochodzą w `schema.sql`.
+Najpierw baza, potem kod — nowy kod sięga do nowych tabel także przy wypisaniu z przypomnień:
+
+```bash
+npx wrangler d1 execute gym-tracker-api --remote --file=schema.sql   # CREATE … IF NOT EXISTS — reszta zostaje
+npx wrangler deploy
+```
+
+Potem Sztab z `VITE_TRACKER_API_URL` (adres Workera) i aplikacja — kolejność w specu.
+
+**Testy.** `link.test.ts` przechodzi te same scenariusze na magazynie w pamięci i na zapytaniach D1
+z `schema.sql`, uruchomionych na SQLite z Node'a (`node:sqlite`).
