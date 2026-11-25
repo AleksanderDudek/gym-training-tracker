@@ -51,11 +51,13 @@ vi.mock('../src/lib/data', () => {
       db.created.push(...rows);
       return rows;
     }),
-    bookClient: vi.fn(async (slotId: string, connectionId: string) => {
-      db.calls.push(`book ${slotId} ${connectionId}`);
+    // Zapis i odwołanie dostają termin i współpracę — z nich biorą się powiadomienia (`lib/notify.ts`).
+    bookClient: vi.fn(async (slot: Pick<SlotRow, 'id' | 'startsAt'>, c: Pick<Connection, 'id'>) => {
+      db.calls.push(`book ${slot.id} ${slot.startsAt} ${c.id}`);
+      return 'b-new';
     }),
-    cancelBooking: vi.fn(async (id: string) => {
-      db.calls.push(`cancelBooking ${id}`);
+    cancelBooking: vi.fn(async (id: string, c: Pick<Connection, 'id'> | undefined) => {
+      db.calls.push(`cancelBooking ${id} ${c?.id}`);
     }),
     cancelSlot: vi.fn(async (id: string) => {
       db.calls.push(`cancelSlot ${id}`);
@@ -116,12 +118,12 @@ describe('Kalendarz', () => {
     const ask = within(dialog).getByRole('group', { name: 'Odwołać rezerwację: GT-ABCD-EFGH · Jan?' });
     expect(db.calls).toEqual([]);
     await user.click(within(ask).getByRole('button', { name: 'Tak, odwołaj' }));
-    await waitFor(() => expect(db.calls).toEqual(['cancelBooking b1']));
+    await waitFor(() => expect(db.calls).toEqual(['cancelBooking b1 c1']));
 
     expect(within(dialog).getByText(/Termin jest pełny — zapiszesz ponad limit/)).toBeInTheDocument();
     await user.selectOptions(within(dialog).getByRole('combobox', { name: 'Podopieczny' }), 'c2');
     await user.click(within(dialog).getByRole('button', { name: 'Zapisz' }));
-    await waitFor(() => expect(db.calls).toContain('book s1 c2'));
+    await waitFor(() => expect(db.calls).toContain(`book s1 ${at(26, 18)} c2`));
 
     await user.click(within(dialog).getByRole('button', { name: 'Odwołaj termin' }));
     const sure = within(dialog).getByRole('group', { name: 'Odwołać cały termin?' });

@@ -11,6 +11,7 @@ import type { Connection, SentAssignment } from '../lib/data';
 import { L } from '../lib/labels';
 import { foodDays, overview } from '../lib/metrics';
 import type { Overview } from '../lib/metrics';
+import { canNotify } from '../lib/notify';
 import { navigate, useLocation } from '../lib/router';
 import { forgetReview } from '../lib/reviewLoad';
 import { useReady } from '../session';
@@ -30,6 +31,8 @@ const T = text({
     sees: 'Widzisz',
     note: 'Notatka z zaproszenia',
     data: (s: string) => `dane z: ${s}`,
+    notifyOn: 'powiadomienia włączone',
+    notifyOnHint: 'Podopieczny dostaje na telefon powiadomienie o twojej wiadomości, zaleceniu, wizycie — bez ich treści.',
     noData: 'Podopieczny jeszcze nic nie wysłał. Dane przyjdą, gdy otworzy GYM TRACKERa.',
     unreadable: 'Paczka jest, ale nie otwiera się kluczem z tego sejfu. Jeśli zakładałeś konto od nowa, poproś o nowe zaproszenie.',
     tabs: {
@@ -125,6 +128,8 @@ const T = text({
     sees: 'You see',
     note: 'Invite note',
     data: (s: string) => `data from: ${s}`,
+    notifyOn: 'notifications on',
+    notifyOnHint: 'The client gets a phone notification about your message, advice or appointment — without its content.',
     noData: 'The client has not sent anything yet. Data arrives when they open GYM TRACKER.',
     unreadable: 'There is a data package, but this vault’s key does not open it. If you recreated your account, ask for a new invite.',
     tabs: {
@@ -271,6 +276,7 @@ export function ClientPage({ id }: { id: string }) {
                     {T.sees}: {c.scopes.map((x) => L.scopeShort[x]).join(', ') || '—'}
                   </span>
                   <span className="chip blue">{T.data(ago(snap.data?.at ?? c.lastPushAt))}</span>
+                  {canNotify(c) ? <span className="chip ok" title={T.notifyOnHint}>{T.notifyOn}</span> : null}
                 </>
               ) : (
                 <span className="chip muted">{c.endedBy ? T.endedBy[c.endedBy] : T.ended}</span>
@@ -803,7 +809,7 @@ function SentTab({
   };
 
   const cancel = (a: SentAssignment) =>
-    void withdrawAssignment(a.id).then(
+    void withdrawAssignment(c, a).then(
       () => {
         setAsking(null);
         toast(S.done);
@@ -887,7 +893,7 @@ function SentTab({
                   {S.cancel}
                 </button>
               ) : !a.withdrawnAt ? (
-                <button type="button" className="btn ghost small" onClick={() => void withdrawAssignment(a.id).then(changed, () => toast(S.failed))}>
+                <button type="button" className="btn ghost small" onClick={() => void withdrawAssignment(c, a).then(changed, () => toast(S.failed))}>
                   {T.withdraw}
                 </button>
               ) : null}
