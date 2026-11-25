@@ -27,6 +27,14 @@ Maile (potwierdzenie konta, reset hasła, link logowania) trafiają do skrzynki 
 Bez telefonu: `npx tsx apps/sztab/scripts/demo-client.ts '<link zaproszenia>'` przyjmuje
 zaproszenie jak GYM TRACKER i wysyła siedem tygodni przykładowych danych.
 
+W samym Sztabie, u każdego prowadzącego (także w produkcji, bez dostępu administratora): **„Dodaj
+przykłady”** w Bibliotece zapisuje przykładową bibliotekę (`src/lib/demo/library.ts` — każdy rodzaj,
+program odsyłający do tej samej partii), a **„Dodaj podopiecznego demo”** na liście podopiecznych zakłada
+współpracę z telefonem symulowanym w tej przeglądarce (`src/lib/demo/client.ts`): zaproszenie „DEMO”
+przyjęte przez `invite_accept`, siedem tygodni danych, zalecenia sprzed czterech tygodni z odpowiedziami,
+wiadomości i zdjęcia. „Symuluj telefon” na jego karcie odpowiada na to, co wysłano (ta sama symulacja co
+`seed.ts phone`: `src/lib/demo/phone.ts`), „Usuń demo” kończy współpracę i zapomina telefon.
+
 Bez rejestracji, do sprawdzania ekranów (Playwright): `npx tsx apps/sztab/scripts/seed.ts coach <stan.json>`
 zakłada prowadzącego z sejfem i dwóch podopiecznych z danymi (wypisuje mail, hasło i kod sejfu) i wysyła
 każdemu zalecenia z datą sprzed 4 tygodni — cotygodniowy check-in, nawyki, jadłospis na 7 dni (szyfrowane
@@ -119,6 +127,8 @@ src/
     mfa.ts, mfaApi.ts  logowanie dwuetapowe (TOTP)
     aliases.ts         prywatne skróty i grupy (tylko w przeglądarce), CSV do CRM
     labels.ts          nazwy obszarów, zakresów, zawodów, rodzajów zaleceń
+    demo/              przykładowa biblioteka (library.ts), telefon symulowany wspólny z seed.ts (phone.ts,
+                       snapshot.ts), podopieczny demonstracyjny w przeglądarce (client.ts, state.ts)
   pages/               logowanie i rejestracja (z kodem TOTP), pierwsze kroki i sejf, podopieczni („Do
                        przejrzenia”, grupy, akcje grupowe), pulpit z zakładkami (wiadomości, odpowiedzi,
                        realizacja, zdjęcia, zalecenia z harmonogramem), zaproszenia (link i QR),
