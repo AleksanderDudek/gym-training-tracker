@@ -1,8 +1,9 @@
 import { linkConfigured } from '../link/config';
 import { activeConnections, newAssignments, useLink } from '../link/store';
 import { formsDue, habitsToday, mealsToday, unreadByConnection } from '../link/today';
-import { LINK_PATH, go, linkAssignmentPath, linkChatPath } from '../routing';
-import { text } from '../i18n';
+import { soonVisit } from '../link/visits';
+import { LINK_PATH, go, linkAssignmentPath, linkChatPath, linkVisitsPath } from '../routing';
+import { LOCALE, text } from '../i18n';
 import { W, assignmentTitle } from './Link.words';
 
 /**
@@ -25,6 +26,7 @@ const T = text({
     form: (title: string) => `Czeka na odpowiedź: ${title}`,
     habits: (title: string, done: number, all: number) => `${title} — dziś ${done} z ${all}`,
     meals: (title: string, done: number, all: number) => `${title} — dziś zjedzone ${done} z ${all}`,
+    visit: (tomorrow: boolean, time: string, title: string) => `Wizyta ${tomorrow ? 'jutro' : 'dziś'} o ${time} — ${title}`,
   },
   en: {
     title: 'Working with a coach',
@@ -39,6 +41,7 @@ const T = text({
     form: (title: string) => `Waiting for your answer: ${title}`,
     habits: (title: string, done: number, all: number) => `${title} — ${done} of ${all} today`,
     meals: (title: string, done: number, all: number) => `${title} — ${done} of ${all} meals eaten today`,
+    visit: (tomorrow: boolean, time: string, title: string) => `Appointment ${tomorrow ? 'tomorrow' : 'today'} at ${time} — ${title}`,
   },
 });
 
@@ -82,7 +85,9 @@ export function LinkNotice() {
   const fresh = newAssignments(s)[0];
   const ended = s.connections.find((c) => c.endNotice);
   const coachName = (id: string) => s.connections.find((c) => c.id === id)?.coach.name ?? '';
+  const visit = soonVisit(s, Date.now());
   const lines: { href: string; text: string }[] = [
+    ...(visit ? [{ href: linkVisitsPath(visit.connection.id), text: T.visit(visit.tomorrow, new Date(visit.booking.startsAt).toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit' }), visit.booking.title) }] : []),
     ...unreadByConnection(s).map((u) => ({ href: linkChatPath(u.connectionId), text: T.messages(coachName(u.connectionId), u.count) })),
     ...formsDue(s).map((f) => ({ href: linkAssignmentPath(f.id), text: T.form(f.a.body.title) })),
     ...habitsToday(s)
