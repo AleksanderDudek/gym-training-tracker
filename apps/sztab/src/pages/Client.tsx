@@ -16,7 +16,7 @@ import { useReady } from '../session';
 import { SendDialog } from './Send';
 import { AdherenceTab } from './client/AdherenceTab';
 import { AnswersTab } from './client/AnswersTab';
-import { MessagesTab } from './client/MessagesTab';
+import { CommentSessionLink, MessagesTab, UnreadBadge } from './client/MessagesTab';
 import { PhotosTab } from './client/PhotosTab';
 
 const T = text({
@@ -303,6 +303,7 @@ export function ClientPage({ id }: { id: string }) {
               <Link key={t} to={`/podopieczni/${c.id}${t === 'overview' ? '' : `?t=${t}`}`} current={tab === t}>
                 {T.tabs[t]}
                 {t === 'sent' && sentCount ? <span className="count">{sentCount}</span> : null}
+                {t === 'messages' ? <UnreadBadge connectionId={c.id} /> : null}
               </Link>
             ))}
           </nav>
@@ -315,7 +316,7 @@ export function ClientPage({ id }: { id: string }) {
             <div className="note">{T.notShared(L.scope[TAB_SCOPE[tab]!].toLowerCase())}</div>
           ) : null}
           {s && ov && tab === 'overview' ? <OverviewTab s={s} ov={ov} c={c} onSend={setSending} /> : null}
-          {s && ov && tab === 'training' && s.training ? <TrainingTab ov={ov} /> : null}
+          {s && ov && tab === 'training' && s.training ? <TrainingTab ov={ov} cid={c.id} /> : null}
           {s && tab === 'food' && s.food ? <FoodTab s={s} /> : null}
           {s && ov && tab === 'body' && s.body ? <BodyTab s={s} ov={ov} /> : null}
           {s && tab === 'labs' && s.labs ? <LabsTab s={s} /> : null}
@@ -503,7 +504,7 @@ export function WeightChart({ series }: { series: { day: string; kg: number }[] 
   );
 }
 
-function TrainingTab({ ov }: { ov: Overview }) {
+function TrainingTab({ ov, cid }: { ov: Overview; cid: string }) {
   return (
     <div className="stack" style={{ gap: 14 }}>
       <section className="card flat scroll-x">
@@ -515,6 +516,7 @@ function TrainingTab({ ov }: { ov: Overview }) {
               <th className="n">{T.minutes}</th>
               <th className="n">{T.sets}</th>
               <th className="n">{T.tonnage}</th>
+              <th />
             </tr>
           </thead>
           <tbody>
@@ -528,6 +530,9 @@ function TrainingTab({ ov }: { ov: Overview }) {
                 <td className="n">{r.minutes ? T.min(r.minutes) : '—'}</td>
                 <td className="n">{r.sets}</td>
                 <td className="n">{r.tonnage ? T.t(r.tonnage) : '—'}</td>
+                <td className="n">
+                  <CommentSessionLink connectionId={cid} at={r.date} name={r.name} />
+                </td>
               </tr>
             ))}
           </tbody>

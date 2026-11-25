@@ -424,7 +424,9 @@ export async function pullMessages(c: LinkConnection): Promise<'ok' | 'offline' 
       const at = confirmed.get(m.id);
       if (at && m.connectionId === c.id) m.serverAt = at;
     }
-    s.messages.push(...fresh);
+    // Dwa pobrania naraz (synchronizacja przy powrocie na kartę i otwarta rozmowa) przynoszą te same.
+    const known = new Set(s.messages.map((m) => m.id));
+    s.messages.push(...fresh.filter((m) => !known.has(m.id)));
     // Najwyżej 500 wiadomości na współpracę na telefonie — starsze zostają u prowadzącego.
     const mine = s.messages.filter((m) => m.connectionId === c.id);
     if (mine.length > 500) {
