@@ -33,7 +33,7 @@ import { addDays, dayLabel, longDay, mealsLeftAt } from '../../diet/model';
 import { fastingOn } from '../../diet/fasting';
 import { dayNeeds } from '../../diet/now';
 import { plannedDay, plannedKcal, type Plan, type PlannedItem, type PlanItem } from '../../diet/plan';
-import { dropCheat, eatCheat, endPause, logFood, markDay, updateChoices, updateDay } from '../../diet/store';
+import { dropCheat, eatCheat, endPause, logFood, logQuick, markDay, updateChoices, updateDay } from '../../diet/store';
 import { autoDay, notEatenToday, restVariants, seedOf, suggest, swaps, type Context } from '../../diet/suggest';
 import { BAND, currentWeight, hidesKcal, isComplete, pauseOn, r10, targetOn } from '../../diet/target';
 import type { Pause, Profile } from '../../diet/types';
@@ -71,6 +71,7 @@ import { SuggestionList } from './SuggestionList';
 import { SwapDialog } from './SwapDialog';
 import { useDietBase, useFoodPool, type FoodPool } from './useDietPage';
 import { HealthAck, HealthNote } from '../../../components/Health';
+import { CoachMeals, CoachQuiet } from '../../../components/CoachMeals';
 import { WeekCheckCard } from './WeekCheckCard';
 import { WeighCard } from './WeighCard';
 import './diet.css';
@@ -425,6 +426,21 @@ function TodayView({ profile, plan, date, today, hour, nowMs, pickerOpen, resume
     <>
       <DietLinks date={date} today={today} />
       <DayNav date={date} today={today} onDate={onDate} />
+
+      {/* Jadłospis od prowadzącego (trwająca współpraca) — na samej górze dnia, tylko dziś. */}
+      {isToday && (
+        <CoachQuiet>
+          <CoachMeals
+            entries={entries}
+            showKcal={shown}
+            onAdd={(m) =>
+              logQuick(today, m.name, m.kcal, { protein: m.protein, carbs: m.carbs, fat: m.fat }).then(() =>
+                bridge.toast(savedText(m.name, m.kcal, shown)),
+              )
+            }
+          />
+        </CoachQuiet>
+      )}
 
       {isToday && profile.notice === 'show' && <ChangeNotice profile={profile} today={today} kgNow={kgNow} />}
       {isToday && <WeekCheckCard profile={profile} today={today} kgNow={kgNow} />}

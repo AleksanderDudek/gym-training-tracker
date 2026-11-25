@@ -55,6 +55,12 @@ export interface LinkConnection {
   pushDueAt?: number;
   /** Do kiedy (czas serwera) „przeczytane” doszło do prowadzącego — dalsze czeka na sieć. */
   readSent?: string | null;
+  /**
+   * Powiadomienia push od tego prowadzącego: losowy token (43 znaki base64url), zarejestrowany na serwerze
+   * aplikacji (`/link/register`) i w Sztabie (`client_set_notify`). `registeredAt` — ostatnie potwierdzenie
+   * na serwerze aplikacji (odświeżane, żeby subskrypcja nie wygasła po ciszy). Brak — wyłączone.
+   */
+  notify?: { token: string; registeredAt: number; sztab: boolean } | null;
   /** Zakończenie przez prowadzącego, o którym ekran jeszcze nie powiedział. */
   endNotice?: boolean;
   /** Czas serwera ostatniej pobranej wiadomości — następne pobranie prosi tylko o nowsze. */
@@ -162,6 +168,11 @@ export function cleanLinkState(raw: unknown): LinkState {
     if (c.readUpTo !== undefined) c.readUpTo = iso(c.readUpTo);
     if (c.readSent !== undefined) c.readSent = iso(c.readSent);
     if (c.pushDueAt !== undefined && (typeof c.pushDueAt !== 'number' || !Number.isFinite(c.pushDueAt))) delete c.pushDueAt;
+    if (c.notify !== undefined) {
+      const n = c.notify as unknown as { token?: unknown; registeredAt?: unknown; sztab?: unknown } | null;
+      if (!n || typeof n.token !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(n.token) || typeof n.registeredAt !== 'number') delete c.notify;
+      else c.notify = { token: n.token, registeredAt: n.registeredAt, sztab: n.sztab === true };
+    }
   }
   const ids = new Set(connections.map((c) => c.id));
   const assignments = (Array.isArray(raw.assignments) ? raw.assignments : []).filter(

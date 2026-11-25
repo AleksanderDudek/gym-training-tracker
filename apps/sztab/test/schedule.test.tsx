@@ -29,8 +29,9 @@ vi.mock('../src/lib/data', async (orig) => {
     getConnection: vi.fn(async (id: string) => connections.find((c) => c.id === id) ?? null),
     readSnapshot: vi.fn(async () => ({ snapshot: null, at: null, bytes: 0, unreadable: false })),
     listAssignments: vi.fn(async () => assignments),
-    withdrawAssignment: vi.fn(async (id: string) => {
-      withdrawn.push(id);
+    // Klucz z sejfu, współpraca i zalecenie (z „pokaż od”) — z nich `withdrawAssignment` wybiera powiadomienie.
+    withdrawAssignment: vi.fn(async (_k: CryptoKey, _c: Connection, a: Pick<SentAssignment, 'id' | 'visibleFrom'>) => {
+      withdrawn.push(a.id);
     }),
     sendAssignment: vi.fn(async (_k: CryptoKey, _c: unknown, c: Connection, area: string, body: { kind: string }, opts: { visibleFrom?: Date | null } = {}) => {
       if (ctl.gate) await ctl.gate;

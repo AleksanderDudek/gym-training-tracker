@@ -33,6 +33,9 @@ import { PROFILES, PROFILE_KEYS } from '../data/profiles';
 import { EX } from '../data/exercises';
 import { snackAddPath } from '../routing';
 import { pluralEn, text } from '../i18n';
+import { useLink } from '../link/store';
+import { byCoach } from '../link/today';
+import './coach.css';
 
 const T = text({
   pl: {
@@ -55,6 +58,7 @@ const T = text({
     profile: 'Profil',
     needsGear: (name: string) => `${name} potrzebuje drążka albo ciężaru — wybierz kettlebell albo siłownię.`,
     yourPlans: 'Twoje plany',
+    fromCoach: (name: string) => `Od prowadzącego — ${name}`,
     buildOwn: 'Ułóż własny plan',
     classic: 'Plan klasyczny z kettlebell',
     classicText:
@@ -143,6 +147,7 @@ const T = text({
     profile: 'Focus',
     needsGear: (name: string) => `${name} needs a bar or a weight — pick kettlebell or gym.`,
     yourPlans: 'Your plans',
+    fromCoach: (name: string) => `From your coach — ${name}`,
     buildOwn: 'Build your own plan',
     classic: 'Classic kettlebell plan',
     classicText:
@@ -261,7 +266,7 @@ type Length = 'all' | '30' | '60' | '90';
 /** Karta planu klasycznego w katalogu: scena poziomu podstawowego — środek drabiny, regularność. */
 const CLASSIC_CARD = { id: 'classic', kind: 'classic', level: 'base' } as const;
 
-/** Katalog planów. Na górze plany z celem, potem własne i konfigurator klasyczny. */
+/** Katalog planów. Na górze plany od prowadzącego, potem z celem, własne i konfigurator klasyczny. */
 export function PlanCatalog({ state }: { state: AppState }) {
   const [len, setLen] = useState<Length>('all');
   const [gear, setGear] = useState<'all' | WorkoutGear>('all');
@@ -269,7 +274,10 @@ export function PlanCatalog({ state }: { state: AppState }) {
   const goals = GOAL_PLANS.filter(
     (t) => (len === 'all' || String(t.days) === len) && (gear === 'all' || t.gear === gear),
   );
-  const own = state.plans ?? [];
+  // Plany od prowadzącego (trwająca współpraca) stoją na samej górze, osobno od własnych.
+  const link = useLink();
+  const coached = byCoach(link, state.plans ?? [], active);
+  const own = (state.plans ?? []).filter((t) => !coached.some((g) => g.items.some((x) => x.id === t.id)));
   const [prof, setProf] = useState<ProfileKey | ''>('');
   const profiled = PROFILE_PLANS.filter((t) => t.profile === prof && (gear === 'all' || t.gear === gear));
 
@@ -278,6 +286,17 @@ export function PlanCatalog({ state }: { state: AppState }) {
       <div className="wrap">
         <p className="lead">{T.lead}</p>
       </div>
+
+      {coached.map((g) => (
+        <section key={g.key} aria-labelledby={`coach-p-${g.key}`}>
+          <h2 className="sect-label lk-coach-sect" id={`coach-p-${g.key}`}>
+            {T.fromCoach(g.name)}
+          </h2>
+          {g.items.map((t) => (
+            <PlanCard key={t.id} t={t} active={t.id === active} />
+          ))}
+        </section>
+      ))}
 
       <div className="sect-label">{T.goalPlans}</div>
       <div className="grp">

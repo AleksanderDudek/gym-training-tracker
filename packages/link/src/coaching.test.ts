@@ -157,3 +157,19 @@ describe('daty z zewnątrz, które nie istnieją', () => {
     expect(parseAssignment({ ...envelope('training', note), sentAt: Date.parse('2026-11-25') })).not.toBeNull();
   });
 });
+
+describe('powiadomienia — pieczęć tokenu i numery zaplanowanych', () => {
+  it('ten sam token i numer dają ten sam ref (telefon i Sztab), inny token — inny; bez numerów z bazy', async () => {
+    const { notifyRef, parseNotifySeal } = await import('./index');
+    const t1 = 'A'.repeat(43);
+    const t2 = 'B'.repeat(43);
+    const id = '0B6F7C1E-3A2D-4F5E-9A8B-1C2D3E4F5A6B';
+    const r = await notifyRef(t1, id);
+    expect(r).toMatch(/^[0-9a-f]{32}$/);
+    expect(await notifyRef(t1, id.toLowerCase())).toBe(r);
+    expect(await notifyRef(t2, id)).not.toBe(r);
+    expect(r).not.toContain('0b6f7c1e');
+    expect(parseNotifySeal({ v: 1, token: t1 })).toBe(t1);
+    expect(parseNotifySeal({ v: 1, token: 'krótki' })).toBeNull();
+  });
+});

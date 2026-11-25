@@ -55,3 +55,62 @@ CREATE TABLE IF NOT EXISTS stats (
   n     INTEGER NOT NULL,
   PRIMARY KEY (day, event, value)
 );
+
+-- Powiadomienia od prowadzącego (GYM TRACKER Sztab): token współpracy przypięty do subskrypcji telefonu
+-- (wiersz w `subs`). Sam token nie trafia do bazy — tylko jego skrót; treści, nazwisk i numerów
+-- współpracy serwer nie zna, a powiadomienie ma ogólny tekst.
+CREATE TABLE IF NOT EXISTS link_tokens (
+  -- SHA-256 tokenu, hex.
+  hash     TEXT PRIMARY KEY,
+  endpoint TEXT NOT NULL,
+  -- Język powiadomień: 'pl' albo 'en'.
+  lang     TEXT NOT NULL,
+  created  INTEGER NOT NULL,
+  -- Ostatnia rejestracja z telefonu, ms. Po 45 dniach ciszy token znika.
+  updated  INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS link_tokens_endpoint ON link_tokens (endpoint, updated);
+CREATE INDEX IF NOT EXISTS link_tokens_updated ON link_tokens (updated);
+
+-- Zaplanowane powiadomienia od prowadzącego: rodzaj i czas wysyłki. Znikają po wysłaniu, po trzeciej
+-- nieudanej próbie i po terminie.
+CREATE TABLE IF NOT EXISTS link_queue (
+  id       INTEGER PRIMARY KEY,
+  hash     TEXT NOT NULL,
+  kind     TEXT NOT NULL,
+  -- Kiedy wysłać, ms.
+  at       INTEGER NOT NULL,
+  -- Numer od prowadzącego (zalecenie, rezerwacja) — do podmiany i odwołania.
+  ref      TEXT,
+  -- Próby wysyłki. Przebieg crona dolicza próbę, zanim wyśle (rezerwacja), więc przerwany przebieg też się liczy.
+  attempts INTEGER NOT NULL DEFAULT 0,
+  -- Najwcześniej następna próba, ms: na początku `at`, potem odstęp po nieudanej (5 min, 20 min, 1 h)
+  -- albo czas, w którym zwolni się godzinny limit tokenu.
+  next_try INTEGER NOT NULL,
+  -- Po tym czasie (ms) wysyłka nie ma już sensu: `at` + godzina dla przypomnienia o wizycie, + doba dla reszty.
+  expires  INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS link_queue_next ON link_queue (next_try);
+CREATE INDEX IF NOT EXISTS link_queue_expires ON link_queue (expires);
+CREATE INDEX IF NOT EXISTS link_queue_hash ON link_queue (hash, ref);
+
+-- Wysyłki z ostatniej godziny, natychmiastowe i z kolejki: skrót tokenu, czas, rodzaj — do limitu na token
+-- i sklejania powtórek. Wiersz powstaje jednym zapytaniem razem ze sprawdzeniem limitu, więc równoległe
+-- zapytania go nie przeskoczą. Starsze niż godzina kasuje cron.
+CREATE TABLE IF NOT EXISTS link_sends (
+  hash TEXT NOT NULL,
+  at   INTEGER NOT NULL,
+  kind TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS link_sends_hash ON link_sends (hash, at);
+CREATE INDEX IF NOT EXISTS link_sends_at ON link_sends (at);
+
+-- Rejestracje tokenów z ostatniej godziny: sam skrót adresu IP (SHA-256 z solą) i czas — do limitu
+-- rejestracji z jednego adresu. Bez tokenu, więc wiersza nie da się połączyć ze współpracą. Starsze
+-- niż godzina kasuje cron.
+CREATE TABLE IF NOT EXISTS link_registrations (
+  ip_hash TEXT NOT NULL,
+  at      INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS link_registrations_ip ON link_registrations (ip_hash, at);
+CREATE INDEX IF NOT EXISTS link_registrations_at ON link_registrations (at);

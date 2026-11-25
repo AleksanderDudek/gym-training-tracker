@@ -1,7 +1,8 @@
-import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { MESSAGE_MAX, formatPseudonym, parsePseudonym, shortPseudonym } from '@gymtracker/link';
 import { LOCALE, text } from '@gt/i18n';
+import { AddDemoClient, DemoChip } from '../components/Demo';
 import { AreaChips, Dialog, Failure, Link, Loading, ago, fmtDate, toast, useLoad } from '../components/ui';
 import {
   addGroup,
@@ -18,6 +19,7 @@ import {
 } from '../lib/aliases';
 import { listConnections, sendMessage, unreadCounts } from '../lib/data';
 import type { Connection } from '../lib/data';
+import { bulkPick } from '../lib/demo/state';
 import { L } from '../lib/labels';
 import { LOW_PCT, compareReviews, reasonText, review } from '../lib/review';
 import type { Review, ReviewData } from '../lib/review';
@@ -241,7 +243,9 @@ export function Clients() {
     selectedIds.current = selected.map((c) => c.id);
   }, [selected]);
   const visibleIds = tab === 'active' ? rows.map((c) => c.id) : [];
-  const allVisible = visibleIds.length > 0 && visibleIds.every((id) => picked.has(id));
+  // „Zaznacz wszystkich” pomija podopiecznego demo (zaznaczony ręcznie dostaje akcję grupową jak każdy).
+  const bulkIds = tab === 'active' ? bulkPick(user.id, rows).map((c) => c.id) : [];
+  const allVisible = bulkIds.length > 0 && bulkIds.every((id) => picked.has(id));
   const someVisible = visibleIds.some((id) => picked.has(id));
   const headBox = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -258,10 +262,8 @@ export function Clients() {
   const toggleVisible = () =>
     setPicked((p) => {
       const n = new Set(p);
-      for (const id of visibleIds) {
-        if (allVisible) n.delete(id);
-        else n.add(id);
-      }
+      if (allVisible) for (const id of visibleIds) n.delete(id);
+      else for (const id of bulkIds) n.add(id);
       return n;
     });
 
@@ -321,9 +323,12 @@ export function Clients() {
           <h1>{T.title}</h1>
           <p className="lead">{T.lead}</p>
         </div>
-        <Link to="/zaproszenia?nowe=1" className="btn blue">
-          {T.invite}
-        </Link>
+        <div className="row">
+          {data?.length ? <AddDemoClient connections={data} /> : null}
+          <Link to="/zaproszenia?nowe=1" className="btn blue">
+            {T.invite}
+          </Link>
+        </div>
       </div>
       {error ? <Failure error={error} retry={reload} /> : null}
       {!data && !error ? <Loading /> : null}
@@ -334,6 +339,7 @@ export function Clients() {
           <Link to="/zaproszenia?nowe=1" className="btn blue">
             {T.invite}
           </Link>
+          <AddDemoClient connections={data} explain />
         </section>
       ) : null}
       {data && data.length > 0 ? (
@@ -459,7 +465,8 @@ export function Clients() {
                             }}
                           >
                             {shortPseudonym(c.pseudonym)}
-                          </a>
+                          </a>{' '}
+                          <DemoChip c={c} />
                           <div className="sz-clients-areas" title={`${T.sees}: ${sees(c)}`}>
                             <AreaChips areas={c.areas} />
                             <span className="sr">{`${T.sees}: ${sees(c)}`}</span>
@@ -765,9 +772,10 @@ function MessageDialog({ recipients, who, onClose }: { recipients: Connection[];
         <strong className="small">{M.to(recipients.length)}</strong>
         <div className="sz-clients-to">
           {recipients.map((c) => (
-            <span key={c.id} className="chip">
-              {who(c)}
-            </span>
+            <Fragment key={c.id}>
+              <span className="chip">{who(c)}</span>
+              <DemoChip c={c} />
+            </Fragment>
           ))}
         </div>
       </div>

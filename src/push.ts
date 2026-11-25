@@ -1,6 +1,7 @@
 import { API_URL, apiConfigured } from './api';
 import { localDay, reminderItems, remindersOf } from './engine/reminders';
 import { hasDiet } from './food/dietFlag';
+import { linkState } from './link/store';
 import type { AppState } from './types';
 
 /**
@@ -61,16 +62,78 @@ export const isStandalone = (): boolean =>
   window.matchMedia?.('(display-mode: standalone)').matches ||
   (navigator as Navigator & { standalone?: boolean }).standalone === true;
 
-const hasPush = (): boolean => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+export const hasPush = (): boolean => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 
 async function registration(): Promise<ServiceWorkerRegistration | undefined> {
   // `getRegistration`, nie `ready`: bez service workera `ready` czeka w nieskończoność.
   return hasPush() ? navigator.serviceWorker.getRegistration() : undefined;
 }
 
-export async function currentPushState(): Promise<PushState> {
+/**
+ * Subskrypcja push jest jedna na urządzenie (jeden klucz VAPID) i dzielą ją przypomnienia z powiadomieniami
+ * od prowadzącego (`src/link/notify.ts`). Subskrypcja założona tylko dla prowadzącego zapisuje tu `off`:
+ * inaczej przypomnienia (domyślnie rano i wieczorem) włączyłyby się przy okazji. Bez wpisu — jak zawsze:
+ * subskrypcja znaczy włączone przypomnienia.
+ */
+const REMINDERS_KEY = 'gt-push-reminders';
+
+const remindersOff = (): boolean => {
+  try {
+    return localStorage.getItem(REMINDERS_KEY) === 'off';
+  } catch {
+    return false;
+  }
+};
+
+const setRemindersOff = (off: boolean) => {
+  try {
+    if (off) localStorage.setItem(REMINDERS_KEY, 'off');
+    else localStorage.removeItem(REMINDERS_KEY);
+  } catch {
+    /* Bez pamięci strony zostaje stary zwyczaj: subskrypcja to przypomnienia. */
+  }
+};
+
+/**
+ * Czy subskrypcję trzyma któraś trwająca współpraca z powiadomieniami. Wtedy wyłączenie przypomnień nie wypisuje
+ * jej z serwera (`/unsubscribe` kasuje tam subskrypcję razem z tokenami prowadzących i ich kolejką).
+ */
+const coachPushOn = (): boolean => linkState().connections.some((c) => c.status === 'active' && !!c.notify);
+
+/**
+ * Numer kolejnej subskrypcji urządzenia: rośnie przy każdej nowej (`subscribe`) i przy wypisaniu z serwera.
+ * Powiadomienia od prowadzącego pamiętają go przy rejestracji tokenu i po zmianie rejestrują się od nowa —
+ * także wtedy, gdy przeglądarka dała nowej subskrypcji ten sam adres.
+ */
+const EPOCH_KEY = 'gt-push-epoch';
+
+export const subscriptionEpoch = (): number => {
+  try {
+    const n = Number(localStorage.getItem(EPOCH_KEY));
+    return Number.isSafeInteger(n) && n > 0 ? n : 0;
+  } catch {
+    return 0;
+  }
+};
+
+const nextEpoch = (): void => {
+  try {
+    localStorage.setItem(EPOCH_KEY, String(subscriptionEpoch() + 1));
+  } catch {
+    /* Bez pamięci strony zostaje porównanie adresu subskrypcji. */
+  }
+};
+
+/** Nowa subskrypcja urządzenia — z numerem kolejnej. */
+const subscribeDevice = (reg: ServiceWorkerRegistration, key: Uint8Array<ArrayBuffer>): Promise<PushSubscription> => {
+  nextEpoch();
+  return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
+};
+
+/** Urządzenie: wszystko oprócz tego, czyje są powiadomienia (`subscribed` — jakakolwiek subskrypcja). */
+export async function pushEnv(): Promise<PushEnv> {
   const reg = pushConfigured() ? await registration().catch(() => undefined) : undefined;
-  return pushStateOf({
+  return {
     configured: pushConfigured(),
     ios: isIos(),
     standalone: isStandalone(),
@@ -78,7 +141,12 @@ export async function currentPushState(): Promise<PushState> {
     worker: !!reg,
     permission: 'Notification' in window ? Notification.permission : null,
     subscribed: !!(await reg?.pushManager.getSubscription().catch(() => null)),
-  });
+  };
+}
+
+export async function currentPushState(): Promise<PushState> {
+  const env = await pushEnv();
+  return pushStateOf({ ...env, subscribed: env.subscribed && !remindersOff() });
 }
 
 /** Klucz publiczny VAPID z base64url do bajtów, jak chce `pushManager.subscribe`. */
@@ -94,6 +162,34 @@ const sameKey = (a: ArrayBuffer | null | undefined, b: Uint8Array): boolean => {
   return x.every((v, i) => v === b[i]);
 };
 
+/**
+ * Subskrypcja push urządzenia dla powiadomień od prowadzącego — ta sama, którą mają przypomnienia. Bez
+ * `create` tylko odczyt (`null`, gdy jej nie ma albo założono ją starym kluczem serwera); z `create` zakłada
+ * ją, gdy trzeba. Zgoda przeglądarki musi już być. Nigdy nie rzuca.
+ */
+export async function deviceSubscription(create = false): Promise<PushSubscription | null> {
+  if (!pushConfigured() || !hasPush() || Notification.permission !== 'granted') return null;
+  try {
+    const reg = await registration();
+    if (!reg) return null;
+    const key = keyBytes(VAPID_KEY);
+    let sub = await reg.pushManager.getSubscription();
+    if (sub && !sameKey(sub.options.applicationServerKey, key)) {
+      if (!create) return null;
+      // Stary klucz serwera: od nowa. Przypomnienia zostają, jakie były — ich lista pójdzie z nową subskrypcją.
+      await sub.unsubscribe();
+      sub = null;
+    } else if (!sub) {
+      if (!create) return null;
+      // Nowa subskrypcja tylko dla prowadzącego: przypomnień nikt tu nie włączał.
+      setRemindersOff(true);
+    }
+    return sub ?? (await subscribeDevice(reg, key));
+  } catch {
+    return null;
+  }
+}
+
 export function deviceTimeZone(): string {
   try {
     return Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Warsaw';
@@ -104,6 +200,9 @@ export function deviceTimeZone(): string {
 
 /** Co i kiedy ostatnio poszło do serwera — żeby nie wysyłać tej samej listy przy każdym kliknięciu. */
 const SYNC_KEY = 'gt-push-sync';
+
+/** Wpis w `SYNC_KEY`: przypomnienia wyłączone, a pusta lista jeszcze nie doszła do serwera. */
+const CLEAR = 'clear';
 
 /** Krótki odcisk listy (djb2). Do porównania, nie do bezpieczeństwa. */
 const fingerprint = (s: string): string => {
@@ -136,6 +235,8 @@ const recalled = (): string | null => {
  */
 export async function syncReminders(state: AppState, force = false): Promise<boolean> {
   if (!pushConfigured() || !hasPush() || Notification.permission !== 'granted') return false;
+  // Subskrypcja tylko dla prowadzącego: listy nie ma — najwyżej pusta, której wyłączenie nie doszło.
+  if (remindersOff()) return recalled() === CLEAR ? clearList() : false;
   try {
     const sub = await (await registration())?.pushManager.getSubscription();
     if (!sub) return false;
@@ -170,6 +271,27 @@ export async function syncReminders(state: AppState, force = false): Promise<boo
   }
 }
 
+/** Pusta lista przypomnień dla subskrypcji, którą trzymają już tylko powiadomienia od prowadzącego. */
+async function clearList(): Promise<boolean> {
+  try {
+    const sub = await (await registration())?.pushManager.getSubscription();
+    if (!sub) {
+      remember(null);
+      return false;
+    }
+    const res = await fetch(`${API_URL}/subscribe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subscription: sub.toJSON(), tz: deviceTimeZone(), items: [] }),
+    });
+    remember(res.ok || res.status === 400 ? null : CLEAR);
+    return res.ok;
+  } catch {
+    remember(CLEAR);
+    return false;
+  }
+}
+
 /**
  * Włącza przypomnienia: pyta o zgodę (musi to zrobić stuknięcie — przeglądarki odrzucają
  * pytanie bez gestu), zakłada subskrypcję i od razu wysyła listę.
@@ -187,15 +309,39 @@ export async function enablePush(state: AppState): Promise<PushState> {
     await sub.unsubscribe();
     sub = null;
   }
-  sub ??= await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
+  sub ??= await subscribeDevice(reg, key);
+  setRemindersOff(false);
   await syncReminders(state, true);
   return currentPushState();
 }
 
+/**
+ * „Usuń wszystkie dane”: subskrypcja założona tylko dla prowadzących (przypomnienia wyłączone), której żadna
+ * współpraca już nie trzyma, znika z serwera i z przeglądarki — jak przy wyłączeniu przypomnień. Włączone
+ * przypomnienia zostają, jak dotąd.
+ */
+export async function dropCoachSubscription(): Promise<void> {
+  if (!remindersOff() || coachPushOn()) return;
+  try {
+    await disablePush();
+  } catch {
+    /* Bez service workera — nie ma czego wypisywać. */
+  }
+  setRemindersOff(false);
+}
+
 export async function disablePush(): Promise<PushState> {
+  let kept = false;
   try {
     const sub = await (await registration())?.pushManager.getSubscription();
-    if (sub) {
+    if (sub && coachPushOn()) {
+      // Subskrypcję trzymają też powiadomienia od prowadzącego: zostaje, a serwer dostaje pustą listę.
+      kept = true;
+      setRemindersOff(true);
+      remember(CLEAR);
+      await clearList();
+    } else if (sub) {
+      nextEpoch();
       await fetch(`${API_URL}/unsubscribe`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -204,7 +350,7 @@ export async function disablePush(): Promise<PushState> {
       await sub.unsubscribe();
     }
   } finally {
-    remember(null);
+    if (!kept) remember(null);
   }
   return currentPushState();
 }

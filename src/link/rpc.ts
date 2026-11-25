@@ -344,6 +344,11 @@ export async function clientBook(connection: string, token: string, slot: string
   return String(id).toLowerCase();
 }
 
+/** Token powiadomień tej współpracy (albo `null` — wyłączone). Odmowy: `bad_notify`, `ended`. */
+export async function clientSetNotify(connection: string, token: string, notify: string | null): Promise<void> {
+  await rpc('client_set_notify', { p_connection: connection, p_token: token, p_notify: notify });
+}
+
 export async function clientCancelBooking(connection: string, token: string, booking: string): Promise<void> {
   await rpc('client_cancel_booking', { p_connection: connection, p_token: token, p_booking: booking });
 }

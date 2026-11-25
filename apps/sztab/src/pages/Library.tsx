@@ -20,6 +20,7 @@ import { FormForm, emptyForm } from '../components/editors/FormEditor';
 import { HabitsForm, emptyHabits } from '../components/editors/HabitsEditor';
 import { MealsForm, emptyMeals } from '../components/editors/MealsEditor';
 import { ProgramForm, emptyProgram } from '../components/editors/ProgramEditor';
+import { AddExamples } from '../components/Demo';
 import { LaunchProgramDialog } from '../components/LaunchProgram';
 import { PrintLayer } from '../components/Print';
 import { Failure, Link, Loading, fmtDate, toast, useLoad } from '../components/ui';
@@ -118,6 +119,7 @@ export function Library() {
           <p className="lead">{T.lead}</p>
         </div>
         <div className="row">
+          <AddExamples count={data?.length} onDone={reload} />
           {LIBRARY_KINDS.map((k) => (
             <Link key={k} to={`/biblioteka/nowy/${k}`} className={`btn ${k === 'workout' ? 'blue' : 'ghost'} small`}>
               + {L.kind[k]}
@@ -131,9 +133,12 @@ export function Library() {
         <section className="card empty">
           <h3>{T.emptyTitle}</h3>
           <p>{T.emptyText}</p>
-          <Link to="/biblioteka/nowy/workout" className="btn blue">
-            + {L.kind.workout}
-          </Link>
+          <div className="row" style={{ justifyContent: 'center' }}>
+            <AddExamples count={0} onDone={reload} primary />
+            <Link to="/biblioteka/nowy/workout" className="btn ghost">
+              + {L.kind.workout}
+            </Link>
+          </div>
         </section>
       ) : null}
       {data?.length ? (

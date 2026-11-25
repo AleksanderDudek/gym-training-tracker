@@ -9,4 +9,6 @@ interface ImportMetaEnv {
   readonly VITE_TRACKER_URL?: string;
   /** `1` — przycisk „Zaloguj przez Google” (wymaga klienta OAuth w projekcie Supabase). */
   readonly VITE_SZTAB_GOOGLE?: string;
+  /** Serwer aplikacji GYM TRACKERa (Worker) — powiadomienia push do podopiecznych. Bez niego Sztab ich nie wysyła. */
+  readonly VITE_TRACKER_API_URL?: string;
 }

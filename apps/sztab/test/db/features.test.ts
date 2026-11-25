@@ -2,6 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   AAD,
+  cleanPublicJwk,
   fingerprint,
   generateIdentity,
   linkKey,
@@ -9,11 +10,13 @@ import {
   newRecoveryCode,
   newToken,
   openJson,
+  parseNotifySeal,
   pseudonymFor,
   sealJson,
   sealPrivate,
 } from '@gymtracker/link';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { NOTIFY_COLUMNS } from '../../src/lib/notify';
 import { anon, coachClient } from './env';
 
 /**
@@ -319,5 +322,46 @@ describe('Poprawki uprawnień i wycieków', () => {
       anon().rpc('client_photo_put', { p_connection: b.id, p_token: b.token, p_id: id, p_ciphertext: 'v1.b2' }),
     ]);
     expect((await coach.client.from('photos').select('connection_id, ciphertext').eq('id', id).single()).data).toEqual({ connection_id: a.id, ciphertext: 'v1.a' });
+  });
+});
+
+describe('Token powiadomień', () => {
+  it('ustawia go tylko telefon, widzi prowadzący tej współpracy, koniec współpracy go kasuje', async () => {
+    const coach = await coachWithProfile();
+    const stranger = await coachWithProfile();
+    const conn = await connect(coach);
+    // Zapieczętowany token (szyfrogram kluczem współpracy) — baza sprawdza tylko kształt.
+    const tok = 'v1.' + 'A'.repeat(80);
+    expect((await anon().rpc('client_set_notify', { p_connection: conn.id, p_token: conn.token, p_notify: 'zły' })).error?.message).toBe('bad_notify');
+    expect((await anon().rpc('client_set_notify', { p_connection: conn.id, p_token: newToken(), p_notify: tok })).error?.message).toBe('bad_token');
+    expect((await anon().rpc('client_set_notify', { p_connection: conn.id, p_token: conn.token, p_notify: tok })).error).toBeNull();
+    expect((await coach.client.from('connections').select('notify_token').eq('id', conn.id).single()).data!.notify_token).toBe(tok);
+    expect((await stranger.client.from('connections').select('notify_token').eq('id', conn.id)).data).toEqual([]);
+    // Prowadzący nie podmieni tokenu (brak uprawnień do zmiany współpracy).
+    const swap = await coach.client.from('connections').update({ notify_token: 'v1.' + 'B'.repeat(80) }).eq('id', conn.id).select('id');
+    expect(swap.error !== null || (swap.data ?? []).length === 0).toBe(true);
+    expect((await coach.client.rpc('coach_end_connection', { p_connection: conn.id })).error).toBeNull();
+    expect((await coach.client.from('connections').select('notify_token').eq('id', conn.id).single()).data!.notify_token).toBeNull();
+  });
+
+  it('pieczęć telefonu otwiera kluczem prowadzącego to, co Sztab czyta przy wysyłce (`NOTIFY_COLUMNS`)', async () => {
+    const coach = await coachWithProfile();
+    const conn = await connect(coach);
+    const token = newToken();
+    // Telefon: klucz współpracy ze swojej strony, AAD `notify|<współpraca>`.
+    const sealed = await sealJson(await linkKey(conn.phone.privateKey, coach.me.publicJwk, conn.inviteId), AAD.notify(conn.id), { v: 1, token });
+    expect((await anon().rpc('client_set_notify', { p_connection: conn.id, p_token: conn.token, p_notify: sealed })).error).toBeNull();
+    // Sztab: jeden wiersz tymi kolumnami (RLS prowadzącego), klucz z sejfu.
+    const row = (await coach.client.from('connections').select(NOTIFY_COLUMNS).eq('id', conn.id).single()).data as {
+      notify_token: string;
+      invite_id: string;
+      client_public_key: unknown;
+    };
+    const key = await linkKey(coach.me.privateKey, cleanPublicJwk(row.client_public_key)!, row.invite_id);
+    expect(parseNotifySeal(await openJson(key, AAD.notify(conn.id), row.notify_token))).toBe(token);
+    // Ta sama pieczęć podłożona pod inną współpracę tego prowadzącego się nie otwiera.
+    const other = await connect(coach);
+    const otherKey = await linkKey(coach.me.privateKey, other.phone.publicJwk, other.inviteId);
+    expect(await openJson(otherKey, AAD.notify(other.id), row.notify_token)).toBeNull();
   });
 });

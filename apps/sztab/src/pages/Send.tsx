@@ -5,6 +5,7 @@ import { BUILTIN } from '@gt/data/exercises';
 import { GOAL_PLANS, PLANS } from '@gt/data/plans';
 import { text } from '@gt/i18n';
 import type { PlanTemplate, Workout } from '@gt/types';
+import { DemoChip } from '../components/Demo';
 import { bodyReady } from '../components/Editors';
 import { Dialog, Loading, toast, useLoad } from '../components/ui';
 import { loadAliases } from '../lib/aliases';
@@ -12,6 +13,7 @@ import { passesCheck, toAssignment } from '../lib/assign';
 import { listLibrary, sendAssignment } from '../lib/data';
 import type { Connection, LibraryBody } from '../lib/data';
 import { L } from '../lib/labels';
+import { canNotify } from '../lib/notify';
 import {
   DEFAULT_TIME,
   MAX_AHEAD_DAYS,
@@ -50,6 +52,15 @@ const T = text({
     planMany: (n: number) => `Zaplanuj dla ${n}`,
     plan: 'Zaplanuj',
     sent: 'Wysłano. Podopieczny zobaczy to przy następnym otwarciu aplikacji.',
+    sentNotified: 'Wysłano. Podopieczny dostanie powiadomienie.',
+    notifyYes: 'Podopieczny dostanie powiadomienie na telefon (bez treści).',
+    notifyNo: 'Bez powiadomienia na telefon — podopieczny zobaczy to przy następnym otwarciu aplikacji.',
+    notifyMany: (n: number, total: number) =>
+      n === total
+        ? 'Wszyscy odbiorcy dostaną powiadomienie na telefon (bez treści).'
+        : n === 0
+          ? 'Bez powiadomień na telefon — odbiorcy zobaczą to przy następnym otwarciu aplikacji.'
+          : `Powiadomienie na telefon: ${n} z ${total}. Pozostali zobaczą to przy następnym otwarciu aplikacji.`,
     scheduled: (w: string) => `Zaplanowano na ${w}. Wcześniej podopieczny tego nie zobaczy.`,
     invalid: 'Ta treść nie przejdzie sprawdzenia w aplikacji podopiecznego — uzupełnij ją.',
     failed: 'Nie udało się wysłać.',
@@ -107,6 +118,15 @@ const T = text({
     planMany: (n: number) => `Schedule for ${n}`,
     plan: 'Schedule',
     sent: 'Sent. The client sees it next time they open the app.',
+    sentNotified: 'Sent. The client gets a notification.',
+    notifyYes: 'The client gets a phone notification (without the content).',
+    notifyNo: 'No phone notification — the client sees it next time they open the app.',
+    notifyMany: (n: number, total: number) =>
+      n === total
+        ? 'All recipients get a phone notification (without the content).'
+        : n === 0
+          ? 'No phone notifications — recipients see it next time they open the app.'
+          : `Phone notification: ${n} of ${total}. The rest see it next time they open the app.`,
     scheduled: (w: string) => `Scheduled for ${w}. The client will not see it before then.`,
     invalid: 'This would not pass the check in the client’s app — please complete it.',
     failed: 'Could not send.',
@@ -308,7 +328,7 @@ export function SendDialog({
       try {
         await sendAssignment(key, coach, connection, area, a, { visibleFrom });
         forgetReview(key, connection.id);
-        toast(visibleFrom ? T.scheduled(fmtWhen(visibleFrom)) : T.sent);
+        toast(visibleFrom ? T.scheduled(fmtWhen(visibleFrom)) : canNotify(connection) ? T.sentNotified : T.sent);
         onSent();
         onClose();
       } catch {
@@ -369,12 +389,22 @@ export function SendDialog({
   const issueText = (x: DateIssue) =>
     x.kind === 'expired' ? T.expired(fmtCalendarDay(x.until), T.release(releaseDay)) : T.started(fmtCalendarDay(x.start), T.release(releaseDay), x.dayIndex + 1);
 
+  // Powiadomienie na telefon: tylko kto je włączył (i gdy ten Sztab zna serwer aplikacji).
+  const notifyLine = multi
+    ? plan.send.length
+      ? T.notifyMany(plan.send.filter((r) => canNotify(r.c)).length, plan.send.length)
+      : null
+    : canNotify(connection)
+      ? T.notifyYes
+      : T.notifyNo;
+
   const gtOptions: { id: string; name: string }[] = kind === 'workout' ? BUILTIN : kind === 'plan' ? BUILTIN_PLANS : [];
   const libraryW: Workout[] = libraryWorkouts(lib.data ?? []);
   const who = (c: Connection) => (
     <span className="sz-sched-who">
       <span className="pid">{shortPseudonym(c.pseudonym)}</span>
       {aliases[c.pseudonym] ? <span className="alias">{aliases[c.pseudonym]}</span> : null}
+      {multi ? <DemoChip c={c} /> : null}
     </span>
   );
 
@@ -559,6 +589,7 @@ export function SendDialog({
       />
       {issue ? <div className="note warn small">{issueText(issue)}</div> : null}
       <p className="small soft">{multi ? T.encryptedMany : T.encrypted}</p>
+      {notifyLine ? <p className="small soft">{notifyLine}</p> : null}
       {err ? <p className="err" role="alert">{err}</p> : null}
       {progress ? (
         <div className="sz-sched-progress" role="status" aria-live="polite">

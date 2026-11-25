@@ -518,8 +518,8 @@ dla prowadzących — **GYM TRACKER Sztab** (`apps/sztab`). Podopieczny nadal ni
 zaproszenia, przyjmuje go w GYM TRACKERze i od tej chwili telefon wysyła prowadzącemu zaszyfrowaną paczkę
 tego, co podopieczny pokazuje, a odbiera od niego zaszyfrowane zalecenia: plan, trening, cele, badania do
 zrobienia, notatkę z listą. Wejścia: karta „Współpraca z prowadzącym” w Profilu i w Ustawieniach, a na
-ekranie Dziś jedna linia — tylko wtedy, gdy przyszło coś nowego albo prowadzący zakończył współpracę.
-Bez nowej zakładki: należy do Profilu, jak historia ćwiczeń.
+górze ekranu Dziś karta „Od prowadzącego” — tylko wtedy, gdy coś czeka albo prowadzący zakończył
+współpracę. Bez nowej zakładki: należy do Profilu, jak historia ćwiczeń.
 
 **Bez Sztabu w buildzie nie ma jej wcale.** Adres bazy (`VITE_SZTAB_URL`, w GitHubie zmienna `SZTAB_URL`;
 lokalnie np. `http://127.0.0.1:54321`) i jej klucz publiczny (`VITE_SZTAB_ANON_KEY` / `SZTAB_ANON_KEY`)
@@ -572,9 +572,27 @@ Trzy rodzaje zaleceń żyją dłużej niż jedno przeczytanie:
   na miejscu, z listą zakupów ze składników), makro od prowadzącego i odhaczaniem „Zjedzone”.
 
 Odpowiedzi i odhaczenia jadą w paczce (część `coaching`, zawsze — to odpowiedzi na zalecenia tego samego
-prowadzącego) 2,5 s po zmianie, a nie po kwadransie. Ekran Dziś pokazuje jedną linię, gdy coś czeka:
-nowa wiadomość, formularz, nieodhaczone nawyki albo posiłki, wizyta w ciągu doby. Zalecenie rodzaju
-nowszego niż wersja aplikacji to „zaktualizuj aplikację”, a nie „zepsute”.
+prowadzącego) 2,5 s po zmianie, a nie po kwadransie. Zalecenie rodzaju nowszego niż wersja aplikacji to
+„zaktualizuj aplikację”, a nie „zepsute”.
+
+**Prowadzący na pierwszym planie** (spec `docs/superpowers/specs/2026-11-25-sztab-powiadomienia-design.md`).
+Przy trwającej współpracy to, co od prowadzącego, stoi tam, gdzie i tak się patrzy:
+
+- **Dziś** — na samej górze karta „Od prowadzącego” (jedna na prowadzącego, nagłówek prowadzi do
+  współpracy), tylko gdy coś czeka, najważniejsze pierwsze: nowe wiadomości, formularz na dziś, dzisiejsze
+  nawyki z odhaczaniem na miejscu, postęp jadłospisu, wizyta w ciągu doby, nowe zalecenia („Uruchom plan
+  od prowadzącego”), plan od prowadzącego czekający na start. Karta treningu podpisuje plan od
+  prowadzącego jego nazwiskiem. Cicha linia „Włącz powiadomienia od prowadzącego” — tylko gdy telefon je
+  obsługuje, a są wyłączone (z „Nie teraz”). `CoachToday.tsx`, w głównej paczce; odhaczenie wczytuje
+  `sync.ts` dopiero na żądanie.
+- **Plany i treningi** — plany i treningi od prowadzącego (`coach-…`) przypięte na górze list pod „Od
+  prowadzącego — <prowadzący>”; po końcu współpracy wracają między własne.
+- **Cele** — „Ustaw jako moje cele” na karcie celów: najpierw co się zmieni, potem zapis do profilu diety
+  tą samą drogą co „Ustaw cel ręcznie” (minimum przemiany podstawowej, wstrzymane sprawdzenie
+  poniedziałkowe; `food/diet/coach.ts`) i waga docelowa, gdy pasuje do kierunku celu. Białko, kroki,
+  treningi w tygodniu i tempo — do wiadomości (aplikacja nie ma na nie osobnych ustawień).
+- **Dziennik jedzenia** — dziś na górze „Jadłospis od prowadzącego”: posiłki dnia z odhaczaniem i „Dodaj”,
+  które zapisuje posiłek z kaloriami jako szybki wpis (nazwa, kcal, makro).
 
 **Wiadomości** — rozmowa z prowadzącym szyfrowana jak paczka (`message|<współpraca>|<numer>`), z kolejką
 bez sieci („czeka na sieć”), „Przeczytane” i dołączeniem treningu z dziennika. Telefon pyta o nowe przy
