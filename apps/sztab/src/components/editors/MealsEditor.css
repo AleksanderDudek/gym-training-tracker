@@ -1,0 +1,22 @@
+/* Kreator jadłospisu. Prefiks sz-meals-. */
+.sz-meals-strong { font-weight: 600; font-size: 14px; }
+.sz-meals-days, .sz-meals-meals { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+.sz-meals-day { border: 1px solid var(--line); border-radius: var(--r); padding: 12px; display: grid; gap: 10px; background: var(--surface); }
+.sz-meals-dayhead { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+.sz-meals-daynum { font: 600 16px var(--display); text-transform: uppercase; letter-spacing: 0.03em; min-width: 72px; }
+.sz-meals-daylabel { flex: 1 1 220px; }
+.sz-meals-tools { display: flex; flex-wrap: wrap; gap: 4px; margin-left: auto; }
+.sz-meals-tools button { min-width: 40px; min-height: 40px; padding: 0 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: var(--r); cursor: pointer; }
+.sz-meals-tools button:disabled { opacity: 0.45; cursor: not-allowed; }
+.sz-meals-meal { background: var(--surface-2); border-radius: var(--r); padding: 10px; display: grid; gap: 8px; }
+.sz-meals-meal .sz-meals-tools button { background: var(--surface); }
+.sz-meals-mealhead { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: end; }
+.sz-meals-slot { flex: 0 1 180px; }
+.sz-meals-name { flex: 1 1 280px; min-width: 0; position: relative; }
+.sz-meals-meal .field > span { font-size: 13px; font-weight: 500; color: var(--ink-soft); }
+.sz-meals-suggest { position: absolute; left: 0; right: 0; z-index: 5; box-shadow: 0 8px 22px rgba(var(--shade), 0.18); }
+.sz-meals-recipe .chip { white-space: normal; }
+.sz-meals-nums { display: grid; grid-template-columns: repeat(4, minmax(72px, 110px)) minmax(160px, 1fr); gap: 8px; }
+@media (max-width: 720px) { .sz-meals-nums { grid-template-columns: repeat(2, minmax(0, 1fr)); } .sz-meals-note { grid-column: 1 / -1; } }
+.sz-meals-total { margin: 0; }
+.sz-meals-problems ul { margin: 6px 0 0; padding-left: 20px; }
