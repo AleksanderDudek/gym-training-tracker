@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { KINDS_BY_AREA, shortPseudonym } from '@gymtracker/link';
-import type { Area, AssignmentKind } from '@gymtracker/link';
+import type { Area, AssignmentBody, AssignmentKind } from '@gymtracker/link';
 import { BUILTIN } from '@gt/data/exercises';
 import { GOAL_PLANS, PLANS } from '@gt/data/plans';
 import { text } from '@gt/i18n';
@@ -12,8 +12,21 @@ import { passesCheck, toAssignment } from '../lib/assign';
 import { listLibrary, sendAssignment } from '../lib/data';
 import type { Connection, LibraryBody } from '../lib/data';
 import { L } from '../lib/labels';
-import { DEFAULT_TIME, MAX_AHEAD_DAYS, addLocalDays, fmtWhen, planRecipients, scheduleAt, today, tomorrow } from '../lib/program';
-import type { ScheduleError } from '../lib/program';
+import {
+  DEFAULT_TIME,
+  MAX_AHEAD_DAYS,
+  addLocalDays,
+  batchAreas,
+  dateIssue,
+  fmtCalendarDay,
+  fmtWhen,
+  planRecipients,
+  scheduleAt,
+  today,
+  tomorrow,
+} from '../lib/program';
+import type { DateIssue, ScheduleError } from '../lib/program';
+import { forgetReview } from '../lib/reviewLoad';
 import { useReady } from '../session';
 import { BodyForm, emptyBody, libraryWorkouts } from './Library';
 import '../components/schedule.css';
@@ -68,6 +81,15 @@ const T = text({
     skipped: 'Pominięto',
     failedList: 'Nie udało się',
     close: 'Zamknij',
+    retry: 'Ponów nieudane',
+    wait: 'Okno zamknie się dopiero po wysyłce.',
+    batchArea: 'Obszar dla podopiecznych z kilkoma obszarami',
+    batchAreaHint: 'Kto nie ma tego obszaru, dostanie to w swoim pierwszym pasującym — obszar każdego widać na liście odbiorców.',
+    release: (day: string) => (day === today() ? 'dziś' : fmtCalendarDay(day)),
+    expired: (until: string, when: string) =>
+      `Ta lista nawyków kończy się ${until}, a podopieczny dostanie ją ${when} — żaden punkt już wtedy nie obowiązuje. Zmień datę końca albo wyślij wcześniej.`,
+    started: (start: string, when: string, n: number) =>
+      `Jadłospis ma stały start ${start}. Podopieczny dostanie go ${when} i zacznie od dnia ${n} cyklu, nie od pierwszego. Jeśli ma zacząć od początku, usuń datę startu.`,
   },
   en: {
     title: 'Send to client',
@@ -116,6 +138,15 @@ const T = text({
     skipped: 'Skipped',
     failedList: 'Failed',
     close: 'Close',
+    retry: 'Retry failed',
+    wait: 'The window closes only after sending.',
+    batchArea: 'Area for clients with several areas',
+    batchAreaHint: 'Clients without this area get it in their first matching one — each client’s area is shown in the recipient list.',
+    release: (day: string) => (day === today() ? 'today' : fmtCalendarDay(day)),
+    expired: (until: string, when: string) =>
+      `This habit list ends on ${until}, but the client gets it ${when} — no item applies by then. Change the end date or send it earlier.`,
+    started: (start: string, when: string, n: number) =>
+      `The meal plan has a fixed start on ${start}. The client gets it ${when} and begins on cycle day ${n}, not day 1. To start from the beginning, remove the start date.`,
   },
 });
 
@@ -125,10 +156,13 @@ type Outcome = { c: Connection; why: string };
 
 interface Result {
   sent: Connection[];
-  failed: Outcome[];
+  /** Nieudani z obszarem — „Ponów nieudane” wysyła tylko do nich. */
+  failed: (Outcome & { area: Area })[];
   skipped: Outcome[];
   total: number;
   at: Date | null;
+  /** Treść, która poszła — ta sama idzie przy ponowieniu. */
+  body: AssignmentBody;
 }
 
 /** „Kiedy”: teraz albo w wybranym dniu o godzinie (czas przeglądarki prowadzącego). */
@@ -220,11 +254,19 @@ export function SendDialog({
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [result, setResult] = useState<Result | null>(null);
+  const [prefer, setPrefer] = useState<Area | null>(null);
   const aliases = useMemo(() => (multi ? loadAliases(user.id) : {}), [multi, user.id]);
+  // W trakcie wysyłki okno się nie zamyka (Escape, tło, ×): pętla i podsumowanie zostają.
+  const close = useCallback(() => {
+    if (!busy) onClose();
+  }, [busy, onClose]);
 
   const items = (lib.data ?? []).filter((i) => i.kind === kind);
   const hasGt = kind === 'workout' || kind === 'plan';
-  const plan = useMemo(() => planRecipients(targets, kind), [targets, kind]);
+  // Obszar wybierany raz dla całej partii — tylko gdy ktoś może dostać ten rodzaj w kilku obszarach.
+  const areaChoices = useMemo(() => (multi ? batchAreas(targets, [kind]) : []), [multi, targets, kind]);
+  const batchArea = prefer && areaChoices.includes(prefer) ? prefer : (areaChoices[0] ?? null);
+  const plan = useMemo(() => planRecipients(targets, kind, batchArea), [targets, kind, batchArea]);
   const whyKind = (c: Connection) => T.why.kind(L.kind[kind], c.areas.map((a) => L.area[a]).join(', '));
   const skipWhy = (s: (typeof plan.skip)[number]) => (s.reason === 'ended' ? T.why.ended : whyKind(s.c));
 
@@ -265,6 +307,7 @@ export function SendDialog({
       setErr(null);
       try {
         await sendAssignment(key, coach, connection, area, a, { visibleFrom });
+        forgetReview(key, connection.id);
         toast(visibleFrom ? T.scheduled(fmtWhen(visibleFrom)) : T.sent);
         onSent();
         onClose();
@@ -284,25 +327,47 @@ export function SendDialog({
       return false;
     });
     if (!go.length) return setErr(plan.send.length ? T.invalid : T.nobody);
-    setBusy(true);
     setErr(null);
-    setProgress({ done: 0, total: go.length });
-    const sent: Connection[] = [];
-    const failed: Outcome[] = [];
-    for (const r of go) {
+    const out: Result = { sent: [], failed: [], skipped, total: plan.send.length + plan.skip.length, at: visibleFrom, body: a };
+    await sendTo(go, a, visibleFrom, out);
+    setResult({ ...out });
+  };
+
+  /** Po kolei, każdy w swoim obszarze i swoim kluczem; nieudani trafiają do `out.failed`. */
+  const sendTo = async (list: { c: Connection; area: Area }[], a: AssignmentBody, visibleFrom: Date | null, out: Result) => {
+    setBusy(true);
+    setProgress({ done: 0, total: list.length });
+    let done = 0;
+    for (const r of list) {
       try {
         await sendAssignment(key, coach, r.c, r.area, a, { visibleFrom });
-        sent.push(r.c);
+        out.sent.push(r.c);
+        forgetReview(key, r.c.id);
       } catch {
-        failed.push({ c: r.c, why: T.why.failed });
+        out.failed.push({ c: r.c, area: r.area, why: T.why.failed });
       }
-      setProgress({ done: sent.length + failed.length, total: go.length });
+      setProgress({ done: ++done, total: list.length });
     }
     setBusy(false);
     setProgress(null);
-    setResult({ sent, failed, skipped, total: plan.send.length + plan.skip.length, at: visibleFrom });
-    if (sent.length) onSent();
+    if (out.sent.length) onSent();
   };
+
+  /** „Ponów nieudane”: tylko do tych, do których nie poszło — reszta już ma. */
+  const retry = async () => {
+    if (!result) return;
+    const again = result.failed.map((f) => ({ c: f.c, area: f.area }));
+    const out: Result = { ...result, sent: [...result.sent], failed: [] };
+    setResult(out);
+    await sendTo(again, result.body, result.at, out);
+    setResult({ ...out });
+  };
+
+  // Stała data w treści (koniec nawyków, start jadłospisu), która w dniu wypuszczenia już minęła.
+  const releaseDay = sched.when === 'later' ? sched.day : today();
+  const issue = dateIssue(body(), releaseDay);
+  const issueText = (x: DateIssue) =>
+    x.kind === 'expired' ? T.expired(fmtCalendarDay(x.until), T.release(releaseDay)) : T.started(fmtCalendarDay(x.start), T.release(releaseDay), x.dayIndex + 1);
 
   const gtOptions: { id: string; name: string }[] = kind === 'workout' ? BUILTIN : kind === 'plan' ? BUILTIN_PLANS : [];
   const libraryW: Workout[] = libraryWorkouts(lib.data ?? []);
@@ -315,7 +380,7 @@ export function SendDialog({
 
   if (result) {
     return (
-      <Dialog title={T.titleMany(result.total)} onClose={onClose}>
+      <Dialog title={T.titleMany(result.total)} onClose={close}>
         <div className="sz-sched-summary" role="status">
           <strong>{result.at ? T.summaryLater(result.sent.length, result.total, fmtWhen(result.at)) : T.summary(result.sent.length, result.total)}</strong>
           {result.skipped.length ? (
@@ -343,15 +408,28 @@ export function SendDialog({
             </div>
           ) : null}
         </div>
-        <button type="button" className="btn blue" onClick={onClose}>
-          {T.close}
-        </button>
+        {progress ? (
+          <div className="sz-sched-progress" role="status" aria-live="polite">
+            <span>{T.progress(progress.done, progress.total)}</span>
+            <progress max={progress.total} value={progress.done} />
+          </div>
+        ) : null}
+        <div className="row">
+          {result.failed.length ? (
+            <button type="button" className="btn blue" disabled={busy} onClick={() => void retry()}>
+              {T.retry}
+            </button>
+          ) : null}
+          <button type="button" className={`btn ${result.failed.length ? 'ghost' : 'blue'}`} disabled={busy} onClick={onClose}>
+            {T.close}
+          </button>
+        </div>
       </Dialog>
     );
   }
 
   return (
-    <Dialog title={multi ? T.titleMany(targets.length) : T.title} onClose={onClose} wide={source === 'fresh'}>
+    <Dialog title={multi ? T.titleMany(targets.length) : T.title} onClose={close} wide={source === 'fresh'}>
       <div className="stack">
         <span style={{ fontWeight: 600 }}>{T.kind}</span>
         <div className="row" role="radiogroup" aria-label={T.kind}>
@@ -372,6 +450,19 @@ export function SendDialog({
               </option>
             ))}
           </select>
+        </label>
+      ) : null}
+      {multi && areaChoices.length > 1 ? (
+        <label className="field">
+          <span>{T.batchArea}</span>
+          <select id="send-batch-area" value={batchArea ?? ''} onChange={(e) => setPrefer(e.target.value as Area)}>
+            {areaChoices.map((a) => (
+              <option key={a} value={a}>
+                {L.area[a]}
+              </option>
+            ))}
+          </select>
+          <span className="small soft">{T.batchAreaHint}</span>
         </label>
       ) : null}
       {multi ? (
@@ -466,12 +557,14 @@ export function SendDialog({
           setErr(null);
         }}
       />
+      {issue ? <div className="note warn small">{issueText(issue)}</div> : null}
       <p className="small soft">{multi ? T.encryptedMany : T.encrypted}</p>
       {err ? <p className="err" role="alert">{err}</p> : null}
       {progress ? (
         <div className="sz-sched-progress" role="status" aria-live="polite">
           <span>{T.progress(progress.done, progress.total)}</span>
           <progress max={progress.total} value={progress.done} />
+          <span className="small soft">{T.wait}</span>
         </div>
       ) : null}
       <button type="button" className="btn blue" disabled={busy || (multi && !plan.send.length)} onClick={() => void send()}>

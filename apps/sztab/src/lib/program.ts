@@ -1,7 +1,7 @@
-import { KINDS_BY_AREA } from '@gymtracker/link';
+import { AREAS, KINDS_BY_AREA, daysBetween } from '@gymtracker/link';
 import type { Area, AssignmentKind } from '@gymtracker/link';
 import { LOCALE } from '@gt/i18n';
-import type { Connection, LibraryItem, LibraryKind, ProgramStep } from './data';
+import type { Connection, LibraryBody, LibraryItem, LibraryKind, ProgramStep } from './data';
 
 /**
  * Harmonogram i programy — sama arytmetyka dat, bez sieci i bez Reacta.
@@ -15,11 +15,10 @@ import type { Connection, LibraryItem, LibraryKind, ProgramStep } from './data';
 export const MAX_DAY = 364;
 /** Kroków w programie najwyżej tyle: telefon pobiera 200 ostatnich zaleceń, program nie może ich wypchnąć. */
 export const MAX_STEPS = 120;
-/** Zaplanować można najwyżej tyle dni naprzód. */
+/** Zaplanować można najwyżej tyle dni kalendarza naprzód (do tego dnia włącznie, o dowolnej godzinie). */
 export const MAX_AHEAD_DAYS = 365;
 export const DEFAULT_TIME = '07:00';
 
-const DAY_MS = 86_400_000;
 const TIME = /^([01]\d|2[0-3]):([0-5]\d)$/;
 const DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
 
@@ -155,12 +154,15 @@ export function programSummary(steps: readonly ProgramStep[], items: readonly Li
 
 export type ScheduleError = 'invalid' | 'past' | 'far';
 
-/** Chwila „pokaż od” z pól daty i godziny: w przyszłości i najwyżej `MAX_AHEAD_DAYS` naprzód. */
+/**
+ * Chwila „pokaż od” z pól daty i godziny: w przyszłości i najwyżej `MAX_AHEAD_DAYS` dni kalendarza
+ * naprzód — tyle samo, ile pozwala pole daty (`max`), o każdej godzinie tego dnia.
+ */
 export function scheduleAt(day: string, time: string, now: number = Date.now()): { at: Date } | { error: ScheduleError } {
   const at = stepAt(day, 0, time);
   if (!at) return { error: 'invalid' };
   if (at.getTime() <= now) return { error: 'past' };
-  if (at.getTime() - now > MAX_AHEAD_DAYS * DAY_MS) return { error: 'far' };
+  if (day > addLocalDays(today(now), MAX_AHEAD_DAYS)) return { error: 'far' };
   return { at };
 }
 
@@ -191,16 +193,47 @@ export function datedSteps(steps: readonly ProgramStep[], start: string, now: nu
 
 /* ── Odbiorcy ────────────────────────────────────────────────────────────────────── */
 
-/** Obszar, w którym ten podopieczny może dostać ten rodzaj: pierwszy z jego obszarów, który na to pozwala. */
-export const areaFor = (c: Pick<Connection, 'areas'>, kind: AssignmentKind): Area | null =>
-  c.areas.find((a) => KINDS_BY_AREA[a].includes(kind)) ?? null;
+/** Obszary tego podopiecznego, w których może dostać ten rodzaj (w kolejności jego obszarów). */
+export const areasFor = (c: Pick<Connection, 'areas'>, kind: AssignmentKind): Area[] => c.areas.filter((a) => KINDS_BY_AREA[a].includes(kind));
+
+/**
+ * Obszar, w którym ten podopieczny dostanie ten rodzaj: `prefer`, jeśli go ma i rodzaj tam pasuje,
+ * a inaczej pierwszy z jego obszarów, który na to pozwala.
+ */
+export function areaFor(c: Pick<Connection, 'areas'>, kind: AssignmentKind, prefer: Area | null = null): Area | null {
+  const ok = areasFor(c, kind);
+  return prefer && ok.includes(prefer) ? prefer : (ok[0] ?? null);
+}
+
+/**
+ * Wysyłka do wielu: obszary do wyboru raz dla całej partii — tylko gdy ktoś z odbiorców może dostać
+ * któryś z rodzajów w dwóch obszarach albo więcej (inaczej wybór niczego nie zmienia). Kolejność jak `AREAS`.
+ */
+export function batchAreas(list: readonly Pick<Connection, 'areas' | 'status'>[], kinds: readonly AssignmentKind[]): Area[] {
+  const out = new Set<Area>();
+  for (const c of list) {
+    if (c.status !== 'active') continue;
+    for (const k of kinds) {
+      const ok = areasFor(c, k);
+      if (ok.length > 1) ok.forEach((a) => out.add(a));
+    }
+  }
+  return AREAS.filter((a) => out.has(a));
+}
 
 export type SkipReason = 'ended' | 'kind';
 
 type Recipient = Pick<Connection, 'id' | 'areas' | 'status'>;
 
-/** Wysyłka do wielu: komu i w jakim obszarze, a kogo pominąć i dlaczego. Każdy raz, w kolejności z listy. */
-export function planRecipients<C extends Recipient>(list: readonly C[], kind: AssignmentKind): { send: { c: C; area: Area }[]; skip: { c: C; reason: SkipReason }[] } {
+/**
+ * Wysyłka do wielu: komu i w jakim obszarze, a kogo pominąć i dlaczego. Każdy raz, w kolejności z listy.
+ * `prefer` — obszar wybrany raz dla całej partii (gdy podopieczny go nie ma — jego pierwszy pasujący).
+ */
+export function planRecipients<C extends Recipient>(
+  list: readonly C[],
+  kind: AssignmentKind,
+  prefer: Area | null = null,
+): { send: { c: C; area: Area }[]; skip: { c: C; reason: SkipReason }[] } {
   const send: { c: C; area: Area }[] = [];
   const skip: { c: C; reason: SkipReason }[] = [];
   const seen = new Set<string>();
@@ -211,7 +244,7 @@ export function planRecipients<C extends Recipient>(list: readonly C[], kind: As
       skip.push({ c, reason: 'ended' });
       continue;
     }
-    const area = areaFor(c, kind);
+    const area = areaFor(c, kind, prefer);
     if (area) send.push({ c, area });
     else skip.push({ c, reason: 'kind' });
   }
@@ -229,21 +262,47 @@ export interface LaunchTask extends DatedStep {
 
 /**
  * Uruchomienie programu dla jednego podopiecznego: każdy krok z elementem, obszarem i powodem
- * pominięcia. `valid` sprawdza treść tak jak telefon (w komponencie: `parseAssignment`).
+ * pominięcia. `valid` sprawdza treść tak jak telefon (w komponencie: `parseAssignment`); `prefer` —
+ * obszar wybrany raz dla całej partii.
  */
 export function planLaunch(
   c: Pick<Connection, 'areas'>,
   dated: readonly DatedStep[],
   items: readonly LibraryItem[],
   valid: (item: LibraryItem, area: Area) => boolean = () => true,
+  prefer: Area | null = null,
 ): LaunchTask[] {
   return dated.map((d) => {
     const item = items.find((i) => i.id === d.step.itemId && i.kind !== 'program') ?? null;
     if (!item || item.kind === 'program') return { ...d, item: null, area: null, skip: 'missing' };
-    const area = areaFor(c, item.kind);
+    const area = areaFor(c, item.kind, prefer);
     if (!area) return { ...d, item, area: null, skip: 'kind' };
     return { ...d, item, area, skip: valid(item, area) ? null : 'invalid' };
   });
+}
+
+/* ── Stałe daty w treści wysyłanej później ───────────────────────────────────────── */
+
+/**
+ * - `expired` — lista nawyków ma datę końca przed dniem, w którym podopieczny ją dostanie;
+ * - `started` — jadłospis ma stały dzień startu przed tym dniem: podopieczny zacznie od dnia `dayIndex`
+ *   cyklu (liczonego od 0), nie od pierwszego.
+ */
+export type DateIssue = { kind: 'expired'; until: string } | { kind: 'started'; start: string; dayIndex: number };
+
+/**
+ * Treść z biblioteki ze stałą datą, która w dniu wypuszczenia (`releaseDay`, kalendarz przeglądarki)
+ * już minęła. Nic nie blokuje — prowadzący dostaje ostrzeżenie zamiast cicho wysłanej przeterminowanej listy.
+ */
+export function dateIssue(body: LibraryBody | null | undefined, releaseDay: string): DateIssue | null {
+  if (!body) return null;
+  if (body.kind === 'habits' && body.until && body.until < releaseDay) return { kind: 'expired', until: body.until };
+  if (body.kind === 'meals' && body.start && body.start < releaseDay && body.days.length) {
+    // Wypada akurat na początek cyklu — podopieczny i tak zaczyna od pierwszego dnia.
+    const dayIndex = daysBetween(body.start, releaseDay) % body.days.length;
+    return dayIndex ? { kind: 'started', start: body.start, dayIndex } : null;
+  }
+  return null;
 }
 
 /* ── Słowa o czasie ──────────────────────────────────────────────────────────────── */
@@ -254,6 +313,12 @@ export function fmtWhen(at: Date, now: Date | number = Date.now()): string {
   const date = new Intl.DateTimeFormat(LOCALE, { day: 'numeric', month: 'long', ...(year ? { year: 'numeric' } : {}) }).format(at);
   const time = new Intl.DateTimeFormat(LOCALE, { hour: 'numeric', minute: '2-digit' }).format(at);
   return `${date}, ${time}`;
+}
+
+/** „3 grudnia” dla dnia `RRRR-MM-DD` (data z treści albo z pola daty — bez przesunięcia strefy). */
+export function fmtCalendarDay(day: string): string {
+  const p = parseDay(day);
+  return p ? new Intl.DateTimeFormat(LOCALE, { day: 'numeric', month: 'long' }).format(new Date(p[0], p[1] - 1, p[2])) : day;
 }
 
 /** „czw., 3 grudnia” — dzień w podglądzie harmonogramu. */

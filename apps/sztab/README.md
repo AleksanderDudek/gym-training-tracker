@@ -28,9 +28,13 @@ Bez telefonu: `npx tsx apps/sztab/scripts/demo-client.ts '<link zaproszenia>'` p
 zaproszenie jak GYM TRACKER i wysyła siedem tygodni przykładowych danych.
 
 Bez rejestracji, do sprawdzania ekranów (Playwright): `npx tsx apps/sztab/scripts/seed.ts coach <stan.json>`
-zakłada prowadzącego z sejfem i dwóch podopiecznych z danymi (wypisuje mail, hasło i kod sejfu), a po
-wysłaniu im czegoś `… seed.ts phone <stan.json>` każe telefonom odpowiedzieć: formularze, nawyki,
-jadłospis, wiadomość, zdjęcia, rezerwacja pierwszego wolnego terminu.
+zakłada prowadzącego z sejfem i dwóch podopiecznych z danymi (wypisuje mail, hasło i kod sejfu) i wysyła
+każdemu zalecenia z datą sprzed 4 tygodni — cotygodniowy check-in, nawyki, jadłospis na 7 dni (szyfrowane
+kluczem prowadzącego jak w przeglądarce; `--bez-historii` — bez nich). Potem `… seed.ts phone <stan.json>`
+każe telefonom odpowiedzieć tak, jak zrobiłby to telefon: formularze, nawyki i jadłospis najwyżej 4 tygodnie
+wstecz, nigdy sprzed wysłania zalecenia, dni w strefie paczki (`Europe/Warsaw`); do tego wiadomość, zdjęcia
+i rezerwacja pierwszego wolnego terminu. Zalecenia wysłane z przeglądarki przed `phone` też dostaną
+odpowiedzi — od dnia wysłania.
 
 ```bash
 npm run typecheck -w @gymtracker/sztab
@@ -91,6 +95,8 @@ src/
     data.ts            zapytania: prowadzący, zaproszenia, współprace, paczki, zalecenia, biblioteka,
                        wiadomości, zdjęcia, terminy i rezerwacje
     metrics.ts         pulpit z paczki silnikiem GYM TRACKERa
+    coached.ts         wspólne dla listy i karty: które zalecenia obowiązują (jak na telefonie), dzień w strefie
+                       telefonu, 7 pełnych dni przed min(dziś, dzień paczki)
     review.ts          „Do przejrzenia”: powody i kolejność na liście podopiecznych (reviewLoad.ts — wczytywanie po 4)
     adherence.ts       realizacja nawyków i jadłospisu dzień po dniu, w strefie telefonu
     forms.ts           gotowe formularze, okresy, stan check-inu, serie do wykresów

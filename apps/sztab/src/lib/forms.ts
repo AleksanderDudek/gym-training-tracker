@@ -1,6 +1,8 @@
-import { addDays, cleanAnswers, cleanCoaching, cleanForm, isoWeek, localDay, weekdayOf } from '@gymtracker/link';
+import { addDays, cleanAnswers, cleanCoaching, cleanForm, isoWeek, weekdayOf } from '@gymtracker/link';
 import type { AnswerValue, FormBody, FormQuestion, FormRepeat, QuestionType } from '@gymtracker/link';
 import { LOCALE, text } from '@gt/i18n';
+import { dayIn, isKind, sortSent } from './coached';
+import type { LiveItem } from './coached';
 import type { SentAssignment } from './data';
 
 /**
@@ -406,17 +408,8 @@ export const fromTemplate = (t: FormTemplate): FormBody => ({ ...t.body, questio
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
 const WEEK_RE = /^(\d{4})-W(\d{2})$/;
 
-/** Dzień `YYYY-MM-DD` w danej strefie (strefa telefonu z paczki). Strefa spoza listy — strefa przeglądarki. */
-export function dayIn(tz: string, at: number): string {
-  try {
-    const parts = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date(at));
-    const get = (t: string) => parts.find((p) => p.type === t)?.value ?? '';
-    const day = `${get('year')}-${get('month')}-${get('day')}`;
-    return DAY_RE.test(day) ? day : localDay(at);
-  } catch {
-    return localDay(at);
-  }
-}
+/** Dzień `YYYY-MM-DD` w strefie telefonu z paczki — jeden rachunek dla całego Sztabu (`coached.ts`). */
+export { dayIn } from './coached';
 
 /** Poniedziałek tygodnia, w którym leży dzień. */
 export const mondayOf = (day: string): string => addDays(day, 1 - weekdayOf(day));
@@ -506,23 +499,27 @@ export function expectedPeriods(form: Pick<FormBody, 'repeat' | 'weekday'>, answ
   return out;
 }
 
-/** Formularz wysłany temu podopiecznemu (bez wycofanych i nieczytelnych), sprawdzony jak na telefonie. */
+/** Formularz, który obowiązuje (`coached.ts`: nie wycofany, nie odrzucony, już widoczny), sprawdzony jak na telefonie. */
 export interface SentForm {
+  /** Numer wiersza małymi literami — pod nim telefon odsyła odpowiedzi. */
   id: string;
   form: FormBody;
   sentAt: number;
 }
 
-export function sentForms(sent: readonly SentAssignment[]): SentForm[] {
-  return sent
-    .flatMap((a) => {
-      if (a.withdrawnAt || !a.envelope || a.envelope.body.kind !== 'form') return [];
-      // Ta sama treść, którą widzi telefon: puste odpowiedzi do wyboru wypadają tam przed numeracją.
-      const form = cleanForm(a.envelope.body as unknown as Record<string, unknown>);
-      return form ? [{ id: a.id, form, sentAt: a.envelope.sentAt }] : [];
-    })
+/** Formularze spośród obowiązujących zaleceń: wywiad pierwszy, potem od najnowszego. */
+export function formsOf(live: readonly LiveItem[]): SentForm[] {
+  return live
+    .filter(isKind('form'))
+    .map((x) => ({ id: x.id, form: x.body, sentAt: x.sentAt }))
     .sort((x, y) => Number(y.form.intake) - Number(x.form.intake) || y.sentAt - x.sentAt);
 }
+
+/**
+ * Wysłane formularze, które obowiązują teraz. Treść po `parseAssignment` (w tym `cleanForm`) — ta sama,
+ * którą widzi telefon: puste odpowiedzi do wyboru wypadają tam przed numeracją.
+ */
+export const sentForms = (sent: readonly SentAssignment[], now: number = Date.now()): SentForm[] => formsOf(sortSent(sent, now).live);
 
 export interface AnswerRow {
   period: string;
@@ -539,15 +536,40 @@ const periodFits = (repeat: FormRepeat, period: string): boolean =>
  * najnowszy okres pierwszy.
  */
 export function answerRows(form: FormBody, assignmentId: string, coaching: unknown): AnswerRow[] {
+  // Telefon odsyła numer wiersza małymi literami; porównujemy bez względu na wielkość liter.
+  const id = assignmentId.toLowerCase();
   const by = new Map<string, AnswerRow>();
   for (const a of cleanCoaching(coaching).answers) {
-    if (a.assignmentId !== assignmentId || !periodFits(form.repeat, a.period)) continue;
+    if (a.assignmentId.toLowerCase() !== id || !periodFits(form.repeat, a.period)) continue;
     const values = cleanAnswers(form, a.values, { partial: true });
     if (!values) continue;
     const prev = by.get(a.period);
     if (!prev || prev.at < a.at) by.set(a.period, { period: a.period, at: a.at, values });
   }
   return [...by.values()].sort((x, y) => (x.period < y.period ? 1 : x.period > y.period ? -1 : 0));
+}
+
+export interface FormState {
+  rows: AnswerRow[];
+  /** Okresy z odpowiedzią. */
+  answered: Set<string>;
+  /** Dziś w strefie telefonu. */
+  today: string;
+  /** Dzień wysłania w strefie telefonu. */
+  sentDay: string;
+  status: FormStatus;
+}
+
+/**
+ * Stan formularza dla prowadzącego — jeden dla zakładki „Odpowiedzi” i listy „Do przejrzenia”:
+ * odpowiedzi z paczki, dziś i dzień wysłania w strefie telefonu, `formStatus` na dziś.
+ */
+export function formState(f: SentForm, coaching: unknown, tz: string | null | undefined, now: number): FormState {
+  const rows = answerRows(f.form, f.id, coaching);
+  const answered = new Set(rows.map((r) => r.period));
+  const today = dayIn(tz, now);
+  const sentDay = dayIn(tz, f.sentAt);
+  return { rows, answered, today, sentDay, status: formStatus(f.form, answered, today, sentDay) };
 }
 
 const A = text({ pl: { yes: 'Tak', no: 'Nie' }, en: { yes: 'Yes', no: 'No' } });

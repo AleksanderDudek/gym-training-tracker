@@ -6,6 +6,8 @@ import type { Connection, LibraryItem, ProgramBody, SentAssignment } from '../sr
 
 const sent: { conn: string; area: string; kind: string; visibleFrom: Date | null }[] = [];
 const withdrawn: string[] = [];
+/** Sterowanie wysyłką: `fail` — „<współpraca>” albo „<współpraca>|<rodzaj>” kończy się błędem; `gate` — wysyłka czeka. */
+const ctl: { fail: Set<string>; gate: Promise<void> | null } = { fail: new Set(), gate: null };
 let library: LibraryItem[] = [];
 let connections: Connection[] = [];
 let assignments: SentAssignment[] = [];
@@ -31,13 +33,15 @@ vi.mock('../src/lib/data', async (orig) => {
       withdrawn.push(id);
     }),
     sendAssignment: vi.fn(async (_k: CryptoKey, _c: unknown, c: Connection, area: string, body: { kind: string }, opts: { visibleFrom?: Date | null } = {}) => {
+      if (ctl.gate) await ctl.gate;
+      if (ctl.fail.has(c.id) || ctl.fail.has(`${c.id}|${body.kind}`)) throw new Error('Failed to fetch');
       sent.push({ conn: c.id, area, kind: body.kind, visibleFrom: opts.visibleFrom ?? null });
       return crypto.randomUUID();
     }),
   };
 });
 
-const { stepAt, tomorrow } = await import('../src/lib/program');
+const { stepAt, today, tomorrow } = await import('../src/lib/program');
 
 const conn = (id: string, pseudonym: string, areas: Connection['areas'], status: Connection['status'] = 'active'): Connection => ({
   id,
@@ -72,6 +76,20 @@ const MEALS = lib('m1', 'Jadłospis 1800', {
   note: '',
 });
 const NOTE = lib('n1', 'Sen', { kind: 'note', title: 'Sen', text: 'Śpij 8 godzin.', checklist: [] });
+const HABITS_UNTIL_TODAY = lib('h1', 'Suplementy do dziś', {
+  kind: 'habits',
+  title: 'Suplementy do dziś',
+  items: [{ label: 'Kreatyna', dose: '5 g', when: 'morning', days: [1, 2, 3, 4, 5, 6, 7] }],
+  note: '',
+  until: today(),
+});
+const MEALS_FIXED = lib('m2', 'Jadłospis od dziś', {
+  kind: 'meals',
+  title: 'Jadłospis od dziś',
+  days: ['A', 'B', 'C'].map((label) => ({ label, meals: [{ slot: '', name: 'Owsianka', recipe: null, kcal: null, protein: null, carbs: null, fat: null, note: '' }] })),
+  start: today(),
+  note: '',
+});
 const PROGRAM = lib('p1', 'Start 4 tygodnie', {
   kind: 'program',
   steps: [
@@ -85,13 +103,16 @@ const PROGRAM = lib('p1', 'Start 4 tygodnie', {
 const A = conn('a', '7K4Q9XM2HT3PZR8WE5NA', ['training']);
 const B = conn('b', 'B4Q29XM2HT3PZR8WE5NA', ['nutrition']);
 const C = conn('c', 'C4Q29XM2HT3PZR8WE5NA', ['training'], 'ended');
+const D = conn('d', 'D4Q29XM2HT3PZR8WE5NA', ['training', 'nutrition']);
 
 beforeEach(() => {
   sent.length = 0;
   withdrawn.length = 0;
-  library = [WORKOUT, MEALS, NOTE, PROGRAM];
-  connections = [A, B, C];
+  library = [WORKOUT, MEALS, NOTE, PROGRAM, HABITS_UNTIL_TODAY, MEALS_FIXED];
+  connections = [A, B, C, D];
   assignments = [];
+  ctl.fail.clear();
+  ctl.gate = null;
   window.print = vi.fn();
 });
 
@@ -176,6 +197,70 @@ describe('Uruchom program', () => {
   });
 });
 
+describe('Uruchom program: przerwanie i ponowienie', () => {
+  it('w trakcie wysyłki okno się nie zamyka; nieudane kroki „Ponów nieudane” wysyła bez dubli', async () => {
+    const { LaunchProgramDialog } = await import('../src/components/LaunchProgram');
+    const onClose = vi.fn();
+    let release = () => undefined as void;
+    ctl.gate = new Promise<void>((r) => (release = r));
+    ctl.fail.add('d|meals');
+    render(<LaunchProgramDialog program={PROGRAM} connections={[D]} onClose={onClose} />);
+    const dialog = await screen.findByRole('dialog');
+    await within(dialog).findByText('Góra A');
+    await userEvent.click(within(dialog).getByRole('button', { name: /Uruchom dla 1|Launch for 1/ }));
+    await within(dialog).findByText(/Wysyłam 0 z 2|Sending 0 of 2/);
+    // Escape, × i tło nie przerywają wysyłki.
+    await userEvent.keyboard('{Escape}');
+    await userEvent.click(within(dialog).getByRole('button', { name: /^(Zamknij|Close)$/ }));
+    fireEvent.mouseDown(dialog.parentElement!);
+    expect(onClose).not.toHaveBeenCalled();
+    act(() => release());
+    ctl.gate = null;
+    await within(dialog).findByText(/Program uruchomiony dla 1 z 1|Program launched for 1 of 1/);
+    expect(dialog).toHaveTextContent(/nie udało się wysłać 1 kroku|1 step failed/);
+    expect(dialog).not.toHaveTextContent(/uruchom program jeszcze raz|launch again/);
+    expect(sent.map((s) => [s.conn, s.kind])).toEqual([['d', 'workout']]);
+
+    ctl.fail.clear();
+    await userEvent.click(within(dialog).getByRole('button', { name: /Ponów nieudane|Retry failed/ }));
+    await waitFor(() => expect(within(dialog).queryByRole('button', { name: /Ponów nieudane|Retry failed/ })).toBeNull());
+    expect(sent.map((s) => [s.conn, s.area, s.kind])).toEqual([
+      ['d', 'training', 'workout'],
+      ['d', 'nutrition', 'meals'],
+    ]);
+    expect(dialog).toHaveTextContent(/2 zalecenia|2 items/);
+    await userEvent.click(within(dialog).getByRole('button', { name: /^(Gotowe|Done)$/ }));
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('obszar dla podopiecznych z kilkoma obszarami i ostrzeżenie o stałej dacie startu jadłospisu', async () => {
+    const { LaunchProgramDialog } = await import('../src/components/LaunchProgram');
+    const prog = lib('p2', 'Nawyk i jadłospis', {
+      kind: 'program',
+      steps: [
+        { day: 0, time: '07:00', itemId: 'n1' },
+        { day: 1, time: '07:00', itemId: 'm2' },
+      ],
+      note: '',
+    });
+    library = [...library, prog];
+    render(<LaunchProgramDialog program={prog} connections={[A, D]} onClose={() => undefined} />);
+    const dialog = await screen.findByRole('dialog');
+    await within(dialog).findByText('Sen');
+    // Jadłospis ze startem dziś, wypuszczony pojutrze (start jutro, dzień 2 programu) — zacznie od dnia 3 cyklu.
+    expect(dialog).toHaveTextContent(/zacznie od dnia 3 cyklu|begins on cycle day 3/);
+    expect(dialog).toHaveTextContent(/stałą datę|fixed date/);
+    await userEvent.selectOptions(within(dialog).getByRole('combobox', { name: /Obszar dla podopiecznych|Area for clients/ }), 'nutrition');
+    await userEvent.click(within(dialog).getByRole('button', { name: /Uruchom dla 2|Launch for 2/ }));
+    await within(dialog).findByText(/uruchomiony|launched/);
+    expect(sent.map((s) => [s.conn, s.area, s.kind])).toEqual([
+      ['a', 'training', 'note'],
+      ['d', 'nutrition', 'note'],
+      ['d', 'nutrition', 'meals'],
+    ]);
+  });
+});
+
 describe('Wysyłka: zaplanowana i do wielu', () => {
   it('„Zaplanuj”: telefon dostaje to dopiero o wybranej porze; przeszłość odrzucona', async () => {
     const { SendDialog } = await import('../src/pages/Send');
@@ -215,6 +300,59 @@ describe('Wysyłka: zaplanowana i do wielu', () => {
     ]);
     expect(dialog).toHaveTextContent(/Pominięto|Skipped/);
     expect(onSent).toHaveBeenCalledTimes(1);
+  });
+
+  it('do wielu: w trakcie okno się nie zamyka; „Ponów nieudane” wysyła tylko do tych, do których nie poszło', async () => {
+    const { SendDialog } = await import('../src/pages/Send');
+    const onClose = vi.fn();
+    let release = () => undefined as void;
+    ctl.gate = new Promise<void>((r) => (release = r));
+    ctl.fail.add('b');
+    render(<SendDialog connection={A} recipients={[A, B]} initialKind="note" onClose={onClose} onSent={() => undefined} />);
+    const dialog = await screen.findByRole('dialog');
+    await userEvent.selectOptions(await within(dialog).findByRole('combobox'), 'n1');
+    await userEvent.click(within(dialog).getByRole('button', { name: /Wyślij do 2|Send to 2/ }));
+    await within(dialog).findByText(/Wysyłam 0 z 2|Sending 0 of 2/);
+    await userEvent.keyboard('{Escape}');
+    await userEvent.click(within(dialog).getByRole('button', { name: /^(Zamknij|Close)$/ }));
+    expect(onClose).not.toHaveBeenCalled();
+    act(() => release());
+    ctl.gate = null;
+    const done = await screen.findByRole('dialog', { name: /2 podopiecznym|2 clients/ });
+    await within(done).findByText(/Wysłano do 1 z 2|Sent to 1 of 2/);
+    expect(done).toHaveTextContent(/Nie udało się|Failed/);
+    ctl.fail.clear();
+    await userEvent.click(within(done).getByRole('button', { name: /Ponów nieudane|Retry failed/ }));
+    await within(done).findByText(/Wysłano do 2 z 2|Sent to 2 of 2/);
+    expect(sent.map((s) => s.conn)).toEqual(['a', 'b']);
+    expect(within(done).queryByRole('button', { name: /Ponów nieudane|Retry failed/ })).toBeNull();
+  });
+
+  it('do wielu: obszar wybrany raz dla tych, którzy mają kilka pasujących', async () => {
+    const { SendDialog } = await import('../src/pages/Send');
+    render(<SendDialog connection={A} recipients={[A, D]} initialKind="note" onClose={() => undefined} onSent={() => undefined} />);
+    const dialog = await screen.findByRole('dialog');
+    const pick = within(dialog).getByRole('combobox', { name: /Obszar dla podopiecznych|Area for clients/ });
+    expect(pick).toHaveValue('training');
+    await userEvent.selectOptions(pick, 'nutrition');
+    expect(within(dialog).getByRole('list', { name: /Odbiorcy|Recipients/ })).toHaveTextContent(/GT-D4Q2-9XM2.*(Żywienie|Nutrition)/);
+    await userEvent.selectOptions(within(dialog).getByRole('combobox', { name: /Z twojej biblioteki|Your library/ }), 'n1');
+    await userEvent.click(within(dialog).getByRole('button', { name: /Wyślij do 2|Send to 2/ }));
+    await within(dialog).findByText(/Wysłano do 2 z 2|Sent to 2 of 2/);
+    expect(sent.map((s) => [s.conn, s.area])).toEqual([
+      ['a', 'training'],
+      ['d', 'nutrition'],
+    ]);
+  });
+
+  it('zaplanowana lista nawyków, która do dnia wypuszczenia się skończy — ostrzeżenie', async () => {
+    const { SendDialog } = await import('../src/pages/Send');
+    render(<SendDialog connection={A} initialKind="habits" onClose={() => undefined} onSent={() => undefined} />);
+    const dialog = await screen.findByRole('dialog');
+    await userEvent.selectOptions(await within(dialog).findByRole('combobox'), 'h1');
+    expect(dialog).not.toHaveTextContent(/kończy się|ends on/);
+    await userEvent.click(within(dialog).getByRole('radio', { name: /Zaplanuj|Schedule/ }));
+    expect(dialog).toHaveTextContent(/Ta lista nawyków kończy się .*, a podopieczny dostanie ją|This habit list ends on .*, but the client gets it/);
   });
 
   it('do wielu: rodzaj, którego część nie przyjmie — pominięci, reszta dostaje', async () => {

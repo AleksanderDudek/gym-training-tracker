@@ -1,17 +1,20 @@
 import { useState } from 'react';
 import { isoWeek } from '@gymtracker/link';
-import type { FormQuestion, SnapshotV1 } from '@gymtracker/link';
+import type { FormBody, FormQuestion, SnapshotV1 } from '@gymtracker/link';
 import { LOCALE, text } from '@gt/i18n';
 import { Link, Loading, ago, fmtDate } from '../../components/ui';
 import type { Connection, SentAssignment } from '../../lib/data';
-import { answerRows, answerText, chartSeries, dayIn, dayLabel, expectedPeriods, formStatus, periodLabel, sentForms } from '../../lib/forms';
-import type { AnswerRow, FormStatus, SentForm, SeriesPoint } from '../../lib/forms';
+import { hasCoaching, isKind, sortSent } from '../../lib/coached';
+import type { LiveItem, ScheduledItem } from '../../lib/coached';
+import { answerText, chartSeries, dayIn, dayLabel, expectedPeriods, formState, formsOf, periodLabel } from '../../lib/forms';
+import type { AnswerRow, FormState, FormStatus, SentForm, SeriesPoint } from '../../lib/forms';
 import './AnswersTab.css';
 
 /**
- * Zakładka „Odpowiedzi” podopiecznego: każdy wysłany (i niewycofany) formularz z odpowiedziami
- * z części `coaching` paczki. Wartości sprawdza `cleanAnswers` przeciw pytaniom formularza — to dane
- * z telefonu. „Dziś” liczy się w strefie telefonu (`s.tz`), tak jak telefon zamyka okresy.
+ * Zakładka „Odpowiedzi” podopiecznego: każdy obowiązujący formularz (ten sam wybór co lista
+ * „Do przejrzenia”: `coached.ts`) z odpowiedziami z części `coaching` paczki. Wartości sprawdza
+ * `cleanAnswers` przeciw pytaniom formularza — to dane z telefonu. „Dziś” liczy się w strefie
+ * telefonu (`s.tz`), tak jak telefon zamyka okresy. Zaplanowane i odrzucone — tylko wzmianka.
  */
 
 const T = text({
@@ -53,6 +56,13 @@ const T = text({
     last: 'ostatnio',
     avg: 'średnio',
     chartDesc: (from: string, to: string, lo: string, hi: string, last: string) => `Od ${from} do ${to}: najmniej ${lo}, najwięcej ${hi}, ostatnio ${last}.`,
+    oldApp:
+      'Telefon podopiecznego ma starszą wersję GYM TRACKERa, która nie odsyła odpowiedzi na formularze — brak danych z tej wersji aplikacji. Odpowiedzi pojawią się po aktualizacji.',
+    noDataChip: 'brak danych z tej wersji aplikacji',
+    scheduled: (title: string, when: string) => `„${title}” — zaplanowany na ${when}`,
+    scheduledHead: 'Zaplanowane (podopieczny jeszcze ich nie widzi):',
+    declined: (title: string) => `„${title}” — odrzucony przez podopiecznego`,
+    declinedHead: 'Nie liczą się:',
   },
   en: {
     noneTitle: 'No forms sent yet',
@@ -90,6 +100,12 @@ const T = text({
     last: 'latest',
     avg: 'average',
     chartDesc: (from: string, to: string, lo: string, hi: string, last: string) => `From ${from} to ${to}: lowest ${lo}, highest ${hi}, latest ${last}.`,
+    oldApp: 'The client’s phone runs an older GYM TRACKER version that does not send form answers back — no data from this app version. Answers appear after the update.',
+    noDataChip: 'no data from this app version',
+    scheduled: (title: string, when: string) => `“${title}” — scheduled for ${when}`,
+    scheduledHead: 'Scheduled (the client cannot see them yet):',
+    declined: (title: string) => `“${title}” — declined by the client`,
+    declinedHead: 'Not counted:',
   },
 });
 
@@ -107,8 +123,11 @@ const fmtAt = (at: number) => new Date(at).toLocaleString(LOCALE, { day: 'numeri
 export function AnswersTab({ c, s, sent }: { c: Connection; s: SnapshotV1; sent: SentAssignment[] | undefined }) {
   const [now] = useState(() => Date.now());
   if (!sent) return <Loading />;
-  const forms = sentForms(sent);
-  if (!forms.length)
+  const sorted = sortSent(sent, now);
+  const forms = formsOf(sorted.live);
+  const later = sorted.scheduled.filter(isKind('form'));
+  const declined = sorted.declined.filter(isKind('form'));
+  if (!forms.length && !later.length && !declined.length)
     return (
       <section className="card empty">
         <h3>{T.noneTitle}</h3>
@@ -119,15 +138,49 @@ export function AnswersTab({ c, s, sent }: { c: Connection; s: SnapshotV1; sent:
       </section>
     );
   const today = dayIn(s.tz, now);
+  const silent = !hasCoaching(s);
   return (
     <div className="stack sz-answers">
       <p className="small soft">
         {T.age(ago(new Date(s.at).toISOString()))}
         {s.tz && s.tz !== browserTz() ? ` ${T.tz(s.tz, dayLabel(today))}` : ''}
       </p>
+      {silent && forms.length ? <p className="note">{T.oldApp}</p> : null}
       {forms.map((f) => (
-        <FormAnswers key={f.id} uid={`${c.id.slice(0, 8)}-${f.id}`} f={f} rows={answerRows(f.form, f.id, s.coaching)} today={today} sentDay={dayIn(s.tz, f.sentAt)} />
+        <FormAnswers key={f.id} uid={`${c.id.slice(0, 8)}-${f.id}`} f={f} st={formState(f, s.coaching, s.tz, now)} silent={silent} />
       ))}
+      <NotCounted later={later} declined={declined} />
+    </div>
+  );
+}
+
+const fmtVisible = (at: number) => new Date(at).toLocaleString(LOCALE, { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
+
+/** Zaplanowane i odrzucone formularze: tylko wzmianka — nie czekają na odpowiedź i nie są zaległe. */
+function NotCounted({ later, declined }: { later: ScheduledItem<FormBody>[]; declined: LiveItem<FormBody>[] }) {
+  if (!later.length && !declined.length) return null;
+  return (
+    <div className="stack small soft">
+      {later.length ? (
+        <div>
+          <span>{T.scheduledHead}</span>
+          <ul>
+            {later.map((x) => (
+              <li key={x.id}>{T.scheduled(x.body.title, fmtVisible(x.visibleAt))}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      {declined.length ? (
+        <div>
+          <span>{T.declinedHead}</span>
+          <ul>
+            {declined.map((x) => (
+              <li key={x.id}>{T.declined(x.body.title)}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -148,10 +201,10 @@ function statusText(f: SentForm, st: FormStatus): { label: string; tone: 'ok' | 
   }
 }
 
-function FormAnswers({ uid, f, rows, today, sentDay }: { uid: string; f: SentForm; rows: AnswerRow[]; today: string; sentDay: string }) {
-  const answered = new Set(rows.map((r) => r.period));
-  const st = statusText(f, formStatus(f.form, answered, today, sentDay));
-  const expected = expectedPeriods(f.form, answered, today, sentDay);
+function FormAnswers({ uid, f, st: state, silent }: { uid: string; f: SentForm; st: FormState; silent: boolean }) {
+  const { rows, answered, today, sentDay } = state;
+  const st = silent ? { label: T.noDataChip, tone: 'muted' as const } : statusText(f, state.status);
+  const expected = silent ? [] : expectedPeriods(f.form, answered, today, sentDay);
   const done = expected.filter((p) => answered.has(p)).length;
   const charts = f.form.questions.map((q) => ({ q, series: chartSeries(q, rows) })).filter((x) => x.series.length >= 2);
   const repeat = f.form.repeat === 'weekly' ? T.weekly(T.weekdays[(f.form.weekday ?? 1) - 1]!) : T.repeat[f.form.repeat];
@@ -168,7 +221,7 @@ function FormAnswers({ uid, f, rows, today, sentDay }: { uid: string; f: SentFor
         </div>
       </div>
       {!rows.length ? (
-        <p className="soft">{f.form.repeat === 'once' ? T.empty.once : T.empty.repeat}</p>
+        <p className="soft">{silent ? '—' : f.form.repeat === 'once' ? T.empty.once : T.empty.repeat}</p>
       ) : (
         <>
           {charts.length ? (

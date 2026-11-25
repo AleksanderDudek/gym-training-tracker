@@ -184,7 +184,7 @@ describe('jadłospis', () => {
 });
 
 describe('wybór zaleceń', () => {
-  it('bez wycofanych, nieczytelnych i innych rodzajów; najnowsze pierwsze', () => {
+  it('bez wycofanych, nieczytelnych, odrzuconych, zaplanowanych i innych rodzajów; najnowsze pierwsze', () => {
     const list = [
       sent('h-old', HABITS, '2026-11-01T10:00:00Z'),
       sent('h-new', HABITS, '2026-11-20T10:00:00Z'),
@@ -192,10 +192,43 @@ describe('wybór zaleceń', () => {
       { ...sent('h-bad', HABITS, '2026-11-21T10:00:00Z'), envelope: null },
       sent('n1', { kind: 'note', title: 'x', text: 'y', checklist: [] }, '2026-11-21T10:00:00Z'),
       sent('m1', MEALS, '2026-11-21T10:00:00Z', { receipt: { v: 1, assignmentId: 'm1', status: 'declined', at: 0, ticked: [], comment: '', updatedAt: '' } }),
+      sent('m-later', MEALS, '2026-11-30T07:00:00Z', { visibleFrom: '2026-11-30T07:00:00Z' }),
     ];
-    const a = adherence(snap(SNAP_AT, null), list, NOW);
+    const a = adherence(snap(SNAP_AT, { answers: [], habits: [], meals: [] }), list, NOW);
     expect(a.habits.map((h) => h.id)).toEqual(['h-new', 'h-old']);
-    expect(a.meals.map((m) => [m.id, m.status])).toEqual([['m1', 'declined']]);
+    // Odrzucony i zaplanowany nie liczą się do realizacji — tylko wzmianka.
+    expect(a.meals).toEqual([]);
+    expect(a.declined.map((m) => m.id)).toEqual(['m1']);
+    expect(a.scheduled.map((m) => [m.id, m.visibleAt])).toEqual([['m-later', Date.parse('2026-11-30T07:00:00Z')]]);
+  });
+
+  it('odhaczenia pod numerem wiersza bez względu na wielkość liter', () => {
+    const list = [{ ...sent('h1', HABITS, '2026-11-15T23:30:00Z'), id: 'H1' }];
+    const a = adherence(snap(SNAP_AT, { answers: [], meals: [], habits: [{ assignmentId: 'h1', days: { '2026-11-24': [0, 1] } }] }), list, NOW);
+    expect(a.habits[0]!.id).toBe('h1');
+    expect(a.habits[0]!.reported).toBe(true);
+  });
+
+  it('telefon bez części „coaching” (starsza wersja): wszystko bez danych, procentów brak — nie same „opuszczone”', () => {
+    const list = [sent('h1', HABITS, '2026-11-15T23:30:00Z'), sent('m1', MEALS, '2026-11-21T23:30:00Z')];
+    const s: SnapshotV1 = { v: 1, at: Date.parse(SNAP_AT), tz: 'Europe/Warsaw', lang: 'pl', app: 'test', scopes: [] };
+    const a = adherence(s, list, NOW);
+    expect(a.noCoaching).toBe(true);
+    const [h] = a.habits;
+    expect(new Set(h!.rows[0]!.cells)).toEqual(new Set(['off', 'unknown']));
+    expect(h!.week.pct).toBeNull();
+    expect(h!.snapDay).toBeNull();
+    expect(a.meals[0]!.days.filter((d) => d.state !== 'before').every((d) => d.state === 'unknown')).toBe(true);
+    expect(weekSummary(a).pct).toBeNull();
+  });
+
+  it('okno 7 pełnych dni przed wcześniejszym z: dziś, dzień paczki', () => {
+    const list = [sent('h1', HABITS, '2026-11-01T10:00:00Z')];
+    const days: Record<string, number[]> = {};
+    for (let d = 14; d <= 20; d++) days[`2026-11-${d}`] = [0, 1];
+    // Paczka z soboty 21.11 (Warszawa), dziś czwartek 26.11 — liczy się 14–20.11, a nie 19–25.11.
+    const [h] = adherence(snap('2026-11-21T12:00:00Z', { answers: [], meals: [], habits: [{ assignmentId: 'h1', days }] }), list, NOW).habits;
+    expect(h!.week).toEqual({ done: 12, due: 12, pct: 100 });
   });
 
   it('jedna liczba na tydzień: nawyki i posiłki razem', () => {

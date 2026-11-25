@@ -13,6 +13,8 @@ const {
   MAX_STEPS,
   addLocalDays,
   areaFor,
+  batchAreas,
+  dateIssue,
   datedSteps,
   dayOf,
   duplicateWeek,
@@ -183,6 +185,9 @@ describe('Zaplanowana wysyłka', () => {
     expect(scheduleAt('2026-11-25', '12:00', now)).toEqual({ error: 'past' });
     expect('at' in scheduleAt('2027-11-25', '11:00', now)).toBe(true);
     expect(scheduleAt('2027-11-26', '12:01', now)).toEqual({ error: 'far' });
+    // Pole daty pozwala na dziś + 365 dni — o każdej godzinie tego dnia, nie tylko do „365 × 24 h”.
+    expect('at' in scheduleAt('2027-11-25', '23:30', now)).toBe(true);
+    expect(scheduleAt('2027-11-26', '00:00', now)).toEqual({ error: 'far' });
     expect(scheduleAt('2026-02-30', '07:00', now)).toEqual({ error: 'invalid' });
     expect(scheduleAt('2026-12-03', '', now)).toEqual({ error: 'invalid' });
   });
@@ -238,6 +243,36 @@ describe('Odbiorcy i uruchomienie programu', () => {
     expect(note.send.map((r) => r.area)).toEqual(['training', 'nutrition', 'insight']);
   });
 
+  it('obszar wybrany raz dla całej partii: kto go ma — w nim, reszta w swoim pierwszym pasującym', () => {
+    const list = [conn('a', ['training', 'nutrition']), conn('b', ['nutrition']), conn('c', ['training'])];
+    expect(batchAreas(list, ['habits'])).toEqual(['training', 'nutrition']);
+    // Nikt nie ma dwóch obszarów dla jadłospisu — wybór niczego by nie zmienił.
+    expect(batchAreas(list, ['meals'])).toEqual([]);
+    expect(batchAreas([conn('a', ['training', 'nutrition'], 'ended')], ['habits'])).toEqual([]);
+    const p = planRecipients(list, 'habits', 'nutrition');
+    expect(p.send.map((r) => [r.c.id, r.area])).toEqual([
+      ['a', 'nutrition'],
+      ['b', 'nutrition'],
+      ['c', 'training'],
+    ]);
+    expect(areaFor(conn('a', ['training', 'nutrition']), 'workout', 'nutrition')).toBe('training');
+  });
+
+  it('stała data w treści przed dniem wypuszczenia: nawyki już po końcu, jadłospis od środka cyklu', () => {
+    const habits = { kind: 'habits' as const, title: 'H', note: '', until: '2026-12-10', items: [] };
+    expect(dateIssue(habits, '2026-12-11')).toEqual({ kind: 'expired', until: '2026-12-10' });
+    expect(dateIssue(habits, '2026-12-10')).toBeNull();
+    expect(dateIssue({ ...habits, until: null }, '2027-05-01')).toBeNull();
+    const day = { label: '', meals: [] };
+    const meals = { kind: 'meals' as const, title: 'M', note: '', start: '2026-12-01', days: [day, day, day] };
+    expect(dateIssue(meals, '2026-12-05')).toEqual({ kind: 'started', start: '2026-12-01', dayIndex: 1 });
+    expect(dateIssue(meals, '2026-12-01')).toBeNull();
+    // Wypada na początek cyklu — nic nie przesunięte.
+    expect(dateIssue(meals, '2026-12-04')).toBeNull();
+    expect(dateIssue({ ...meals, start: null }, '2026-12-05')).toBeNull();
+    expect(dateIssue(null, '2026-12-05')).toBeNull();
+  });
+
   it('każdy krok: element, obszar albo powód pominięcia', () => {
     const items = [item('w', 'workout'), item('m', 'meals'), item('n', 'note'), item('p', 'program')];
     const dated = datedSteps(
@@ -254,5 +289,12 @@ describe('Odbiorcy i uruchomienie programu', () => {
       ['p', null, 'missing'],
     ]);
     expect(tasks[0]!.at.getTime()).toBe(new Date(2026, 11, 1, 7, 0).getTime());
+    // Obszar partii: notatka w żywieniu u podopiecznego z treningiem i żywieniem; trening zostaje w treningu.
+    const both = planLaunch(conn('b', ['training', 'nutrition']), dated, items, () => true, 'nutrition');
+    expect(both.slice(0, 3).map((t) => [t.step.itemId, t.area])).toEqual([
+      ['w', 'training'],
+      ['m', 'nutrition'],
+      ['n', 'nutrition'],
+    ]);
   });
 });

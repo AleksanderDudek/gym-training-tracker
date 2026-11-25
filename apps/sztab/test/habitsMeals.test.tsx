@@ -218,6 +218,29 @@ describe('zakładka Realizacja', () => {
     expect(screen.getByText('Nic tu jeszcze nie ma')).toBeInTheDocument();
   });
 
+  it('telefon bez części „coaching”: „brak danych z tej wersji aplikacji”, a nie 0% i czerwone światła', () => {
+    const s: SnapshotV1 = { v: 1, at: Date.now() - 3600_000, tz: 'Europe/Warsaw', lang: 'pl', app: 't', scopes: [] };
+    render(<AdherenceTab c={{} as Connection} s={s} sent={[sentRow('h1', habits(), new Date(Date.now() - 20 * 86_400_000).toISOString())]} />);
+    expect(screen.getByText(/starszą wersję GYM TRACKERa.*brak danych z tej wersji aplikacji/)).toBeInTheDocument();
+    expect(screen.getAllByText('brak danych z tej wersji aplikacji')).toHaveLength(2);
+    const grid = screen.getByRole('table', { name: 'Codzienne: ostatnie 14 dni' });
+    expect(within(grid).queryByText('pominięte')).not.toBeInTheDocument();
+    expect(within(grid).getAllByText('brak danych').length).toBeGreaterThan(0);
+    expect(screen.queryByText('słabo')).not.toBeInTheDocument();
+    expect(screen.queryByText(/^\d+%$/)).not.toBeInTheDocument();
+  });
+
+  it('zaplanowane i odrzucone: tylko wzmianka, bez siatki', () => {
+    const s: SnapshotV1 = { v: 1, at: Date.now(), tz: 'Europe/Warsaw', lang: 'pl', app: 't', scopes: [], coaching: { answers: [], habits: [], meals: [] } };
+    const later = { ...sentRow('h2', habits({ title: 'Na grudzień' }), new Date(Date.now() + 5 * 86_400_000).toISOString()), visibleFrom: new Date(Date.now() + 5 * 86_400_000).toISOString() };
+    const declined = { ...sentRow('m3', meals({ title: 'Nie dla mnie' }), new Date(Date.now() - 86_400_000).toISOString()), receipt: { v: 1 as const, assignmentId: 'm3', status: 'declined' as const, at: 0, ticked: [], comment: '', updatedAt: '' } };
+    render(<AdherenceTab c={{} as Connection} s={s} sent={[later, declined]} />);
+    expect(screen.getByText('Nic tu jeszcze nie ma')).toBeInTheDocument();
+    expect(screen.getByText(/Nawyki: „Na grudzień” — od /)).toBeInTheDocument();
+    expect(screen.getByText('Jadłospis: „Nie dla mnie” — odrzucone przez podopiecznego')).toBeInTheDocument();
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+  });
+
   it('siatka nawyków ze znakami i światła dni jadłospisu z podpisem', () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-11-26T12:00:00Z'));
