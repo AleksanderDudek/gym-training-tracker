@@ -1,0 +1,81 @@
+/*
+ * Kalendarz wizyt (`Calendar.tsx`). Tydzień w siedmiu kolumnach, gdy jest miejsce; węższy obszar
+ * (zapytanie o kontener, nie o okno — boczny pasek zabiera szerokość) to lista dni jeden pod drugim.
+ * Tylko tokeny z `styles.css`, więc ciemny wygląd działa sam.
+ */
+.sz-cal { container-type: inline-size; container-name: sz-cal; }
+.sz-cal-bar { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; }
+.sz-cal-range { font-size: 17px; }
+.sz-cal-bar .btn { gap: 6px; }
+
+.sz-cal-week { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; }
+.sz-cal-day { min-width: 0; display: grid; grid-template-rows: auto 1fr; gap: 6px; background: var(--surface-2); border-radius: var(--r); padding: 8px; border-top: 3px solid transparent; }
+.sz-cal-day.is-today { border-top-color: var(--blue-ink); background: var(--blue-bg); }
+.sz-cal-day.is-past .sz-cal-dayhead h3 { color: var(--ink-soft); }
+.sz-cal-dayhead { display: flex; align-items: center; justify-content: space-between; gap: 4px; min-height: 36px; }
+.sz-cal-dayhead h3 { font-size: 14px; display: flex; flex-direction: column; line-height: 1.15; }
+.sz-cal-dow { text-transform: uppercase; letter-spacing: 0.05em; }
+.sz-cal-date { font: 500 12px var(--body); color: var(--ink-soft); }
+.sz-cal-add { min-width: 36px; min-height: 36px; border: 1px dashed var(--edge); border-radius: var(--r); background: transparent; color: var(--ink); font-size: 20px; line-height: 1; cursor: pointer; }
+.sz-cal-add:hover { background: var(--surface); border-style: solid; }
+
+.sz-cal-slots { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; align-content: start; }
+.sz-cal-slot { width: 100%; min-height: 44px; text-align: left; display: grid; gap: 2px; padding: 8px 9px; border: 1px solid var(--line); border-left: 3px solid var(--blue-ink); border-radius: var(--r); background: var(--surface); color: var(--ink); cursor: pointer; font-size: 13px; line-height: 1.3; }
+.sz-cal-slot:hover { border-color: var(--edge); border-left-color: var(--blue-ink); }
+.sz-cal-slot.is-full { border-left-color: var(--ok); }
+.sz-cal-slot.is-ended { opacity: 0.7; }
+.sz-cal-slot.is-cancelled { border-left-color: var(--edge); color: var(--ink-soft); }
+.sz-cal-slot.is-cancelled .sz-cal-title { text-decoration: line-through; }
+.sz-cal-time { font: 500 12.5px var(--mono); font-variant-numeric: tabular-nums; }
+.sz-cal-title { font-weight: 600; overflow-wrap: anywhere; }
+.sz-cal-meta { display: flex; flex-wrap: wrap; gap: 2px 8px; color: var(--ink-soft); font-size: 12px; min-width: 0; }
+.sz-cal-seats { font: 500 12px var(--mono); color: var(--ink); }
+.sz-cal-slot.is-full .sz-cal-seats { color: var(--ok); }
+.sz-cal-place { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.sz-cal-flag { color: var(--bad); font-weight: 600; }
+
+/* Wąsko: lista dni; dzień bez terminów to jedna linijka. */
+@container sz-cal (max-width: 760px) {
+  .sz-cal-week { grid-template-columns: minmax(0, 1fr); }
+  .sz-cal-day { grid-template-rows: none; grid-template-columns: minmax(0, 1fr); }
+  .sz-cal-dayhead h3 { flex-direction: row; gap: 8px; align-items: baseline; font-size: 15px; }
+  .sz-cal-date { font-size: 14px; }
+  .sz-cal-day.is-empty { display: flex; align-items: center; justify-content: space-between; padding: 4px 8px; }
+  .sz-cal-day.is-empty .sz-cal-dayhead { flex: 1; }
+  .sz-cal-slot { grid-template-columns: auto minmax(0, 1fr); column-gap: 12px; font-size: 14px; }
+  .sz-cal-slot .sz-cal-time { grid-row: span 2; padding-top: 1px; }
+}
+@container sz-cal (max-width: 760px) {
+  .sz-cal-navword { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+}
+
+/* Szczegóły terminu */
+.sz-cal-facts { margin: 0; display: grid; gap: 8px; }
+.sz-cal-facts > div { display: grid; grid-template-columns: 9em minmax(0, 1fr); gap: 8px; }
+.sz-cal-facts dt { font: 500 11px var(--mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); padding-top: 3px; }
+.sz-cal-facts dd { margin: 0; min-width: 0; }
+.sz-cal-url { display: block; overflow-wrap: anywhere; }
+.sz-cal-note { white-space: pre-wrap; }
+.sz-cal-link { font-weight: 600; }
+.sz-cal-over { margin-left: 8px; vertical-align: 2px; }
+.sz-cal-people { list-style: none; margin: 0; padding: 0; display: grid; }
+.sz-cal-people > li { border-top: 1px solid var(--line); padding: 4px 0; min-height: 44px; display: grid; align-items: center; }
+.sz-cal-people > li:first-child { border-top: 0; }
+.sz-cal-who { font: 500 14px var(--mono); letter-spacing: 0.02em; overflow-wrap: anywhere; }
+.sz-cal-gone summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; color: var(--ink-soft); }
+.sz-cal-ask { display: grid; gap: 10px; background: var(--orange-bg); color: var(--ink); border-radius: var(--r); padding: 10px 12px; }
+.sz-cal-signup-row { align-items: end; }
+.sz-cal-signup-row .field { flex: 1 1 240px; }
+@media (max-width: 560px) {
+  .sz-cal-facts > div { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+}
+
+/* Formularz */
+.sz-cal-form input[type='time'] { width: 100%; min-height: 44px; padding: 9px 12px; border: 1.5px solid var(--edge); border-radius: var(--r); background: var(--field); font-size: 16px; }
+.sz-cal-form [aria-invalid='true'] { border-color: var(--bad); }
+.sz-cal-length { align-items: center; }
+.sz-cal-length input { width: 7.5em; flex: none; }
+.sz-cal-length .btn[aria-pressed='true'] { background: var(--blue-bg); color: var(--blue-ink); border-color: var(--blue-ink); }
+.sz-cal-form .sz-cal-narrow { max-width: 7.5em; }
+.sz-cal-form .grid.cols-2 { gap: 14px; }
+.sz-cal-field > label { font-weight: 600; font-size: 14px; }

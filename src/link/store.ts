@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import type { Area, AssignmentV1, Profession, PublicJwk, ReceiptStatus, Scope } from '@gymtracker/link';
 import type { AnswerValue, MessageRef } from '@gymtracker/link/coaching';
+import type { Booking } from './rpc';
 
 /**
  * Współprace na tym telefonie: z kim, w jakich obszarach, co widzi, klucz i token — oraz
@@ -58,6 +59,8 @@ export interface LinkConnection {
   readUpTo?: string | null;
   /** Wysłane zdjęcia sylwetki: numer zdjęcia na telefonie → numer na serwerze. */
   photos?: Record<string, string>;
+  /** Wizyty z ostatniego pobrania (`client_slots`): do pokazania bez sieci i do uwagi na ekranie Dziś. */
+  visits?: { at: number; bookings: Booking[] };
 }
 
 /** Wiadomość w rozmowie z prowadzącym — już odszyfrowana (albo nasza, jeszcze niewysłana). */
@@ -143,6 +146,7 @@ export function cleanLinkState(raw: unknown): LinkState {
       isObj(c.coachKey) &&
       (c.status === 'active' || c.status === 'ended'),
   );
+  for (const c of connections) if (c.visits !== undefined) cleanVisits(c);
   const ids = new Set(connections.map((c) => c.id));
   const assignments = (Array.isArray(raw.assignments) ? raw.assignments : []).filter(
     (a): a is StoredAssignment =>
@@ -187,6 +191,36 @@ export function cleanLinkState(raw: unknown): LinkState {
     }
   }
   return { connections, assignments, broken, unsupported, messages, answers, ticks };
+}
+
+/** Kopia wizyt przesiana: zepsuta wypada w całości, rezerwacja bez numeru, czasu albo tytułu — sama. */
+function cleanVisits(c: LinkConnection): void {
+  const v = c.visits as unknown;
+  if (!isObj(v) || typeof v.at !== 'number' || !Array.isArray(v.bookings)) {
+    delete c.visits;
+    return;
+  }
+  const opt = (x: unknown): string | null => (typeof x === 'string' ? x : null);
+  c.visits = {
+    at: v.at,
+    bookings: v.bookings.flatMap((b): Booking[] =>
+      isObj(b) && typeof b.id === 'string' && typeof b.slotId === 'string' && typeof b.startsAt === 'string' && typeof b.endsAt === 'string' && typeof b.title === 'string'
+        ? [
+            {
+              id: b.id,
+              slotId: b.slotId,
+              startsAt: b.startsAt,
+              endsAt: b.endsAt,
+              title: b.title,
+              place: opt(b.place),
+              note: opt(b.note),
+              cancelledAt: opt(b.cancelledAt),
+              cancelledBy: b.cancelledBy === 'client' || b.cancelledBy === 'coach' ? b.cancelledBy : null,
+            },
+          ]
+        : [],
+    ),
+  };
 }
 
 function read(): LinkState {
