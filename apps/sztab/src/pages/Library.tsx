@@ -19,7 +19,10 @@ import { FormForm, emptyForm } from '../components/editors/FormEditor';
 import { HabitsForm, emptyHabits } from '../components/editors/HabitsEditor';
 import { MealsForm, emptyMeals } from '../components/editors/MealsEditor';
 import { ProgramForm, emptyProgram } from '../components/editors/ProgramEditor';
+import { LaunchProgramDialog } from '../components/LaunchProgram';
+import { PrintLayer } from '../components/Print';
 import { Failure, Link, Loading, fmtDate, toast, useLoad } from '../components/ui';
+import { toAssignment } from '../lib/assign';
 import { LIBRARY_KINDS, deleteLibraryItem, listLibrary, saveLibraryItem } from '../lib/data';
 import type { LibraryBody, LibraryItem, LibraryKind } from '../lib/data';
 import { L } from '../lib/labels';
@@ -262,8 +265,15 @@ export function BodyForm({
   }
 }
 
+const TE = text({
+  pl: { launch: 'Uruchom program…', print: 'Drukuj' },
+  en: { launch: 'Launch program…', print: 'Print' },
+});
+
 export function LibraryEditor({ id, kind }: { id?: string; kind?: string }) {
   const { coach } = useReady();
+  const [launching, setLaunching] = useState(false);
+  const [printing, setPrinting] = useState(false);
   const lib = useLoad(listLibrary, []);
   const existing = useMemo(() => lib.data?.find((i) => i.id === id), [lib.data, id]);
   const [body, setBody] = useState<LibraryBody | null>(null);
@@ -316,6 +326,16 @@ export function LibraryEditor({ id, kind }: { id?: string; kind?: string }) {
           <h1 style={{ marginTop: 6 }}>{existing ? existing.title : L.kind[body.kind]}</h1>
         </div>
         <div className="row">
+          {existing && existing.kind === 'program' ? (
+            <button type="button" className="btn ghost" onClick={() => setLaunching(true)}>
+              {TE.launch}
+            </button>
+          ) : null}
+          {body.kind !== 'program' ? (
+            <button type="button" className="btn ghost" onClick={() => setPrinting(true)}>
+              {TE.print}
+            </button>
+          ) : null}
           {existing ? (
             <button type="button" className="btn ghost" onClick={() => void save(true)}>
               {T.duplicate}
@@ -364,6 +384,8 @@ export function LibraryEditor({ id, kind }: { id?: string; kind?: string }) {
           )}
         </section>
       ) : null}
+      {launching && existing ? <LaunchProgramDialog program={existing} connections={[]} onClose={() => setLaunching(false)} /> : null}
+      {printing && body.kind !== 'program' ? <PrintLayer body={toAssignment(body, lib.data ?? [], '')} onClose={() => setPrinting(false)} /> : null}
     </>
   );
 }

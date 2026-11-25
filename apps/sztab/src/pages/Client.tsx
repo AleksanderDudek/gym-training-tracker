@@ -717,52 +717,179 @@ function LabsTab({ s }: { s: SnapshotV1 }) {
 }
 
 function SentTab({ list, error, reload }: { list: SentAssignment[] | undefined; error: string | null; reload: () => void }) {
+  // Harmonogram i druk (spec 2026-11-25). Teksty, numer podopiecznego i wydruk (ładowany dopiero na
+  // „Drukuj”) mieszkają tu, w środku zakładki — reszta pliku należy do innych części.
+  const S = useMemo(
+    () =>
+      text({
+        pl: {
+          scheduled: (w: string) => `Zaplanowane: ${w}`,
+          cancel: 'Anuluj',
+          sure: 'Anulować? Podopieczny tego nie zobaczy.',
+          yes: 'Tak, anuluj',
+          no: 'Nie',
+          cancelled: 'anulowane',
+          done: 'Anulowano',
+          print: 'Drukuj',
+          failed: 'Nie udało się. Spróbuj ponownie.',
+          upcoming: (n: number) => `Zaplanowane (${n})`,
+        },
+        en: {
+          scheduled: (w: string) => `Scheduled: ${w}`,
+          cancel: 'Cancel',
+          sure: 'Cancel it? The client will not see it.',
+          yes: 'Yes, cancel',
+          no: 'No',
+          cancelled: 'cancelled',
+          done: 'Cancelled',
+          print: 'Print',
+          failed: 'That did not work. Try again.',
+          upcoming: (n: number) => `Scheduled (${n})`,
+        },
+      }),
+    [],
+  );
+  const { path } = useLocation();
+  const [asking, setAsking] = useState<string | null>(null);
+  const [printing, setPrinting] = useState<{ mod: typeof import('../components/Print'); a: SentAssignment; client: string | null } | null>(null);
+  const now = Date.now();
+  const at = (iso: string | null) => (iso ? Date.parse(iso) : NaN);
+  const isLater = (a: SentAssignment) => !a.withdrawnAt && at(a.visibleFrom) > now;
+  /** Kiedy podopieczny to dostał: „pokaż od”, chyba że anulowane wcześniej — wtedy dzień wysłania. */
+  const shownAt = (a: SentAssignment) => (a.visibleFrom && !(a.withdrawnAt && at(a.withdrawnAt) < at(a.visibleFrom)) ? a.visibleFrom : a.createdAt);
+  const rows = useMemo(() => {
+    const all = list ?? [];
+    const later = all.filter(isLater).sort((x, y) => at(x.visibleFrom) - at(y.visibleFrom));
+    const rest = all.filter((a) => !isLater(a)).sort((x, y) => at(shownAt(y)) - at(shownAt(x)));
+    return { later, rest };
+    // `now` zmienia się co render — lista liczy się od nowa razem z danymi.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [list]);
+
+  const when = (iso: string) => {
+    const d = new Date(iso);
+    const year = d.getFullYear() !== new Date().getFullYear();
+    const day = new Intl.DateTimeFormat(LOCALE, { day: 'numeric', month: 'long', ...(year ? { year: 'numeric' } : {}) }).format(d);
+    return `${day}, ${new Intl.DateTimeFormat(LOCALE, { hour: 'numeric', minute: '2-digit' }).format(d)}`;
+  };
+
+  const cancel = (a: SentAssignment) =>
+    void withdrawAssignment(a.id).then(
+      () => {
+        setAsking(null);
+        toast(S.done);
+        reload();
+      },
+      () => toast(S.failed),
+    );
+
+  const print = (a: SentAssignment) => {
+    const id = path.match(/^\/podopieczni\/([^/]+)$/)?.[1];
+    void Promise.all([import('../components/Print'), id ? getConnection(decodeURIComponent(id)).catch(() => null) : Promise.resolve(null)]).then(
+      ([mod, c]) => setPrinting({ mod, a, client: c ? shortPseudonym(c.pseudonym) : null }),
+      () => toast(S.failed),
+    );
+  };
+
   if (error) return <Failure error={error} retry={reload} />;
   if (!list) return <Loading />;
   if (!list.length) return <p className="soft">{T.sentEmpty}</p>;
+
+  const row = (a: SentAssignment) => {
+    const b = a.envelope?.body;
+    const title = !b
+      ? T.unreadableAssignment
+      : b.kind === 'plan'
+        ? b.plan.name
+        : b.kind === 'workout'
+          ? b.workout.name
+          : b.kind === 'note' || b.kind === 'form' || b.kind === 'habits' || b.kind === 'meals'
+            ? b.title
+            : L.kind[b.kind];
+    const later = isLater(a);
+    const cancelledEarly = !!a.withdrawnAt && !!a.visibleFrom && at(a.withdrawnAt) < at(a.visibleFrom);
+    return (
+      <tr key={a.id}>
+        <td>
+          <strong>{title}</strong>
+          <div className="small soft">
+            {L.kind[a.kind] === L.area[a.area] ? L.kind[a.kind] : `${L.kind[a.kind]} · ${L.area[a.area]}`} · {fmtDate(shownAt(a), LOCALE)}
+          </div>
+          {a.receipt?.comment ? (
+            <div className="small" style={{ marginTop: 4 }}>
+              {T.comment}: „{a.receipt.comment}”
+            </div>
+          ) : null}
+        </td>
+        <td className="small">
+          {later ? (
+            <span className="chip blue">{S.scheduled(when(a.visibleFrom!))}</span>
+          ) : a.withdrawnAt ? (
+            <span className="chip muted">{cancelledEarly ? S.cancelled : T.withdrawn}</span>
+          ) : a.receipt ? (
+            <span className={`chip ${a.receipt.status === 'declined' ? 'warn' : 'ok'}`}>
+              {T.receipt[a.receipt.status]} · {ago(a.receipt.updatedAt)}
+            </span>
+          ) : (
+            <span className="chip muted">{T.waiting}</span>
+          )}
+        </td>
+        <td className="n">
+          {asking === a.id ? (
+            <span className="stack" style={{ justifyItems: 'end', gap: 6 }} role="group" aria-label={S.sure}>
+              <span className="small">{S.sure}</span>
+              <span className="row" style={{ flexWrap: 'nowrap' }}>
+                <button type="button" className="btn danger small" onClick={() => cancel(a)}>
+                  {S.yes}
+                </button>
+                <button type="button" className="btn ghost small" onClick={() => setAsking(null)}>
+                  {S.no}
+                </button>
+              </span>
+            </span>
+          ) : (
+            <span className="row" style={{ justifyContent: 'flex-end', flexWrap: 'nowrap' }}>
+              {a.envelope ? (
+                <button type="button" className="btn ghost small" onClick={() => print(a)}>
+                  {S.print}
+                </button>
+              ) : null}
+              {later ? (
+                <button type="button" className="btn ghost small" onClick={() => setAsking(a.id)}>
+                  {S.cancel}
+                </button>
+              ) : !a.withdrawnAt ? (
+                <button type="button" className="btn ghost small" onClick={() => void withdrawAssignment(a.id).then(reload)}>
+                  {T.withdraw}
+                </button>
+              ) : null}
+            </span>
+          )}
+        </td>
+      </tr>
+    );
+  };
+
   return (
-    <section className="card flat scroll-x">
-      <table className="tbl">
-        <tbody>
-          {list.map((a) => {
-            const b = a.envelope?.body;
-            const title = !b ? T.unreadableAssignment : b.kind === 'plan' ? b.plan.name : b.kind === 'workout' ? b.workout.name : b.kind === 'note' ? b.title : L.kind[b.kind];
-            return (
-              <tr key={a.id}>
-                <td>
-                  <strong>{title}</strong>
-                  <div className="small soft">
-                    {L.kind[a.kind] === L.area[a.area] ? L.kind[a.kind] : `${L.kind[a.kind]} · ${L.area[a.area]}`} · {fmtDate(a.createdAt, LOCALE)}
-                  </div>
-                  {a.receipt?.comment ? (
-                    <div className="small" style={{ marginTop: 4 }}>
-                      {T.comment}: „{a.receipt.comment}”
-                    </div>
-                  ) : null}
-                </td>
-                <td className="small">
-                  {a.withdrawnAt ? (
-                    <span className="chip muted">{T.withdrawn}</span>
-                  ) : a.receipt ? (
-                    <span className={`chip ${a.receipt.status === 'declined' ? 'warn' : 'ok'}`}>
-                      {T.receipt[a.receipt.status]} · {ago(a.receipt.updatedAt)}
-                    </span>
-                  ) : (
-                    <span className="chip muted">{T.waiting}</span>
-                  )}
-                </td>
-                <td className="n">
-                  {!a.withdrawnAt ? (
-                    <button type="button" className="btn ghost small" onClick={() => void withdrawAssignment(a.id).then(reload)}>
-                      {T.withdraw}
-                    </button>
-                  ) : null}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </section>
+    <>
+      {rows.later.length ? (
+        <section className="card flat scroll-x" aria-label={S.upcoming(rows.later.length)}>
+          <h2 style={{ padding: '14px 16px 0' }}>{S.upcoming(rows.later.length)}</h2>
+          <table className="tbl">
+            <tbody>{rows.later.map(row)}</tbody>
+          </table>
+        </section>
+      ) : null}
+      {rows.rest.length ? (
+        <section className="card flat scroll-x">
+          <table className="tbl">
+            <tbody>{rows.rest.map(row)}</tbody>
+          </table>
+        </section>
+      ) : null}
+      {printing && printing.a.envelope ? (
+        <printing.mod.PrintLayer body={printing.a.envelope.body} clientId={printing.client} sentAt={printing.a.envelope.sentAt} onClose={() => setPrinting(null)} />
+      ) : null}
+    </>
   );
 }
