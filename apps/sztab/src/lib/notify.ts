@@ -1,5 +1,10 @@
-import type { Connection } from './data';
 import { TRACKER_API_URL } from './env';
+
+/**
+ * Tyle współpracy, ile trzeba do powiadomienia — bez importu `data.ts`, żeby moduł dało się wczytać także
+ * w teście umowy po stronie GYM TRACKERa (`src/link/notify.contract.test.ts`), który nie zna aliasów Sztabu.
+ */
+type Notifiable = { notifyToken?: string | null };
 
 /**
  * Powiadomienia push do podopiecznego (spec 2026-11-25 „powiadomienia”).
@@ -35,13 +40,13 @@ export const NOTIFY_TIMEOUT_MS = 5000;
 const TOKEN = /^[A-Za-z0-9_-]{43}$/;
 const REF = /^[\w-]{1,64}$/;
 
-const tokenOf = (c: Pick<Connection, 'notifyToken'> | null | undefined): string | null => {
+const tokenOf = (c: Notifiable | null | undefined): string | null => {
   const t = c?.notifyToken;
   return typeof t === 'string' && TOKEN.test(t) ? t : null;
 };
 
 /** Czy podopieczny dostanie powiadomienie: włączył je w GYM TRACKERze, a ten Sztab zna serwer aplikacji. */
-export const canNotify = (c: Pick<Connection, 'notifyToken'> | null | undefined): boolean => !!TRACKER_API_URL && tokenOf(c) !== null;
+export const canNotify = (c: Notifiable | null | undefined): boolean => !!TRACKER_API_URL && tokenOf(c) !== null;
 
 async function post(path: '/link/notify' | '/link/cancel', body: Record<string, unknown>): Promise<void> {
   const ctl = new AbortController();
@@ -63,7 +68,7 @@ async function post(path: '/link/notify' | '/link/cancel', body: Record<string, 
   }
 }
 
-export async function notifyClient(c: Pick<Connection, 'notifyToken'>, kind: NotifyKind, opts: NotifyOpts = {}): Promise<void> {
+export async function notifyClient(c: Notifiable, kind: NotifyKind, opts: NotifyOpts = {}): Promise<void> {
   try {
     const token = tokenOf(c);
     if (!token || !TRACKER_API_URL || !KINDS.has(kind)) return;
@@ -86,7 +91,7 @@ export async function notifyClient(c: Pick<Connection, 'notifyToken'>, kind: Not
 }
 
 /** Odwołanie zaplanowanego powiadomienia (wycofane zaplanowane zalecenie, odwołana wizyta). */
-export async function cancelNotify(c: Pick<Connection, 'notifyToken'>, ref: string): Promise<void> {
+export async function cancelNotify(c: Notifiable, ref: string): Promise<void> {
   try {
     const token = tokenOf(c);
     if (!token || !TRACKER_API_URL || typeof ref !== 'string' || !REF.test(ref)) return;
