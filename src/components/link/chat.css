@@ -1,0 +1,73 @@
+/*
+ * Rozmowa z prowadzącym (`Chat.tsx`). Dymki: prowadzący po lewej na tle wnętrza karty, nasze po
+ * prawej w kolorze akcji (stal) — tak jak przycisk, najmocniejsza plama. Niewysłana nasza
+ * wiadomość jasna z przerywaną krawędzią: jeszcze nie „poszła”. Kolory wyłącznie z tokenów.
+ */
+
+.lk-chat-log{display:grid;gap:6px}
+.lk-chat-day{display:grid;gap:6px}
+
+/* Nagłówek dnia: napis między dwiema kreskami. */
+.lk-chat .lk-chat-daytitle{display:flex;align-items:center;gap:10px;margin:12px 0 4px;
+  font-family:var(--body);font-size:11.5px;font-weight:600;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--ink-soft)}
+.lk-chat .lk-chat-day:first-child .lk-chat-daytitle{margin-top:0}
+.lk-chat-daytitle::before,.lk-chat-daytitle::after{content:'';flex:1;height:1px;background:var(--line)}
+
+.lk-chat-msg{position:relative;max-width:85%;padding:8px 12px 6px;border-radius:14px;
+  border:1px solid transparent}
+.lk-chat-msg.theirs{justify-self:start;background:var(--surface-2);color:var(--ink);
+  border-bottom-left-radius:4px}
+.lk-chat-msg.mine{justify-self:end;background:var(--steel);color:var(--on-strong);
+  border-bottom-right-radius:4px}
+.lk-chat-msg.mine.waiting{background:var(--surface);color:var(--ink);border:1px dashed var(--edge)}
+
+.lk-chat .lk-chat-text{margin:0;font-size:15px;line-height:1.4;color:inherit;max-width:none;
+  white-space:pre-wrap;overflow-wrap:anywhere}
+.lk-chat .lk-chat-meta{margin:2px 0 0;font-size:11.5px;color:inherit;opacity:.8;text-align:right}
+.lk-chat-msg.theirs .lk-chat-meta{text-align:left}
+.lk-chat-msg.waiting .lk-chat-meta{opacity:1}
+.lk-chat-wait{color:var(--warn);font-weight:600}
+
+.lk-chat .lk-chat-read{justify-self:end;margin:-2px 4px 2px;font-size:12px;color:var(--ink-soft)}
+
+/* Odniesienie (trening albo zalecenie): obrys w kolorze tekstu dymka, więc czyta się w obu. */
+.lk-chat-ref{display:inline-block;max-width:100%;margin:0 0 4px;padding:2px 9px;border:1px solid currentColor;
+  border-radius:999px;font-size:12.5px;font-weight:600;line-height:1.4;color:inherit;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}
+a.lk-chat-ref{text-decoration:underline;min-height:28px}
+
+.lk-chat .lk-chat-empty{margin:4px 0 6px;font-size:14px}
+.lk-chat .lk-chat-note{margin:14px 0 0;padding:9px 11px;background:var(--surface-2);border-radius:var(--r);
+  font-size:13.5px;color:var(--ink)}
+.lk-chat .lk-chat-e2e{margin:12px 0 0}
+
+/* ---------------- Pisanie ---------------- */
+
+.lk-chat-compose{display:grid;gap:8px;margin-top:16px;padding-top:12px;border-top:1px solid var(--line)}
+.lk-chat-input{width:100%;min-height:48px;font:inherit;font-size:16px;line-height:1.4;padding:10px 12px;
+  border:1px solid var(--edge);border-radius:var(--r);background:var(--field);color:var(--ink);
+  resize:none;overflow-y:auto}
+.lk-chat-input:focus-visible{outline:2px solid var(--steel);outline-offset:1px}
+.lk-chat .lk-chat-count{margin:-2px 0 0;font-size:12px;text-align:right;font-variant-numeric:tabular-nums}
+.lk-chat-actions{justify-content:flex-end}
+.lk-chat-send{min-width:110px}
+/* Pusty tekst — nie ma czego wysłać; przycisk mówi to wyglądem, nie tylko atrybutem. */
+.lk-chat-send:disabled{opacity:.45;cursor:default}
+.lk-chat-send:disabled:active{transform:none}
+
+.lk-chat .lk-chat-attached{display:flex;align-items:center;gap:2px;margin:0;color:var(--steel)}
+.lk-chat-attached .lk-chat-ref{margin:0}
+.lk-chat-x{min-width:44px;min-height:44px;border:0;background:none;font:inherit;font-size:22px;line-height:1;
+  color:var(--ink-soft);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.lk-chat-x:focus-visible{outline:2px solid var(--steel);outline-offset:-4px}
+
+.lk-chat-sessions{list-style:none;margin:0;padding:0;border:1px solid var(--line);border-radius:var(--r);
+  background:var(--surface)}
+.lk-chat-sessions li + li{border-top:1px solid var(--line)}
+.lk-chat-sessions button{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;
+  min-height:48px;padding:8px 12px;border:0;background:none;font:inherit;font-size:14.5px;color:var(--ink);
+  text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.lk-chat-sessions button:active{background:var(--surface-2)}
+.lk-chat-sessions button:focus-visible{outline:2px solid var(--steel);outline-offset:-3px}
+.lk-chat-when{flex:none;font-size:12.5px;color:var(--ink-soft)}
