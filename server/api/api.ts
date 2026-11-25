@@ -1,10 +1,11 @@
 import { notifyDiscord, validWebhook } from './discord';
-import { garmin } from './garmin';
+import { BOX_TTL_MS, garmin } from './garmin';
 import { dueItems, isStale, localParts, pruneSent, sentKey } from './schedule';
 import type { ReminderItem } from './schedule';
 import type { FeedbackSummary, Store } from './store';
-import { link } from './link';
-import { pushRequest } from './webpush';
+import { link, linkTick } from './link';
+import type { LinkTickResult } from './link';
+import { pushRequest, sendWithin } from './webpush';
 import { subscriptionOf, validEndpoint, validTz } from './subscription';
 import { lastDays, parseStats, statsPage, utcDay } from './stats';
 import type { Vapid } from './webpush';
@@ -26,7 +27,8 @@ export { validEndpoint };
  * - `POST /garmin/push` — zaszyfrowana paczka z zegarka Garmin (serwer nie ma klucza).
  * - `POST /garmin/pull`, `POST /garmin/forget` — odbiór paczki i odłączenie zegarka.
  * - `POST /link/…` — powiadomienia od prowadzącego (GYM TRACKER Sztab) tokenem współpracy (`link.ts`).
- * - `tick` — co kilka minut: wyślij to, czemu wybiła godzina (zaplanowane od prowadzącego: `linkTick`).
+ * - `cron` — co kilka minut: wyślij to, czemu wybiła godzina — najpierw przypomnienia (`tick`), potem
+ *   zaplanowane od prowadzącego (`linkTick`), na końcu sprzątanie skrzynek zegarka; każde osobno.
  *
  * Konta nie ma. Subskrypcję identyfikuje jej własny adres w usłudze powiadomień — losowy,
  * długi i znany tylko temu telefonowi, więc wypisać może ją tylko on.
@@ -150,7 +152,7 @@ export async function handle(
     return garmin(path, data, () => ipHashOf(req, env), store, now, { reply, json });
   }
 
-  if (path.startsWith('/link/')) return link(path, data, env, store, now, reply, defer, send);
+  if (path.startsWith('/link/')) return link(path, data, env, store, now, reply, defer, send, () => ipHashOf(req, env));
 
   if (path === '/subscribe') {
     const sub = subscriptionOf(data.subscription);
@@ -171,8 +173,10 @@ export async function handle(
 }
 
 /**
- * Jeden przebieg crona. Postęp zapisuje się po każdej subskrypcji, więc przebieg przerwany
- * limitem czasu procesora nie wyśle niczego dwa razy — następny zacznie od niewysłanych.
+ * Przypomnienia w przebiegu crona. Postęp zapisuje się po każdej subskrypcji, więc przebieg przerwany
+ * limitem czasu procesora nie wyśle niczego dwa razy — następny zacznie od niewysłanych. Kłopot z jedną
+ * subskrypcją (usługa milczy dłużej niż limit czasu, sieć, zły klucz) liczy się jako nieudane i nie
+ * zatrzymuje pozostałych.
  */
 export async function tick(
   store: Store,
@@ -184,41 +188,79 @@ export async function tick(
   const out = { sent: 0, removed: 0, failed: 0 };
 
   for (const r of await store.all()) {
-    if (isStale(r, now.getTime())) {
-      await store.remove(r.endpoint);
-      out.removed++;
-      continue;
-    }
-    const due = dueItems(r, now);
-    if (!due.length) continue;
-
-    const sent = pruneSent(r.sent, localParts(now, r.tz).date);
-    let gone = false;
-    for (const item of due) {
-      const req = await pushRequest(
-        { endpoint: r.endpoint, keys: { p256dh: r.p256dh, auth: r.auth } },
-        { title: item.title, body: item.body, url: item.url, tag: item.tag },
-        vapid,
-        // Trzy godziny w usłudze, jeśli telefon jest offline; temat zastępuje starszą wersję.
-        { ttl: 3 * 3600, urgency: 'normal', topic: item.tag },
-      );
-      const res = await send(req);
-      if (res.status === 404 || res.status === 410) {
-        gone = true;
-        break;
+    try {
+      if (isStale(r, now.getTime())) {
+        await store.remove(r.endpoint);
+        out.removed++;
+        continue;
       }
-      if (res.ok) {
-        sent.push(sentKey(item));
-        out.sent++;
-      } else out.failed++;
-    }
+      const due = dueItems(r, now);
+      if (!due.length) continue;
 
-    if (gone) {
-      await store.remove(r.endpoint);
-      out.removed++;
-    } else await store.markSent(r.endpoint, sent);
+      const sent = pruneSent(r.sent, localParts(now, r.tz).date);
+      let gone = false;
+      for (const item of due) {
+        let res: Response;
+        try {
+          const req = await pushRequest(
+            { endpoint: r.endpoint, keys: { p256dh: r.p256dh, auth: r.auth } },
+            { title: item.title, body: item.body, url: item.url, tag: item.tag },
+            vapid,
+            // Trzy godziny w usłudze, jeśli telefon jest offline; temat zastępuje starszą wersję.
+            { ttl: 3 * 3600, urgency: 'normal', topic: item.tag },
+          );
+          res = await sendWithin(send, req);
+        } catch {
+          // Sieć, limit czasu albo zły klucz — jak błąd usługi: następny przebieg spróbuje znowu.
+          out.failed++;
+          continue;
+        }
+        if (res.status === 404 || res.status === 410) {
+          gone = true;
+          break;
+        }
+        if (res.ok) {
+          sent.push(sentKey(item));
+          out.sent++;
+        } else out.failed++;
+      }
+
+      if (gone) {
+        await store.remove(r.endpoint);
+        out.removed++;
+      } else await store.markSent(r.endpoint, sent);
+    } catch {
+      out.failed++;
+    }
   }
   return out;
+}
+
+/** Wynik przebiegu crona — jedna linijka JSON w dzienniku Workera. Część, która rzuciła, ma `{error}`. */
+export interface CronResult {
+  reminders: Awaited<ReturnType<typeof tick>> | { error: string };
+  coach: LinkTickResult | { error: string };
+  boxes: number | { error: string };
+}
+
+/**
+ * Jeden przebieg crona: przypomnienia, potem zaplanowane od prowadzącego, potem skrzynki zegarków, które
+ * od tygodnia milczą. Po kolei, nie naraz: przypomnienia idą pierwsze, więc kolejka od prowadzącego
+ * (choćby pełna zepsutych subskrypcji) nie zje im procesora ani zapytań na zewnątrz, a błąd jednej
+ * części nie zatrzymuje pozostałych.
+ */
+export async function cron(store: Store, env: Env, now: Date, send: Send = (r) => fetch(r)): Promise<CronResult> {
+  const safe = async <T>(f: () => Promise<T>): Promise<T | { error: string }> => {
+    try {
+      return await f();
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : String(e) };
+    }
+  };
+  const reminders = await safe(() => tick(store, env, now, send));
+  const coach = await safe(() => linkTick(store, env, now, send));
+  const boxes = await safe(() => store.pruneBoxes(now.getTime() - BOX_TTL_MS));
+  return { reminders, coach, boxes };
 }
 
 /* ---------------- Uwagi od użytkowników ---------------- */

@@ -1,7 +1,5 @@
-import { handle, tick } from './api';
+import { cron, handle } from './api';
 import type { Env as ApiEnv } from './api';
-import { BOX_TTL_MS } from './garmin';
-import { linkTick } from './link';
 import { d1Store } from './store';
 import type { D1Database } from './store';
 
@@ -23,14 +21,9 @@ export default {
   // trzyma Workera, aż wyśle.
   fetch: (req: Request, env: Env, ctx: ExecutionContext): Promise<Response> =>
     handle(req, env, d1Store(env.DB), Date.now(), (p) => ctx.waitUntil(p)),
+  // Przypomnienia, potem zaplanowane od prowadzącego, potem skrzynki zegarków — po kolei, każde osobno
+  // (`cron` w `api.ts`). Dziennik: `{"reminders":{…},"coach":{…},"boxes":n}`, część z błędem — `{"error":…}`.
   scheduled: (_event: unknown, env: Env, ctx: ExecutionContext): void => {
-    const store = d1Store(env.DB);
-    const now = new Date();
-    // Przypomnienia, zaplanowane od prowadzącego, a przy okazji skrzynki zegarków, które od tygodnia milczą.
-    ctx.waitUntil(
-      Promise.all([tick(store, env, now), linkTick(store, env, now), store.pruneBoxes(now.getTime() - BOX_TTL_MS)]).then(
-        ([r, coach, boxes]) => console.log(JSON.stringify({ ...r, coach, boxes })),
-      ),
-    );
+    ctx.waitUntil(cron(d1Store(env.DB), env, new Date()).then((r) => console.log(JSON.stringify(r))));
   },
 };
