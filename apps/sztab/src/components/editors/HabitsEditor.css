@@ -1,0 +1,17 @@
+/* Kreator nawyków. Prefiks sz-habits-; wiersze korzystają z .ex-row kreatora treningu. */
+.sz-habits-list { list-style: none; padding: 0; margin: 0; }
+.sz-habits-body { gap: 10px; min-width: 0; }
+.sz-habits-fields { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+.sz-habits-fields .field > span { font-size: 13px; font-weight: 500; color: var(--ink-soft); }
+@media (max-width: 720px) { .sz-habits-fields { grid-template-columns: minmax(0, 1fr); } }
+.sz-habits-days { border: 0; padding: 0; margin: 0; min-width: 0; }
+.sz-habits-days legend { font-size: 13px; font-weight: 500; color: var(--ink-soft); padding: 0; margin-bottom: 4px; }
+.sz-habits-day { min-height: 40px; cursor: pointer; padding: 4px 10px; }
+.sz-habits-day input { width: 18px; height: 18px; margin: 0; accent-color: var(--steel); }
+.sz-habits-day:has(input:checked) { background: var(--blue-bg); color: var(--blue-ink); border-color: transparent; }
+.sz-habits-day:has(input:focus-visible) { outline: 2.5px solid var(--blue-ink); outline-offset: 2px; }
+.sz-habits-quick { display: inline-flex; flex-wrap: wrap; gap: 6px; margin-left: 6px; }
+.sz-habits-quick .btn[aria-pressed='true'] { background: var(--blue-bg); color: var(--blue-ink); border-color: var(--blue-ink); }
+.sz-habits-presets .btn { font-weight: 500; }
+.sz-habits-strong { font-weight: 600; font-size: 14px; }
+.sz-habits-problems ul { margin: 6px 0 0; padding-left: 20px; }

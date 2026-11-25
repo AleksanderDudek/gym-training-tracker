@@ -1,0 +1,34 @@
+/* Realizacja nawyków i jadłospisu (zakładka podopiecznego). Prefiks sz-adh-. */
+.sz-adh-head { display: flex; flex-wrap: wrap; gap: 12px 24px; justify-content: space-between; align-items: start; }
+.sz-adh-kpis { display: flex; flex-wrap: wrap; gap: 10px 22px; }
+.sz-adh-kpi { min-width: 92px; }
+.sz-adh-kpi .value { font-size: 24px; }
+
+.sz-adh-light { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; padding: 2px 9px 2px 7px; border-radius: 999px; white-space: nowrap; }
+.sz-adh-light i { width: 9px; height: 9px; border-radius: 50%; background: currentColor; flex: none; }
+.sz-adh-green { color: var(--ok); background: var(--green-bg); }
+.sz-adh-yellow { color: var(--gold-ink); background: var(--gold-bg); }
+.sz-adh-red { color: var(--bad); background: var(--orange-bg); }
+
+.sz-adh-grid { font-size: 13px; }
+.sz-adh-grid th, .sz-adh-grid td { padding: 8px 6px; }
+.sz-adh-grid th:first-child { padding-left: 14px; }
+.sz-adh-grid td:last-child, .sz-adh-grid th:last-child { padding-right: 14px; }
+.sz-adh-grid th.sz-adh-day { text-align: center; min-width: 34px; line-height: 1.25; }
+.sz-adh-day span { display: block; }
+.sz-adh-grid th.sz-adh-item { font: 500 14px/1.35 var(--body); text-transform: none; letter-spacing: 0; color: var(--ink); background: none; min-width: 170px; max-width: 260px; }
+.sz-adh-item span { display: block; }
+.sz-adh-cell { text-align: center; font-weight: 700; font-size: 15px; }
+.sz-adh-cell.sz-adh-done { color: var(--ok); background: var(--green-bg); }
+.sz-adh-cell.sz-adh-missed { color: var(--bad); background: var(--orange-bg); }
+.sz-adh-cell.sz-adh-pending { color: var(--gold-ink); }
+.sz-adh-cell.sz-adh-unknown, .sz-adh-cell.sz-adh-off { color: var(--ink-soft); font-weight: 500; }
+
+.sz-adh-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+.sz-adh-mark { display: inline-block; min-width: 18px; text-align: center; border-radius: var(--r); }
+.sz-adh-mark.sz-adh-done { color: var(--ok); background: var(--green-bg); }
+.sz-adh-mark.sz-adh-missed { color: var(--bad); background: var(--orange-bg); }
+.sz-adh-mark.sz-adh-pending { color: var(--gold-ink); }
+
+.sz-adh-meals td { vertical-align: middle; }
+.sz-adh-later td { color: var(--ink-soft); }

@@ -1,0 +1,14 @@
+/* Nawyki od prowadzącego (strona zalecenia). Prefiks lk-habits-. */
+.lk-habits-head h2{font-family:var(--display);font-size:20px;line-height:1.15;font-weight:500;margin:0 0 4px}
+.lk-habits-when{font-family:var(--display);font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);font-weight:500;margin:0 0 6px}
+.lk-habits-list{list-style:none;margin:0;padding:0}
+.lk-habits-list li+li{border-top:1px solid var(--line)}
+.lk-habits-row{display:flex;align-items:center;gap:14px;min-height:56px;padding:8px 0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.lk-habits-row input{width:28px;height:28px;margin:0;flex:none;accent-color:var(--ok);cursor:pointer}
+.lk-habits-text{display:flex;flex-direction:column;min-width:0}
+.lk-habits-label{font-size:16px;font-weight:600;color:var(--ink)}
+.lk-habits-dose{font-size:13.5px;color:var(--ink-soft)}
+.lk-habits-done .lk-habits-label{color:var(--ink-soft)}
+.lk-habits-back{font-size:13px;color:var(--ink-soft)}
+.lk-habits-link{font:inherit;background:none;border:0;padding:0 2px;min-height:44px;color:var(--steel);text-decoration:underline;cursor:pointer}
+.lk-habits-whole .link-list{margin-top:0}
