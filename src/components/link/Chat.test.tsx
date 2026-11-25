@@ -150,7 +150,7 @@ describe('strona rozmowy', () => {
   it('wysłana wiadomość dochodzi do prowadzącego zaszyfrowana; po jego odczycie stoi „Przeczytane”', async () => {
     const user = userEvent.setup();
     page();
-    await waitFor(() => expect(pulls()).toBeGreaterThan(0));
+    await vi.waitFor(() => expect(pulls()).toBeGreaterThan(0));
     const box = screen.getByRole('textbox', { name: 'Wiadomość do: Anna Kowalska' });
     expect(screen.getByRole('button', { name: 'Wyślij' })).toBeDisabled();
     await user.type(box, 'Kolano lepiej, robię dalej plan.');
@@ -173,7 +173,7 @@ describe('strona rozmowy', () => {
   it('bez sieci: „czeka na sieć”, a po synchronizacji idzie i znacznik znika', async () => {
     const user = userEvent.setup();
     const { onToast } = page();
-    await waitFor(() => expect(pulls()).toBeGreaterThan(0));
+    await vi.waitFor(() => expect(pulls()).toBeGreaterThan(0));
     server.setOffline(true);
     await user.type(screen.getByRole('textbox'), 'Bez zasięgu w piwnicy');
     await user.click(screen.getByRole('button', { name: 'Wyślij' }));
@@ -195,7 +195,7 @@ describe('strona rozmowy', () => {
     const user = userEvent.setup();
     const state = { ...freshState(), log: [entry('2026-11-20T18:00:00.000Z', 'Dół B'), entry('2026-11-24T18:30:00.000Z', 'Góra A')] };
     page(state);
-    await waitFor(() => expect(pulls()).toBeGreaterThan(0));
+    await vi.waitFor(() => expect(pulls()).toBeGreaterThan(0));
     const attach = screen.getByRole('button', { name: 'Dołącz trening' });
     expect(attach).toHaveAttribute('aria-expanded', 'false');
     await user.click(attach);
@@ -230,7 +230,7 @@ describe('strona rozmowy', () => {
 
   it('bez treningów w dzienniku nie ma czego dołączać', async () => {
     page();
-    await waitFor(() => expect(pulls()).toBeGreaterThan(0));
+    await vi.waitFor(() => expect(pulls()).toBeGreaterThan(0));
     expect(screen.queryByRole('button', { name: 'Dołącz trening' })).not.toBeInTheDocument();
   });
 
@@ -249,13 +249,13 @@ describe('strona rozmowy', () => {
   it('pyta o nowe co 20 s, ale tylko na widocznej karcie; powrót na kartę — od razu', async () => {
     vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
     page();
-    await waitFor(() => expect(pulls()).toBe(1));
+    await vi.waitFor(() => expect(pulls()).toBe(1));
     await server.message(conn.id, 'Pamiętaj o rozgrzewce');
     await act(async () => {
       vi.advanceTimersByTime(POLL_MS);
     });
     expect(await screen.findByText('Pamiętaj o rozgrzewce')).toBeInTheDocument();
-    await waitFor(() => expect(pulls()).toBe(2));
+    await vi.waitFor(() => expect(pulls()).toBe(2));
 
     setVisibility('hidden');
     await act(async () => {
@@ -266,13 +266,15 @@ describe('strona rozmowy', () => {
     await server.message(conn.id, 'Jutro 18:00?');
     act(() => setVisibility('visible'));
     expect(await screen.findByText('Jutro 18:00?')).toBeInTheDocument();
-    await waitFor(() => expect(server.connections.get(conn.id)!.messages.every((m) => m.readAt)).toBe(true));
+    // `vi.waitFor` (prawdziwe zegary): `waitFor` z testing-library sprawdza co `setInterval`, a ten jest tu
+    // udawany — zmiany na serwerze (bez zmiany na ekranie) zauważyłby tylko przypadkiem.
+    await vi.waitFor(() => expect(server.connections.get(conn.id)!.messages.every((m) => m.readAt)).toBe(true));
   });
 
   it('po wyjściu ze strony przestaje pytać', async () => {
     vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
     const view = render(<ChatPage id={conn.id} state={freshState()} onToast={vi.fn()} />);
-    await waitFor(() => expect(pulls()).toBe(1));
+    await vi.waitFor(() => expect(pulls()).toBe(1));
     view.unmount();
     vi.advanceTimersByTime(POLL_MS * 2);
     expect(pulls()).toBe(1);
