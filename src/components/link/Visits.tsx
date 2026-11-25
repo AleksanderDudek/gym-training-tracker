@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { agoText } from '../../deviceStatus';
 import { LOCALE, text } from '../../i18n';
+import { cancelVisitReminder, scheduleVisitReminder } from '../../link/notify';
 import { clientBook, clientCancelBooking, clientSlots, isRpcError } from '../../link/rpc';
 import type { Booking, Slot } from '../../link/rpc';
 import { connectionOf, linkState, subscribeLink, updateLink, useLink } from '../../link/store';
@@ -220,8 +221,26 @@ export function VisitsPage({ id, onToast }: { id: string; onToast: (m: string) =
     if (alive.current) setChecking(true);
     await refresh();
   };
-  const book = (slot: Slot) => act('book', (x) => clientBook(x.id, x.token, slot.id), T.booked);
-  const cancel = (b: Booking) => act('cancel', (x) => clientCancelBooking(x.id, x.token, b.id), T.cancelled);
+  // Przy włączonych powiadomieniach: przypomnienie 2 godziny przed wizytą z kolejki serwera aplikacji
+  // (w tle — rezerwacja i odwołanie nie czekają na nie i nie psują się bez niego).
+  const book = (slot: Slot) =>
+    act(
+      'book',
+      async (x) => {
+        const booking = await clientBook(x.id, x.token, slot.id);
+        void scheduleVisitReminder(x.id, { id: booking, startsAt: slot.startsAt });
+      },
+      T.booked,
+    );
+  const cancel = (b: Booking) =>
+    act(
+      'cancel',
+      async (x) => {
+        await clientCancelBooking(x.id, x.token, b.id);
+        void cancelVisitReminder(x.id, b.id);
+      },
+      T.cancelled,
+    );
   const addToCalendar = (b: Booking) => {
     downloadIcs(visitIcsName(b), visitIcs(b, c.coach.name, new Date()));
     onToast(T.icsSaved);

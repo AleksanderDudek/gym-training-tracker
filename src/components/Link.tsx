@@ -9,6 +9,7 @@ import { acceptInvite, areaChecks, keyMatches } from '../link/accept';
 import type { AcceptFailure } from '../link/accept';
 import { importPlan, importWorkout } from '../link/assign';
 import { linkConfigured, sztabAppUrl } from '../link/config';
+import { askCoachPermission } from '../link/notify';
 import { invitePreview, isRpcError } from '../link/rpc';
 import { activeConnections, connectionOf, linkState, subscribeLink, unreadMessages, updateLink, useLink, visibleAssignments } from '../link/store';
 import type { LinkConnection, StoredAssignment } from '../link/store';
@@ -25,6 +26,7 @@ import { FormAssignment } from './link/FormFill';
 import { HabitsAssignment } from './link/HabitsDay';
 import { MealsAssignment } from './link/MealsDay';
 import { PhotosHint } from './link/PhotosHint';
+import { NotifyCheck, NotifySection, enableAfterAccept, pushPossible, useCoachPushState } from './link/Notify';
 import { VisitsPage } from './link/Visits';
 
 /**
@@ -302,6 +304,9 @@ function InviteForm({
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<AcceptFailure | null>(null);
+  // Powiadomienia od prowadzącego: zaznaczone, gdy telefon je obsługuje (zgoda przeglądarki i tak pyta osobno).
+  const [pushSt] = useCoachPushState();
+  const [notify, setNotify] = useState(true);
   // Sekret zapisany dopiero przy przyjęciu; do tego czasu ID liczy się z kandydata.
   const [candidate] = useState(() => state.cfg.linkSecret ?? newIdSecret());
   const secret = state.cfg.linkSecret ?? candidate;
@@ -319,6 +324,9 @@ function InviteForm({
 
   const accept = async () => {
     if (!chosen.length) return setError('no_areas');
+    // Zgoda na powiadomienia pytana od razu w stuknięciu — po rozmowie z serwerem przeglądarka nie uznałaby gestu.
+    const wantPush = notify && pushPossible(pushSt);
+    const asked = wantPush ? askCoachPermission() : null;
     setBusy(true);
     setError(null);
     const r = await acceptInvite({ preview, fingerprint, chosen, replace, scopes, secret: ensureSecret(secret) });
@@ -327,7 +335,10 @@ function InviteForm({
       setError(r.reason);
       return;
     }
-    const pushed = await pushOne(r.connection, state, { force: true });
+    const [pushed] = await Promise.all([
+      pushOne(r.connection, state, { force: true }),
+      wantPush ? enableAfterAccept(r.connection.id, state, asked) : null,
+    ]);
     onToast(pushed === 'sent' ? T.accepted : T.acceptedLater);
     go(linkConnectionPath(r.connection.id), { replace: true });
   };
@@ -381,6 +392,7 @@ function InviteForm({
         <PhotosHint />
         <p className="hint">{T.scopesHint}</p>
       </div>
+      <NotifyCheck st={pushSt} checked={notify} onChange={setNotify} />
       <div className="grp">
         <h2>{T.idTitle}</h2>
         <p className="tight">{T.idText(id ?? '…')}</p>
@@ -502,6 +514,7 @@ function ConnectionPage({ id, state, onToast }: { id: string; state: AppState; o
           </p>
         </div>
       )}
+      <NotifySection c={c} state={state} onToast={onToast} />
       <div className="grp">
         <h2>{T.itsAssignments}</h2>
         {!list.length && <p className="tight">{T.noAssignments}</p>}
