@@ -10,16 +10,21 @@ import type { AcceptFailure } from '../link/accept';
 import { importPlan, importWorkout } from '../link/assign';
 import { linkConfigured, sztabAppUrl } from '../link/config';
 import { invitePreview, isRpcError } from '../link/rpc';
-import { activeConnections, connectionOf, linkState, subscribeLink, updateLink, useLink, visibleAssignments } from '../link/store';
+import { activeConnections, connectionOf, linkState, subscribeLink, unreadMessages, updateLink, useLink, visibleAssignments } from '../link/store';
 import type { LinkConnection, StoredAssignment } from '../link/store';
 import { changeScopes, endConnection, pushOne, setAssignmentStatus } from '../link/sync';
-import { LINK_PATH, dietPath, go, goBack, linkAssignmentPath, linkConnectionPath, planPath, workoutPath } from '../routing';
+import { LINK_PATH, dietPath, go, goBack, linkAssignmentPath, linkChatPath, linkConnectionPath, linkVisitsPath, planPath, workoutPath } from '../routing';
 import type { LinkRoute } from '../routing';
 import type { AppState } from '../types';
 import { T } from './Link.text';
 import { W, assignmentTitle } from './Link.words';
 import { useNow } from './DeviceStatus';
 import { Banner } from './ui';
+import { ChatPage } from './link/Chat';
+import { FormAssignment } from './link/FormFill';
+import { HabitsAssignment } from './link/HabitsDay';
+import { MealsAssignment } from './link/MealsDay';
+import { VisitsPage } from './link/Visits';
 
 /**
  * Strony współpracy z prowadzącym: lista, zaproszenie, jedna współpraca i jedno zalecenie.
@@ -60,6 +65,10 @@ export default function LinkPages(props: LinkProps) {
       return <ConnectionPage key={props.route.id} id={props.route.id} state={props.state} onToast={props.onToast} />;
     case 'linkAssignment':
       return <AssignmentPage key={props.route.id} id={props.route.id} {...props} />;
+    case 'linkChat':
+      return <ChatPage key={props.route.id} id={props.route.id} state={props.state} onToast={props.onToast} />;
+    case 'linkVisits':
+      return <VisitsPage key={props.route.id} id={props.route.id} onToast={props.onToast} />;
   }
 }
 
@@ -104,6 +113,7 @@ function LinkHome() {
         {!list.length && <p className="tight">{T.noAssignments}</p>}
         <AssignmentList list={list} s={s} />
         {s.broken.length > 0 && <p className="hint">{T.broken(s.broken.length)}</p>}
+        {s.unsupported.length > 0 && <p className="hint">{T.unsupported(s.unsupported.length)}</p>}
       </div>
       {ended.length > 0 && (
         <div className="grp">
@@ -447,6 +457,16 @@ function ConnectionPage({ id, state, onToast }: { id: string; state: AppState; o
         </div>
         <h2 style={{ marginTop: 14 }}>{T.yourId}</h2>
         <p className="link-id">{formatPseudonym(c.pseudonym)}</p>
+        {c.status === 'active' && (
+          <div className="btnrow" style={{ marginTop: 12 }}>
+            <button className="btn sm" onClick={() => go(linkChatPath(c.id))}>
+              {T.chatOpen(unreadMessages(s, c.id).length)}
+            </button>
+            <button className="btn ghost sm" onClick={() => go(linkVisitsPath(c.id))}>
+              {T.visitsOpen}
+            </button>
+          </div>
+        )}
       </div>
       {c.status === 'active' && (
         <div className="grp">
@@ -538,7 +558,7 @@ function AssignmentPage({ id, apply, state, onToast }: LinkProps & { id: string 
       {stored.status !== 'done' && stored.status !== 'declined' && (
         <div className="wrap">
           <div className="btnrow">
-            {a.body.kind !== 'plan' && a.body.kind !== 'workout' && (
+            {a.body.kind !== 'plan' && a.body.kind !== 'workout' && a.body.kind !== 'form' && a.body.kind !== 'habits' && a.body.kind !== 'meals' && (
               <button className="btn" onClick={() => mark('done')}>
                 {T.done}
               </button>
@@ -744,5 +764,11 @@ function AssignmentBody({
           ))}
         </div>
       );
+    case 'form':
+      return <FormAssignment stored={stored as Parameters<typeof FormAssignment>[0]['stored']} state={state} onToast={onToast} />;
+    case 'habits':
+      return <HabitsAssignment stored={stored as Parameters<typeof HabitsAssignment>[0]['stored']} state={state} />;
+    case 'meals':
+      return <MealsAssignment stored={stored as Parameters<typeof MealsAssignment>[0]['stored']} state={state} />;
   }
 }

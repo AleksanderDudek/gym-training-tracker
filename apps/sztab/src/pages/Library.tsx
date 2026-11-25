@@ -1,6 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ASSIGNMENT_KINDS } from '@gymtracker/link';
-import type { AssignmentKind } from '@gymtracker/link';
 import { LOCALE, text } from '@gt/i18n';
 import type { Workout } from '@gt/types';
 import {
@@ -17,9 +15,13 @@ import {
   emptyTargets,
   emptyWorkout,
 } from '../components/Editors';
+import { FormForm, emptyForm } from '../components/editors/FormEditor';
+import { HabitsForm, emptyHabits } from '../components/editors/HabitsEditor';
+import { MealsForm, emptyMeals } from '../components/editors/MealsEditor';
+import { ProgramForm, emptyProgram } from '../components/editors/ProgramEditor';
 import { Failure, Link, Loading, fmtDate, toast, useLoad } from '../components/ui';
-import { deleteLibraryItem, listLibrary, saveLibraryItem } from '../lib/data';
-import type { LibraryBody, LibraryItem } from '../lib/data';
+import { LIBRARY_KINDS, deleteLibraryItem, listLibrary, saveLibraryItem } from '../lib/data';
+import type { LibraryBody, LibraryItem, LibraryKind } from '../lib/data';
 import { L } from '../lib/labels';
 import { navigate } from '../lib/router';
 import { useReady } from '../session';
@@ -53,6 +55,11 @@ const T = text({
       kcal: (n: number) => `${n} kcal`,
       protein: (n: number) => `${n} g białka`,
       steps: (n: number) => `${n} kroków`,
+      questions: (n: number) => `${n} pytań`,
+      repeat: { once: 'jednorazowo', daily: 'codziennie', weekly: 'co tydzień' } as Record<string, string>,
+      habits: (n: number) => `${n} nawyków`,
+      meals: (d: number, m: number) => `${d} dni · ${m} posiłków`,
+      program: (n: number, days: number) => `${n} elementów · ${days} dni`,
     },
   },
   en: {
@@ -83,6 +90,11 @@ const T = text({
       kcal: (n: number) => `${n} kcal`,
       protein: (n: number) => `${n} g protein`,
       steps: (n: number) => `${n} steps`,
+      questions: (n: number) => `${n} questions`,
+      repeat: { once: 'once', daily: 'daily', weekly: 'weekly' } as Record<string, string>,
+      habits: (n: number) => `${n} habits`,
+      meals: (d: number, m: number) => `${d} days · ${m} meals`,
+      program: (n: number, days: number) => `${n} items · ${days} days`,
     },
   },
 });
@@ -92,7 +104,7 @@ export const libraryWorkouts = (items: LibraryItem[]): Workout[] =>
 
 export function Library() {
   const { data, error, reload } = useLoad(listLibrary, []);
-  const [kind, setKind] = useState<AssignmentKind | 'all'>('all');
+  const [kind, setKind] = useState<LibraryKind | 'all'>('all');
   const rows = (data ?? []).filter((i) => kind === 'all' || i.kind === kind);
   return (
     <>
@@ -102,7 +114,7 @@ export function Library() {
           <p className="lead">{T.lead}</p>
         </div>
         <div className="row">
-          {ASSIGNMENT_KINDS.map((k) => (
+          {LIBRARY_KINDS.map((k) => (
             <Link key={k} to={`/biblioteka/nowy/${k}`} className={`btn ${k === 'workout' ? 'blue' : 'ghost'} small`}>
               + {L.kind[k]}
             </Link>
@@ -123,7 +135,7 @@ export function Library() {
       {data?.length ? (
         <section className="card flat">
           <div className="tabs" style={{ padding: '4px 12px 0' }}>
-            {(['all', ...ASSIGNMENT_KINDS] as const).map((k) => (
+            {(['all', ...LIBRARY_KINDS] as const).map((k) => (
               <a
                 key={k}
                 href="#"
@@ -182,10 +194,18 @@ export function summary(b: LibraryBody): string {
       return b.tests.map((t) => t.name).filter(Boolean).join(', ');
     case 'note':
       return b.text.slice(0, 90);
+    case 'form':
+      return [T.sum.questions(b.questions.length), T.sum.repeat[b.repeat]].join(' · ');
+    case 'habits':
+      return T.sum.habits(b.items.length);
+    case 'meals':
+      return T.sum.meals(b.days.length, b.days.reduce((n, d) => n + d.meals.length, 0));
+    case 'program':
+      return T.sum.program(b.steps.length, b.steps.reduce((n, s) => Math.max(n, s.day + 1), 0));
   }
 }
 
-export function emptyBody(kind: AssignmentKind): LibraryBody {
+export function emptyBody(kind: LibraryKind): LibraryBody {
   switch (kind) {
     case 'workout':
       return emptyWorkout();
@@ -197,10 +217,29 @@ export function emptyBody(kind: AssignmentKind): LibraryBody {
       return emptyLabs();
     case 'note':
       return emptyNote();
+    case 'form':
+      return emptyForm();
+    case 'habits':
+      return emptyHabits();
+    case 'meals':
+      return emptyMeals();
+    case 'program':
+      return emptyProgram();
   }
 }
 
-export function BodyForm({ body, onChange, library }: { body: LibraryBody; onChange: (b: LibraryBody) => void; library: Workout[] }) {
+export function BodyForm({
+  body,
+  onChange,
+  library,
+  items = [],
+}: {
+  body: LibraryBody;
+  onChange: (b: LibraryBody) => void;
+  library: Workout[];
+  /** Cała biblioteka — program układa się z jej elementów. */
+  items?: LibraryItem[];
+}) {
   switch (body.kind) {
     case 'workout':
       return <WorkoutForm value={body} onChange={onChange} />;
@@ -212,6 +251,14 @@ export function BodyForm({ body, onChange, library }: { body: LibraryBody; onCha
       return <LabsForm value={body} onChange={onChange} />;
     case 'note':
       return <NoteForm value={body} onChange={onChange} />;
+    case 'form':
+      return <FormForm value={body} onChange={onChange} />;
+    case 'habits':
+      return <HabitsForm value={body} onChange={onChange} />;
+    case 'meals':
+      return <MealsForm value={body} onChange={onChange} />;
+    case 'program':
+      return <ProgramForm value={body} onChange={onChange} items={items} />;
   }
 }
 
@@ -229,14 +276,14 @@ export function LibraryEditor({ id, kind }: { id?: string; kind?: string }) {
     if (existing) {
       setBody(existing.body);
       setTitle(existing.title);
-    } else if (kind && (ASSIGNMENT_KINDS as readonly string[]).includes(kind)) setBody(emptyBody(kind as AssignmentKind));
+    } else if (kind && (LIBRARY_KINDS as readonly string[]).includes(kind)) setBody(emptyBody(kind as LibraryKind));
   }, [existing, kind, body]);
 
   if (lib.error) return <Failure error={lib.error} retry={lib.reload} />;
   if (!body) return <Loading />;
 
   const library = libraryWorkouts(lib.data ?? []).filter((w) => body.kind !== 'workout' || w.id !== body.workout.id);
-  const named = body.kind === 'workout' || body.kind === 'plan' || body.kind === 'note';
+  const named = body.kind !== 'targets' && body.kind !== 'labs' && body.kind !== 'program';
 
   const save = async (asCopy = false) => {
     if (!bodyReady(body)) return setErr(T.notReady);
@@ -286,7 +333,7 @@ export function LibraryEditor({ id, kind }: { id?: string; kind?: string }) {
             <input id="lib-title" type="text" maxLength={120} value={title} onChange={(e) => setTitle(e.target.value)} />
           </label>
         ) : null}
-        <BodyForm body={body} onChange={setBody} library={library} />
+        <BodyForm body={body} onChange={setBody} library={library} items={lib.data ?? []} />
         {err ? <p className="err" role="alert">{err}</p> : null}
       </section>
       {existing ? (

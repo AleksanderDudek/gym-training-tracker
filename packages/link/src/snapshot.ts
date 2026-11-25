@@ -12,6 +12,7 @@ import type {
 } from '../../../src/types';
 import type { CatalogDef } from '../../../src/data/catalog/derive';
 import type { Scope } from './areas';
+import type { CoachingV1 } from './coaching';
 
 /**
  * Paczka danych podopiecznego, wersja 1 — to, co telefon wysyła prowadzącemu.
@@ -109,6 +110,12 @@ export interface SnapshotV1 {
   labs?: {
     visits: LabVisit[];
   };
+  /**
+   * Odpowiedzi na zalecenia tego prowadzącego: formularze, odhaczone nawyki i posiłki. Zawsze, bez
+   * względu na zakres — to część samej współpracy, nie dane z aplikacji. Sztab czyta przez
+   * `cleanCoaching`.
+   */
+  coaching?: CoachingV1;
 }
 
 /** Pierwsze sprawdzenie odszyfrowanej paczki — reszta pól jest tak dobra jak zapis aplikacji. */

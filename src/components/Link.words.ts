@@ -33,6 +33,7 @@ export const W = text({
       food: 'Jedzenie i napoje',
       body: 'Waga i obwody',
       labs: 'Badania',
+      photos: 'Zdjęcia sylwetki',
     } as Record<Scope, string>,
     kind: {
       plan: 'plan',
@@ -40,6 +41,9 @@ export const W = text({
       targets: 'cele',
       labs: 'badania do zrobienia',
       note: 'zalecenie',
+      form: 'formularz',
+      habits: 'nawyki',
+      meals: 'jadłospis',
     } as Record<AssignmentV1['body']['kind'], string>,
   },
   en: {
@@ -57,8 +61,9 @@ export const W = text({
       food: 'Food and drinks',
       body: 'Weight and measurements',
       labs: 'Lab results',
+      photos: 'Body photos',
     },
-    kind: { plan: 'plan', workout: 'workout', targets: 'targets', labs: 'lab tests to do', note: 'note' },
+    kind: { plan: 'plan', workout: 'workout', targets: 'targets', labs: 'lab tests to do', note: 'note', form: 'form', habits: 'habits', meals: 'meal plan' },
   },
 });
 
@@ -71,6 +76,9 @@ export function assignmentTitle(a: AssignmentV1): string {
     case 'workout':
       return `${W.kind.workout} „${b.workout.name}”`;
     case 'note':
+    case 'form':
+    case 'habits':
+    case 'meals':
       return b.title;
     default:
       return W.kind[b.kind];

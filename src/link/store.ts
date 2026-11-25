@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import type { Area, AssignmentV1, Profession, PublicJwk, ReceiptStatus, Scope } from '@gymtracker/link';
+import type { AnswerValue, MessageRef } from '@gymtracker/link/coaching';
 
 /**
  * Współprace na tym telefonie: z kim, w jakich obszarach, co widzi, klucz i token — oraz
@@ -51,7 +52,39 @@ export interface LinkConnection {
   pushDue?: boolean;
   /** Zakończenie przez prowadzącego, o którym ekran jeszcze nie powiedział. */
   endNotice?: boolean;
+  /** Czas serwera ostatniej pobranej wiadomości — następne pobranie prosi tylko o nowsze. */
+  messagesSince?: string | null;
+  /** Do kiedy (czas serwera) prowadzący przeczytał wiadomości od nas. */
+  readUpTo?: string | null;
+  /** Wysłane zdjęcia sylwetki: numer zdjęcia na telefonie → numer na serwerze. */
+  photos?: Record<string, string>;
 }
+
+/** Wiadomość w rozmowie z prowadzącym — już odszyfrowana (albo nasza, jeszcze niewysłana). */
+export interface StoredMessage {
+  id: string;
+  connectionId: string;
+  author: 'coach' | 'client';
+  text: string;
+  ref: MessageRef | null;
+  /** Chwila napisania (ms, zegar autora). */
+  at: number;
+  /** Czas serwera; `null` — nasza wiadomość czeka na sieć. */
+  serverAt: string | null;
+  /** Wiadomość prowadzącego przeczytana na tym telefonie (ms); u naszych — nieużywane. */
+  readAt: number | null;
+}
+
+/** Odpowiedź na formularz zapisana na telefonie; idzie do prowadzącego w paczce (`coaching`). */
+export interface StoredAnswer {
+  assignmentId: string;
+  period: string;
+  at: number;
+  values: Record<string, AnswerValue>;
+}
+
+/** Odhaczenia dzień po dniu jednego zalecenia (nawyki albo jadłospis): dzień → numery punktów. */
+export type DayTicks = Record<string, number[]>;
 
 /** `new` — przyszło, nikt nie otworzył; potem to, co podopieczny z nim zrobił. */
 export type LocalStatus = 'new' | ReceiptStatus;
@@ -78,18 +111,24 @@ export interface LinkState {
   assignments: StoredAssignment[];
   /** Zalecenia, których nie dało się otworzyć (zły klucz, podmieniony szyfrogram) — po numerze. */
   broken: { id: string; connectionId: string }[];
+  /** Zalecenia rodzaju, którego ta wersja nie zna — „zaktualizuj aplikację”, a nie „zepsute”. */
+  unsupported: { id: string; connectionId: string; kind: string }[];
+  messages: StoredMessage[];
+  answers: StoredAnswer[];
+  /** Odhaczone nawyki i posiłki: numer zalecenia → dni. */
+  ticks: Record<string, DayTicks>;
 }
 
 /** Sekret ID z zapisu (`cfg.linkSecret`): 32 bajty base64url. Zepsuty dałby inne ID niż wcześniej, więc odpada. */
 export const validLinkSecret = (v: unknown): v is string => typeof v === 'string' && /^[A-Za-z0-9_-]{43}$/.test(v);
 
-const EMPTY: LinkState = { connections: [], assignments: [], broken: [] };
+const empty = (): LinkState => ({ connections: [], assignments: [], broken: [], unsupported: [], messages: [], answers: [], ticks: {} });
 
 const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object';
 
 /** Wczytany zapis przesiany: zepsuta współpraca odpada, zamiast wywrócić ekran. */
 export function cleanLinkState(raw: unknown): LinkState {
-  if (!isObj(raw)) return { ...EMPTY, connections: [], assignments: [], broken: [] };
+  if (!isObj(raw)) return empty();
   const connections = (Array.isArray(raw.connections) ? raw.connections : []).filter(
     (c): c is LinkConnection =>
       isObj(c) &&
@@ -113,7 +152,41 @@ export function cleanLinkState(raw: unknown): LinkState {
   const broken = (Array.isArray(raw.broken) ? raw.broken : []).filter(
     (b): b is { id: string; connectionId: string } => isObj(b) && typeof b.id === 'string' && typeof b.connectionId === 'string',
   );
-  return { connections, assignments, broken };
+  const unsupported = (Array.isArray(raw.unsupported) ? raw.unsupported : []).filter(
+    (u): u is { id: string; connectionId: string; kind: string } =>
+      isObj(u) && typeof u.id === 'string' && typeof u.connectionId === 'string' && typeof u.kind === 'string',
+  );
+  const messages = (Array.isArray(raw.messages) ? raw.messages : []).filter(
+    (m): m is StoredMessage =>
+      isObj(m) &&
+      typeof m.id === 'string' &&
+      typeof m.connectionId === 'string' &&
+      ids.has(m.connectionId) &&
+      (m.author === 'coach' || m.author === 'client') &&
+      typeof m.text === 'string' &&
+      typeof m.at === 'number',
+  );
+  for (const m of messages) {
+    if (typeof m.serverAt !== 'string') m.serverAt = null;
+    if (typeof m.readAt !== 'number') m.readAt = null;
+    if (!isObj(m.ref)) m.ref = null;
+  }
+  const answers = (Array.isArray(raw.answers) ? raw.answers : []).filter(
+    (a): a is StoredAnswer =>
+      isObj(a) && typeof a.assignmentId === 'string' && typeof a.period === 'string' && typeof a.at === 'number' && isObj(a.values),
+  );
+  const ticks: Record<string, DayTicks> = {};
+  if (isObj(raw.ticks)) {
+    for (const [id, days] of Object.entries(raw.ticks)) {
+      if (!isObj(days)) continue;
+      const clean: DayTicks = {};
+      for (const [day, list] of Object.entries(days)) {
+        if (/^\d{4}-\d{2}-\d{2}$/.test(day) && Array.isArray(list)) clean[day] = list.filter((i): i is number => Number.isInteger(i) && i >= 0);
+      }
+      ticks[id] = clean;
+    }
+  }
+  return { connections, assignments, broken, unsupported, messages, answers, ticks };
 }
 
 function read(): LinkState {
@@ -160,7 +233,7 @@ export function clearLink(): void {
   } catch {
     /* nic do skasowania */
   }
-  current = { connections: [], assignments: [], broken: [] };
+  current = empty();
   listeners.forEach((l) => l());
 }
 
@@ -187,3 +260,23 @@ export const newAssignments = (s: LinkState): StoredAssignment[] => visibleAssig
 /** Czy jest z czym rozmawiać ze Sztabem — bez tego aplikacja nie wczytuje nawet `sync.ts`. */
 export const hasLinkWork = (s: LinkState = linkState()): boolean =>
   s.connections.some((c) => c.status === 'active' || (!!c.pending && !!c.token));
+
+/** Rozmowa z jednym prowadzącym, od najstarszej. */
+export const messagesOf = (s: LinkState, connectionId: string): StoredMessage[] =>
+  s.messages.filter((m) => m.connectionId === connectionId).sort((a, b) => (a.serverAt ?? '\uffff').localeCompare(b.serverAt ?? '\uffff') || a.at - b.at);
+
+/** Wiadomości od prowadzących, których nikt na tym telefonie jeszcze nie otworzył. */
+export const unreadMessages = (s: LinkState, connectionId?: string): StoredMessage[] =>
+  s.messages.filter(
+    (m) =>
+      m.author === 'coach' &&
+      m.readAt === null &&
+      (connectionId === undefined || m.connectionId === connectionId) &&
+      s.connections.some((c) => c.id === m.connectionId && c.status === 'active'),
+  );
+
+/** Odpowiedzi na jeden formularz (wszystkie okresy). */
+export const answersOf = (s: LinkState, assignmentId: string): StoredAnswer[] => s.answers.filter((a) => a.assignmentId === assignmentId);
+
+/** Odhaczone punkty zalecenia w danym dniu. */
+export const ticksOn = (s: LinkState, assignmentId: string, day: string): number[] => s.ticks[assignmentId]?.[day] ?? [];

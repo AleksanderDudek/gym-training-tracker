@@ -113,6 +113,10 @@ export function statsScreen(route: Route): StatsValue<'screen'> {
       return `diet-${route.page}`;
     case 'exercise':
       return isCatalogId(route.id) ? 'exercise-catalog' : 'exercise-library';
+    // Podstrony jednej współpracy liczą się jak ona — zamknięta lista ekranów (`statsCatalog`) bez zmian.
+    case 'linkChat':
+    case 'linkVisits':
+      return 'linkConnection';
     default:
       return route.kind;
   }

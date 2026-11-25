@@ -15,12 +15,13 @@ const ClientPage = lazy(() => import('./pages/Client').then((m) => ({ default: m
 const Invites = lazy(() => import('./pages/Invites').then((m) => ({ default: m.Invites })));
 const Library = lazy(() => import('./pages/Library').then((m) => ({ default: m.Library })));
 const LibraryEditor = lazy(() => import('./pages/Library').then((m) => ({ default: m.LibraryEditor })));
+const Calendar = lazy(() => import('./pages/Calendar').then((m) => ({ default: m.Calendar })));
 const Settings = lazy(() => import('./pages/Settings').then((m) => ({ default: m.Settings })));
 const Privacy = lazy(() => import('./pages/Privacy').then((m) => ({ default: m.Privacy })));
 
 const T = text({
-  pl: { clients: 'Podopieczni', invites: 'Zaproszenia', library: 'Biblioteka', settings: 'Ustawienia', privacy: 'RODO i rejestr', signOut: 'Wyloguj', notFound: 'Nie ma takiej strony.' },
-  en: { clients: 'Clients', invites: 'Invites', library: 'Library', settings: 'Settings', privacy: 'GDPR and records', signOut: 'Sign out', notFound: 'No such page.' },
+  pl: { clients: 'Podopieczni', invites: 'Zaproszenia', library: 'Biblioteka', calendar: 'Kalendarz', settings: 'Ustawienia', privacy: 'RODO i rejestr', signOut: 'Wyloguj', notFound: 'Nie ma takiej strony.' },
+  en: { clients: 'Clients', invites: 'Invites', library: 'Library', calendar: 'Calendar', settings: 'Settings', privacy: 'GDPR and records', signOut: 'Sign out', notFound: 'No such page.' },
 });
 
 const PUBLIC = ['/logowanie', '/rejestracja', '/haslo'];
@@ -87,6 +88,7 @@ function Shell({ path }: { path: string }) {
   else if (path === '/biblioteka') page = <Library />;
   else if ((m = match('/biblioteka/nowy/:kind', path))) page = <LibraryEditor kind={m.kind!} />;
   else if ((m = match('/biblioteka/:id', path))) page = <LibraryEditor id={m.id!} />;
+  else if (path === '/kalendarz') page = <Calendar />;
   else if (path === '/ustawienia') page = <Settings />;
   else if (path === '/rodo') page = <Privacy />;
   else page = <p>{T.notFound}</p>;
@@ -95,6 +97,7 @@ function Shell({ path }: { path: string }) {
     ['/podopieczni', T.clients, counts.data?.clients],
     ['/zaproszenia', T.invites, counts.data?.invites],
     ['/biblioteka', T.library, undefined],
+    ['/kalendarz', T.calendar, undefined],
     ['/ustawienia', T.settings, undefined],
     ['/rodo', T.privacy, undefined],
   ];

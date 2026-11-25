@@ -8,7 +8,7 @@ import type { PlanTemplate, Workout } from '@gt/types';
 import { bodyReady } from '../components/Editors';
 import { Dialog, Loading, toast, useLoad } from '../components/ui';
 import { listLibrary, sendAssignment } from '../lib/data';
-import type { Connection, LibraryBody, LibraryItem } from '../lib/data';
+import type { Connection, LibraryBody, LibraryItem, SendableBody } from '../lib/data';
 import { L } from '../lib/labels';
 import { useReady } from '../session';
 import { BodyForm, emptyBody, libraryWorkouts } from './Library';
@@ -53,7 +53,7 @@ const T = text({
 const BUILTIN_PLANS: PlanTemplate[] = [...GOAL_PLANS, ...PLANS];
 
 /** Treść z biblioteki zamieniona na zalecenie: plan dostaje treningi z biblioteki, do których odsyła. */
-export function toAssignment(body: LibraryBody, library: LibraryItem[], note: string): AssignmentBody {
+export function toAssignment(body: SendableBody, library: LibraryItem[], note: string): AssignmentBody {
   switch (body.kind) {
     case 'workout':
       return { kind: 'workout', workout: body.workout, videos: body.videos, note };
@@ -110,7 +110,7 @@ export function SendDialog({ connection, onClose, onSent, initialKind }: { conne
 
   const send = async () => {
     const b = body();
-    if (!b || !bodyReady(b)) return setErr(T.invalid);
+    if (!b || b.kind === 'program' || !bodyReady(b)) return setErr(T.invalid);
     const a = toAssignment(b, lib.data ?? [], note.trim());
     // To samo sprawdzenie, które zrobi telefon — lepiej odmówić tu niż wysłać coś, co tam przepadnie.
     if (!parseAssignment({ v: 1, id: 'check', area, sentAt: Date.now(), from: { name: coach.display_name, profession: coach.profession }, body: a }))

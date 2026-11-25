@@ -14,6 +14,10 @@ import type { Overview } from '../lib/metrics';
 import { navigate, useLocation } from '../lib/router';
 import { useReady } from '../session';
 import { SendDialog } from './Send';
+import { AdherenceTab } from './client/AdherenceTab';
+import { AnswersTab } from './client/AnswersTab';
+import { MessagesTab } from './client/MessagesTab';
+import { PhotosTab } from './client/PhotosTab';
 
 const T = text({
   pl: {
@@ -27,7 +31,18 @@ const T = text({
     data: (s: string) => `dane z: ${s}`,
     noData: 'Podopieczny jeszcze nic nie wysłał. Dane przyjdą, gdy otworzy GYM TRACKERa.',
     unreadable: 'Paczka jest, ale nie otwiera się kluczem z tego sejfu. Jeśli zakładałeś konto od nowa, poproś o nowe zaproszenie.',
-    tabs: { overview: 'Przegląd', training: 'Trening', food: 'Jedzenie', body: 'Ciało', labs: 'Badania', sent: 'Zalecenia' },
+    tabs: {
+      overview: 'Przegląd',
+      messages: 'Wiadomości',
+      training: 'Trening',
+      food: 'Jedzenie',
+      body: 'Ciało',
+      labs: 'Badania',
+      answers: 'Odpowiedzi',
+      adherence: 'Realizacja',
+      photos: 'Zdjęcia',
+      sent: 'Zalecenia',
+    },
     notShared: (what: string) => `Podopieczny nie udostępnia: ${what}. Zakres zmienia on sam, w GYM TRACKERze.`,
     send: 'Wyślij',
     quick: { plan: 'Wyślij plan', targets: 'Ustaw cele', labs: 'Zleć badania', note: 'Zalecenie', workout: 'Wyślij trening' } as Record<AssignmentKind, string>,
@@ -111,7 +126,18 @@ const T = text({
     data: (s: string) => `data from: ${s}`,
     noData: 'The client has not sent anything yet. Data arrives when they open GYM TRACKER.',
     unreadable: 'There is a data package, but this vault’s key does not open it. If you recreated your account, ask for a new invite.',
-    tabs: { overview: 'Overview', training: 'Training', food: 'Food', body: 'Body', labs: 'Labs', sent: 'Advice' },
+    tabs: {
+      overview: 'Overview',
+      messages: 'Messages',
+      training: 'Training',
+      food: 'Food',
+      body: 'Body',
+      labs: 'Labs',
+      answers: 'Answers',
+      adherence: 'Adherence',
+      photos: 'Photos',
+      sent: 'Advice',
+    },
     notShared: (what: string) => `The client does not share: ${what}. Only they can change it, in GYM TRACKER.`,
     send: 'Send',
     quick: { plan: 'Send plan', targets: 'Set targets', labs: 'Order lab tests', note: 'Advice', workout: 'Send workout' } as Record<AssignmentKind, string>,
@@ -187,7 +213,9 @@ const T = text({
 });
 
 type Tab = keyof typeof T.tabs;
-const TAB_SCOPE: Partial<Record<Tab, Scope>> = { training: 'training', food: 'food', body: 'body', labs: 'labs' };
+const TAB_SCOPE: Partial<Record<Tab, Scope>> = { training: 'training', food: 'food', body: 'body', labs: 'labs', photos: 'photos' };
+/** Zakładki, które nie czytają paczki danych — nie czekają na nią i nie mówią „brak danych”. */
+const NO_SNAPSHOT: readonly Tab[] = ['sent', 'messages', 'photos'];
 
 export function ClientPage({ id }: { id: string }) {
   const { key, user } = useReady();
@@ -279,11 +307,11 @@ export function ClientPage({ id }: { id: string }) {
             ))}
           </nav>
           {snap.error ? <Failure error={snap.error} retry={snap.reload} /> : null}
-          {tab !== 'sent' && !snap.data && !snap.error ? <Loading /> : null}
-          {tab !== 'sent' && snap.data && !snap.data.snapshot ? (
+          {!NO_SNAPSHOT.includes(tab) && !snap.data && !snap.error ? <Loading /> : null}
+          {!NO_SNAPSHOT.includes(tab) && snap.data && !snap.data.snapshot ? (
             <div className="note gold">{snap.data.unreadable ? T.unreadable : T.noData}</div>
           ) : null}
-          {tab !== 'sent' && TAB_SCOPE[tab] && !c.scopes.includes(TAB_SCOPE[tab]) ? (
+          {tab !== 'sent' && TAB_SCOPE[tab] && !c.scopes.includes(TAB_SCOPE[tab]!) ? (
             <div className="note">{T.notShared(L.scope[TAB_SCOPE[tab]!].toLowerCase())}</div>
           ) : null}
           {s && ov && tab === 'overview' ? <OverviewTab s={s} ov={ov} c={c} onSend={setSending} /> : null}
@@ -292,6 +320,10 @@ export function ClientPage({ id }: { id: string }) {
           {s && ov && tab === 'body' && s.body ? <BodyTab s={s} ov={ov} /> : null}
           {s && tab === 'labs' && s.labs ? <LabsTab s={s} /> : null}
           {tab === 'sent' ? <SentTab list={sent.data} error={sent.error} reload={sent.reload} /> : null}
+          {tab === 'messages' ? <MessagesTab c={c} /> : null}
+          {s && tab === 'answers' ? <AnswersTab c={c} s={s} sent={sent.data} /> : null}
+          {s && tab === 'adherence' ? <AdherenceTab c={c} s={s} sent={sent.data} /> : null}
+          {tab === 'photos' && c.scopes.includes('photos') ? <PhotosTab c={c} /> : null}
           <section className="row" style={{ marginTop: 12 }}>
             <button type="button" className="btn danger" onClick={() => setEnding(true)}>
               {T.end}

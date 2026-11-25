@@ -760,7 +760,11 @@ export type Route =
   /** Jedna współpraca: zakres danych, zakończenie, jej zalecenia. */
   | { kind: 'linkConnection'; id: string }
   /** Jedno zalecenie od prowadzącego. */
-  | { kind: 'linkAssignment'; id: string };
+  | { kind: 'linkAssignment'; id: string }
+  /** Rozmowa z prowadzącym jednej współpracy. */
+  | { kind: 'linkChat'; id: string }
+  /** Wizyty u prowadzącego jednej współpracy: terminy, rezerwacje. */
+  | { kind: 'linkVisits'; id: string };
 
 /** Materiał wideo pokazujący technikę ćwiczenia. */
 export interface VideoRef {

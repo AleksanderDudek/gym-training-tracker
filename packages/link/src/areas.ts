@@ -18,7 +18,11 @@ export type Area = (typeof AREAS)[number];
 
 export const AREA_LIMIT: Record<Area, number> = { training: 1, nutrition: 1, rehab: 1, insight: 3 };
 
-export const SCOPES = ['training', 'movement', 'food', 'body', 'labs'] as const;
+/**
+ * `photos` — zdjęcia sylwetki: najwrażliwsze dane, więc osobna zgoda i nigdy w podpowiedziach
+ * zaproszenia (`SUGGESTED_SCOPES`) — prowadzący musi o nie poprosić sam.
+ */
+export const SCOPES = ['training', 'movement', 'food', 'body', 'labs', 'photos'] as const;
 export type Scope = (typeof SCOPES)[number];
 
 /** Co zaproszenie proponuje pokazać, gdy prowadzący nie wybierze sam. */

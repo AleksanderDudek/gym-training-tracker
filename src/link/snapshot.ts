@@ -1,9 +1,10 @@
 import { AAD, SNAPSHOT_DAYS, SNAPSHOT_MAX_CHARS, sealJson } from '@gymtracker/link';
-import type { FoodDay, FoodEntry, LabVisit, Scope, SnapshotV1 } from '@gymtracker/link';
+import type { CoachingV1, FoodDay, FoodEntry, LabVisit, Scope, SnapshotV1 } from '@gymtracker/link';
 import { version } from '../../package.json';
 import { LANG } from '../i18n';
 import { localDayOf } from '../engine/watch';
 import type { AppState } from '../types';
+import type { LinkState } from './store';
 
 /**
  * Paczka dla prowadzącego (`SnapshotV1`): tylko części, na które podopieczny się zgodził
@@ -97,6 +98,27 @@ export function buildSnapshot(state: AppState, scopes: readonly Scope[], extras:
  * kurczy się o czwartą część na raz). Gdy nie mieści się nawet tydzień, nie wysyłamy niczego:
  * `null`. `bytes` to długość szyfrogramu.
  */
+/**
+ * Część `coaching` paczki dla jednej współpracy: odpowiedzi na jej formularze i odhaczenia jej
+ * nawyków i jadłospisów — w tym samym oknie dni co reszta. Idzie zawsze, bez względu na zakres:
+ * to odpowiedzi na zalecenia tego samego prowadzącego, a nie dane z aplikacji.
+ */
+export function coachingFor(s: LinkState, connectionId: string, now: number, days = SNAPSHOT_DAYS): CoachingV1 {
+  const from = windowStart(now, days);
+  const mine = new Map(s.assignments.filter((a) => a.connectionId === connectionId && !a.withdrawn).map((a) => [a.id, a.a.body.kind]));
+  const answers = s.answers
+    .filter((a) => mine.get(a.assignmentId) === 'form' && localDayOf(new Date(a.at)) >= from)
+    .map((a) => ({ assignmentId: a.assignmentId, period: a.period, at: a.at, values: a.values }));
+  const logs = (kind: 'habits' | 'meals') =>
+    Object.entries(s.ticks)
+      .filter(([id]) => mine.get(id) === kind)
+      .map(([assignmentId, byDay]) => ({
+        assignmentId,
+        days: Object.fromEntries(Object.entries(byDay).filter(([day]) => day >= from)),
+      }));
+  return { answers, habits: logs('habits'), meals: logs('meals') };
+}
+
 export async function sealSnapshot(
   key: CryptoKey,
   connectionId: string,

@@ -1,6 +1,7 @@
 import { linkConfigured } from '../link/config';
 import { activeConnections, newAssignments, useLink } from '../link/store';
-import { LINK_PATH, go, linkAssignmentPath } from '../routing';
+import { formsDue, habitsToday, mealsToday, unreadByConnection } from '../link/today';
+import { LINK_PATH, go, linkAssignmentPath, linkChatPath } from '../routing';
 import { text } from '../i18n';
 import { W, assignmentTitle } from './Link.words';
 
@@ -20,6 +21,10 @@ const T = text({
     open: 'Współpraca',
     newFrom: (name: string, what: string) => `Nowe od prowadzącego — ${name}: ${what}`,
     ended: (name: string) => `Współpraca z: ${name} — zakończona przez prowadzącego. Twoich danych już nie widzi.`,
+    messages: (name: string, n: number) => (n === 1 ? `Nowa wiadomość od: ${name}` : `Nowe wiadomości od: ${name} (${n})`),
+    form: (title: string) => `Czeka na odpowiedź: ${title}`,
+    habits: (title: string, done: number, all: number) => `${title} — dziś ${done} z ${all}`,
+    meals: (title: string, done: number, all: number) => `${title} — dziś zjedzone ${done} z ${all}`,
   },
   en: {
     title: 'Working with a coach',
@@ -30,6 +35,10 @@ const T = text({
     open: 'Open',
     newFrom: (name: string, what: string) => `New from ${name}: ${what}`,
     ended: (name: string) => `${name} has ended working with you. They no longer see your data.`,
+    messages: (name: string, n: number) => (n === 1 ? `New message from ${name}` : `${n} new messages from ${name}`),
+    form: (title: string) => `Waiting for your answer: ${title}`,
+    habits: (title: string, done: number, all: number) => `${title} — ${done} of ${all} today`,
+    meals: (title: string, done: number, all: number) => `${title} — ${done} of ${all} meals eaten today`,
   },
 });
 
@@ -62,13 +71,28 @@ export function LinkCard() {
   );
 }
 
-/** Uwaga na ekranie Dziś — tylko przy nowym zaleceniu albo zakończeniu przez prowadzącego. */
+/**
+ * Uwaga na ekranie Dziś — tylko gdy coś czeka: nowe zalecenie, nowa wiadomość, formularz do
+ * wypełnienia, nieodhaczone nawyki albo posiłki z dzisiejszego jadłospisu, zakończenie przez
+ * prowadzącego. Najwyżej trzy linie, najważniejsze pierwsze.
+ */
 export function LinkNotice() {
   const s = useLink();
   if (!linkConfigured()) return null;
   const fresh = newAssignments(s)[0];
   const ended = s.connections.find((c) => c.endNotice);
-  if (!fresh && !ended) return null;
+  const coachName = (id: string) => s.connections.find((c) => c.id === id)?.coach.name ?? '';
+  const lines: { href: string; text: string }[] = [
+    ...unreadByConnection(s).map((u) => ({ href: linkChatPath(u.connectionId), text: T.messages(coachName(u.connectionId), u.count) })),
+    ...formsDue(s).map((f) => ({ href: linkAssignmentPath(f.id), text: T.form(f.a.body.title) })),
+    ...habitsToday(s)
+      .filter((h) => h.done.length < h.due.length)
+      .map((h) => ({ href: linkAssignmentPath(h.x.id), text: T.habits(h.x.a.body.title, h.done.length, h.due.length) })),
+    ...mealsToday(s)
+      .filter((m) => m.done.length < m.due.length)
+      .map((m) => ({ href: linkAssignmentPath(m.x.id), text: T.meals(m.x.a.body.title, m.done.length, m.due.length) })),
+  ].slice(0, fresh ? 2 : 3);
+  if (!fresh && !ended && !lines.length) return null;
   const coach = fresh ? s.connections.find((c) => c.id === fresh.connectionId) : undefined;
   return (
     <div className="wrap link-notice">
@@ -77,6 +101,11 @@ export function LinkNotice() {
           {T.newFrom(coach?.coach.name ?? fresh.a.from.name, assignmentTitle(fresh.a))}
         </a>
       )}
+      {lines.map((l) => (
+        <a key={l.href + l.text} className="vidlink" href={l.href}>
+          {l.text}
+        </a>
+      ))}
       {ended && (
         <a className="vidlink dev-late" href={LINK_PATH}>
           {T.ended(ended.coach.name)}

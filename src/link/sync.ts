@@ -1,11 +1,23 @@
-import { AAD, importPrivate, linkKey, openJson, parseAssignment, sealJson } from '@gymtracker/link';
-import type { Area, ReceiptV1, Scope } from '@gymtracker/link';
+import { AAD, importPrivate, isAssignmentKind, linkKey, openJson, parseAssignment, parseMessage, sealJson } from '@gymtracker/link';
+import type { AnswerValue, Area, MessageRef, MessageV1, ReceiptV1, Scope } from '@gymtracker/link';
 import type { AppState } from '../types';
-import { clientEnd, clientPull, clientPush, clientReceipt, clientStatus, clientUpdate, isRpcError } from './rpc';
+import {
+  clientEnd,
+  clientMessage,
+  clientMessages,
+  clientPull,
+  clientPush,
+  clientRead,
+  clientReceipt,
+  clientStatus,
+  clientUpdate,
+  isRpcError,
+} from './rpc';
 import { linkConfigured } from './config';
-import { buildSnapshot, readExtras, sealSnapshot } from './snapshot';
+import { syncPhotos } from './photos';
+import { buildSnapshot, coachingFor, readExtras, sealSnapshot } from './snapshot';
 import { activeConnections, connectionOf, linkState, updateLink } from './store';
-import type { LinkConnection, LocalStatus, StoredAssignment } from './store';
+import type { LinkConnection, LocalStatus, StoredAssignment, StoredMessage } from './store';
 
 /**
  * Rozmowa ze Sztabem dla każdej trwającej współpracy — po cichu, w tle: przy otwarciu aplikacji,
@@ -16,8 +28,10 @@ import type { LinkConnection, LocalStatus, StoredAssignment } from './store';
  * 2. Odbiór: obszary i zakres z serwera, nowe zalecenia (odszyfrowane i sprawdzone), wycofane.
  *    `bad_token` znaczy, że tokenu już nie ma — pytamy o stan i, gdy współpraca jest zakończona,
  *    zapisujemy to u siebie razem z uwagą na ekranie.
- * 3. Paczka danych, gdy ostatnia jest starsza niż `PUSH_EVERY_MS` (albo na żądanie).
- * 4. Potwierdzenia zaleceń, które czekały na sieć.
+ * 3. Paczka danych, gdy ostatnia jest starsza niż `PUSH_EVERY_MS` (albo na żądanie) — razem
+ *    z częścią `coaching`: odpowiedziami na formularze i odhaczeniami nawyków i posiłków.
+ * 4. Wiadomości od prowadzącego i zdjęcia sylwetki (gdy jest na nie zgoda).
+ * 5. Potwierdzenia zaleceń i nasze wiadomości, które czekały na sieć.
  */
 
 export const PUSH_EVERY_MS = 15 * 60_000;
@@ -107,13 +121,25 @@ export async function pullOne(c: LinkConnection, now: number = Date.now()): Prom
     await checkEnded(c);
     return 'ended';
   }
-  const have = new Set([...linkState().assignments.map((a) => a.id), ...linkState().broken.map((b) => b.id)]);
+  // Rodzaj nieznany wcześniej, a znany tej wersji, przychodzi jeszcze raz — po aktualizacji aplikacji.
+  const stillUnknown = linkState().unsupported.filter((u) => !isAssignmentKind(u.kind));
+  const have = new Set([
+    ...linkState().assignments.map((a) => a.id),
+    ...linkState().broken.map((b) => b.id),
+    ...stillUnknown.map((u) => u.id),
+  ]);
   const fresh: StoredAssignment[] = [];
   const broken: { id: string; connectionId: string }[] = [];
+  const unknown: { id: string; connectionId: string; kind: string }[] = [];
   const fresher = reply.assignments.filter((a) => !have.has(a.id) && !a.withdrawnAt);
   if (fresher.length) {
     const key = await keyFor(c).catch(() => null);
     for (const x of fresher) {
+      // Rodzaj z jawnej kolumny: nowszy niż ta wersja aplikacji — nie „zepsute”, tylko „zaktualizuj”.
+      if (!isAssignmentKind(x.kind)) {
+        unknown.push({ id: x.id, connectionId: c.id, kind: x.kind.slice(0, 20) });
+        continue;
+      }
       const opened = key ? parseAssignment(await openJson(key, AAD.assignment(c.id, x.id), x.ciphertext)) : null;
       // Numer w środku musi być tym z serwera: inaczej ktoś przełożył szyfrogram pod inny wiersz.
       if (!opened || opened.id.toLowerCase() !== x.id) broken.push({ id: x.id, connectionId: c.id });
@@ -130,6 +156,7 @@ export async function pullOne(c: LinkConnection, now: number = Date.now()): Prom
     x.lastPullAt = now;
     s.assignments.push(...fresh);
     s.broken.push(...broken);
+    s.unsupported = [...s.unsupported.filter((u) => !isAssignmentKind(u.kind) && !withdrawn.has(u.id)), ...unknown];
     for (const a of s.assignments) if (withdrawn.has(a.id)) a.withdrawn = true;
   });
   return 'ok';
@@ -151,7 +178,10 @@ export async function pushOne(
   try {
     const key = await keyFor(c);
     const extras = await readExtras(c.scopes, now);
-    sealed = await sealSnapshot(key, c.id, (days) => buildSnapshot(state, c.scopes, extras, now, days));
+    sealed = await sealSnapshot(key, c.id, (days) => ({
+      ...buildSnapshot(state, c.scopes, extras, now, days),
+      coaching: coachingFor(linkState(), c.id, now, days),
+    }));
   } catch {
     return 'offline';
   }
@@ -316,10 +346,16 @@ export function syncAll(getState: () => AppState | null, opts: { force?: boolean
           const pushed = await pushOne(c, state, opts);
           if (pushed === 'offline') return;
         }
+        const fresh = connectionOf(linkState(), c0.id);
+        if (fresh?.status === 'active') {
+          if ((await pullMessages(fresh)) === 'offline') return;
+          if (fresh.scopes.includes('photos') && (await syncPhotos(fresh)) === 'offline') return;
+        }
       }
       for (const a of linkState().assignments.filter((x) => x.status !== x.sent && x.status !== 'new')) {
         if (!(await sendReceipt(a))) break;
       }
+      await flushOutbox();
     } finally {
       running = null;
     }
@@ -328,4 +364,213 @@ export function syncAll(getState: () => AppState | null, opts: { force?: boolean
 }
 
 /** Na potrzeby testów: zapomina policzone klucze. */
-export const forgetKeys = (): void => keys.clear();
+export const forgetKeys = (): void => {
+  keys.clear();
+  if (pushTimer) clearTimeout(pushTimer);
+  pushTimer = null;
+  pushFor.clear();
+};
+
+/* ── Wiadomości ────────────────────────────────────────────────────────────────────── */
+
+/**
+ * Nowe wiadomości jednej współpracy (od ostatniej pobranej). Każda otwierana kluczem współpracy
+ * z AAD `message|<współpraca>|<numer>`; numer w środku musi być numerem wiersza. Zepsuta — pomijana.
+ */
+export async function pullMessages(c: LinkConnection): Promise<'ok' | 'offline' | 'ended'> {
+  if (!c.token || c.status !== 'active') return 'ended';
+  let reply;
+  try {
+    reply = await clientMessages(c.id, c.token, c.messagesSince ?? null);
+  } catch (e) {
+    if (isRpcError(e, 'bad_token')) return (await checkEnded(c)) ? 'ended' : 'offline';
+    return 'offline';
+  }
+  const have = new Set(linkState().messages.filter((m) => m.connectionId === c.id).map((m) => m.id));
+  const fresh: StoredMessage[] = [];
+  const confirmed = new Map<string, string>();
+  if (reply.messages.length) {
+    const key = await keyFor(c).catch(() => null);
+    for (const x of reply.messages) {
+      if (have.has(x.id)) {
+        confirmed.set(x.id, x.createdAt);
+        continue;
+      }
+      const opened = key ? parseMessage(await openJson(key, AAD.message(c.id, x.id), x.ciphertext)) : null;
+      if (!opened || opened.id.toLowerCase() !== x.id) continue;
+      fresh.push({
+        id: x.id,
+        connectionId: c.id,
+        author: x.author,
+        text: opened.text,
+        ref: opened.ref,
+        at: opened.at,
+        serverAt: x.createdAt,
+        readAt: null,
+      });
+    }
+  }
+  const last = reply.messages.at(-1)?.createdAt ?? c.messagesSince ?? null;
+  updateLink((s) => {
+    const x = s.connections.find((y) => y.id === c.id);
+    if (x) {
+      x.messagesSince = last;
+      x.readUpTo = reply.readUpTo;
+    }
+    for (const m of s.messages) {
+      const at = confirmed.get(m.id);
+      if (at && m.connectionId === c.id) m.serverAt = at;
+    }
+    s.messages.push(...fresh);
+    // Najwyżej 500 wiadomości na współpracę na telefonie — starsze zostają u prowadzącego.
+    const mine = s.messages.filter((m) => m.connectionId === c.id);
+    if (mine.length > 500) {
+      const drop = new Set(mine.sort((a, b) => a.at - b.at).slice(0, mine.length - 500).map((m) => m.id));
+      s.messages = s.messages.filter((m) => !drop.has(m.id));
+    }
+  });
+  return 'ok';
+}
+
+async function sendOne(m: StoredMessage): Promise<'sent' | 'offline' | 'gone'> {
+  const c = connectionOf(linkState(), m.connectionId);
+  if (!c?.token || c.status !== 'active') return 'gone';
+  const env: MessageV1 = { v: 1, id: m.id, at: m.at, text: m.text, ref: m.ref };
+  try {
+    const key = await keyFor(c);
+    const serverAt = await clientMessage(c.id, c.token, m.id, await sealJson(key, AAD.message(c.id, m.id), env));
+    updateLink((s) => {
+      const x = s.messages.find((y) => y.id === m.id);
+      if (x) x.serverAt = serverAt;
+    });
+    return 'sent';
+  } catch (e) {
+    if (isRpcError(e, 'ended') || isRpcError(e, 'bad_token')) {
+      await checkEnded(c);
+      return 'gone';
+    }
+    return 'offline';
+  }
+}
+
+/** Nasze wiadomości, które czekały na sieć. */
+async function flushOutbox(): Promise<void> {
+  for (const m of linkState().messages.filter((x) => x.author === 'client' && x.serverAt === null)) {
+    if ((await sendOne(m)) === 'offline') return;
+  }
+}
+
+/**
+ * Nowa wiadomość do prowadzącego: od razu na ekranie, w tle do serwera. Bez sieci czeka
+ * i idzie przy następnej synchronizacji. Zwraca, czy już doszła.
+ */
+export async function sendMessage(connectionId: string, text: string, ref: MessageRef | null = null): Promise<'sent' | 'later' | 'gone'> {
+  const clean = text.trim().slice(0, 4000);
+  if (!clean) return 'gone';
+  const m: StoredMessage = {
+    id: crypto.randomUUID(),
+    connectionId,
+    author: 'client',
+    text: clean,
+    ref,
+    at: Date.now(),
+    serverAt: null,
+    readAt: null,
+  };
+  updateLink((s) => {
+    s.messages.push(m);
+  });
+  if (!linkConfigured()) return 'later';
+  const r = await sendOne(m);
+  return r === 'offline' ? 'later' : r;
+}
+
+/** Rozmowa otwarta: wiadomości prowadzącego przeczytane — u siebie od razu, na serwerze gdy jest sieć. */
+export async function markMessagesRead(connectionId: string, now: number = Date.now()): Promise<void> {
+  const unread = linkState().messages.filter((m) => m.connectionId === connectionId && m.author === 'coach' && m.readAt === null);
+  if (!unread.length) return;
+  updateLink((s) => {
+    for (const m of s.messages) if (m.connectionId === connectionId && m.author === 'coach' && m.readAt === null) m.readAt = now;
+  });
+  const c = connectionOf(linkState(), connectionId);
+  const upTo = unread.map((m) => m.serverAt ?? '').sort().at(-1);
+  if (!c?.token || c.status !== 'active' || !upTo || !linkConfigured()) return;
+  try {
+    await clientRead(c.id, c.token, upTo);
+  } catch {
+    // Bez sieci prowadzący dowie się przy następnym otwarciu rozmowy — u nas już przeczytane.
+  }
+}
+
+/** Otwarta rozmowa: pobierz nowe i wyślij zaległe — bez reszty synchronizacji. */
+export async function refreshMessages(connectionId: string): Promise<'ok' | 'offline' | 'ended'> {
+  const c = connectionOf(linkState(), connectionId);
+  if (!c || !linkConfigured()) return 'offline';
+  const r = await pullMessages(c);
+  if (r === 'ok') await flushOutbox();
+  return r;
+}
+
+/* ── Odpowiedzi i odhaczenia (część `coaching` paczki) ─────────────────────────────── */
+
+let pushTimer: ReturnType<typeof setTimeout> | null = null;
+const pushFor = new Set<string>();
+let pushState: (() => AppState | null) | null = null;
+
+/**
+ * Coś dla prowadzącego się zmieniło (odpowiedź, odhaczenie) — paczka idzie zaraz, a nie po
+ * kwadransie. Kilka odhaczeń pod rząd składa się w jedną wysyłkę (2,5 s). Serwer i tak przyjmuje
+ * jedną paczkę na 30 s; za wcześnie — idzie przy następnej synchronizacji (`pushDue`).
+ */
+export function pushSoon(connectionId: string, getState: () => AppState | null, delay = 2500): void {
+  pushFor.add(connectionId);
+  pushState = getState;
+  updateLink((s) => {
+    const x = s.connections.find((y) => y.id === connectionId);
+    if (x) x.pushDue = true;
+  });
+  if (pushTimer) clearTimeout(pushTimer);
+  pushTimer = setTimeout(() => {
+    pushTimer = null;
+    const ids = [...pushFor];
+    pushFor.clear();
+    const state = pushState?.();
+    if (!state || !linkConfigured()) return;
+    void (async () => {
+      for (const id of ids) {
+        const c = connectionOf(linkState(), id);
+        if (c?.status === 'active') await pushOne(c, state, { force: true });
+      }
+    })();
+  }, delay);
+}
+
+/** Odpowiedź na formularz za dany okres (`formPeriod`) — nowsza zastępuje starszą z tego okresu. */
+export function saveAnswer(
+  a: Pick<StoredAssignment, 'id' | 'connectionId'>,
+  period: string,
+  values: Record<string, AnswerValue>,
+  getState: () => AppState | null,
+  now: number = Date.now(),
+): void {
+  updateLink((s) => {
+    s.answers = [...s.answers.filter((x) => !(x.assignmentId === a.id && x.period === period)), { assignmentId: a.id, period, at: now, values }];
+  });
+  pushSoon(a.connectionId, getState);
+}
+
+/** Odhaczenia nawyków albo posiłków w jednym dniu. */
+export function setDayTicks(
+  a: Pick<StoredAssignment, 'id' | 'connectionId'>,
+  day: string,
+  ticked: number[],
+  getState: () => AppState | null,
+): void {
+  updateLink((s) => {
+    const days = { ...(s.ticks[a.id] ?? {}) };
+    if (ticked.length) days[day] = [...new Set(ticked)].sort((x, y) => x - y);
+    else delete days[day];
+    s.ticks[a.id] = days;
+  });
+  pushSoon(a.connectionId, getState);
+}

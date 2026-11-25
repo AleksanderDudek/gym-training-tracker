@@ -115,6 +115,8 @@ export const AAD = {
   snapshot: (connectionId: string) => `snapshot|${connectionId}`,
   assignment: (connectionId: string, assignmentId: string) => `assignment|${connectionId}|${assignmentId}`,
   receipt: (connectionId: string, assignmentId: string) => `receipt|${connectionId}|${assignmentId}`,
+  message: (connectionId: string, messageId: string) => `message|${connectionId}|${messageId}`,
+  photo: (connectionId: string, photoId: string) => `photo|${connectionId}|${photoId}`,
   vault: (userId: string) => `vault|${userId}`,
 };
 

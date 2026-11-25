@@ -5,7 +5,8 @@
   "type": "module",
   "description": "Protokół współpracy GYM TRACKER ↔ GYM TRACKER Sztab: ID podopiecznego, szyfrowanie, zaproszenia, obszary, paczka danych i zalecenia",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./coaching": "./src/coaching.ts"
   },
   "dependencies": {
     "fflate": "^0.8.3"

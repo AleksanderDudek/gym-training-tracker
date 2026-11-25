@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { cleanForm, cleanHabits, cleanMeals } from '@gymtracker/link';
 import type { AssignmentBody } from '@gymtracker/link';
 import { BUILTIN, EX, groupLabel } from '@gt/data/exercises';
 import { MARKER_LIST } from '@gt/food/labs/markers';
@@ -578,6 +579,14 @@ export function NoteForm({ value, onChange }: { value: Note; onChange: (v: Note)
 /** Czy treść da się zapisać albo wysłać — te same minima, które przepuszcza `parseAssignment`. */
 export function bodyReady(b: LibraryBody): boolean {
   switch (b.kind) {
+    case 'form':
+      return cleanForm(b as unknown as Record<string, unknown>) !== null;
+    case 'habits':
+      return cleanHabits(b as unknown as Record<string, unknown>) !== null;
+    case 'meals':
+      return cleanMeals(b as unknown as Record<string, unknown>) !== null;
+    case 'program':
+      return b.steps.length > 0 && b.steps.every((s) => Number.isInteger(s.day) && s.day >= 0 && s.day <= 364 && /^\d{2}:\d{2}$/.test(s.time) && !!s.itemId);
     case 'workout':
       return !!b.workout.name.trim() && b.workout.items.length > 0;
     case 'plan':
@@ -595,6 +604,6 @@ export function bodyReady(b: LibraryBody): boolean {
 export function bodyTitle(b: LibraryBody, fallback: string): string {
   if (b.kind === 'workout') return b.workout.name || fallback;
   if (b.kind === 'plan') return b.plan.name || fallback;
-  if (b.kind === 'note') return b.title || fallback;
+  if (b.kind === 'note' || b.kind === 'form' || b.kind === 'habits' || b.kind === 'meals') return b.title || fallback;
   return fallback;
 }
