@@ -9,3 +9,5 @@ export const SUPABASE_URL = import.meta.env.VITE_SZTAB_URL || 'http://127.0.0.1:
 export const SUPABASE_ANON_KEY = import.meta.env.VITE_SZTAB_ANON_KEY || LOCAL_ANON;
 export const TRACKER_URL = import.meta.env.VITE_TRACKER_URL || 'https://aleksanderdudek.github.io/gym-training-tracker/';
 export const GOOGLE_SIGN_IN = import.meta.env.VITE_SZTAB_GOOGLE === '1';
+/** Serwer aplikacji GYM TRACKERa (powiadomienia push); pusty — Sztab nie powiadamia. */
+export const TRACKER_API_URL = String(import.meta.env.VITE_TRACKER_API_URL || '').trim().replace(/\/+$/, '');

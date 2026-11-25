@@ -59,6 +59,11 @@ export interface Connection {
   endedAt: string | null;
   lastPushAt: string | null;
   label: string | null;
+  /**
+   * Token powiadomień push od telefonu (`client_set_notify`) — `null`, gdy podopieczny ich nie włączył.
+   * Sztab woła z nim serwer aplikacji GYM TRACKERa (`lib/notify.ts`), samym rodzajem zdarzenia.
+   */
+  notifyToken?: string | null;
 }
 
 export interface Invite {
@@ -163,6 +168,7 @@ type ConnRow = {
   created_at: string;
   ended_at: string | null;
   last_push_at: string | null;
+  notify_token: string | null;
   invites: { label: string | null } | null;
 };
 
@@ -182,11 +188,12 @@ const toConnection = (r: ConnRow): Connection | null => {
     endedAt: r.ended_at,
     lastPushAt: r.last_push_at,
     label: r.invites?.label ?? null,
+    notifyToken: typeof r.notify_token === 'string' && /^[A-Za-z0-9_-]{43}$/.test(r.notify_token) ? r.notify_token : null,
   };
 };
 
 const CONN_COLS =
-  'id, invite_id, pseudonym, areas, scopes, client_public_key, status, ended_by, created_at, ended_at, last_push_at, invites(label)';
+  'id, invite_id, pseudonym, areas, scopes, client_public_key, status, ended_by, created_at, ended_at, last_push_at, notify_token, invites(label)';
 
 export async function listConnections(): Promise<Connection[]> {
   const { data, error } = await sb.from('connections').select(CONN_COLS).order('created_at', { ascending: false });

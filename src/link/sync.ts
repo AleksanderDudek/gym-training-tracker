@@ -15,6 +15,7 @@ import {
   isRpcError,
 } from './rpc';
 import { linkConfigured } from './config';
+import { keepCoachPush } from './notify';
 import { syncPhotos } from './photos';
 import { buildSnapshot, coachingFor, readExtras, sealSnapshot } from './snapshot';
 import { activeConnections, connectionOf, linkState, updateLink } from './store';
@@ -382,6 +383,10 @@ export function syncAll(getState: () => AppState | null, opts: { force?: boolean
         if (!(await sendReceipt(a))) break;
       }
       await flushOutbox();
+      // Powiadomienia: odświeżenie rejestracji trwających, sprzątanie po zakończonych.
+      for (const c of linkState().connections.filter((x) => x.notify)) {
+        if ((await keepCoachPush(c)) === 'offline') break;
+      }
     } finally {
       running = null;
     }

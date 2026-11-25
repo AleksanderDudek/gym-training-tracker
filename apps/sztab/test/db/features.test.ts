@@ -321,3 +321,22 @@ describe('Poprawki uprawnień i wycieków', () => {
     expect((await coach.client.from('photos').select('connection_id, ciphertext').eq('id', id).single()).data).toEqual({ connection_id: a.id, ciphertext: 'v1.a' });
   });
 });
+
+describe('Token powiadomień', () => {
+  it('ustawia go tylko telefon, widzi prowadzący tej współpracy, koniec współpracy go kasuje', async () => {
+    const coach = await coachWithProfile();
+    const stranger = await coachWithProfile();
+    const conn = await connect(coach);
+    const tok = 'A'.repeat(43);
+    expect((await anon().rpc('client_set_notify', { p_connection: conn.id, p_token: conn.token, p_notify: 'zły' })).error?.message).toBe('bad_notify');
+    expect((await anon().rpc('client_set_notify', { p_connection: conn.id, p_token: newToken(), p_notify: tok })).error?.message).toBe('bad_token');
+    expect((await anon().rpc('client_set_notify', { p_connection: conn.id, p_token: conn.token, p_notify: tok })).error).toBeNull();
+    expect((await coach.client.from('connections').select('notify_token').eq('id', conn.id).single()).data!.notify_token).toBe(tok);
+    expect((await stranger.client.from('connections').select('notify_token').eq('id', conn.id)).data).toEqual([]);
+    // Prowadzący nie podmieni tokenu (brak uprawnień do zmiany współpracy).
+    const swap = await coach.client.from('connections').update({ notify_token: 'B'.repeat(43) }).eq('id', conn.id).select('id');
+    expect(swap.error !== null || (swap.data ?? []).length === 0).toBe(true);
+    expect((await coach.client.rpc('coach_end_connection', { p_connection: conn.id })).error).toBeNull();
+    expect((await coach.client.from('connections').select('notify_token').eq('id', conn.id).single()).data!.notify_token).toBeNull();
+  });
+});

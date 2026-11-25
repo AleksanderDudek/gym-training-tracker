@@ -25,6 +25,7 @@ export interface FakeConnection {
   messages: { id: string; author: 'coach' | 'client'; ciphertext: string; createdAt: string; readAt: string | null }[];
   photos: Map<string, string>;
   bookings: { id: string; slotId: string; cancelledAt: string | null; cancelledBy: 'client' | 'coach' | null }[];
+  notifyToken?: string | null;
 }
 
 export interface FakeSlot {
@@ -95,6 +96,7 @@ export async function fakeSztab(opts: { coachName?: string; profession?: string 
     c.assignments = [];
     c.scopes = [];
     c.messages = [];
+    c.notifyToken = null;
     c.photos.clear();
     c.bookings = c.bookings.filter((b) => Date.parse(slots.get(b.slotId)?.startsAt ?? '') <= Date.now());
   }
@@ -223,6 +225,14 @@ export async function fakeSztab(opts: { coachName?: string; profession?: string 
         const c = await byToken(a.p_connection, a.p_token);
         if (!c) return fail('bad_token');
         for (const m of c.messages) if (m.author === 'coach' && !m.readAt && m.createdAt <= String(a.p_upto)) m.readAt = serverNow();
+        return ok(undefined);
+      }
+      case 'client_set_notify': {
+        const c = await byToken(a.p_connection, a.p_token);
+        if (!c) return fail('bad_token');
+        if (c.status !== 'active') return fail('ended');
+        if (a.p_notify !== null && !/^[A-Za-z0-9_-]{43}$/.test(String(a.p_notify))) return fail('bad_notify');
+        c.notifyToken = a.p_notify === null ? null : String(a.p_notify);
         return ok(undefined);
       }
       case 'client_photo_ids': {
