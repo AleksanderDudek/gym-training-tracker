@@ -97,12 +97,12 @@ describe('powiadomienia: telefon ↔ serwer aplikacji ↔ Sztab', () => {
     const token = (await sztab.readNotify(c.id))!;
     expect(token).toBe(connectionOf(linkState(), c.id)!.notify!.token);
 
-    const { notifyClient } = await import('../../apps/sztab/src/lib/notify');
-    await notifyClient({ notifyToken: token }, 'message');
+    const { tokenNotifier } = await import('../../apps/sztab/src/lib/notify');
+    await tokenNotifier(token)!.notify('message');
     await vi.waitFor(() => expect(pushes).toHaveLength(1));
 
     const later = Date.now() + 3 * HOUR;
-    await notifyClient({ notifyToken: token }, 'assignment', { at: new Date(later), ref: crypto.randomUUID() });
+    await tokenNotifier(token)!.notify('assignment', { at: new Date(later), ref: crypto.randomUUID() });
     const startsAt = new Date(Date.now() + 5 * HOUR).toISOString();
     expect(await scheduleVisitReminder(c.id, { id: crypto.randomUUID(), startsAt })).toBe(true);
     expect(pushes).toHaveLength(1);
@@ -125,8 +125,8 @@ describe('powiadomienia: telefon ↔ serwer aplikacji ↔ Sztab', () => {
 
     expect(await cancelVisitReminder(c.id, mine)).toBe(true);
     // Sztab odwołuje wizytę po swojej stronie: liczy numer z tokenu i numeru rezerwacji tak samo jak telefon.
-    const { cancelNotify } = await import('../../apps/sztab/src/lib/notify');
-    await cancelNotify({ notifyToken: token }, await notifyRef(token, theirs));
+    const { tokenNotifier } = await import('../../apps/sztab/src/lib/notify');
+    await tokenNotifier(token)!.cancel(theirs); // Sztab sam liczy HMAC z numeru — jak telefon
     expect(await queued()).toEqual([]);
     await linkTick(store, env, new Date(Date.now() + 3.5 * HOUR), send);
     expect(pushes).toHaveLength(0);
@@ -139,8 +139,8 @@ describe('powiadomienia: telefon ↔ serwer aplikacji ↔ Sztab', () => {
     expect(await scheduleVisitReminder(c.id, { id: crypto.randomUUID(), startsAt: new Date(Date.now() + 5 * HOUR).toISOString() })).toBe(true);
     expect(await disableCoachPush(c.id)).toBe('off');
     expect(await sztab.readNotify(c.id)).toBeNull();
-    const { notifyClient } = await import('../../apps/sztab/src/lib/notify');
-    await notifyClient({ notifyToken: token }, 'message');
+    const { tokenNotifier } = await import('../../apps/sztab/src/lib/notify');
+    await tokenNotifier(token)!.notify('message');
     await linkTick(store, env, new Date(Date.now() + 3.5 * HOUR), send);
     expect(pushes).toHaveLength(0);
     expect(await store.dueNotifies(Date.now() + 10 * HOUR, 100)).toEqual([]);
@@ -154,8 +154,8 @@ describe('powiadomienia: telefon ↔ serwer aplikacji ↔ Sztab', () => {
     await enableCoachPush(c.id, state);
     const token = (await sztab.readNotify(c.id))!;
     // Sztab przepuszcza każdy rodzaj serwera (jego własna lista niczego nie gubi) — każdy dochodzi jako powiadomienie.
-    const { notifyClient } = await import('../../apps/sztab/src/lib/notify');
-    for (const kind of KINDS) await notifyClient({ notifyToken: token }, kind);
+    const { tokenNotifier } = await import('../../apps/sztab/src/lib/notify');
+    for (const kind of KINDS) await tokenNotifier(token)!.notify(kind);
     await vi.waitFor(() => expect(pushes).toHaveLength(KINDS.length));
   });
 });
