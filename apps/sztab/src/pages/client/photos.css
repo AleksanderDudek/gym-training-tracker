@@ -1,0 +1,25 @@
+/* Zakładka „Zdjęcia” podopiecznego: siatka miesiącami, duży podgląd, porównanie obok siebie. */
+.sz-photo { gap: 18px; }
+.sz-photo-head { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; }
+
+.sz-photo-month { display: grid; gap: 10px; }
+.sz-photo-month h3::first-letter { text-transform: uppercase; }
+.sz-photo-grid { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); }
+.sz-photo-tile { display: grid; gap: 6px; width: 100%; padding: 0 0 8px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); color: var(--ink); text-align: left; cursor: pointer; overflow: hidden; font-size: 13px; }
+.sz-photo-tile:hover { border-color: var(--edge); }
+.sz-photo-tile img { display: block; width: 100%; height: auto; aspect-ratio: 3 / 4; object-fit: cover; background: var(--surface-2); }
+.sz-photo-tile span { padding: 0 10px; font-variant-numeric: tabular-nums; }
+
+.sz-photo-big { margin: 0; display: grid; place-items: center; background: var(--surface-2); border-radius: var(--r); padding: 8px; }
+.sz-photo-big img { display: block; height: min(68vh, 760px); width: auto; max-width: 100%; object-fit: contain; }
+
+.sz-photo-gap { font: 600 16px/1.3 var(--display); letter-spacing: 0.01em; }
+.sz-photo-gap .soft { font: 400 14px var(--body); }
+.sz-photo-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.sz-photo-side { display: grid; gap: 10px; align-content: start; min-width: 0; }
+.sz-photo-side figure { margin: 0; display: grid; gap: 8px; }
+.sz-photo-side img { display: block; justify-self: center; height: min(60vh, 640px); width: auto; max-width: 100%; object-fit: contain; background: var(--surface-2); border-radius: var(--r); }
+.sz-photo-side figcaption { display: grid; gap: 2px; font-size: 14px; font-variant-numeric: tabular-nums; }
+@media (max-width: 560px) {
+  .sz-photo-side img { height: min(44vh, 360px); }
+}
