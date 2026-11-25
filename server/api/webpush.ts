@@ -42,12 +42,14 @@ const RECORD_SIZE = 4096;
 /**
  * Szyfruje treść dla jednej subskrypcji. `salt` i `serverKeys` podaje tylko test — w ruchu
  * oba są losowe i jednorazowe, inaczej dwie wiadomości zdradzałyby, że mają tę samą treść.
+ * `padTo` dopełnia treść zerami (RFC 8188 §2) do tylu bajtów — szyfrogram ma wtedy tę samą długość
+ * bez względu na tekst, więc usługa powiadomień nie odróżni rodzajów po rozmiarze.
  */
 export async function encryptPayload(
   plaintext: Uint8Array,
   p256dh: string,
   auth: string,
-  fixed: { salt?: Uint8Array<ArrayBuffer>; serverKeys?: CryptoKeyPair } = {},
+  fixed: { salt?: Uint8Array<ArrayBuffer>; serverKeys?: CryptoKeyPair; padTo?: number } = {},
 ): Promise<Uint8Array<ArrayBuffer>> {
   const uaPublic = fromB64u(p256dh);
   const authSecret = fromB64u(auth);
@@ -70,10 +72,11 @@ export async function encryptPayload(
   const cek = (await hmac(prk, enc.encode('Content-Encoding: aes128gcm\0\x01'))).slice(0, 16);
   const nonce = (await hmac(prk, enc.encode('Content-Encoding: nonce\0\x01'))).slice(0, 12);
 
-  // Jeden rekord, więc od razu ostatni: znacznik 0x02, bez dopełnienia.
+  // Jeden rekord, więc od razu ostatni: znacznik 0x02, za nim dopełnienie zerami (domyślnie żadne).
+  const padding = new Uint8Array(Math.max(0, (fixed.padTo ?? 0) - plaintext.length));
   const key = await crypto.subtle.importKey('raw', cek, 'AES-GCM', false, ['encrypt']);
   const cipher = new Uint8Array(
-    await crypto.subtle.encrypt({ name: 'AES-GCM', iv: nonce }, key, concat(plaintext, new Uint8Array([2]))),
+    await crypto.subtle.encrypt({ name: 'AES-GCM', iv: nonce }, key, concat(plaintext, new Uint8Array([2]), padding)),
   );
 
   const header = new Uint8Array(16 + 4 + 1);
@@ -116,13 +119,18 @@ export interface PushOptions {
   /** Ile sekund usługa ma trzymać wiadomość, gdy telefon jest offline. */
   ttl: number;
   urgency?: 'very-low' | 'low' | 'normal' | 'high';
-  /** Nowsza wiadomość z tym samym tematem zastępuje niedostarczoną starszą. */
+  /**
+   * Nowsza wiadomość z tym samym tematem zastępuje niedostarczoną starszą. Usługa powiadomień widzi go
+   * otwartym tekstem (RFC 8030 §5.4: najwyżej 32 znaki z alfabetu base64url).
+   */
   topic?: string;
+  /** Dopełnienie treści do tylu bajtów przed szyfrowaniem (`encryptPayload`). */
+  padTo?: number;
 }
 
 /** Gotowe zapytanie do usługi powiadomień — wysyła je `fetch`, a test może je obejrzeć. */
 export async function pushRequest(sub: Subscription, payload: unknown, vapid: Vapid, opts: PushOptions): Promise<Request> {
-  const body = await encryptPayload(enc.encode(JSON.stringify(payload)), sub.keys.p256dh, sub.keys.auth);
+  const body = await encryptPayload(enc.encode(JSON.stringify(payload)), sub.keys.p256dh, sub.keys.auth, { padTo: opts.padTo });
   const token = await vapidToken(sub.endpoint, vapid.subject, await importVapid(vapid.privateJwk));
   const headers = new Headers({
     'Content-Type': 'application/octet-stream',
@@ -133,4 +141,32 @@ export async function pushRequest(sub: Subscription, payload: unknown, vapid: Va
   });
   if (opts.topic) headers.set('Topic', opts.topic);
   return new Request(sub.endpoint, { method: 'POST', headers, body });
+}
+
+/** Po tylu milisekundach wysyłka do usługi powiadomień się poddaje — przebieg crona nie czeka w nieskończoność. */
+export const SEND_TIMEOUT_MS = 10_000;
+
+/**
+ * Wysyła zapytanie z limitem czasu: po `ms` przerywa połączenie (`AbortController`) i odrzuca obietnicę,
+ * nawet gdy `send` sygnału nie słucha. Zawieszona usługa powiadomień nie zatrzyma więc przebiegu crona
+ * ani nie zajmie na stałe połączenia Workera.
+ */
+export async function sendWithin(
+  send: (r: Request) => Promise<Response>,
+  req: Request,
+  ms = SEND_TIMEOUT_MS,
+): Promise<Response> {
+  const ctl = new AbortController();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const late = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      ctl.abort();
+      reject(new Error(`usługa powiadomień milczy ${ms} ms`));
+    }, ms);
+  });
+  try {
+    return await Promise.race([send(new Request(req, { signal: ctl.signal })), late]);
+  } finally {
+    clearTimeout(timer);
+  }
 }

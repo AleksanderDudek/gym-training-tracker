@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { b64u, encryptPayload, fromB64u, importVapid, pushRequest, vapidToken } from './webpush';
+import { b64u, encryptPayload, fromB64u, importVapid, pushRequest, sendWithin, vapidToken } from './webpush';
 
 /**
  * Szyfrowanie wiadomości i podpis VAPID robione ręcznie na WebCrypto, bez biblioteki — test
@@ -61,6 +61,45 @@ describe('szyfrowanie wiadomości (RFC 8291)', () => {
     expect(b64u(a)).not.toBe(b64u(b));
     // Sól 16, rozmiar rekordu 4, długość klucza 1, klucz 65, szyfrogram z tagiem.
     expect(a.length).toBe(16 + 4 + 1 + 65 + 1 + 1 + 16);
+  });
+
+  it('dopełnienie zerami (RFC 8188): krótka i dłuższa treść dają szyfrogram tej samej długości', async () => {
+    const short = await encryptPayload(new TextEncoder().encode('x'), RFC.uaPublic, RFC.auth, { padTo: 64 });
+    const long = await encryptPayload(new TextEncoder().encode('y'.repeat(60)), RFC.uaPublic, RFC.auth, { padTo: 64 });
+    expect(short.length).toBe(16 + 4 + 1 + 65 + 64 + 1 + 16);
+    expect(long.length).toBe(short.length);
+    // Dłuższa niż dopełnienie — bez obcinania.
+    const over = await encryptPayload(new TextEncoder().encode('z'.repeat(80)), RFC.uaPublic, RFC.auth, { padTo: 64 });
+    expect(over.length).toBe(16 + 4 + 1 + 65 + 80 + 1 + 16);
+  });
+});
+
+describe('wysyłka z limitem czasu', () => {
+  const req = () => new Request('https://fcm.googleapis.com/fcm/send/abc', { method: 'POST', body: new Uint8Array([1, 2, 3]) });
+
+  it('zawieszona usługa: po limicie odrzuca i przerywa połączenie, nawet gdy wysyłka nie słucha sygnału', async () => {
+    let signal: AbortSignal | undefined;
+    const hang = (r: Request) => {
+      signal = r.signal;
+      return new Promise<Response>(() => undefined);
+    };
+    await expect(sendWithin(hang, req(), 20)).rejects.toThrow(/20 ms/);
+    expect(signal?.aborted).toBe(true);
+  });
+
+  it('szybka odpowiedź przechodzi bez zmian, z treścią i nagłówkami zapytania', async () => {
+    const seen: Request[] = [];
+    const res = await sendWithin(
+      async (r) => {
+        seen.push(r);
+        return new Response(null, { status: 201 });
+      },
+      new Request(req(), { headers: { TTL: '60' } }),
+    );
+    expect(res.status).toBe(201);
+    expect(seen[0]!.headers.get('TTL')).toBe('60');
+    expect([...new Uint8Array(await seen[0]!.arrayBuffer())]).toEqual([1, 2, 3]);
+    expect(seen[0]!.signal.aborted).toBe(false);
   });
 });
 

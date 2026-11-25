@@ -90,6 +90,13 @@ Darmowy plan Workers daje 10 ms procesora na przebieg crona; jedno przypomnienie
 milisekundy, więc mieści się kilkanaście na przebieg, a reszta wychodzi w następnym (co 5 minut,
 okno 90 minut). Dla kilkuset osób wystarczy; przy większym ruchu — plan płatny Workers.
 
+Przebieg (`cron` w `api.ts`) idzie po kolei: najpierw przypomnienia, potem zaplanowane od prowadzącego
+(najwyżej 10 wysyłek na przebieg), na końcu sprzątanie skrzynek zegarka. Każda część ma własną obsługę
+błędów, a każda wysyłka do usługi powiadomień — limit 10 s, więc zawieszona usługa, wyjątek przy jednej
+subskrypcji czy pełna kolejka od prowadzącego nie zatrzymają przypomnień. Dziennik (`npx wrangler tail`):
+jedna linijka `{"reminders":{"sent","removed","failed"},"coach":{"sent","failed","deferred","dropped","removed","pruned"},"boxes":n}`;
+część, która rzuciła, ma zamiast liczb `{"error":"…"}`.
+
 ## Uwagi od użytkowników
 
 Dymek w pasku aplikacji (na każdym ekranie) i przycisk w Ustawieniach otwierają okno: e-mail
@@ -197,19 +204,24 @@ przypomnienia: przeglądarka ma jedną subskrypcję na klucz (spec
 - `POST /link/register {token, subscription, tz, lang}` — z aplikacji. Token losuje telefon (32 bajty
   w base64url, osobny dla każdej współpracy) i ten sam podaje Sztabowi. Serwer zakłada subskrypcję albo
   odświeża istniejącą (klucze, strefa, czas — lista przypomnień zostaje) i wiąże z nią token. Telefon
-  odświeża rejestrację co kilka dni. `lang`: `pl` albo `en`.
+  odświeża rejestrację co kilka dni. `lang`: `pl` albo `en`. Najwyżej 30 rejestracji na godzinę z jednego
+  adresu IP, ponad to `429` (telefon traktuje je jak brak sieci i ponawia przy następnej synchronizacji).
 - `POST /link/unregister {token}` — z aplikacji: token i jego kolejka znikają.
 - `POST /link/notify {token, kind, at?, ref?}` — ze Sztabu (i z aplikacji: przypomnienie o wizycie
   zarezerwowanej na telefonie). `kind`: `message`, `assignment`, `withdrawn`, `visit`, `visit-cancel`,
-  `visit-soon`, `ended`. Bez `at`, z `at` w przeszłości albo najwyżej minutę naprzód — od razu; dalej
-  (do 400 dni; ms od 1970) — do kolejki, którą wysyła cron. `ref` (do 64 znaków `A-Z a-z 0-9 _ -`) to
+  `visit-soon`, `ended`. Bez `at` albo z `at` ≤ teraz — od razu; każde `at` w przyszłości (do 400 dni;
+  ms od 1970), choćby o sekundy — do kolejki, którą wysyła cron. Zalecenie „pokaż od” staje się dla
+  telefonu widoczne dopiero o tym czasie, więc powiadomienie nie może przyjść wcześniej (cron co 5 minut).
+  `ref` (do 64 znaków `A-Z a-z 0-9 _ -`; klienci wysyłają 32 znaki hex — HMAC numeru, nie sam numer) to
   numer zalecenia albo rezerwacji: nowe zaplanowane z tym samym numerem podmienia poprzednie, a
   natychmiastowe tego samego rodzaju je zastępuje (innego rodzaju nie rusza — „zapisał cię” nie kasuje
-  „za dwie godziny”). `ended` czyści całą kolejkę tokenu.
+  „za dwie godziny”). `ended` kasuje token razem z kolejką — były prowadzący nie powiadomi już niczym,
+  zanim telefon zauważy koniec przy synchronizacji (także gdy samo powiadomienie zatrzyma limit; zaplanowany
+  `ended` kasuje token, gdy cron go wyśle albo gdy przepadnie).
 - `POST /link/cancel {token, ref}` — odwołuje zaplanowane z tym numerem.
 
 Każde dobrze zbudowane zapytanie dostaje 204 — także z tokenem, którego serwer nie zna, więc nie da się
-sprawdzić, które tokeny istnieją. Zły kształt — 400. Sztab wysyła JSON bez nagłówka `Content-Type`
+sprawdzić, które tokeny istnieją (jedyny wyjątek: rejestracja ponad limit adresu — 429). Zły kształt — 400. Sztab wysyła JSON bez nagłówka `Content-Type`
 (przeglądarka daje `text/plain`: proste zapytanie CORS bez preflightu, działa z `keepalive`), telefon —
 z `application/json`; serwer czyta treść jako JSON bez względu na nagłówek.
 
@@ -217,29 +229,61 @@ Treść: `{title: 'GYM TRACKER', body, url: '#/wspolpraca', tag: 'coach-<rodzaj>
 w języku z rejestracji („Nowa wiadomość od prowadzącego”, „Prowadzący zapisał cię na wizytę”…), bez
 nazwiska, treści i numeru współpracy, więc i podgląd na zablokowanym ekranie niczego nie zdradza.
 
+**Co widzi usługa powiadomień** (FCM, Apple, Mozilla, Microsoft): adres subskrypcji, czas wysyłki
+i nagłówki — a te nie zależą od rodzaju. Temat (`Topic`, jawny) to zawsze `coach`; rodzaj jest tylko
+w zaszyfrowanym znaczniku. Treść jest przed szyfrowaniem dopełniona zerami do 160 bajtów (RFC 8188), więc
+„wizyta za dwie godziny” i „nowa wiadomość” mają szyfrogram tej samej długości. Czas życia (`TTL`, ile
+usługa trzyma wiadomość dla telefonu offline) zależy od drogi, nie od rodzaju: natychmiastowe — doba
+(wiadomość z wieczora przychodzi rano), z kolejki — dwie godziny (przypomnienie „za dwie godziny wizyta”
+po czasie wprowadzałoby w błąd). Osobny czas dla przypomnienia o wizycie zdradzałby, kiedy ktoś ma
+wizytę; to, że coś było zaplanowane, usługa i tak widzi po godzinie wysyłki (cron co 5 minut). Skutek
+wspólnego tematu: telefon, który był offline, dostaje po powrocie tylko najnowsze powiadomienie od
+prowadzącego — wszystkie otwierają ten sam ekran współpracy.
+
 **Co wie serwer.** Tabela `link_tokens`: SHA-256 tokenu (samego tokenu baza nie zna — jej wyciek nie
-pozwala wysyłać), adres subskrypcji, język, czas założenia i ostatniej rejestracji oraz rodzaje i czasy
-natychmiastowych wysyłek z ostatniej godziny (do limitów). Tabela `link_queue`: zaplanowane — skrót
-tokenu, rodzaj, czas, numer od prowadzącego; po wysłaniu znika. Bez adresów IP, nazwisk i treści:
-serwer wie tylko, że token dostał zdarzenie danego rodzaju.
+pozwala wysyłać), adres subskrypcji, język, czas założenia i ostatniej rejestracji. `link_queue`:
+zaplanowane — skrót tokenu, rodzaj, czas, numer od prowadzącego, liczba nieudanych prób, następna próba
+i termin, po którym wysyłka nie ma sensu; po wysłaniu znika. `link_sends`: skrót tokenu, czas i rodzaj
+wysyłek z ostatniej godziny (do limitu). `link_registrations`: skrót adresu IP (SHA-256 z solą) i czas
+rejestracji z ostatniej godziny — bez tokenu, więc wiersza nie da się połączyć ze współpracą. Wiersze
+`link_sends` i `link_registrations` starsze niż godzina kasuje cron. Bez nazwisk i treści: serwer wie
+tylko, że token dostał zdarzenie danego rodzaju.
 
 **Limity i sprzątanie.**
 
-- 20 natychmiastowych na token w ruchomej godzinie, ponad to — po cichu nic; ten sam rodzaj od tego
-  samego tokenu w ciągu minuty — jedno powiadomienie.
+- 20 wysyłek na token w ruchomej godzinie — natychmiastowych i z kolejki razem, liczy się każda próba —
+  ponad to natychmiastowe przepada po cichu, a zaplanowane czeka, aż miejsce się zwolni (nie przepada).
+  Ten sam rodzaj od tego samego tokenu w ciągu minuty — jedno powiadomienie. Sprawdzenie limitu i zapis
+  wysyłki to jedno zapytanie D1 (`INSERT … SELECT … WHERE` na `link_sends`), więc sto równoległych
+  `notify` to nadal najwyżej jedno powiadomienie danego rodzaju na minutę i 20 na godzinę. Tak samo
+  limit rejestracji.
 - 200 zaplanowanych na token; 10 tokenów na subskrypcję (wypada najdawniej odświeżony, z kolejką).
-- Cron co 5 minut wysyła do 50 zaplanowanych i każde kasuje zaraz po wysłaniu, więc przerwany przebieg
-  niczego nie powtórzy; kilka tego samego rodzaju dla jednego tokenu to jedno powiadomienie. Gdy usługa
-  powiadomień nie przyjmie, następny przebieg próbuje znowu — przypomnienie o wizycie najwyżej godzinę
-  po czasie, reszta przez dobę.
+- Cron co 5 minut: najwyżej 10 wysyłek z kolejki na przebieg, sprawiedliwie — z jednego tokenu najwyżej
+  3, z jednej subskrypcji najwyżej 5, najpierw pierwsze zaplanowane każdego tokenu, potem drugie (w
+  obrębie — najdawniej czekające). Jedno powiadomienie załatwia wszystkie zaplanowane tego rodzaju dla
+  tokenu, którym już wybiła godzina.
+- Przebieg najpierw bierze zaplanowane w dzierżawę (przesuwa następną próbę o 5 minut — drugi przebieg
+  tego samego nie weźmie, a przerwany go nie zgubi), potem liczy je do limitu, potem wysyła, a po udanej
+  wysyłce kasuje. Każde zaplanowane wychodzi więc raz — poza przebiegiem przerwanym między przyjęciem przez
+  usługę a skasowaniem: wtedy wyjdzie drugi raz po 5 minutach (ten sam temat i znacznik — na telefonie
+  zastępuje poprzednie).
+- Usługa nie przyjęła (inny kod niż 2xx/404/410, sieć, 10 s bez odpowiedzi): następna próba po 5 minutach,
+  potem po 20; po trzeciej nieudanej zaplanowane przepada. Cała kolejka tej subskrypcji czeka tyle samo
+  (po trzeciej — godzinę), więc zepsuta albo złośliwa subskrypcja (np. założona cudzym kluczem VAPID —
+  usługa odpowiada 403) zabiera najwyżej jedno miejsce na przebieg, a cudze zaplanowane wychodzą przed
+  jej kolejnymi próbami.
+- Po terminie zaplanowane przepada bez próby: przypomnienie o wizycie godzinę po czasie, reszta po dobie.
 - Token bez rejestracji przez 45 dni znika. Martwa subskrypcja (404/410) i wypisanie z przypomnień
   (`/unsubscribe` — telefon zaraz potem zamyka subskrypcję) zabierają też jej tokeny i kolejkę.
 
 **CORS.** Sztab (`https://gym-tracker-sztab.instrukcje-app.workers.dev`, lokalnie `http://localhost:5190`
 i podgląd `:5191`) stoi w `ALLOWED_ORIGINS` w `wrangler.toml`.
 
-**Wdrożenie przy istniejącym serwerze.** Tabele `link_tokens` i `link_queue` dochodzą w `schema.sql`.
-Najpierw baza, potem kod — nowy kod sięga do nowych tabel także przy wypisaniu z przypomnień:
+**Wdrożenie przy istniejącym serwerze.** Tabele `link_tokens`, `link_queue`, `link_sends`
+i `link_registrations` dochodzą w `schema.sql`. Najpierw baza, potem kod — nowy kod sięga do nowych tabel
+także przy wypisaniu z przypomnień. (Gdyby w D1 była już wcześniejsza wersja `link_tokens`/`link_queue` —
+z kolumną `recent`, bez `next_try` — najpierw `DROP TABLE link_queue; DROP TABLE link_tokens;`: telefony
+zarejestrują tokeny na nowo przy najbliższej synchronizacji.)
 
 ```bash
 npx wrangler d1 execute gym-tracker-api --remote --file=schema.sql   # CREATE … IF NOT EXISTS — reszta zostaje
@@ -249,4 +293,6 @@ npx wrangler deploy
 Potem Sztab z `VITE_TRACKER_API_URL` (adres Workera) i aplikacja — kolejność w specu.
 
 **Testy.** `link.test.ts` przechodzi te same scenariusze na magazynie w pamięci i na zapytaniach D1
-z `schema.sql`, uruchomionych na SQLite z Node'a (`node:sqlite`).
+z `schema.sql`, uruchomionych na SQLite z Node'a (`node:sqlite`) — w tym równoległe `notify`
+i rejestracje puszczone do bazy w tej samej chwili, dwa przebiegi crona naraz i kolejkę zapchaną przez
+zepsute subskrypcje.
