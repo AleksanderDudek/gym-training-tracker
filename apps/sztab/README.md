@@ -84,20 +84,25 @@ test/
   logic.test.ts        pulpit, sejf, wysyłka, skróty (jsdom, IndexedDB w pamięci)
   db/rpc.test.ts       baza na żywo: zaproszenia, paczki, zalecenia, zgoda, zakończenie, usunięcie konta
 scripts/demo-client.ts telefon demo do sprawdzania pulpitu
-public/_headers        CSP i nagłówki bezpieczeństwa (Cloudflare Pages); _redirects — SPA
+public/_headers        CSP i nagłówki bezpieczeństwa (Cloudflare Workers, pliki statyczne)
+wrangler.jsonc         Worker z plikami statycznymi: dist/, każda nieznana ścieżka → index.html (SPA)
 ```
 
 ## Wdrożenie
 
 1. **Supabase** (projekt w regionie Frankfurt): `npx supabase link --project-ref <ref>`,
-   `npx supabase db push`. W panelu: Authentication → URL Configuration — adres Sztabu jako Site
-   URL i `https://<adres>/**` w Redirect URLs; włączone potwierdzanie maila, „Leaked password
-   protection”, minimum 10 znaków; własny SMTP do maili (domyślny Supabase ma niski limit).
+   `npx supabase db push --remote` (CLI 3 bez `--remote` celuje w lokalną bazę). W panelu:
+   Authentication → URL Configuration — adres Sztabu jako Site URL i `https://<adres>/**` w
+   Redirect URLs; włączone potwierdzanie maila, „Leaked password protection” (plan płatny),
+   minimum 10 znaków; własny SMTP do maili (wbudowany wysyła tylko do członków organizacji
+   Supabase, ok. 2 maile na godzinę).
 2. **Google** (opcjonalnie): klient OAuth w Google Cloud, wpisany w Authentication → Providers →
    Google; w buildzie `VITE_SZTAB_GOOGLE=1`.
-3. **Hosting** (Cloudflare Pages): katalog `apps/sztab`, polecenie
-   `npm ci && npm run build -w @gymtracker/sztab`, wynik `apps/sztab/dist`. Zmienne:
-   `VITE_SZTAB_URL`, `VITE_SZTAB_ANON_KEY` (klucz publiczny projektu), `VITE_TRACKER_URL`.
+3. **Hosting** (Cloudflare Workers, pliki statyczne — `wrangler.jsonc`): zmienne buildu w
+   `apps/sztab/.env.production.local` (poza gitem): `VITE_SZTAB_URL`, `VITE_SZTAB_ANON_KEY` —
+   starszy klucz `anon` (JWT, `eyJ…`), bo GYM TRACKER wysyła go też jako `Authorization: Bearer`,
+   a nowy `sb_publishable_…` nie jest JWT — i `VITE_TRACKER_URL`. Potem
+   `npm run build -w @gymtracker/sztab` i z katalogu `apps/sztab` `npx wrangler deploy`.
 4. **GYM TRACKER**: zmienne repozytorium `SZTAB_URL`, `SZTAB_ANON_KEY`, `SZTAB_APP_URL` (Settings
    → Secrets and variables → Actions → Variables). Bez nich Współpraca w GYM TRACKERze jest
    ukryta.
