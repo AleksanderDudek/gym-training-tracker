@@ -5,6 +5,7 @@ import { BUILTIN } from '@gt/data/exercises';
 import { GOAL_PLANS, PLANS } from '@gt/data/plans';
 import { text } from '@gt/i18n';
 import type { PlanTemplate, Workout } from '@gt/types';
+import { DemoChip } from '../components/Demo';
 import { bodyReady } from '../components/Editors';
 import { Dialog, Loading, toast, useLoad } from '../components/ui';
 import { loadAliases } from '../lib/aliases';
@@ -403,6 +404,7 @@ export function SendDialog({
     <span className="sz-sched-who">
       <span className="pid">{shortPseudonym(c.pseudonym)}</span>
       {aliases[c.pseudonym] ? <span className="alias">{aliases[c.pseudonym]}</span> : null}
+      {multi ? <DemoChip c={c} /> : null}
     </span>
   );
 

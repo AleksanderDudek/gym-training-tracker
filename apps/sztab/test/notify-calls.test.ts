@@ -1,9 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { AAD, generateIdentity, linkKey, notifyRef, sealJson } from '@gymtracker/link';
+import type { Identity } from '@gymtracker/link';
 import type { Connection } from '../src/lib/data';
 
 /**
  * Gdzie Sztab powiadamia podopiecznego: funkcje `lib/data.ts` na bazie w pamięci (podmieniony klient
- * Supabase) i z podmienionym `fetch` — sprawdzamy, co idzie do serwera aplikacji GYM TRACKERa.
+ * Supabase), z prawdziwym szyfrowaniem i z podmienionym `fetch` — sprawdzamy, co idzie do serwera
+ * aplikacji GYM TRACKERa. Token leży w bazie zapieczętowany przez telefon i otwiera go dopiero wysyłka,
+ * świeżo z bazy; numery zaplanowanych to HMAC tokenem, nie numery z bazy.
  */
 
 const API = 'https://api.example.test';
@@ -18,20 +22,17 @@ const st = vi.hoisted(() => ({
   /** `tabela.operacja`, która kończy się błędem bazy. */
   fail: new Set<string>(),
   rpc: [] as [string, unknown][],
+  /** Odczyty z bazy: `tabela.operacja`. */
+  reads: [] as string[],
 }));
 
 vi.mock('../src/lib/env', async (orig) => ({ ...(await orig<typeof import('../src/lib/env')>()), TRACKER_API_URL: 'https://api.example.test' }));
-
-vi.mock('@gymtracker/link', async (orig) => ({
-  ...(await orig<typeof import('@gymtracker/link')>()),
-  linkKey: vi.fn(async () => ({}) as CryptoKey),
-  sealJson: vi.fn(async () => 'v1.sealed'),
-}));
 
 /** Najmniejszy PostgREST: eq / is / gt / in na wierszach w pamięci, insert z `select().single()`, update. */
 vi.mock('../src/lib/sb', () => {
   const run = (table: string, ops: Op[]) => {
     const first = ops[0]?.[0];
+    st.reads.push(`${table}.${first}`);
     if (st.fail.has(`${table}.${first}`)) return { data: null, error: { message: `${table} ${first} failed` } };
     const rows = (st.db[table] ??= []);
     if (first === 'insert') {
@@ -72,7 +73,7 @@ vi.mock('../src/lib/sb', () => {
     );
     return q;
   };
-  // Koniec współpracy jak w bazie (`private.end_connection`): kasuje token, zalecenia i przyszłe rezerwacje.
+  // Koniec współpracy jak w bazie (`private.end_connection`): kasuje pieczęć, zalecenia i przyszłe rezerwacje.
   const rpc = async (name: string, args: { p_connection: string }) => {
     st.rpc.push([name, args]);
     if (st.fail.has(`rpc.${name}`)) return { error: { message: 'ended' } };
@@ -87,61 +88,79 @@ vi.mock('../src/lib/sb', () => {
 });
 
 const data = await import('../src/lib/data');
+const { forgetNotify, notifyIdle } = await import('../src/lib/notify');
 
-const conn = (id: string, notifyToken: string | null): Connection => ({
+/** Prowadzący (klucz z sejfu) i trzy telefony — prawdziwe klucze ECDH. */
+const coach = await generateIdentity();
+const phones: Record<string, Identity> = { ca: await generateIdentity(), cb: await generateIdentity(), cs: await generateIdentity() };
+const KEY = coach.privateKey;
+
+/** Pieczęć tokenu tak, jak robi ją telefon (`client_set_notify`). */
+const sealFor = async (id: string, token: string) =>
+  sealJson(await linkKey(phones[id]!.privateKey, coach.publicJwk, `i-${id}`), AAD.notify(id), { v: 1, token });
+
+const conn = (id: string, notifySealed: boolean): Connection => ({
   id,
   inviteId: `i-${id}`,
   pseudonym: 'ABCDEFGHJK0123456789',
   areas: ['training'],
   scopes: ['training'],
-  clientKey: { kty: 'EC', crv: 'P-256', x: 'x', y: 'y' } as Connection['clientKey'],
+  clientKey: phones[id]!.publicJwk,
   status: 'active',
   endedBy: null,
   createdAt: '2026-11-01T10:00:00Z',
   endedAt: null,
   lastPushAt: null,
   label: null,
-  notifyToken,
+  notifySealed,
 });
 
-const A = conn('ca', TOKEN_A);
-const B = conn('cb', TOKEN_B);
-const SILENT = conn('cs', null);
-const KEY = {} as CryptoKey;
+const A = conn('ca', true);
+const B = conn('cb', true);
+const SILENT = conn('cs', false);
 const COACH = { display_name: 'Anna', profession: 'trainer' as const };
 const NOTE = { kind: 'note' as const, title: 'Sen', text: 'Śpij 8 godzin.', checklist: [] };
 
 const H = 3_600_000;
 const iso = (ms: number) => new Date(ms).toISOString();
+const ref = notifyRef;
 
 let fetchMock: ReturnType<typeof vi.fn>;
-/** Co poszło do serwera aplikacji: trasa i treść. */
-const sent = () => fetchMock.mock.calls.map(([url, init]) => [(url as string).replace(API, ''), JSON.parse((init as RequestInit).body as string)] as const);
+/** Co poszło do serwera aplikacji: trasa i treść, po wysłaniu wszystkiego, co czeka w tle. */
+const sent = async () => {
+  await notifyIdle();
+  return fetchMock.mock.calls.map(([url, init]) => [(url as string).replace(API, ''), JSON.parse((init as RequestInit).body as string)] as const);
+};
+/** Powiadomienia jednego działania idą równolegle — kolejność między nimi nie ma znaczenia. */
+const sorted = <T,>(xs: readonly T[]) => [...xs].sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
+const expectSent = async (want: (readonly [string, unknown])[]) => expect(sorted(await sent())).toEqual(sorted(want));
 
-beforeEach(() => {
+beforeEach(async () => {
+  forgetNotify();
   st.db = {
     connections: [
-      { id: 'ca', notify_token: TOKEN_A },
-      { id: 'cb', notify_token: TOKEN_B },
-      { id: 'cs', notify_token: null },
+      { id: 'ca', invite_id: 'i-ca', client_public_key: phones.ca!.publicJwk, notify_token: await sealFor('ca', TOKEN_A) },
+      { id: 'cb', invite_id: 'i-cb', client_public_key: phones.cb!.publicJwk, notify_token: await sealFor('cb', TOKEN_B) },
+      { id: 'cs', invite_id: 'i-cs', client_public_key: phones.cs!.publicJwk, notify_token: null },
     ],
   };
   st.fail.clear();
   st.rpc = [];
+  st.reads = [];
   fetchMock = vi.fn(async () => ({ ok: true, status: 204 }) as Response);
   vi.stubGlobal('fetch', fetchMock);
 });
 
 describe('wiadomość', () => {
-  it('od prowadzącego — „message”; bez tokenu nic', async () => {
+  it('od prowadzącego — „message” tokenem otwartym z pieczęci; bez pieczęci nic', async () => {
     await data.sendMessage(KEY, A, 'Jutro lżej.');
     await data.sendMessage(KEY, SILENT, 'Jutro lżej.');
-    expect(sent()).toEqual([['/link/notify', { token: TOKEN_A, kind: 'message' }]]);
+    await expectSent([['/link/notify', { token: TOKEN_A, kind: 'message' }]]);
   });
 
   it('wiadomość do grupy (Podopieczni → „Napisz do zaznaczonych”) — każdy z tokenem osobno', async () => {
     for (const c of [A, SILENT, B]) await data.sendMessage(KEY, c, 'Zmiana godzin w przyszłym tygodniu.');
-    expect(sent()).toEqual([
+    await expectSent([
       ['/link/notify', { token: TOKEN_A, kind: 'message' }],
       ['/link/notify', { token: TOKEN_B, kind: 'message' }],
     ]);
@@ -150,91 +169,130 @@ describe('wiadomość', () => {
   it('nieudany zapis — bez powiadomienia', async () => {
     st.fail.add('messages.insert');
     await expect(data.sendMessage(KEY, A, 'x')).rejects.toThrow('messages insert failed');
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(await sent()).toEqual([]);
+  });
+
+  it('cudza pieczęć w wierszu (podłożona z innej współpracy) — nic', async () => {
+    st.db.connections![0]!.notify_token = st.db.connections![1]!.notify_token;
+    await data.sendMessage(KEY, A, 'x');
+    expect(await sent()).toEqual([]);
+  });
+});
+
+describe('świeży token', () => {
+  it('telefon włączył powiadomienia po wczytaniu strony — wysyłka i odwołanie biorą token z bazy, nie z listy', async () => {
+    // Lista wczytana, zanim telefon włączył powiadomienia: `notifySealed: false`. Pierwsza wiadomość — bez.
+    const stale = conn('cs', false);
+    await data.sendMessage(KEY, stale, 'Hej');
+    expect(await sent()).toEqual([]);
+    // Telefon włącza powiadomienia i sam rezerwuje wizytę (planuje swoje przypomnienie), strona dalej otwarta.
+    st.db.connections![2]!.notify_token = await sealFor('cs', TOKEN_B);
+    st.db.bookings = [{ id: 'bk-phone', slot_id: 's1', connection_id: 'cs', cancelled_at: null }];
+    await data.cancelBooking(KEY, { id: 'bk-phone', connectionId: 'cs' });
+    // Odwołanie czyta pieczęć od nowa (mimo pamięci sprzed chwili) i trafia w przypomnienie telefonu:
+    // ten sam numer HMAC(token, rezerwacja). Następna wiadomość korzysta już z odświeżonej pieczęci.
+    await data.sendMessage(KEY, stale, 'Odwołuję czwartek');
+    await expectSent([
+      ['/link/notify', { token: TOKEN_B, kind: 'visit-cancel' }],
+      ['/link/cancel', { token: TOKEN_B, ref: await ref(TOKEN_B, 'bk-phone') }],
+      ['/link/notify', { token: TOKEN_B, kind: 'message' }],
+    ]);
+  });
+
+  it('program dla jednego podopiecznego: jeden odczyt pieczęci na całą partię; odwołanie czyta od nowa', async () => {
+    for (let i = 0; i < 6; i++) await data.sendAssignment(KEY, COACH, A, 'training', NOTE, { visibleFrom: new Date(Date.now() + (i + 1) * 24 * H) });
+    expect(await sent()).toHaveLength(6);
+    expect(st.reads.filter((r) => r === 'connections.select')).toHaveLength(1);
+    await data.withdrawAssignment(KEY, A, { id: 'as-x', visibleFrom: iso(Date.now() + 5 * H) });
+    await sent();
+    expect(st.reads.filter((r) => r === 'connections.select')).toHaveLength(2);
   });
 });
 
 describe('zalecenie', () => {
   it('wysłane teraz — „assignment” od razu', async () => {
     await data.sendAssignment(KEY, COACH, A, 'training', NOTE);
-    expect(sent()).toEqual([['/link/notify', { token: TOKEN_A, kind: 'assignment' }]]);
+    await expectSent([['/link/notify', { token: TOKEN_A, kind: 'assignment' }]]);
   });
 
-  it('zaplanowane — „assignment” o „pokaż od”, z numerem zalecenia (Wyślij i Uruchom program)', async () => {
+  it('zaplanowane — „assignment” o „pokaż od”, z numerem HMAC zalecenia (Wyślij i Uruchom program)', async () => {
     const at = new Date(Date.now() + 26 * H);
     const id = await data.sendAssignment(KEY, COACH, A, 'training', NOTE, { visibleFrom: at });
-    expect(sent()).toEqual([['/link/notify', { token: TOKEN_A, kind: 'assignment', at: at.getTime(), ref: id }]]);
+    const [[, body]] = (await sent()) as [[string, { ref: string }]];
+    expect(body).toEqual({ token: TOKEN_A, kind: 'assignment', at: at.getTime(), ref: await ref(TOKEN_A, id) });
+    expect(body.ref).toMatch(/^[0-9a-f]{32}$/);
+    expect(body.ref).not.toBe(id);
     expect(st.db.assignments![0]).toMatchObject({ id, visible_from: at.toISOString() });
   });
 
   it('„pokaż od” w przeszłości to wysyłka teraz', async () => {
     await data.sendAssignment(KEY, COACH, A, 'training', NOTE, { visibleFrom: new Date(Date.now() - H) });
-    expect(sent()).toEqual([['/link/notify', { token: TOKEN_A, kind: 'assignment' }]]);
+    await expectSent([['/link/notify', { token: TOKEN_A, kind: 'assignment' }]]);
   });
 
   it('nieudany zapis — bez powiadomienia', async () => {
     st.fail.add('assignments.insert');
     await expect(data.sendAssignment(KEY, COACH, A, 'training', NOTE)).rejects.toThrow();
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(await sent()).toEqual([]);
   });
 });
 
 describe('wycofanie', () => {
   it('zaplanowane, jeszcze niewidoczne — tylko odwołanie z kolejki', async () => {
-    await data.withdrawAssignment(A, { id: 'as-1', visibleFrom: iso(Date.now() + 5 * H) });
-    expect(sent()).toEqual([['/link/cancel', { token: TOKEN_A, ref: 'as-1' }]]);
+    await data.withdrawAssignment(KEY, A, { id: 'as-1', visibleFrom: iso(Date.now() + 5 * H) });
+    await expectSent([['/link/cancel', { token: TOKEN_A, ref: await ref(TOKEN_A, 'as-1') }]]);
   });
 
   it('już widoczne — „withdrawn”', async () => {
-    await data.withdrawAssignment(A, { id: 'as-2', visibleFrom: null });
-    expect(sent()).toEqual([['/link/notify', { token: TOKEN_A, kind: 'withdrawn' }]]);
+    await data.withdrawAssignment(KEY, A, { id: 'as-2', visibleFrom: null });
+    await expectSent([['/link/notify', { token: TOKEN_A, kind: 'withdrawn' }]]);
   });
 
   it('zaplanowane, którego pora właśnie minęła — odwołanie (kolejka mogła nie zdążyć) i „withdrawn”', async () => {
-    await data.withdrawAssignment(A, { id: 'as-3', visibleFrom: iso(Date.now() - 60_000) });
-    expect(sent()).toEqual([
-      ['/link/cancel', { token: TOKEN_A, ref: 'as-3' }],
+    await data.withdrawAssignment(KEY, A, { id: 'as-3', visibleFrom: iso(Date.now() - 60_000) });
+    await expectSent([
+      ['/link/cancel', { token: TOKEN_A, ref: await ref(TOKEN_A, 'as-3') }],
       ['/link/notify', { token: TOKEN_A, kind: 'withdrawn' }],
     ]);
   });
 
   it('nieudane wycofanie — bez powiadomienia', async () => {
     st.fail.add('assignments.update');
-    await expect(data.withdrawAssignment(A, { id: 'as-4', visibleFrom: null })).rejects.toThrow();
-    expect(fetchMock).not.toHaveBeenCalled();
+    await expect(data.withdrawAssignment(KEY, A, { id: 'as-4', visibleFrom: null })).rejects.toThrow();
+    expect(await sent()).toEqual([]);
   });
 });
 
 describe('wizyty', () => {
-  it('zapis przez prowadzącego — „visit” teraz i „visit-soon” 2 h przed, z numerem rezerwacji', async () => {
+  it('zapis przez prowadzącego — „visit” teraz i „visit-soon” 2 h przed, z numerem HMAC rezerwacji', async () => {
     const startsAt = iso(Date.now() + 30 * H);
-    const id = await data.bookClient({ id: 's1', startsAt }, A);
+    const id = await data.bookClient(KEY, { id: 's1', startsAt }, A);
     expect(id).toBe('bookings-new');
     expect(st.db.bookings).toEqual([expect.objectContaining({ slot_id: 's1', connection_id: 'ca' })]);
-    expect(sent()).toEqual([
+    await expectSent([
       ['/link/notify', { token: TOKEN_A, kind: 'visit' }],
-      ['/link/notify', { token: TOKEN_A, kind: 'visit-soon', at: Date.parse(startsAt) - 2 * H, ref: id }],
+      ['/link/notify', { token: TOKEN_A, kind: 'visit-soon', at: Date.parse(startsAt) - 2 * H, ref: await ref(TOKEN_A, id) }],
     ]);
   });
 
   it('wizyta za mniej niż 2 h — samo „visit”', async () => {
-    await data.bookClient({ id: 's1', startsAt: iso(Date.now() + H) }, A);
-    expect(sent()).toEqual([['/link/notify', { token: TOKEN_A, kind: 'visit' }]]);
+    await data.bookClient(KEY, { id: 's1', startsAt: iso(Date.now() + H) }, A);
+    await expectSent([['/link/notify', { token: TOKEN_A, kind: 'visit' }]]);
   });
 
   it('podopieczny już zapisany (błąd bazy) — bez powiadomień', async () => {
     st.fail.add('bookings.insert');
-    await expect(data.bookClient({ id: 's1', startsAt: iso(Date.now() + 30 * H) }, A)).rejects.toThrow();
-    expect(fetchMock).not.toHaveBeenCalled();
+    await expect(data.bookClient(KEY, { id: 's1', startsAt: iso(Date.now() + 30 * H) }, A)).rejects.toThrow();
+    expect(await sent()).toEqual([]);
   });
 
   it('odwołanie rezerwacji — „visit-cancel” i odwołanie przypomnienia', async () => {
     st.db.bookings = [{ id: 'bk-1', slot_id: 's1', connection_id: 'ca', cancelled_at: null }];
-    await data.cancelBooking('bk-1', A);
+    await data.cancelBooking(KEY, { id: 'bk-1', connectionId: 'ca' });
     expect(st.db.bookings[0]).toMatchObject({ cancelled_by: 'coach' });
-    expect(sent()).toEqual([
+    await expectSent([
       ['/link/notify', { token: TOKEN_A, kind: 'visit-cancel' }],
-      ['/link/cancel', { token: TOKEN_A, ref: 'bk-1' }],
+      ['/link/cancel', { token: TOKEN_A, ref: await ref(TOKEN_A, 'bk-1') }],
     ]);
   });
 
@@ -247,13 +305,13 @@ describe('wizyty', () => {
       { id: 'bk-old', slot_id: 's1', connection_id: 'ca', created_at: iso(Date.now()), cancelled_at: iso(Date.now()), cancelled_by: 'client' },
       { id: 'bk-other', slot_id: 's2', connection_id: 'ca', created_at: iso(Date.now()), cancelled_at: null, cancelled_by: null },
     ];
-    await data.cancelSlot('s1');
+    await data.cancelSlot(KEY, 's1');
     expect(st.db.slots[0]!.cancelled_at).toEqual(expect.any(String));
-    expect(sent()).toEqual([
+    await expectSent([
       ['/link/notify', { token: TOKEN_A, kind: 'visit-cancel' }],
-      ['/link/cancel', { token: TOKEN_A, ref: 'bk-a' }],
+      ['/link/cancel', { token: TOKEN_A, ref: await ref(TOKEN_A, 'bk-a') }],
       ['/link/notify', { token: TOKEN_B, kind: 'visit-cancel' }],
-      ['/link/cancel', { token: TOKEN_B, ref: 'bk-b' }],
+      ['/link/cancel', { token: TOKEN_B, ref: await ref(TOKEN_B, 'bk-b') }],
     ]);
   });
 
@@ -261,13 +319,13 @@ describe('wizyty', () => {
     st.db.slots = [{ id: 's1', starts_at: iso(Date.now() + 30 * H), cancelled_at: null }];
     st.db.bookings = [{ id: 'bk-a', slot_id: 's1', connection_id: 'ca', cancelled_at: null }];
     st.fail.add('slots.update');
-    await expect(data.cancelSlot('s1')).rejects.toThrow();
-    expect(fetchMock).not.toHaveBeenCalled();
+    await expect(data.cancelSlot(KEY, 's1')).rejects.toThrow();
+    expect(await sent()).toEqual([]);
 
     st.fail.clear();
     st.fail.add('bookings.select');
-    await expect(data.cancelSlot('s1')).resolves.toBeUndefined();
-    expect(fetchMock).not.toHaveBeenCalled();
+    await expect(data.cancelSlot(KEY, 's1')).resolves.toBeUndefined();
+    expect(await sent()).toEqual([]);
   });
 });
 
@@ -293,36 +351,52 @@ describe('koniec współpracy', () => {
     ];
   });
 
-  it('„ended” tokenem sprzed funkcji bazy (ona go kasuje) i odwołanie wszystkiego, co czeka w kolejce', async () => {
-    await data.endConnection('ca');
+  it('„ended” tokenem sprzed funkcji bazy (ona kasuje pieczęć) i odwołanie wszystkiego, co czeka w kolejce', async () => {
+    await data.endConnection(KEY, 'ca');
     expect(st.rpc).toEqual([['coach_end_connection', { p_connection: 'ca' }]]);
     expect(st.db.connections!.find((c) => c.id === 'ca')!.notify_token).toBeNull();
-    expect(sent()).toEqual([
+    await expectSent([
       ['/link/notify', { token: TOKEN_A, kind: 'ended' }],
-      ['/link/cancel', { token: TOKEN_A, ref: 'as-later' }],
-      ['/link/cancel', { token: TOKEN_A, ref: 'bk-soon' }],
+      ['/link/cancel', { token: TOKEN_A, ref: await ref(TOKEN_A, 'as-later') }],
+      ['/link/cancel', { token: TOKEN_A, ref: await ref(TOKEN_A, 'bk-soon') }],
     ]);
+    // Po końcu pieczęć nie zostaje w pamięci — następna wysyłka nie ma czym powiadomić.
+    await data.sendMessage(KEY, A, 'x');
+    expect(await sent()).toHaveLength(3);
   });
 
-  it('bez tokenu — nic; nieudany koniec — nic; nieudany odczyt tokenu nie blokuje końca', async () => {
-    await data.endConnection('cs');
-    expect(fetchMock).not.toHaveBeenCalled();
+  it('bez pieczęci — nic; nieudany koniec — nic; nieudany odczyt pieczęci nie blokuje końca', async () => {
+    await data.endConnection(KEY, 'cs');
+    expect(await sent()).toEqual([]);
 
     st.fail.add('rpc.coach_end_connection');
-    await expect(data.endConnection('ca')).rejects.toThrow('ended');
-    expect(fetchMock).not.toHaveBeenCalled();
+    await expect(data.endConnection(KEY, 'ca')).rejects.toThrow('ended');
+    expect(await sent()).toEqual([]);
 
     st.fail.clear();
     st.fail.add('connections.select');
-    await data.endConnection('ca');
+    await data.endConnection(KEY, 'ca');
     expect(st.rpc.at(-1)).toEqual(['coach_end_connection', { p_connection: 'ca' }]);
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(await sent()).toEqual([]);
   });
 
   it('błąd odczytu kolejki (zalecenia, wizyty) — samo „ended”', async () => {
     st.fail.add('assignments.select');
     st.fail.add('slots.select');
-    await data.endConnection('ca');
-    expect(sent()).toEqual([['/link/notify', { token: TOKEN_A, kind: 'ended' }]]);
+    await data.endConnection(KEY, 'ca');
+    await expectSent([['/link/notify', { token: TOKEN_A, kind: 'ended' }]]);
+  });
+});
+
+describe('numery z bazy nie wychodzą', () => {
+  it('żadne zapytanie do serwera aplikacji nie niesie numeru zalecenia, rezerwacji ani współpracy', async () => {
+    const id = await data.sendAssignment(KEY, COACH, A, 'training', NOTE, { visibleFrom: new Date(Date.now() + 26 * H) });
+    const bk = await data.bookClient(KEY, { id: 's1', startsAt: iso(Date.now() + 30 * H) }, A);
+    await data.withdrawAssignment(KEY, A, { id, visibleFrom: iso(Date.now() + 26 * H) });
+    st.db.bookings!.push({ id: 'bk-9', slot_id: 's1', connection_id: 'ca', cancelled_at: null });
+    await data.cancelBooking(KEY, { id: 'bk-9', connectionId: 'ca' });
+    const all = JSON.stringify(await sent());
+    expect((await sent()).length).toBeGreaterThanOrEqual(5);
+    for (const raw of [id, bk, 'bk-9', 'ca', 'i-ca']) expect(all).not.toContain(`"${raw}"`);
   });
 });

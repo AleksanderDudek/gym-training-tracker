@@ -445,6 +445,8 @@ function SlotDialog({
   onChanged: () => void;
 }) {
   const [busy, setBusy] = useState(false);
+  // Klucz z sejfu otwiera pieczęć tokenu powiadomień — czytaną świeżo przy każdym zapisie i odwołaniu.
+  const { key } = useReady();
   const [err, setErr] = useState<string | null>(null);
   const [pick, setPick] = useState('');
   const [askSlot, setAskSlot] = useState(false);
@@ -529,7 +531,7 @@ function SlotDialog({
                       <strong>{T.cancelBookingQ(who(b.connectionId))}</strong> {T.cancelBookingText}
                     </p>
                     <div className="row">
-                      <button type="button" className="btn danger small" disabled={busy} onClick={() => void run(() => cancelBooking(b.id, connections.find((c) => c.id === b.connectionId)), T.bookingCancelled)}>
+                      <button type="button" className="btn danger small" disabled={busy} onClick={() => void run(() => cancelBooking(key, b), T.bookingCancelled)}>
                         {T.cancelBookingYes}
                       </button>
                       <button type="button" className="btn ghost small" disabled={busy} onClick={() => setAskBooking(null)}>
@@ -573,7 +575,7 @@ function SlotDialog({
           onSubmit={(e) => {
             e.preventDefault();
             const c = candidates.find((x) => x.id === pick);
-            if (c) void run(() => bookClient(slot, c), T.signedUp, duplicate);
+            if (c) void run(() => bookClient(key, slot, c), T.signedUp, duplicate);
           }}
         >
           <h3>{T.signUp}</h3>
@@ -616,7 +618,7 @@ function SlotDialog({
               <strong>{T.cancelSlotQ}</strong> {T.cancelSlotText(active.length)}
             </p>
             <div className="row">
-              <button type="button" className="btn danger" disabled={busy} onClick={() => void run(() => cancelSlot(slot.id), T.slotCancelled)}>
+              <button type="button" className="btn danger" disabled={busy} onClick={() => void run(() => cancelSlot(key, slot.id), T.slotCancelled)}>
                 {T.cancelSlotYes}
               </button>
               <button type="button" className="btn ghost" disabled={busy} onClick={() => setAskSlot(false)}>

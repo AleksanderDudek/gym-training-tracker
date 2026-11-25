@@ -208,7 +208,8 @@ async function phone(file: string) {
   const now = Date.now();
   for (const [pi, p] of state.phones.entries()) {
     // Ta sama symulacja co „Symuluj telefon” w Sztabie: odbiór, potwierdzenia, odpowiedzi i odhaczenia
-    // od dnia wysłania (strefa `Europe/Warsaw`), paczka z częścią `coaching`, rezerwacja wolnego terminu.
+    // od dnia wysłania (strefa `Europe/Warsaw`), paczka z częścią `coaching` — i tylko tu (konto z samymi
+    // zmyślonymi danymi w lokalnej bazie) rezerwacja wolnego terminu; demo w Sztabie nie rezerwuje.
     const r = await simulatePhone(rpc, p, coachKey, { now, lang: 'pl', maxDays: HISTORY_DAYS, book: true });
     const key = await phoneKey(p, coachKey);
     await sendClientMessage(rpc, p, key, HELLO[pi % HELLO.length]!, now);

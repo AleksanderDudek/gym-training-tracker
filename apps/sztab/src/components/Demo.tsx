@@ -4,7 +4,7 @@ import { pluralEn, text } from '@gt/i18n';
 import type { Connection } from '../lib/data';
 import type { CreateStep } from '../lib/demo/client';
 import type { SimReport, SimStep } from '../lib/demo/phone';
-import { isDemo, loadDemo } from '../lib/demo/state';
+import { isDemo, isDemoConnection, loadDemo } from '../lib/demo/state';
 import { forgetReview } from '../lib/reviewLoad';
 import { navigate } from '../lib/router';
 import { useReady } from '../session';
@@ -45,7 +45,8 @@ const T = text({
     } as Record<CreateStep, string>,
     demoDone: 'Podopieczny demo gotowy',
     demoFailed: (e: string) => `Nie udało się założyć podopiecznego demo (${e}).`,
-    chipTitle: 'Podopieczny demonstracyjny — telefon symulowany w tej przeglądarce',
+    chipTitle: 'Podopieczny demonstracyjny — telefon symulowany w tej przeglądarce. „Zaznacz wszystkich” go pomija.',
+    chipTitleOther: 'Podopieczny demonstracyjny (zaproszenie „DEMO”). „Zaznacz wszystkich” go pomija.',
     simulate: 'Symuluj telefon',
     simulateHint: 'Telefon demo odbierze to, co wysłałeś, odpowie na formularze, odhaczy nawyki i posiłki, odpisze na wiadomość i wyśle paczkę danych.',
     simSteps: {
@@ -101,7 +102,8 @@ const T = text({
     } as Record<CreateStep, string>,
     demoDone: 'Demo client ready',
     demoFailed: (e: string) => `Could not create the demo client (${e}).`,
-    chipTitle: 'Demo client — a phone simulated in this browser',
+    chipTitle: 'Demo client — a phone simulated in this browser. “Select all” skips it.',
+    chipTitleOther: 'Demo client (a “DEMO” invite). “Select all” skips it.',
     simulate: 'Simulate phone',
     simulateHint: 'The demo phone receives what you sent, answers forms, ticks habits and meals, replies to your message and sends its data package.',
     simSteps: {
@@ -267,12 +269,15 @@ export function AddDemoClient({ connections, explain = false }: { connections: r
   );
 }
 
-/** „DEMO” przy podopiecznym, którego telefon symuluje ta przeglądarka. */
-export function DemoChip({ connectionId }: { connectionId: string }) {
+/**
+ * „DEMO” przy podopiecznym demonstracyjnym — na liście i w odbiorcach akcji grupowych, gdzie „Zaznacz
+ * wszystkich” go pomija (`bulkPick`).
+ */
+export function DemoChip({ c }: { c: Pick<Connection, 'id' | 'label'> }) {
   const { user } = useReady();
-  if (!isDemo(user.id, connectionId)) return null;
+  if (!isDemoConnection(user.id, c)) return null;
   return (
-    <span className="chip sz-demo-chip" title={T.chipTitle}>
+    <span className="chip sz-demo-chip" title={isDemo(user.id, c.id) ? T.chipTitle : T.chipTitleOther}>
       DEMO
     </span>
   );
@@ -314,7 +319,7 @@ export function DemoActions({ c, onChanged }: { c: Pick<Connection, 'id' | 'stat
     setBusy(T.remove);
     try {
       const { removeDemo } = await import('../lib/demo/client');
-      await removeDemo(user.id);
+      await removeDemo({ userId: user.id, key });
       forgetReview(key, c.id);
       toast(T.removed);
       navigate('/podopieczni');

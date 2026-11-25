@@ -152,6 +152,41 @@ describe('Podopieczni: podopieczny demonstracyjny', () => {
     expect(screen.queryByRole('button', { name: 'Dodaj podopiecznego demo' })).not.toBeInTheDocument();
   });
 
+  it('„Zaznacz wszystkich” pomija demo; zaznaczone ręcznie idzie z „DEMO” na liście odbiorców', async () => {
+    localStorage.setItem('sztab-demo:u1', JSON.stringify(demoState));
+    const real = parsePseudonym('GT-1B2C-3D4E-5F6G-7H8J-9K0M')!;
+    state.connections = [conn('c-demo', PSEUDO), conn('c-real', real)];
+    render(<Clients />);
+    await screen.findAllByRole('row');
+    const all = screen.getByRole('checkbox', { name: /Zaznacz wszystkich/ });
+    await userEvent.click(all);
+    expect(screen.getByText('Zaznaczono: 1')).toBeInTheDocument();
+    expect(all).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: /^Zaznacz: GT-7K4Q/ })).not.toBeChecked();
+
+    await userEvent.click(screen.getByRole('checkbox', { name: /^Zaznacz: GT-7K4Q/ }));
+    expect(screen.getByText('Zaznaczono: 2')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Wiadomość do zaznaczonych' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Wiadomość do zaznaczonych' });
+    expect(within(dialog).getByText('DEMO')).toHaveAttribute('title', expect.stringMatching(/„Zaznacz wszystkich” go pomija/));
+    await userEvent.click(within(dialog).getAllByRole('button', { name: 'Zamknij' })[0]!);
+
+    // Drugi klik w „Zaznacz wszystkich” odznacza wszystkich widocznych, także demo.
+    await userEvent.click(all);
+    expect(screen.queryByText(/Zaznaczono:/)).not.toBeInTheDocument();
+  });
+
+  it('demo z innego komputera (zaproszenie „DEMO”) też pomijane i oznaczone', async () => {
+    const { bulkPick, isDemoConnection } = await import('../src/lib/demo/state');
+    const other = conn('c-demo', PSEUDO);
+    const real = conn('c-real', parsePseudonym('GT-1B2C-3D4E-5F6G-7H8J-9K0M')!);
+    expect(isDemoConnection('u1', other)).toBe(true);
+    expect(isDemoConnection('u1', real)).toBe(false);
+    expect(bulkPick('u1', [other, real]).map((c) => c.id)).toEqual(['c-real']);
+    // Na liście tylko demo — „Zaznacz wszystkich” zaznacza je (prowadzący patrzy właśnie na nie).
+    expect(bulkPick('u1', [other]).map((c) => c.id)).toEqual(['c-demo']);
+  });
+
   it('lista bez demo: przycisk w nagłówku obok zaproszenia', async () => {
     state.connections = [conn('c-real', PSEUDO)];
     render(<Clients />);
@@ -182,7 +217,8 @@ describe('Karta podopiecznego: „Symuluj telefon” i „Usuń demo”', () => 
     await userEvent.click(screen.getByRole('button', { name: 'Usuń demo' }));
     const dialog = screen.getByRole('dialog', { name: 'Usunąć podopiecznego demo?' });
     await userEvent.click(within(dialog).getByRole('button', { name: 'Tak, usuń demo' }));
-    await waitFor(() => expect(demoClient.removeDemo).toHaveBeenCalledWith('u1'));
+    // Z kluczem z sejfu — koniec współpracy demo jak prawdziwej (pieczęć tokenu powiadomień).
+    await waitFor(() => expect(demoClient.removeDemo).toHaveBeenCalledWith({ userId: 'u1', key: expect.anything() }));
     await waitFor(() => expect(location.pathname).toBe('/podopieczni'));
   });
 });

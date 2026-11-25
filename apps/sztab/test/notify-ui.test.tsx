@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import type { Connection } from '../src/lib/data';
 
 /** Powiadomienia w ekranach: znacznik na karcie podopiecznego i zdanie w oknie wysyłki. */
@@ -38,9 +38,7 @@ vi.mock('../src/lib/data', async (orig) => ({
   unreadCounts: vi.fn(async () => ({})),
 }));
 
-const TOKEN = `T${'t'.repeat(42)}`;
-
-const conn = (id: string, pseudonym: string, notifyToken: string | null): Connection => ({
+const conn = (id: string, pseudonym: string, notifySealed: boolean): Connection => ({
   id,
   inviteId: `i-${id}`,
   pseudonym,
@@ -53,12 +51,12 @@ const conn = (id: string, pseudonym: string, notifyToken: string | null): Connec
   endedAt: null,
   lastPushAt: null,
   label: null,
-  notifyToken,
+  notifySealed,
 });
 
-const ON = conn('on', '7K4Q9XM2HT3PZR8WE5NA', TOKEN);
-const OFF = conn('off', 'B4Q29XM2HT3PZR8WE5NA', null);
-const ON2 = conn('on2', 'C4Q29XM2HT3PZR8WE5NA', TOKEN);
+const ON = conn('on', '7K4Q9XM2HT3PZR8WE5NA', true);
+const OFF = conn('off', 'B4Q29XM2HT3PZR8WE5NA', false);
+const ON2 = conn('on2', 'C4Q29XM2HT3PZR8WE5NA', true);
 
 beforeEach(() => {
   env.api = 'https://api.example.test';
@@ -66,7 +64,7 @@ beforeEach(() => {
 });
 
 describe('Karta podopiecznego', () => {
-  it('„powiadomienia włączone”, gdy podopieczny je włączył; bez tokenu — nic', async () => {
+  it('„powiadomienia włączone”, gdy podopieczny je włączył (pieczęć tokenu w bazie); bez niej — nic', async () => {
     const { ClientPage } = await import('../src/pages/Client');
     const { unmount } = render(<ClientPage id="on" />);
     expect(await screen.findByText('powiadomienia włączone')).toHaveAttribute('title', expect.stringMatching(/bez ich treści/));
@@ -93,12 +91,12 @@ describe('Okno wysyłki', () => {
     return screen.findByRole('dialog');
   };
 
-  it('z tokenem — „dostanie powiadomienie”', async () => {
+  it('z pieczęcią tokenu — „dostanie powiadomienie”', async () => {
     const d = await open(ON);
     expect(d).toHaveTextContent('Podopieczny dostanie powiadomienie na telefon (bez treści).');
   });
 
-  it('bez tokenu albo bez serwera — „zobaczy to przy następnym otwarciu aplikacji”', async () => {
+  it('bez pieczęci albo bez serwera — „zobaczy to przy następnym otwarciu aplikacji”', async () => {
     const d = await open(OFF);
     expect(d).toHaveTextContent('Bez powiadomienia na telefon — podopieczny zobaczy to przy następnym otwarciu aplikacji.');
   });
@@ -112,9 +110,17 @@ describe('Okno wysyłki', () => {
   it('do wielu — ilu z odbiorców dostanie powiadomienie', async () => {
     const some = await open(ON, [ON, OFF]);
     expect(some).toHaveTextContent('Powiadomienie na telefon: 1 z 2. Pozostali zobaczą to przy następnym otwarciu aplikacji.');
+    expect(within(some).queryByText('DEMO')).toBeNull();
   });
 
-  it('do wielu, wszyscy z tokenem', async () => {
+  it('do wielu z podopiecznym demo zaznaczonym ręcznie — „DEMO” przy nim na liście odbiorców', async () => {
+    const demo = { ...conn('demo', 'D4Q29XM2HT3PZR8WE5NA', false), label: 'DEMO' };
+    const d = await open(ON, [ON, demo]);
+    const row = within(d).getByText('GT-D4Q2-9XM2').closest('li')!;
+    expect(within(row).getByText('DEMO')).toBeInTheDocument();
+  });
+
+  it('do wielu, wszyscy z pieczęcią', async () => {
     const all = await open(ON, [ON, ON2]);
     expect(all).toHaveTextContent('Wszyscy odbiorcy dostaną powiadomienie na telefon (bez treści).');
   });

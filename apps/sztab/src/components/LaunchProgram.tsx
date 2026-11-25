@@ -7,6 +7,7 @@ import { loadAliases } from '../lib/aliases';
 import { passesCheck, toAssignment } from '../lib/assign';
 import { listConnections, listLibrary, sendAssignment } from '../lib/data';
 import type { Connection, LibraryItem, SendableBody } from '../lib/data';
+import { bulkPick } from '../lib/demo/state';
 import { L } from '../lib/labels';
 import {
   MAX_AHEAD_DAYS,
@@ -27,6 +28,7 @@ import {
 import type { DateIssue, LaunchTask, ScheduleError, StepSkip } from '../lib/program';
 import { forgetReview } from '../lib/reviewLoad';
 import { useReady } from '../session';
+import { DemoChip } from './Demo';
 import { AreaChips, Dialog, Failure, Loading, useLoad } from './ui';
 import './schedule.css';
 
@@ -363,7 +365,7 @@ export function LaunchProgramDialog({ program, connections, onClose }: { program
         {pool.data && !people.length ? <p className="soft">{T.noClients}</p> : null}
         {people.length > 1 ? (
           <div className="row">
-            <button type="button" className="btn link small" onClick={() => setChosen(new Set(people.filter((c) => c.status === 'active').map((c) => c.id)))}>
+            <button type="button" className="btn link small" onClick={() => setChosen(new Set(bulkPick(user.id, people.filter((c) => c.status === 'active')).map((c) => c.id)))}>
               {T.all}
             </button>
             <button type="button" className="btn link small" onClick={() => setChosen(new Set())}>
@@ -379,6 +381,7 @@ export function LaunchProgramDialog({ program, connections, onClose }: { program
                 <span className="sz-sched-who">
                   <span className="pid">{label(c)}</span>
                   {aliases[c.pseudonym] ? <span className="alias">{aliases[c.pseudonym]}</span> : null}
+                  <DemoChip c={c} />
                 </span>
                 {c.status === 'active' ? <AreaChips areas={c.areas} /> : <span className="chip muted">{T.ended}</span>}
               </label>

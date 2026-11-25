@@ -24,8 +24,10 @@ const db = vi.hoisted(() => ({
   calls: [] as string[],
 }));
 
+const VAULT = vi.hoisted(() => ({ key: { vault: true } as unknown as CryptoKey }));
+
 vi.mock('../src/session', () => ({
-  useReady: () => ({ coach: { id: 'coach-1', display_name: 'Anna', profession: 'trainer' }, user: { id: 'u1' } }),
+  useReady: () => ({ coach: { id: 'coach-1', display_name: 'Anna', profession: 'trainer' }, user: { id: 'u1' }, key: VAULT.key }),
 }));
 
 vi.mock('../src/lib/data', () => {
@@ -51,16 +53,17 @@ vi.mock('../src/lib/data', () => {
       db.created.push(...rows);
       return rows;
     }),
-    // Zapis i odwołanie dostają termin i współpracę — z nich biorą się powiadomienia (`lib/notify.ts`).
-    bookClient: vi.fn(async (slot: Pick<SlotRow, 'id' | 'startsAt'>, c: Pick<Connection, 'id'>) => {
-      db.calls.push(`book ${slot.id} ${slot.startsAt} ${c.id}`);
+    // Zapis i odwołanie dostają klucz z sejfu (otwiera pieczęć tokenu powiadomień — `lib/notify.ts`),
+    // termin i współpracę; odwołanie rezerwacji — współpracę z samej rezerwacji, nie z listy wczytanej z ekranem.
+    bookClient: vi.fn(async (key: CryptoKey, slot: Pick<SlotRow, 'id' | 'startsAt'>, c: Pick<Connection, 'id'>) => {
+      db.calls.push(`book ${slot.id} ${slot.startsAt} ${c.id}${key === VAULT.key ? '' : ' bez klucza'}`);
       return 'b-new';
     }),
-    cancelBooking: vi.fn(async (id: string, c: Pick<Connection, 'id'> | undefined) => {
-      db.calls.push(`cancelBooking ${id} ${c?.id}`);
+    cancelBooking: vi.fn(async (key: CryptoKey, b: Pick<BookingRow, 'id' | 'connectionId'>) => {
+      db.calls.push(`cancelBooking ${b.id} ${b.connectionId}${key === VAULT.key ? '' : ' bez klucza'}`);
     }),
-    cancelSlot: vi.fn(async (id: string) => {
-      db.calls.push(`cancelSlot ${id}`);
+    cancelSlot: vi.fn(async (key: CryptoKey, id: string) => {
+      db.calls.push(`cancelSlot ${id}${key === VAULT.key ? '' : ' bez klucza'}`);
     }),
   };
 });

@@ -51,3 +51,20 @@ export function clearDemo(userId: string): void {
 }
 
 export const isDemo = (userId: string, connectionId: string): boolean => loadDemo(userId)?.connectionId === connectionId;
+
+/**
+ * Współpraca demo: z telefonem symulowanym w tej przeglądarce albo — na innym komputerze — z zaproszenia
+ * z etykietą „DEMO”.
+ */
+export const isDemoConnection = (userId: string, c: { id: string; label: string | null }): boolean =>
+  c.label === DEMO_LABEL || isDemo(userId, c.id);
+
+/**
+ * „Zaznacz wszystkich” w akcjach grupowych (wysyłka, program, wiadomość): bez podopiecznego demo, żeby
+ * treść „dla wszystkich” nie szła do zmyślonego podopiecznego — zaznaczony ręcznie dostaje ją jak każdy.
+ * Gdy na liście jest tylko demo, zaznacza je (prowadzący wyraźnie patrzy właśnie na nie).
+ */
+export function bulkPick<C extends { id: string; label: string | null }>(userId: string, list: readonly C[]): C[] {
+  const real = list.filter((c) => !isDemoConnection(userId, c));
+  return real.length ? real : [...list];
+}

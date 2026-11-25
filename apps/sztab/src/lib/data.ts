@@ -4,7 +4,6 @@ import {
   cleanPublicJwk,
   cleanScopes,
   isSnapshot,
-  linkKey,
   openJson,
   parseMessage,
   parsePhoto,
@@ -29,7 +28,8 @@ import type {
   SnapshotV1,
 } from '@gymtracker/link';
 import type { PlanTemplate, Workout } from '@gt/types';
-import { cancelNotify, notifyClient } from './notify';
+import { connectionKey } from './connectionKey';
+import { forgetNotify, notifierFor, notifyLater, sendLater } from './notify';
 import { errorCode, sb } from './sb';
 
 /**
@@ -61,10 +61,11 @@ export interface Connection {
   lastPushAt: string | null;
   label: string | null;
   /**
-   * Token powiadomień push od telefonu (`client_set_notify`) — `null`, gdy podopieczny ich nie włączył.
-   * Sztab woła z nim serwer aplikacji GYM TRACKERa (`lib/notify.ts`), samym rodzajem zdarzenia.
+   * Telefon włączył powiadomienia push: w bazie leży jego token zapieczętowany kluczem współpracy
+   * (`client_set_notify`). Stan z chwili wczytania — do podpowiedzi na ekranie; sama wysyłka czyta
+   * i otwiera pieczęć świeżo, w chwili wysyłki (`lib/notify.ts`). Jawnego tokenu Sztab nie trzyma.
    */
-  notifyToken?: string | null;
+  notifySealed?: boolean;
 }
 
 export interface Invite {
@@ -189,7 +190,7 @@ const toConnection = (r: ConnRow): Connection | null => {
     endedAt: r.ended_at,
     lastPushAt: r.last_push_at,
     label: r.invites?.label ?? null,
-    notifyToken: typeof r.notify_token === 'string' && /^[A-Za-z0-9_-]{43}$/.test(r.notify_token) ? r.notify_token : null,
+    notifySealed: typeof r.notify_token === 'string' && r.notify_token.startsWith('v1.'),
   };
 };
 
@@ -209,27 +210,22 @@ export async function getConnection(id: string): Promise<Connection | null> {
 }
 
 /**
- * Koniec współpracy. Token powiadomień i to, co czeka w kolejce serwera aplikacji (zaplanowane zalecenia,
- * przypomnienia o przyszłych wizytach), trzeba przeczytać przed funkcją bazy — ona kasuje token, zalecenia
- * i przyszłe rezerwacje. Po udanym końcu: „zakończona” do podopiecznego i odwołanie zaplanowanych, żeby
+ * Koniec współpracy. Token powiadomień (pieczęć świeżo z bazy, otwarta kluczem z sejfu) i to, co czeka
+ * w kolejce serwera aplikacji (zaplanowane zalecenia, przypomnienia o przyszłych wizytach), trzeba przeczytać
+ * przed funkcją bazy — ona kasuje pieczęć, zalecenia i przyszłe rezerwacje. Po udanym końcu: „zakończona” do podopiecznego i odwołanie zaplanowanych, żeby
  * prowadzący po rozstaniu niczego już nie wysłał. Odczyt jest po cichu: jego błąd nie blokuje końca.
  */
-export async function endConnection(id: string): Promise<void> {
-  const pending = await pendingNotify(id).catch(() => null);
+export async function endConnection(privateKey: CryptoKey, id: string): Promise<void> {
+  const n = await notifierFor(privateKey, id, { fresh: true });
+  const refs = n ? await pendingRefs(id).catch((): string[] => []) : [];
   const { error } = await sb.rpc('coach_end_connection', { p_connection: id });
   if (error) fail(error);
-  if (!pending?.token) return;
-  const c = { notifyToken: pending.token };
-  void notifyClient(c, 'ended');
-  for (const ref of pending.refs) void cancelNotify(c, ref);
+  forgetNotify(id);
+  if (n) sendLater(n, (x) => [x.notify('ended'), ...refs.map((ref) => x.cancel(ref))]);
 }
 
-/** Token współpracy i numery zaplanowanych powiadomień: zalecenia „pokaż od” w przyszłości, przyszłe wizyty. */
-async function pendingNotify(connectionId: string): Promise<{ token: string | null; refs: string[] }> {
-  const { data, error } = await sb.from('connections').select('notify_token').eq('id', connectionId).maybeSingle();
-  if (error) fail(error);
-  const token = typeof data?.notify_token === 'string' ? (data.notify_token as string) : null;
-  if (!token) return { token: null, refs: [] };
+/** Numery zaplanowanych powiadomień współpracy: zalecenia „pokaż od” w przyszłości, przyszłe wizyty. */
+async function pendingRefs(connectionId: string): Promise<string[]> {
   const now = new Date().toISOString();
   // Przyszłe terminy prowadzącego (RLS: tylko jego) osobno, bez listy numerów w adresie zapytania.
   const [a, b, s] = await Promise.all([
@@ -240,21 +236,12 @@ async function pendingNotify(connectionId: string): Promise<{ token: string | nu
   const refs = a.error ? [] : (a.data ?? []).map((r) => r.id as string);
   const future = new Set(s.error ? [] : (s.data ?? []).map((r) => r.id as string));
   for (const r of b.error ? [] : (b.data ?? [])) if (future.has(r.slot_id as string)) refs.push(r.id as string);
-  return { token, refs };
+  return refs;
 }
 
 /* ── Klucz współpracy ─────────────────────────────────────────────────────────────── */
 
-const keys = new Map<string, Promise<CryptoKey>>();
-
-export function connectionKey(privateKey: CryptoKey, c: Pick<Connection, 'id' | 'clientKey' | 'inviteId'>): Promise<CryptoKey> {
-  let k = keys.get(c.id);
-  if (!k) {
-    k = linkKey(privateKey, c.clientKey, c.inviteId);
-    keys.set(c.id, k);
-  }
-  return k;
-}
+export { connectionKey };
 
 export interface SnapshotRead {
   snapshot: SnapshotV1 | null;
@@ -401,7 +388,7 @@ export async function sendAssignment(
     .insert({ id, connection_id: c.id, kind: body.kind, area, ciphertext, visible_from: visible ? visible.toISOString() : null });
   if (error) fail(error);
   // Zaplanowane: serwer aplikacji trzyma je w kolejce do „pokaż od”; numer zalecenia pozwala je odwołać.
-  void notifyClient(c, 'assignment', visible ? { at: visible, ref: id } : {});
+  notifyLater(privateKey, c.id, (n) => [n.notify('assignment', visible ? { at: visible, ref: id } : {})]);
   return id;
 }
 
@@ -410,11 +397,15 @@ export async function sendAssignment(
  * odwołanie zaplanowanego powiadomienia; już widoczne — „wycofane”. Zaplanowane, którego czas właśnie minął,
  * dostaje oba: kolejka serwera mogła go jeszcze nie wysłać (cron co 5 minut).
  */
-export async function withdrawAssignment(c: Pick<Connection, 'notifyToken'>, a: Pick<SentAssignment, 'id' | 'visibleFrom'>): Promise<void> {
+export async function withdrawAssignment(
+  privateKey: CryptoKey,
+  c: Pick<Connection, 'id'>,
+  a: Pick<SentAssignment, 'id' | 'visibleFrom'>,
+): Promise<void> {
   const { error } = await sb.from('assignments').update({ withdrawn_at: new Date().toISOString() }).eq('id', a.id);
   if (error) fail(error);
-  if (a.visibleFrom) void cancelNotify(c, a.id);
-  if (!a.visibleFrom || !(Date.parse(a.visibleFrom) > Date.now())) void notifyClient(c, 'withdrawn');
+  const shown = !a.visibleFrom || !(Date.parse(a.visibleFrom) > Date.now());
+  notifyLater(privateKey, c.id, (n) => [...(a.visibleFrom ? [n.cancel(a.id)] : []), ...(shown ? [n.notify('withdrawn')] : [])], { fresh: true });
 }
 
 /* ── Biblioteka ───────────────────────────────────────────────────────────────────── */
@@ -483,7 +474,7 @@ export async function sendMessage(privateKey: CryptoKey, c: Connection, text: st
   const ciphertext = await sealJson(await connectionKey(privateKey, c), AAD.message(c.id, id, 'coach'), env);
   const { error } = await sb.from('messages').insert({ id, connection_id: c.id, author: 'coach', ciphertext });
   if (error) fail(error);
-  void notifyClient(c, 'message');
+  notifyLater(privateKey, c.id, (n) => [n.notify('message')]);
   return id;
 }
 
@@ -599,33 +590,22 @@ export async function createSlots(
 /**
  * Odwołanie terminu: zostaje jako ślad, telefon widzi rezerwację „odwołaną przez prowadzącego”. Każdy
  * zapisany dostaje „wizyta odwołana”, a jego przypomnienie znika z kolejki. Zapisanych i ich tokeny czyta
- * tu, świeżo z bazy (telefon mógł zarezerwować, gdy kalendarz był otwarty) — po cichu, po udanym odwołaniu.
+ * tu, świeżo z bazy (telefon mógł zarezerwować albo włączyć powiadomienia, gdy kalendarz był otwarty) —
+ * po cichu, po udanym odwołaniu.
  */
-export async function cancelSlot(id: string): Promise<void> {
+export async function cancelSlot(privateKey: CryptoKey, id: string): Promise<void> {
   const { error } = await sb.from('slots').update({ cancelled_at: new Date().toISOString() }).eq('id', id);
   if (error) fail(error);
   try {
-    const active = (await listBookings([id])).filter((b) => !b.cancelledAt);
-    if (!active.length) return;
-    const tokens = await notifyTokens(active.map((b) => b.connectionId));
-    for (const b of active) {
-      const c = { notifyToken: tokens.get(b.connectionId) ?? null };
-      void notifyClient(c, 'visit-cancel');
-      void cancelNotify(c, b.id);
-    }
+    for (const b of (await listBookings([id])).filter((x) => !x.cancelledAt)) visitCancelled(privateKey, b);
   } catch {
     // Termin odwołany; powiadomienia to dodatek.
   }
 }
 
-/** Tokeny powiadomień współprac (numer → token); bez tokenu — brak w mapie. */
-async function notifyTokens(connectionIds: string[]): Promise<Map<string, string>> {
-  const ids = [...new Set(connectionIds)];
-  const { data, error } = await sb.from('connections').select('id, notify_token').in('id', ids);
-  if (error) fail(error);
-  const out = new Map<string, string>();
-  for (const r of data ?? []) if (typeof r.notify_token === 'string') out.set(r.id as string, r.notify_token);
-  return out;
+/** „Wizyta odwołana” i odwołanie przypomnienia (zaplanowanego przez Sztab albo przez telefon — ten sam numer). */
+function visitCancelled(privateKey: CryptoKey, b: Pick<BookingRow, 'id' | 'connectionId'>): void {
+  notifyLater(privateKey, b.connectionId, (n) => [n.notify('visit-cancel'), n.cancel(b.id)], { fresh: true });
 }
 
 export async function listBookings(slotIds: string[]): Promise<BookingRow[]> {
@@ -653,22 +633,20 @@ export const VISIT_SOON_MS = 2 * 3_600_000;
  * dostaje „zapisano cię na wizytę” od razu i przypomnienie 2 h przed nią (numer rezerwacji pozwala je
  * odwołać); gdy do wizyty zostało mniej — samo pierwsze. Zwraca numer rezerwacji.
  */
-export async function bookClient(slot: Pick<SlotRow, 'id' | 'startsAt'>, c: Pick<Connection, 'id' | 'notifyToken'>): Promise<string> {
+export async function bookClient(privateKey: CryptoKey, slot: Pick<SlotRow, 'id' | 'startsAt'>, c: Pick<Connection, 'id'>): Promise<string> {
   const { data, error } = await sb.from('bookings').insert({ slot_id: slot.id, connection_id: c.id }).select('id').single();
   if (error) fail(error);
   // Zapis się udał; bez numeru (nie powinno się zdarzyć) przypomnienie bez odwołania i tak nie wyjdzie.
   const id = String((data as { id?: unknown } | null)?.id ?? '');
-  void notifyClient(c, 'visit');
   const soon = Date.parse(slot.startsAt) - VISIT_SOON_MS;
-  if (soon > Date.now()) void notifyClient(c, 'visit-soon', { at: new Date(soon), ref: id });
+  const remind = soon > Date.now();
+  notifyLater(privateKey, c.id, (n) => [n.notify('visit'), ...(remind ? [n.notify('visit-soon', { at: new Date(soon), ref: id })] : [])]);
   return id;
 }
 
-/** Odwołanie rezerwacji przez prowadzącego: „wizyta odwołana” i bez przypomnienia. `c` — współpraca tej rezerwacji. */
-export async function cancelBooking(id: string, c: Pick<Connection, 'notifyToken'> | null | undefined): Promise<void> {
-  const { error } = await sb.from('bookings').update({ cancelled_at: new Date().toISOString(), cancelled_by: 'coach' }).eq('id', id);
+/** Odwołanie rezerwacji przez prowadzącego: „wizyta odwołana” i bez przypomnienia — współpraca z samej rezerwacji. */
+export async function cancelBooking(privateKey: CryptoKey, b: Pick<BookingRow, 'id' | 'connectionId'>): Promise<void> {
+  const { error } = await sb.from('bookings').update({ cancelled_at: new Date().toISOString(), cancelled_by: 'coach' }).eq('id', b.id);
   if (error) fail(error);
-  if (!c) return;
-  void notifyClient(c, 'visit-cancel');
-  void cancelNotify(c, id);
+  visitCancelled(privateKey, b);
 }
