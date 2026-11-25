@@ -295,7 +295,11 @@ function InviteForm({
   const checks = areaChecks(s, preview);
   // Wolne obszary zaznaczone, zajęte przez kogoś innego — nie: zamiana prowadzącego to decyzja.
   const [chosen, setChosen] = useState<Area[]>(() => checks.filter((c) => c.free).map((c) => c.area));
-  const [scopes, setScopes] = useState<Scope[]>(() => (preview.scopes.length ? preview.scopes : suggestScopes(preview.areas)));
+  // Zdjęcia sylwetki nigdy nie są zaznaczone z góry, także gdy prowadzący o nie prosi: zgoda na dane szczególnej
+  // kategorii musi być osobnym, świadomym kliknięciem (RODO art. 9).
+  const [scopes, setScopes] = useState<Scope[]>(() =>
+    (preview.scopes.length ? preview.scopes : suggestScopes(preview.areas)).filter((sc) => sc !== 'photos'),
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<AcceptFailure | null>(null);
   // Sekret zapisany dopiero przy przyjęciu; do tego czasu ID liczy się z kandydata.
@@ -768,10 +772,30 @@ function AssignmentBody({
         </div>
       );
     case 'form':
-      return <FormAssignment stored={stored as Parameters<typeof FormAssignment>[0]['stored']} state={state} onToast={onToast} />;
     case 'habits':
-      return <HabitsAssignment stored={stored as Parameters<typeof HabitsAssignment>[0]['stored']} state={state} />;
-    case 'meals':
-      return <MealsAssignment stored={stored as Parameters<typeof MealsAssignment>[0]['stored']} state={state} />;
+    case 'meals': {
+      // Po zakończeniu współpracy zalecenie zostaje do wglądu, ale nic już nie idzie do prowadzącego:
+      // `fieldset disabled` wyłącza wszystkie pola i przyciski naraz.
+      const ended = connectionOf(linkState(), stored.connectionId)?.status !== 'active';
+      const inner =
+        b.kind === 'form' ? (
+          <FormAssignment stored={stored as Parameters<typeof FormAssignment>[0]['stored']} state={state} onToast={onToast} />
+        ) : b.kind === 'habits' ? (
+          <HabitsAssignment stored={stored as Parameters<typeof HabitsAssignment>[0]['stored']} state={state} />
+        ) : (
+          <MealsAssignment stored={stored as Parameters<typeof MealsAssignment>[0]['stored']} state={state} />
+        );
+      if (!ended) return inner;
+      return (
+        <>
+          <div className="wrap">
+            <p className="hint">{T.endedReadOnly}</p>
+          </div>
+          <fieldset disabled style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
+            {inner}
+          </fieldset>
+        </>
+      );
+    }
   }
 }

@@ -96,10 +96,12 @@ export async function syncPhotos(c: LinkConnection, deps: Partial<PhotoDeps> = {
   const was = c.photos && typeof c.photos === 'object' ? c.photos : {};
   const wantedKeys = new Set(wanted.map(keyOf));
   for (const [k, v] of Object.entries(was)) if (wantedKeys.has(k) && isUuid(v)) map[k] = v.toLowerCase();
+  // Mapa tylko wtedy, gdy zgoda wciąż jest: cofnięcie w trakcie wysyłki (`changeScopes`) skasowało ją
+  // razem ze zdjęciami na serwerze — nie przywracamy jej.
   const save = () =>
     updateLink((s) => {
       const x = s.connections.find((y) => y.id === c.id);
-      if (x) x.photos = { ...map };
+      if (x && x.scopes.includes('photos')) x.photos = { ...map };
     });
 
   // Kasowanie: wszystko na serwerze, czego nie ma w mapie — usunięte na telefonie, starsze niż

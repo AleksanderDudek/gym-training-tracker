@@ -51,6 +51,10 @@ export interface LinkConnection {
   pending?: { kind: 'end' } | { kind: 'areas'; areas: Area[] };
   /** Paczka, o którą poproszono, a serwer kazał chwilę poczekać — idzie przy następnej synchronizacji. */
   pushDue?: boolean;
+  /** Kiedy poproszono o paczkę (ms) — wysłana paczka złożona wcześniej nie kasuje tej prośby. */
+  pushDueAt?: number;
+  /** Do kiedy (czas serwera) „przeczytane” doszło do prowadzącego — dalsze czeka na sieć. */
+  readSent?: string | null;
   /** Zakończenie przez prowadzącego, o którym ekran jeszcze nie powiedział. */
   endNotice?: boolean;
   /** Czas serwera ostatniej pobranej wiadomości — następne pobranie prosi tylko o nowsze. */
@@ -150,6 +154,15 @@ export function cleanLinkState(raw: unknown): LinkState {
       (c.status === 'active' || c.status === 'ended'),
   );
   for (const c of connections) if (c.visits !== undefined) cleanVisits(c);
+  // Kursory wiadomości: zepsuty czas wysłany do serwera kończy się błędem rzutowania, który wygląda jak brak
+  // sieci — i synchronizacja stawałaby na nim za każdym razem.
+  const iso = (v: unknown): string | null => (typeof v === 'string' && Number.isFinite(Date.parse(v)) ? v : null);
+  for (const c of connections) {
+    if (c.messagesSince !== undefined) c.messagesSince = iso(c.messagesSince);
+    if (c.readUpTo !== undefined) c.readUpTo = iso(c.readUpTo);
+    if (c.readSent !== undefined) c.readSent = iso(c.readSent);
+    if (c.pushDueAt !== undefined && (typeof c.pushDueAt !== 'number' || !Number.isFinite(c.pushDueAt))) delete c.pushDueAt;
+  }
   const ids = new Set(connections.map((c) => c.id));
   const assignments = (Array.isArray(raw.assignments) ? raw.assignments : []).filter(
     (a): a is StoredAssignment =>
@@ -161,7 +174,7 @@ export function cleanLinkState(raw: unknown): LinkState {
   );
   const unsupported = (Array.isArray(raw.unsupported) ? raw.unsupported : []).filter(
     (u): u is { id: string; connectionId: string; kind: string } =>
-      isObj(u) && typeof u.id === 'string' && typeof u.connectionId === 'string' && typeof u.kind === 'string',
+      isObj(u) && typeof u.id === 'string' && typeof u.connectionId === 'string' && ids.has(u.connectionId) && typeof u.kind === 'string',
   );
   const messages = (Array.isArray(raw.messages) ? raw.messages : []).filter(
     (m): m is StoredMessage =>

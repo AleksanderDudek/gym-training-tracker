@@ -423,7 +423,7 @@ export async function listMessages(privateKey: CryptoKey, c: Connection): Promis
   const key = await connectionKey(privateKey, c);
   const out: Message[] = [];
   for (const row of (data ?? []).reverse()) {
-    const m = parseMessage(await openJson(key, AAD.message(c.id, row.id as string), row.ciphertext as string));
+    const m = parseMessage(await openJson(key, AAD.message(c.id, row.id as string, row.author as 'coach' | 'client'), row.ciphertext as string));
     if (!m || m.id.toLowerCase() !== row.id) continue;
     out.push({ id: row.id as string, author: row.author as 'coach' | 'client', text: m.text, ref: m.ref, createdAt: row.created_at as string, readAt: row.read_at as string | null });
   }
@@ -433,7 +433,7 @@ export async function listMessages(privateKey: CryptoKey, c: Connection): Promis
 export async function sendMessage(privateKey: CryptoKey, c: Connection, text: string, ref: MessageRef | null = null): Promise<string> {
   const id = crypto.randomUUID();
   const env: MessageV1 = { v: 1, id, at: Date.now(), text: text.trim().slice(0, 4000), ref };
-  const ciphertext = await sealJson(await connectionKey(privateKey, c), AAD.message(c.id, id), env);
+  const ciphertext = await sealJson(await connectionKey(privateKey, c), AAD.message(c.id, id, 'coach'), env);
   const { error } = await sb.from('messages').insert({ id, connection_id: c.id, author: 'coach', ciphertext });
   if (error) fail(error);
   return id;
@@ -473,7 +473,8 @@ export async function listPhotos(privateKey: CryptoKey, c: Connection): Promise<
   const out: Photo[] = [];
   for (const row of data ?? []) {
     const p = parsePhoto(await openJson(key, AAD.photo(c.id, row.id as string), row.ciphertext as string));
-    if (p) out.push({ ...p, createdAt: row.created_at as string });
+    // Numer w środku musi być numerem wiersza — jak przy zaleceniach i wiadomościach.
+    if (p && p.id.toLowerCase() === row.id) out.push({ ...p, createdAt: row.created_at as string });
   }
   return out.sort((a, b) => b.day.localeCompare(a.day) || b.createdAt.localeCompare(a.createdAt));
 }

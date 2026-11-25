@@ -12,7 +12,12 @@ import type { FormBody, FormQuestion, HabitsBody, MealsBody } from './assignment
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
 const DAY_MS = 86_400_000;
 
-export const isDay = (v: unknown): v is string => typeof v === 'string' && DAY_RE.test(v) && !Number.isNaN(Date.parse(`${v}T00:00:00Z`));
+/** Dzień, który naprawdę istnieje — `2026-02-30` i `2026-13-45` mają kształt, ale nie przechodzą (rachunek dni dałby NaN). */
+export const isDay = (v: unknown): v is string => {
+  if (typeof v !== 'string' || !DAY_RE.test(v)) return false;
+  const ms = Date.parse(`${v}T00:00:00Z`);
+  return !Number.isNaN(ms) && new Date(ms).toISOString().slice(0, 10) === v;
+};
 
 const utc = (day: string): number => Date.parse(`${day}T00:00:00Z`);
 const fromUtc = (ms: number): string => new Date(ms).toISOString().slice(0, 10);
@@ -106,8 +111,9 @@ export function habitsFor(h: Pick<HabitsBody, 'items' | 'until'>, day: string): 
  */
 export function mealDayIndex(m: Pick<MealsBody, 'days' | 'start'>, sentDay: string, day: string): number | null {
   const start = m.start ?? sentDay;
+  if (!isDay(start) || !isDay(day) || !m.days.length) return null;
   const n = daysBetween(start, day);
-  if (n < 0 || !m.days.length) return null;
+  if (!Number.isFinite(n) || n < 0) return null;
   return n % m.days.length;
 }
 

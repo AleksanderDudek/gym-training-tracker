@@ -155,7 +155,7 @@ describe('wizyty', () => {
     server.connections.get(c.id)!.bookings.push({ id: crypto.randomUUID(), slotId: mine.id, cancelledAt: null, cancelledBy: null });
     server.slot({ title: 'Druga online', place: 'https://meet.example.com/xyz', startsAt: new Date(Date.now() + 50 * HOUR).toISOString(), endsAt: new Date(Date.now() + 51 * HOUR).toISOString() });
     page(c.id);
-    const join = await screen.findByRole('link', { name: 'Dołącz do rozmowy' });
+    const join = await screen.findByRole('link', { name: /^Dołącz do rozmowy \(/ });
     expect(join).toHaveAttribute('href', 'https://meet.example.com/abc-def');
     expect(join).toHaveAttribute('rel', 'noopener noreferrer');
     const free = section('Wolne terminy');

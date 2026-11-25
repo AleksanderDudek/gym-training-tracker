@@ -215,7 +215,7 @@ async function phone(file: string) {
       p_connection: p.connectionId,
       p_token: p.token,
       p_id: msgId,
-      p_ciphertext: await sealJson(key, AAD.message(p.connectionId, msgId), {
+      p_ciphertext: await sealJson(key, AAD.message(p.connectionId, msgId, 'client'), {
         v: 1,
         id: msgId,
         at: Date.now(),

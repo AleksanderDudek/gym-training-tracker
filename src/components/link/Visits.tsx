@@ -396,7 +396,8 @@ function Place({ place, live }: { place: string | null; live: boolean }) {
   if (link && live)
     return (
       <a className="vidlink" href={link} target="_blank" rel="noopener noreferrer">
-        {T.join}
+        {/* Nazwa serwera przy linku: podmieniony adres (phishing) widać, zanim się kliknie. */}
+        {T.join} ({new URL(link).hostname})
       </a>
     );
   if (link) return <p className="lk-visit-place">{T.video}</p>;

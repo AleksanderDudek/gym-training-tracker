@@ -82,9 +82,14 @@ create policy messages_insert_own on public.messages for insert to authenticated
 -- …i oznacza jako przeczytane tylko wiadomości od podopiecznego.
 create policy messages_update_own on public.messages for update to authenticated
   using (author = 'client' and exists (select 1 from public.connections c where c.id = connection_id and c.coach_id = (select auth.uid())))
-  with check (author = 'client');
+  with check (author = 'client' and exists (select 1 from public.connections c where c.id = connection_id and c.coach_id = (select auth.uid())));
 
-grant select, insert on table public.messages to authenticated;
+-- Najpierw odebrać wszystko (lokalny Supabase daje domyślnie pełne prawa), potem kolumnami: prowadzący
+-- nie ustawi `created_at` (przesunąłby telefonowi kursor „od kiedy” i kolejne wiadomości by nie doszły)
+-- ani nie przepisze cudzego szyfrogramu.
+revoke all on table public.messages from authenticated;
+grant select on table public.messages to authenticated;
+grant insert (id, connection_id, author, ciphertext) on table public.messages to authenticated;
 grant update (read_at) on table public.messages to authenticated;
 
 -- Nowe wiadomości dla telefonu (po chwili `p_since`, najwyżej 200) i do kiedy prowadzący przeczytał.
@@ -167,6 +172,7 @@ alter table public.photos enable row level security;
 create policy photos_select_own on public.photos for select to authenticated using (
   exists (select 1 from public.connections c where c.id = connection_id and c.coach_id = (select auth.uid()))
 );
+revoke all on table public.photos from authenticated;
 grant select on table public.photos to authenticated;
 
 create function public.client_photo_ids(p_connection uuid, p_token text) returns json
@@ -195,7 +201,8 @@ begin
     raise exception 'photo_limit' using errcode = 'P0001';
   end if;
   insert into public.photos (id, connection_id, ciphertext) values (p_id, c.id, p_ciphertext)
-    on conflict (id) do update set ciphertext = excluded.ciphertext;
+    on conflict (id) do update set ciphertext = excluded.ciphertext
+    where public.photos.connection_id = excluded.connection_id;
 end $$;
 
 create function public.client_photo_delete(p_connection uuid, p_token text, p_id uuid) returns void
@@ -250,6 +257,7 @@ create index slots_coach on public.slots (coach_id, starts_at);
 alter table public.slots enable row level security;
 create policy slots_all_own on public.slots for all to authenticated
   using (coach_id = (select auth.uid())) with check (coach_id = (select auth.uid()));
+revoke all on table public.slots from authenticated;
 grant select, insert, update, delete on table public.slots to authenticated;
 
 create table public.bookings (
@@ -277,11 +285,18 @@ create policy bookings_insert_own on public.bookings for insert to authenticated
 );
 create policy bookings_update_own on public.bookings for update to authenticated
   using (exists (select 1 from public.slots s where s.id = slot_id and s.coach_id = (select auth.uid())))
-  with check (exists (select 1 from public.slots s where s.id = slot_id and s.coach_id = (select auth.uid())));
-grant select, insert on table public.bookings to authenticated;
+  with check (
+    exists (select 1 from public.slots s where s.id = slot_id and s.coach_id = (select auth.uid()))
+    and exists (select 1 from public.connections c where c.id = connection_id and c.coach_id = (select auth.uid()))
+  );
+revoke all on table public.bookings from authenticated;
+grant select on table public.bookings to authenticated;
+grant insert (slot_id, connection_id) on table public.bookings to authenticated;
 grant update (cancelled_at, cancelled_by) on table public.bookings to authenticated;
 
--- Terminy prowadzącego na 60 dni naprzód (wolne miejsca) i rezerwacje tego telefonu (od 14 dni wstecz).
+-- Terminy prowadzącego na 60 dni naprzód — tylko z wolnym miejscem albo zarezerwowane przez ten telefon
+-- (pełny termin innego podopiecznego nie zdradza jego linku do rozmowy, notatki ani tego, że ma wizytę)
+-- — i rezerwacje tego telefonu (od 14 dni wstecz).
 create function public.client_slots(p_connection uuid, p_token text) returns json
 language plpgsql security definer set search_path = '' as $$
 declare
@@ -299,6 +314,10 @@ begin
       from public.slots s
       where s.coach_id = c.coach_id and s.cancelled_at is null
         and s.starts_at > now() and s.starts_at < now() + interval '60 days'
+        and (
+          (select count(*) from public.bookings b where b.slot_id = s.id and b.cancelled_at is null) < s.capacity
+          or exists (select 1 from public.bookings b where b.slot_id = s.id and b.connection_id = c.id and b.cancelled_at is null)
+        )
     ), '[]'::json),
     'bookings', coalesce((
       select json_agg(json_build_object(
@@ -337,6 +356,10 @@ begin
   ) >= 10 then
     raise exception 'too_many' using errcode = 'P0001';
   end if;
+  -- Rezerwuj/odwołaj w pętli zostawiałoby bez końca wierszy — 30 nowych rezerwacji na dobę wystarczy każdemu.
+  if (select count(*) from public.bookings where connection_id = c.id and created_at > now() - interval '1 day') >= 30 then
+    raise exception 'rate_limited' using errcode = 'P0001';
+  end if;
   insert into public.bookings (slot_id, connection_id) values (s.id, c.id) returning id into new_id;
   return new_id;
 end $$;
@@ -359,16 +382,74 @@ end $$;
 create or replace function private.end_connection(p_connection uuid, p_by text) returns void
 language plpgsql security definer set search_path = '' as $$
 begin
+  -- Blokada wiersza współpracy, tak jak w funkcjach telefonu (`connection_for … for update`): wysyłka
+  -- zdjęcia czy wiadomości w toku kończy się przed kasowaniem, a nie przeżywa końca współpracy.
+  perform 1 from public.connections where id = p_connection for update;
   delete from public.snapshots where connection_id = p_connection;
   delete from public.assignments where connection_id = p_connection;
   delete from public.messages where connection_id = p_connection;
   delete from public.photos where connection_id = p_connection;
+  -- Przyszłe wizyty znikają; minione zostają prowadzącemu jako ślad rozliczeń (godziny, bez danych o zdrowiu).
   delete from public.bookings b using public.slots s
     where b.slot_id = s.id and b.connection_id = p_connection and s.starts_at > now();
   delete from private.connection_tokens where connection_id = p_connection;
   update public.connections
     set status = 'ended', ended_by = p_by, ended_at = now(), scopes = '{}'
     where id = p_connection and status = 'active';
+end $$;
+
+-- ── Logowanie dwuetapowe egzekwowane w bazie ──────────────────────────────────────────
+
+-- Ekran kodu TOTP w Sztabie to za mało: samo hasło (sesja aal1) dawałoby przez PostgREST te same prawa.
+-- Prowadzący z włączonym MFA widzi i zmienia cokolwiek dopiero z sesją aal2; bez MFA — jak dotąd.
+-- Schemat `authz` nie jest wystawiony przez API (tylko `public`), a funkcja czyta `auth.mfa_factors`
+-- z prawami właściciela.
+create schema if not exists authz;
+revoke all on schema authz from public;
+grant usage on schema authz to authenticated;
+
+create function authz.mfa_ok() returns boolean
+language sql stable security definer set search_path = '' as $$
+  select coalesce(auth.jwt() ->> 'aal', '') = 'aal2'
+    or not exists (select 1 from auth.mfa_factors f where f.user_id = (select auth.uid()) and f.status = 'verified')
+$$;
+revoke all on function authz.mfa_ok() from public, anon;
+grant execute on function authz.mfa_ok() to authenticated;
+
+create policy coaches_mfa on public.coaches as restrictive for all to authenticated using ((select authz.mfa_ok())) with check ((select authz.mfa_ok()));
+create policy invites_mfa on public.invites as restrictive for all to authenticated using ((select authz.mfa_ok())) with check ((select authz.mfa_ok()));
+create policy connections_mfa on public.connections as restrictive for all to authenticated using ((select authz.mfa_ok())) with check ((select authz.mfa_ok()));
+create policy snapshots_mfa on public.snapshots as restrictive for all to authenticated using ((select authz.mfa_ok())) with check ((select authz.mfa_ok()));
+create policy assignments_mfa on public.assignments as restrictive for all to authenticated using ((select authz.mfa_ok())) with check ((select authz.mfa_ok()));
+create policy receipts_mfa on public.receipts as restrictive for all to authenticated using ((select authz.mfa_ok())) with check ((select authz.mfa_ok()));
+create policy library_mfa on public.library_items as restrictive for all to authenticated using ((select authz.mfa_ok())) with check ((select authz.mfa_ok()));
+create policy messages_mfa on public.messages as restrictive for all to authenticated using ((select authz.mfa_ok())) with check ((select authz.mfa_ok()));
+create policy photos_mfa on public.photos as restrictive for all to authenticated using ((select authz.mfa_ok())) with check ((select authz.mfa_ok()));
+create policy slots_mfa on public.slots as restrictive for all to authenticated using ((select authz.mfa_ok())) with check ((select authz.mfa_ok()));
+create policy bookings_mfa on public.bookings as restrictive for all to authenticated using ((select authz.mfa_ok())) with check ((select authz.mfa_ok()));
+
+-- Funkcje prowadzącego omijają RLS (SECURITY DEFINER) — ten sam warunek wprost.
+create or replace function public.coach_end_connection(p_connection uuid) returns void
+language plpgsql security definer set search_path = '' as $$
+begin
+  if not authz.mfa_ok() then raise exception 'mfa_required' using errcode = 'P0001'; end if;
+  if not exists (
+    select 1 from public.connections where id = p_connection and coach_id = (select auth.uid()) and status = 'active'
+  ) then
+    raise exception 'not_found' using errcode = 'P0001';
+  end if;
+  perform private.end_connection(p_connection, 'coach');
+end $$;
+
+create or replace function public.coach_delete_account() returns void
+language plpgsql security definer set search_path = '' as $$
+declare
+  me uuid := (select auth.uid());
+begin
+  if me is null then raise exception 'not_signed_in' using errcode = 'P0001'; end if;
+  if not authz.mfa_ok() then raise exception 'mfa_required' using errcode = 'P0001'; end if;
+  delete from public.connections where coach_id = me;
+  delete from auth.users where id = me;
 end $$;
 
 -- ── Uprawnienia funkcji ───────────────────────────────────────────────────────────────

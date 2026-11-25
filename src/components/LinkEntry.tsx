@@ -82,7 +82,8 @@ export function LinkCard() {
 export function LinkNotice() {
   const s = useLink();
   if (!linkConfigured()) return null;
-  const fresh = newAssignments(s)[0];
+  const live = new Set(activeConnections(s).map((c) => c.id));
+  const fresh = newAssignments(s).find((a) => live.has(a.connectionId));
   const ended = s.connections.find((c) => c.endNotice);
   const coachName = (id: string) => s.connections.find((c) => c.id === id)?.coach.name ?? '';
   const visit = soonVisit(s, Date.now());

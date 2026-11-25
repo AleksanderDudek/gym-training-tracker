@@ -106,8 +106,10 @@ export function buildSnapshot(state: AppState, scopes: readonly Scope[], extras:
 export function coachingFor(s: LinkState, connectionId: string, now: number, days = SNAPSHOT_DAYS): CoachingV1 {
   const from = windowStart(now, days);
   const mine = new Map(s.assignments.filter((a) => a.connectionId === connectionId && !a.withdrawn).map((a) => [a.id, a.a.body.kind]));
+  // Wywiad i inne jednorazowe odpowiedzi idą zawsze, bez względu na okno — inaczej po pół roku (albo po
+  // skurczeniu za dużej paczki) prowadzący widziałby wywiad jako „bez odpowiedzi”.
   const answers = s.answers
-    .filter((a) => mine.get(a.assignmentId) === 'form' && localDayOf(new Date(a.at)) >= from)
+    .filter((a) => mine.get(a.assignmentId) === 'form' && (a.period === 'once' || localDayOf(new Date(a.at)) >= from))
     .map((a) => ({ assignmentId: a.assignmentId, period: a.period, at: a.at, values: a.values }));
   const logs = (kind: 'habits' | 'meals') =>
     Object.entries(s.ticks)

@@ -248,6 +248,9 @@ export function cleanPlan(v: unknown): PlanTemplate | null {
 }
 
 const QID = /^[a-z0-9]{1,8}$/;
+/** Dzień kalendarza naprawdę istniejący (`2026-13-45` ma kształt, ale nie istnieje — i wywracałby rachunek dni). */
+const realDay = (v: unknown): v is string =>
+  typeof v === 'string' && DAY.test(v) && !Number.isNaN(Date.parse(`${v}T00:00:00Z`)) && new Date(`${v}T00:00:00Z`).toISOString().slice(0, 10) === v;
 const RECIPE_ID = /^[a-zA-Z0-9_-]{1,64}$/;
 const weekdays = (v: unknown): number[] =>
   Array.isArray(v) ? [...new Set(v.filter((d): d is number => Number.isInteger(d) && d >= 1 && d <= 7))].sort() : [];
@@ -319,7 +322,7 @@ export function cleanHabits(b: Record<string, unknown>): HabitsBody | null {
     items.push({ label, dose: str(h.dose, 60), when: HABIT_TIMES.find((t) => t === h.when) ?? 'any', days });
   }
   if (!title || !items.length) return null;
-  return { kind: 'habits', title, items, note: str(b.note, 2000), until: typeof b.until === 'string' && DAY.test(b.until) ? b.until : null };
+  return { kind: 'habits', title, items, note: str(b.note, 2000), until: realDay(b.until) ? b.until : null };
 }
 
 export function cleanMeals(b: Record<string, unknown>): MealsBody | null {
@@ -349,7 +352,7 @@ export function cleanMeals(b: Record<string, unknown>): MealsBody | null {
     days.push({ label: str(d.label, 40), meals });
   }
   if (!title || !days.length) return null;
-  return { kind: 'meals', title, days, start: typeof b.start === 'string' && DAY.test(b.start) ? b.start : null, note: str(b.note, 2000) };
+  return { kind: 'meals', title, days, start: realDay(b.start) ? b.start : null, note: str(b.note, 2000) };
 }
 
 function cleanBody(v: unknown): AssignmentBody | null {
@@ -412,7 +415,9 @@ function cleanBody(v: unknown): AssignmentBody | null {
 export function parseAssignment(v: unknown): AssignmentV1 | null {
   if (!v || typeof v !== 'object') return null;
   const a = v as Partial<AssignmentV1>;
+  // Chwila wysłania w rozsądnym zakresie (do roku 2200): z niej telefon liczy dzień startu jadłospisu.
   if (a.v !== 1 || typeof a.id !== 'string' || !isArea(a.area) || typeof a.sentAt !== 'number') return null;
+  if (!Number.isFinite(a.sentAt) || a.sentAt <= 0 || a.sentAt >= 7_258_118_400_000) return null;
   const body = cleanBody(a.body);
   if (!body || !KINDS_BY_AREA[a.area].includes(body.kind)) return null;
   const from = a.from as Partial<AssignmentV1['from']> | undefined;

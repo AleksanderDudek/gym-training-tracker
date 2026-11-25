@@ -173,7 +173,9 @@ export function SessionHome({
       </div>
 
       {/* Nowe od prowadzącego (albo koniec współpracy z jego strony) — jedna linia, tylko gdy coś przyszło. */}
-      <LinkNotice />
+      <QuietBoundary>
+        <LinkNotice />
+      </QuietBoundary>
 
       {/* Jednorazowe pytanie o anonimowe statystyki — po pierwszym treningu, za zgodą. */}
       <StatsAsk state={state} />

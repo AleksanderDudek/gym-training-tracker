@@ -92,6 +92,10 @@ describe('formularz od prowadzącego', () => {
     expect(screen.getByText('Krótkie podsumowanie tygodnia.')).toBeInTheDocument();
     expect(screen.getByText(/^Co tydzień, od poniedziałku · Odpowiedź za ten tydzień/)).toBeInTheDocument();
 
+    // Pierwsza paczka poszła przy przyjęciu zaproszenia; serwer bierze jedną na 30 s — tu „dawno temu”.
+    updateLink((s) => {
+      for (const c of s.connections) c.lastPushAt = Date.now() - 60_000;
+    });
     // Bez wymaganych — odmowa, słowa przy pytaniach i kursor na pierwszym.
     await user.click(screen.getByRole('button', { name: 'Wyślij odpowiedź' }));
     expect(screen.getByRole('alert')).toHaveTextContent('Uzupełnij zaznaczone pytania.');

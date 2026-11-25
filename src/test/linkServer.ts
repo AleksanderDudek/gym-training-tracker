@@ -349,7 +349,7 @@ export async function fakeSztab(opts: { coachName?: string; profession?: string 
       const c = connections.get(connectionId)!;
       const key = await linkKey(coach.privateKey, c.clientKey, c.inviteId);
       const env: MessageV1 = { v: 1, id, at: Date.now(), text, ref: null };
-      c.messages.push({ id, author: 'coach', ciphertext: await sealJson(key, AAD.message(c.id, id), env), createdAt: serverNow(), readAt: null });
+      c.messages.push({ id, author: 'coach', ciphertext: await sealJson(key, AAD.message(c.id, id, 'coach'), env), createdAt: serverNow(), readAt: null });
       return id;
     },
     /** Wiadomość od telefonu odczytana kluczem prowadzącego. */
@@ -358,7 +358,7 @@ export async function fakeSztab(opts: { coachName?: string; profession?: string 
       const m = c.messages.find((x) => x.id === id);
       if (!m) return null;
       const key = await linkKey(coach.privateKey, c.clientKey, c.inviteId);
-      return openJson(key, AAD.message(c.id, id), m.ciphertext);
+      return openJson(key, AAD.message(c.id, id, m.author), m.ciphertext);
     },
     /** Prowadzący oznacza wiadomości telefonu jako przeczytane. */
     readByCoach(connectionId: string) {

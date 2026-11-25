@@ -137,3 +137,23 @@ describe('paczka, wiadomość, zdjęcie z zewnątrz', () => {
     expect(parsePhoto({ v: 1, id: 'p1', day: '25.11', w: 540, h: 720, jpeg: 'AAAA' })).toBeNull();
   });
 });
+
+describe('daty z zewnątrz, które nie istnieją', () => {
+  it('2026-02-30 i 2026-13-45 nie przechodzą, a jadłospis z takim startem nie wywraca rachunku dni', () => {
+    const meals = { kind: 'meals', title: 'T', start: '2026-02-30', note: '', days: [{ label: 'A', meals: [{ slot: '', name: 'x', recipe: null, kcal: null, protein: null, carbs: null, fat: null, note: '' }] }] };
+    const p = parseAssignment(envelope('nutrition', meals));
+    expect(p?.body.kind === 'meals' && p.body.start).toBeNull();
+    expect(mealDayIndex({ days: [{ label: 'A', meals: [] }], start: '2026-13-45' }, '2026-11-25', '2026-11-25')).toBeNull();
+    expect(mealDayIndex({ days: [{ label: 'A', meals: [] }], start: null }, 'NaN-NaN-NaN', '2026-11-25')).toBeNull();
+    const h = { kind: 'habits', title: 'H', note: '', until: '2026-02-31', items: [{ label: 'x', dose: '', when: 'any', days: [1] }] };
+    const ph = parseAssignment(envelope('training', h));
+    expect(ph?.body.kind === 'habits' && ph.body.until).toBeNull();
+  });
+
+  it('chwila wysłania poza rozsądnym zakresem odrzuca zalecenie', () => {
+    const note = { kind: 'note', title: 't', text: 'x', checklist: [] };
+    expect(parseAssignment({ ...envelope('training', note), sentAt: 1e300 })).toBeNull();
+    expect(parseAssignment({ ...envelope('training', note), sentAt: -5 })).toBeNull();
+    expect(parseAssignment({ ...envelope('training', note), sentAt: Date.parse('2026-11-25') })).not.toBeNull();
+  });
+});

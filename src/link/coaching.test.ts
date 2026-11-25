@@ -183,6 +183,10 @@ describe('odpowiedzi i odhaczenia w paczce', () => {
     });
     await syncAll(() => state);
     const ha = linkState().assignments.find((a) => a.id === habitsId)!;
+    // Poprzednia paczka dawno temu — odstęp 30 s nie gra tu roli.
+    updateLink((s) => {
+      s.connections[0]!.lastPushAt = Date.now() - 60_000;
+    });
     vi.useFakeTimers();
     const before = server.names().filter((n) => n === 'client_push').length;
     setDayTicks(ha, '2026-11-25', [0], () => state);
@@ -212,5 +216,91 @@ describe('wizyty w tle', () => {
   it('bez zapisu (nigdy nie otwierał wizyt) nie pyta o terminy', async () => {
     await syncAll(() => state);
     expect(server.names()).not.toContain('client_slots');
+  });
+});
+
+describe('poprawki po przeglądzie', () => {
+  it('serwer nie poszerzy zgody: dopisane „photos” nie trafia do zakresu na telefonie', async () => {
+    server.connections.get(conn.id)!.scopes = ['training', 'photos'];
+    await syncAll(() => state);
+    expect(linkState().connections[0]!.scopes).toEqual(['training']);
+    // Zwężenie przechodzi.
+    server.connections.get(conn.id)!.scopes = [];
+    await syncAll(() => state);
+    expect(linkState().connections[0]!.scopes).toEqual([]);
+  });
+
+  it('otwiera się, ale nie przechodzi sprawdzenia → „zaktualizuj”, nie „zepsute”; zepsute próbujemy jeszcze raz', async () => {
+    const id = await server.send(conn.id, { area: 'training', sentAt: Date.now(), from, body: { kind: 'note', title: 'x', text: 'y', checklist: [] } });
+    const row = server.connections.get(conn.id)!.assignments[0]!;
+    const good = row.ciphertext;
+    // Kształt, którego ta wersja nie przyjmuje (np. pole z przyszłości) — szyfrogram poprawny.
+    const bad = await server.send(conn.id, { area: 'training', sentAt: Date.now(), from, body: { kind: 'note', title: '', text: '', checklist: [] } as never });
+    row.ciphertext = 'v1.zepsuty';
+    await syncAll(() => state);
+    expect(linkState().unsupported.map((u) => u.id)).toEqual([bad]);
+    expect(linkState().broken.map((b) => b.id)).toEqual([id]);
+    row.ciphertext = good;
+    await syncAll(() => state);
+    expect(linkState().broken).toEqual([]);
+    expect(linkState().assignments.map((a) => a.id)).toContain(id);
+  });
+
+  it('„przeczytane”, które nie doszło bez sieci, idzie przy następnym pobraniu', async () => {
+    await server.message(conn.id, 'Hej');
+    await syncAll(() => state);
+    server.setOffline(true);
+    await markMessagesRead(conn.id);
+    expect(server.connections.get(conn.id)!.messages[0]!.readAt).toBeNull();
+    server.setOffline(false);
+    await refreshMessages(conn.id);
+    expect(server.connections.get(conn.id)!.messages[0]!.readAt).not.toBeNull();
+  });
+
+  it('odhaczenie w 30 s po paczce czeka na swoją kolej zamiast przepaść do następnej synchronizacji', async () => {
+    const habitsId = await server.send(conn.id, {
+      area: 'training',
+      sentAt: Date.now(),
+      from,
+      body: { kind: 'habits', title: 'Sen', note: '', until: null, items: [{ label: '8 h', dose: '', when: 'evening', days: [1, 2, 3, 4, 5, 6, 7] }] },
+    });
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] });
+    await syncAll(() => state); // paczka właśnie poszła
+    const ha = linkState().assignments.find((a) => a.id === habitsId)!;
+    const pushes = () => server.names().filter((n) => n === 'client_push').length;
+    const before = pushes();
+    setDayTicks(ha, '2026-11-25', [0], () => state);
+    await vi.advanceTimersByTimeAsync(3_000);
+    expect(pushes()).toBe(before); // za wcześnie — telefon nawet nie próbuje
+    await vi.advanceTimersByTimeAsync(30_000);
+    vi.useRealTimers();
+    await vi.waitFor(() => {
+      expect(pushes()).toBe(before + 1);
+      // Prośba skasowana dopiero po odpowiedzi serwera — licznik zapytań rośnie wcześniej.
+      expect(linkState().connections[0]!.pushDue).toBeUndefined();
+    });
+  });
+
+  it('wywiad (jednorazowy) idzie w paczce także po wyjściu poza okno dni', () => {
+    updateLink((s) => {
+      s.assignments.push({
+        id: 'w1',
+        connectionId: conn.id,
+        a: {
+          v: 1,
+          id: 'w1',
+          area: 'training',
+          sentAt: 1,
+          from,
+          body: { kind: 'form', title: 'Wywiad', intro: '', repeat: 'once', weekday: null, intake: true, questions: [{ id: 'q1', type: 'text', label: 'Cel', help: '', required: true, unit: '', min: null, max: null, options: [] }] },
+        },
+        receivedAt: 0,
+        status: 'done',
+        ticked: [],
+        sent: 'done',
+      });
+      s.answers.push({ assignmentId: 'w1', period: 'once', at: Date.parse('2025-01-02T10:00:00Z'), values: { q1: 'siła' } });
+    });
+    expect(coachingFor(linkState(), conn.id, Date.parse('2026-11-25T12:00:00Z'), 30).answers.map((a) => a.assignmentId)).toEqual(['w1']);
   });
 });
