@@ -319,7 +319,8 @@ export async function scheduleVisitReminder(
     if (!configured() || c?.status !== 'active' || !c.notify) return false;
     const at = Date.parse(booking.startsAt) - VISIT_SOON_MS;
     if (!Number.isFinite(at) || at <= now) return false;
-    return (await worker('/link/notify', { token: c.notify.token, kind: 'visit-soon', at: new Date(at).toISOString(), ref: booking.id })) === 'ok';
+    // `at` w milisekundach, jak w Sztabie — serwer aplikacji przyjmuje tylko liczbę.
+    return (await worker('/link/notify', { token: c.notify.token, kind: 'visit-soon', at: Math.round(at), ref: booking.id })) === 'ok';
   } catch {
     return false;
   }

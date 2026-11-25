@@ -342,7 +342,7 @@ describe('przypomnienie o wizycie', () => {
     const now = Date.now();
     const startsAt = new Date(now + 26 * HOUR).toISOString();
     expect(await scheduleVisitReminder(c.id, { id: 'booking-1', startsAt }, now)).toBe(true);
-    expect(worker.last('/link/notify')).toEqual({ token, kind: 'visit-soon', at: new Date(Date.parse(startsAt) - VISIT_SOON_MS).toISOString(), ref: 'booking-1' });
+    expect(worker.last('/link/notify')).toEqual({ token, kind: 'visit-soon', at: Date.parse(startsAt) - VISIT_SOON_MS, ref: 'booking-1' });
     expect(await cancelVisitReminder(c.id, 'booking-1')).toBe(true);
     expect(worker.last('/link/cancel')).toEqual({ token, ref: 'booking-1' });
   });
@@ -369,7 +369,7 @@ describe('przypomnienie o wizycie', () => {
       s.connections.find((x) => x.id === c.id)!.visits = { at: Date.now(), bookings: r.bookings };
     });
     await enableCoachPush(c.id, state);
-    expect(worker.last('/link/notify')).toMatchObject({ kind: 'visit-soon', ref: booking, at: new Date(Date.parse(slot.startsAt) - VISIT_SOON_MS).toISOString() });
+    expect(worker.last('/link/notify')).toMatchObject({ kind: 'visit-soon', ref: booking, at: Date.parse(slot.startsAt) - VISIT_SOON_MS });
   });
 
   it('odwołanie bez sieci czeka i idzie przy następnej synchronizacji', async () => {

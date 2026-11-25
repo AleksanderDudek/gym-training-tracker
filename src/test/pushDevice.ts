@@ -15,7 +15,14 @@ interface FakeSub {
   unsubscribe: () => Promise<boolean>;
 }
 
-export function fakeDevice(opts: { permission?: NotificationPermission; answer?: NotificationPermission } = {}) {
+export function fakeDevice(
+  opts: {
+    permission?: NotificationPermission;
+    answer?: NotificationPermission;
+    /** Subskrypcja, jaką da przeglądarka — dla testu umowy z prawdziwym serwerem aplikacji (prawdziwe klucze). */
+    subscription?: (n: number) => { endpoint: string; keys: { p256dh: string; auth: string } };
+  } = {},
+) {
   let permission: NotificationPermission = opts.permission ?? 'default';
   let answer: NotificationPermission = opts.answer ?? 'granted';
   let sub: FakeSub | null = null;
@@ -25,11 +32,12 @@ export function fakeDevice(opts: { permission?: NotificationPermission; answer?:
   const make = (key: ArrayBuffer | null): FakeSub => {
     if (!reuse || n === 0) n += 1;
     // Adres bez `https`: test CSP (`csp.test.ts`) czyta też pliki pomocnicze testów i szuka w nich obcych serwerów.
-    const endpoint = `http://push.invalid/send/device-${n}`;
+    const real = opts.subscription?.(n);
+    const endpoint = real?.endpoint ?? `http://push.invalid/send/device-${n}`;
     const s: FakeSub = {
       endpoint,
       options: { applicationServerKey: key },
-      toJSON: () => ({ endpoint, keys: { p256dh: 'p256dh-key', auth: 'auth-key' } }),
+      toJSON: () => real ?? { endpoint, keys: { p256dh: 'p256dh-key', auth: 'auth-key' } },
       unsubscribe: async () => {
         if (sub === s) sub = null;
         return true;

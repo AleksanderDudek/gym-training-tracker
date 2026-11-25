@@ -219,7 +219,7 @@ describe('wizyty', () => {
     await user.click(within(free).getByRole('button', { name: 'Tak, rezerwuję' }));
     await waitFor(() => expect(worker.last('/link/notify')).toBeDefined());
     const booking = server.connections.get(c.id)!.bookings[0]!.id;
-    expect(worker.last('/link/notify')).toEqual({ token, kind: 'visit-soon', at: new Date(Date.parse(slot.startsAt) - 2 * HOUR).toISOString(), ref: booking });
+    expect(worker.last('/link/notify')).toEqual({ token, kind: 'visit-soon', at: Date.parse(slot.startsAt) - 2 * HOUR, ref: booking });
 
     const yours = section('Twoje wizyty');
     await user.click(await within(yours).findByRole('button', { name: 'Odwołaj' }));
