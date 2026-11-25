@@ -6,6 +6,9 @@ import { GOOGLE_SIGN_IN } from '../lib/env';
 import { APP_NAME } from '../lib/labels';
 import { navigate } from '../lib/router';
 import { sb } from '../lib/sb';
+import { verifyCode } from '../lib/mfaApi';
+import type { CodeResult } from '../lib/mfaApi';
+import { useSession } from '../session';
 
 /**
  * Logowanie według standardu: e-mail i hasło z potwierdzeniem adresu, link logowania na maila,
@@ -52,6 +55,14 @@ const T = text({
     errRate: 'Za dużo prób. Spróbuj za kilka minut.',
     errOther: 'Coś poszło nie tak. Spróbuj ponownie.',
     errWeak: 'To hasło jest za słabe albo wyciekło w znanym wycieku. Wybierz inne.',
+    mfaTitle: 'Kod z aplikacji',
+    mfaLead: 'Wpisz sześciocyfrowy kod z aplikacji uwierzytelniającej, w której dodałeś to konto.',
+    mfaCode: 'Kod (6 cyfr)',
+    mfaGo: 'Potwierdź',
+    mfaBad: 'Zły albo wygasły kod. Wpisz aktualny z aplikacji.',
+    mfaFormat: 'Kod ma sześć cyfr.',
+    mfaOut: 'Wyloguj',
+    mfaNew: 'Do zmiany hasła potrzebny jest też kod z aplikacji uwierzytelniającej.',
   },
   en: {
     tagline: 'For trainers, dietitians, physiotherapists and doctors who coach people using GYM TRACKER.',
@@ -90,10 +101,22 @@ const T = text({
     errRate: 'Too many attempts. Try again in a few minutes.',
     errOther: 'Something went wrong. Try again.',
     errWeak: 'This password is too weak or appeared in a known breach. Pick another.',
+    mfaTitle: 'Code from your app',
+    mfaLead: 'Enter the six-digit code from the authenticator app where you added this account.',
+    mfaCode: 'Code (6 digits)',
+    mfaGo: 'Confirm',
+    mfaBad: 'Wrong or expired code. Enter the current one from the app.',
+    mfaFormat: 'The code has six digits.',
+    mfaOut: 'Sign out',
+    mfaNew: 'Changing the password also needs the code from your authenticator app.',
   },
 });
 
 const origin = () => location.origin;
+
+export function codeError(r: CodeResult): string {
+  return r === 'bad' ? T.mfaBad : r === 'format' ? T.mfaFormat : r === 'rate' ? T.errRate : T.errOther;
+}
 
 function explain(e: { message?: string; code?: string; status?: number } | null): string {
   const code = e?.code ?? '';
@@ -287,11 +310,18 @@ export function ResetRequest() {
 export function NewPassword() {
   const [p1, setP1] = useState('');
   const [p2, setP2] = useState('');
+  const [code, setCode] = useState<string | null>(null);
   const f = useForm();
   const submit = f.run(async () => {
     if (p1.length < 10) return f.setErr(T.errShort);
     if (p1 !== p2) return f.setErr(T.errSame);
+    // Konto z logowaniem dwuetapowym: sesja z linku z maila ma tylko hasło, a zmiana hasła wymaga kodu.
+    if (code !== null) {
+      const r = await verifyCode(code);
+      if (r !== 'ok') return f.setErr(codeError(r));
+    }
     const { error } = await sb.auth.updateUser({ password: p1 });
+    if (error?.code === 'insufficient_aal') return setCode((c) => c ?? '');
     if (error) return f.setErr(explain(error));
     navigate('/podopieczni', { replace: true });
   });
@@ -307,12 +337,55 @@ export function NewPassword() {
           <span>{T.password2}</span>
           <input id="password2" type="password" autoComplete="new-password" value={p2} onChange={(e) => setP2(e.target.value)} />
         </label>
+        {code !== null ? (
+          <label className="field">
+            <span>{T.mfaCode}</span>
+            <input id="code" type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={9} className="mono" value={code} onChange={(e) => setCode(e.target.value)} aria-describedby="mfa-new" />
+            <span className="hint" id="mfa-new">{T.mfaNew}</span>
+          </label>
+        ) : null}
         {f.err ? <p className="err" role="alert">{f.err}</p> : null}
         <button className="btn" type="submit" disabled={f.busy}>
           {T.newSave}
         </button>
       </form>
     </Frame>
+  );
+}
+
+/** Drugi krok logowania: kod z aplikacji. Sesja po haśle nic nie otwiera, dopóki kod nie przejdzie. */
+export function MfaChallenge() {
+  const { refresh } = useSession();
+  const [code, setCode] = useState('');
+  const f = useForm();
+  const submit = f.run(async () => {
+    const r = await verifyCode(code);
+    if (r !== 'ok') return f.setErr(codeError(r));
+    await refresh();
+  });
+  return (
+    <Frame title={T.mfaTitle} lead={T.mfaLead}>
+      <form className="stack" onSubmit={submit} noValidate>
+        <label className="field">
+          <span>{T.mfaCode}</span>
+          <input id="code" type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={9} autoFocus className="mono" value={code} onChange={(e) => setCode(e.target.value)} />
+        </label>
+        {f.err ? <p className="err" role="alert">{f.err}</p> : null}
+        <button className="btn" type="submit" disabled={f.busy}>
+          {T.mfaGo}
+        </button>
+      </form>
+      <SignOutLink />
+    </Frame>
+  );
+}
+
+function SignOutLink() {
+  const { signOut } = useSession();
+  return (
+    <button type="button" className="btn link" style={{ justifyContent: 'flex-start', padding: 0 }} onClick={() => void signOut()}>
+      {T.mfaOut}
+    </button>
   );
 }
 

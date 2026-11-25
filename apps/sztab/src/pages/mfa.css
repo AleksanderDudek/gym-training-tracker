@@ -1,0 +1,5 @@
+.sz-mfa-status { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0; }
+.sz-mfa-enroll { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+.sz-mfa-enroll .qr { flex: none; border: 1px solid var(--line); }
+.sz-mfa-enroll .stack { min-width: 0; flex: 1 1 200px; }
+.sz-mfa-secret { display: block; font-size: 15px; letter-spacing: 0.08em; overflow-wrap: anywhere; background: var(--surface-2); border-radius: var(--r); padding: 10px 12px; }
