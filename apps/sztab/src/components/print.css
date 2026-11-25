@@ -1,0 +1,73 @@
+/*
+ * Wydruk / PDF. Na ekranie: podgląd kartki A4 nad aplikacją. Przy druku: tylko kartka, czarno na
+ * białym — reszta strony (menu boczne, nawigacja, przyciski) znika.
+ */
+
+.sz-print-root { position: fixed; inset: 0; z-index: 70; background: rgba(var(--shade), 0.55); overflow: auto; display: grid; justify-items: center; align-content: start; gap: 12px; padding: 16px; }
+.sz-print-bar { position: sticky; top: 0; z-index: 1; width: min(210mm, 100%); display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: space-between; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: var(--r); padding: 8px 10px 8px 14px; box-shadow: 0 4px 16px rgba(var(--shade), 0.25); }
+.sz-print-bar strong { font: 600 15px var(--display); text-transform: uppercase; letter-spacing: 0.04em; }
+
+/* Kartka: zawsze biała z czarnym drukiem, także w ciemnym motywie — to podgląd papieru. */
+.sz-print-sheet { width: min(210mm, 100%); min-height: 297mm; background: #fff; color: #000; padding: 14mm 15mm; font: 10.5pt/1.45 var(--body); box-shadow: 0 10px 40px rgba(var(--shade), 0.35); color-scheme: light; }
+.sz-print-sheet h1, .sz-print-sheet h2, .sz-print-sheet h3 { color: #000; text-transform: none; letter-spacing: 0; }
+.sz-print-sheet h1 { font: 600 20pt/1.15 var(--display); margin: 2px 0 0; }
+.sz-print-sheet h2 { font: 600 13pt/1.2 var(--display); margin: 14px 0 6px; text-transform: uppercase; letter-spacing: 0.03em; }
+.sz-print-sheet h3 { font: 600 11pt/1.25 var(--body); margin: 10px 0 4px; }
+.sz-print-sheet p { margin: 0 0 6px; }
+.sz-print-sheet .pre { white-space: pre-wrap; }
+.sz-print-sheet .muted { color: #444; }
+.sz-print-sheet .mono { font-family: var(--mono); }
+
+.sz-print-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px; align-items: end; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 12px; }
+.sz-print-kind { font: 500 8.5pt var(--mono); text-transform: uppercase; letter-spacing: 0.1em; }
+.sz-print-meta { display: grid; grid-template-columns: auto auto; gap: 1px 10px; margin: 0; font-size: 9pt; }
+.sz-print-meta dt { color: #444; }
+.sz-print-meta dd { margin: 0; font-weight: 600; }
+
+.sz-print-facts { display: flex; flex-wrap: wrap; gap: 2px 8px; margin: 0 0 8px; font-size: 9.5pt; }
+.sz-print-facts span + span::before { content: '·'; margin-right: 8px; }
+.sz-print-yesno { display: flex; gap: 18px; margin-top: 4px; }
+.sz-print-box { border: 1px solid #000; padding: 6px 8px; margin: 8px 0; }
+
+.sz-print-sheet table { width: 100%; border-collapse: collapse; margin: 4px 0 10px; font-size: 9.5pt; }
+.sz-print-sheet th, .sz-print-sheet td { border: 1px solid #000; padding: 4px 6px; text-align: left; vertical-align: top; }
+.sz-print-sheet th { font: 600 8.5pt var(--body); text-transform: uppercase; letter-spacing: 0.04em; }
+.sz-print-sheet td.n, .sz-print-sheet th.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.sz-print-sheet td.c, .sz-print-sheet th.c { text-align: center; }
+.sz-print-sheet td.blank { min-width: 32mm; }
+.sz-print-sheet tfoot td { font-weight: 600; }
+.sz-print-sheet td.off { color: #777; text-align: center; }
+.sz-print-sheet .deload { font-style: italic; }
+
+.sz-print-check { display: inline-block; width: 11px; height: 11px; border: 1.2px solid #000; vertical-align: -1px; margin-right: 6px; }
+.sz-print-check.round { border-radius: 50%; }
+.sz-print-checklist { list-style: none; margin: 4px 0 8px; padding: 0; display: grid; gap: 4px; }
+
+.sz-print-qs { margin: 0; padding-left: 20px; display: grid; gap: 12px; }
+.sz-print-qs li { break-inside: avoid; }
+.sz-print-q { font-weight: 600; }
+.sz-print-lines { display: grid; gap: 0; margin-top: 4px; }
+.sz-print-lines span { display: block; height: 22px; border-bottom: 1px solid #000; }
+.sz-print-num { display: inline-block; min-width: 40mm; height: 22px; border: 1px solid #000; margin-top: 4px; vertical-align: middle; }
+.sz-print-scale { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.sz-print-scale span { display: inline-grid; place-items: center; min-width: 24px; height: 24px; border: 1px solid #000; border-radius: 50%; font-size: 9pt; }
+.sz-print-opts { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 3px; }
+
+.sz-print-foot { margin-top: 16px; padding-top: 6px; border-top: 1px solid #000; font-size: 8pt; color: #444; display: flex; justify-content: space-between; gap: 12px; }
+
+@media (max-width: 560px) {
+  .sz-print-sheet { padding: 16px; min-height: 0; }
+}
+
+@media print {
+  @page { size: A4; margin: 12mm 13mm; }
+  html.sz-printing, html.sz-printing body { background: #fff !important; color: #000 !important; }
+  html.sz-printing body > :not(.sz-print-root) { display: none !important; }
+  html.sz-printing .side, html.sz-printing .nav, html.sz-printing .toast, html.sz-printing .overlay { display: none !important; }
+  .sz-print-root { position: static; inset: auto; display: block; justify-items: normal; align-content: normal; padding: 0; background: none; overflow: visible; }
+  .sz-print-bar { display: none !important; }
+  .sz-print-sheet { width: auto; justify-self: stretch; min-height: 0; padding: 0; box-shadow: none; }
+  .sz-print-sheet h2, .sz-print-sheet h3 { break-after: avoid; }
+  .sz-print-sheet tr, .sz-print-box, .sz-print-sheet section { break-inside: avoid; }
+  .sz-print-sheet thead { display: table-header-group; }
+}
