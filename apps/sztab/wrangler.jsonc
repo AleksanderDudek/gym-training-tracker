@@ -1,0 +1,13 @@
+// GYM TRACKER Sztab na Cloudflare Workers (statyczne pliki, bez kodu po stronie serwera).
+// Wdrożenie: zbuduj ze zmiennymi produkcji (apps/sztab/README.md, „Wdrożenie”), potem
+//   npx wrangler deploy   (z katalogu apps/sztab)
+// Nagłówki bezpieczeństwa z public/_headers trafiają do dist/ i Workers je stosuje.
+{
+  "name": "gym-tracker-sztab",
+  "compatibility_date": "2026-11-25",
+  "assets": {
+    "directory": "./dist",
+    // SPA: każda nieznana ścieżka dostaje index.html (trasy w History API, src/lib/router.ts).
+    "not_found_handling": "single-page-application"
+  }
+}
