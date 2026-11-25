@@ -24,6 +24,7 @@ import { ChatPage } from './link/Chat';
 import { FormAssignment } from './link/FormFill';
 import { HabitsAssignment } from './link/HabitsDay';
 import { MealsAssignment } from './link/MealsDay';
+import { PhotosHint } from './link/PhotosHint';
 import { VisitsPage } from './link/Visits';
 
 /**
@@ -373,6 +374,7 @@ function InviteForm({
             <span>{W.scope[sc]}</span>
           </label>
         ))}
+        <PhotosHint />
         <p className="hint">{T.scopesHint}</p>
       </div>
       <div className="grp">
@@ -481,6 +483,7 @@ function ConnectionPage({ id, state, onToast }: { id: string; state: AppState; o
               <span>{W.scope[sc]}</span>
             </label>
           ))}
+          <PhotosHint />
           {narrower && <p className="hint">{T.scopesNarrow}</p>}
           <div className="btnrow">
             <button className="btn sm" disabled={!changed || busy} onClick={() => void save()}>

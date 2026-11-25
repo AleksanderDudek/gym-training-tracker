@@ -299,7 +299,10 @@ export async function changeScopes(id: string, scopes: Scope[], state: AppState)
   }
   const next = updateLink((s) => {
     const x = s.connections.find((y) => y.id === id);
-    if (x) x.scopes = scopes;
+    if (!x) return;
+    x.scopes = scopes;
+    // Bez zgody na zdjęcia serwer skasował je od razu — mapa wysłanych też idzie do kosza.
+    if (!scopes.includes('photos')) delete x.photos;
   });
   const fresh = connectionOf(next, id);
   if (fresh) await pushOne(fresh, state, { force: true });

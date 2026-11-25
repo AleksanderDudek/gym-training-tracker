@@ -77,7 +77,7 @@ const T = text({
     // Zdjęcia
     photos: 'Zdjęcia sylwetki',
     photosNote:
-      'Zdjęcia zostają na tym telefonie: nigdzie ich nie wysyłamy i nie wchodzą do kopii zapasowej (są za duże). Kopię zdjęcia daje „Pobierz”. „Usuń wszystkie dane” kasuje także je.',
+      'Zdjęcia zostają na tym telefonie: nigdzie ich nie wysyłamy i nie wchodzą do kopii zapasowej (są za duże). Jedyny wyjątek to prowadzący, któremu osobną zgodą pozwolisz je oglądać — dostaje zaszyfrowane, zmniejszone kopie. Kopię zdjęcia daje „Pobierz”. „Usuń wszystkie dane” kasuje także je.',
     noPhotos: 'Bez zdjęć. To samo światło, ta sama odległość i poza co kilka tygodni dają porównanie, które widać.',
     camera: 'Aparat',
     gallery: 'Z galerii',
@@ -152,7 +152,7 @@ const T = text({
     deleteDay: (day: string) => `Delete the measurement from ${day}`,
     photos: 'Progress photos',
     photosNote:
-      'Photos stay on this phone: they’re never sent anywhere and aren’t in the backup file (they’re too big). “Download” gives you a copy. “Delete all data” deletes them too.',
+      'Photos stay on this phone: they’re never sent anywhere and aren’t in the backup file (they’re too big). The only exception is a coach you give separate consent to see them — they get encrypted, downscaled copies. “Download” gives you a copy. “Delete all data” deletes them too.',
     noPhotos: 'No photos yet. Same light, same distance and same pose every few weeks give you a comparison you can see.',
     camera: 'Camera',
     gallery: 'From gallery',
