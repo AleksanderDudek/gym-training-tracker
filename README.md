@@ -560,7 +560,31 @@ atlasu tej wersji odpadają, a ekran mówi które; filmy prowadzącego stoją pr
 i notatka to karty do przeczytania, z „Zrobione”, „Nie tym razem” i odhaczaniem listy. Prowadzący dostaje
 zaszyfrowane potwierdzenie: zobaczone, w trakcie, zrobione, odrzucone. Wycofane zalecenie znika.
 
-**Koniec współpracy** — z dowolnej strony — kasuje na serwerze od razu paczkę, zalecenia i token. Telefon
+**Prowadzenie dzień po dniu** (spec `docs/superpowers/specs/2026-11-25-sztab-funkcje-konkurencji-design.md`).
+Trzy rodzaje zaleceń żyją dłużej niż jedno przeczytanie:
+
+- **Formularz** — wywiad na start (wisi na wierzchu, aż odpowiedź pójdzie), cotygodniowy check-in,
+  codzienna skala bólu, własne mierniki. Pytania: tekst, liczba, skala, wybór, kilka wyborów, tak/nie.
+  Odpowiedź zamyka okres (dzień albo tydzień ISO, liczony tak samo po obu stronach — `formPeriod`).
+- **Nawyki** — lista na dni tygodnia z porą i dawką (sen, woda, suplementy, kroki); odhaczana dzień po
+  dniu, także do sześciu dni wstecz.
+- **Jadłospis** — dni × posiłki w cyklu od dnia startu, z przepisami z katalogu aplikacji (otwierają się
+  na miejscu, z listą zakupów ze składników), makro od prowadzącego i odhaczaniem „Zjedzone”.
+
+Odpowiedzi i odhaczenia jadą w paczce (część `coaching`, zawsze — to odpowiedzi na zalecenia tego samego
+prowadzącego) 2,5 s po zmianie, a nie po kwadransie. Ekran Dziś pokazuje jedną linię, gdy coś czeka:
+nowa wiadomość, formularz, nieodhaczone nawyki albo posiłki, wizyta w ciągu doby. Zalecenie rodzaju
+nowszego niż wersja aplikacji to „zaktualizuj aplikację”, a nie „zepsute”.
+
+**Wiadomości** — rozmowa z prowadzącym szyfrowana jak paczka (`message|<współpraca>|<numer>`), z kolejką
+bez sieci („czeka na sieć”), „Przeczytane” i dołączeniem treningu z dziennika. Telefon pyta o nowe przy
+otwarciu i co 20 s na otwartej rozmowie. **Wizyty** — wolne terminy prowadzącego, rezerwacja, odwołanie,
+plik .ics i link do rozmowy wideo; godziny wizyt to jedyne dane współpracy, które serwer widzi jawnie.
+**Zdjęcia sylwetki** — tylko za osobną zgodą (`photos`, nigdy domyślnie): zmniejszone kopie (≤ 720 px)
+ostatnich 60 zdjęć, szyfrowane kluczem współpracy; cofnięcie zgody kasuje je u prowadzącego od razu.
+
+**Koniec współpracy** — z dowolnej strony — kasuje na serwerze od razu paczkę, zalecenia, rozmowę,
+zdjęcia, przyszłe wizyty i token. Telefon
 pyta na stronie, zanim zakończy, i mówi wprost, że prowadzący traci dane od razu, a to, co jest na
 telefonie, zostaje. Koniec po stronie prowadzącego telefon poznaje po odrzuconym tokenie, sprawdza stan
 i pokazuje uwagę na ekranie Dziś. Bez sieci zakończenie zapisuje się od razu u siebie, a serwer dowiaduje
@@ -2087,9 +2111,13 @@ src/
     sync.ts                 w tle: zaległe zmiany, odbiór i odszyfrowanie zaleceń, koniec po stronie prowadzącego, paczka, potwierdzenia
     snapshot.ts             paczka dla prowadzącego: zakresy, okno pół roku, limit wielkości; jedzenie i badania z bazy dziennika
     assign.ts               plan i trening od prowadzącego jako własne: osobne numery, pominięte ćwiczenia spoza atlasu
-    *.test.ts               43 testy przyjęcia, wyłączności, synchronizacji, paczki, zaleceń, zapisu i tras
+    today.ts                co czeka dziś (formularze, nawyki, jadłospis, wiadomości) — czyste, w głównej paczce
+    photos.ts               zdjęcia sylwetki dla prowadzącego: zmniejszone, szyfrowane, najwyżej 60, za zgodą `photos`
+    visits.ts               wizyty: podział na nadchodzące i minione, wolne miejsca, wizyta w ciągu doby
+    *.test.ts               testy przyjęcia, wyłączności, synchronizacji, paczki, zaleceń, rozmowy, zdjęć, wizyt, zapisu i tras
   components/Link.tsx       strony współpracy (osobna paczka): lista, zaproszenie, współpraca z zakresem i zakończeniem, zalecenie
-  components/LinkEntry.tsx  karta w profilu i ustawieniach, uwaga na ekranie Dziś
+  components/link/          rozmowa (Chat), formularz (FormFill), nawyki (HabitsDay), jadłospis (MealsDay, mealRecipes), wizyty (Visits, visitIcs)
+  components/LinkEntry.tsx  karta w profilu i ustawieniach, uwaga na ekranie Dziś (zalecenia, wiadomości, formularze, nawyki, posiłki, wizyta)
   components/Link*.test.tsx 13 testów stron pod jsdom (także po angielsku) i współpracy w całej aplikacji: link na świeżym profilu, start, reset
   test/linkServer.ts        Sztab w pamięci dla testów: funkcje RPC z migracji, prowadzący z prawdziwym kluczem
   styles.css                arkusz stylów
