@@ -459,7 +459,7 @@ function SlotDialog({
   const link = videoLink(slot.place);
   const minutes = Math.round((Date.parse(slot.endsAt) - Date.parse(slot.startsAt)) / 60_000);
 
-  const run = async (f: () => Promise<void>, done: string, mapErr?: (e: unknown) => string | null) => {
+  const run = async (f: () => Promise<unknown>, done: string, mapErr?: (e: unknown) => string | null) => {
     setBusy(true);
     setErr(null);
     try {
@@ -529,7 +529,7 @@ function SlotDialog({
                       <strong>{T.cancelBookingQ(who(b.connectionId))}</strong> {T.cancelBookingText}
                     </p>
                     <div className="row">
-                      <button type="button" className="btn danger small" disabled={busy} onClick={() => void run(() => cancelBooking(b.id), T.bookingCancelled)}>
+                      <button type="button" className="btn danger small" disabled={busy} onClick={() => void run(() => cancelBooking(b.id, connections.find((c) => c.id === b.connectionId)), T.bookingCancelled)}>
                         {T.cancelBookingYes}
                       </button>
                       <button type="button" className="btn ghost small" disabled={busy} onClick={() => setAskBooking(null)}>
@@ -572,7 +572,8 @@ function SlotDialog({
           className="stack sz-cal-signup"
           onSubmit={(e) => {
             e.preventDefault();
-            if (pick) void run(() => bookClient(slot.id, pick), T.signedUp, duplicate);
+            const c = candidates.find((x) => x.id === pick);
+            if (c) void run(() => bookClient(slot, c), T.signedUp, duplicate);
           }}
         >
           <h3>{T.signUp}</h3>

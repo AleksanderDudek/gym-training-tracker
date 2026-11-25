@@ -78,6 +78,18 @@ GYM TRACKER (telefon, bez konta)  ──szyfrogram──▶  Supabase (UE)  ─�
   o tym przypomina). Rezerwację z telefonu pilnuje baza: limit miejsc z blokadą wiersza, 10 przyszłych
   wizyt na podopiecznego.
 - **Grupy i skróty** zostają w przeglądarce prowadzącego, nigdy na serwerze.
+- **Powiadomienia push do podopiecznego** (spec `docs/superpowers/specs/2026-11-25-sztab-powiadomienia-design.md`,
+  `src/lib/notify.ts`): gdy podopieczny je włączy, telefon podaje Sztabowi losowy token współpracy
+  (`connections.notify_token`). Po akcji prowadzącego przeglądarka woła serwer aplikacji GYM TRACKERa
+  (`VITE_TRACKER_API_URL`) tym tokenem i samym rodzajem zdarzenia — bez treści, nazwisk i numerów:
+  wiadomość (`message`), zalecenie (`assignment`; zaplanowane — o „pokaż od”, z numerem zalecenia, żeby
+  dało się je odwołać), wycofanie (`withdrawn`; zaplanowane i jeszcze niewidoczne — tylko odwołanie z
+  kolejki), zapis na wizytę (`visit` + `visit-soon` 2 h przed, z numerem rezerwacji), odwołanie wizyty
+  albo terminu (`visit-cancel` + odwołanie przypomnienia), koniec współpracy (`ended` + odwołanie
+  wszystkiego, co czeka w kolejce). Wołają je funkcje `lib/data.ts`, więc każda ścieżka w interfejsie
+  (pojedynczo, do grupy, „Uruchom program”) powiadamia tak samo. Wysłane i zapomniane: 5 s limitu,
+  `keepalive`, bez ponawiania, błąd nigdy nie psuje samej wysyłki; treść JSON jako `text/plain` (bez
+  preflightu CORS).
 
 Pełny opis decyzji: `docs/superpowers/specs/2026-11-03-sztab-design.md`.
 
@@ -89,6 +101,7 @@ src/
   session.tsx          stan logowania, sejf na tym komputerze
   lib/
     env.ts             konfiguracja z buildu (domyślnie lokalny Supabase)
+    notify.ts          powiadomienia push do podopiecznego przez serwer aplikacji GYM TRACKERa
     sb.ts              klient Supabase (PKCE)
     router.ts          trasy w ścieżce adresu (History API)
     vault.ts           sejf: klucz w IndexedDB, kod odzyskiwania, zmiana kodu
@@ -120,6 +133,7 @@ test/
   logic.test.ts        pulpit, sejf, wysyłka, skróty (jsdom, IndexedDB w pamięci)
   db/rpc.test.ts       baza na żywo: zaproszenia, paczki, zalecenia, zgoda, zakończenie, usunięcie konta
   db/features.test.ts  baza na żywo: harmonogram, wiadomości, zdjęcia, wizyty, uprawnienia nowych tabel
+  notify*.test.ts(x)   powiadomienia: zapytanie do serwera aplikacji, kiedy i co wysyłają funkcje danych, ekrany
   *.test.ts(x)         formularze, nawyki i jadłospis, realizacja, „Do przejrzenia”, harmonogram, druk,
                        wiadomości, zdjęcia, kalendarz, MFA
 scripts/demo-client.ts telefon demo do sprawdzania pulpitu
@@ -139,10 +153,17 @@ wrangler.jsonc         Worker z plikami statycznymi: dist/, każda nieznana ści
 2. **Google** (opcjonalnie): klient OAuth w Google Cloud, wpisany w Authentication → Providers →
    Google; w buildzie `VITE_SZTAB_GOOGLE=1`.
 3. **Hosting** (Cloudflare Workers, pliki statyczne — `wrangler.jsonc`): zmienne buildu w
-   `apps/sztab/.env.production.local` (poza gitem): `VITE_SZTAB_URL`, `VITE_SZTAB_ANON_KEY` —
-   starszy klucz `anon` (JWT, `eyJ…`), bo GYM TRACKER wysyła go też jako `Authorization: Bearer`,
-   a nowy `sb_publishable_…` nie jest JWT — i `VITE_TRACKER_URL`. Potem
+   `apps/sztab/.env.production.local` (poza gitem, tabela niżej). Potem
    `npm run build -w @gymtracker/sztab` i z katalogu `apps/sztab` `npx wrangler deploy`.
+
+   | Zmienna | Co | Bez niej |
+   |---|---|---|
+   | `VITE_SZTAB_URL` | adres projektu Supabase | lokalny Supabase (`http://127.0.0.1:54321`) |
+   | `VITE_SZTAB_ANON_KEY` | starszy klucz `anon` (JWT, `eyJ…`) — GYM TRACKER wysyła go też jako `Authorization: Bearer`, a nowy `sb_publishable_…` nie jest JWT | klucz lokalnego Supabase |
+   | `VITE_TRACKER_URL` | adres GYM TRACKERa (linki zaproszeń) | `https://aleksanderdudek.github.io/gym-training-tracker/` |
+   | `VITE_TRACKER_API_URL` | serwer aplikacji GYM TRACKERa do powiadomień push; w produkcji `https://gym-tracker-api.instrukcje-app.workers.dev` (ten adres jest w `connect-src` w `public/_headers`, a adres Sztabu musi być w `ALLOWED_ORIGINS` Workera) | Sztab nie powiadamia, okno wysyłki mówi „zobaczy to przy następnym otwarciu aplikacji” |
+   | `VITE_SZTAB_GOOGLE` | `1` — logowanie przez Google | tylko mail i hasło |
+
 4. **GYM TRACKER**: zmienne repozytorium `SZTAB_URL`, `SZTAB_ANON_KEY`, `SZTAB_APP_URL` (Settings
    → Secrets and variables → Actions → Variables). Bez nich Współpraca w GYM TRACKERze jest
    ukryta.
@@ -153,7 +174,7 @@ Etap 2 jest zrobiony (formularze ze skalą bólu i check-inem, jadłospis z prze
 treningów w rozmowie, MFA) razem z funkcjami z przeglądu FitFive i Trainero — decyzje i to, czego
 świadomie nie ma, w `docs/superpowers/specs/2026-11-25-sztab-funkcje-konkurencji-design.md`.
 
-Dalej: pliki i wideo w szyfrowanym Storage (zamiast adresów), powiadomienia push o wiadomościach,
-synchronizacja z Google Calendar. Etap 3: analiza AI płatna za analizę (własny klucz z przeglądarki
-prosto do dostawcy albo serwer MCP na komputerze prowadzącego), widok drużyny (dzielenie kluczy
-współpracy), płatności.
+Dalej: pliki i wideo w szyfrowanym Storage (zamiast adresów), powiadomienia push dla prowadzącego
+(o wiadomości od podopiecznego — Sztab nie jest PWA i nie ma service workera), synchronizacja z Google
+Calendar. Etap 3: analiza AI płatna za analizę (własny klucz z przeglądarki prosto do dostawcy albo
+serwer MCP na komputerze prowadzącego), widok drużyny (dzielenie kluczy współpracy), płatności.
