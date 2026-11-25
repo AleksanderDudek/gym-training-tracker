@@ -11,7 +11,7 @@ import { plannedBurn } from '../engine/burn';
 import { dayKey } from '../engine/schedule';
 import { BoostCard } from './Boost';
 import { WeighCard } from './Weigh';
-import { LinkNotice } from './LinkEntry';
+import { CoachPlanNote, CoachToday } from './CoachToday';
 import { CalendarCard } from './CalendarCard';
 import { hasDiet } from '../food/dietFlag';
 import { FoodCardPlaceholder } from '../food/FoodCardPlaceholder';
@@ -160,6 +160,15 @@ export function SessionHome({
 
   return (
     <>
+      {/*
+        Od prowadzącego — na samej górze, gdy współpraca trwa i coś czeka: wiadomość, formularz, nawyki
+        do odhaczenia, jadłospis, wizyta, nowe zalecenie. Karta jest dodatkiem: gdyby się wywróciła,
+        znika po cichu, a reszta ekranu zostaje.
+      */}
+      <QuietBoundary>
+        <CoachToday state={state} today={today} />
+      </QuietBoundary>
+
       <div className="wrap">
         <p className="statline">{statsLine}</p>
         <p className="lead">
@@ -171,11 +180,6 @@ export function SessionHome({
         </p>
         <CharacterStrip state={state} />
       </div>
-
-      {/* Nowe od prowadzącego (albo koniec współpracy z jego strony) — jedna linia, tylko gdy coś przyszło. */}
-      <QuietBoundary>
-        <LinkNotice />
-      </QuietBoundary>
 
       {/* Jednorazowe pytanie o anonimowe statystyki — po pierwszym treningu, za zgodą. */}
       <StatsAsk state={state} />
@@ -197,6 +201,10 @@ export function SessionHome({
               {T.deload}
             </p>
           )}
+          {/* Plan od prowadzącego: co dziś, ekran mówi wyżej — ta linijka mówi, czyj to plan. */}
+          <QuietBoundary>
+            <CoachPlanNote planId={state.plan?.templateId} />
+          </QuietBoundary>
           {burn && (
             <p className="tight" style={{ marginTop: 6 }}>
               {/* Kto prowadzi dziennik jedzenia, ma na tym ekranie jeden rachunek kalorii — jedzenia. */}
@@ -220,6 +228,9 @@ export function SessionHome({
             {today.nextDate ? T.next(today.nextIn === 0 ? T.today : days(today.nextIn ?? 1)) : T.noMore}
           </h2>
           {today.nextDate && <p className="tight">{T.nextLine(shortDate(today.nextDate), today.nextName)}</p>}
+          <QuietBoundary>
+            <CoachPlanNote planId={state.plan?.templateId} />
+          </QuietBoundary>
         </div>
       )}
 

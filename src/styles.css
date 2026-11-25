@@ -1693,4 +1693,3 @@
   .link-id{font-family:var(--display);font-size:18px;letter-spacing:.06em;margin:4px 0 0;font-variant-numeric:tabular-nums}
   .link-error{color:var(--warn);font-weight:600;margin:0 0 10px}
   .link-summary{cursor:pointer;color:var(--steel);font-weight:600;min-height:44px;display:flex;align-items:center}
-  .link-notice{display:flex;flex-direction:column}

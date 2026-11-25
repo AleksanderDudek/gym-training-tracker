@@ -21,6 +21,7 @@ import { W, assignmentTitle } from './Link.words';
 import { useNow } from './DeviceStatus';
 import { Banner } from './ui';
 import { ChatPage } from './link/Chat';
+import { CoachTargets } from './link/CoachTargets';
 import { FormAssignment } from './link/FormFill';
 import { HabitsAssignment } from './link/HabitsDay';
 import { MealsAssignment } from './link/MealsDay';
@@ -726,6 +727,7 @@ function AssignmentBody({
             </ul>
           </div>
           <CoachNote text={b.note} />
+          <CoachTargets stored={stored} body={b} state={state} onToast={onToast} />
         </>
       );
     }

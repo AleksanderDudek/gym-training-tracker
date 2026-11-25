@@ -146,7 +146,8 @@ describe('wejścia i współpraca', () => {
     });
     await syncAll(() => freshState());
     rerender(<LinkNotice />);
-    expect(screen.getByRole('link', { name: /Nowe od prowadzącego — Anna Kowalska: Rozgrzewka/ })).toBeInTheDocument();
+    const card = screen.getByRole('region', { name: /^Od prowadzącego Anna Kowalska/ });
+    expect(within(card).getByRole('link', { name: /^Nowe zalecenie: Rozgrzewka/ })).toBeInTheDocument();
   });
 
   it('zakończenie pyta na stronie i dopiero po „Tak” kończy u prowadzącego', async () => {
