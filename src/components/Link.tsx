@@ -28,6 +28,7 @@ import { MealsAssignment } from './link/MealsDay';
 import { PhotosHint } from './link/PhotosHint';
 import { NotifyCheck, NotifySection, enableAfterAccept, pushPossible, useCoachPushState } from './link/Notify';
 import { VisitsPage } from './link/Visits';
+import { PasteInvite } from './link/PasteInvite';
 
 /**
  * Strony współpracy z prowadzącym: lista, zaproszenie, jedna współpraca i jedno zalecenie.
@@ -118,6 +119,7 @@ function LinkHome() {
         {s.broken.length > 0 && <p className="hint">{T.broken(s.broken.length)}</p>}
         {s.unsupported.length > 0 && <p className="hint">{T.unsupported(s.unsupported.length)}</p>}
       </div>
+      <PasteInvite />
       {ended.length > 0 && (
         <div className="grp">
           <details>
