@@ -128,3 +128,34 @@ dziś). Wszystko w leniwej paczce współpracy, jak dotąd.
 Migracja idzie na produkcję dopiero ręcznie (`npx supabase db push --remote`), potem build
 i `npx wrangler deploy` Sztabu oraz push GYM TRACKERa. Kolejność ma znaczenie: najpierw baza
 (nowe funkcje), potem obie aplikacje.
+
+## Zrobione (25 listopada 2026)
+
+Wszystkie pozycje „Robimy” z tabeli. Rdzeń (protokół, baza, synchronizacja, zaczepy) napisał prowadzący,
+potem osiem części równolegle w osobnych drzewach roboczych, scalonych bez konfliktów; potem trzy
+niezależne przeglądy (bezpieczeństwo, telefon, Sztab) i poprawki.
+
+### Decyzje podjęte w trakcie
+
+| Decyzja | Dlaczego |
+|---|---|
+| **MFA egzekwowane w bazie**, nie tylko na ekranie: restrykcyjna polityka na każdej tabeli prowadzącego (`authz.mfa_ok()` — sesja `aal2` albo brak zweryfikowanego składnika) i ten sam warunek w funkcjach prowadzącego | Przegląd: samo hasło (sesja `aal1`) dawało przez PostgREST pełne prawa do jawnych danych (biblioteka, terminy) i kończenia współprac. Dane o zdrowiu i tak chronił sejf |
+| **Autor wiadomości w AAD** (`message|współpraca|numer|autor`) | Jawna kolumna `author` dawała się przestawić — zalecenie prowadzącego udawałoby słowa podopiecznego |
+| **Serwer może zakres zgody tylko zwęzić** | Przejęta baza dopisująca `photos` włączyłaby po cichu wysyłkę zdjęć |
+| **Zdjęcia nigdy nie są zaznaczone z góry**, także gdy prowadzący o nie prosi | Zgoda na dane szczególnej kategorii (RODO art. 9) to osobne kliknięcie |
+| **Pełny termin innego podopiecznego nie wychodzi do telefonu** | Link do rozmowy 1:1 i fakt cudzej wizyty |
+| **Minione wizyty zostają po końcu współpracy** | Ślad rozliczeń prowadzącego; to godziny, bez danych o zdrowiu |
+| **Brak przycisku „pobierz” przy zdjęciach w Sztabie** | Mniej kopii przez przypadek (nie zabezpieczenie — przeglądarka i tak pozwala zapisać) |
+| **Skróty prowadzącego nie trafiają do .ics ani do wydruku** (do .ics tylko na wyraźne życzenie) | Skróty bywają nazwiskami albo „kolano”; kalendarz w chmurze by je widział |
+| **Lista zakupów z jadłospisu na telefonie liczy składniki przepisów** (porcja na posiłek), bez produktów i cen | Pełna lista z produktami wymaga bazy produktów — osobna, duża praca |
+| **Program wysyła treść taką, jaka jest w bibliotece w chwili uruchomienia** | Zalecenie po wysłaniu jest niezmienne (szyfrogram); późniejsza edycja biblioteki nie zmienia wysłanego |
+| **„Dzień tygodnia” w programie liczy się od dnia startu**, a przycisk „najbliższy poniedziałek” ustawia start | Program to kurs „dzień N”, nie kalendarz |
+| **Telefon przy odhaczeniu w 30 s po paczce czeka na swoją kolej** zamiast próbować (serwer i tak odmawia) | Bez czytania bazy jedzenia i szyfrowania pół roku na darmo |
+| **Wywiad (jednorazowa odpowiedź) zawsze w paczce**, bez względu na okno dni | Po pół roku prowadzący widziałby go jako „bez odpowiedzi” |
+| **Zalecenie zakończonej współpracy — tylko do wglądu** | Odhaczenia i odpowiedzi i tak nie dojdą; ekran nie udaje, że idą |
+
+### Do zrobienia przez człowieka
+
+Migracje na produkcję (`npx supabase db push --remote` w `apps/sztab`), potem build i `npx wrangler deploy`
+Sztabu, na końcu push GYM TRACKERa (kolejność: baza → Sztab → telefon). MFA w produkcyjnym Supabase jest
+włączone; maile do innych prowadzących wymagają własnego SMTP.
