@@ -75,6 +75,8 @@ describe('„Usuń wszystkie dane” z powiadomieniami od prowadzącego', () => 
       await user.click(within(dialog).getByRole('button', { name: 'Usuń wszystko' }));
       await waitFor(() => expect(server.connections.get(r.connection.id)!.status).toBe('ended'), { timeout: 8000 });
       await waitFor(() => expect(linkState().connections).toEqual([]));
+      // Reset doszedł do końca (ostatni krok zapisuje świeży stan) — nic z niego nie przeżyje testu.
+      await waitFor(() => expect(localStorage.getItem('kb-trener-v3')).not.toBeNull(), { timeout: 8000 });
       // Subskrypcję trzymał tylko prowadzący (przypomnień nikt nie włączał) — znika z przeglądarki.
       expect(device.subscription).toBeNull();
       expect(hasNotifyChores()).toBe(true);

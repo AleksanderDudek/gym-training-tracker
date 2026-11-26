@@ -96,6 +96,10 @@ describe('współpraca w aplikacji', () => {
       expect(within(dialog).getByText(/Współpraca z prowadzącym się zakończy/)).toBeInTheDocument();
       await user.click(within(dialog).getByRole('button', { name: 'Usuń wszystko' }));
       await waitFor(() => expect(server.connections.get(c.id)!.status).toBe('ended'), { timeout: 8000 });
+      // Koniec resetu: ostatni krok `resetAll` (`commit` świeżego stanu) zapisuje go z powrotem. Bez tego
+      // czekania test kończy się w trakcie resetu, a `commit` trafia w rozebrane już środowisko
+      // (CI: „window is not defined”). Wprowadzenie nie jest tu sygnałem — pokazuje się wcześniej.
+      await waitFor(() => expect(localStorage.getItem('kb-trener-v3')).not.toBeNull(), { timeout: 8000 });
       expect(localStorage.getItem(LINK_KEY)).toBeNull();
       expect(linkState().connections).toEqual([]);
       expect(saved().cfg?.linkSecret).toBeUndefined();

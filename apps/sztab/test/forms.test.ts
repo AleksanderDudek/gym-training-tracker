@@ -182,7 +182,7 @@ describe('okresy i stan po stronie prowadzącego', () => {
     // Odstępy wokół półpauzy zależą od wersji ICU.
     expect(periodLabel('2026-W49', 'pl-PL')).toMatch(/^30 lis\s?–\s?6 gru$/);
     expect(periodLabel('2026-11-25', 'pl-PL')).toBe('25 lis');
-    expect(periodLabel('2026-W48', 'en-GB')).toBe('23–29 Nov');
+    expect(periodLabel('2026-W48', 'en-GB')).toMatch(/^23\s?–\s?29 Nov$/);
     expect(periodLabel('once', 'pl-PL')).toBe('');
   });
 

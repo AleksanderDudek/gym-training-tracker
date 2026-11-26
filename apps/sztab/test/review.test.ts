@@ -169,7 +169,7 @@ describe('Powody do przejrzenia', () => {
 
   it('nowe odpowiedzi: od ostatniego otwarcia z listy, a bez śladu otwarcia — z ostatnich 7 dni', () => {
     const f = sent(form({ repeat: 'daily', weekday: null }));
-    const answers = [1, 3, 5, 9, 12].map((n) => ({ assignmentId: f.id, period: localDay(NOW - n * DAY), at: NOW - n * DAY, values: { q1: 5 } }));
+    const answers = [1, 3, 5, 9, 12].map((n) => ({ assignmentId: f.id, period: dayIn('Europe/Warsaw', NOW - n * DAY), at: NOW - n * DAY, values: { q1: 5 } }));
     const d = prepare(read(snapshot({ ...none, answers })), [f], null, NOW);
     const seen = review(conn, d, ctx({ lastSeen: NOW - 4 * DAY }));
     expect(seen.newAnswers).toBe(2);
