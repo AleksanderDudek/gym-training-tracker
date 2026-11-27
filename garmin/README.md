@@ -185,6 +185,16 @@ Stan na 21.10.2026 — Connect IQ SDK 9.2.0 z urządzeniami z SDK Managera:
 - [ ] **Następna wysyłka na zegarku**: po pierwszym przebiegu w tle z nową wersją ekran ma pokazać
       „Następna ok. HH:MM” pół godziny po nim, a dwuliniowy stan („Zły klucz - wklej go jeszcze
       raz”) ma się mieścić na najmniejszych ekranach (Instinct 2, vívoactive 3).
+- [x] **Budżet instrukcji** (27.11.2026, zgłoszenie z Instinct 2S: ikona z wykrzyknikiem po START).
+      Zegarek przerywa wywołanie po `watchdogCount` instrukcjach (`simulator.json` urządzenia):
+      120 000 na Instinct 2/2S/2X/Crossover, fēnix 6/6S, Enduro, Forerunner 245/255/255S/55
+      i Descent G1, 240 000 na pozostałych. Próbka czujnika kosztuje ok. 140 instrukcji, a limit
+      600 próbek na czujnik pozwalał na ok. 250 000 — w symulatorze instinct2s „Watchdog Tripped”
+      przy 12 godzinach zaległości. Do tego `seen` przesuwał się dopiero po udanym przebiegu, więc
+      po pierwszym przerwaniu każdy następny (i każde START) też padał. Teraz 120 próbek na czujnik
+      i osobny `seen` dla każdego. Najgorszy przypadek (doba zaległości, 300 aktywności) przechodzi
+      na instinct2s. **Testy (`-t`) budżetu nie pilnują** — sprawdza się go tylko aplikacją
+      w symulatorze (`monkeydo` bez `-t`) na zegarku ze 120 000.
 
 ## Pliki
 
@@ -200,6 +210,7 @@ Stan na 21.10.2026 — Connect IQ SDK 9.2.0 z urządzeniami z SDK Managera:
 | `source/SyncGlance.mc` | podgląd na liście aplikacji |
 | `source/SealTest.mc` | testy: wspólny wektor koperty, czytanie klucza |
 | `source/NextSendTest.mc` | test: następna wysyłka pół godziny po ostatnim przebiegu, „wkrótce”, „w ciągu 30 min” |
+| `source/CollectTest.mc` | testy: budżet próbek na przebieg, reszta w następnym, nic dwa razy; `seen` po czujnikach |
 | `resources/settings/` | `key` (dla użytkownika) i `api` (ukryty adres serwera) |
 | `build.sh` | testy, symulator, `.prg` na jeden zegarek, `.iq` do sklepu; klucz dewelopera |
 | `store-devices.json` | przycięty katalog urządzeń Connect IQ Store: inne nazwy zegarków dla listy w GYM TRACKER (`npm run garmin:watches -- --store`) |
