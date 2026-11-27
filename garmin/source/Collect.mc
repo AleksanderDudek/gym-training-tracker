@@ -19,14 +19,21 @@ module Collect {
     // tętno spoczynkowe, wynik snu (zawsze null — patrz wyżej)]. Zegarek pamięta próbki czujników krótko, więc kubełek
     // dnia rośnie z każdym przebiegiem, a nie liczy się od nowa z całej doby.
     const HEALTH = "health";
-    // Do której chwili (s) próbki są już w kubełkach.
+    // Do której chwili (s) próbki są już w kubełkach: [tętno, stres, Body Battery]. Wersje sprzed
+    // budżetu próbek zapisywały jedną liczbę dla wszystkich trzech — `since` czyta obie postaci.
     const SEEN = "seen";
     // Pierwszy przebieg: tyle wstecz, ile zegarek zwykle pamięta.
     const FIRST = 7200;
     // Najkrótszy okres zapytania o historię czujników (s) — patrz `health`.
     const MIN_PERIOD = 600;
-    // Próbek na przebieg — tło ma limit czasu, a 30 minut to kilkadziesiąt próbek.
-    const MAX_SAMPLES = 600;
+    // Próbek z jednego czujnika na przebieg. Zegarek przerywa aplikację, gdy jedno wywołanie
+    // wykona za dużo instrukcji („Watchdog Tripped”, ikona z wykrzyknikiem): Instinct 2/2S,
+    // fenix 6, Forerunner 245/255 mają budżet 120 000, nowsze 240 000. Próbka kosztuje ok. 140
+    // instrukcji — w symulatorze instinct2s 680 próbek przechodzi, ok. 760 już nie. 3 × 120 to ok.
+    // 50 000, a reszta budżetu zostaje na aktywności, dni i szyfrowanie. Czego przebieg nie
+    // zmieści, bierze następny (co 30 minut), więc zaległość po dniu bez przebiegów schodzi
+    // w kilka godzin zamiast wywracać każdy przebieg i każde START.
+    const MAX_SAMPLES = 120;
     // Dziś i siedem poprzednich dni.
     const DAYS = 8;
 
@@ -137,23 +144,21 @@ module Collect {
             store = {};
         }
         var seen = Application.Storage.getValue(SEEN);
-        var from = (seen instanceof Number && seen < now) ? seen : now - FIRST;
-        if (now - from > 86400) {
-            from = now - 86400;
-        }
-        // Okres zapytania co najmniej 10 minut: krótszy (np. „Wyślij teraz” chwilę po przebiegu w tle)
-        // kończy getStressHistory błędem „Invalid Value”, którego try/catch nie łapie — w symulatorze
-        // przy 87 s. Próbki sprzed `from` i tak odcina `fold`, więc nic nie liczy się dwa razy.
-        var period = now - from < MIN_PERIOD ? MIN_PERIOD : now - from;
-        var opts = { :period => new Time.Duration(period), :order => SensorHistory.ORDER_OLDEST_FIRST };
+        // Każdy czujnik od miejsca, w którym skończył poprzedni przebieg — budżet próbek może go
+        // przerwać w innym miejscu niż pozostałe.
+        var upTo = [now, now, now];
+        var from;
         if (SensorHistory has :getHeartRateHistory) {
-            fold(store, SensorHistory.getHeartRateHistory(opts), from, 0);
+            from = since(seen, 0, now);
+            upTo[0] = fold(store, SensorHistory.getHeartRateHistory(query(from, now)), from, now, 0);
         }
         if (SensorHistory has :getStressHistory) {
-            fold(store, SensorHistory.getStressHistory(opts), from, 1);
+            from = since(seen, 1, now);
+            upTo[1] = fold(store, SensorHistory.getStressHistory(query(from, now)), from, now, 1);
         }
         if (SensorHistory has :getBodyBatteryHistory) {
-            fold(store, SensorHistory.getBodyBatteryHistory(opts), from, 2);
+            from = since(seen, 2, now);
+            upTo[2] = fold(store, SensorHistory.getBodyBatteryHistory(query(from, now)), from, now, 2);
         }
 
         var today = dayOf(Time.now());
@@ -165,7 +170,7 @@ module Collect {
         store[today] = b;
         store = recent(store);
         Application.Storage.setValue(HEALTH, store);
-        Application.Storage.setValue(SEEN, now);
+        Application.Storage.setValue(SEEN, upTo);
 
         var rows = [];
         var keys = store.keys();
@@ -186,6 +191,22 @@ module Collect {
         return row(rows);
     }
 
+    // Od której chwili (s) czytać czujnik `what` (0 tętno, 1 stres, 2 Body Battery): tam, gdzie
+    // skończył poprzedni przebieg, ale najwyżej dobę wstecz. Bez zapisu — FIRST wstecz.
+    function since(seen, what, now) {
+        var t = (seen instanceof Array && seen.size() == 3) ? seen[what] : seen;
+        var from = (t instanceof Number && t < now) ? t : now - FIRST;
+        return now - from > 86400 ? now - 86400 : from;
+    }
+
+    // Okres zapytania co najmniej 10 minut: krótszy (np. „Wyślij teraz” chwilę po przebiegu w tle)
+    // kończy getStressHistory błędem „Invalid Value”, którego try/catch nie łapie — w symulatorze
+    // przy 87 s. Próbki sprzed `from` i tak odcina `fold`, więc nic nie liczy się dwa razy.
+    function query(from, now) {
+        var period = now - from < MIN_PERIOD ? MIN_PERIOD : now - from;
+        return { :period => new Time.Duration(period), :order => SensorHistory.ORDER_OLDEST_FIRST };
+    }
+
     function bucket(store, key) {
         var b = store[key];
         if (b instanceof Array && b.size() == 10) {
@@ -195,25 +216,38 @@ module Collect {
     }
 
     // Próbki od `from` do kubełków dnia. what: 0 tętno, 1 stres, 2 Body Battery.
-    // Dzień próbki liczony tylko po przejściu przez północ — `dayOf` przy każdej z kilkuset
-    // próbek mógłby przekroczyć limit czasu przebiegu w tle.
-    function fold(store, it, from, what) {
+    // Zwraca, do której chwili (s) czujnik jest przeczytany: `now`, gdy próbki się skończyły, albo
+    // najnowszą przeczytaną, gdy skończył się budżet MAX_SAMPLES. Od najstarszej to miejsce,
+    // od którego następny przebieg weźmie resztę. Od najnowszej — tak podaje stres i Body Battery
+    // symulator mimo ORDER_OLDEST_FIRST — starsza zaległość przepada, ale nic nie liczy się dwa
+    // razy. Dzień próbki liczony tylko po przejściu przez północ — `dayOf` przy każdej próbce
+    // zjadłby budżet instrukcji.
+    function fold(store, it, from, now, what) {
         if (it == null) {
-            return;
+            return now;
         }
         var s = it.next();
         var n = 0;
+        var hi = from;
         var key = null;
         var b = null;
         var dayStart = 0;
         var dayEnd = 0;
-        while (s != null && n < MAX_SAMPLES) {
+        while (s != null) {
+            if (n == MAX_SAMPLES) {
+                // Nie dalej niż teraz: symulator daje stres z przyszłości, a zapis z przyszłości
+                // `since` i tak odrzuca.
+                return hi < now ? hi : now;
+            }
             n++;
-            if (s.data != null && s.when != null && s.when.value() > from) {
-                var v = s.data.toNumber();
+            if (s.when != null) {
+                var w = s.when.value();
+                if (w > hi) {
+                    hi = w;
+                }
+                var v = s.data != null && w > from ? s.data.toNumber() : -1;
                 // Poza zakresem to znacznik „brak pomiaru”, a nie wynik.
                 if (what == 0 ? (v >= 25 && v <= 250) : (v >= 0 && v <= 100)) {
-                    var w = s.when.value();
                     if (w < dayStart || w >= dayEnd) {
                         var g = Gregorian.info(s.when, Time.FORMAT_SHORT);
                         dayStart = w - g.hour * 3600 - g.min * 60 - g.sec;
@@ -238,6 +272,7 @@ module Collect {
             }
             s = it.next();
         }
+        return now;
     }
 
     // Tylko ostatnie dni — starsze aplikacja ma już u siebie.

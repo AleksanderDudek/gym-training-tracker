@@ -53,6 +53,10 @@ PERMISSIONS
 
 GYM TRACKER helps you plan and log training. It is not a medical device and does not replace a doctor, physiotherapist or dietitian.
 
+## What’s new (1.0.1)
+
+Fixes a crash on Instinct 2/2S/2X/Crossover, fenix 6/6S, Enduro, Forerunner 245/255/55 and Descent G1 when sending data after a longer break.
+
 ## What’s new (1.0)
 
 First release: steps, distance, floors, intensity minutes, bike rides, heart rate, stress, Body Battery and resting heart rate, end-to-end encrypted, every 30 minutes. English and Polish.
